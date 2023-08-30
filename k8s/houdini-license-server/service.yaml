@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: houdini-license-server
+  namespace: houdini
+spec:
+  selector:
+    deployment: houdini-license-server
+  ports:
+    - protocol: TCP
+      port: 1715
