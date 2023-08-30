@@ -15,3 +15,6 @@ crash.*.log
 # to change depending on the environment.
 *.tfvars
 *.tfvars.json
+
+# Ignore org files that I use to generate .md files.
+**/*.org
