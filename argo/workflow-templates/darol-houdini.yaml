@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: darol-houdini-template
+  namespace: argo
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a simple hello world example.
+spec:
+  serviceAccountName: argo
+  entrypoint: start
+  templates:
+  - name: start
+    container:
+        image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/darol-houdini:latest
+    command: [echo]
+    args: ["hello world"]

@@ -40,11 +40,11 @@ create_namespace() {
 create_namespace argo
 
 # install the argo resources
-#!/bin/bash
-
 read -p "Install argo resources [y/N]? " choice
 case "$choice" in
   y|Y)
+    git clone git@github.com:argoproj/argo-workflows.git
+    cd argo-workflows
     kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/$VERSION/install.yaml
     ;;
   n|N)
