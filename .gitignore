@@ -18,3 +18,6 @@ crash.*.log
 
 # Ignore org files that I use to generate .md files.
 **/*.org
+
+*.pem
+*.key
