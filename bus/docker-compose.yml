@@ -1,0 +1,41 @@
+version: '3'
+services:
+  rabbitmq1:
+    image: rabbitmq:3.9-management
+    container_name: rabbitmq1
+    hostname: rabbit1
+    environment:
+      RABBITMQ_ERLANG_COOKIE: secret_cookie
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq1.config:/etc/rabbitmq/rabbitmq.config
+
+  rabbitmq2:
+    image: rabbitmq:3.9-management
+    container_name: rabbitmq2
+    hostname: rabbit2
+    environment:
+      RABBITMQ_ERLANG_COOKIE: secret_cookie
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - ./rabbitmq2.config:/etc/rabbitmq/rabbitmq.config
+
+  python_service:
+    build: .
+    container_name: python_service
+    depends_on:
+      - rabbitmq1
+      - rabbitmq2
+    environment:
+      RABBITMQ_HOST: rabbitmq1,rabbitmq2
+      RABBITMQ_PORT: 5672
+    volumes:
+      - ./:/app
