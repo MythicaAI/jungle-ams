@@ -1,10 +1,16 @@
 # Infra for Mythica.ai
 
-In this repo expect to find definitions for infrastructure. Currently we
-have subdirectories for:
+In this repo expect to find definitions, helpers and code for back end
+infrastructure. Currently this repository is not intended to be shared externally.
 
-- terraform
-- k8s
+DO NOT STORE SECRETS HERE
+
+Do not under any cicumstances store secret data in this repository.
+
+Talk to @jacob or @pedro for secret management patterns.
+
+Currently secrets will be stored in 1password and can be made available
+via their [command line tools](https://developer.1password.com/docs/cli/get-started/#install).
 
 ## Setup
 
