@@ -1,16 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: front-end-api
+  name: mythica-fe
   namespace: web
   labels:
-    app: front-end-api
+    app: mythica-fe
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
 spec:
-  # gcloud compute addresses describe mythica-gke-public-ip --region us-central1
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - name: http
       port: 80
       targetPort: 80
   selector:
-    app: front-end-api
+    app: mythica-fe
