@@ -1,0 +1,86 @@
+#
+# This docker compose creates a backend testing environment for 
+# storage tier services. You can run this compose set with -d (--detach)
+#
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:13
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: upload_pipeline
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/
+    healthcheck:
+      test: [ "CMD", "pg_isready --username=test" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    networks:
+      - storage
+  minio:
+    container_name: minio
+    image: minio/minio
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - blockstore:/blockstore
+    command: server /blockstore --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "mc ping local" ]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    networks:
+      - storage
+  # this is a one shot container to configure the minio access key within
+  # the minio service
+  minio-config:
+    image: minio-config
+    depends_on:
+      - minio
+    build:
+      context: ./minio-config
+      dockerfile: Dockerfile
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: foo-access
+      MINIO_SECRET_KEY: bar-secret
+    networks:
+      - storage
+  redis:
+    image: redis
+    container_name: redis
+    networks:
+      - storage
+volumes:
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "../mnt/pgdata"
+  blockstore:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "../mnt/blockstore"
+  mldata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "../mnt/mldata"
+
+networks:
+  storage:
+    driver: bridge
+    name: storage
