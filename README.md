@@ -12,9 +12,22 @@ Talk to @jacob or @pedro for secret management patterns.
 Currently secrets will be stored in 1password and can be made available
 via their [command line tools](https://developer.1password.com/docs/cli/get-started/#install).
 
+## Running
+
+Ensure you have [Python3](https://python.org) installed 
+
+Setup virtual environment and fabrick
+```bash
+. ./env.sh
+```
+
+```bash
+fab local storage
+```
+
 ## Setup
 
-We are using `asdf` to manage tool versions. Observe the
+We are using `asdf` to manage local tool versions. Observe the
 `.tool-versions` file.
 
 To install all tools:
