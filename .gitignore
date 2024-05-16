@@ -19,10 +19,20 @@ crash.*.log
 # Ignore org files that I use to generate .md files.
 **/*.org
 
+# key data
 *.pem
 *.key
 *.p12
 
+# virtual environments
 venv/
 .infra/
-mnt/*/**
+
+# any mount data
+testing/mnt/*/**
+
+# minio system files
+.minio.sys/
+
+# jetbrains config
+.idea
