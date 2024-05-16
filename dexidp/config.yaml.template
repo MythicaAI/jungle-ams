@@ -1,0 +1,42 @@
+issuer: http://api.mythica.ai/dex
+storage:
+  type: postgres
+  config:
+    host: $DB_HOST
+    port: $DB_PORT
+    database: $DB_NAME
+    user: $DB_USER
+    password: $DB_PASSWORD
+web:
+  https: 0.0.0.0:5556
+  tlsCert: /etc/dex/tls/tls.crt
+  tlsKey: /etc/dex/tls/tls.key
+connectors:
+- type: google
+  id: google
+  name: Google
+  config:
+    # Connector config values starting with a "$" will read from the environment.
+    clientID: $GOOGLE_WS_CLIENT_ID
+    clientSecret: $GOOGLE_WS_CLIENT_SECRET
+
+    # Dex's issuer URL + "/callback"
+    redirectURI: http://api.mythica.ai/dex/callback
+
+oauth2:
+  skipApprovalScreen: true
+
+staticClients:
+- id: example-app
+  redirectURIs:
+  - 'http://127.0.0.1:5555/callback'
+  name: 'Example App'
+  secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+
+enablePasswordDB: true
+staticPasswords:
+- email: "admin@example.com"
+  # bcrypt hash of the string "password": $(echo password | htpasswd -BinC 10 admin | cut -d: -f2)
+  hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+  username: "admin"
+  userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
