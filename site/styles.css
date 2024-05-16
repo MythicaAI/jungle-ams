@@ -1,0 +1,226 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #141414;
+    color: #EAEAEA;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Top Navigation Bar */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1F1F1F;
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    color: #EAEAEA;
+}
+
+.hamburger-menu {
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #EAEAEA;
+}
+
+.branding {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.search-bar {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.search-bar input {
+    padding: 10px;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    width: 200px;
+    transition: width 0.3s;
+    background-color: #333;
+    color: #EAEAEA;
+}
+
+.search-bar input:focus {
+    width: 300px;
+}
+
+.profile-login {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.persona-icon {
+    font-size: 1.5em;
+    cursor: pointer;
+}
+
+.persona-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: #EAEAEA;
+}
+
+.login-options {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 40px;
+    background-color: #1F1F1F;
+    border: 1px solid #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    z-index: 10;
+    border-radius: 5px;
+    color: #EAEAEA;
+}
+
+.persona-icon:hover + .login-options,
+.login-options:hover {
+    display: block;
+}
+
+.login-options button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: none;
+    background-color: #FF6F61;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-options button:hover {
+    background-color: #E94E3D;
+}
+
+/* Main Content */
+main {
+    margin-top: 70px; /* Adjust based on the height of the nav bar */
+    padding: 20px;
+}
+
+/* Carousel */
+.carousel {
+    display: flex;
+    overflow: hidden;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.carousel-item {
+    min-width: 100%;
+    text-align: center;
+    padding: 40px;
+    background-color: #2D2D2D;
+    color: #EAEAEA;
+    transition: transform 0.5s;
+}
+
+.carousel-item:nth-child(even) {
+    background-color: #393939;
+}
+
+/* Call to Action */
+.call-to-action {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.call-to-action button {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    border: none;
+    background-color: #28A745;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.call-to-action button:hover {
+    background-color: #218838;
+}
+
+/* Filtering Navigation Bar */
+.filter-nav {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.filter-nav button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    background-color: #17A2B8;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.filter-nav button:hover {
+    background-color: #138496;
+}
+
+/* Asset Grid */
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.asset-card {
+    background-color: #2D2D2D;
+    border: 1px solid #393939;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.asset-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.asset-card video {
+    width: 100%;
+    border-bottom: 1px solid #393939;
+}
+
+.asset-info {
+    padding: 15px;
+    color: #EAEAEA;
+}
+
+.asset-info h3 {
+    margin: 0 0 10px;
+    font-size: 1.2em;
+}
+
+.asset-info p {
+    margin: 5px 0;
+    color: #BDBDBD;
+}
