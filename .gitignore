@@ -21,3 +21,8 @@ crash.*.log
 
 *.pem
 *.key
+*.p12
+
+venv/
+.infra/
+mnt/*/**
