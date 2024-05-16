@@ -1,0 +1,30 @@
+#
+# This docker compose creates a backend testing environment for 
+# storage tier services. You can run this compose set with -d (--detach)
+#
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - static:/www/html
+    networks:
+      - web
+      - storage
+volumes:
+  static:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../mnt/static
+  
+networks:
+  storage:
+    driver: bridge
+    name: storage
+  web:
+    driver: bridge
+    name: web

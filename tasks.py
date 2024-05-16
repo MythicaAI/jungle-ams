@@ -8,15 +8,15 @@ testing_web_dir = 'testing/web'
 
 
 def start_docker_compose(c, docker_compose_path):
-    docker_compose_file = 'docker-compose.yml'
-    with c.cd(testing_storage_dir):
+    with c.cd(docker_compose_path):
         c.run('docker compose down --timeout 1')
-        c.run(f'docker compose -f {docker_compose_file} up -d', pty=True)
+        c.run('docker compose -f ./docker-compose.yml up -d', pty=True)
 
 
 def stop_docker_compose(c, docker_compose_path):
     with c.cd(testing_storage_dir):
         c.run('docker compose down --timeout 3')
+
 
 @task
 def docker_cleanup(c):
@@ -48,3 +48,4 @@ def web_start(c):
 @task
 def web_stop(c):
     stop_docker_compose(c, testing_web_dir)
+

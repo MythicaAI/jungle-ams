@@ -31,10 +31,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - uploads:/data/uploads
-      - static:/data/static
-      - mldata:/data/mldata
-    command: server /data --console-address ":9001"
+      - blockstore:/blockstore
+    command: server /blockstore --console-address ":9001"
     healthcheck:
       test: [ "CMD", "mc ping local" ]
       interval: 3s
@@ -68,25 +66,19 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: mnt/pgdata
-  uploads:
+      device: "../mnt/pgdata"
+  blockstore:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: mnt/uploads
-  static:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: mnt/static
+      device: "../mnt/blockstore"
   mldata:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: mnt/mldata
+      device: "../mnt/mldata"
 
 networks:
   storage:
