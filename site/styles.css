@@ -3,8 +3,8 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f0f2f5;
-    color: #333;
+    background-color: #141414;
+    color: #EAEAEA;
 }
 
 a {
@@ -17,18 +17,20 @@ a {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #fff;
+    background-color: #1F1F1F;
     padding: 10px 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     position: fixed;
     width: 100%;
     top: 0;
     z-index: 1000;
+    color: #EAEAEA;
 }
 
 .hamburger-menu {
     font-size: 1.5em;
     cursor: pointer;
+    color: #EAEAEA;
 }
 
 .branding {
@@ -36,13 +38,20 @@ a {
     font-weight: bold;
 }
 
+.search-bar {
+    flex-grow: 1;
+    text-align: center;
+}
+
 .search-bar input {
     padding: 10px;
     font-size: 1em;
-    border: 1px solid #ddd;
+    border: none;
     border-radius: 5px;
     width: 200px;
     transition: width 0.3s;
+    background-color: #333;
+    color: #EAEAEA;
 }
 
 .search-bar input:focus {
@@ -50,6 +59,8 @@ a {
 }
 
 .profile-login {
+    display: flex;
+    align-items: center;
     position: relative;
 }
 
@@ -58,17 +69,24 @@ a {
     cursor: pointer;
 }
 
+.persona-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: #EAEAEA;
+}
+
 .login-options {
     display: none;
     position: absolute;
     right: 0;
     top: 40px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    background-color: #1F1F1F;
+    border: 1px solid #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     padding: 10px;
     z-index: 10;
     border-radius: 5px;
+    color: #EAEAEA;
 }
 
 .persona-icon:hover + .login-options,
@@ -82,7 +100,7 @@ a {
     padding: 10px;
     margin: 5px 0;
     border: none;
-    background-color: #007bff;
+    background-color: #FF6F61;
     color: #fff;
     border-radius: 5px;
     cursor: pointer;
@@ -90,7 +108,7 @@ a {
 }
 
 .login-options button:hover {
-    background-color: #0056b3;
+    background-color: #E94E3D;
 }
 
 /* Main Content */
@@ -105,19 +123,20 @@ main {
     overflow: hidden;
     margin: 20px 0;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .carousel-item {
     min-width: 100%;
     text-align: center;
     padding: 40px;
-    background-color: #fff;
+    background-color: #2D2D2D;
+    color: #EAEAEA;
     transition: transform 0.5s;
 }
 
 .carousel-item:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #393939;
 }
 
 /* Call to Action */
@@ -130,7 +149,7 @@ main {
     padding: 15px 30px;
     font-size: 1.2em;
     border: none;
-    background-color: #28a745;
+    background-color: #28A745;
     color: #fff;
     border-radius: 5px;
     cursor: pointer;
@@ -153,7 +172,7 @@ main {
     padding: 10px 20px;
     font-size: 1em;
     border: none;
-    background-color: #007bff;
+    background-color: #17A2B8;
     color: #fff;
     border-radius: 5px;
     cursor: pointer;
@@ -161,7 +180,7 @@ main {
 }
 
 .filter-nav button:hover {
-    background-color: #0056b3;
+    background-color: #138496;
 }
 
 /* Asset Grid */
@@ -173,9 +192,9 @@ main {
 }
 
 .asset-card {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #2D2D2D;
+    border: 1px solid #393939;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     border-radius: 10px;
     overflow: hidden;
     transition: transform 0.3s, box-shadow 0.3s;
@@ -183,16 +202,17 @@ main {
 
 .asset-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
 }
 
 .asset-card video {
     width: 100%;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #393939;
 }
 
 .asset-info {
     padding: 15px;
+    color: #EAEAEA;
 }
 
 .asset-info h3 {
@@ -202,5 +222,5 @@ main {
 
 .asset-info p {
     margin: 5px 0;
-    color: #666;
+    color: #BDBDBD;
 }
