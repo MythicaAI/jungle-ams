@@ -1,0 +1,109 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    color: #fff;
+    padding: 10px 20px;
+}
+
+.hamburger-menu {
+    cursor: pointer;
+}
+
+.branding {
+    font-size: 1.5em;
+}
+
+.search-bar input {
+    padding: 5px;
+    font-size: 1em;
+}
+
+.profile-login {
+    position: relative;
+}
+
+.persona-icon {
+    cursor: pointer;
+}
+
+.login-options {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    z-index: 10;
+}
+
+.persona-icon:hover + .login-options,
+.login-options:hover {
+    display: block;
+}
+
+.carousel {
+    display: flex;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.carousel-item {
+    min-width: 100%;
+    text-align: center;
+    padding: 40px;
+    background-color: #f5f5f5;
+}
+
+.call-to-action {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.call-to-action button {
+    padding: 10px 20px;
+    font-size: 1.2em;
+}
+
+.filter-nav {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.filter-nav button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 1em;
+}
+
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.asset-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.asset-card video {
+    width: 100%;
+}
+
+.asset-info {
+    padding: 10px;
+}
