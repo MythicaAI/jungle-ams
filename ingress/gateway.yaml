@@ -12,7 +12,7 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
-      allowedRoutes: &allowedRoutes
+      allowedRoutes:
         kinds:
           - group: gateway.networking.k8s.io
             kind: HTTPRoute
@@ -20,12 +20,16 @@ spec:
           from: Selector
           selector:
            matchLabels:
-              exposed: "true"
+              exposed_http: "true"
     - name: https
       protocol: HTTPS
       port: 443
-      tls:
-        mode: Terminate
-        certificateRefs:
-         - name: mythica-ai-cert
-      allowedRoutes: *allowedRoutes
+      allowedRoutes:
+        kinds:
+          - group: gateway.networking.k8s.io
+            kind: HTTPRoute
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              exposed_https: "true"
