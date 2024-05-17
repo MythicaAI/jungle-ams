@@ -19,7 +19,7 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: "../../site"
+      device: "../../sites"
   
 networks:
   storage:
