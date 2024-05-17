@@ -16,13 +16,14 @@ via their [command line tools](https://developer.1password.com/docs/cli/get-star
 
 Ensure you have [Python3](https://python.org) installed 
 
-Setup virtual environment and fabrick
+Setup virtual environment and invoke
 ```bash
 . ./env.sh
 ```
 
 ```bash
-fab local storage
+invoke storage-start
+inv storage-stop
 ```
 
 ## Setup
