@@ -27,17 +27,6 @@ spec:
         - /usr/local/bin/dex
         - serve
         - /etc/dex/cfg/config.yaml
-        env:
-        - name: GITHUB_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              key: client-id
-              name: github-client
-        - name: GITHUB_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              key: client-secret
-              name: github-client
         image: ghcr.io/dexidp/dex:v2.32.0
         imagePullPolicy: IfNotPresent
         name: dex
@@ -70,10 +59,12 @@ spec:
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         volumeMounts:
-        - mountPath: /etc/dex/cfg
-          name: config
-        - mountPath: /etc/dex/tls
-          name: tls
+        - name: config
+          mountPath: /etc/dex/cfg
+          readOnly: true
+        - name: tls
+          mountPath: /etc/dex/tls
+          readOnly: true
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -89,14 +80,9 @@ spec:
         operator: Equal
         value: amd64
       volumes:
-      - configMap:
-          defaultMode: 420
-          items:
-          - key: config.yaml
-            path: config.yaml
-          name: dex
-        name: config
+      - name: config
+        secret:
+          secretName: config
       - name: tls
         secret:
-          defaultMode: 420
-          secretName: dex-tls
+          secretName: tls

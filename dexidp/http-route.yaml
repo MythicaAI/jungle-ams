@@ -11,11 +11,11 @@ spec:
     namespace: ingress
     name: external-gateway
   hostnames:
-  - "api.mythica.ai"
+  - "dex.mythica.ai"
   rules:
   - matches:
     - path:
-        value: /dex
+        value: /
     backendRefs:
     - name: dex
       port: 5556

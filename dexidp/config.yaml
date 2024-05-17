@@ -2,11 +2,11 @@ issuer: http://dex.mythica.ai/
 storage:
   type: postgres
   config:
-    host: $POSTGRES_HOST
-    port: $POSTGRES_PORT
-    database: $POSTGRES_DB
-    user: $POSTGRES_USER
-    password: $POSTGRES_PASSWORD
+    host: 10.115.112.3
+    port: 5432
+    database: dex
+    user: dex
+    password: kiTzEiUu9rxRG8V4DCgv
     ssl:
       mode: disable
 web:
@@ -19,8 +19,8 @@ connectors:
   name: Google
   config:
     # Connector config values starting with a "$" will read from the environment.
-    clientID: $GOOGLE_WS_CLIENT_ID
-    clientSecret: $GOOGLE_WS_CLIENT_SECRET
+    clientID: 296075347103-65q2i7ilj65a8epso1l37h1fqng5mb2s.apps.googleusercontent.com
+    clientSecret: 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
 
     # Dex's issuer URL + "/callback"
     redirectURI: http://dex.mythica.ai/callback

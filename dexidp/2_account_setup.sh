@@ -17,22 +17,23 @@ op signin
 # https://developer.1password.com/docs/cli/secrets-reference-syntax
 
 # Create the secret with the loaded values
-export OP_GOOGLE_WS_CLIENT_ID=op://Employee/Google-Workspace-Mytica-OIDC/username
-export OP_GOOGLE_WS_CLIENT_SECRET=op://Employee/Google-Workspace-Mytica-OIDC/credential
+export GOOGLE_WS_CLIENT_ID=op://Employee/Google-Workspace-Mytica-OIDC/username
+export GOOGLE_WS_CLIENT_SECRET=op://Employee/Google-Workspace-Mytica-OIDC/credential
 
-#
-# Create the key, value secret version
-#
-kubectl -n dex delete secret/google-workspace-client
-
-op run -- kubectl -n dex create secret \
-    generic google-workspace-client \
-    --from-literal=client-id=$OP_GOOGLE_WS_CLIENT_ID \
-    --from-literal=client-secret=$OP_GOOGLE_WS_CLIENT_SECRET
+export POSTGRES_HOST=10.115.112.3
+export POSTGRES_PORT=5432
+export POSTGRES_DB=dex
+export POSTGRES_USER=dex
+export POSTGRES_PASSWORD=op://Employee/Google-CloudSQL-DEX/password
 
 #
 # Create the YAML expanded config version
 #
-kubectl -n dex delete secret/connectors
-op run --no-masking -- envsubst < connectors.yaml.template > connectors.yaml
-kubectl -n dex create secret generic connectors --from-file=connectors.yaml
+kubectl -n dex delete secret/config
+op run --no-masking -- envsubst < config.yaml.template > config.yaml
+kubectl -n dex create secret generic config --from-file=config.yaml
+
+#
+# Create the TLS cert secret
+#
+kubectl -n dex create secret tls tls --key key.pem --cert certificate.pem
