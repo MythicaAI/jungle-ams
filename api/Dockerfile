@@ -1,22 +1,27 @@
-FROM nginx:1.26
+#
+# Create a builder to build the gcsfuse binary
+# there is not yet an overlap of gcsfuse and nginx OS
+# dependencies
+#
+FROM golang:1.22.3-alpine as builder
 
-# Add GCS fuse support
-RUN . /etc/os-release && \
-      echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt $VERSION_CODENAME main" | \
-      tee /etc/apt/sources.list.d/gcsfuse.list
+RUN apk add git
 
-# Import the cloud GPG key
-RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-    tee /usr/share/keyrings/cloud.google.asc
+WORKDIR /repo
+RUN git clone --depth 1 --branch v2.0.1 https://github.com/GoogleCloudPlatform/gcsfuse.git
+WORKDIR /repo/gcsfuse
+RUN go install ./tools/build_gcsfuse
+RUN build_gcsfuse . /tmp $(git log -1 --format=format:"%H")
 
-RUN cat /etc/apt/sources.list.d/gcsfuse.list
+#
+# Main image is the nginx alpine distribute
+#
+FROM nginx:1.25.5-alpine
 
-# Update the package index
-# Install GCS fuse and certbot
-RUN apt update -y && \
-    apt install -y gcsfuse certbot && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --update --no-cache bash ca-certificates fuse certbot
+
+COPY --from=builder /tmp/bin/gcsfuse /usr/local/bin/gcsfuse
+COPY --from=builder /tmp/sbin/mount.gcsfuse /usr/sbin/mount.gcsfuse
 
 ENV API_ENDPOINT localhost:5555
 ENV DEX_ENDPOINT localhost:5556
