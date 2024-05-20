@@ -15,10 +15,47 @@ spec:
       labels:
         app: api-v1
     spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      securityContext:
+        fsGroup: 100
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: api
+      initContainers:
+        - name: publish-init
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:33fc7086
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: ephemeral-web-content
+              mountPath: /data
+          env:
+            - name: PUBLISH_PATH
+              value: "/data"
+            - name: SOURCE_BUCKET
+              value: "mythica-public-web-content"
+            - name: SOURCE_BUCKET_PATH
+              value: "test/"
       containers:
-        - image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:e70ff1be
-          name: api-v1
+        - name: api-v1
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:e70ff1be
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "1"
           ports:
             - containerPort: 80
               name: http
+          volumeMounts:
+            - name: ephemeral-web-content
+              mountPath: /data
+              readOnly: true
+            - name: ephemeral-upload-content
+              mountPath: /uploads
+              readOnly: false
+      volumes:
+        # Nodal ephemeral volume used by the CSI driver
+        - name: ephemeral-web-content
+          emptyDir: {}
+        - name: ephemeral-upload-content
+          emptyDir: {}
       restartPolicy: Always
