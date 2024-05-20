@@ -18,26 +18,23 @@ spec:
       nodeSelector:
         cloud.google.com/compute-class: "Scale-Out"
       securityContext:
-        fsGroup: 100
+        fsGroup: 101 # use the nginx group for file-system security privileges
       terminationGracePeriodSeconds: 60
       serviceAccountName: api
       initContainers:
         - name: publish-init
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:33fc7086
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:latest
           imagePullPolicy: Always
           volumeMounts:
             - name: ephemeral-web-content
-              mountPath: /data
+              mountPath: /sites
           env:
             - name: PUBLISH_PATH
-              value: "/data"
-            - name: SOURCE_BUCKET
-              value: "mythica-public-web-content"
-            - name: SOURCE_BUCKET_PATH
-              value: "test/"
+              value: "/sites"
       containers:
         - name: api-v1
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:e70ff1be
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
+          imagePullPolicy: Always
           resources:
             requests:
               memory: "1Gi"
@@ -47,8 +44,7 @@ spec:
               name: http
           volumeMounts:
             - name: ephemeral-web-content
-              mountPath: /data
-              readOnly: true
+              mountPath: /sites
             - name: ephemeral-upload-content
               mountPath: /uploads
               readOnly: false

@@ -4,8 +4,11 @@ set -x
 
 source .vars
 
-docker tag $IMAGE_NAME:latest $LOCAL_IMAGE
-docker tag $LOCAL_IMAGE $REMOTE_IMAGE 
-docker push $REMOTE_IMAGE
+docker tag $IMAGE_NAME:latest $IMAGE_NAME:$COMMIT_HASH
 
-echo "pushed version: $COMMIT_HASH, image: $REMOTE_IMAGE"
+docker tag $IMAGE_NAME:latest $REMOTE_IMAGE_NAME:latest
+docker tag $IMAGE_NAME:$COMMIT_HASH $REMOTE_IMAGE_NAME:$COMMIT_HASH
+
+docker push $REMOTE_IMAGE_NAME --all-tags
+
+echo "pushed latest version: $COMMIT_HASH"
