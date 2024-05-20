@@ -14,9 +14,6 @@ spec:
     metadata:
       labels:
         app: api-v1
-      annotations:
-        gke-gcsfuse/volumes: "true"
-        gke-gcsfuse/ephemeral-storage-limit: "50Gi"
     spec:
       nodeSelector:
         cloud.google.com/compute-class: "Scale-Out"
@@ -24,13 +21,21 @@ spec:
         fsGroup: 100
       terminationGracePeriodSeconds: 60
       serviceAccountName: api
+      initContainers:
+        - name: publish-init
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:33fc7086
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: ephemeral-web-content
+              mountPath: /data
+          env:
+            - name: PUBLISH_PATH
+              value: "/data"
+            - name: SOURCE_BUCKET
+              value: "mythica-public-web-content"
+            - name: SOURCE_BUCKET_PATH
+              value: "test/"
       containers:
-        - name: gke-gcsfuse-sidecar
-          image: gcs-fuse-csi-driver-sidecar-mounter:v1.2.0
-          resources:
-            requests:
-              memory: "2Gi"
-              ephemeral-storage: "50Gi"
         - name: api-v1
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:e70ff1be
           resources:
@@ -41,30 +46,16 @@ spec:
             - containerPort: 80
               name: http
           volumeMounts:
-            - name: gcs-fuse-csi-ephemeral-web-content
+            - name: ephemeral-web-content
               mountPath: /data
               readOnly: true
-            - name: gcs-fuse-csi-ephermal-upload-content
+            - name: ephemeral-upload-content
               mountPath: /uploads
               readOnly: false
       volumes:
         # Nodal ephemeral volume used by the CSI driver
-        - name: gcs-fuse-csi-ephemeral-web-content
-          csi:
-            driver: gcsfuse.csi.storage.gke.io
-            readOnly: true
-            volumeAttributes:
-              bucketName: mythica-public-web-content
-              mountOptions: "implicit-dirs"
-              gcsfuseLoggingSeverity: warning
-              fileCacheCapacity: "40Gi"
-        - name: gcs-fuse-csi-ephermal-upload-content
-          csi:
-            driver: gcsfuse.csi.storage.gke.io
-            readOnly: false
-            volumeAttributes:
-              bucketName: hda-ingest
-              mountOptions: "implicit-dirs"
-              gcsfuseLoggingSeverity: warning
-              fileCacheCapacity: "10Gi"
+        - name: ephemeral-web-content
+          emptyDir: {}
+        - name: ephemeral-upload-content
+          emptyDir: {}
       restartPolicy: Always

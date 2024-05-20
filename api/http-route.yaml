@@ -15,7 +15,7 @@ spec:
   rules:
   - matches:
     - path:
-        value: /v1
+        value: /
     backendRefs:
     - name: api-v1
       port: 80
