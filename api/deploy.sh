@@ -12,3 +12,5 @@ docker tag $IMAGE_NAME:$COMMIT_HASH $REMOTE_IMAGE_NAME:$COMMIT_HASH
 docker push $REMOTE_IMAGE_NAME --all-tags
 
 echo "pushed latest version: $COMMIT_HASH"
+
+kubectl rollout restart deploy api
