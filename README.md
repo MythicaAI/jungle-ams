@@ -33,7 +33,7 @@ We are using `asdf` to manage local tool versions. Observe the
 
 To install all tools:
 
-- Install `asdf` <https://asdf-vm.com/guide/getting-started.html>
+- [Install `asdf`](https://asdf-vm.com/guide/getting-started.html)
 
 - Install plugins:
 
@@ -41,6 +41,8 @@ To install all tools:
   asdf plugin-add terraform https://github.com/asdf-community/asdf-hashicorp.git
   asdf plugin add gcloud https://github.com/jthegedus/asdf-gcloud
   asdf plugin-add kubectl https://github.com/asdf-community/asdf-kubectl.git
+  asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
+  asdf plugin add yarn https://github.com/twuni/asdf-yarn.git
   ```
 
 - From repo root install tools:
@@ -51,3 +53,17 @@ To install all tools:
 
 For further setup information for terraform or k8s check the README
 files in those subfolders.
+
+## Working on Sites
+
+* Edit site data in sites/<sitename>/content
+* Publish changes with sites/publish.sh <sitename>
+
+Installing node dependencies
+
+```bash
+asdf shell nodejs 22.2.0
+corepack enable
+asdf reshim nodejs
+yarn
+```
