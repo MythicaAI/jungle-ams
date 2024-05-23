@@ -1,3 +1,5 @@
 terraform 1.5.6
 gcloud 444.0.0
 kubectl 1.28.1
+nodejs 22.2.0
+yarn 1.22.22
