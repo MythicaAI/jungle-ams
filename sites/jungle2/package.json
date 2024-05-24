@@ -8,12 +8,15 @@
     "@park-ui/panda-preset": "^0.37.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
+    "axios": "^1.7.2",
     "eslint-config-react-app": "^7.0.1",
     "lucide-react": "^0.379.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "^5.0.1",
+    "ts-loader": "^9.5.1",
     "web-vitals": "^2.1.4",
+    "webpack-cli": "^5.1.4",
     "zustand": "^4.5.2"
   },
   "scripts": {

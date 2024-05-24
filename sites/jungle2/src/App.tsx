@@ -1,9 +1,8 @@
-import logo from './logo.svg';
 //import './App.css';
 import './index.css'
-import { MainPageUpload } from './components/upload'
-import { AppMenubar } from "./components/menubar";
-import { MainPageAssetCollection } from "./components/assetcollection";
+import { AssetUpload } from './components/AssetUpload'
+import { AppMenubar } from "./components/AppMenubar";
+import { AssetCollection } from "./components/AssetCollection";
 import {useRef} from "react";
 
 function App() {
@@ -11,10 +10,10 @@ function App() {
         <div className="App">
             <AppMenubar/>
             <section>
-                <MainPageUpload />
+                <AssetUpload progress={0}/>
             </section>
             <section>
-                <MainPageAssetCollection />
+                <AssetCollection />
             </section>
         </div>
     );

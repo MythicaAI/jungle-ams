@@ -7,9 +7,9 @@ export const AppMenubar = () => (
     </Menu.Trigger>
     <Menu.Positioner>
       <Menu.Content>
-        <Menu.Item id='react' value="react">React</Menu.Item>
-        <Menu.Item id='solid' value="solid">Solid</Menu.Item>
-        <Menu.Item id='vue' value="vue">Vue</Menu.Item>
+        <Menu.Item id='react'>React</Menu.Item>
+        <Menu.Item id='solid'>Solid</Menu.Item>
+        <Menu.Item id='vue'>Vue</Menu.Item>
       </Menu.Content>
     </Menu.Positioner>
   </Menu.Root>

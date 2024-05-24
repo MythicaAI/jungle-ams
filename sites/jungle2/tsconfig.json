@@ -17,6 +17,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", "./styled-system"],
   "exclude": ["node_modules"]
 }

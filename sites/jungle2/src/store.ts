@@ -8,7 +8,7 @@ export const fetchData = async () => {
     if (!response.ok) {
         throw new Error('Network response was not ok');
     }
-    return response.json().data;
+    return response.json();
 };
 
 const useStore = create((set) => ({
