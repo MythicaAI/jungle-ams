@@ -13,7 +13,6 @@
     "lucide-react": "^0.379.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-scripts": "^5.0.1",
     "ts-loader": "^9.5.1",
     "web-vitals": "^2.1.4",
     "webpack-cli": "^5.1.4",
@@ -22,7 +21,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
     "ts-migrate": "ts-migrate-full .",
     "storybook": "storybook dev -p 6006",
@@ -31,8 +30,22 @@
   "eslintConfig": {
     "extends": [
       "react-app",
+      "shared-config",
       "react-app/jest",
       "plugin:storybook/recommended"
+    ],
+    "rules": {
+      "additional-rule": "warn"
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/*.ts?(x)"
+        ],
+        "rules": {
+          "additional-typescript-only-rule": "warn"
+        }
+      }
     ]
   },
   "browserslist": {
@@ -64,11 +77,25 @@
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
     "eslint-plugin-storybook": "^0.8.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.4",
     "msw-storybook-addon": "^2.0.2",
+    "prettier": "^3.2.5",
     "prop-types": "^15.8.1",
+    "react-scripts": "^5.0.1",
     "storybook": "^8.1.3",
     "ts-migrate": "^0.1.35",
     "typescript": "^5.4.5",
     "webpack": "^5.91.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write"
+    ]
   }
 }
