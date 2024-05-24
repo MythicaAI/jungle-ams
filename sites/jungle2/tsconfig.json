@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.build.json",
   "compilerOptions": {
     "baseUrl": ".",
     "esModuleInterop": true,
@@ -9,7 +10,8 @@
     "moduleResolution": "node",
     "noEmit": true,
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./src/**"],
+      "@shared-system": ["./styled-system"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -17,6 +19,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "./styled-system"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "./styled-system"],
   "exclude": ["node_modules"]
 }
