@@ -24,7 +24,8 @@
     "eject": "react-scripts eject",
     "ts-migrate": "ts-migrate-full .",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "prepare": "panda codegen"
   },
   "browserslist": {
     "production": [
