@@ -10,7 +10,7 @@
     "moduleResolution": "node",
     "noEmit": true,
     "paths": {
-      "~/*": ["./src/**"],
+      "~/*": ["./src/*"],
       "~/lib": ["./src/lib"],
       "shared-system": ["./styled-system"]
     },
