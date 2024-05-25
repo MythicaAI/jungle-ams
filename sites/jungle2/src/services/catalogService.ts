@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type {UploadAssetListResponse} from '~/types/apiTypes'
+import type {UploadAssetListResponse} from '../types/apiTypes'
 
 export const CatalogService = {
     getAll: async () : Promise<UploadAssetListResponse> => {

@@ -11,7 +11,8 @@
     "noEmit": true,
     "paths": {
       "~/*": ["./src/**"],
-      "@shared-system": ["./styled-system"]
+      "~/lib": ["./src/lib"],
+      "shared-system": ["./styled-system"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
