@@ -43,5 +43,5 @@ sites/*.txt
 __pycache__
 
 # p/npm artifacts
-sites/**/node_modules
-sites/**/build
+**/node_modules
+**/build*
