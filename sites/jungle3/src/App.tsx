@@ -19,38 +19,33 @@ function App() {
         <CssVarsProvider>
             {/* must be used under CssVarsProvider */}
             <CssBaseline/>
-            <Container maxWidth="lg">
-        <Box sx={{ my: 4 }}>
-        <Typography level="h1" component="h1">
-          HDA Manager
-        </Typography>
-    
-        <Tabs orientation='vertical' variant='outlined'>
-
-            <TabList>
-                <Tab variant="plain" color="neutral">Assets</Tab>
-                <Tab variant="plain" color="neutral">Uploads </Tab>
-                <Tab variant="plain" color="neutral">Settings</Tab>
-            </TabList>
-
             
-            <TabPanel value={0}>                
-                <Assets />
-            </TabPanel>
-            <TabPanel value={1}>
+            <Box
+                sx={{
+                width: {
+                    mobile: 100,
+                    laptop: 300,
+                },
+                }}>
+                <Box>
+                    <Typography level="h1" component="h1">
+                    HDA Manager
+                    </Typography>
+                </Box>
+                <Box>
+                    <Tabs orientation='vertical' variant='outlined'>
+                        <TabList>
+                            <Tab variant="plain" color="neutral">Assets</Tab>
+                            <Tab variant="plain" color="neutral">Uploads </Tab>
+                            <Tab variant="plain" color="neutral">Settings</Tab>
+                        </TabList>
+                    </Tabs>
+                </Box>
+                <Box>
+                    test content
+                </Box>
+            </Box>
 
-                <Uploads />
-
-            </TabPanel>
-            <TabPanel value={2}>
-
-                <ProfileSettings />
-
-            </TabPanel>
-            
-        </Tabs>
-        </Box>
-        </Container>
         </CssVarsProvider>
     )
 }
