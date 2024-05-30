@@ -1,6 +1,0 @@
-upstream api {
-    server $API_ENDPOINT;
-}
-upstream dex {
-    server $DEX_ENDPOINT;
-}

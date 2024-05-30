@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-end-api
+  labels:
+    io.kompose.service: front-end-api
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.32.0 (HEAD)
+spec:
+  # gcloud compute addresses describe mythica-gke-public-ip --region us-central1
+  type: LoadBalancer
+  loadBalancerIP: "130.211.115.221"
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+  selector:
+    io.kompose.service: front-end-api
