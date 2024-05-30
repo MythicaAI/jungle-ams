@@ -1,0 +1,3917 @@
+{
+  "nodes": [
+    {
+      "id": "Full_Scene_Breakdown",
+      "title": "Full_Scene_Breakdown",
+      "type": "graph/subgraph",
+      "pos": [
+        2703.63,
+        1111.2
+      ],
+      "flags": {
+        "horizontal": true
+      },
+      "inputs": [
+        {
+          "name": 0,
+          "type": "",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": 0,
+          "type": "",
+          "links": []
+        }
+      ],
+      "properties": {},
+      "subgraph": {
+        "nodes": [
+          {
+            "id": "transform2",
+            "title": "transform2",
+            "type": "sop/xform",
+            "pos": [
+              1653.3799999999999,
+              652.817
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 1
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  7
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                0.0,
+                0.0,
+                -1080.0
+              ]
+            }
+          },
+          {
+            "id": "initial_segmentation_output",
+            "title": "initial_segmentation_output",
+            "type": "sop/merge",
+            "pos": [
+              1926.16,
+              120.49000000000001
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  2
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  21
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "export_image3",
+            "title": "export_image3",
+            "type": "sop/mlops::export_image::2.0",
+            "pos": [
+              1653.3799999999999,
+              533.157
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 7
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  3
+                ]
+              }
+            ],
+            "properties": {
+              "path": ""
+            }
+          },
+          {
+            "id": "foreach_end2",
+            "title": "foreach_end2",
+            "type": "sop/block_end",
+            "pos": [
+              534.81,
+              300.123
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 8
+              },
+              {
+                "name": 1,
+                "type": "",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  6
+                ]
+              }
+            ],
+            "properties": {
+              "itermethod": 1,
+              "method": 1,
+              "attrib": "id",
+              "blockpath": "../foreach_begin2",
+              "templatepath": "../foreach_begin2"
+            }
+          },
+          {
+            "id": "foreach_begin2",
+            "title": "foreach_begin2",
+            "type": "sop/block_begin",
+            "pos": [
+              600.452,
+              525.93
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 9
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  10
+                ]
+              }
+            ],
+            "properties": {
+              "method": 1,
+              "blockpath": "../foreach_end2"
+            }
+          },
+          {
+            "id": "attribwrangle4",
+            "title": "attribwrangle4",
+            "type": "sop/attribwrangle",
+            "pos": [
+              576.194,
+              406.405
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 10
+              },
+              {
+                "name": 1,
+                "type": "",
+                "link": 11
+              },
+              {
+                "name": 2,
+                "type": "",
+                "link": null
+              },
+              {
+                "name": 3,
+                "type": "",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  8
+                ]
+              }
+            ],
+            "properties": {
+              "snippet": "int iter = detail(1,\"value\",0);\nvector2 dim = detail(0,\"image_dimension\",0);\n\nif (@id==iter) {\n    @Cd = point(0, \"Cd\", @ptnum);\n} else {\n    @Cd = {0,0,0}; \n}\n@P.z += dim[1] * @id;\n"
+            }
+          },
+          {
+            "id": "transform6",
+            "title": "transform6",
+            "type": "sop/xform",
+            "pos": [
+              606.191,
+              660.997
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 12
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  9
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                -1920.0,
+                0.0,
+                -2160.0
+              ]
+            }
+          },
+          {
+            "id": "foreach_begin2_metadata1",
+            "title": "foreach_begin2_metadata1",
+            "type": "sop/block_begin",
+            "pos": [
+              300.452,
+              525.93
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  11
+                ]
+              }
+            ],
+            "properties": {
+              "method": 2,
+              "blockpath": "../foreach_end2"
+            }
+          },
+          {
+            "id": "image_segmentation_pipeline1",
+            "title": "image_segmentation_pipeline1",
+            "type": "sop/mlops::image_segmentation_pipeline::1.0",
+            "pos": [
+              1356.47,
+              -50.02609999999999
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 13
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  32
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  68
+                ]
+              },
+              {
+                "name": 2,
+                "type": "",
+                "links": [
+                  33
+                ]
+              }
+            ],
+            "properties": {
+              "model": "shi-labs/oneformer_coco_dinat_large",
+              "subtask": "instance",
+              "threshold": 0.717,
+              "mask_threshold": 0.372,
+              "overlap_mask_area_threshold": 0.35
+            }
+          },
+          {
+            "id": "image_segment9",
+            "title": "image_segment9",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1430.05,
+              595.521
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 14
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  4
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  13
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 4,
+              "t": [
+                0.0,
+                0.0,
+                1080.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rocks.png"
+            }
+          },
+          {
+            "id": "null1",
+            "title": "null1",
+            "type": "sop/null",
+            "pos": [
+              1969.85,
+              595.0210000000001
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 15
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  2
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "image_segment10",
+            "title": "image_segment10",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1263.63,
+              533.157
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 16
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  5
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  17
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 1,
+              "t": [
+                1920.0,
+                0.0,
+                1080.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_trees.png"
+            }
+          },
+          {
+            "id": "image_segmentation_pipeline2",
+            "title": "image_segmentation_pipeline2",
+            "type": "sop/mlops::image_segmentation_pipeline::1.0",
+            "pos": [
+              460.57,
+              -37.8054
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 17
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  34
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              },
+              {
+                "name": 2,
+                "type": "",
+                "links": [
+                  41
+                ]
+              }
+            ],
+            "properties": {
+              "model": "facebook/mask2former-swin-large-ade-panoptic"
+            }
+          },
+          {
+            "id": "image_segment1",
+            "title": "image_segment1",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1409.73,
+              -245.222
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 18
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  25
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  69
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                0.0,
+                0.0,
+                1080.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rock_1.png"
+            }
+          },
+          {
+            "id": "image_segment8",
+            "title": "image_segment8",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1213.06,
+              -310.255
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 19
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  27
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  71
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 2,
+              "t": [
+                0.0,
+                0.0,
+                3240.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rock_3.png"
+            }
+          },
+          {
+            "id": "image_segment2",
+            "title": "image_segment2",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              367.702,
+              -234.73999999999998
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 20
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  36
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  55
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 1,
+              "t": [
+                0.0,
+                0.0,
+                1080.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_tree_1.png"
+            }
+          },
+          {
+            "id": "final_segmentation_output",
+            "title": "final_segmentation_output",
+            "type": "sop/merge",
+            "pos": [
+              1657.6799999999998,
+              -1571.35
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  21
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  61
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "merge3",
+            "title": "merge3",
+            "type": "sop/merge",
+            "pos": [
+              1641.5500000000002,
+              -569.944
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  24
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  22
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "image_segment3",
+            "title": "image_segment3",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1317.83,
+              -283.938
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 31
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  26
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  70
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 1,
+              "t": [
+                0.0,
+                0.0,
+                2160.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rock_2.png"
+            }
+          },
+          {
+            "id": "transform1",
+            "title": "transform1",
+            "type": "sop/xform",
+            "pos": [
+              1682.6799999999998,
+              -212.412
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 32
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  24
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                0.0,
+                0.0,
+                2160.0
+              ]
+            }
+          },
+          {
+            "id": "transform3",
+            "title": "transform3",
+            "type": "sop/xform",
+            "pos": [
+              1199.7,
+              -149.526
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 33
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  18,
+                  19,
+                  31,
+                  65,
+                  66,
+                  67
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                0.0,
+                0.0,
+                2160.0
+              ]
+            }
+          },
+          {
+            "id": "transform4",
+            "title": "transform4",
+            "type": "sop/xform",
+            "pos": [
+              584.91,
+              -183.661
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 34
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  35
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                1920.0,
+                0.0,
+                2160.0
+              ]
+            }
+          },
+          {
+            "id": "merge4",
+            "title": "merge4",
+            "type": "sop/merge",
+            "pos": [
+              585.025,
+              -540.988
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  35
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  72
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "transform7",
+            "title": "transform7",
+            "type": "sop/xform",
+            "pos": [
+              261.925,
+              -153.216
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 41
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  20,
+                  42,
+                  43,
+                  44,
+                  45
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                1920.0,
+                0.0,
+                2160.0
+              ]
+            }
+          },
+          {
+            "id": "image_segment4",
+            "title": "image_segment4",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              273.519,
+              -280.255
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 42
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  37
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  47
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 2,
+              "t": [
+                0.0,
+                0.0,
+                2160.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_tree_2.png"
+            }
+          },
+          {
+            "id": "image_segment5",
+            "title": "image_segment5",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              185.612,
+              -321.98199999999997
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 43
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  38
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  46
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 3,
+              "t": [
+                0.0,
+                0.0,
+                3240.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_tree_3.png"
+            }
+          },
+          {
+            "id": "image_segment6",
+            "title": "image_segment6",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              87.6375,
+              -364.491
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 44
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  39
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  53
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 4,
+              "t": [
+                0.0,
+                0.0,
+                4320.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_tree_4.png"
+            }
+          },
+          {
+            "id": "image_segment7",
+            "title": "image_segment7",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              -14.929200000000002,
+              -401.204
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 45
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  40
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  54
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 5,
+              "t": [
+                0.0,
+                0.0,
+                5400.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_tree_5.png"
+            }
+          },
+          {
+            "id": "image_segmentation_pipeline0",
+            "title": "image_segmentation_pipeline0",
+            "type": "graph/subgraph",
+            "pos": [
+              1409.73,
+              986.4010000000001
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  15
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              },
+              {
+                "name": 2,
+                "type": "",
+                "links": [
+                  1,
+                  12,
+                  14,
+                  16,
+                  64
+                ]
+              }
+            ],
+            "properties": {
+              "image": "/home/pedro/Desktop/objects/concept_art/darker.jpeg",
+              "model": "shi-labs/oneformer_coco_dinat_large",
+              "subtask": "instance"
+            },
+            "subgraph": {
+              "nodes": [
+                {
+                  "id": "image_to_points1",
+                  "title": "image_to_points1",
+                  "type": "sop/mlops::image_to_points::2.1",
+                  "pos": [
+                    -76.4605,
+                    1788.12
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        20
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "filename": "/home/pedro/Desktop/objects/concept_art/darker.jpeg",
+                    "do_resize": 0
+                  }
+                },
+                {
+                  "id": "output0",
+                  "title": "output0",
+                  "type": "sop/output",
+                  "pos": [
+                    400.725,
+                    -205.137
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 1
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": []
+                    }
+                  ],
+                  "properties": {
+                    "outputidx": 0
+                  }
+                },
+                {
+                  "id": "output1",
+                  "title": "output1",
+                  "type": "sop/output",
+                  "pos": [
+                    -58.058,
+                    -205.137
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 2
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": []
+                    }
+                  ],
+                  "properties": {
+                    "outputidx": 1
+                  }
+                },
+                {
+                  "id": "output2",
+                  "title": "output2",
+                  "type": "sop/output",
+                  "pos": [
+                    -516.576,
+                    -141.375
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 3
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": []
+                    }
+                  ],
+                  "properties": {
+                    "outputidx": 2
+                  }
+                },
+                {
+                  "id": "python1",
+                  "title": "python1",
+                  "type": "sop/python",
+                  "pos": [
+                    233.48399999999998,
+                    1169.62
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 4
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": 5
+                    },
+                    {
+                      "name": 2,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 3,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        10,
+                        22
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "python": "import mlops_image_utils\nimport mlops_utils\nimport os\nimport re\nimport torch\nimport numpy as np\nimport warnings\nfrom PIL import Image\n\nfrom transformers import pipeline\n\nfrom importlib import reload\nreload(mlops_image_utils)\nreload(mlops_utils)\n\n\n# Inputs\nnode = hou.pwd()\ngeo = node.geometry()\ngeo1 = node.inputs()[1].geometry()\n\n# Parameters\ndevice = node.parent().parm(\"device\").evalAsString()\ncache_only = bool(node.parent().parm(\"cache_only\").evalAsInt())\nmodel = node.parent().parm(\"model\").evalAsString()\nsubtask=node.parent().parm(\"subtask\").evalAsString()\nthreshold=node.parent().parm(\"threshold\").evalAsFloat()\nmask_threshold=node.parent().parm(\"mask_threshold\").evalAsFloat()\noverlap_mask_area_threshold=node.parent().parm(\"overlap_mask_area_threshold\").evalAsFloat()\n\n# Attributes\nwidth = int(geo1.attribValue(\"image_dimension\")[0])\nheight = int(geo1.attribValue(\"image_dimension\")[1])\n\n# Image to process\nimage = mlops_image_utils.colored_points_to_numpy_array(geo1)\nimage = mlops_image_utils.colors_numpy_array_to_pil(image).convert(\"RGB\")\n\n# Cache Model\nmodel = mlops_utils.ensure_huggingface_model_local(\n    model, \n    os.path.join(\"/home/pedro/developer/mythica/platform/MLOPs/data/versions/20.0/models\", \"transformers\"), \n    bool(cache_only), \n    model_type=\"all\"\n)\n    \n# Clear Cuda Method    \ndef clear_cuda():\n    if device.startswith(\"cuda\"):\n        torch.cuda.empty_cache()\n\nclear_cuda()\n\n# Process the image\nsegs = pipeline(\n    \"image-segmentation\", \n    model, \n    device=device,\n)\n\nwith torch.no_grad():\n    segs = segs(\n        image,\n        subtask=subtask,\n        threshold=threshold,\n        mask_threshold=mask_threshold,\n        overlap_mask_area_threshold=overlap_mask_area_threshold,\n    )\n\nclear_cuda() \n\n\n# Create structures for processing\nlabels = {}\nlabels_ids = {}\n_idx=0\n\nfor seg in segs:\n    label = seg['label']\n    if label not in labels.values():\n        labels[_idx] = label\n        labels_ids[label] = _idx\n    _idx += 1\n    \n\nsegments_map = {}\nmask = Image.new('L',(width,height),0)\nmask = np.array(mask)\n    \nfor idx, seg in enumerate(segs):\n    segments_map[idx] = seg\n    seg['id'] = idx\n    seg['label_id'] = labels_ids[seg['label']] \n\n    # In pipeline, segments are returned as black/white masks\n    # So we convert mask to a numpy array and then set corresponding\n    # value to the id of the instance\n    _m = seg[\"mask\"]\n    _m = np.array(_m)\n\n    mask[_m == 255] = idx\n\n# Convert the numpy array back to a PIL image\nmask = mask.flatten()\n\nif len(segs) == 0:\n    warnings.warn(\"No segments returned by model. Expected at least 1\")\n\n    geo.setPointIntAttribValues(\"id\", \n        [0 for _ in mask])\n    geo.setPointStringAttribValues(\"label\",\n        ['Error' for _ in mask])\n    geo.setPointFloatAttribValues(\"score\",\n        [0.0 for _ in mask])\n    \nelse:\n    # Set point attributes\n    geo.setPointIntAttribValues(\"id\", \n        list(map(int, mask)))\n    geo.setPointStringAttribValues(\"label\",\n        [labels[segments_map[id]['label_id']] for id in mask])\n    geo.setPointFloatAttribValues(\"score\",\n        [segments_map[id]['score'] for id in mask])\n    \n"
+                  }
+                },
+                {
+                  "id": "attribwrangle2",
+                  "title": "attribwrangle2",
+                  "type": "sop/attribwrangle",
+                  "pos": [
+                    233.784,
+                    1333.11
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 6
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 2,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 3,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        5,
+                        21
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "snippet": "f@r = v@Cd.r;\nf@g = v@Cd.g;\nf@b = v@Cd.b;"
+                  }
+                },
+                {
+                  "id": "attribcreate1",
+                  "title": "attribcreate1",
+                  "type": "sop/attribcreate::2.0",
+                  "pos": [
+                    561.8000000000001,
+                    1396.97
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 7
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        4
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "name1": "id",
+                    "type1": 1,
+                    "name2": "score",
+                    "name3": "label",
+                    "type3": 3
+                  }
+                },
+                {
+                  "id": "pointgenerate2",
+                  "title": "pointgenerate2",
+                  "type": "sop/pointgenerate",
+                  "pos": [
+                    561.8000000000001,
+                    1596.97
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        9
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "npts": 2073600
+                  }
+                },
+                {
+                  "id": "null1",
+                  "title": "null1",
+                  "type": "sop/null",
+                  "pos": [
+                    234.83800000000002,
+                    1446.37
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 8
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        6
+                      ]
+                    }
+                  ],
+                  "properties": {}
+                },
+                {
+                  "id": "attribwrangle3",
+                  "title": "attribwrangle3",
+                  "type": "sop/attribwrangle",
+                  "pos": [
+                    561.8000000000001,
+                    1496.97
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 9
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 2,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 3,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        7
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "snippet": "int x = chi(\"x\");\nint y = chi(\"y\");\nv@P = set(@ptnum%y, 0, @ptnum / y);",
+                    "x": 1080,
+                    "y": 1920
+                  }
+                },
+                {
+                  "id": "color1",
+                  "title": "color1",
+                  "type": "sop/color",
+                  "pos": [
+                    233.48399999999998,
+                    1082.14
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 10
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        11
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "colortype": 4,
+                    "rampattribute": "id"
+                  }
+                },
+                {
+                  "id": "color2",
+                  "title": "color2",
+                  "type": "sop/color",
+                  "pos": [
+                    233.48399999999998,
+                    982.1410000000001
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 11
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        12
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "group": "@id=0",
+                    "grouptype": 3,
+                    "color": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  }
+                },
+                {
+                  "id": "attribcopy1",
+                  "title": "attribcopy1",
+                  "type": "sop/attribcopy",
+                  "pos": [
+                    207.301,
+                    822.031
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 12
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": 13
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        1,
+                        14
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "attribname": "image_dimension"
+                  }
+                },
+                {
+                  "id": "export_image1",
+                  "title": "export_image1",
+                  "type": "sop/mlops::export_image::2.0",
+                  "pos": [
+                    -40.5452,
+                    582.756
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 14
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        15
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "auto": 0,
+                    "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/image_mask.png"
+                  }
+                },
+                {
+                  "id": "fuse1",
+                  "title": "fuse1",
+                  "type": "sop/fuse::2.0",
+                  "pos": [
+                    -40.5452,
+                    482.75600000000003
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 15
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        19
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "usematchattrib": 1,
+                    "matchattrib": "id"
+                  }
+                },
+                {
+                  "id": "dissolve2",
+                  "title": "dissolve2",
+                  "type": "sop/dissolve::2.0",
+                  "pos": [
+                    -40.5452,
+                    282.75600000000003
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 16
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        17
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "group": "unshared",
+                    "invertsel": 1
+                  }
+                },
+                {
+                  "id": "groupdelete1",
+                  "title": "groupdelete1",
+                  "type": "sop/groupdelete",
+                  "pos": [
+                    -40.5452,
+                    180.935
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 17
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        18
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "group1": "unshared"
+                  }
+                },
+                {
+                  "id": "attribpromote1",
+                  "title": "attribpromote1",
+                  "type": "sop/attribpromote",
+                  "pos": [
+                    -40.2002,
+                    80.9348
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 18
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        2
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "inname": "Cd id score label",
+                    "outclass": 1
+                  }
+                },
+                {
+                  "id": "group1",
+                  "title": "group1",
+                  "type": "sop/groupcreate",
+                  "pos": [
+                    -40.5452,
+                    381.66
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 19
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        16
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "groupname": "unshared",
+                    "grouptype": 2,
+                    "groupbase": 0,
+                    "groupedges": 1,
+                    "unshared": 1
+                  }
+                },
+                {
+                  "id": "switchif1",
+                  "title": "switchif1",
+                  "type": "sop/switchif",
+                  "pos": [
+                    187.52,
+                    1562.6
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": 20
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        8,
+                        13
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "mergecondition": 2,
+                    "type1": 2,
+                    "countcomp1": 2,
+                    "hasinputtype1": 1
+                  }
+                },
+                {
+                  "id": "attribcopy2",
+                  "title": "attribcopy2",
+                  "type": "sop/attribcopy",
+                  "pos": [
+                    -428.808,
+                    414.97200000000004
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 21
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": 22
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        3
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "attribname": "id score label"
+                  }
+                }
+              ],
+              "links": [
+                [
+                  1,
+                  "attribcopy1",
+                  0,
+                  "output0",
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  "attribpromote1",
+                  0,
+                  "output1",
+                  0,
+                  0
+                ],
+                [
+                  3,
+                  "attribcopy2",
+                  0,
+                  "output2",
+                  0,
+                  0
+                ],
+                [
+                  4,
+                  "attribcreate1",
+                  0,
+                  "python1",
+                  0,
+                  0
+                ],
+                [
+                  5,
+                  "attribwrangle2",
+                  0,
+                  "python1",
+                  1,
+                  0
+                ],
+                [
+                  6,
+                  "null1",
+                  0,
+                  "attribwrangle2",
+                  0,
+                  0
+                ],
+                [
+                  7,
+                  "attribwrangle3",
+                  0,
+                  "attribcreate1",
+                  0,
+                  0
+                ],
+                [
+                  8,
+                  "switchif1",
+                  0,
+                  "null1",
+                  0,
+                  0
+                ],
+                [
+                  9,
+                  "pointgenerate2",
+                  0,
+                  "attribwrangle3",
+                  0,
+                  0
+                ],
+                [
+                  10,
+                  "python1",
+                  0,
+                  "color1",
+                  0,
+                  0
+                ],
+                [
+                  11,
+                  "color1",
+                  0,
+                  "color2",
+                  0,
+                  0
+                ],
+                [
+                  12,
+                  "color2",
+                  0,
+                  "attribcopy1",
+                  0,
+                  0
+                ],
+                [
+                  13,
+                  "switchif1",
+                  0,
+                  "attribcopy1",
+                  1,
+                  0
+                ],
+                [
+                  14,
+                  "attribcopy1",
+                  0,
+                  "export_image1",
+                  0,
+                  0
+                ],
+                [
+                  15,
+                  "export_image1",
+                  0,
+                  "fuse1",
+                  0,
+                  0
+                ],
+                [
+                  16,
+                  "group1",
+                  0,
+                  "dissolve2",
+                  0,
+                  0
+                ],
+                [
+                  17,
+                  "dissolve2",
+                  0,
+                  "groupdelete1",
+                  0,
+                  0
+                ],
+                [
+                  18,
+                  "groupdelete1",
+                  0,
+                  "attribpromote1",
+                  0,
+                  0
+                ],
+                [
+                  19,
+                  "fuse1",
+                  0,
+                  "group1",
+                  0,
+                  0
+                ],
+                [
+                  20,
+                  "image_to_points1",
+                  0,
+                  "switchif1",
+                  1,
+                  0
+                ],
+                [
+                  21,
+                  "attribwrangle2",
+                  0,
+                  "attribcopy2",
+                  0,
+                  0
+                ],
+                [
+                  22,
+                  "python1",
+                  0,
+                  "attribcopy2",
+                  1,
+                  0
+                ]
+              ]
+            }
+          },
+          {
+            "id": "image_to_3d1",
+            "title": "image_to_3d1",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              151.605,
+              -894.561
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 46
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  50
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2800.0,
+                300.0,
+                9800.0
+              ],
+              "r": [
+                -90.0,
+                90.0,
+                0.0
+              ],
+              "s": [
+                -1.0,
+                1.0,
+                1.0
+              ],
+              "scale": 600.0
+            }
+          },
+          {
+            "id": "image_to_3d2",
+            "title": "image_to_3d2",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              238.821,
+              -846.255
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 47
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  49
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2000.0,
+                250.0,
+                9700.0
+              ],
+              "r": [
+                -90.0,
+                90.0,
+                0.0
+              ],
+              "s": [
+                -1.0,
+                1.0,
+                1.0
+              ],
+              "scale": 700.0
+            }
+          },
+          {
+            "id": "merge5",
+            "title": "merge5",
+            "type": "sop/merge",
+            "pos": [
+              255.35000000000002,
+              -1122.12
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  48
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  60,
+                  62
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "image_to_3d3",
+            "title": "image_to_3d3",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              60.7897,
+              -937.0699999999999
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 53
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  51
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2350.0,
+                400.0,
+                10000.0
+              ],
+              "r": [
+                -90.0,
+                90.0,
+                0.0
+              ],
+              "s": [
+                -1.0,
+                1.0,
+                1.0
+              ],
+              "scale": 800.0
+            }
+          },
+          {
+            "id": "image_to_3d4",
+            "title": "image_to_3d4",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              -42.0095,
+              -993.1050000000001
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 54
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  52
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                3300.0,
+                400.0,
+                10000.0
+              ],
+              "r": [
+                -90.0,
+                90.0,
+                0.0
+              ],
+              "s": [
+                -1.0,
+                1.0,
+                1.0
+              ],
+              "scale": 1000.0
+            }
+          },
+          {
+            "id": "image_to_3d6",
+            "title": "image_to_3d6",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              329.918,
+              -805.678
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 55
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  48
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2550.0,
+                350.0,
+                9500.0
+              ],
+              "r": [
+                -90.0,
+                90.0,
+                0.0
+              ],
+              "s": [
+                -1.0,
+                1.0,
+                1.0
+              ],
+              "scale": 600.0
+            }
+          },
+          {
+            "id": "final_scene_render",
+            "title": "final_scene_render",
+            "type": "sop/merge",
+            "pos": [
+              1018.0999999999999,
+              -1733.85
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  56
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "transform8",
+            "title": "transform8",
+            "type": "sop/xform",
+            "pos": [
+              -429.81499999999994,
+              -1280.73
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 59
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  57
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                0.0,
+                1080.0,
+                -1500.0
+              ],
+              "r": [
+                90.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          {
+            "id": "transform9",
+            "title": "transform9",
+            "type": "sop/xform",
+            "pos": [
+              132.757,
+              -1280.73
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 60
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  56
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                -1920.0,
+                0.0,
+                -10000.0
+              ]
+            }
+          },
+          {
+            "id": "full_stage_breakdown",
+            "title": "full_stage_breakdown",
+            "type": "sop/merge",
+            "pos": [
+              1340.21,
+              -1645.4699999999998
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  61
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "null3",
+            "title": "null3",
+            "type": "sop/null",
+            "pos": [
+              -401.942,
+              815.5469999999999
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 64
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  59
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "image_segment11",
+            "title": "image_segment11",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1123.63,
+              -349.315
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 65
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  28
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  73
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 3,
+              "t": [
+                0.0,
+                0.0,
+                4320.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rock_3.png"
+            }
+          },
+          {
+            "id": "image_segment12",
+            "title": "image_segment12",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              1023.63,
+              -383.509
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 66
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  29
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  74
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 4,
+              "t": [
+                0.0,
+                0.0,
+                5400.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rock_3.png"
+            }
+          },
+          {
+            "id": "image_segment13",
+            "title": "image_segment13",
+            "type": "sop/mlops::image_segment::1.0",
+            "pos": [
+              933.839,
+              -418.69399999999996
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 67
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  30
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": [
+                  75
+                ]
+              }
+            ],
+            "properties": {
+              "instance_id": 5,
+              "t": [
+                0.0,
+                0.0,
+                6480.0
+              ],
+              "path": "/home/pedro/developer/mythica/platform/MLOPs/hip/ToBeValidated/out/isolated_rock_3.png"
+            }
+          },
+          {
+            "id": "null4",
+            "title": "null4",
+            "type": "sop/null",
+            "pos": [
+              1012.7,
+              -150.02599999999998
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 68
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "image_to_3d7",
+            "title": "image_to_3d7",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              1395.25,
+              -835.013
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 69
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  76
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                3000.0,
+                100.0,
+                10500.0
+              ],
+              "r": [
+                -90.0,
+                -90.0,
+                0.0
+              ],
+              "scale": 300.0
+            }
+          },
+          {
+            "id": "image_to_3d8",
+            "title": "image_to_3d8",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              1298.8300000000002,
+              -894.561
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 70
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  77
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2400.0,
+                0.0,
+                10200.0
+              ],
+              "r": [
+                -90.0,
+                -90.0,
+                0.0
+              ],
+              "scale": 1700.0
+            }
+          },
+          {
+            "id": "image_to_3d9",
+            "title": "image_to_3d9",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              1210.3999999999999,
+              -961.6809999999999
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 71
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  78
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                3130.0,
+                50.0,
+                10570.0
+              ],
+              "r": [
+                -90.0,
+                -90.0,
+                0.0
+              ],
+              "scale": 1700.0
+            }
+          },
+          {
+            "id": "null5",
+            "title": "null5",
+            "type": "sop/null",
+            "pos": [
+              584.91,
+              -1145.8500000000001
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 72
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  23
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "image_to_3d10",
+            "title": "image_to_3d10",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              1112.0,
+              -1008.92
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 73
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  79
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2650.0,
+                20.0,
+                9890.0
+              ],
+              "r": [
+                -90.0,
+                -90.0,
+                0.0
+              ],
+              "scale": 2300.0
+            }
+          },
+          {
+            "id": "image_to_3d11",
+            "title": "image_to_3d11",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              1010.39,
+              -1064.25
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 74
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  80
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2900.0,
+                80.0,
+                10400.0
+              ],
+              "r": [
+                -90.0,
+                -90.0,
+                0.0
+              ],
+              "scale": 300.0
+            }
+          },
+          {
+            "id": "image_to_3d12",
+            "title": "image_to_3d12",
+            "type": "sop/mlops::image_to_3d::1.0",
+            "pos": [
+              910.381,
+              -1122.4399999999998
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 75
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  81
+                ]
+              },
+              {
+                "name": 1,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "t": [
+                2700.0,
+                80.0,
+                10450.0
+              ],
+              "r": [
+                -90.0,
+                -90.0,
+                0.0
+              ],
+              "scale": 300.0
+            }
+          },
+          {
+            "id": "merge1",
+            "title": "merge1",
+            "type": "sop/merge",
+            "pos": [
+              1460.52,
+              -1145.35
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "multi",
+                "link": [
+                  76
+                ]
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  82
+                ]
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "transform10",
+            "title": "transform10",
+            "type": "sop/xform",
+            "pos": [
+              1235.18,
+              -1304.64
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "",
+                "link": 82
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": [
+                  58,
+                  63
+                ]
+              }
+            ],
+            "properties": {
+              "t": [
+                -1500.0,
+                0.0,
+                -8550.0
+              ],
+              "scale": 0.85
+            }
+          },
+          {
+            "id": "nodetype_export1",
+            "title": "nodetype_export1",
+            "type": "graph/subgraph",
+            "pos": [
+              746.1909999999999,
+              1214.17
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "",
+                "links": []
+              }
+            ],
+            "properties": {
+              "export_file": "/home/pedro/developer/mythica/platform/darol/app/blueprints/editor/static/json/houdini-nodes.json",
+              "overwrite": 1
+            },
+            "subgraph": {
+              "nodes": [
+                {
+                  "id": "export",
+                  "title": "export",
+                  "type": "sop/python",
+                  "pos": [
+                    175.094,
+                    503.729
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 1
+                    },
+                    {
+                      "name": 1,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 2,
+                      "type": "",
+                      "link": null
+                    },
+                    {
+                      "name": 3,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        3
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "python": "import os\nimport importlib\n\nfrom mythica import network as mythica_net\n\nimportlib.reload(mythica_net)\n\nnode = hou.pwd()\n\n# read Processing params from the parent node.    \ntarget_file = node.parent().parm(\"export_file\").evalAsString()\noverwrite = bool(node.parent().parm(\"overwrite\").evalAsInt())   \n\n    \nout = mythica_net.get_node_types() or 'NULL'\n\ngeo = node.geometry()\ngeo.setGlobalAttribValue('json',out)\n#Only write the file if we have a target \nif target_file and target_file != \"\": \n    #Only overwrite if overwrite is specified\n    if not os.path.exists(target_file) or overwrite:\n        with open(target_file, 'w') as file:\n            file.write(out) \n\n"
+                  }
+                },
+                {
+                  "id": "null1",
+                  "title": "null1",
+                  "type": "sop/null",
+                  "pos": [
+                    315.32800000000003,
+                    784.588
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        2
+                      ]
+                    }
+                  ],
+                  "properties": {}
+                },
+                {
+                  "id": "attribcreate1",
+                  "title": "attribcreate1",
+                  "type": "sop/attribcreate::2.0",
+                  "pos": [
+                    315.32800000000003,
+                    675.318
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 2
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": [
+                        1
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "name1": "json",
+                    "class1": 0,
+                    "type1": 3
+                  }
+                },
+                {
+                  "id": "output0",
+                  "title": "output0",
+                  "type": "sop/output",
+                  "pos": [
+                    175.094,
+                    386.62100000000004
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "link": 3
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "",
+                      "links": []
+                    }
+                  ],
+                  "properties": {
+                    "outputidx": 0
+                  }
+                }
+              ],
+              "links": [
+                [
+                  1,
+                  "attribcreate1",
+                  0,
+                  "export",
+                  0,
+                  0
+                ],
+                [
+                  2,
+                  "null1",
+                  0,
+                  "attribcreate1",
+                  0,
+                  0
+                ],
+                [
+                  3,
+                  "export",
+                  0,
+                  "output0",
+                  0,
+                  0
+                ]
+              ]
+            }
+          }
+        ],
+        "links": [
+          [
+            1,
+            "image_segmentation_pipeline0",
+            2,
+            "transform2",
+            0,
+            0
+          ],
+          [
+            2,
+            "null1",
+            0,
+            "initial_segmentation_output",
+            0,
+            0
+          ],
+          [
+            3,
+            "export_image3",
+            0,
+            "initial_segmentation_output",
+            0,
+            0
+          ],
+          [
+            4,
+            "image_segment9",
+            0,
+            "initial_segmentation_output",
+            0,
+            0
+          ],
+          [
+            5,
+            "image_segment10",
+            0,
+            "initial_segmentation_output",
+            0,
+            0
+          ],
+          [
+            6,
+            "foreach_end2",
+            0,
+            "initial_segmentation_output",
+            0,
+            0
+          ],
+          [
+            7,
+            "transform2",
+            0,
+            "export_image3",
+            0,
+            0
+          ],
+          [
+            8,
+            "attribwrangle4",
+            0,
+            "foreach_end2",
+            0,
+            0
+          ],
+          [
+            9,
+            "transform6",
+            0,
+            "foreach_begin2",
+            0,
+            0
+          ],
+          [
+            10,
+            "foreach_begin2",
+            0,
+            "attribwrangle4",
+            0,
+            0
+          ],
+          [
+            11,
+            "foreach_begin2_metadata1",
+            0,
+            "attribwrangle4",
+            1,
+            0
+          ],
+          [
+            12,
+            "image_segmentation_pipeline0",
+            2,
+            "transform6",
+            0,
+            0
+          ],
+          [
+            13,
+            "image_segment9",
+            1,
+            "image_segmentation_pipeline1",
+            0,
+            0
+          ],
+          [
+            14,
+            "image_segmentation_pipeline0",
+            2,
+            "image_segment9",
+            0,
+            0
+          ],
+          [
+            15,
+            "image_segmentation_pipeline0",
+            0,
+            "null1",
+            0,
+            0
+          ],
+          [
+            16,
+            "image_segmentation_pipeline0",
+            2,
+            "image_segment10",
+            0,
+            0
+          ],
+          [
+            17,
+            "image_segment10",
+            1,
+            "image_segmentation_pipeline2",
+            0,
+            0
+          ],
+          [
+            18,
+            "transform3",
+            0,
+            "image_segment1",
+            0,
+            0
+          ],
+          [
+            19,
+            "transform3",
+            0,
+            "image_segment8",
+            0,
+            0
+          ],
+          [
+            20,
+            "transform7",
+            0,
+            "image_segment2",
+            0,
+            0
+          ],
+          [
+            21,
+            "initial_segmentation_output",
+            0,
+            "final_segmentation_output",
+            0,
+            0
+          ],
+          [
+            22,
+            "merge3",
+            0,
+            "final_segmentation_output",
+            0,
+            0
+          ],
+          [
+            23,
+            "null5",
+            0,
+            "final_segmentation_output",
+            0,
+            0
+          ],
+          [
+            24,
+            "transform1",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            25,
+            "image_segment1",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            26,
+            "image_segment3",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            27,
+            "image_segment8",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            28,
+            "image_segment11",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            29,
+            "image_segment12",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            30,
+            "image_segment13",
+            0,
+            "merge3",
+            0,
+            0
+          ],
+          [
+            31,
+            "transform3",
+            0,
+            "image_segment3",
+            0,
+            0
+          ],
+          [
+            32,
+            "image_segmentation_pipeline1",
+            0,
+            "transform1",
+            0,
+            0
+          ],
+          [
+            33,
+            "image_segmentation_pipeline1",
+            2,
+            "transform3",
+            0,
+            0
+          ],
+          [
+            34,
+            "image_segmentation_pipeline2",
+            0,
+            "transform4",
+            0,
+            0
+          ],
+          [
+            35,
+            "transform4",
+            0,
+            "merge4",
+            0,
+            0
+          ],
+          [
+            36,
+            "image_segment2",
+            0,
+            "merge4",
+            0,
+            0
+          ],
+          [
+            37,
+            "image_segment4",
+            0,
+            "merge4",
+            0,
+            0
+          ],
+          [
+            38,
+            "image_segment5",
+            0,
+            "merge4",
+            0,
+            0
+          ],
+          [
+            39,
+            "image_segment6",
+            0,
+            "merge4",
+            0,
+            0
+          ],
+          [
+            40,
+            "image_segment7",
+            0,
+            "merge4",
+            0,
+            0
+          ],
+          [
+            41,
+            "image_segmentation_pipeline2",
+            2,
+            "transform7",
+            0,
+            0
+          ],
+          [
+            42,
+            "transform7",
+            0,
+            "image_segment4",
+            0,
+            0
+          ],
+          [
+            43,
+            "transform7",
+            0,
+            "image_segment5",
+            0,
+            0
+          ],
+          [
+            44,
+            "transform7",
+            0,
+            "image_segment6",
+            0,
+            0
+          ],
+          [
+            45,
+            "transform7",
+            0,
+            "image_segment7",
+            0,
+            0
+          ],
+          [
+            46,
+            "image_segment5",
+            1,
+            "image_to_3d1",
+            0,
+            0
+          ],
+          [
+            47,
+            "image_segment4",
+            1,
+            "image_to_3d2",
+            0,
+            0
+          ],
+          [
+            48,
+            "image_to_3d6",
+            0,
+            "merge5",
+            0,
+            0
+          ],
+          [
+            49,
+            "image_to_3d2",
+            0,
+            "merge5",
+            0,
+            0
+          ],
+          [
+            50,
+            "image_to_3d1",
+            0,
+            "merge5",
+            0,
+            0
+          ],
+          [
+            51,
+            "image_to_3d3",
+            0,
+            "merge5",
+            0,
+            0
+          ],
+          [
+            52,
+            "image_to_3d4",
+            0,
+            "merge5",
+            0,
+            0
+          ],
+          [
+            53,
+            "image_segment6",
+            1,
+            "image_to_3d3",
+            0,
+            0
+          ],
+          [
+            54,
+            "image_segment7",
+            1,
+            "image_to_3d4",
+            0,
+            0
+          ],
+          [
+            55,
+            "image_segment2",
+            1,
+            "image_to_3d6",
+            0,
+            0
+          ],
+          [
+            56,
+            "transform9",
+            0,
+            "final_scene_render",
+            0,
+            0
+          ],
+          [
+            57,
+            "transform8",
+            0,
+            "final_scene_render",
+            0,
+            0
+          ],
+          [
+            58,
+            "transform10",
+            0,
+            "final_scene_render",
+            0,
+            0
+          ],
+          [
+            59,
+            "null3",
+            0,
+            "transform8",
+            0,
+            0
+          ],
+          [
+            60,
+            "merge5",
+            0,
+            "transform9",
+            0,
+            0
+          ],
+          [
+            61,
+            "final_segmentation_output",
+            0,
+            "full_stage_breakdown",
+            0,
+            0
+          ],
+          [
+            62,
+            "merge5",
+            0,
+            "full_stage_breakdown",
+            0,
+            0
+          ],
+          [
+            63,
+            "transform10",
+            0,
+            "full_stage_breakdown",
+            0,
+            0
+          ],
+          [
+            64,
+            "image_segmentation_pipeline0",
+            2,
+            "null3",
+            0,
+            0
+          ],
+          [
+            65,
+            "transform3",
+            0,
+            "image_segment11",
+            0,
+            0
+          ],
+          [
+            66,
+            "transform3",
+            0,
+            "image_segment12",
+            0,
+            0
+          ],
+          [
+            67,
+            "transform3",
+            0,
+            "image_segment13",
+            0,
+            0
+          ],
+          [
+            68,
+            "image_segmentation_pipeline1",
+            1,
+            "null4",
+            0,
+            0
+          ],
+          [
+            69,
+            "image_segment1",
+            1,
+            "image_to_3d7",
+            0,
+            0
+          ],
+          [
+            70,
+            "image_segment3",
+            1,
+            "image_to_3d8",
+            0,
+            0
+          ],
+          [
+            71,
+            "image_segment8",
+            1,
+            "image_to_3d9",
+            0,
+            0
+          ],
+          [
+            72,
+            "merge4",
+            0,
+            "null5",
+            0,
+            0
+          ],
+          [
+            73,
+            "image_segment11",
+            1,
+            "image_to_3d10",
+            0,
+            0
+          ],
+          [
+            74,
+            "image_segment12",
+            1,
+            "image_to_3d11",
+            0,
+            0
+          ],
+          [
+            75,
+            "image_segment13",
+            1,
+            "image_to_3d12",
+            0,
+            0
+          ],
+          [
+            76,
+            "image_to_3d7",
+            0,
+            "merge1",
+            0,
+            0
+          ],
+          [
+            77,
+            "image_to_3d8",
+            0,
+            "merge1",
+            0,
+            0
+          ],
+          [
+            78,
+            "image_to_3d9",
+            0,
+            "merge1",
+            0,
+            0
+          ],
+          [
+            79,
+            "image_to_3d10",
+            0,
+            "merge1",
+            0,
+            0
+          ],
+          [
+            80,
+            "image_to_3d11",
+            0,
+            "merge1",
+            0,
+            0
+          ],
+          [
+            81,
+            "image_to_3d12",
+            0,
+            "merge1",
+            0,
+            0
+          ],
+          [
+            82,
+            "merge1",
+            0,
+            "transform10",
+            0,
+            0
+          ]
+        ]
+      }
+    }
+  ],
+  "links": []
+}
