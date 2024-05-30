@@ -39,10 +39,19 @@ function App() {
                             <Tab variant="plain" color="neutral">Uploads </Tab>
                             <Tab variant="plain" color="neutral">Settings</Tab>
                         </TabList>
+                        <TabPanel value={0}>
+                        <Assets />
+                        </TabPanel>
+                        <TabPanel value={1}>
+                        <Uploads />
+                        </TabPanel>
+                        <TabPanel value={2}>
+                        <ProfileSettings />
+                        </TabPanel>
                     </Tabs>
                 </Box>
                 <Box>
-                    test content
+                
                 </Box>
             </Box>
 
