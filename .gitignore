@@ -39,3 +39,5 @@ testing/mnt/*/**
 
 # site pointers
 sites/*.txt
+
+__pycache__
