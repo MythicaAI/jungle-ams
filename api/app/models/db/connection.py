@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import sessionmaker
 
-engine_url = os.environ.get('SQL_URL').strip()
+engine_url = os.environ.get('SQL_URL', 'postgresql://test:test@localhost:5432/upload_pipeline').strip()
 engine = create_engine(engine_url)
 
 
