@@ -1,4 +1,4 @@
-import {Box, Typography, Button, Table, styled} from '@mui/joy';
+import {Box, Typography, Button, Table, styled, Card} from '@mui/joy';
 import {LucideUploadCloud} from 'lucide-react';
 import {ChangeEvent, FormEvent, useState} from "react";
 import {v4} from "uuid";
@@ -23,6 +23,7 @@ const VisuallyHiddenInput = styled('input')`
 
 const Uploads = () => {
     const [filesSelected, setFilesSelected] = useState<File[]>() // also tried <string | Blob>
+    const [formData, setFormData] = useState<FormData>();
 
     const handleFileChanged = function (e: React.ChangeEvent<HTMLInputElement>) {
         const fileList = (document.getElementById("file-input") as HTMLInputElement).files;
@@ -31,17 +32,28 @@ const Uploads = () => {
             console.log("no fileList found")
             return;
         }
+
+        // push all the form files into the local state
         const currentFileList: File[] = filesSelected ?? [];
-        const updatedFileList = [...currentFileList, ...fileList];
-        for (const file of updatedFileList) {
-            console.log("upload via " + e + ", file: " + file.name + ", " + file.size);
+        for (let i = 0; i < fileList.length; i++) {
+            currentFileList.push(fileList[i]);
         }
-        setFilesSelected(updatedFileList);
-        uploadFile();
+        setFilesSelected(currentFileList);
     };
 
-    const submit = function(formData: FormData) {// Assuming fileInput is an HTMLInputElement of type file
-        fetch('https://localhost:5555/api/v1/upload/store', {
+    const submit = function(e) {
+        if (!filesSelected) {
+            return;
+        }
+        const formData = new FormData();
+        for (let i = 0; i < filesSelected.length; ++i) {
+            const inputName = `hda[${i}]`;
+            formData.append(inputName, filesSelected[i], filesSelected[i].name);
+        }
+        setFormData(formData);
+
+        // Assuming fileInput is an HTMLInputElement of type file
+        fetch('http://localhost:5555/api/v1/upload/store', {
           method: 'POST',
           body: formData,
         })
@@ -50,34 +62,35 @@ const Uploads = () => {
           .catch(error => console.error('Error:', error));
     }
 
-    const uploadFile = function () {
-        if (filesSelected) {
-            const formData = new FormData();
-            for (let i = 0; i < filesSelected.length; ++i) {
-                const inputName = `hda[${i}]`;
-                formData.append(inputName, filesSelected[i], filesSelected[i].name);
-            }
-            submit(formData);
-        }
-    };
-
     const SubmitUploads = function () {
         if (!filesSelected) {
             return "";
         } else {
-            return (
-                filesSelected.map(file => (
-                <tr key={v4()}>
-                    <td>
-                        {file.name}
-                    </td>
-                    <td>
-                        {file.size}
-                    </td>
-                    <td>
-                        Unknown
-                    </td>
-                </tr>)));
+            return (<Card><Table aria-label="basic table">
+                <thead>
+                <tr>
+                    <th>Pending upload</th>
+                    <th>Size</th>
+                </tr>
+                </thead>
+                <tbody>
+                {
+                    filesSelected.map(file => (
+                        <tr key={v4()}>
+                            <td>
+                                {file.name}
+                            </td>
+                            <td>
+                                {file.size}
+                            </td>
+                        </tr>))
+                }
+                </tbody>
+            </Table>
+                <Button color="primary" onClick={submit}>
+                    Upload {filesSelected.length}
+                </Button>
+            </Card>);
         }
     }
 
@@ -94,6 +107,7 @@ const Uploads = () => {
                 Upload a file
                 <VisuallyHiddenInput type="file" id="file-input" accept=".hda" multiple={true} onChange={handleFileChanged}/>
             </Button>
+            {<SubmitUploads />}
             <Table aria-label="basic table">
                 <thead>
                 <tr>
@@ -104,7 +118,6 @@ const Uploads = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {<SubmitUploads />}
                 {uploads.map(upload => (
                     <tr key={upload.hash}>
                         <td>{upload.name}</td>
