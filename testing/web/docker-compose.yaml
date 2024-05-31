@@ -13,6 +13,16 @@ services:
     networks:
       - web
       - storage
+  app:
+    container_name: app
+    image: mythica-app:latest
+    ports:
+      - "50555:5555"
+    volumes:
+      - static:/static
+    networks:
+      - web
+      - storage
 volumes:
   static:
     driver: local
