@@ -53,13 +53,16 @@ def upload_stream():
 
 @upload_bp.route('/store', methods=['POST'])
 def upload():
-    hda: FileStorage = request.files.get('file')
-    if hda is None:
-        return jsonify({'error': 'no file'}), HTTPStatus.BAD_REQUEST
+    if not request.files:
+        return jsonify({'error': 'no files'}), HTTPStatus.BAD_REQUEST
+    for key, file in request.files.items():
+        upload_internal(file)
 
+
+def upload_internal(file):
     ctx = RequestContext(request)
 
-    filename = hda.filename
+    filename = file.filename
     extension = filename.rpartition(".")[-1].lower()
     if extension != "hda":
         return jsonify({
@@ -71,7 +74,7 @@ def upload():
     ctx.filename = filename
     ctx.local_filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-    hda.save(ctx.local_filepath)
+    file.save(ctx.local_filepath)
     app.logger.info(
         f'{filename} saved to {ctx.local_filepath}')
 
