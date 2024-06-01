@@ -14,15 +14,19 @@
     "@emotion/styled": "^11.11.5",
     "@fontsource/inter": "^5.0.18",
     "@mui/joy": "5.0.0-beta.36",
+    "axios": "^1.7.2",
     "lucide-react": "^0.379.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.23.1",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@types/node": "^20.13.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
