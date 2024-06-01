@@ -2,11 +2,10 @@ import os
 from http import HTTPStatus
 from io import BytesIO
 
-from flask import jsonify, g
+from flask import jsonify
 from google.cloud import storage
-from google.oauth2.service_account import Credentials
 
-import models.minio_uploader as minio_uploader
+import storage.minio_uploader as minio_uploader
 
 from context import RequestContext
 
@@ -18,22 +17,22 @@ class Client:
     def validate(self):
         return
 
-    def upload(self, ctx: RequestContext, bucket_name: str) -> tuple[jsonify, HTTPStatus]:
+    def upload(self, ctx: RequestContext, bucket_name: str):
         ctx.bucket_name = bucket_name
         bucket = self.gcs.bucket(bucket_name)
         ch = ctx.content_hash
-        ctx.object_name = os.path.join(
+        object_name = os.path.join(
             ctx.extension,
             ch[0:2],
             ch[2:4],
             ch[4:6],
             ctx.content_hash + '.' + ctx.extension)
 
-        blob = bucket.blob(ctx.object_name)
+        blob = bucket.blob(object_name)
         blob.upload_from_filename(ctx.local_filepath)
-        return jsonify({'message': 'uploaded successful', "hash": ctx.content_hash}), HTTPStatus.OK
+        ctx.add_object_locator('gcs', bucket_name, object_name)
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str) -> tuple[jsonify, HTTPStatus]:
+    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
         raise NotImplemented
 
 

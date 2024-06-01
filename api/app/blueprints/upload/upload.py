@@ -1,14 +1,13 @@
 import hashlib
 import os
+import uuid
 
-from werkzeug.datastructures import FileStorage
 from flask import Blueprint, request, jsonify, g, current_app as app
 from http import HTTPStatus
 
-from models import gcs_uploader
-from models import minio_uploader
+from storage import gcs_uploader, minio_uploader
 
-import models.db.index as db_index
+import db.index as db_index
 
 from context import RequestContext
 
@@ -40,23 +39,26 @@ def upload_stream():
     ctx.extension = extension
 
     if app.config['ENABLE_STORAGE']:
-        json, status, ctx = g.storage.upload_stream(
+        g.storage.upload_stream(
             ctx, request.stream, app.config['BUCKET_NAME'])
-    else:
-        json, status = jsonify({"message": "file saved"}), HTTPStatus.OK
 
     # Update database index
-    if status == HTTPStatus.OK and app.config['ENABLE_DB']:
+    if app.config['ENABLE_DB']:
         db_index.update(ctx)
-    return json, status
+    return jsonify({"message": "file saved"}), HTTPStatus.OK
 
 
 @upload_bp.route('/store', methods=['POST'])
 def upload():
     if not request.files:
         return jsonify({'error': 'no files'}), HTTPStatus.BAD_REQUEST
+    events = list()
     for key, file in request.files.items():
-        upload_internal(file)
+        try:
+            events.append(upload_internal(file))
+        except:
+            return jsonify({'error': 'upload failed'}), 400
+    return jsonify({'events': events, 'message': f'uploaded {len(events)} files'}), HTTPStatus.OK
 
 
 def upload_internal(file):
@@ -88,16 +90,16 @@ def upload_internal(file):
 
     # Upload to bucket storage
     if app.config['ENABLE_STORAGE']:
-        json, status = g.storage.upload(ctx, app.config['BUCKET_NAME'])
-    else:
-        json, status = jsonify({"message": "file saved"}), HTTPStatus.OK
+        g.storage.upload(ctx, app.config['BUCKET_NAME'])
 
     # Update database index
-    if status == HTTPStatus.OK and app.config['ENABLE_DB']:
-        db_index.update(ctx)
+    if app.config['ENABLE_DB']:
+        event_id = db_index.update(ctx)
+    else:
+        event_id = uuid.UUID(int=0, version=4)
 
     if app.config['UPLOAD_FOLDER_AUTOCLEAN']:
         os.remove(ctx.local_filepath)
         app.logger.debug("cleaned local file")
 
-    return json, status
+    return event_id

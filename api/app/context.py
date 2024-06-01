@@ -10,7 +10,9 @@ class RequestContext:
         self.user = 'unknown'
         self.timestamp = datetime.now(timezone.utc)
         self.file_size = 0
-        self.bucket_name = ''
-        self.object_name = ''
         self.content_hash = ''
         self.extension = ''
+        self.locators = list()
+
+    def add_object_locator(self, backend, bucket_name, object_name):
+        self.locators.append(f"{backend}://{bucket_name}:{object_name}")

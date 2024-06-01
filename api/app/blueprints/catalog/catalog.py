@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
-from models.db.connection import get_session
-from models.db.models import Upload
+from db.connection import get_session
+from db.schema.media import FileContent
 
 catalog_bp = Blueprint('catalog', __name__)
 
@@ -14,7 +14,7 @@ def featured():
 @catalog_bp.route('/all', methods=['GET'])
 def catalog():
     session = get_session()
-    uploads = session.query(Upload).filter(Upload.status == 'upload_completed').all()
+    uploads = session.query(FileContent).all()
     results = list()
     for u in uploads:
         results.append(u.to_dict())

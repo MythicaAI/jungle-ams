@@ -7,6 +7,13 @@ from sqlalchemy import pool
 
 from alembic import context
 
+# import the SQLModels
+from sqlmodel import SQLModel
+from db.schema.profiles import *
+from db.schema.events import *
+from db.schema.media import *
+from db.schema.assets import *
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -17,15 +24,11 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = SQLModel.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+print("target_metadata tables:")
+for key, table in target_metadata.tables.items():
+    print(f"table: {key}, type: {table}")
 
 
 def run_migrations_offline() -> None:
@@ -70,7 +73,8 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata
         )
 
         with context.begin_transaction():

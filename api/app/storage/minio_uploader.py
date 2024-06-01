@@ -27,7 +27,7 @@ class Client:
     def __init__(self, minio):
         self.minio = minio
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validates the availability of buckets using the create_client() method
         and logs the bucket name using the log.info() method.
@@ -51,17 +51,16 @@ class Client:
         try:
             self.minio.fput_object(ctx.bucket_name, ctx.object_name, ctx.local_filepath)
             log.info(f"{ctx.object_name} uploaded to bucket {ctx.bucket_name}")
-            return jsonify({"message": "upload successful", "hash": ctx.content_hash}), HTTPStatus.OK
         except S3Error as exc:
             log.exception(f"upload failed to {ctx.bucket_name}:{ctx.object_name}",
                           exc_info=exc)
-            return jsonify({"message": "upload failed"}), HTTPStatus.INTERNAL_SERVER_ERROR
+            raise
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str) -> tuple[jsonify, HTTPStatus]:
+    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
         _create_bucket(self.minio, bucket_name)
 
-        ctx.bucket_name = bucket_name
-        ctx.object_name = ctx.content_hash + '.' + ctx.extension
+        bucket_name = bucket_name
+        object_name = ctx.content_hash + '.' + ctx.extension
 
         # Initialize hash
         hash_sha1 = hashlib.sha1()
@@ -79,17 +78,16 @@ class Client:
             size = data.tell()  # Get the size of the data
 
             # Upload the data
-            self.minio.put_object(bucket_name, ctx.object_name, data, length=size)
-            log.info(f"{ctx.object_name} uploaded to bucket {bucket_name}")
-
-            # Finalize hash
-            ctx.content_hash = hash_sha1.hexdigest()
-            ctx.file_size = size
-
-            return jsonify({"message": "Upload successful", "hash": ctx.content_hash}), HTTPStatus.OK
+            self.minio.put_object(bucket_name, object_name, data, length=size)
+            log.info(f"{object_name} uploaded to bucket {bucket_name}")
         except S3Error as exc:
-            log.exception(f"Upload failed to {bucket_name}:{ctx.object_name}", exc_info=exc)
-            return jsonify({"message": "Upload failed"}), HTTPStatus.INTERNAL_SERVER_ERROR
+            log.exception(f"Upload failed to {bucket_name}:{object_name}", exc_info=exc)
+            raise
+
+        # Finalize hash and location
+        ctx.content_hash = hash_sha1.hexdigest()
+        ctx.file_size = size
+        ctx.add_object_locator('minio', bucket_name, object_name)
 
 
 def create_client():
