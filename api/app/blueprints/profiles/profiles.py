@@ -36,7 +36,7 @@ class ProfileListModel(BaseModel):
     profile_base_href: str | None = None
     active: bool = None
     created: datetime = None
-    updated: datetime | None  = None
+    updated: datetime | None = None
     email_verified: bool = None
 
 @profiles_bp.route('', methods=['GET'])
@@ -71,7 +71,7 @@ def start_session(profile_id: str):
                                          refreshed=datetime.now(timezone.utc),
                                          location=location,
                                          authenticated=False,
-                                         auth_token=)
+                                         auth_token='')
         session.add(profile_session)
         session.commit()
 
