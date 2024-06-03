@@ -1,4 +1,5 @@
 # This file is intended for invoke, see README.md for install setup instructions
+import re
 import os
 import subprocess
 from operator import call
@@ -18,9 +19,9 @@ CPLN_IMAGE_REPO = f"{CPLN_ORG_NAME}.registry.cpln.io"
 #
 GCS_PROJECT_NAME = "controlnet"
 GCS_PROJECT_ID = 407314
-GCS_PROJECT = f"{GCS_PROJECT_NAME}-${GCS_PROJECT_ID}"
+GCS_PROJECT = f"{GCS_PROJECT_NAME}-{GCS_PROJECT_ID}"
 GCS_REPO_HOST = "us-central1-docker"
-GCS_REPO_NAME = "gke-us-centra1-images"
+GCS_REPO_NAME = "gke-us-central1-images"
 GCS_IMAGE_REPO = f"{GCS_REPO_HOST}.pkg.dev/{GCS_PROJECT}/{GCS_REPO_NAME}"
 
 IMAGE_PLATFORM = "linux/amd64"
@@ -39,6 +40,7 @@ IMAGES = {
     'api/publish-init': {'name': 'mythica-publish-init'},
 }
 
+
 def get_commit_hash(ref='HEAD'):
     """Return a short commit hash for the current HEAD commit"""
     result = subprocess.run(
@@ -46,9 +48,6 @@ def get_commit_hash(ref='HEAD'):
         stdout=subprocess.PIPE,
         text=True)
     return result.stdout.strip()
-
-
-import re
 
 
 def parse_expose_to_ports(image_path):
@@ -83,8 +82,10 @@ def build_image(c, image_path):
     image_name = IMAGES[image_path]['name']
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .', pty=True)
-        c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}', pty=True)
+        c.run(
+            f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .', pty=True)
+        c.run(f'docker tag {image_name}:latest {
+              image_name}:{commit_hash}', pty=True)
 
 
 def deploy_image(c, image_path):
@@ -93,8 +94,10 @@ def deploy_image(c, image_path):
     commit_hash = get_commit_hash()
     repo = GCS_IMAGE_REPO
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:{commit_hash}", pty=True)
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:latest", pty=True)
+        c.run(f"docker tag {image_name}:{commit_hash} {
+              repo}/{image_name}:{commit_hash}", pty=True)
+        c.run(f"docker tag {image_name}:{commit_hash} {
+              repo}/{image_name}:latest", pty=True)
         c.run(f"docker push {repo}/{image_name} --all-tags", pty=True)
 
 
