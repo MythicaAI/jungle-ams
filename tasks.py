@@ -115,7 +115,7 @@ def run_image(c, image_path, background=False):
         args.append('--detach')
     else:
         args.append('--interactive --tty')
-    c.run(f'docker run {'  '.join(args)} {image_name}:{commit_hash}', pty=True)
+    c.run(f"docker run {'  '.join(args)} {image_name}:{commit_hash}", pty=True)
 
 
 @task
