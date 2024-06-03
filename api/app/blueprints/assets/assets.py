@@ -6,6 +6,7 @@ from psycopg2 import IntegrityError
 from sqlmodel import select, update, insert
 
 from auth.data import get_profile
+from content.locate_content import locate_content
 from db.schema.assets import *
 from db.connection import get_session
 
@@ -83,6 +84,11 @@ def create_asset():
         return jsonify({'error': str(e)}), HTTPStatus.BAD_REQUEST
     except ValidationError as e:
         return e.json(), HTTPStatus.BAD_REQUEST
+
+    try:
+        file_content = locate_content(r.content_hash)
+    except FileNotFoundError:
+        return jsonify({'error': f"content hash '{r.content_hash}' not found"}), HTTPStatus.NOT_FOUND
 
     with get_session() as session:
         if r.id is None or r.id == ZERO_ID:
