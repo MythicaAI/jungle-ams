@@ -1,3 +1,6 @@
+import logging
+from typing import Tuple
+
 from uuid import UUID
 
 from db.schema.media import FileContent
@@ -5,9 +8,13 @@ from db.schema.events import Event
 from context import RequestContext
 from db.connection import get_session
 from flask import jsonify
+from sqlmodel import insert, select
 
 
-def update(ctx: RequestContext) -> UUID:
+log = logging.getLogger(__name__)
+
+
+def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
     """Update the database index for the upload"""
     # Begin a transaction
     session = get_session()
@@ -15,15 +22,13 @@ def update(ctx: RequestContext) -> UUID:
     content_type = f"application/{ctx.extension}"
 
     # Create a new upload
-    upload = FileContent(
-        name=ctx.filename,
-        owner=ctx.user,
-        locators=jsonify(ctx.locators),
-        content_hash=ctx.content_hash,
-        size=ctx.file_size,
-        content_type=content_type)
-    session.add(upload)
-    session.commit()
+    file_content_result = session.exec(insert(FileContent).values(
+        {'name': ctx.filename,
+         'owner': ctx.profile_id,
+         'locators': ctx.locators,
+         'content_hash': ctx.content_hash,
+         'size': ctx.file_size,
+         'content_type': content_type}))
 
     job_data = {'locators': ctx.locators,
                 'content_type': content_type,
@@ -31,11 +36,12 @@ def update(ctx: RequestContext) -> UUID:
                 'file_type': ctx.extension}
 
     # Create a new pipeline event
-    event = Event(
-        event_type='file_uploaded',
-        job_data=job_data)
-    session.add(event)
+    event_result = session.exec(insert(Event).values(
+        {'event_type': 'file_uploaded',
+        'job_data': job_data}))
     session.commit()
 
-    session.refresh(event)
-    return event.id
+    log.info(event_result)
+    log.info(file_content_result)
+
+    return (file_content_result.inserted_primary_key[0], event_result.inserted_primary_key[0])

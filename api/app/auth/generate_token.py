@@ -14,7 +14,7 @@ def generate_token(profile: Profile) -> str:
     h = hashlib.blake2b(digest_size=DIGEST_SIZE, key=_SECRET, person=_PERSON)
     profile_cookie = profile_to_cookie(profile)
     h.update(profile_cookie)
-    return f"{profile_cookie}:{h.hexdigest()}"
+    return f"{profile_cookie.decode('utf-8')}:{h.hexdigest()}"
 
 
 def validate_token(token: str) -> bool:

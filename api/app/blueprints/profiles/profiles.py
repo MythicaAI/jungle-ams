@@ -7,9 +7,10 @@ from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 from pydantic import ValidationError, BaseModel, HttpUrl
 
+from auth.generate_token import generate_token
 from db.schema.profiles import *
 from db.connection import get_session
-from sqlmodel import select, update
+from sqlmodel import select, update, delete
 
 from db.validate_as_json import validate_as_json
 
@@ -65,6 +66,9 @@ def start_session(profile_id: str):
         if result.rowcount == 0:
             return jsonify({'error': 'profile not found'}), HTTPStatus.NOT_FOUND
 
+        session.exec(delete(ProfileSession).where(ProfileSession.profile_id == profile_id))
+        session.commit()
+
         # Add a new session
         location = os.environ.get('MYTHICA_LOCATION', 'localhost')
         profile_session = ProfileSession(profile_id=profile_id,
@@ -77,8 +81,12 @@ def start_session(profile_id: str):
 
         profile_sessions = session.exec(select(ProfileSession).where(ProfileSession.profile_id == profile_id)).all()
         profile = session.exec(select(Profile).where(Profile.id == profile_id)).first()
+
+        token = generate_token(profile)
+
         return jsonify({'message': 'ok',
                         'profile': profile.model_dump(),
+                        'token': token,
                         'sessions': [s.model_dump() for s in profile_sessions]}), HTTPStatus.OK
 
 

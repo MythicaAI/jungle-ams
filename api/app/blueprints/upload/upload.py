@@ -1,6 +1,7 @@
 import hashlib
 import os
 import uuid
+import logging
 
 from flask import Blueprint, request, jsonify, g, current_app as app
 from http import HTTPStatus
@@ -9,7 +10,12 @@ from storage import gcs_uploader, minio_uploader
 
 import db.index as db_index
 
+from auth.generate_token import validate_token
+from auth.cookie import cookie_to_profile
+
 from context import RequestContext
+
+log = logging.getLogger(__name__)
 
 upload_bp = Blueprint('upload', __name__)
 
@@ -50,19 +56,40 @@ def upload_stream():
 
 @upload_bp.route('/store', methods=['POST'])
 def upload():
+    authorization = request.headers.get('Authorization')
+    if authorization is None:
+        return jsonify({'error': 'Authorization header missing'}), HTTPStatus.BAD_REQUEST
+
+    auth_parts = authorization.split(' ')
+    if not authorization.startswith('Bearer '):
+        return jsonify({'error': 'Invalid Authorization header'}), HTTPStatus.BAD_REQUEST
+
+    if len(auth_parts) != 2:
+        return jsonify({'error': 'Bad Authorization header'}), HTTPStatus.BAD_REQUEST
+
+    if not validate_token(auth_parts[1]):
+        return jsonify({'error': 'Invalid token'}), HTTPStatus.UNAUTHORIZED
+
+    cookie_data = auth_parts[1].split(':')[0]
+    profile = cookie_to_profile(cookie_data)
+    log.info("handling upload for profile: %s", profile)
+
     if not request.files:
         return jsonify({'error': 'no files'}), HTTPStatus.BAD_REQUEST
+    files = list()
     events = list()
     for key, file in request.files.items():
-        try:
-            events.append(upload_internal(file))
-        except:
-            return jsonify({'error': 'upload failed'}), 400
-    return jsonify({'events': events, 'message': f'uploaded {len(events)} files'}), HTTPStatus.OK
+        file_id, event_id = upload_internal(profile.id, file)
+        files.append(file_id)
+        events.append(event_id)
+    return jsonify({'message': f'uploaded {len(events)} files',
+                    'files': files,
+                    'events': events}), HTTPStatus.OK
 
 
-def upload_internal(file):
+def upload_internal(profile_id, file):
     ctx = RequestContext(request)
+    ctx.profile_id = profile_id
 
     filename = file.filename
     extension = filename.rpartition(".")[-1].lower()
