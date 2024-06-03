@@ -10,5 +10,6 @@ def validate():
     engine.connect()
 
 
-def get_session():
+def get_session(echo=False):
+    engine.echo = echo
     return Session(engine)

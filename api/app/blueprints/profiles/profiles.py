@@ -1,3 +1,5 @@
+import hashlib
+import logging
 import os
 from datetime import timezone
 from http import HTTPStatus
@@ -13,15 +15,16 @@ from db.validate_as_json import validate_as_json
 
 profiles_bp = Blueprint('profiles', __name__)
 
+log = logging.getLogger(__name__)
 
 # Define a dictionary with the attributes you want to validate
-class CreateUpdateModel(BaseModel):
+class CreateUpdateProfileModel(BaseModel):
     """A model with only allowed public properties for profile creation"""
     name: str = None
-    description: str = None
-    signature: str = None
-    tags: dict
-    profile_base_url: HttpUrl = None
+    description: str | None = None
+    signature: str | None = None
+    tags: dict | None = None
+    profile_base_href: str | None = None
 
 
 class ProfileListModel(BaseModel):
@@ -30,7 +33,7 @@ class ProfileListModel(BaseModel):
     description: str | None  = None
     signature: str | None  = None
     tags: dict | None
-    profile_base_url: HttpUrl | None  = None
+    profile_base_href: str | None = None
     active: bool = None
     created: datetime = None
     updated: datetime | None  = None
@@ -67,7 +70,8 @@ def start_session(profile_id: str):
         profile_session = ProfileSession(profile_id=profile_id,
                                          refreshed=datetime.now(timezone.utc),
                                          location=location,
-                                         authenticated=False)
+                                         authenticated=False,
+                                         auth_token=)
         session.add(profile_session)
         session.commit()
 
@@ -82,8 +86,14 @@ def start_session(profile_id: str):
 def validate_email(profile_id: str):
     UUID(hex=profile_id, version=4)  # validate the ID
     with get_session() as session:
-        result = session.exec(update(Profile).values({'email_verified', True}).where(Profile.id == profile_id))
-        return jsonify({'message': 'ok', 'result': result}), HTTPStatus.OK
+        stmt = update(Profile).values({Profile.email_verified: True}).where(Profile.id == profile_id)
+        stmt_sql = str(stmt)
+        log.info(stmt_sql)
+        result = session.exec(stmt)
+        if result.rowcount == 0:
+            return jsonify({'error': 'profile not found'}), HTTPStatus.NOT_FOUND
+        session.commit()
+        return jsonify({'message': 'ok'}), HTTPStatus.OK
 
 
 @profiles_bp.route('create', methods=['POST'])
@@ -91,7 +101,7 @@ def create_profile():
     session = get_session()
     try:
         obj = dict(**request.json)
-        req_model = CreateUpdateModel.model_validate(obj=obj)
+        req_model = CreateUpdateProfileModel.model_validate(obj=obj)
         profile = Profile(**req_model.dict())
     except TypeError as e:
         return jsonify({'error': str(e)}), HTTPStatus.BAD_REQUEST
@@ -111,20 +121,24 @@ def update_profile(profile_id: str):
     TODO: authentication
     """
     UUID(hex=profile_id, version=4)
+    filtered_update = {'updated': None}
     try:
         obj = dict(**request.json)
-        req_model = CreateUpdateModel.model_validate(obj=obj)
-        profile = Profile(**req_model.dict())
+
+        update_req = CreateUpdateProfileModel.model_validate(obj=obj)
+        for k, v in update_req.model_dump().items():
+            if v is not None:
+                filtered_update[k] = v
     except TypeError as e:
         return jsonify({'error': str(e)}), HTTPStatus.BAD_REQUEST
     except ValidationError as e:
         return e.json(), HTTPStatus.BAD_REQUEST
-
-    session = get_session()
-    result = session.exec(Profile.update(profile).where(Profile.id == profile_id))
+    session = get_session(echo=True)
+    stmt = update(Profile).where(Profile.id == profile_id).values(**filtered_update)
+    result = session.execute(stmt)
     rows_affected = result.rowcount
     if rows_affected == 0:
         return jsonify({'error': 'missing profile'})
-    session.refresh(profile)
 
-    return jsonify({'message': 'ok', 'profile': profile.model_dump()})
+    updated = session.exec(select(Profile).where(Profile.id==profile_id)).one()
+    return jsonify({'message': 'ok', 'profile': ProfileListModel(**updated.model_dump()).model_dump()}), HTTPStatus.OK
