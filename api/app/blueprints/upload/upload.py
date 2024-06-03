@@ -15,6 +15,11 @@ from auth.cookie import cookie_to_profile
 
 from context import RequestContext
 
+from sqlmodel import select
+from db.connection import get_session
+from db.schema.media import FileContent
+from auth.data import get_profile
+
 log = logging.getLogger(__name__)
 
 upload_bp = Blueprint('upload', __name__)
@@ -56,22 +61,8 @@ def upload_stream():
 
 @upload_bp.route('/store', methods=['POST'])
 def upload():
-    authorization = request.headers.get('Authorization')
-    if authorization is None:
-        return jsonify({'error': 'Authorization header missing'}), HTTPStatus.BAD_REQUEST
+    profile = get_profile(request.headers.get('Authorization'))
 
-    auth_parts = authorization.split(' ')
-    if not authorization.startswith('Bearer '):
-        return jsonify({'error': 'Invalid Authorization header'}), HTTPStatus.BAD_REQUEST
-
-    if len(auth_parts) != 2:
-        return jsonify({'error': 'Bad Authorization header'}), HTTPStatus.BAD_REQUEST
-
-    if not validate_token(auth_parts[1]):
-        return jsonify({'error': 'Invalid token'}), HTTPStatus.UNAUTHORIZED
-
-    cookie_data = auth_parts[1].split(':')[0]
-    profile = cookie_to_profile(cookie_data)
     log.info("handling upload for profile: %s", profile)
 
     if not request.files:
@@ -130,3 +121,17 @@ def upload_internal(profile_id, file):
         app.logger.debug("cleaned local file")
 
     return event_id
+
+
+@upload_bp.route('/pending', methods=['GET'])
+def pending_uploads():
+    """Get the list of uploads that have been created for the current profile"""
+    profile = get_profile(request.headers.get('Authorization'))
+    with get_session() as session:
+        uploaded = session.exec(select(FileContent).where(FileContent.owner == profile.id))
+        results = list()
+        size_bytes = 0
+        for u in uploaded:
+            results.append(u.model_dump())
+            size_bytes += u.size
+        return jsonify({'message': 'ok', 'total_size': size_bytes, 'results': results}), HTTPStatus.OK
