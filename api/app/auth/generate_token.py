@@ -24,4 +24,3 @@ def validate_token(token: str) -> bool:
     h = hashlib.blake2b(digest_size=DIGEST_SIZE, key=_SECRET, person=_PERSON)
     h.update(cookie.encode('utf-8'))
     return signature == h.hexdigest()
-

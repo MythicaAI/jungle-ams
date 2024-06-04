@@ -26,6 +26,7 @@ class Profile(SQLModel, table=True):
     tags: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
     profile_base_href: str | None = None
     description: str | None = None
+    email: str | None = None
     email_verified: bool | None = False
     location: str | None = None
     login_count: int | None = 0
