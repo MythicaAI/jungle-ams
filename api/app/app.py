@@ -8,8 +8,10 @@ from flask_cors import CORS
 from blueprints.upload import upload_bp
 from blueprints.editor.editor import editor_bp
 from blueprints.catalog.catalog import catalog_bp
+from blueprints.profiles.profiles import profiles_bp
+from blueprints.assets.assets import assets_bp
 
-import models.db.connection as db_connection
+import db.connection as db_connection
 import log_config
 from config import config
 
@@ -30,6 +32,8 @@ app.logger.level = logging.DEBUG
 app.register_blueprint(upload_bp, url_prefix='/api/v1/upload')
 app.register_blueprint(editor_bp, url_prefix='/api/v1/editor')
 app.register_blueprint(catalog_bp, url_prefix='/api/v1/catalog')
+app.register_blueprint(profiles_bp, url_prefix='/api/v1/profiles')
+app.register_blueprint(assets_bp, url_prefix='/api/v1/assets')
 
 
 @app.route("/", methods=["GET"])

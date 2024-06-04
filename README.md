@@ -42,7 +42,6 @@ To install all tools:
   asdf plugin add gcloud https://github.com/jthegedus/asdf-gcloud
   asdf plugin-add kubectl https://github.com/asdf-community/asdf-kubectl.git
   asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
-  asdf plugin add yarn https://github.com/twuni/asdf-yarn.git
   ```
 
 - From repo root install tools:
@@ -59,11 +58,14 @@ files in those subfolders.
 * Edit site data in sites/<sitename>/content
 * Publish changes with sites/publish.sh <sitename>
 
-Installing node dependencies
+### Node based Sites
+
+Installing node dependencies in a sites/ project
 
 ```bash
 asdf shell nodejs 22.2.0
-corepack enable
+cd ../sites/jungle2
+corepack enable pnpm
 asdf reshim nodejs
-yarn
+pnpm install
 ```
