@@ -2,14 +2,14 @@ import logging
 import os
 import sys
 
-from flask import Flask
-from flask_cors import CORS
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
-from blueprints.upload import upload_bp
-from blueprints.editor.editor import editor_bp
-from blueprints.catalog.catalog import catalog_bp
-from blueprints.profiles.profiles import profiles_bp
-from blueprints.assets.assets import assets_bp
+from routes.upload import router
+from routes.editor.editor import editor_bp
+from routes.catalog.catalog import router
+from routes.profiles.profiles import router
+from routes.assets.assets import router
 
 import db.connection as db_connection
 import log_config
@@ -19,21 +19,32 @@ from config import config
 # flask logging configuration
 log_config.configure()
 
-app = Flask(__name__)
-CORS(app,
-     resources={r"/*": {"origins": "*"}},
-     send_wildcard=True)
+app = FastAPI()
+
+origins = [
+    "https://api.mythica.ai",
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 config(app)
 logging.getLogger('flask_cors').level = logging.DEBUG
 logging.getLogger('flask_cors').addHandler(logging.StreamHandler(sys.stdout))
 app.logger.level = logging.DEBUG
 
-app.register_blueprint(upload_bp, url_prefix='/api/v1/upload')
+app.register_blueprint(router, url_prefix='/api/v1/upload')
 app.register_blueprint(editor_bp, url_prefix='/api/v1/editor')
-app.register_blueprint(catalog_bp, url_prefix='/api/v1/catalog')
-app.register_blueprint(profiles_bp, url_prefix='/api/v1/profiles')
-app.register_blueprint(assets_bp, url_prefix='/api/v1/assets')
+app.register_blueprint(router, url_prefix='/api/v1/catalog')
+app.register_blueprint(router, url_prefix='/api/v1/profiles')
+app.register_blueprint(router, url_prefix='/api/v1/assets')
 
 
 @app.route("/", methods=["GET"])

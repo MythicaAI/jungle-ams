@@ -5,18 +5,21 @@ from datetime import timezone
 from http import HTTPStatus
 
 from flask import Blueprint, request, jsonify
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError, BaseModel, HttpUrl
 
 from auth.generate_token import generate_token
 from db.schema.profiles import *
 from db.connection import get_session
+from routes.responses import ListResponse, ScalarResponse
 from sqlmodel import select, update, delete
 
 from db.validate_as_json import validate_as_json
 
-profiles_bp = Blueprint('profiles', __name__)
+router = APIRouter(prefix="/profiles")
 
 log = logging.getLogger(__name__)
+
 
 # Define a dictionary with the attributes you want to validate
 class CreateUpdateProfileModel(BaseModel):
@@ -28,11 +31,12 @@ class CreateUpdateProfileModel(BaseModel):
     profile_base_href: str | None = None
 
 
-class ProfileListModel(BaseModel):
+class ProfileResponseModel(BaseModel):
+    """A model with only allowed public properties for profile creation"""
     id: UUID = None
     name: str | None = None
-    description: str | None  = None
-    signature: str | None  = None
+    description: str | None = None
+    signature: str | None = None
     tags: dict | None
     profile_base_href: str | None = None
     active: bool = None
@@ -40,27 +44,40 @@ class ProfileListModel(BaseModel):
     updated: datetime | None = None
     email_verified: bool = None
 
-@profiles_bp.route('', methods=['GET'])
-def get_profiles():
+
+class ProfileScalarResponse(ScalarResponse):
+    result: ProfileResponseModel
+
+class ProfileListResponse(ListResponse):
+    results: list[ProfileResponseModel]
+
+@router.get('/')
+async def get_profiles() -> ProfileListResponse:
     with get_session() as session:
-        results = [ProfileListModel(**profile.model_dump()).model_dump() for profile in session.exec(select(Profile))]
-        return jsonify({'message': 'ok', 'result': results}), HTTPStatus.OK
+        return ProfileListResponse(
+            results=[ProfileResponseModel(**profile.model_dump()) for profile in session.exec(select(Profile))])
 
 
-@profiles_bp.route('<profile_id>', methods=['GET'])
-def get_profile(profile_id: str):
+@router.get('/{profile_id}')
+async def get_profile(profile_id: str) -> ProfileScalarResponse:
     UUID(hex=profile_id, version=4)  # validate the ID
     with get_session() as session:
-        result = session.exec(select(Profile).where(Profile.id == profile_id))
-        return jsonify({'message': 'ok', 'result': result}), HTTPStatus.OK
+        return ProfileScalarResponse(result=session.exec(select(Profile).where(Profile.id == profile_id)))
 
 
-@profiles_bp.route('/start_session/<profile_id>', methods=['GET'])
-def start_session(profile_id: str):
+class SessionStartResponse(ScalarResponse):
+    result: ProfileResponseModel
+    sessions: list[ProfileSession]
+    token: str
+
+@router.get('/start_session/{profile_id}')
+async def start_session(profile_id: str):
     UUID(hex=profile_id, version=4)  # validate the ID
     with get_session() as session:
         session.begin()
-        result = session.exec(update(Profile).values({'login_count': Profile.login_count + 1, 'active': True}).where(Profile.id == profile_id))
+        result = session.exec(update(Profile).values(
+            {'login_count': Profile.login_count + 1, 'active': True}).where(
+            Profile.id == profile_id))
         session.commit()
 
         if result.rowcount == 0:
@@ -90,8 +107,8 @@ def start_session(profile_id: str):
                         'sessions': [s.model_dump() for s in profile_sessions]}), HTTPStatus.OK
 
 
-@profiles_bp.route('/validate_email/<profile_id>', methods=['GET'])
-def validate_email(profile_id: str):
+@router.get('/validate_email/{profile_id}')
+async def validate_email(profile_id: str):
     UUID(hex=profile_id, version=4)  # validate the ID
     with get_session() as session:
         stmt = update(Profile).values({Profile.email_verified: True}).where(Profile.id == profile_id)
@@ -104,8 +121,8 @@ def validate_email(profile_id: str):
         return jsonify({'message': 'ok'}), HTTPStatus.OK
 
 
-@profiles_bp.route('create', methods=['POST'])
-def create_profile():
+@router.post('/create')
+async def create_profile():
     session = get_session()
     try:
         obj = dict(**request.json)
@@ -123,8 +140,8 @@ def create_profile():
     return jsonify({'message': 'ok', 'profile': profile.model_dump()})
 
 
-@profiles_bp.route('update/<profile_id>', methods=['POST'])
-def update_profile(profile_id: str):
+@router.post('/update/{profile_id}')
+async def update_profile(profile_id: str):
     """
     TODO: authentication
     """
@@ -148,5 +165,5 @@ def update_profile(profile_id: str):
     if rows_affected == 0:
         return jsonify({'error': 'missing profile'})
 
-    updated = session.exec(select(Profile).where(Profile.id==profile_id)).one()
+    updated = session.exec(select(Profile).where(Profile.id == profile_id)).one()
     return jsonify({'message': 'ok', 'profile': ProfileListModel(**updated.model_dump()).model_dump()}), HTTPStatus.OK

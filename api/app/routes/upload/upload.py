@@ -3,7 +3,7 @@ import os
 import uuid
 import logging
 
-from flask import Blueprint, request, jsonify, g, current_app as app
+from fastapi import APIRouter
 from http import HTTPStatus
 
 from storage import gcs_uploader, minio_uploader
@@ -22,10 +22,10 @@ from auth.data import get_profile
 
 log = logging.getLogger(__name__)
 
-upload_bp = Blueprint('upload', __name__)
+router = APIRouter(prefix="/upload")
 
 
-@upload_bp.before_request
+@router.before_request
 def configure_g_storage():
     if g.get('storage') is not None:
         return
@@ -34,8 +34,8 @@ def configure_g_storage():
     g.storage = minio_uploader.create_client()
 
 
-@upload_bp.route('/stream', methods=['POST'])
-def upload_stream():
+@router.post('/stream')
+async def upload_stream():
     original_filename = request.headers.get('X-Original-File-Name')
     if not original_filename:
         return jsonify({'error': 'Filename header missing'}), 400
@@ -59,8 +59,8 @@ def upload_stream():
     return jsonify({"message": "file saved"}), HTTPStatus.OK
 
 
-@upload_bp.route('/store', methods=['POST'])
-def upload():
+@router.post('/store')
+async def upload():
     profile = get_profile(request.headers.get('Authorization'))
 
     log.info("handling upload for profile: %s", profile)
@@ -123,8 +123,8 @@ def upload_internal(profile_id, file):
     return event_id
 
 
-@upload_bp.route('/pending', methods=['GET'])
-def pending_uploads():
+@router.get('/pending')
+async def pending_uploads():
     """Get the list of uploads that have been created for the current profile"""
     profile = get_profile(request.headers.get('Authorization'))
     with get_session() as session:

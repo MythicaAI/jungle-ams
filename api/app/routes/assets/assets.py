@@ -5,6 +5,7 @@ from uuid import UUID
 
 import sqlalchemy
 from flask import Blueprint, request, jsonify, g, current_app as app
+from fastapi import APIRouter
 from psycopg2 import IntegrityError
 from sqlmodel import select, update, insert
 
@@ -18,7 +19,7 @@ from pydantic import BaseModel, ValidationError
 
 ZERO_ID = UUID(int=0, version=4)
 
-assets_bp = Blueprint('assets', __name__)
+router = APIRouter(prefix="/assets")
 
 
 class CreateAssetModel(BaseModel):
@@ -71,8 +72,8 @@ def process_join_results(join_results):
     return [r.model_dump() for r in results_by_asset.values()]
 
 
-@assets_bp.route('all', methods=['GET'])
-def get_assets():
+@router.get('/all')
+async def get_assets():
     with get_session() as session:
         join_results = session.exec(
             select(Asset, AssetVersion, FileContent).where(
@@ -82,22 +83,22 @@ def get_assets():
         return jsonify({'message': 'ok', 'results': processed_results})
 
 
-@assets_bp.route('latest', methods=['GET'])
-def get_assets_by_latest_ts():
+@router.get('/latest')
+async def get_assets_by_latest_ts():
     with get_session() as session:
         results = session.exec(select(Asset).order_by(Asset.updated))
         return jsonify({'message': 'ok', 'results': [r.model_dump() for r in results]})
 
 
-@assets_bp.route('named/<asset_name>', methods=['GET'])
-def get_asset_by_name(asset_name):
+@router.get('/named/{asset_name}')
+async def get_asset_by_name(asset_name):
     with get_session() as session:
         results = session.exec(select(Asset).where('updated'))
         return jsonify({'message': 'ok', 'results': [r.model_dump() for r in results]})
 
 
-@assets_bp.route('<asset_id>', methods=['GET'])
-def get_asset_by_id(asset_id):
+@router.get('/{asset_id}')
+async def get_asset_by_id(asset_id):
     with get_session() as session:
         db_results = session.exec(
             select(Asset, AssetVersion, FileContent).where(
@@ -108,8 +109,8 @@ def get_asset_by_id(asset_id):
         return jsonify({'message': 'ok', 'results': results})
 
 
-@assets_bp.route('create', methods=['POST'])
-def create_asset():
+@router.post('/create')
+async def create_asset():
     profile = get_profile(request.headers.get('Authorization'))
     try:
         obj = dict(**request.json)
@@ -158,6 +159,6 @@ def create_asset():
                     }})
 
 
-@assets_bp.route('update', methods=['POST'])
-def update_asset():
+@router.post('/update')
+async def update_asset():
     pass
