@@ -17,7 +17,7 @@ class Profile(SQLModel, table=True):
     """
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=True)
+    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     name: str | None = None
     signature: str | None = None
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
@@ -38,7 +38,7 @@ class OrgRef(SQLModel, table=True):
     """
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: int | None = Field(primary_key=True, nullable=True)
+    id: int = Field(primary_key=True, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     profile_id: UUID = Field(foreign_key='profiles.id')
@@ -52,7 +52,7 @@ class Org(SQLModel, table=True):
     """
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=True)
+    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = None
@@ -66,7 +66,7 @@ class ProfileSession(SQLModel, table=True):
     """
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=True)
+    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     refreshed: datetime | None = None
