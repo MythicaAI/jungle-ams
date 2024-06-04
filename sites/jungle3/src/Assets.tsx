@@ -10,7 +10,6 @@ const assets = [
 const Assets = () => {
   return (
     <Box>
-      <Typography level="h2">Assets</Typography>
       <Table>
           <thead>
           <tr>

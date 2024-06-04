@@ -20,12 +20,13 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage/>,
     children: [
       {
-        path: "profile",
-        element: <ProfileSettings/>,
-      },
-      {
+        index: true,
         path: "assets",
         element: <Assets/>,
+      },
+      {
+        path: "profile",
+        element: <ProfileSettings/>,
       },
       {
         path: "uploads",

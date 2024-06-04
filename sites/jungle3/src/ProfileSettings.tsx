@@ -13,7 +13,6 @@ const userProfile = {
 const Settings = () => {
   return (
     <Box>
-      <Typography level="h2">Settings</Typography>
       <Avatar src={userProfile.profileImage} alt="Profile Image" />
       <FormControl>
         <FormLabel>

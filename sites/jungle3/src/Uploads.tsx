@@ -1,5 +1,5 @@
 import {Box, Typography, Button, Table, styled, Card} from '@mui/joy';
-import {LucideUploadCloud} from 'lucide-react';
+import {LucidePlusCircle, LucideUploadCloud} from 'lucide-react';
 import {ChangeEvent, FormEvent, useState} from "react";
 import {v4} from "uuid";
 
@@ -96,7 +96,13 @@ const Uploads = () => {
 
     return (
         <Box>
-            <Typography level="h2">Uploads</Typography>
+            <Button
+                component="label"
+                variant={"plain"}
+                color={"neutral"}
+                startDecorator={<LucidePlusCircle/>}>
+                New Asset
+            </Button>
             <Button
                 component="label"
                 role={undefined}
@@ -104,7 +110,7 @@ const Uploads = () => {
                 variant="plain"
                 color="neutral"
                 startDecorator={<LucideUploadCloud/>}>
-                Upload a file
+                Upload Files
                 <VisuallyHiddenInput type="file" id="file-input" accept=".hda" multiple={true} onChange={handleFileChanged}/>
             </Button>
             {<SubmitUploads />}
