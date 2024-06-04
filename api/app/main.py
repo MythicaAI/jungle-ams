@@ -35,11 +35,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(routes.upload.upload.router, prefix='/api/v1/upload')
-app.include_router(routes.editor.editor.router, prefix='/api/v1/editor')
-app.include_router(routes.profiles.profiles.router, prefix='/api/v1/profiles')
-app.include_router(routes.assets.assets.router, prefix='/api/v1/assets')
+api_prefix = "/api/v1"
+app.include_router(routes.upload.upload.router, prefix=api_prefix)
+app.include_router(routes.editor.editor.router, prefix=api_prefix)
+app.include_router(routes.profiles.profiles.router, prefix=api_prefix)
+app.include_router(routes.assets.assets.router, prefix=api_prefix)
 
 
 @app.get("/")

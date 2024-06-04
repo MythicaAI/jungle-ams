@@ -128,9 +128,7 @@ async def validate_email(profile_id: UUID) -> ScalarResponse:
 async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileScalarResponse:
     session = get_session()
     try:
-        obj = dict(**request.json)
-        req_model = CreateUpdateProfileModel.model_validate(obj=obj)
-        profile = Profile(**req_model.dict())
+        profile = Profile(**req_profile.dict())
     except TypeError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e))
     except ValidationError as e:
