@@ -1,8 +1,8 @@
 """initial tables
 
-Revision ID: 7bd967b3ea4e
+Revision ID: 0d6c49359ee9
 Revises: 
-Create Date: 2024-06-01 22:02:51.120906+00:00
+Create Date: 2024-06-04 02:44:56.632729+00:00
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7bd967b3ea4e'
+revision: str = '0d6c49359ee9'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -90,7 +90,7 @@ def upgrade() -> None:
     sa.Column('minor', sa.Integer(), nullable=False),
     sa.Column('patch', sa.Integer(), nullable=False),
     sa.Column('created', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('content_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('file_id', sqlmodel.sql.sqltypes.GUID(), nullable=False),
     sa.Column('friendly_name', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('tags', sa.JSON(), nullable=True),
     sa.Column('author', sqlmodel.sql.sqltypes.GUID(), nullable=False),
@@ -102,6 +102,7 @@ def upgrade() -> None:
     sa.Column('created', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated', sa.TIMESTAMP(timezone=True), nullable=True),
     sa.Column('deleted', sa.DateTime(), nullable=True),
+    sa.Column('published', sa.Boolean(), nullable=True),
     sa.Column('collection_id', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.Column('owner', sqlmodel.sql.sqltypes.GUID(), nullable=True),
     sa.ForeignKeyConstraint(['owner'], ['profiles.id'], ),

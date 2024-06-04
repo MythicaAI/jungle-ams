@@ -14,6 +14,8 @@ from db.schema.events import *
 from db.schema.media import *
 from db.schema.assets import *
 
+LOCAL_DB = "postgresql://test:test@localhost:5432/upload_pipeline"
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -43,7 +45,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = os.environ.get("SQL_URL").strip()
+    url = os.environ.get("SQL_URL", LOCAL_DB).strip()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -64,7 +66,7 @@ def run_migrations_online() -> None:
     """
     # Update the config with the environment
     config_dict = config.get_section(config.config_ini_section, {})
-    config_dict["sqlalchemy.url"] = os.environ.get("SQL_URL").strip()
+    config_dict["sqlalchemy.url"] = os.environ.get("SQL_URL", LOCAL_DB).strip()
     connectable = engine_from_config(
         config_dict,
         prefix="sqlalchemy.",

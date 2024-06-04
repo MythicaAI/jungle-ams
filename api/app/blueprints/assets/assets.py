@@ -1,4 +1,7 @@
+from datetime import datetime
 from http import HTTPStatus
+from typing import Dict, Any, List
+from uuid import UUID
 
 import sqlalchemy
 from flask import Blueprint, request, jsonify, g, current_app as app
@@ -6,8 +9,9 @@ from psycopg2 import IntegrityError
 from sqlmodel import select, update, insert
 
 from auth.data import get_profile
-from content.locate_content import locate_content
-from db.schema.assets import *
+from content.locate_content import locate_content_by_id
+from db.schema.assets import Asset, AssetVersion
+from db.schema.media import FileContent
 from db.connection import get_session
 
 from pydantic import BaseModel, ValidationError
@@ -22,34 +26,60 @@ class CreateAssetModel(BaseModel):
     major: int = 0
     minor: int = 1
     patch: int = 0
-    content_hash: str | None
+    file_id: UUID = None
     friendly_name: str
     tags: Dict[str, Any] | None = None
 
 
+class AssetVersionResultModel(BaseModel):
+    version: List[int] = None
+    owner: UUID = None
+    created: datetime = None
+    content_hash: str = None
+    file_id: UUID = None
+    size: int = None
+    friendly_name: str | None = None
+    tags: Dict[str, Any] | None = None
+
+
+class AssetHeadResultModel(BaseModel):
+    id: UUID | None = None
+    collection_id: UUID | None = None
+    versions: List[AssetVersionResultModel] = list()
+
+    def __hash__(self):
+        return hash(self.id)
+
+
 def process_join_results(join_results):
+    """Process the join result of Asset, AssetVersion and FileContent tables"""
     results_by_asset = dict()
     for join_result in join_results:
-        asset, ver = join_result
-        asset_unique_id = f"{asset.id}:{asset.collection_id}"
-        r = dict(
+        asset, ver, file = join_result
+        asset_head = results_by_asset.setdefault(
+            asset.id, AssetHeadResultModel(id=asset.id, collection_id=asset.collection_id))
+        asset_version = AssetVersionResultModel(
             version=[ver.major, ver.minor, ver.patch],
             owner=asset.owner,
-            created=ver.created,
-            content_hash=ver.content_hash,
+            author=ver.created,
+            file_id=file.id,
+            content_hash=file.content_hash,
+            size=file.size,
             friendly_name=ver.friendly_name,
             tags=ver.tags)
-        results_by_asset.setdefault(asset_unique_id, list()).append(r)
-    return results_by_asset
+        asset_head.versions.append(asset_version)
+    return [r.model_dump() for r in results_by_asset.values()]
 
 
 @assets_bp.route('all', methods=['GET'])
 def get_assets():
     with get_session() as session:
-        join_results = session.exec(select(Asset, AssetVersion).where(Asset.id == AssetVersion.asset_id)).all()
+        join_results = session.exec(
+            select(Asset, AssetVersion, FileContent).where(
+                Asset.id == AssetVersion.asset_id).where(
+                AssetVersion.file_id == FileContent.id)).all()
         processed_results = process_join_results(join_results)
         return jsonify({'message': 'ok', 'results': processed_results})
-
 
 
 @assets_bp.route('latest', methods=['GET'])
@@ -69,7 +99,11 @@ def get_asset_by_name(asset_name):
 @assets_bp.route('<asset_id>', methods=['GET'])
 def get_asset_by_id(asset_id):
     with get_session() as session:
-        db_results = session.exec(select(Asset, AssetVersion).where(Asset.id == asset_id).where(Asset.id == AssetVersion.asset_id))
+        db_results = session.exec(
+            select(Asset, AssetVersion, FileContent).where(
+                Asset.id == asset_id).where(
+                Asset.id == AssetVersion.asset_id).where(
+                AssetVersion.file_id == FileContent.id))
         results = process_join_results(db_results)
         return jsonify({'message': 'ok', 'results': results})
 
@@ -86,10 +120,11 @@ def create_asset():
         return e.json(), HTTPStatus.BAD_REQUEST
 
     try:
-        file_content = locate_content(r.content_hash)
+        file = locate_content_by_id(r.file_id)
     except FileNotFoundError:
-        return jsonify({'error': f"content hash '{r.content_hash}' not found"}), HTTPStatus.NOT_FOUND
+        return jsonify({'error': f"file '{r.file_id}' not found"}), HTTPStatus.NOT_FOUND
 
+    version = [r.major, r.minor, r.patch]
     with get_session() as session:
         if r.id is None or r.id == ZERO_ID:
             asset_result = session.exec(insert(Asset).values(owner=profile.id))
@@ -97,12 +132,12 @@ def create_asset():
         else:
             asset_id = r.id
         try:
-            asset_version_result = session.exec(insert(AssetVersion).values(
+            session.exec(insert(AssetVersion).values(
                 asset_id=asset_id,
                 major=r.major,
                 minor=r.minor,
                 patch=r.patch,
-                content_hash=r.content_hash,
+                file_id=r.file_id,
                 friendly_name=r.friendly_name,
                 tags=r.tags,
                 author=profile.id))
@@ -110,14 +145,16 @@ def create_asset():
             return jsonify({
                 'error': f'asset version {[r.major, r.minor, r.patch]} exists',
                 'asset_id': asset_id,
-                'version': [r.major, r.minor, r.patch]}), HTTPStatus.CONFLICT
-
-        asset_version_id = asset_version_result.inserted_primary_key[0]
+                'version': version}), HTTPStatus.CONFLICT
         session.commit()
     return jsonify({'message': 'ok',
                     'result': {
                         'asset_id': asset_id,
-                        'asset_version_id': asset_version_id
+                        'file_id': file.id,
+                        'content_hash': file.content_hash,
+                        'size': file.size,
+                        'author': profile.id,
+                        'version': version
                     }})
 
 

@@ -21,6 +21,7 @@ class Asset(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = None
+    published: bool | None = False
     collection_id: UUID | None = uuid4()
     owner: UUID | None = Field(foreign_key='profiles.id')
 
@@ -36,7 +37,7 @@ class AssetVersion(SQLModel, table=True):
     minor: int = Field(primary_key=True, nullable=False)
     patch: int = Field(primary_key=True, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    content_hash: str = None
+    file_id: UUID = uuid4()
     friendly_name: str | None = None
     tags: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
     author: UUID = Field(foreign_key='profiles.id')
