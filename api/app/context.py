@@ -4,7 +4,7 @@ import flask
 
 
 class RequestContext:
-    def __init__(self, request: flask.Request):
+    def __init__(self):
         self.filename = ''
         self.local_filepath = ''
         self.profile_id = UUID(int=0, version=4)

@@ -5,19 +5,20 @@ import sys
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes.upload import router
-from routes.editor.editor import editor_bp
-from routes.catalog.catalog import router
-from routes.profiles.profiles import router
-from routes.assets.assets import router
+import routes.upload.upload
+import routes.editor.editor
+import routes.profiles.profiles
+import routes.assets.assets
 
 import db.connection as db_connection
 import log_config
-from config import config
+from config import app_config
 
 # This must run before the app is created to override the default
 # flask logging configuration
 log_config.configure()
+
+log = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -35,31 +36,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-config(app)
-logging.getLogger('flask_cors').level = logging.DEBUG
-logging.getLogger('flask_cors').addHandler(logging.StreamHandler(sys.stdout))
-app.logger.level = logging.DEBUG
-
-app.register_blueprint(router, url_prefix='/api/v1/upload')
-app.register_blueprint(editor_bp, url_prefix='/api/v1/editor')
-app.register_blueprint(router, url_prefix='/api/v1/catalog')
-app.register_blueprint(router, url_prefix='/api/v1/profiles')
-app.register_blueprint(router, url_prefix='/api/v1/assets')
+app.include_router(routes.upload.upload.router, prefix='/api/v1/upload')
+app.include_router(routes.editor.editor.router, prefix='/api/v1/editor')
+app.include_router(routes.profiles.profiles.router, prefix='/api/v1/profiles')
+app.include_router(routes.assets.assets.router, prefix='/api/v1/assets')
 
 
-@app.route("/", methods=["GET"])
+@app.get("/")
 def root():
-    app.logger.info('Root endpoint hit')
+    log.info('Root endpoint hit')
     return "Alive and well"
 
 
-if __name__ == '__main__':
+def main():
     # setup logging and validate dependencies before serving clients
     db_connection.validate()
-
+    cfg = app_config()
     print('database validated')
-    print(f"temporary upload folder is {app.config['UPLOAD_FOLDER']}")
+    print(f"temporary upload folder is {cfg.upload_folder}")
 
-    listen_addr = os.environ.get('HTTP_LISTEN_ADDR', '0.0.0.0')
-    port = int(os.environ.get('HTTP_LISTEN_PORT', 5555))
-    app.run(debug=True, host=listen_addr, port=port)
+
+if __name__ == '__main__':
+    main()
+

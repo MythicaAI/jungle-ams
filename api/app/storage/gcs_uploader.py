@@ -6,11 +6,13 @@ from flask import jsonify
 from google.cloud import storage
 
 import storage.minio_uploader as minio_uploader
+from config import app_config
 
 from context import RequestContext
+from storage.storage_client import StorageClient
 
 
-class Client:
+class Client(StorageClient):
     def __init__(self, gcs: storage.Client):
         self.gcs = gcs
 
@@ -37,6 +39,6 @@ class Client:
 
 
 def create_client():
-    if os.environ.get('GCP_SERVICE_ENABLE') is not None:
+    if app_config().gcp_service_enable:
         return Client(storage.Client())  # use default impersonation settings
     return minio_uploader.create_client()
