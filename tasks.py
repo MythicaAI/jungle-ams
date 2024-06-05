@@ -140,6 +140,13 @@ def storage_tail(c, container=''):
         c.run(f'docker compose logs -f {container}', pty=True)
 
 
+@task(pre=[storage_stop])
+def storage_nuke(c):
+    answer = input("Continue? Type 'nuke' to confirm: ")
+    if answer.upper() in ["NUKE"]:
+        os.rmdir(os.path.join(BASE_DIR, 'testing/mnt/pgdata/data'))
+
+
 @task
 def web_start(c):
     start_docker_compose(c, TESTING_WEB_DIR)
