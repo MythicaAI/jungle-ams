@@ -37,6 +37,7 @@ class ProfileResponseModel(BaseModel):
     id: UUID = None
     name: str | None = None
     description: str | None = None
+    email: str | None = None
     signature: str | None = None
     tags: dict | None
     profile_base_href: str | None = None
