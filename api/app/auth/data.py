@@ -8,15 +8,12 @@ from fastapi import HTTPException
 
 def get_profile(authorization: str) -> Profile:
     """Given an auth bearer header value, return a Profile object"""
-    if authorization is None:
+    if not authorization:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='Authorization header missing')
 
     auth_parts = authorization.split(' ')
-    if not authorization.startswith('Bearer '):
+    if len(auth_parts) != 2 or not auth_parts[0] == 'Bearer':
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='Invalid Authorization header')
-
-    if len(auth_parts) != 2:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='Bad Authorization header')
 
     if not validate_token(auth_parts[1]):
         raise HTTPException(HTTPStatus.UNAUTHORIZED, detail='Invalid token')

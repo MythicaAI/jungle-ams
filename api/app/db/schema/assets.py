@@ -37,10 +37,10 @@ class AssetVersion(SQLModel, table=True):
     minor: int = Field(primary_key=True, nullable=False)
     patch: int = Field(primary_key=True, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    file_id: UUID = uuid4()
-    friendly_name: str | None = None
-    tags: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    name: str | None = None
     author: UUID = Field(foreign_key='profiles.id')
+    package_id: UUID | None = Field(foreign_key='files.id')
+    contents: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class Topology(SQLModel, table=True):

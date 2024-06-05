@@ -57,7 +57,6 @@ class Org(SQLModel, table=True):
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = None
     description: str | None = None
-    tags: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class ProfileSession(SQLModel, table=True):

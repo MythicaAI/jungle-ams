@@ -9,6 +9,7 @@ import routes.upload.upload
 import routes.editor.editor
 import routes.profiles.profiles
 import routes.assets.assets
+import routes.files.files
 
 import db.connection as db_connection
 import log_config
@@ -40,6 +41,7 @@ app.include_router(routes.upload.upload.router, prefix=api_prefix)
 app.include_router(routes.editor.editor.router, prefix=api_prefix)
 app.include_router(routes.profiles.profiles.router, prefix=api_prefix)
 app.include_router(routes.assets.assets.router, prefix=api_prefix)
+app.include_router(routes.files.files.router, prefix=api_prefix)
 
 
 @app.get("/")

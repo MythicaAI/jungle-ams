@@ -17,7 +17,7 @@ from sqlmodel import select, update, delete
 
 from db.validate_as_json import validate_as_json
 
-router = APIRouter(prefix="/profiles")
+router = APIRouter(prefix="/profiles", tags=["profiles"])
 
 log = logging.getLogger(__name__)
 
@@ -32,14 +32,14 @@ class CreateUpdateProfileModel(BaseModel):
     profile_base_href: str | None = None
 
 
-class ProfileResponseModel(BaseModel):
+class ProfileResponse(BaseModel):
     """A model with only allowed public properties for profile creation"""
     id: UUID = None
     name: str | None = None
     description: str | None = None
     email: str | None = None
     signature: str | None = None
-    tags: dict | None
+    tags: dict | None = Field(default={})
     profile_base_href: str | None = None
     active: bool = None
     created: datetime = None
@@ -47,32 +47,28 @@ class ProfileResponseModel(BaseModel):
     email_verified: bool = None
 
 
-class ProfileScalarResponse(ScalarResponse):
-    result: ProfileResponseModel
-
-
-class ProfileListResponse(ListResponse):
-    results: list[ProfileResponseModel]
-
-
-class SessionStartResponse(ScalarResponse):
-    result: ProfileResponseModel
-    sessions: list[ProfileSession]
+class SessionStartResponse(BaseModel):
     token: str
+    profile: ProfileResponse
+    sessions: list[ProfileSession]
 
+
+class ValidateEmailResponse(BaseModel):
+    profile_id: UUID
 
 @router.get('/')
-async def get_profiles() -> ProfileListResponse:
+async def get_profiles() -> list[ProfileResponse]:
     with get_session() as session:
-        return ProfileListResponse(
-            results=[ProfileResponseModel(**profile.model_dump()) for profile in session.exec(select(Profile))])
+        return [ProfileResponse(**profile.model_dump())
+                for profile in session.exec(select(Profile))]
 
 
 @router.get('/{profile_id}')
-async def get_profile(profile_id: str) -> ProfileScalarResponse:
+async def get_profile(profile_id: str) -> ProfileResponse:
     UUID(hex=profile_id, version=4)  # validate the ID
     with get_session() as session:
-        return ProfileScalarResponse(result=session.exec(select(Profile).where(Profile.id == profile_id)))
+        profile = session.exec(select(Profile).where(Profile.id == profile_id)).first()
+        return ProfileResponse(**profile.model_dump())
 
 
 @router.get('/start_session/{profile_id}')
@@ -92,6 +88,7 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
 
         # Generate a new token
         profile = session.exec(select(Profile).where(Profile.id == profile_id)).first()
+        profile_data = profile.model_dump()
         token = generate_token(profile)
 
         # Add a new session
@@ -104,29 +101,34 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
         session.add(profile_session)
         session.commit()
 
-        profile_sessions = session.exec(select(ProfileSession).where(ProfileSession.profile_id == profile_id)).all()
+        sessions = session.exec(select(ProfileSession).where(ProfileSession.profile_id == profile_id)).all()
+        sessions = [ProfileSession(**s.model_dump()) for s in sessions]
 
-        return SessionStartResponse(
-                        profile=profile.model_dump(),
-                        token=token,
-                        sessions=[s.model_dump() for s in profile_sessions])
+        profile_summary = ProfileResponse(**profile_data)
+
+        result = SessionStartResponse(
+            token=token,
+            profile=profile_summary,
+            sessions=sessions)
+        return result
 
 
 @router.get('/validate_email/{profile_id}')
-async def validate_email(profile_id: UUID) -> ScalarResponse:
+async def validate_email(profile_id: UUID) -> ValidateEmailResponse:
     with get_session() as session:
-        stmt = update(Profile).values({Profile.email_verified: True}).where(Profile.id == profile_id)
+        stmt = update(Profile).values({Profile.email_verified: True}).where(
+            Profile.id == profile_id)
         stmt_sql = str(stmt)
         log.info(stmt_sql)
         result = session.exec(stmt)
         if result.rowcount == 0:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail='profile not found')
         session.commit()
-        return ScalarResponse(result=profile_id)
+        return ValidateEmailResponse(profile_id=profile_id)
 
 
 @router.post('/create')
-async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileScalarResponse:
+async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     session = get_session()
     try:
         profile = Profile(**req_profile.dict())
@@ -139,22 +141,21 @@ async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileScalar
     session.commit()
     session.refresh(profile)
 
-    return ProfileScalarResponse(
-        result=ProfileResponseModel(**profile.model_dump()))
+    return ProfileResponse(**profile.model_dump())
 
 
 @router.post('/update/{profile_id}')
-async def update_profile(profile_id: UUID, req_profile: CreateUpdateProfileModel) -> ProfileScalarResponse:
+async def update_profile(profile_id: UUID, req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     """
     TODO: authentication
     """
-    filtered_update = {'updated': None}
     session = get_session(echo=True)
-    stmt = update(Profile).where(Profile.id == profile_id).values(**filtered_update)
+    stmt = update(Profile).where(Profile.id == profile_id).values(**req_profile.model_dump())
     result = session.execute(stmt)
     rows_affected = result.rowcount
     if rows_affected == 0:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
+    session.commit()
 
     updated = session.exec(select(Profile).where(Profile.id == profile_id)).one()
-    return ProfileScalarResponse(response=ProfileResponseModel(**updated.model_dump()))
+    return ProfileResponse(**updated.model_dump())

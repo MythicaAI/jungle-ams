@@ -1,5 +1,6 @@
 import hashlib
 import os
+import shutil
 import uuid
 import logging
 from functools import lru_cache
@@ -29,23 +30,22 @@ from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/upload")
+router = APIRouter(prefix="/upload", tags=["upload"])
 
 
-class PendingUploadsResponse(ListResponse):
-    results: list[FileContent]
-    total_size: int
-
-
-async def current_profile(authorization: str = Annotated[str, Header("Authorization")]):
+async def current_profile(authorization: str = Header("Authorization")):
     return get_profile(authorization)
 
 
 @lru_cache
-async def storage_client():
+def create_storage_client() -> StorageClient:
     if app_config().gcs_service_enable:
         return gcs_uploader.create_client()  # use default impersonation settings
     return minio_uploader.create_client()
+
+
+async def storage_client() -> StorageClient:
+    return create_storage_client()
 
 
 # @router.post('/stream')
@@ -78,29 +78,31 @@ class UploadResponse(BaseModel):
     files: list[uuid.UUID]
     events: list[uuid.UUID]
 
+
 @router.post('/store')
 async def upload(
-        profile: Annotated[Profile, Depends(current_profile)],
-        storage: Annotated[StorageClient, Depends(storage_client)],
-        files: list[UploadFile]) -> UploadResponse:
+        files: list[UploadFile] = File(...),
+        profile: Profile = Depends(current_profile),
+        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
     log.info("handling upload for profile: %s", profile)
+    storage.validate()
 
     if not files:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
 
-    files = list()
+    contents = list()
     events = list()
     for file in files:
-        file_id, event_id = upload_internal(profile.id, file)
-        files.append(file_id)
+        file_id, event_id = upload_internal(storage, profile.id, file)
+        contents.append(file_id)
         events.append(event_id)
     return UploadResponse(
         message=f'uploaded {len(events)} files',
-        files=files,
+        files=contents,
         events=events)
 
 
-def upload_internal(profile_id, upload_file):
+def upload_internal(storage, profile_id, upload_file):
     cfg = app_config()
     ctx = RequestContext()
     ctx.profile_id = profile_id
@@ -115,9 +117,9 @@ def upload_internal(profile_id, upload_file):
     ctx.filename = filename
     ctx.local_filepath = os.path.join(cfg.upload_folder, filename)
 
-    upload_file.save(ctx.local_filepath)
-    log.info(
-        f'{filename} saved to {ctx.local_filepath}')
+    with open(ctx.local_filepath, 'wb') as f:
+        shutil.copyfileobj(upload_file.file, f)
+    log.info(f'{filename} saved to {ctx.local_filepath}')
 
     with open(ctx.local_filepath, "rb") as f:
         content = f.read()
@@ -128,9 +130,9 @@ def upload_internal(profile_id, upload_file):
         f"file info: {ctx.local_filepath}, size: {ctx.file_size}, hash: {ctx.content_hash}")
 
     # Upload to bucket storage
-    if cfg.enable_storeage:
+    if cfg.enable_storage:
         bucket_name = cfg.bucket_name
-        storage_client_ref.upload(ctx, bucket_name)
+        storage.upload(ctx, bucket_name)
 
     # Update database index
     if cfg.enable_db:
@@ -147,13 +149,7 @@ def upload_internal(profile_id, upload_file):
 
 @router.get('/pending')
 async def pending_uploads(
-        profile: Annotated[Profile, Depends(current_profile)]) -> PendingUploadsResponse:
+        profile: Annotated[Profile, Depends(current_profile)]) -> list[FileContent]:
     """Get the list of uploads that have been created for the current profile"""
     with get_session() as session:
-        uploaded = session.exec(select(FileContent).where(FileContent.owner == profile.id))
-        results = list()
-        size_bytes = 0
-        for u in uploaded:
-            results.append(u.model_dump())
-            size_bytes += u.size
-        return PendingUploadsResponse(total_size=size_bytes, results=results)
+        return session.exec(select(FileContent).where(FileContent.owner == profile.id)).all()

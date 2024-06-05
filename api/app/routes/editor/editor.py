@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 
 # Create the router and load the templates
-router = APIRouter()
+router = APIRouter(prefix="/editor", tags=["editor"])
 templates = Jinja2Templates(directory="templates")
 router.mount("/static", StaticFiles(directory=static_dir), name="static")
 
