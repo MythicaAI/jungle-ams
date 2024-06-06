@@ -1,14 +1,13 @@
 import hashlib
 import logging
-import os
-from http import HTTPStatus
 from io import BytesIO
 
-from flask import jsonify
 from minio import Minio
 from minio.error import S3Error
 
+from config import app_config
 from context import RequestContext
+from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +22,7 @@ def _create_bucket(client: Minio, bucket_name: str):
         log.debug(f"bucket {bucket_name} already exists")
 
 
-class Client:
+class Client(StorageClient):
     def __init__(self, minio):
         self.minio = minio
 
@@ -91,10 +90,11 @@ class Client:
 
 
 def create_client():
-    tls_enable = os.environ.get('MINO_TLS_ENABLE') is not None
-    access = os.environ.get("MINIO_ACCESS_KEY", 'foo-access')
-    secret = os.environ.get("MINIO_SECRET_KEY", 'bar-secret')
-    endpoint = os.environ.get("MINIO_ENDPOINT", 'localhost:9000')
+    cfg = app_config()
+    tls_enable = cfg.minio_tls_enable
+    access = cfg.minio_access_key
+    secret = cfg.minio_secret_key
+    endpoint = cfg.minio_endpoint
     log.info("MINIO_ENDPOINT: %s", endpoint)
     log.info("MINIO_ACCESS_KEY: %s", access)
     return Client(Minio(endpoint,

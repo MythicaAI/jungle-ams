@@ -17,7 +17,7 @@ class Event(SQLModel, table=True):
     """
     __tablename__ = "events"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID | None = Field(primary_key=True, default_factory=uuid4, nullable=True)
+    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     event_type: str = None
     queued: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     acked: datetime | None = None

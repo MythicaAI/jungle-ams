@@ -10,7 +10,7 @@ const assets = [
 const Assets = () => {
   return (
     <Box>
-      <Table>
+      <Table>s
           <thead>
           <tr>
               <th>Name</th>

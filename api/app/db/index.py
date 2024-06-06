@@ -7,8 +7,7 @@ from db.schema.media import FileContent
 from db.schema.events import Event
 from context import RequestContext
 from db.connection import get_session
-from flask import jsonify
-from sqlmodel import insert, select
+from sqlmodel import insert
 
 
 log = logging.getLogger(__name__)

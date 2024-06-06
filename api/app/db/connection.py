@@ -2,7 +2,9 @@ import os
 
 from sqlmodel import create_engine, Session
 
-engine_url = os.environ.get('SQL_URL', 'postgresql://test:test@localhost:5432/upload_pipeline').strip()
+from config import app_config
+
+engine_url = app_config().sql_url.strip()
 engine = create_engine(engine_url)
 
 

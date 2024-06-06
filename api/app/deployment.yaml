@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - env:
-            - name: GUNICORN_WORKER_COUNT
+            - name: WORKER_COUNT
               value: "3"
             - name: GCP_SERVICE_ENABLE
               value: "true"

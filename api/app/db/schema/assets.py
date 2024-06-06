@@ -17,7 +17,7 @@ class Asset(SQLModel, table=True):
     """
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=True)
+    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = None
@@ -36,11 +36,12 @@ class AssetVersion(SQLModel, table=True):
     major: int = Field(primary_key=True, nullable=False)
     minor: int = Field(primary_key=True, nullable=False)
     patch: int = Field(primary_key=True, nullable=False)
+    commit_ref: str | None = None
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    file_id: UUID = uuid4()
-    friendly_name: str | None = None
-    tags: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    name: str | None = None
     author: UUID = Field(foreign_key='profiles.id')
+    package_id: UUID | None = Field(foreign_key='files.id')
+    contents: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class Topology(SQLModel, table=True):
@@ -49,7 +50,7 @@ class Topology(SQLModel, table=True):
     """
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: int | None = Field(primary_key=True, nullable=True)
+    id: int = Field(primary_key=True, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     name: str | None = None
     description: str | None = None
@@ -62,7 +63,7 @@ class AssetRef(SQLModel, table=True):
     """
     __tablename__ = "asset_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    src: UUID | None = Field(primary_key=True, nullable=True)
-    dst: UUID | None = Field(primary_key=True, nullable=True)
+    src: UUID = Field(primary_key=True, nullable=False)
+    dst: UUID = Field(primary_key=True, nullable=False)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
     topology_id: int | None = Field(foreign_key='topologies.id')

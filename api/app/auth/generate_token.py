@@ -2,10 +2,11 @@ import hashlib
 import os
 
 from auth.cookie import profile_to_cookie
+from config import app_config
 from db.schema.profiles import Profile
 
 DIGEST_SIZE: int = 32
-_SECRET: bytes = os.environ.get("SECRET_KEY", 'invalid').encode('utf-8')
+_SECRET: bytes = app_config().secret_key.encode('utf-8')
 _PERSON: bytes = "auth_token".encode('utf-8')
 
 
@@ -23,4 +24,3 @@ def validate_token(token: str) -> bool:
     h = hashlib.blake2b(digest_size=DIGEST_SIZE, key=_SECRET, person=_PERSON)
     h.update(cookie.encode('utf-8'))
     return signature == h.hexdigest()
-

@@ -16,8 +16,6 @@ from db.schema.assets import *
 
 from config import app_config
 
-LOCAL_DB = "postgresql://test:test@localhost:5432/upload_pipeline"
-
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
