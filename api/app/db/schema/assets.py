@@ -36,6 +36,7 @@ class AssetVersion(SQLModel, table=True):
     major: int = Field(primary_key=True, nullable=False)
     minor: int = Field(primary_key=True, nullable=False)
     patch: int = Field(primary_key=True, nullable=False)
+    commit_ref: str | None = None
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     name: str | None = None
     author: UUID = Field(foreign_key='profiles.id')

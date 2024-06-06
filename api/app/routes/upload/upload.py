@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Header, Depends
 from http import HTTPStatus
 
 from config import app_config
+from routes.authorization import current_profile
 from routes.responses import ListResponse
 from storage import gcs_uploader, minio_uploader
 
@@ -31,10 +32,6 @@ from storage.storage_client import StorageClient
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
-
-
-async def current_profile(authorization: str = Header("Authorization")):
-    return get_profile(authorization)
 
 
 @lru_cache

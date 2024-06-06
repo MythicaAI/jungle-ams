@@ -23,7 +23,6 @@ class Profile(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     active: bool | None = False
-    tags: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
     profile_base_href: str | None = None
     description: str | None = None
     email: str | None = None

@@ -1,21 +1,17 @@
-import hashlib
 import logging
-import os
 from datetime import timezone
 from http import HTTPStatus
 
-from flask import Blueprint, request, jsonify
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import ValidationError, BaseModel, HttpUrl
+from pydantic import ValidationError, BaseModel
 
 from auth.generate_token import generate_token
 from config import app_config
 from db.schema.profiles import *
 from db.connection import get_session
-from routes.responses import ListResponse, ScalarResponse
 from sqlmodel import select, update, delete
 
-from db.validate_as_json import validate_as_json
+from routes.authorization import current_profile
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -28,7 +24,6 @@ class CreateUpdateProfileModel(BaseModel):
     name: str = None
     description: str | None = None
     signature: str | None = None
-    tags: dict | None = None
     profile_base_href: str | None = None
 
 
@@ -39,7 +34,6 @@ class ProfileResponse(BaseModel):
     description: str | None = None
     email: str | None = None
     signature: str | None = None
-    tags: dict | None = Field(default={})
     profile_base_href: str | None = None
     active: bool = None
     created: datetime = None
@@ -127,7 +121,7 @@ async def validate_email(profile_id: UUID) -> ValidateEmailResponse:
         return ValidateEmailResponse(profile_id=profile_id)
 
 
-@router.post('/create')
+@router.post('/', status_code=HTTPStatus.CREATED)
 async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     session = get_session()
     try:
@@ -144,11 +138,14 @@ async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileRespon
     return ProfileResponse(**profile.model_dump())
 
 
-@router.post('/update/{profile_id}')
-async def update_profile(profile_id: UUID, req_profile: CreateUpdateProfileModel) -> ProfileResponse:
-    """
-    TODO: authentication
-    """
+@router.post('/{profile_id}')
+async def update_profile(
+        profile_id: UUID,
+        req_profile: CreateUpdateProfileModel,
+        profile: Profile = Depends(current_profile)) -> ProfileResponse:
+    if profile_id != profile.id:
+        raise HTTPException(HTTPStatus.FORBIDDEN, detail='profile not authenticated')
+
     session = get_session(echo=True)
     stmt = update(Profile).where(Profile.id == profile_id).values(**req_profile.model_dump())
     result = session.execute(stmt)
