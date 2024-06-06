@@ -10,21 +10,23 @@ const assets = [
 const Assets = () => {
   return (
     <Box>
-      <Table>s
+      <Table>
           <thead>
-          <tr>
-              <th>Name</th>
-              <th>Version</th>
-              <th>Author</th>
-          </tr>
+              <tr>
+                  <th>Name</th>
+                  <th>Version</th>
+                  <th>Author</th>
+              </tr>
           </thead>
-        {assets.map(asset => (
-            <tr key={asset.id}>
-                <td><Link to={"/assets/:assetId:"}>{asset.name}</Link></td>
-                <td>{asset.version}</td>
-                <td>{asset.author}</td>
-            </tr>
-        ))}
+          <tbody>
+            {assets.map(asset => (
+                <tr key={asset.id}>
+                    <td><Link to={"/assets/:assetId:"}>{asset.name}</Link></td>
+                    <td>{asset.version}</td>
+                    <td>{asset.author}</td>
+                </tr>
+            ))}
+          </tbody>
       </Table>
     </Box>
   );

@@ -15,14 +15,14 @@ const AssetEdit: React.FC = () => {
               <FormLabel>
                 Name
               </FormLabel>
-              <Input variant="outlined" fullWidth />
+              <Input variant="outlined" />
 
             </FormControl>
             <FormControl>
               <FormLabel>
                 Description
               </FormLabel>
-              <Textarea variant="outlined" fullWidth multiline rows={4} />
+              <Textarea variant="outlined" multiline="true" rows={4} />
 
             </FormControl>
             <FormControl>

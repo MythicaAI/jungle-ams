@@ -6,20 +6,34 @@ import {
     Tabs,
     TabPanel,
     Typography, TabList,
-    Box,
     Sheet
 } from "@mui/joy";
 
-import Assets from "./Assets.tsx";
-import Uploads from "./Uploads.tsx";
-import ProfileSettings from "./ProfileSettings.tsx";
-import {Outlet, Link } from "react-router-dom";
-import {useRef} from "react";
+import {Outlet, Link, useLocation} from "react-router-dom";
+import {useEffect, useState} from "react";
 
 function App() {
-    const tabsChanged = (e: React.SyntheticEvent<Element>, value: string): void => {
+    const tabsChanged = (_, value: number): void => {
         console.log("tab value " + value);
+        setActiveTab(value)
     }
+    const location = useLocation();
+    const [activeTab, setActiveTab] = useState(0);
+
+    useEffect(() => {
+        switch (location.pathname) {
+            case '/uploads':
+                setActiveTab(1);
+                break;
+            case '/profile':
+                setActiveTab(2);
+                break;
+            case '/':
+            default:
+                setActiveTab(0);
+                break;
+        }
+    }, [location.pathname]);
 
     return (
         <CssVarsProvider>
@@ -31,7 +45,7 @@ function App() {
                 </Typography>
                 <Tabs orientation='vertical' variant='outlined' onChange={tabsChanged}>
                     <TabList>
-                        <Tab variant="plain" color="neutral" component={Link} to={"/assets"}>
+                        <Tab variant="plain" color="neutral" component={Link} to={"/"}>
                             Assets
                         </Tab>
                         <Tab variant="plain" color="neutral" component={Link} to={"/uploads"}>
@@ -42,13 +56,13 @@ function App() {
                         </Tab>
                     </TabList>
                     <TabPanel value={0}>
-                    <Outlet/>
+                        {activeTab === 0 && <Outlet />}
                     </TabPanel>
                     <TabPanel value={1}>
-                    <Uploads />
+                        {activeTab === 1 && <Outlet />}
                     </TabPanel>
                     <TabPanel value={2}>
-                    <ProfileSettings />
+                        {activeTab === 2 && <Outlet />}
                     </TabPanel>
                 </Tabs>
             </Sheet>
