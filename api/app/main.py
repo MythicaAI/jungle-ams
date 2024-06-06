@@ -16,7 +16,7 @@ import log_config
 from config import app_config
 
 # This must run before the app is created to override the default
-# flask logging configuration
+# default logging configuration
 log_config.configure()
 
 log = logging.getLogger(__name__)

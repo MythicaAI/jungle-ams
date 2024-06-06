@@ -1,8 +1,6 @@
 import os
-from http import HTTPStatus
 from io import BytesIO
 
-from flask import jsonify
 from google.cloud import storage
 
 import storage.minio_uploader as minio_uploader

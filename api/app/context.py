@@ -1,6 +1,5 @@
 from datetime import timezone, datetime
 from uuid import UUID
-import flask
 
 
 class RequestContext:
