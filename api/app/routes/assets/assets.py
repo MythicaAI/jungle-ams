@@ -252,3 +252,4 @@ async def get_asset_version_by_id(
             commit_ref=version.commit_ref,
             created=version.created,
             contents=version.contents)
+

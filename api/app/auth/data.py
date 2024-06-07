@@ -2,8 +2,10 @@ from http import HTTPStatus
 
 from auth.cookie import cookie_to_profile
 from auth.generate_token import validate_token
-from db.schema.profiles import Profile
+from db.schema.profiles import Profile, OrgRef
 from fastapi import HTTPException
+from uuid import UUID
+from sqlmodel import Session, select
 
 
 def get_profile(authorization: str) -> Profile:
@@ -21,3 +23,18 @@ def get_profile(authorization: str) -> Profile:
     cookie_data = auth_parts[1].split(':')[0]
     profile = cookie_to_profile(cookie_data)
     return profile
+
+
+def resolve_profile(session, profile: Profile) -> Profile:
+   profile = session.exec(
+       select(Profile).where(Profile.id == profile.id)).first()
+   if profile is None:
+       raise HTTPException(HTTPStatus.NOT_FOUND, detail=f'Profile {profile.id} not found')
+   return profile
+
+
+def resolve_roles(session: Session, profile: Profile, org_id: UUID) -> set[str]:
+    """Get the set of roles for a profile in an org"""
+    org_refs = session.exec(select(OrgRef).where(
+        OrgRef.org_id == org_id, OrgRef.profile_id == profile.id)).all()
+    return {o.role for o in org_refs}

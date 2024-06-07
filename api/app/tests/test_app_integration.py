@@ -137,6 +137,12 @@ def test_create_profile_and_assets():
     assert o.name == test_asset_collection_name
     assert o.version == [1,0,0]
 
+    # query asset collections for profile
+    collections = client.get(f"{api_base}/assets/owned/collections").json()
+    assert len(collections) == 1
+    assert collections[0]['id'] == collection_id
+    assert collections[0]['name'] == test_asset_collection_name
+
     # create asset in collection
     o = munchify(client.post(
         f"{api_base}/assets",
