@@ -6,8 +6,8 @@
 
 // models
 // Types for storing and referencing rich media (images, etc)
-// Table name: 
-export interface Media {
+// Table name: files
+export interface FileContent {
     id: string;
     name: string;
     created: string;
@@ -20,4 +20,5 @@ export interface Media {
     cache_ttl: number;
     lifetime: number;
     content_hash: string;
+    locators: object;
 }

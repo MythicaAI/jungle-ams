@@ -1,67 +1,71 @@
 import React from 'react';
-import {Box, Typography, Input, Button, List, ListItem, Sheet, FormControl, FormLabel, Textarea} from '@mui/joy';
+import {Box, Typography, Input, Button, List, ListItem, FormControl, FormLabel, Textarea} from '@mui/joy';
 import {Text} from "lucide-react";
+import {useGlobalStore} from "./stores/globalStore.ts";
 
 const AssetEdit: React.FC = () => {
+  const {assetCreation} = useGlobalStore();
+
   return (
-    <div className="outer-container">
       <Box className="full-size-box">
-        <Sheet elevation={3} className="full-size-box">
-          <Typography variant="h4" gutterBottom>
-            Single Asset View
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <FormControl>
-              <FormLabel>
-                Name
-              </FormLabel>
-              <Input variant="outlined" />
+        <Typography gutterBottom>
+          Create Asset
+        </Typography>
+        Asset ID: {assetCreation.asset_id}
+        Collection ID: {assetCreation.collection_id}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <FormControl>
+            <FormLabel>
+              Name
+            </FormLabel>
+            <Input variant="outlined" defaultValue="Asset Name" />
 
-            </FormControl>
-            <FormControl>
-              <FormLabel>
-                Description
-              </FormLabel>
-              <Textarea variant="outlined" multiline="true" rows={4} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>
+              Collection
+            </FormLabel>
+            <Input variant="outlined" defaultValue="Choose a collection/namespace" />
 
-            </FormControl>
-            <FormControl>
-              <FormLabel>
-                Images
-              </FormLabel>
-              <Input variant="outlined" fullWidth />
+          </FormControl>
+          <FormControl>
+            <FormLabel>
+              Version
+            </FormLabel>
+            <Input variant="outlined" defaultValue="0.0.0" />
 
-            </FormControl>
-            <FormControl>
-              <FormLabel>
-                Links
-              </FormLabel>
-              <Input variant="outlined" fullWidth />
+          </FormControl>
+          <FormControl>
+            <FormLabel>
+              Description
+            </FormLabel>
+            <Textarea variant="outlined" multiline="true" rows={4}></Textarea>
 
-            </FormControl>
+          </FormControl>
+          <FormControl>
+            <FormLabel>
+              Images
+            </FormLabel>
+            <Input variant="outlined" fullWidth />
 
-            <Box>
-              <Typography variant="h6">Files List</Typography>
-              <Button variant="contained" component="label">
-                Upload
-                <input type="file" hidden />
-              </Button>
-            </Box>
+          </FormControl>
+          <FormControl>
+            <FormLabel>
+              Links
+            </FormLabel>
+            <Input variant="outlined" fullWidth />
 
-            <Box>
-              <Typography variant="h6">References</Typography>
-              <List>
-                <ListItem>
-                  <Text primary="FileA -> FileB" />
-                </ListItem>
-                {/* Additional references can be added here */}
-                <Button variant="contained">+</Button>
-              </List>
-            </Box>
+          </FormControl>
+
+          <Box>
+            <Typography level="title-md">References</Typography>
+            <List>
+              <ListItem>File B</ListItem>
+              <ListItem>File C</ListItem>
+            </List>
           </Box>
-        </Sheet>
+        </Box>
       </Box>
-    </div>
   );
 };
 

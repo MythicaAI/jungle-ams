@@ -14,9 +14,9 @@ export interface Profile {
     created: string;
     updated: string;
     active: boolean;
-    tags: object;
     profile_base_href: string;
     description: string;
+    email: string;
     email_verified: boolean;
     location: string;
     login_count: number;
@@ -39,7 +39,6 @@ export interface Org {
     updated: string;
     name: string;
     description: string;
-    tags: object;
 }
 // Types to represent profiles online
 // Table name: profile_sessions
@@ -52,12 +51,13 @@ export interface ProfileSession {
     authenticated: boolean;
     auth_token: string;
     refresh_token: string;
+    location: string;
 }
 // Types to represent profiles online
 // Table name: profile_followers
 export interface ProfileFollower {
-    ref_profile_id: string;
-    ref_follow_id: string;
+    profile_id: string;
+    follow_id: string;
     created: string;
     deleted: string;
 }

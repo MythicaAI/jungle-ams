@@ -1,8 +1,12 @@
+import {ProfileSession} from "../schema_types/profiles.ts";
 
 type ApiResponse<T> = {
       message: string,
       data: T,
-}
+};
+
+export type UUID = string;
+export type ISOTime = string;
 
 export type UploadAsset = {
       bucket_name: string,
@@ -16,6 +20,61 @@ export type UploadAsset = {
       status: string,
       updated_at: string,
       uploaded_by: string,
+};
+
+export type ProfileResponse = {
+      id: UUID,
+      name: string,
+      description: string,
+      email: string,
+      signature: string,
+      profile_base_href: string,
+      active: boolean,
+      created: ISOTime,
+      updated: ISOTime,
+      email_verified: boolean,
+};
+
+export interface SessionStartResponse {
+      token: string,
+      profile: ProfileResponse,
+      sessions: ProfileSession
+}
+
+export interface AssetCreateRequest {
+      collection_id: UUID
+}
+
+export interface AssetCreateResponse {
+      id: UUID,
+      collection_id: UUID,
+      owner: UUID
+}
+
+export interface AssetCreateVersionRequest {
+      author: UUID,
+      name: string,
+      commit_ref: string,
+      contents: UUID[]
+}
+
+export interface AssetVersionContent {
+      file_id: UUID,
+      file_name: string,
+      content_hash: string,
+      size: number,
+}
+
+export interface AssetCreateVersionResponse {
+      asset_id: UUID,
+      collection_id: UUID,
+      package_id: UUID,
+      author: UUID,
+      name: string,
+      version: number[],
+      commit_ref: string,
+      created: ISOTime,
+      contents: AssetVersionContent[]
 }
 
 export type UploadAssetList = Array<UploadAsset>;

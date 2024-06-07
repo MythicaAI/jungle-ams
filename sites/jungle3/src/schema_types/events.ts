@@ -8,7 +8,8 @@
 // Storage for events that are used to trigger downstream effects
 // Table name: events
 export interface Event {
-    id: number;
+    id: string;
+    event_type: string;
     queued: string;
     acked: string;
     completed: string;

@@ -12,6 +12,7 @@ export interface Asset {
     created: string;
     updated: string;
     deleted: string;
+    published: boolean;
     collection_id: string;
     owner: string;
 }
@@ -22,26 +23,30 @@ export interface AssetVersion {
     major: number;
     minor: number;
     patch: number;
+    commit_ref: string;
     created: string;
-    content_hash: string;
-    friendly_name: string;
-    tags: object;
+    name: string;
     author: string;
+    package_id: string;
+    contents: object;
 }
-// Provides a natural grouping for asset graphs
+// Provides a grouping for asset graphs
 // Table name: topologies
 export interface Topology {
     id: number;
+    owner: string;
+    org_id: string;
     created: string;
+    updated: string;
     name: string;
     description: string;
-    edge_data: object;
+    edge_data_schema: object;
 }
 // Records relationships between assets
 // Table name: asset_refs
 export interface AssetRef {
+    topology_id: number;
     src: string;
     dst: string;
     edge_data: object;
-    topology_id: number;
 }

@@ -1,12 +1,15 @@
-import {Box, Typography, Button, Table, styled, Card} from '@mui/joy';
+    import {Box, Button, Table, styled, Card} from '@mui/joy';
 import {LucidePlusCircle, LucideUploadCloud} from 'lucide-react';
-import {ChangeEvent, FormEvent, useState} from "react";
+import {useEffect, useState} from "react";
 import {v4} from "uuid";
-
-const uploads = [
-    {name: 'File1.jpg', size: '1MB', hash: 'abc123', date: '2024-05-25'},
-    {name: 'File2.png', size: '2MB', hash: 'def456', date: '2024-05-26'}
-];
+import {useCookies} from "react-cookie";
+import {AssetCreateRequest, AssetCreateResponse, ProfileResponse} from "./types/apiTypes.ts";
+import {getData, postData} from "./services/backendCommon.ts";
+import {FileContent} from "./schema_types/media.ts";
+import {useGlobalStore} from "./stores/globalStore.ts";
+import axios from "axios";
+import {format, parseISO} from "date-fns";
+import AssetEdit from "./AssetEdit.tsx";
 
 const VisuallyHiddenInput = styled('input')`
     clip: rect(0 0 0 0);
@@ -22,6 +25,32 @@ const VisuallyHiddenInput = styled('input')`
 
 
 const Uploads = () => {
+    const [cookies, ] = useCookies(['profile_id', 'auth_token'])
+    const [profile, setProfile] = useState<ProfileResponse>();
+    const {updateAssetCreation, authToken, assetCreation} = useGlobalStore();
+
+    useEffect(() => {
+        if (!profile) {
+            getData<ProfileResponse>(`profiles/${cookies.user}`).then(r => {
+                    setProfile(r);
+                }
+            ).catch(error => {
+                console.error(error);
+            });
+        }
+        if (authToken) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+            getData<FileContent[]>("upload/pending").then(files => {
+                console.log("loading pending uploads")
+                updateAssetCreation({pendingFiles: files})
+            }).catch(error => {
+                console.error(error);
+            });
+        } else {
+            console.log("not authorized yet")
+        }
+    }, [profile, cookies, updateAssetCreation])
+
     const [filesSelected, setFilesSelected] = useState<File[]>() // also tried <string | Blob>
     const [formData, setFormData] = useState<FormData>();
 
@@ -40,26 +69,41 @@ const Uploads = () => {
         }
         setFilesSelected(currentFileList);
     };
-
-    const submit = function(e) {
+    const createAsset = function() {
+        if (!assetCreation.asset_id || assetCreation.asset_id === "") {
+            const createRequest: AssetCreateRequest = { collection_id: assetCreation.collection_id }
+            postData<AssetCreateResponse>('assets/', createRequest).then(r => {
+                updateAssetCreation({
+                    asset_id: r.id,
+                    collection_id: r.collection_id,
+                })
+            })
+        }
+    }
+    const submit = function() {
         if (!filesSelected) {
             return;
         }
         const formData = new FormData();
         for (let i = 0; i < filesSelected.length; ++i) {
-            const inputName = `hda[${i}]`;
-            formData.append(inputName, filesSelected[i], filesSelected[i].name);
+            formData.append('files', filesSelected[i], filesSelected[i].name);
         }
         setFormData(formData);
 
         // Assuming fileInput is an HTMLInputElement of type file
         fetch('http://localhost:5555/api/v1/upload/store', {
-          method: 'POST',
-          body: formData,
+            method: 'POST',
+            body: formData,
+            headers: {'Authorization': 'Bearer ' + authToken}
         })
-          .then(response => response.json())
-          .then(data => console.log(data))
-          .catch(error => console.error('Error:', error));
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+    };
+
+    const formatISO = (isoString: string): string => {
+        const date = parseISO(isoString);
+        return format(date, 'PPpp');
     }
 
     const SubmitUploads = function () {
@@ -88,7 +132,7 @@ const Uploads = () => {
                 </tbody>
             </Table>
                 <Button color="primary" onClick={submit}>
-                    Upload {filesSelected.length}
+                    Upload {filesSelected.length} Files
                 </Button>
             </Card>);
         }
@@ -96,13 +140,15 @@ const Uploads = () => {
 
     return (
         <Box>
-            <Button
+            {assetCreation.asset_id ? <Button
                 component="label"
                 variant={"plain"}
                 color={"neutral"}
+                onMouseDown={createAsset}
                 startDecorator={<LucidePlusCircle/>}>
                 New Asset
-            </Button>
+            </Button> : <AssetEdit/>
+            }
             <Button
                 component="label"
                 role={undefined}
@@ -117,19 +163,19 @@ const Uploads = () => {
             <Table aria-label="basic table">
                 <thead>
                 <tr>
-                    <th>Upload Name</th>
+                    <th>File Name</th>
                     <th>Size</th>
                     <th>Hash</th>
                     <th>Date</th>
                 </tr>
                 </thead>
                 <tbody>
-                {uploads.map(upload => (
-                    <tr key={upload.hash}>
-                        <td>{upload.name}</td>
-                        <td>{upload.size}</td>
-                        <td>{upload.hash}</td>
-                        <td>{upload.date}</td>
+                {assetCreation.pendingFiles.map(file => (
+                    <tr key={file.content_hash}>
+                        <td>{file.name}</td>
+                        <td>{file.size}</td>
+                        <td>{file.content_hash.substring(0, 8)}</td>
+                        <td>{formatISO(file.created)}</td>
                     </tr>
                 ))}
                 </tbody>
