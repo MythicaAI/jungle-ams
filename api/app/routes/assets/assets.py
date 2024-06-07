@@ -2,7 +2,6 @@ from pydantic.types import StrictInt
 from pydantic import conlist
 from datetime import datetime
 from http import HTTPStatus
-from typing import Dict, Any, List, Tuple
 from uuid import UUID
 
 import sqlalchemy
@@ -14,7 +13,7 @@ from db.schema.assets import Asset, AssetVersion
 from db.schema.media import FileContent
 from db.connection import get_session
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
@@ -46,6 +45,13 @@ class AssetCreateResult(BaseModel):
     owner: UUID
 
 
+class AssetVersionContent(BaseModel):
+    file_id: UUID
+    file_name: str
+    content_hash: str
+    size: int
+
+
 class AssetVersionResult(BaseModel):
     asset_id: UUID
     collection_id: UUID | None = None
@@ -55,7 +61,7 @@ class AssetVersionResult(BaseModel):
     version: tuple[int, ...]
     commit_ref: str | None = None
     created: datetime = None
-    contents: List[Any] | None = None
+    contents: list[AssetVersionContent] | None = None
 
 
 def process_join_results(join_results) -> list[AssetVersionResult]:
@@ -80,11 +86,14 @@ def process_join_results(join_results) -> list[AssetVersionResult]:
 def convert_version_input(version: str) -> tuple[int, ...]:
     tuple_version = tuple(map(int, version.split('.')))
     if len(tuple_version) != VERSION_LEN:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail="version must conform to 1.2.3")
+        raise HTTPException(HTTPStatus.BAD_REQUEST,
+                            detail="version must conform to 1.2.3")
     return tuple_version
 
 
-def select_asset_version(session: Session, asset_id: UUID, version: tuple[int, ...]) -> AssetVersion:
+def select_asset_version(session: Session,
+                         asset_id: UUID,
+                         version: tuple[int, ...]) -> AssetVersion:
     return session.exec(select(AssetVersion).where(
         AssetVersion.asset_id == asset_id).where(
         AssetVersion.major == version[0]).where(
@@ -122,43 +131,54 @@ async def get_asset_by_id(asset_id) -> list[AssetVersionResult]:
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_asset(r: AssetCreateRequest,
-                       profile: Profile = Depends(current_profile)) -> AssetCreateResult:
+                       profile: Profile = Depends(current_profile)
+                       ) -> AssetCreateResult:
     """Create a new asset for storing revisions or other assets"""
     with get_session() as session:
         # If the user passes a collection ID ensure that it exists
         if r.collection_id is not None:
-            col_result = session.exec(select(Asset).where(Asset.id == r.collection_id)).one_or_none()
+            col_result = session.exec(select(Asset).where(
+                Asset.id == r.collection_id)).one_or_none()
             if col_result is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND, f"collection {r.collection_id} not found")
+                raise HTTPException(HTTPStatus.NOT_FOUND, f"collection {
+                                    r.collection_id} not found")
 
-        asset_result = session.exec(insert(Asset).values(collection_id=r.collection_id, owner=profile.id))
+        asset_result = session.exec(insert(Asset).values(
+            collection_id=r.collection_id, owner=profile.id))
         asset_id = asset_result.inserted_primary_key[0]
         session.commit()
         return AssetCreateResult(id=asset_id, collection_id=r.collection_id, owner=profile.id)
 
 
-@router.post('/{asset_id}/versions/{version_str}', status_code=HTTPStatus.CREATED)
+@router.post('/{asset_id}/versions/{version_str}',
+             status_code=HTTPStatus.CREATED)
 async def create_asset_version(asset_id: UUID,
                                version_str: str,
                                r: AssetCreateVersionRequest,
                                response: Response,
-                               profile: Profile = Depends(current_profile)) -> AssetVersionResult:
+                               profile: Profile = Depends(current_profile)
+                               ) -> AssetVersionResult:
     """Create or update a single asset version"""
     version_id = convert_version_input(version_str)
     with get_session() as session:
         # Validate asset ID
         asset = session.exec(select(Asset).where(Asset.id == asset_id)).first()
         if asset is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}' not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{
+                                asset_id}' not found")
 
         # Validate and load contents
         contents = list()
         for file_id in r.contents:
             try:
                 file = locate_content_by_id(session, file_id)
-                contents.append({'file_id': str(file_id), 'content_hash': file.content_hash, 'size': file.size})
+                contents.append(
+                    {'file_id': str(file_id),
+                     'content_hash': file.content_hash,
+                     'size': file.size})
             except FileNotFoundError:
-                raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"file '{file_id}' not found")
+                raise HTTPException(HTTPStatus.NOT_FOUND,
+                                    detail=f"file '{file_id}' not found")
 
         # Create the revision, fails if the revision already exists
         try:
@@ -193,27 +213,34 @@ async def create_asset_version(asset_id: UUID,
                                       package_id=version.package_id,
                                       author=version.author,
                                       name=version.name,
-                                      version=(version.major, version.minor, version.patch),
+                                      version=(version.major,
+                                               version.minor, version.patch),
                                       commit_ref=version.commit_ref,
                                       created=version.created,
                                       contents=version.contents)
-        except sqlalchemy.exc.IntegrityError as _:
+        except sqlalchemy.exc.IntegrityError:
+            detail = (f'asset: {asset.id} '
+                      'version {[r.major, r.minor, r.patch]} exists')
             raise HTTPException(HTTPStatus.CONFLICT,
-                                detail=f'asset: {asset.id} version {[r.major, r.minor, r.patch]} exists')
+                                detail=detail)
 
 
 @router.get('/{asset_id}/versions/{version_str}')
-async def get_asset_version_by_id(asset_id: UUID, version_str: str) -> AssetVersionResult:
+async def get_asset_version_by_id(
+        asset_id: UUID,
+        version_str: str) -> AssetVersionResult:
     """Get the asset version for a given asset and version"""
     version_id = convert_version_input(version_str)
     with get_session() as session:
         asset = session.exec(select(Asset).where(Asset.id == asset_id)).first()
         if asset is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}' not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{
+                                asset_id}' not found")
 
         version = select_asset_version(session, asset.id, version_id)
         if version is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}', version {version_id} not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{
+                                asset_id}', version {version_id} not found")
 
         return AssetVersionResult(
             asset_id=asset.id,

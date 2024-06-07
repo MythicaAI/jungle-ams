@@ -1,8 +1,6 @@
 import logging
-import os
-import sys
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import routes.upload.upload
@@ -23,15 +21,9 @@ log = logging.getLogger(__name__)
 
 app = FastAPI()
 
-origins = [
-    "https://api.mythica.ai",
-    "http://localhost",
-    "http://localhost:8080",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
