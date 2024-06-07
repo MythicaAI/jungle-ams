@@ -13,7 +13,7 @@ def get_profile(authorization: str) -> Profile:
 
     auth_parts = authorization.split(' ')
     if len(auth_parts) != 2 or not auth_parts[0] == 'Bearer':
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='Invalid Authorization header')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f'Invalid Authorization header "{authorization}"')
 
     if not validate_token(auth_parts[1]):
         raise HTTPException(HTTPStatus.UNAUTHORIZED, detail='Invalid token')

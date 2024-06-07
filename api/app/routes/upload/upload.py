@@ -6,18 +6,14 @@ import logging
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, File, UploadFile, Header, Depends
+from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from http import HTTPStatus
 
 from config import app_config
 from routes.authorization import current_profile
-from routes.responses import ListResponse
 from storage import gcs_uploader, minio_uploader
 
 import db.index as db_index
-
-from auth.generate_token import validate_token
-from auth.cookie import cookie_to_profile
 
 from pydantic import BaseModel
 from context import RequestContext
@@ -26,7 +22,6 @@ from sqlmodel import select
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from auth.data import get_profile
 from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
@@ -37,37 +32,12 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 @lru_cache
 def create_storage_client() -> StorageClient:
     if app_config().gcs_service_enable:
-        return gcs_uploader.create_client()  # use default impersonation settings
+        return gcs_uploader.create_client()
     return minio_uploader.create_client()
 
 
 async def storage_client() -> StorageClient:
     return create_storage_client()
-
-
-# @router.post('/stream')
-# async def upload_stream():
-#     original_filename = request.headers.get('X-Original-File-Name')
-#     if not original_filename:
-#         return jsonify({'error': 'Filename header missing'}), 400
-#
-#     extension = original_filename.rpartition(".")[-1].lower()
-#     if extension != "hda":
-#         return jsonify({
-#             "message": "Only .hda files are currently supported for upload."
-#         }, status=HTTPStatus.BAD_REQUEST)
-#
-#     ctx = RequestContext(request)
-#     ctx.extension = extension
-#
-#     if app.config['ENABLE_STORAGE']:
-#         g.storage.upload_stream(
-#             ctx, request.stream, app.config['BUCKET_NAME'])
-#
-#     # Update database index
-#     if app.config['ENABLE_DB']:
-#         db_index.update(ctx)
-#     return jsonify({"message": "file saved"}), HTTPStatus.OK
 
 
 class UploadResponse(BaseModel):
@@ -107,7 +77,9 @@ def upload_internal(storage, profile_id, upload_file):
     filename = upload_file.filename
     extension = filename.rpartition(".")[-1].lower()
     if extension != "hda":
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Only .hda files are currently supported for upload.")
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST,
+            detail="Only .hda files are currently supported for upload.")
     ctx.extension = extension
 
     # stream the file content to a local file path in the upload folder
@@ -123,8 +95,8 @@ def upload_internal(storage, profile_id, upload_file):
         ctx.content_hash = hashlib.sha1(content).hexdigest()
         ctx.file_size = len(content)
 
-    log.info(
-        f"file info: {ctx.local_filepath}, size: {ctx.file_size}, hash: {ctx.content_hash}")
+    log.info(f"file info: {ctx.local_filepath}, "
+             "size: {ctx.file_size}, hash: {ctx.content_hash}")
 
     # Upload to bucket storage
     if cfg.enable_storage:
@@ -146,7 +118,10 @@ def upload_internal(storage, profile_id, upload_file):
 
 @router.get('/pending')
 async def pending_uploads(
-        profile: Annotated[Profile, Depends(current_profile)]) -> list[FileContent]:
-    """Get the list of uploads that have been created for the current profile"""
+        profile: Annotated[Profile, Depends(current_profile)]
+) -> list[FileContent]:
+    """Get the list of uploads that have been created for
+    the current profile"""
     with get_session() as session:
-        return session.exec(select(FileContent).where(FileContent.owner == profile.id)).all()
+        return session.exec(select(FileContent).where(
+            FileContent.owner == profile.id)).all()
