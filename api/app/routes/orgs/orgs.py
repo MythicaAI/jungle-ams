@@ -1,19 +1,17 @@
-import logging
-from datetime import datetime, timezone
 from http import HTTPStatus
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import ValidationError, BaseModel
+from pydantic import BaseModel
 
+import auth.roles as roles
 from auth.data import resolve_profile, resolve_roles
-from auth.generate_token import generate_token
-from config import app_config
-from db.schema.profiles import Profile, ProfileSession, Org, OrgRef
+from db.schema.profiles import Profile, Org, OrgRef
 from db.connection import get_session
-from sqlmodel import select, update, delete, insert
+from sqlmodel import Session, select, update, delete, insert
 from sqlalchemy.sql.functions import now as sql_now
-from routes.authorization import current_profile, validate_roles
+from routes.authorization import current_profile
+from auth.authorization import validate_roles
 
 
 class OrgCreateRequest(BaseModel):
@@ -46,12 +44,23 @@ class OrgRemoveRoleRequest(BaseModel):
 router = APIRouter(prefix="/orgs", tags=["orgs"])
 
 
+def resolve_and_validate(session: Session, profile: Profile, org_id: UUID, required_role: str):
+    # role validation
+    profile = resolve_profile(session, profile)
+    profile_roles = resolve_roles(session, profile, org_id)
+    if not validate_roles(required_role, profile_roles):
+        raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid roles in {profile_roles}")
+    pass
+
+
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_org(
         create: OrgCreateRequest,
         profile: Profile = Depends(current_profile)
 ) -> OrgCreateResponse:
+    """Create a new organization, the creating profile will be an admin"""
     with get_session() as session:
+        # create the org
         org = Org(**create.model_dump())
         session.add(org)
 
@@ -71,15 +80,13 @@ async def update_org(
         req: OrgUpdateRequest,
         profile: Profile = Depends(current_profile)
 ) -> Org:
+    """Update an existing organization"""
     with get_session(echo=True) as session:
         org = session.exec(select(Org).where(Org.id == org_id)).first()
         if org is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"org: {org_id} not found")
 
-        profile = resolve_profile(session, profile)
-        roles = resolve_roles(session, profile, org.id)
-        if not validate_roles(profile, 'update_org', roles):
-            raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid roles in {roles}")
+        resolve_and_validate(session, profile, org_id, roles.org_update)
 
         r = session.exec(update(Org).where(
             Org.id == org_id).values(
@@ -91,31 +98,40 @@ async def update_org(
         return org
 
 
+@router.delete('/{org_id}')
+async def delete_org(org_id: UUID, profile: Profile = Depends(current_profile)):
+    """Removes an existing organization"""
+    with get_session() as session:
+        resolve_and_validate(session, profile, org_id, roles.org_delete)
+        session.exec(update(Org).where(
+            Org.id == org_id).values(
+            deleted=sql_now()))
+
+
 @router.get('/{org_id}')
 async def get_org(org_id: UUID) -> Org:
+    """Get organization by ID"""
     with get_session() as session:
         org = session.exec(select(Org).where(Org.id == org_id)).first()
         return org
 
 
-@router.get('/{org_id}/refs')
-async def get_org_ref(org_id: UUID) -> list[OrgRef]:
+@router.get('/{org_id}/roles')
+async def get_org_roles(org_id: UUID) -> list[OrgRef]:
+    """Get all the roles in the organization """
     with get_session() as session:
         return session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all()
 
 
-@router.post('/{org_id}/refs/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
-async def create_org_ref(
+@router.post('/{org_id}/roles/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
+async def add_role_to_org(
         org_id: UUID,
         profile_id: UUID,
         role: str,
         profile: Profile = Depends(current_profile)) -> list[OrgRef]:
+    """Create a new role for an organization"""
     with get_session() as session:
-        # role validation
-        profile = resolve_profile(session, profile)
-        roles = resolve_roles(session, profile, org_id)
-        if not validate_roles(profile, 'create_org_ref', roles):
-            raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid roles in {roles}")
+        resolve_and_validate(session, profile, org_id, roles.org_add_role)
 
         session.exec(insert(OrgRef).values(
             org_id=org_id, profile_id=profile_id, role=role, created_by=profile.id))
@@ -124,21 +140,17 @@ async def create_org_ref(
         return session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all()
 
 
-@router.delete('/{org_id}/refs/{profile_id}/{role}')
-async def delete_org_ref(
+@router.delete('/{org_id}/roles/{profile_id}/{role}')
+async def remove_role_from_org(
         org_id: UUID,
         profile_id: UUID,
         role: str,
         profile=Depends(current_profile)) -> list[OrgRef]:
+    """Delete a role from an organization"""
     with get_session() as session:
-        # role validation
-        profile = resolve_profile(session, profile)
-        roles = resolve_roles(session, profile, org_id)
-        if not validate_roles(profile, 'delete_org_ref', roles):
-            raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid roles in {roles}")
-
+        resolve_and_validate(session, profile, org_id, roles.org_remove_role)
         session.exec(delete(OrgRef).where(
-            OrgRef.org_id==org_id, OrgRef.profile_id==profile_id, OrgRef.role==role))
+            OrgRef.org_id == org_id, OrgRef.profile_id == profile_id, OrgRef.role == role))
         session.commit()
 
         return session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all()

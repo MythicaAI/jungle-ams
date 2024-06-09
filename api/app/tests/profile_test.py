@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel
 from db.schema.profiles import Profile, ProfileSession
 
+from .shared_test import api_base
 
 class ProfileTestInfo(BaseModel):
     auth_token: str
@@ -17,16 +18,15 @@ class ProfileTestInfo(BaseModel):
 
 
 def create_and_auth(client: TestClient) -> ProfileTestInfo:
-    r = client.post(f"/api/v1/profiles",
-                    json={
-                        'name': 'test-profile'})
+    r = client.post(f"{api_base}/profiles",
+                    json={'name': 'test-profile'})
     assert r.status_code == HTTPStatus.CREATED
     o = munchify(r.json())
     assert o.name == "test-profile"
     profile_id = o.id
 
     # Start session
-    o = munchify(client.get(f"/api/v1/profiles/start_session/{profile_id}").json())
+    o = munchify(client.get(f"{api_base}/profiles/start_session/{profile_id}").json())
     assert o.profile.id == profile_id
     assert len(o.sessions) > 0
     assert len(o.token) > 0
