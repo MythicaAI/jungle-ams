@@ -38,6 +38,7 @@ jobs:
       - name: Initialize Database
         run: |
           cd api/app
+          mkdir alembic_sqlite/versions
           alembic -n sqlite revision --autogenerate -m "initial"
 
       - name: Create Schema
