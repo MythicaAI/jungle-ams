@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      SQL_URL: "sqlite:///${{ github.workspace }}/base/mythica.db"
-      DATABASE_PATH: "${{ github.workspace }}/base/mythica.db"
+      SQL_URL: "sqlite:///${{ github.workspace }}/mythica.db"
+      DATABASE_PATH: "${{ github.workspace }}/mythica.db"
 
     steps:
       - name: Checkout repository
