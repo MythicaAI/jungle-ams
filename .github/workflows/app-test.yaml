@@ -37,10 +37,12 @@ jobs:
 
       - name: Initialize Database
         run: |
+          cd api/app
           alembic -n sqlite revision --autogenerate -m "initial"
 
       - name: Create Schema
         run: |
+          cd api/app
           alembic -n sqlite upgrade head
 
       - name: Run tests
