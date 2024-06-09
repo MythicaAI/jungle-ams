@@ -1,14 +1,37 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
+import {useCookies} from "react-cookie";
+import {SessionStartResponse} from "./types/apiTypes.ts";
+import {useGlobalStore} from "./stores/globalStore.ts";
+import {getData} from "./services/backendCommon.ts";
+import axios from "axios";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [, setCookie] = useCookies(['profile_id', 'auth_token', 'refresh_token']);
+  const {setAuthToken, setLoggedIn} = useGlobalStore();
+
+  useEffect(() => {
+    setUsername("32a05c1d-d2c6-47f2-9411-156c3619c71a")
+  }, []);
 
   const handleLogin = (event: React.FormEvent) => {
     event.preventDefault();
     // Handle login logic here
     console.log('Username:', username);
     console.log('Password:', password);
+
+    setCookie('profile_id', username, { path: '/' })
+
+    // 32a05c1d-d2c6-47f2-9411-156c3619c71a
+    getData<SessionStartResponse>(`profiles/start_session/${username}`).then(r => {
+      console.log(`auth: ${r.token}`)
+      setAuthToken(r.token);
+      setLoggedIn(true);
+      setCookie('auth_token', r.token, { path: '/' })
+      setCookie('refresh_token', '', { path: '/' })
+      axios.defaults.headers.common['Authorization'] = `Bearer ${r.token}`;
+    })
   };
 
   const handleForgotPassword = () => {
@@ -25,6 +48,7 @@ const Login: React.FC = () => {
           <input
             type="text"
             id="username"
+            autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             style={styles.input}
@@ -35,6 +59,7 @@ const Login: React.FC = () => {
           <input
             type="password"
             id="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={styles.input}

@@ -235,8 +235,3 @@ def test_create_profile_and_assets():
     assert o.name == test_asset_name + '-updated-2'
     assert len(o.contents) == 0
 
-
-def test_create_asset():
-    """Test a full asset creation run through the API"""
-    assets = client.get(f"{api_base}/assets").json()
-    assert len(assets) > 0

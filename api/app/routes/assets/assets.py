@@ -174,6 +174,7 @@ async def create_asset_version(asset_id: UUID,
                 file = locate_content_by_id(session, file_id)
                 contents.append(
                     {'file_id': str(file_id),
+                     'file_name': file.name,
                      'content_hash': file.content_hash,
                      'size': file.size})
             except FileNotFoundError:
@@ -252,3 +253,4 @@ async def get_asset_version_by_id(
             commit_ref=version.commit_ref,
             created=version.created,
             contents=version.contents)
+

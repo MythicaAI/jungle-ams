@@ -46,15 +46,18 @@ class AssetVersion(SQLModel, table=True):
 
 class Topology(SQLModel, table=True):
     """
-    Provides a natural grouping for asset graphs
+    Provides a grouping for asset graphs
     """
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     id: int = Field(primary_key=True, nullable=False)
+    owner: UUID = uuid4()
+    org_id: UUID | None = uuid4()
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
+    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = None
     description: str | None = None
-    edge_data: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    edge_data_schema: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class AssetRef(SQLModel, table=True):
@@ -63,7 +66,7 @@ class AssetRef(SQLModel, table=True):
     """
     __tablename__ = "asset_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+    topology_id: int = Field(primary_key=True, nullable=False)
     src: UUID = Field(primary_key=True, nullable=False)
     dst: UUID = Field(primary_key=True, nullable=False)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
-    topology_id: int | None = Field(foreign_key='topologies.id')

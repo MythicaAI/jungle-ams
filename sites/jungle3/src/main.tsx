@@ -12,6 +12,7 @@ import ProfileSettings from "./ProfileSettings.tsx";
 import Uploads from "./Uploads.tsx";
 import Assets from "./Assets.tsx";
 import AssetEdit from "./AssetEdit.tsx";
+import Login from "./Login.tsx";
 
 const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
       {
         path: "assets/:assetId:",
         element: <AssetEdit/>,
+      },
+      {
+        path: "login",
+        element: <Login/>
       }]
   }]
 );
