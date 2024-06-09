@@ -1,0 +1,46 @@
+name: api/app tests
+
+on:
+  push:
+    paths:
+      - 'api/app/**' # watch for changes in app, add dependencies
+
+jobs:
+  db-setup:
+    runs-on: ubuntu-latest
+
+    env:
+      SQL_URL: "sqlite:///${{ github.workspace }}/base/mythica.db"
+      DATABASE_PATH: "${{ github.workspace }}/base/mythica.db"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'  # Specify your Python version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r api/app/requirements.txt
+          pip install -r api/app/test/requirements.txt
+
+      - name: Create SQLite database
+        run: |
+          touch $DATABASE_PATH
+
+      - name: Initialize Database
+        run: |
+          alembic -n sqlite revision --autogenerate -m "initial"
+
+      - name: Create Schema
+        run: |
+          alembic -n sqlite upgrade head
+
+      - name: Run tests
+        run: |
+          cd api/app
+          pytest .
