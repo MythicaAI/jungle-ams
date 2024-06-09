@@ -3,7 +3,10 @@ name: api/app tests
 on:
   push:
     paths:
-      - 'api/app/**' # watch for changes in app, add dependencies
+      - 'api/app/**'
+  pull_request:
+    paths:
+      - 'api/app/**'
 
 jobs:
   db-setup:
