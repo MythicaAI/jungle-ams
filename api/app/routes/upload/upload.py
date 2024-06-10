@@ -31,16 +31,22 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 
 @lru_cache
 def create_storage_client() -> StorageClient:
+    """Get a cached storage client implementation based on app configuration"""
+    cfg = app_config()
+    if not cfg.enable_storage:
+        return StorageClient()
     if app_config().gcs_service_enable:
         return gcs_uploader.create_client()
     return minio_uploader.create_client()
 
 
 async def storage_client() -> StorageClient:
+    """The dependency injection method for APIs needing a storage client"""
     return create_storage_client()
 
 
 class UploadResponse(BaseModel):
+    """Response from uploading one or more files"""
     message: str
     files: list[uuid.UUID]
     events: list[uuid.UUID]
@@ -52,7 +58,6 @@ async def upload(
         profile: Profile = Depends(current_profile),
         storage: StorageClient = Depends(storage_client)) -> UploadResponse:
     log.info("handling upload for profile: %s", profile)
-    storage.validate()
 
     if not files:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
