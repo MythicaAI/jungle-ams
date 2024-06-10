@@ -1,16 +1,12 @@
-import hashlib
 from http import HTTPStatus
-from uuid import UUID
 
 from fastapi.testclient import TestClient
 from munch import munchify
-from uuid import UUID, uuid4
 from main import app
 
-from config import app_config
-from .profile_test import create_and_auth, ProfileTestInfo
+from .profile_test import create_and_auth
 from .org_test import create_org
-from .shared_test import api_base
+from .shared_test import api_base, assert_status_code
 
 
 def test_create_update():
@@ -37,8 +33,10 @@ def test_org_ref_operations():
     user_profile_test_info = create_and_auth(client)
     headers = admin_profile_test_info.authorization_header()
     o = create_org(client, admin_profile_test_info)
+    o2 = create_org(client, admin_profile_test_info)
 
     org_id = o.org.id
+    org_id2 = o2.org.id
     admin_id = o.admin.profile_id
 
     # create a new role for the admin
@@ -75,3 +73,24 @@ def test_org_ref_operations():
     r = client.delete(f'{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.id}/mod', headers=headers)
     assert r.status_code == HTTPStatus.OK
     assert len(r.json()) == 3
+
+    # create the user role in org2
+    r = client.post(f"{api_base}/orgs/{org_id2}/roles/{user_profile_test_info.profile.id}/user", headers=headers)
+    assert r.status_code == HTTPStatus.CREATED
+    roles = r.json()
+    assert len(roles) == 2  # admin and user
+
+    # query the roles for the user
+    user_headers = user_profile_test_info.authorization_header()
+    r = client.get(f'{api_base}/orgs', headers=user_headers)
+    assert_status_code(r, HTTPStatus.OK)
+    assert len(r.json()) == 2
+    orgs = list()
+    for role in r.json():
+        o = munchify(role)
+        assert o.profile_id == user_profile_test_info.profile.id
+        assert o.role == 'user'
+        assert o.org_id in {org_id, org_id2}
+        orgs.append(o.org_id)
+    assert org_id in orgs
+    assert org_id2 in orgs
