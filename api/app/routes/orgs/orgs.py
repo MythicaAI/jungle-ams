@@ -108,10 +108,21 @@ async def delete_org(org_id: UUID, profile: Profile = Depends(current_profile)):
             deleted=sql_now()))
 
 
+@router.get('/')
+async def get_org(profile: Profile = Depends(current_profile)) -> list[OrgRef]:
+    """Default get returns roles for the requesting profile"""
+    with get_session() as session:
+        return session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all()
+
+
 @router.get('/{org_id}')
-async def get_org(org_id: UUID) -> Org:
+async def get_org(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
     """Get organization by ID"""
     with get_session() as session:
+        if org_id is None:
+            if profile is None:
+                raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid profile")
+            return session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all()
         org = session.exec(select(Org).where(Org.id == org_id)).first()
         return org
 
