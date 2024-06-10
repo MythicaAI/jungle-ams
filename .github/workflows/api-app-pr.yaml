@@ -53,5 +53,5 @@ jobs:
 
       - name: Run tests
         run: |
-          cd api/app/tests
+          cd api/app
           pytest .
