@@ -15,7 +15,7 @@ from db.connection import get_session
 
 from pydantic import BaseModel
 
-from db.schema.profiles import Profile
+from db.schema.profiles import Profile, Org
 from routes.authorization import current_profile
 
 ZERO_ID = UUID(int=0, version=4)
@@ -29,7 +29,7 @@ VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
 
 
 class AssetCreateRequest(BaseModel):
-    collection_id: UUID | None = None
+    org_id: UUID | None = None
 
 
 class AssetCreateVersionRequest(BaseModel):
@@ -41,7 +41,7 @@ class AssetCreateVersionRequest(BaseModel):
 
 class AssetCreateResult(BaseModel):
     id: UUID
-    collection_id: UUID | None = None
+    org_id: UUID | None = None
     owner: UUID
 
 
@@ -54,7 +54,7 @@ class AssetVersionContent(BaseModel):
 
 class AssetVersionResult(BaseModel):
     asset_id: UUID
-    collection_id: UUID | None = None
+    org_id: UUID | None = None
     package_id: UUID | None = None
     author: UUID
     name: str
@@ -71,7 +71,7 @@ def process_join_results(join_results) -> list[AssetVersionResult]:
         asset, ver = join_result
         avr = AssetVersionResult(
             asset_id=asset.id,
-            collection_id=asset.collection_id,
+            org_id=asset.org_id,
             package_id=ver.package_id,
             author=ver.author,
             name=ver.name,
@@ -136,18 +136,18 @@ async def create_asset(r: AssetCreateRequest,
     """Create a new asset for storing revisions or other assets"""
     with get_session() as session:
         # If the user passes a collection ID ensure that it exists
-        if r.collection_id is not None:
-            col_result = session.exec(select(Asset).where(
-                Asset.id == r.collection_id)).one_or_none()
+        if r.org_id is not None:
+            col_result = session.exec(select(Org).where(
+                Org.id == r.org_id)).one_or_none()
             if col_result is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND, f"collection {
-                                    r.collection_id} not found")
+                raise HTTPException(HTTPStatus.NOT_FOUND, f"org {
+                                    r.org_id} not found")
 
         asset_result = session.exec(insert(Asset).values(
-            collection_id=r.collection_id, owner=profile.id))
+            org_id=r.org_id, owner=profile.id))
         asset_id = asset_result.inserted_primary_key[0]
         session.commit()
-        return AssetCreateResult(id=asset_id, collection_id=r.collection_id, owner=profile.id)
+        return AssetCreateResult(id=asset_id, org_id=r.org_id, owner=profile.id)
 
 
 @router.post('/{asset_id}/versions/{version_str}',
@@ -210,7 +210,7 @@ async def create_asset_version(asset_id: UUID,
             version = select_asset_version(session, asset_id, version_id)
             response.status = HTTPStatus.OK
             return AssetVersionResult(asset_id=asset.id,
-                                      collection_id=asset.collection_id,
+                                      org_id=asset.org_id,
                                       package_id=version.package_id,
                                       author=version.author,
                                       name=version.name,
@@ -245,7 +245,7 @@ async def get_asset_version_by_id(
 
         return AssetVersionResult(
             asset_id=asset.id,
-            collection_id=asset.collection_id,
+            org_id=asset.org_id,
             author=version.author,
             package_id=version.package_id,
             name=version.name,

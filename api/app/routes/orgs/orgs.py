@@ -16,7 +16,7 @@ from auth.authorization import validate_roles
 
 class OrgCreateRequest(BaseModel):
     name: str
-    description: str
+    description: str | None = None
 
 
 class OrgCreateResponse(BaseModel):
