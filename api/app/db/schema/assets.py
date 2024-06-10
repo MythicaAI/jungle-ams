@@ -22,7 +22,7 @@ class Asset(SQLModel, table=True):
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = None
     published: bool | None = False
-    collection_id: UUID | None = uuid4()
+    org_id: UUID | None = uuid4()
     owner: UUID | None = Field(foreign_key='profiles.id')
 
 

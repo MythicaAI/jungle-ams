@@ -1,4 +1,5 @@
 import hashlib
+import string
 from http import HTTPStatus
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from munch import munchify
 from main import app
 
 from config import app_config
+from tests.shared_test import get_random_string, assert_status_code
 
 client = TestClient(app)
 
@@ -120,27 +122,21 @@ def test_create_profile_and_assets():
         assert o.content_hash == test_file_content_hash
         assert o.id in file_ids
 
-    # create asset collection
+    # create org to contain assets
+    org_name = 'org-' + get_random_string(10, digits=False)
     r = client.post(
-        f"{api_base}/assets/",
-        json={},
+        f"{api_base}/orgs/",
+        json={'name': org_name},
         headers=headers)
-    assert r.status_code == 201
+    assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    collection_id = o.id
-    r = client.post(
-        f"{api_base}/assets/{collection_id}/versions/1.0.0",
-        json={'name': test_asset_collection_name, 'author': profile_id},
-        headers=headers)
-    o = munchify(r.json())
-    assert r.status_code == 201
-    assert o.name == test_asset_collection_name
-    assert o.version == [1,0,0]
+    assert profile_id == o.admin.profile_id
+    org_id = o.org.id
 
-    # create asset in collection
+    # create asset in org
     o = munchify(client.post(
         f"{api_base}/assets",
-        json={'collection_id': str(collection_id)},
+        json={'org_id': str(org_id)},
         headers=headers).json())
     asset_id = o.id
 
@@ -157,7 +153,7 @@ def test_create_profile_and_assets():
         json=test_asset_ver_json,
         headers=headers).json())
     assert o.asset_id == asset_id
-    assert o.collection_id == collection_id
+    assert o.org_id == org_id
     assert o.name == test_asset_name
     assert o.version == [0, 1, 0]
     for f in o.contents:
@@ -170,7 +166,7 @@ def test_create_profile_and_assets():
     assert len(r) == 1
     o = munchify(r[0])
     assert o.asset_id == asset_id
-    assert o.collection_id == collection_id
+    assert o.org_id == org_id
 
     # create new asset version
     test_asset_ver_json = {
@@ -185,7 +181,7 @@ def test_create_profile_and_assets():
         json=test_asset_ver_json,
         headers=headers).json())
     assert o.asset_id == asset_id
-    assert o.collection_id == collection_id
+    assert o.org_id == org_id
     assert o.commit_ref == test_commit_ref + '-updated'
     assert o.name == test_asset_name + '-updated'
     assert o.version == [0, 2, 0]
@@ -195,12 +191,12 @@ def test_create_profile_and_assets():
     # query specific asset version
     o = munchify(client.get(f"{api_base}/assets/{asset_id}/versions/0.1.0").json())
     assert o.asset_id == asset_id
-    assert o.collection_id == collection_id
+    assert o.org_id == org_id
     assert o.version == [0, 1, 0]
 
     o = munchify(client.get(f"{api_base}/assets/{asset_id}/versions/0.2.0").json())
     assert o.asset_id == asset_id
-    assert o.collection_id == collection_id
+    assert o.org_id == org_id
     assert o.version == [0, 2, 0]
     assert o.name == test_asset_name + '-updated'
     assert len(o.contents) == 1
@@ -214,8 +210,8 @@ def test_create_profile_and_assets():
     r[1] = munchify(r[1])
     assert r[0].asset_id == asset_id
     assert r[1].asset_id == asset_id
-    assert r[0].collection_id == collection_id
-    assert r[1].collection_id == collection_id
+    assert r[0].org_id == org_id
+    assert r[1].org_id == org_id
     assert r[0].version == [0, 1, 0]
     assert r[1].version == [0, 2, 0]
 
