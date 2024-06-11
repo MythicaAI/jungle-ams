@@ -2,6 +2,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 import routes.upload.upload
 import routes.editor.editor
@@ -22,6 +23,8 @@ log_config.configure()
 log = logging.getLogger(__name__)
 
 app = FastAPI()
+
+Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(
     CORSMiddleware,
