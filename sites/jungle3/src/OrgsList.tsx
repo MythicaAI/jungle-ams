@@ -1,72 +1,91 @@
-import React from 'react';
-import {Box, Typography, Input, Button, List, ListItem, FormControl, FormLabel, Textarea} from '@mui/joy';
-import {Text} from "lucide-react";
-import {useGlobalStore} from "./stores/globalStore.ts";
+import React, {useEffect, useState} from 'react';
+import {Box, Input, Button, List, ListItem, FormControl, FormLabel, Textarea} from '@mui/joy';
+import {getData, postData} from "./services/backendCommon.ts";
+import {Org} from "./schema_types/profiles.ts";
+import {Form} from "react-router-dom";
+import {ResolvedOrgRef} from 'types/apiTypes.ts';
 
-const AssetEdit: React.FC = () => {
-  const {assetCreation} = useGlobalStore();
+const defaultOrg = (): Org => {
+    return {
+        id: '',
+        name: '',
+        description: '',
+        created: '',
+        updated: '',
+    }
+}
 
-  return (
-      <Box className="full-size-box">
-        <Typography gutterBottom>
-          Create Asset
-        </Typography>
-        Asset ID: {assetCreation.asset_id}
-        Collection ID: {assetCreation.collection_id}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <FormControl>
-            <FormLabel>
-              Name
-            </FormLabel>
-            <Input variant="outlined" defaultValue="Asset Name" />
+const OrgsList: React.FC = () => {
+  const [orgRefs, setOrgRefs] = useState<ResolvedOrgRef[]>();
+  const [org, setOrg] = useState<Org>(defaultOrg());
+  const [creating, setCreating] = useState<boolean>(false);
 
-          </FormControl>
-          <FormControl>
-            <FormLabel>
-              Collection
-            </FormLabel>
-            <Input variant="outlined" defaultValue="Choose a collection/namespace" />
+  useEffect(() => {
+    getData<ResolvedOrgRef[]>("orgs").then((data) => {setOrgRefs(data)});
+  }, []);
 
-          </FormControl>
-          <FormControl>
-            <FormLabel>
-              Version
-            </FormLabel>
-            <Input variant="outlined" defaultValue="0.0.0" />
+  const createOrg = () => {
+      setCreating(true);
+      postData<Org>("orgs", org).then((data) => {
+          setCreating(false)
+          setOrg(data);
 
-          </FormControl>
-          <FormControl>
-            <FormLabel>
-              Description
-            </FormLabel>
-            <Textarea variant="outlined" multiline="true" rows={4}></Textarea>
+          // query for updated org refs
+          getData<ResolvedOrgRef[]>("orgs").then((data) => {
+              setOrgRefs(data)
+          })
+      })
+  }
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const {name, value} = e.target;
+        setOrg((prevOrg) => ({
+            ...prevOrg,
+            [name]: value,
+        }));
+    };
 
-          </FormControl>
-          <FormControl>
-            <FormLabel>
-              Images
-            </FormLabel>
-            <Input variant="outlined" fullWidth />
+  const createForm = (
+          <Form>
+              <FormControl>
+                  <FormLabel>Name</FormLabel>
+                  <Input name="name" onChange={handleInputChange}></Input>
+              </FormControl>
+              <FormControl>
+                  <FormLabel>Description</FormLabel>
+                  <Input name="description" onchange={handleInputChange}></Input>
+              </FormControl>
+              <Button onClick={createOrg} disabled={creating}>
+                {creating ? 'Creating...' : 'Create'}
+              </Button>
+          </Form>
+      );
 
-          </FormControl>
-          <FormControl>
-            <FormLabel>
-              Links
-            </FormLabel>
-            <Input variant="outlined" fullWidth />
+  if (orgRefs === undefined) {
+      return (<Box className="full-size-box">loading...</Box>);
+  } else if (orgRefs.length === 0) {
+      return (<Box className="full-size-box" id="create-form">You are currently not part of any organizations.
+          Would you like to create a new organization? {createForm}</Box>);
+  }
+  return (<Box className="full-size-box">
+      <table>
+          <thead>
+          <tr>
+              <td>Org</td>
+              <td>Member</td>
+              <td>Role</td>
+          </tr>
+          </thead>
+          <tbody>
 
-          </FormControl>
-
-          <Box>
-            <Typography level="title-md">References</Typography>
-            <List>
-              <ListItem>File B</ListItem>
-              <ListItem>File C</ListItem>
-            </List>
-          </Box>
-        </Box>
-      </Box>
-  );
+          {orgRefs.map(ref => (
+              <tr key={ref.org_id}>
+                  <td>{ref.org_name}</td>
+                  <td>{ref.profile_name}</td>
+                  <td>{ref.role}</td>
+              </tr>))}
+          </tbody>
+      </table>
+  </Box>);
 };
 
-export default AssetEdit;
+export default OrgsList;

@@ -24,12 +24,11 @@ export interface Profile {
 // Types to represent profiles online
 // Table name: org_refs
 export interface OrgRef {
-    id: number;
-    created: string;
-    updated: string;
-    profile_id: string;
     org_id: string;
+    profile_id: string;
     role: string;
+    created: string;
+    created_by: string;
 }
 // Types to represent profiles online
 // Table name: orgs

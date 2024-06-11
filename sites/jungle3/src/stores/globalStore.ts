@@ -1,5 +1,7 @@
 import {create} from 'zustand';
 import {FileContent} from '../schema_types/media'
+import {ResolvedOrgRef} from "../types/apiTypes.ts";
+import {Profile} from "../schema_types/profiles.ts";
 
 interface AssetSummary {
   name: string;
@@ -42,19 +44,21 @@ const defaultAssetCreation: AssetCreation = {
   pendingFiles: []
 }
 
+const defaultProfile: Profile = {}
+
 interface GlobalState {
-  isLoggedIn: boolean;
-  userRole: string;
   authToken: string;
   refreshToken: string;
+  isLoggedIn: boolean;
 
+  profile: Profile,
+  orgRoles: ResolvedOrgRef[];
   assetCreation: AssetCreation;
   assetNavigation: AssetNavigation;
 
-  setLoggedIn: (loggedIn: boolean) => void;
-  setUserRole: (role: string) => void;
   setAuthToken: (token: string) => void;
-
+  setProfile: (profile: Profile) => void;
+  setOrgRoles: (roles: ResolvedOrgRef[]) => void;
   setAssetNavigation: (navigation: AssetNavigation) => void;
 
   updateAssetCreation: (update: Partial<AssetCreation>) => void;
@@ -62,17 +66,18 @@ interface GlobalState {
 
 export const useGlobalStore = create<GlobalState>((set) => ({
   isLoggedIn: false,
-  userRole: '',
   authToken: '',
   refreshToken: '',
 
+  profile: defaultProfile,
+  orgRoles: [],
   assetCreation: defaultAssetCreation,
   assetNavigation: defaultAssetNavigation,
 
-  setLoggedIn: (loggedIn) => set({isLoggedIn: loggedIn}),
-  setUserRole: (role) => set({userRole: role}),
-  setAuthToken: (authToken: string) => set( {authToken: authToken}),
+  setAuthToken: (authToken: string) => set( {authToken: authToken, isLoggedIn: authToken !== '' }),
   setRefreshToken: (refreshToken: string) => set( {refreshToken: refreshToken}),
+  setProfile: (profile: Profile) => set( {profile: profile}),
+  setOrgRoles: (roles) => set({orgRoles: roles}),
 
   setAssetNavigation: (navigation: AssetNavigation) => set(
       {assetNavigation: navigation}),

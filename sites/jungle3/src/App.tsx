@@ -18,25 +18,22 @@ function App() {
     const tabsChanged = (e, value: number): void => {
         setActiveTab(value);
     }
-    const [cookies, ] = useCookies(['profile_id', 'auth_token', 'refresh_token'])
+
     const location = useLocation();
     const [activeTab, setActiveTab] = useState(0);
 
-    const isAuthenticated = () => {
-        if (cookies.auth_token === undefined) {
-            return false;
-        }
-        console.log("auth_token", cookies.auth_token);
-        return cookies.auth_token !== '';
-    }
+
 
     useEffect(() => {
         switch (location.pathname) {
+            case '/profile':
+                setActiveTab(2);
+                break;
             case '/uploads':
                 setActiveTab(1);
                 break;
-            case '/profile':
-                setActiveTab(2);
+            case '/orgs':
+                setActiveTab(3);
                 break;
             case '/':
             default:
@@ -49,21 +46,20 @@ function App() {
         {/* must be used under CssVarsProvider */}
         <CssBaseline/>
         <Sheet sx={{ width: '100%', height: '100%' }}>
-            <Typography level="h1" component="h1">
-                HDA Manager
-            </Typography>
-
-            <AuthHeader authenticated={isAuthenticated()}/>
+            <AuthHeader/>
             <Tabs orientation='vertical' variant='outlined' onChange={tabsChanged}>
                 <TabList>
+                    <Tab variant="plain" color="neutral" component={Link} to={"/profile"}>
+                        Profile
+                    </Tab>
                     <Tab variant="plain" color="neutral" component={Link} to={"/"}>
                         Assets
                     </Tab>
                     <Tab variant="plain" color="neutral" component={Link} to={"/uploads"}>
                         Uploads
                     </Tab>
-                    <Tab variant="plain" color="neutral" component={Link} to={"/profile"}>
-                        Profile
+                    <Tab variant="plain" color="neutral" component={Link} to={"/orgs"}>
+                        Orgs
                     </Tab>
                 </TabList>
                 <TabPanel value={0}>
@@ -74,6 +70,9 @@ function App() {
                 </TabPanel>
                 <TabPanel value={2}>
                     {activeTab === 2 && <Outlet />}
+                </TabPanel>
+                <TabPanel value={3}>
+                    {activeTab === 3 && <Outlet />}
                 </TabPanel>
             </Tabs>
         </Sheet>

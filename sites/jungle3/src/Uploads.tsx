@@ -31,7 +31,7 @@ const Uploads = () => {
 
     useEffect(() => {
         if (!profile) {
-            getData<ProfileResponse>(`profiles/${cookies.user}`).then(r => {
+            getData<ProfileResponse>(`profiles/${cookies.profile_id}`).then(r => {
                     setProfile(r);
                 }
             ).catch(error => {
@@ -39,7 +39,6 @@ const Uploads = () => {
             });
         }
         if (authToken) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
             getData<FileContent[]>("upload/pending").then(files => {
                 console.log("loading pending uploads")
                 updateAssetCreation({pendingFiles: files})

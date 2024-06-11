@@ -26,10 +26,9 @@ const Login: React.FC = () => {
     // 32a05c1d-d2c6-47f2-9411-156c3619c71a
     getData<SessionStartResponse>(`profiles/start_session/${username}`).then(r => {
       console.log(`auth: ${r.token}`)
+      setCookie('auth_token', r.token, { path: '/' });
+      setCookie('refresh_token', '', { path: '/' });
       setAuthToken(r.token);
-      setLoggedIn(true);
-      setCookie('auth_token', r.token, { path: '/' })
-      setCookie('refresh_token', '', { path: '/' })
       axios.defaults.headers.common['Authorization'] = `Bearer ${r.token}`;
     })
   };

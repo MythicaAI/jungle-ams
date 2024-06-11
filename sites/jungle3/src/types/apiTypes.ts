@@ -1,4 +1,4 @@
-import {ProfileSession} from "../schema_types/profiles.ts";
+import {OrgRef, ProfileSession} from "../schema_types/profiles.ts";
 
 type ApiResponse<T> = {
       message: string,
@@ -75,6 +75,11 @@ export interface AssetCreateVersionResponse {
       commit_ref: string,
       created: ISOTime,
       contents: AssetVersionContent[]
+}
+
+export interface ResolvedOrgRef extends OrgRef {
+    org_name: string,
+    profile_name: string
 }
 
 export type UploadAssetList = Array<UploadAsset>;
