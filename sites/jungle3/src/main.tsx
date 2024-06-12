@@ -13,6 +13,7 @@ import Uploads from "./Uploads.tsx";
 import Assets from "./Assets.tsx";
 import AssetEdit from "./AssetEdit.tsx";
 import Login from "./Login.tsx";
+import OrgsList from "./OrgsList.tsx";
 
 const router = createBrowserRouter([
   {
@@ -37,14 +38,22 @@ const router = createBrowserRouter([
         element: <AssetEdit/>,
       },
       {
+        path: "orgs",
+        element: <OrgsList/>,
+      },
+      {
         path: "login",
         element: <Login/>
       }]
   }]
 );
+//
+// ReactDOM.createRoot(document.getElementById('root')!).render(
+//   <React.StrictMode>
+//     <RouterProvider router={router} />
+//   </React.StrictMode>
+// )
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
     <RouterProvider router={router} />
-  </React.StrictMode>
 )

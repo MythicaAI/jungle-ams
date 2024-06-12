@@ -7,7 +7,6 @@ import {AssetCreateRequest, AssetCreateResponse, ProfileResponse} from "./types/
 import {getData, postData} from "./services/backendCommon.ts";
 import {FileContent} from "./schema_types/media.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
-import axios from "axios";
 import {format, parseISO} from "date-fns";
 import AssetEdit from "./AssetEdit.tsx";
 
@@ -25,31 +24,18 @@ const VisuallyHiddenInput = styled('input')`
 
 
 const Uploads = () => {
-    const [cookies, ] = useCookies(['profile_id', 'auth_token'])
-    const [profile, setProfile] = useState<ProfileResponse>();
-    const {updateAssetCreation, authToken, assetCreation} = useGlobalStore();
+    const {updateAssetCreation, authToken, orgRoles, assetCreation} = useGlobalStore();
 
     useEffect(() => {
-        if (!profile) {
-            getData<ProfileResponse>(`profiles/${cookies.user}`).then(r => {
-                    setProfile(r);
-                }
-            ).catch(error => {
-                console.error(error);
-            });
-        }
         if (authToken) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+            console.log("loading pending uploads")
             getData<FileContent[]>("upload/pending").then(files => {
-                console.log("loading pending uploads")
                 updateAssetCreation({pendingFiles: files})
             }).catch(error => {
                 console.error(error);
             });
-        } else {
-            console.log("not authorized yet")
         }
-    }, [profile, cookies, updateAssetCreation])
+    }, [authToken])
 
     const [filesSelected, setFilesSelected] = useState<File[]>() // also tried <string | Blob>
     const [formData, setFormData] = useState<FormData>();
@@ -140,7 +126,7 @@ const Uploads = () => {
 
     return (
         <Box>
-            {assetCreation.asset_id ? <Button
+            {!assetCreation.asset_id ? <Button
                 component="label"
                 variant={"plain"}
                 color={"neutral"}

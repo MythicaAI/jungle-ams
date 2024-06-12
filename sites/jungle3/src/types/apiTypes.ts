@@ -1,4 +1,4 @@
-import {ProfileSession} from "../schema_types/profiles.ts";
+import {OrgRef, ProfileSession} from "../schema_types/profiles.ts";
 
 type ApiResponse<T> = {
       message: string,
@@ -34,6 +34,21 @@ export type ProfileResponse = {
       updated: ISOTime,
       email_verified: boolean,
 };
+
+export const defaultProfileResponse = () => {
+      return {
+            id: '',
+            name: '',
+            description: '',
+            email: '',
+            signature: '',
+            profile_base_href: '',
+            active: false,
+            created: '',
+            updated: '',
+            email_verified: false,
+      };
+}
 
 export interface SessionStartResponse {
       token: string,
@@ -75,6 +90,11 @@ export interface AssetCreateVersionResponse {
       commit_ref: string,
       created: ISOTime,
       contents: AssetVersionContent[]
+}
+
+export interface ResolvedOrgRef extends OrgRef {
+    org_name: string,
+    profile_name: string
 }
 
 export type UploadAssetList = Array<UploadAsset>;

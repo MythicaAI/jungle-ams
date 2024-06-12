@@ -13,7 +13,7 @@ export interface Asset {
     updated: string;
     deleted: string;
     published: boolean;
-    collection_id: string;
+    org_id: string;
     owner: string;
 }
 // Metadata to store relationships and descriptions of assets

@@ -8,7 +8,7 @@ import auth.roles as roles
 from auth.data import resolve_profile, resolve_roles
 from db.schema.profiles import Profile, Org, OrgRef
 from db.connection import get_session
-from sqlmodel import Session, select, update, delete, insert
+from sqlmodel import Session, select, update, delete, insert, col
 from sqlalchemy.sql.functions import now as sql_now
 from routes.authorization import current_profile
 from auth.authorization import validate_roles
@@ -41,6 +41,11 @@ class OrgRemoveRoleRequest(BaseModel):
     role: str
 
 
+class ResolvedOrgRef(OrgRef):
+    org_name: str
+    profile_name: str
+
+
 router = APIRouter(prefix="/orgs", tags=["orgs"])
 
 
@@ -51,6 +56,26 @@ def resolve_and_validate(session: Session, profile: Profile, org_id: UUID, requi
     if not validate_roles(required_role, profile_roles):
         raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid roles in {profile_roles}")
     pass
+
+
+def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[ResolvedOrgRef]:
+    org_ids = set()
+    profile_ids = set()
+    for ref in refs:
+        org_ids.add(ref.org_id)
+        profile_ids.add(ref.profile_id)
+    orgs = {org.id: org for org in
+            session.exec(select(Org).where(col(Org.id).in_(org_ids))).all()}
+    profiles = {profile.id: profile for profile in
+                session.exec(select(Profile).where(col(Profile.id).in_(profile_ids))).all()}
+    results = list()
+    for ref in refs:
+        org = orgs.get(ref.org_id, Org())
+        profile = profiles.get(ref.profile_id, Profile())
+        results.append(ResolvedOrgRef(**ref.model_dump(),
+                                      org_name=org.name,
+                                      profile_name=profile.name))
+    return results
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
@@ -109,10 +134,11 @@ async def delete_org(org_id: UUID, profile: Profile = Depends(current_profile)):
 
 
 @router.get('/')
-async def get_org(profile: Profile = Depends(current_profile)) -> list[OrgRef]:
+async def get_org(profile: Profile = Depends(current_profile)) -> list[ResolvedOrgRef]:
     """Default get returns roles for the requesting profile"""
     with get_session() as session:
-        return session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all()
+        return resolve_org_refs(session,
+                                session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all())
 
 
 @router.get('/{org_id}')
@@ -128,10 +154,12 @@ async def get_org(org_id: UUID = None, profile: Profile = Depends(current_profil
 
 
 @router.get('/{org_id}/roles')
-async def get_org_roles(org_id: UUID) -> list[OrgRef]:
+async def get_org_roles(org_id: UUID) -> list[ResolvedOrgRef]:
     """Get all the roles in the organization """
     with get_session() as session:
-        return session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all()
+        return resolve_org_refs(
+            session,
+            session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all())
 
 
 @router.post('/{org_id}/roles/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
@@ -139,7 +167,7 @@ async def add_role_to_org(
         org_id: UUID,
         profile_id: UUID,
         role: str,
-        profile: Profile = Depends(current_profile)) -> list[OrgRef]:
+        profile: Profile = Depends(current_profile)) -> list[ResolvedOrgRef]:
     """Create a new role for an organization"""
     with get_session() as session:
         resolve_and_validate(session, profile, org_id, roles.org_add_role)
@@ -148,7 +176,9 @@ async def add_role_to_org(
             org_id=org_id, profile_id=profile_id, role=role, created_by=profile.id))
         session.commit()
 
-        return session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all()
+        return resolve_org_refs(
+            session,
+            session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all())
 
 
 @router.delete('/{org_id}/roles/{profile_id}/{role}')
@@ -156,7 +186,7 @@ async def remove_role_from_org(
         org_id: UUID,
         profile_id: UUID,
         role: str,
-        profile=Depends(current_profile)) -> list[OrgRef]:
+        profile=Depends(current_profile)) -> list[ResolvedOrgRef]:
     """Delete a role from an organization"""
     with get_session() as session:
         resolve_and_validate(session, profile, org_id, roles.org_remove_role)
@@ -164,4 +194,6 @@ async def remove_role_from_org(
             OrgRef.org_id == org_id, OrgRef.profile_id == profile_id, OrgRef.role == role))
         session.commit()
 
-        return session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all()
+        return resolve_org_refs(
+            session,
+            session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all())

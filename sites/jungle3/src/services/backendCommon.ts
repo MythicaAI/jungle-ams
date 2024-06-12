@@ -11,7 +11,7 @@ export const getData  = async <T>(subpath: string): Promise<T> => {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             // Handle Axios-specific errors here
-            console.error('Axios error:', error.message, "response:", error.response ? error.response.data.detail : "");
+            console.error('url:', url, 'error:', error.message, "response:", error.response ? error.response.data.detail : "");
             throw new Error('An error occurred while fetching the user data');
         } else {
             // Handle non-Axios errors here
