@@ -8,6 +8,8 @@ on:
 jobs:
   pylint:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "${{ github.workspace }}/api/app"
 
     strategy:
       matrix:
