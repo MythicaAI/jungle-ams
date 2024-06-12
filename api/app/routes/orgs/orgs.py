@@ -146,7 +146,7 @@ async def get_org(profile: Profile = Depends(current_profile)) -> list[ResolvedO
 
 
 @router.get('/{org_id}')
-async def get_org(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
+async def get_org_by_id(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
     """Get organization by ID"""
     with get_session() as session:
         if org_id is None:

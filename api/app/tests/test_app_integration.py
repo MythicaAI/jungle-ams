@@ -90,7 +90,6 @@ def test_create_profile_and_assets():
     assert len(o.events) == 2
     assert len(o.files) == 2
     file_ids = list(o.files)
-    event_ids = list(o.events)
 
     # validate file content
     for f in file_ids:

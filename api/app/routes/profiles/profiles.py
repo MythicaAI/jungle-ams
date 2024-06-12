@@ -136,9 +136,9 @@ async def create_profile(
     try:
         profile = Profile(**req_profile.dict())
     except TypeError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e))
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
     except ValidationError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e))
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
 
     session.add(profile)
     session.commit()
