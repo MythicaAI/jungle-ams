@@ -140,8 +140,7 @@ async def create_asset(r: AssetCreateRequest,
             col_result = session.exec(select(Org).where(
                 Org.id == r.org_id)).one_or_none()
             if col_result is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND, f"org {
-                                    r.org_id} not found")
+                raise HTTPException(HTTPStatus.NOT_FOUND, f"org {r.org_id} not found")
 
         asset_result = session.exec(insert(Asset).values(
             org_id=r.org_id, owner=profile.id))
@@ -164,8 +163,7 @@ async def create_asset_version(asset_id: UUID,
         # Validate asset ID
         asset = session.exec(select(Asset).where(Asset.id == asset_id)).first()
         if asset is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{
-                                asset_id}' not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}' not found")
 
         # Validate and load contents
         contents = list()
@@ -177,9 +175,9 @@ async def create_asset_version(asset_id: UUID,
                      'file_name': file.name,
                      'content_hash': file.content_hash,
                      'size': file.size})
-            except FileNotFoundError:
+            except FileNotFoundError as exc:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
-                                    detail=f"file '{file_id}' not found")
+                                    detail=f"file '{file_id}' not found") from exc
 
         # Create the revision, fails if the revision already exists
         try:
@@ -219,11 +217,10 @@ async def create_asset_version(asset_id: UUID,
                                       commit_ref=version.commit_ref,
                                       created=version.created,
                                       contents=version.contents)
-        except sqlalchemy.exc.IntegrityError:
+        except sqlalchemy.exc.IntegrityError as exc:
             detail = (f'asset: {asset.id} '
                       'version {[r.major, r.minor, r.patch]} exists')
-            raise HTTPException(HTTPStatus.CONFLICT,
-                                detail=detail)
+            raise HTTPException(HTTPStatus.CONFLICT, detail=detail) from exc
 
 
 @router.get('/{asset_id}/versions/{version_str}')
@@ -235,13 +232,11 @@ async def get_asset_version_by_id(
     with get_session() as session:
         asset = session.exec(select(Asset).where(Asset.id == asset_id)).first()
         if asset is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{
-                                asset_id}' not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}' not found")
 
         version = select_asset_version(session, asset.id, version_id)
         if version is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{
-                                asset_id}', version {version_id} not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}', version {version_id} not found")
 
         return AssetVersionResult(
             asset_id=asset.id,
@@ -253,4 +248,3 @@ async def get_asset_version_by_id(
             commit_ref=version.commit_ref,
             created=version.created,
             contents=version.contents)
-

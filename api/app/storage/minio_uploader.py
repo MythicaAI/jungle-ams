@@ -48,7 +48,8 @@ class Client(StorageClient):
         ctx.object_name = ctx.content_hash + '.' + ctx.extension
         # Upload the file, renaming it in the process
         try:
-            self.minio.fput_object(ctx.bucket_name, ctx.object_name, ctx.local_filepath)
+            self.minio.fput_object(
+                ctx.bucket_name, ctx.object_name, ctx.local_filepath)
             log.info(f"{ctx.object_name} uploaded to bucket {ctx.bucket_name}")
         except S3Error as exc:
             log.exception(f"upload failed to {ctx.bucket_name}:{ctx.object_name}",
@@ -58,7 +59,6 @@ class Client(StorageClient):
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
         _create_bucket(self.minio, bucket_name)
 
-        bucket_name = bucket_name
         object_name = ctx.content_hash + '.' + ctx.extension
 
         # Initialize hash

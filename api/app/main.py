@@ -1,3 +1,5 @@
+"""Main entrypoint for FastAPI app creation"""
+
 import logging
 
 from fastapi import FastAPI
@@ -43,7 +45,6 @@ app.include_router(routes.orgs.orgs.router, prefix=api_prefix)
 app.include_router(routes.topos.topos.router, prefix=api_prefix)
 
 
-
 @app.get("/")
 def root():
     log.info('Root endpoint hit')
@@ -60,4 +61,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

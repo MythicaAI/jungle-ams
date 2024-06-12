@@ -1,9 +1,7 @@
 from http import HTTPStatus
-
-from auth import roles
-from db.schema.profiles import Profile
-import auth.roles as roles
 from fastapi import HTTPException
+
+import auth.roles as roles
 
 
 role_aliases: dict = {
@@ -13,10 +11,11 @@ role_aliases: dict = {
 }
 
 
-def validate_roles(required_role: str, roles: set[str]) -> bool:
-    if required_role in roles:
+def validate_roles(required_role: str, profile_roles: set[str]) -> bool:
+    """Validate that the required role is satisfied by the given role set."""
+    if required_role in profile_roles:
         return True
-    for role in roles:
+    for role in profile_roles:
         if role == required_role:
             return True
         aliases = role_aliases.get(role, set())
@@ -25,4 +24,4 @@ def validate_roles(required_role: str, roles: set[str]) -> bool:
         if required_role in aliases:
             return True
 
-    raise HTTPException(HTTPStatus.BAD_REQUEST, f'no role for {required_role} {roles}"')
+    raise HTTPException(HTTPStatus.BAD_REQUEST, f'{required_role} not satisfied by {profile_roles}"')

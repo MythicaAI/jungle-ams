@@ -54,7 +54,8 @@ def resolve_and_validate(session: Session, profile: Profile, org_id: UUID, requi
     profile = resolve_profile(session, profile)
     profile_roles = resolve_roles(session, profile, org_id)
     if not validate_roles(required_role, profile_roles):
-        raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid roles in {profile_roles}")
+        raise HTTPException(HTTPStatus.FORBIDDEN,
+                            detail=f"no valid roles in {profile_roles}")
     pass
 
 
@@ -90,7 +91,8 @@ async def create_org(
         session.add(org)
 
         # create the admin from the profile
-        admin = OrgRef(org_id=org.id, profile_id=profile.id, role='admin', created_by=profile.id)
+        admin = OrgRef(org_id=org.id, profile_id=profile.id,
+                       role='admin', created_by=profile.id)
         session.add(admin)
         session.commit()
         session.refresh(admin)
@@ -109,7 +111,8 @@ async def update_org(
     with get_session(echo=True) as session:
         org = session.exec(select(Org).where(Org.id == org_id)).first()
         if org is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"org: {org_id} not found")
+            raise HTTPException(HTTPStatus.NOT_FOUND,
+                                f"org: {org_id} not found")
 
         resolve_and_validate(session, profile, org_id, roles.org_update)
 
@@ -117,7 +120,8 @@ async def update_org(
             Org.id == org_id).values(
             **req.model_dump(), updated=sql_now()))
         if r.rowcount == 0:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f"update for: {org_id} failed")
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                f"update for: {org_id} failed")
         session.commit()
         session.refresh(org)
         return org
@@ -142,12 +146,13 @@ async def get_org(profile: Profile = Depends(current_profile)) -> list[ResolvedO
 
 
 @router.get('/{org_id}')
-async def get_org(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
+async def get_org_by_id(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
     """Get organization by ID"""
     with get_session() as session:
         if org_id is None:
             if profile is None:
-                raise HTTPException(HTTPStatus.FORBIDDEN, detail=f"no valid profile")
+                raise HTTPException(HTTPStatus.FORBIDDEN,
+                                    detail="no valid profile")
             return session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all()
         org = session.exec(select(Org).where(Org.id == org_id)).first()
         return org

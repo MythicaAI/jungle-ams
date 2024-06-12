@@ -1,5 +1,5 @@
-from fastapi.testclient import TestClient
 from http import HTTPStatus
+from fastapi.testclient import TestClient
 from munch import munchify
 
 from .profile_test import ProfileTestInfo
