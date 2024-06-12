@@ -80,8 +80,7 @@ class Client(StorageClient):
             self.minio.put_object(bucket_name, object_name, data, length=size)
             log.info(f"{object_name} uploaded to bucket {bucket_name}")
         except S3Error as exc:
-            log.exception(f"Upload failed to {bucket_name}:{
-                          object_name}", exc_info=exc)
+            log.exception(f"Upload failed to {bucket_name}:{object_name}", exc_info=exc)
             raise
 
         # Finalize hash and location

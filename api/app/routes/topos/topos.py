@@ -99,8 +99,7 @@ async def update_topology(
                 raise HTTPException(HTTPStatus.BAD_REQUEST,
                                     detail=f'invalid topo name: {req.name}')
             if session.exec(select(Topology).where(Topology.name == req.name)).first() is not None:
-                raise HTTPException(HTTPStatus.CONFLICT, detail=f'topology: {
-                                    req.name} already exists')
+                raise HTTPException(HTTPStatus.CONFLICT, detail=f'topology: {req.name} already exists')
 
         # Update the topology
         r = session.exec(

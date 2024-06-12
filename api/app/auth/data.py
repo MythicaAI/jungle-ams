@@ -28,12 +28,11 @@ def get_profile(authorization: str) -> Profile:
 
 
 def resolve_profile(session, profile: Profile) -> Profile:
-    profile = session.exec(
+    resolved_profile = session.exec(
         select(Profile).where(Profile.id == profile.id)).first()
-    if profile is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail=f'Profile {
-                            profile.id} not found')
-    return profile
+    if resolved_profile is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail=f'Profile {profile.id} not found')
+    return resolved_profile
 
 
 def resolve_roles(session: Session, profile: Profile, org_id: UUID) -> set[str]:
