@@ -1,3 +1,6 @@
+"""
+Application configuration definitions
+"""
 import tempfile
 import functools
 from pydantic_settings import BaseSettings
@@ -9,6 +12,8 @@ temp_dir = tempfile.TemporaryDirectory()
 
 
 class AppConfig(BaseSettings):
+    """This is the config type for the application, it can be modified from the
+    environment by defining SETTING_NAME variables"""
     upload_folder: str = temp_dir.name
     upload_folder_auto_clean: bool = True
     enable_storage: bool = True
@@ -26,6 +31,8 @@ class AppConfig(BaseSettings):
     secret_key: str = 'test'
     mythica_location: str = 'localhost'
 
+
 @functools.lru_cache
 def app_config() -> AppConfig:
+    """Get the current cached application config"""
     return AppConfig()

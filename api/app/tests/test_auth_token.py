@@ -8,7 +8,8 @@ TEST_EMAIL = 'test@test.com'
 
 def test_auth_token():
     profile_id = uuid4()
-    profile = Profile(id=profile_id, email=TEST_EMAIL, email_verified=False, location='localhost')
+    profile = Profile(id=profile_id, email=TEST_EMAIL,
+                      email_verified=False, location='localhost')
     token = generate_token(profile)
     assert token is not None
     assert len(token.split(':')[1]) == DIGEST_SIZE*2  # for hex encoding
@@ -17,4 +18,3 @@ def test_auth_token():
     assert profile.email == TEST_EMAIL
     assert profile.email_verified == 'N'
     assert profile.id == profile_id
-

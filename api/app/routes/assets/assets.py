@@ -177,9 +177,9 @@ async def create_asset_version(asset_id: UUID,
                      'file_name': file.name,
                      'content_hash': file.content_hash,
                      'size': file.size})
-            except FileNotFoundError:
+            except FileNotFoundError as exc:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
-                                    detail=f"file '{file_id}' not found")
+                                    detail=f"file '{file_id}' not found") from exc
 
         # Create the revision, fails if the revision already exists
         try:
@@ -219,11 +219,10 @@ async def create_asset_version(asset_id: UUID,
                                       commit_ref=version.commit_ref,
                                       created=version.created,
                                       contents=version.contents)
-        except sqlalchemy.exc.IntegrityError:
+        except sqlalchemy.exc.IntegrityError as exc:
             detail = (f'asset: {asset.id} '
                       'version {[r.major, r.minor, r.patch]} exists')
-            raise HTTPException(HTTPStatus.CONFLICT,
-                                detail=detail)
+            raise HTTPException(HTTPStatus.CONFLICT, detail=detail) from exc
 
 
 @router.get('/{asset_id}/versions/{version_str}')
@@ -253,4 +252,3 @@ async def get_asset_version_by_id(
             commit_ref=version.commit_ref,
             created=version.created,
             contents=version.contents)
-

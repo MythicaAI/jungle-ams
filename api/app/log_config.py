@@ -1,4 +1,6 @@
-
+"""
+Application logging configuration
+"""
 import logging
 #
 # class RequestFormatter(logging.Formatter):
