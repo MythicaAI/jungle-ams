@@ -4,12 +4,14 @@ import {SessionStartResponse} from "./types/apiTypes.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
 import {getData} from "./services/backendCommon.ts";
 import axios from "axios";
+import {useNavigate} from "react-router-dom";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [, setCookie] = useCookies(['profile_id', 'auth_token', 'refresh_token']);
-  const {setAuthToken, setLoggedIn} = useGlobalStore();
+  const {setAuthToken} = useGlobalStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setUsername("32a05c1d-d2c6-47f2-9411-156c3619c71a")
@@ -30,6 +32,7 @@ const Login: React.FC = () => {
       setCookie('refresh_token', '', { path: '/' });
       setAuthToken(r.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${r.token}`;
+      navigate("/");
     })
   };
 

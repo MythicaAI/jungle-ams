@@ -1,31 +1,26 @@
-import {Box, Input, Avatar, FormControl, FormLabel} from '@mui/joy';
-import {useEffect, useState} from "react";
-import {getData} from "./services/backendCommon.ts";
-import {ProfileResponse} from "./types/apiTypes.ts";
+import {Box, Input, Avatar, FormControl, FormLabel, List, ListItem} from '@mui/joy';
+import {ProfileResponse, ResolvedOrgRef} from "./types/apiTypes.ts";
 import {useCookies} from "react-cookie";
-
-const userProfile = {
-  name: 'John Doe',
-  description: 'Sample user profile',
-  org: 'Org Name',
-  profileImage: 'path/to/image.jpg',
-  profileSignature: 'John Doe Signature',
-  lastOnline: '2024-05-25',
-  uploadCount: 5
-};
+import {useGlobalStore} from "./stores/globalStore.ts";
+import {postData} from "./services/backendCommon.ts";
+import {Profile} from "./schema_types/profiles.ts";
+import {useState} from "react";
+import {Form} from "react-router-dom";
 
 const Settings = () => {
-    const [cookies, ] = useCookies(['user'])
-    const [profile, setProfile] = useState<ProfileResponse>();
-    useEffect(() => {
-        getData<ProfileResponse>(`profiles/${cookies.user}`).then(r => {
-                setProfile(r);
-            }
-        )
-    }, [cookies])
+    const [cookies, ] = useCookies(['profile_id'])
+    const [profileResponse, setProfileResponse] = useState<ProfileResponse>();
+    const {profile, setProfile, orgRoles} = useGlobalStore();
 
-    const profileEdit = profile && <Box>
-        <Avatar src={userProfile.profileImage} alt="Profile Image" />
+    const onUpdateProfile = (formData) => {
+        postData<ProfileResponse>(`profiles/${cookies.profile_id}`, formData).then(r =>
+            {
+                setProfileResponse(r)
+                setProfile(r as Profile);
+            });
+    }
+
+    const profileEdit = profile && <Form onSubmit={onUpdateProfile}>
       <FormControl>
         <FormLabel>
           Name
@@ -42,9 +37,17 @@ const Settings = () => {
       </FormControl>
       <FormControl>
         <FormLabel>
-          Organization
+          Organizations
         </FormLabel>
-        <Input value={profile.org} />
+        <FormLabel>
+            <List>
+            {orgRoles.map(role => (
+                <ListItem key={role.org_id}>
+                    {role.org_name}
+                </ListItem>)
+            )}
+            </List>
+        </FormLabel>
 
       </FormControl>
       <FormControl>
@@ -61,7 +64,7 @@ const Settings = () => {
         <Input value={profile.updated} />
 
       </FormControl>
-    </Box>
+    </Form>
 
     const profileLoading = <Box>
         Loading

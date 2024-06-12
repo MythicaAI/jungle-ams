@@ -35,6 +35,21 @@ export type ProfileResponse = {
       email_verified: boolean,
 };
 
+export const defaultProfileResponse = () => {
+      return {
+            id: '',
+            name: '',
+            description: '',
+            email: '',
+            signature: '',
+            profile_base_href: '',
+            active: false,
+            created: '',
+            updated: '',
+            email_verified: false,
+      };
+}
+
 export interface SessionStartResponse {
       token: string,
       profile: ProfileResponse,

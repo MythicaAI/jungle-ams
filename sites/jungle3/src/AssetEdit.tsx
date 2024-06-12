@@ -1,24 +1,14 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Typography, Input, Button, List, ListItem, FormControl, FormLabel, Textarea, Select} from '@mui/joy';
-import {Text} from "lucide-react";
+import {Box, Typography, Input, Button, List, ListItem, FormControl, FormLabel, Select, Option} from '@mui/joy';
+import Textarea from '@mui/joy/Textarea';
 import {useGlobalStore} from "./stores/globalStore.ts";
-import {ResolvedOrgRef} from "./types/apiTypes.ts";
-import {getData} from "./services/backendCommon.ts";
 
 const AssetEdit: React.FC = () => {
-  const defaultOrgRefs: ResolvedOrgRef[] = [];
-  const {assetCreation} = useGlobalStore();
-  const [orgRefs, setOrgRefs] = useState<ResolvedOrgRef[]>(defaultOrgRefs);
-  useEffect(() => {
-    getData<ResolvedOrgRef[]>("orgs").then(data => {
-      setOrgRefs(data)
-    })
-  }, []);
+  const {assetCreation, orgRoles} = useGlobalStore();
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const formJson = Object.fromEntries((formData as any).entries());
+    const formJson = Object.fromEntries(formData.entries());
     alert(JSON.stringify(formJson));
   }
   return (
@@ -43,8 +33,10 @@ const AssetEdit: React.FC = () => {
                 Namespace
               </FormLabel>
               <Select placeholder={"Choose an existing org..."}>
-                {orgRefs.map(ref =>
-                  <Option key={ref.org_id}>{ref.org_name}</Option>
+                {orgRoles.map(role =>(
+                  <Option key={role.org_id} value={role.org_id}>
+                    {role.org_name}
+                  </Option>)
                 )}
               </Select>
 
@@ -60,7 +52,12 @@ const AssetEdit: React.FC = () => {
               <FormLabel>
                 Description
               </FormLabel>
-              <Textarea variant="outlined" multiline="true" rows={4}></Textarea>
+              <Textarea
+                  placeholder="Fill out a description..."
+                  variant="outlined"
+                  size="md"
+                  minRows={4}>
+              </Textarea>
 
             </FormControl>
             <FormControl>
