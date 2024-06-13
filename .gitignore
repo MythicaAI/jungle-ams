@@ -45,3 +45,6 @@ __pycache__
 # p/npm artifacts
 **/node_modules
 **/build*
+
+# Some secrets
+api/app/.env
