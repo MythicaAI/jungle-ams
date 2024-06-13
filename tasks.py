@@ -2,7 +2,6 @@
 import re
 import os
 import subprocess
-from operator import call
 
 from invoke import task
 
@@ -88,11 +87,17 @@ def build_image(c, image_path):
               image_name}:{commit_hash}', pty=True)
 
 
-def deploy_image(c, image_path):
+def deploy_image(c, image_path, target):
     """Deploy a docker image"""
     image_name = IMAGES[image_path]['name']
     commit_hash = get_commit_hash()
-    repo = GCS_IMAGE_REPO
+    if target == "gcs":
+        repo = GCS_IMAGE_REPO
+    elif target == "cpln":
+        repo = CPLN_IMAGE_REPO
+    else:
+        raise ValueError(f"unknown deployment target {target}")
+
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(f"docker tag {image_name}:{commit_hash} {
               repo}/{image_name}:{commit_hash}", pty=True)
@@ -174,12 +179,12 @@ def docker_build(c, image='all'):
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})
-def docker_deploy(c, image='all'):
-    image_path_action(c, image, deploy_image)
+def docker_deploy(c, image='all', target='gcs'):
+    image_path_action(c, image, deploy_image, target=target)
 
 
 @task(help={
     'image': f'Image path to run: {IMAGES.keys()}',
-    'background': f'Run the image in the background'})
+    'background': 'Run the image in the background'})
 def docker_run(c, image='api/app', background=False):
     image_path_action(c, image, run_image, background=background)
