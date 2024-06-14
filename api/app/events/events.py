@@ -48,11 +48,11 @@ class EventsSession(object):
         self.conn = None
         self.event_type_prefix = event_type_prefix
 
-    def __enter__(self) -> Self:
+    async def __aenter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.async_engine.dispose()
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.async_engine.dispose()
         if self.conn:
             self.conn.close()
 
