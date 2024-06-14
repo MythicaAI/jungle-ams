@@ -38,7 +38,7 @@ def launch_container():
     process_output(*run_docker(["docker", "run", "--rm", IMAGE_NAME, 'run.py helloworld']))
 
 
-def parse_job_data(json):
+def parse_job_data(_):
     pass
 
 
