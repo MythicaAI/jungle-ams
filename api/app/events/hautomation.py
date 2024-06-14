@@ -5,11 +5,10 @@ import os
 
 from events.events import EventsSession
 
-#CONTAINER_NAME = 'hautomation'
-CONTAINER_NAME = "hello-world"
+CONTAINER_REPO = 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
+CONTAINER_NAME = 'darol-houdini'
 CONTAINER_TAG = 'latest'
-CONTAINER_REPO = ''
-IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_TAG}:{CONTAINER_NAME}"
+IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
 
 
 def run_docker(docker_command: list[str]):
@@ -32,7 +31,7 @@ def process_output(stdout, stderr, returncode):
 
 
 def pull_container():
-    process_output(*run_docker(['docker', 'pull', CONTAINER_NAME]))
+    process_output(*run_docker(['docker', 'pull', IMAGE_NAME]))
 
 
 def launch_container():
