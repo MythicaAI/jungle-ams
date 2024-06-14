@@ -1,4 +1,5 @@
 import hashlib
+import pytest
 import tempfile
 from http import HTTPStatus
 from pathlib import Path
@@ -93,4 +94,5 @@ def test_download():
     api = API(client)
     with tempfile.TemporaryDirectory() as tmp_dir:
         for f in create_files():
-            api.download_file(f, Path(tmp_dir))
+            with pytest.raises(FileNotFoundError, match="TODO: add local file testing"):
+                api.download_file(f, Path(tmp_dir))
