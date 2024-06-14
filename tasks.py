@@ -6,6 +6,7 @@ import subprocess
 from invoke import task
 
 COMMIT_HASH = ''
+PTY_SUPPORTED = os.name != 'nt'
 
 #
 # Control plane variables
@@ -67,7 +68,7 @@ def start_docker_compose(c, docker_compose_path):
     """Cleanly start a docker compose instance"""
     with c.cd(docker_compose_path):
         c.run('docker compose down --timeout 1')
-        c.run('docker compose -f ./docker-compose.yaml up -d', pty=True)
+        c.run('docker compose -f ./docker-compose.yaml up -d', pty=PTY_SUPPORTED)
 
 
 def stop_docker_compose(c, docker_compose_path):
@@ -81,10 +82,8 @@ def build_image(c, image_path):
     image_name = IMAGES[image_path]['name']
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(
-            f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .', pty=True)
-        c.run(f'docker tag {image_name}:latest {
-              image_name}:{commit_hash}', pty=True)
+        c.run(f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .', pty=PTY_SUPPORTED)
+        c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}', pty=PTY_SUPPORTED)
 
 
 def deploy_image(c, image_path, target):
@@ -99,11 +98,9 @@ def deploy_image(c, image_path, target):
         raise ValueError(f"unknown deployment target {target}")
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(f"docker tag {image_name}:{commit_hash} {
-              repo}/{image_name}:{commit_hash}", pty=True)
-        c.run(f"docker tag {image_name}:{commit_hash} {
-              repo}/{image_name}:latest", pty=True)
-        c.run(f"docker push {repo}/{image_name} --all-tags", pty=True)
+        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:{commit_hash}", pty=PTY_SUPPORTED)
+        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:latest", pty=PTY_SUPPORTED)
+        c.run(f"docker push {repo}/{image_name} --all-tags", pty=PTY_SUPPORTED)
 
 
 def run_image(c, image_path, background=False):
@@ -120,7 +117,7 @@ def run_image(c, image_path, background=False):
         args.append('--detach')
     else:
         args.append('--interactive --tty')
-    c.run(f"docker run {'  '.join(args)} {image_name}:{commit_hash}", pty=True)
+    c.run(f"docker run {'  '.join(args)} {image_name}:{commit_hash}", pty=PTY_SUPPORTED)
 
 
 @task
@@ -142,7 +139,7 @@ def storage_stop(c):
 @task(help={'container': "Container to tail, defaults to all"})
 def storage_tail(c, container=''):
     with c.cd(TESTING_STORAGE_DIR):
-        c.run(f'docker compose logs -f {container}', pty=True)
+        c.run(f'docker compose logs -f {container}', pty=PTY_SUPPORTED)
 
 
 @task(pre=[storage_stop])
