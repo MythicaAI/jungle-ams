@@ -14,6 +14,7 @@ jobs:
       DATABASE_PATH: "${{ github.workspace }}/mythica.db"
       PYTHONPATH: "${{ github.workspace }}/api/app"
       ENABLE_STORAGE: false
+      UPLOAD_FOLDER_AUTO_CLEAN: false
 
     steps:
       - name: Checkout repository

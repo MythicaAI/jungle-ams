@@ -51,6 +51,7 @@ class Client(StorageClient):
             self.minio.fput_object(
                 ctx.bucket_name, ctx.object_name, ctx.local_filepath)
             log.info(f"{ctx.object_name} uploaded to bucket {ctx.bucket_name}")
+            ctx.add_object_locator("minio", ctx.bucket_name, ctx.object_name)
         except S3Error as exc:
             log.exception(f"upload failed to {ctx.bucket_name}:{ctx.object_name}",
                           exc_info=exc)
