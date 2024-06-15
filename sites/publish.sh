@@ -15,7 +15,7 @@ GCS_POINTER_PATH=pointers_sites/latest/
 #
 if [[ -f ${SITE_NAME}/vite.config.ts ]]; then
   pushd ${SITE_NAME}
-  vite build
+  vite build -m production
   popd
   LOCAL_PATH="${SITE_NAME}/dist"
 else

@@ -1,9 +1,9 @@
 import axios from "axios";
 
 export const getData  = async <T>(subpath: string): Promise<T> => {
-    // const apiBaseUrl = import.meta.env.VITE_APP_API_BASE_URL;
-    const endpoint_path = `api/v1/${subpath}`;
-    const url = `http://localhost:5555/${endpoint_path}`;
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const endpointPath = `${subpath}`;
+    const url = `${apiBaseUrl}/${endpointPath}`;
 
     try {
         const response = await axios.get<T>(url);
@@ -22,9 +22,9 @@ export const getData  = async <T>(subpath: string): Promise<T> => {
 }
 
 export const postData  = async <T>(subpath: string, data: object): Promise<T> => {
-    // const apiBaseUrl = import.meta.env.VITE_APP_API_BASE_URL;
-    const endpoint_path = `api/v1/${subpath}`;
-    const url = `http://localhost:5555/${endpoint_path}`;
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const endpointPath = `${subpath}`;
+    const url = `${apiBaseUrl}/${endpointPath}`;
 
     try {
         const response = await axios.post<T>(url, data);

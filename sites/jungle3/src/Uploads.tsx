@@ -77,7 +77,8 @@ const Uploads = () => {
         setFormData(formData);
 
         // Assuming fileInput is an HTMLInputElement of type file
-        fetch('http://localhost:5555/api/v1/upload/store', {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+        fetch(`${apiBaseUrl}/upload/store`, {
             method: 'POST',
             body: formData,
             headers: {'Authorization': 'Bearer ' + authToken}
