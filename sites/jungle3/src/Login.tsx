@@ -5,8 +5,10 @@ import {useGlobalStore} from "./stores/globalStore.ts";
 import {getData} from "./services/backendCommon.ts";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
+import {Alert} from "@mui/joy";
 
 const Login: React.FC = () => {
+  const [loginError, setLoginError] = useState<string>("");
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [, setCookie] = useCookies(['profile_id', 'auth_token', 'refresh_token']);
@@ -33,6 +35,12 @@ const Login: React.FC = () => {
       setAuthToken(r.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${r.token}`;
       navigate("/");
+    }).catch(err => {
+      console.log(`login err ${err}`)
+      setCookie('auth_token', "", {path: '/'});
+      setCookie('refresh_token', '', { path: '/' });
+      setCookie('profile_id', '', { path: '/' });
+      setLoginError(err);
     })
   };
 
@@ -43,8 +51,11 @@ const Login: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      <form onSubmit={handleLogin} style={styles.form}>
+      <form onSubmit={handleLogin}>
         <h2>Login</h2>
+        <div>
+          {loginError ? <Alert color="danger">There was a login error</Alert> : ""}
+        </div>
         <div style={styles.inputGroup}>
           <label htmlFor="username">Username:</label>
           <input
