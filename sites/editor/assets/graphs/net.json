@@ -3,10 +3,10 @@
     {
       "id": "subnet1",
       "title": "subnet1",
-      "type": "houdini::Sop::subnet",
+      "type": "SOP/Other/subnet",
       "pos": [
         -225.92,
-        180.72
+        180.71999820470808
       ],
       "flags": {
         "horizontal": true
@@ -14,29 +14,29 @@
       "inputs": [
         {
           "name": 0,
-          "type": "HOUDINI_SOP",
+          "type": "SOP",
           "link": null
         },
         {
           "name": 1,
-          "type": "HOUDINI_SOP",
+          "type": "SOP",
           "link": null
         },
         {
           "name": 2,
-          "type": "HOUDINI_SOP",
+          "type": "SOP",
           "link": null
         },
         {
           "name": 3,
-          "type": "HOUDINI_SOP",
+          "type": "SOP",
           "link": null
         }
       ],
       "outputs": [
         {
           "name": 0,
-          "type": "HOUDINI_SOP",
+          "type": "SOP",
           "link": null
         }
       ],
@@ -46,7 +46,7 @@
           {
             "id": "tree_trunk_generator1",
             "title": "tree_trunk_generator1",
-            "type": "houdini::Sop::labs::tree_trunk_generator::1.0",
+            "type": "SOP/Labs/World Building/Vegetation/labs::tree_trunk_generator::1.0",
             "pos": [
               0.0,
               -611.18
@@ -57,28 +57,28 @@
             "inputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               }
             ],
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "3ee4f8ac-2bbc-4000-ac56-83bf281684f5"
+                  "219b39bd-4bc1-4f8c-9ee5-97d8302dbdb7"
                 ]
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "d3c72bce-4199-404b-87f0-2509aee9efec"
+                  "cd4bceb1-faa8-4605-8202-414cea43d205"
                 ]
               }
             ],
@@ -260,7 +260,7 @@
           {
             "id": "tree_branch_generator1",
             "title": "tree_branch_generator1",
-            "type": "houdini::Sop::labs::tree_branch_generator::1.1",
+            "type": "SOP/Labs/World Building/Vegetation/labs::tree_branch_generator::1.1",
             "pos": [
               -92.87140000000001,
               -407.216
@@ -271,28 +271,28 @@
             "inputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
-                "link": "3ee4f8ac-2bbc-4000-ac56-83bf281684f5"
+                "type": "SOP",
+                "link": "219b39bd-4bc1-4f8c-9ee5-97d8302dbdb7"
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
-                "link": "d3c72bce-4199-404b-87f0-2509aee9efec"
+                "type": "SOP",
+                "link": "cd4bceb1-faa8-4605-8202-414cea43d205"
               }
             ],
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "6232db25-1265-470f-8780-72c5b06261d7"
+                  "61df42e8-8e82-4d86-ac89-e98738885b34"
                 ]
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "b3c1eecf-fc3e-4e50-9a09-343f05a86037"
+                  "a2b55661-7749-4290-9286-d8a91bb3bd18"
                 ]
               }
             ],
@@ -473,7 +473,7 @@
           {
             "id": "tree_leaf_generator1",
             "title": "tree_leaf_generator1",
-            "type": "houdini::Sop::labs::tree_leaf_generator::1.0",
+            "type": "SOP/Labs/World Building/Vegetation/labs::tree_leaf_generator::1.0",
             "pos": [
               10.9326,
               -290.16
@@ -484,31 +484,31 @@
             "inputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
-                "link": "6232db25-1265-470f-8780-72c5b06261d7"
+                "type": "SOP",
+                "link": "61df42e8-8e82-4d86-ac89-e98738885b34"
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
-                "link": "b3c1eecf-fc3e-4e50-9a09-343f05a86037"
+                "type": "SOP",
+                "link": "a2b55661-7749-4290-9286-d8a91bb3bd18"
               },
               {
                 "name": 2,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               }
             ],
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "289dd970-6b11-49c2-a4ee-03a0eff05026"
+                  "c6066ff2-5143-4afc-91c7-a6cfc85f3536"
                 ]
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": []
               }
             ],
@@ -673,7 +673,7 @@
           {
             "id": "output0",
             "title": "output0",
-            "type": "houdini::Sop::output",
+            "type": "SOP/Other/output",
             "pos": [
               -167.889,
               -42.6244
@@ -684,14 +684,14 @@
             "inputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
-                "link": "289dd970-6b11-49c2-a4ee-03a0eff05026"
+                "type": "SOP",
+                "link": "c6066ff2-5143-4afc-91c7-a6cfc85f3536"
               }
             ],
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": []
               }
             ],
@@ -702,7 +702,7 @@
           {
             "id": "subnet1",
             "title": "subnet1",
-            "type": "houdini::Sop::subnet",
+            "type": "SOP/Other/subnet",
             "pos": [
               350.214,
               -494.663
@@ -713,29 +713,29 @@
             "inputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               },
               {
                 "name": 2,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               },
               {
                 "name": 3,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               }
             ],
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "link": null
               }
             ],
@@ -745,7 +745,7 @@
                 {
                   "id": "output0",
                   "title": "output0",
-                  "type": "houdini::Sop::output",
+                  "type": "SOP/Other/output",
                   "pos": [
                     272.417,
                     90.7527
@@ -756,14 +756,14 @@
                   "inputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
-                      "link": "b12c12c0-6a02-4912-82d9-b9ffb5992d8d"
+                      "type": "SOP",
+                      "link": "cf9a212f-ab53-4517-8080-c277ffabf763"
                     }
                   ],
                   "outputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": []
                     }
                   ],
@@ -774,7 +774,7 @@
                 {
                   "id": "tree_trunk_generator1",
                   "title": "tree_trunk_generator1",
-                  "type": "houdini::Sop::labs::tree_trunk_generator::1.0",
+                  "type": "SOP/Labs/World Building/Vegetation/labs::tree_trunk_generator::1.0",
                   "pos": [
                     440.306,
                     -608.418
@@ -785,28 +785,28 @@
                   "inputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "link": null
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "link": null
                     }
                   ],
                   "outputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "60cbf0d1-3535-4140-a10e-aaed9bbd3b5f"
+                        "86099f44-cea9-4fb1-869c-b654335fcd13"
                       ]
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "867f8d9e-1b70-47c6-99cf-b92c7f75103a"
+                        "afff333a-8c03-4534-b255-f1d5108470a7"
                       ]
                     }
                   ],
@@ -988,7 +988,7 @@
                 {
                   "id": "tree_branch_generator1",
                   "title": "tree_branch_generator1",
-                  "type": "houdini::Sop::labs::tree_branch_generator::1.1",
+                  "type": "SOP/Labs/World Building/Vegetation/labs::tree_branch_generator::1.1",
                   "pos": [
                     808.08,
                     -484.884
@@ -999,28 +999,28 @@
                   "inputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
-                      "link": "60cbf0d1-3535-4140-a10e-aaed9bbd3b5f"
+                      "type": "SOP",
+                      "link": "86099f44-cea9-4fb1-869c-b654335fcd13"
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
-                      "link": "867f8d9e-1b70-47c6-99cf-b92c7f75103a"
+                      "type": "SOP",
+                      "link": "afff333a-8c03-4534-b255-f1d5108470a7"
                     }
                   ],
                   "outputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "9518a8fb-7720-4603-9857-3bd8c9dd29ef"
+                        "3a676e44-4af4-40d6-b4fc-146e1a395465"
                       ]
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "09d4336b-0ce5-4bb4-b452-ffca1d0d54d8"
+                        "b5602cd6-6b54-4137-ba86-691f96bf3ca2"
                       ]
                     }
                   ],
@@ -1201,7 +1201,7 @@
                 {
                   "id": "tree_leaf_generator1",
                   "title": "tree_leaf_generator1",
-                  "type": "houdini::Sop::labs::tree_leaf_generator::1.0",
+                  "type": "SOP/Labs/World Building/Vegetation/labs::tree_leaf_generator::1.0",
                   "pos": [
                     440.306,
                     -155.785
@@ -1212,31 +1212,31 @@
                   "inputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
-                      "link": "dbf1bc08-ad8d-4dcf-a9e9-717151289834"
+                      "type": "SOP",
+                      "link": "57e05070-ba55-4fb7-99a5-2a30b3c111f2"
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
-                      "link": "257e8e32-9060-4501-a5c2-07a4151de347"
+                      "type": "SOP",
+                      "link": "01a079d7-2ee9-4c0c-8772-65c3632b6c22"
                     },
                     {
                       "name": 2,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "link": null
                     }
                   ],
                   "outputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "b12c12c0-6a02-4912-82d9-b9ffb5992d8d"
+                        "cf9a212f-ab53-4517-8080-c277ffabf763"
                       ]
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": []
                     }
                   ],
@@ -1401,7 +1401,7 @@
                 {
                   "id": "tree_branch_generator2",
                   "title": "tree_branch_generator2",
-                  "type": "houdini::Sop::labs::tree_branch_generator::1.1",
+                  "type": "SOP/Labs/World Building/Vegetation/labs::tree_branch_generator::1.1",
                   "pos": [
                     674.2090000000001,
                     -329.753
@@ -1412,28 +1412,28 @@
                   "inputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
-                      "link": "9518a8fb-7720-4603-9857-3bd8c9dd29ef"
+                      "type": "SOP",
+                      "link": "3a676e44-4af4-40d6-b4fc-146e1a395465"
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
-                      "link": "09d4336b-0ce5-4bb4-b452-ffca1d0d54d8"
+                      "type": "SOP",
+                      "link": "b5602cd6-6b54-4137-ba86-691f96bf3ca2"
                     }
                   ],
                   "outputs": [
                     {
                       "name": 0,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "dbf1bc08-ad8d-4dcf-a9e9-717151289834"
+                        "57e05070-ba55-4fb7-99a5-2a30b3c111f2"
                       ]
                     },
                     {
                       "name": 1,
-                      "type": "HOUDINI_SOP",
+                      "type": "SOP",
                       "links": [
-                        "257e8e32-9060-4501-a5c2-07a4151de347"
+                        "01a079d7-2ee9-4c0c-8772-65c3632b6c22"
                       ]
                     }
                   ],
@@ -1614,60 +1614,60 @@
               ],
               "links": [
                 [
-                  "b12c12c0-6a02-4912-82d9-b9ffb5992d8d",
+                  "cf9a212f-ab53-4517-8080-c277ffabf763",
                   "tree_leaf_generator1",
                   0,
                   "output0",
                   0,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ],
                 [
-                  "60cbf0d1-3535-4140-a10e-aaed9bbd3b5f",
+                  "86099f44-cea9-4fb1-869c-b654335fcd13",
                   "tree_trunk_generator1",
                   0,
                   "tree_branch_generator1",
                   0,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ],
                 [
-                  "867f8d9e-1b70-47c6-99cf-b92c7f75103a",
+                  "afff333a-8c03-4534-b255-f1d5108470a7",
                   "tree_trunk_generator1",
                   1,
                   "tree_branch_generator1",
                   1,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ],
                 [
-                  "dbf1bc08-ad8d-4dcf-a9e9-717151289834",
+                  "57e05070-ba55-4fb7-99a5-2a30b3c111f2",
                   "tree_branch_generator2",
                   0,
                   "tree_leaf_generator1",
                   0,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ],
                 [
-                  "257e8e32-9060-4501-a5c2-07a4151de347",
+                  "01a079d7-2ee9-4c0c-8772-65c3632b6c22",
                   "tree_branch_generator2",
                   1,
                   "tree_leaf_generator1",
                   1,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ],
                 [
-                  "9518a8fb-7720-4603-9857-3bd8c9dd29ef",
+                  "3a676e44-4af4-40d6-b4fc-146e1a395465",
                   "tree_branch_generator1",
                   0,
                   "tree_branch_generator2",
                   0,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ],
                 [
-                  "09d4336b-0ce5-4bb4-b452-ffca1d0d54d8",
+                  "b5602cd6-6b54-4137-ba86-691f96bf3ca2",
                   "tree_branch_generator1",
                   1,
                   "tree_branch_generator2",
                   1,
-                  "HOUDINI_SOP"
+                  "SOP"
                 ]
               ]
             }
@@ -1675,7 +1675,7 @@
           {
             "id": "merge1",
             "title": "merge1",
-            "type": "houdini::Sop::merge",
+            "type": "SOP/Other/merge",
             "pos": [
               774.667,
               -512.532
@@ -1686,19 +1686,19 @@
             "inputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
-                "link": "d720d19d-f644-4dc7-b452-79e4eb2202ca"
+                "type": "SOP",
+                "link": "78f25f0b-1ee3-439f-b2bc-a4690e79c886"
               },
               {
                 "name": 1,
-                "type": "HOUDINI_SOP",
-                "link": "4b06b325-4dc9-4cb7-8737-d16d2e044d2d"
+                "type": "SOP",
+                "link": "9f62344d-82ee-40e0-b3fe-c69aa5149ce6"
               }
             ],
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": []
               }
             ],
@@ -1707,7 +1707,7 @@
           {
             "id": "circle1",
             "title": "circle1",
-            "type": "houdini::Sop::circle",
+            "type": "SOP/Other/circle",
             "pos": [
               628.269,
               -753.96
@@ -1719,9 +1719,9 @@
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "d720d19d-f644-4dc7-b452-79e4eb2202ca"
+                  "78f25f0b-1ee3-439f-b2bc-a4690e79c886"
                 ]
               }
             ],
@@ -1732,7 +1732,7 @@
           {
             "id": "line1",
             "title": "line1",
-            "type": "houdini::Sop::line",
+            "type": "SOP/Other/line",
             "pos": [
               1175.34,
               -700.024
@@ -1744,9 +1744,9 @@
             "outputs": [
               {
                 "name": 0,
-                "type": "HOUDINI_SOP",
+                "type": "SOP",
                 "links": [
-                  "4b06b325-4dc9-4cb7-8737-d16d2e044d2d"
+                  "9f62344d-82ee-40e0-b3fe-c69aa5149ce6"
                 ]
               }
             ],
@@ -1755,60 +1755,60 @@
         ],
         "links": [
           [
-            "3ee4f8ac-2bbc-4000-ac56-83bf281684f5",
+            "219b39bd-4bc1-4f8c-9ee5-97d8302dbdb7",
             "tree_trunk_generator1",
             0,
             "tree_branch_generator1",
             0,
-            "HOUDINI_SOP"
+            "SOP"
           ],
           [
-            "d3c72bce-4199-404b-87f0-2509aee9efec",
+            "cd4bceb1-faa8-4605-8202-414cea43d205",
             "tree_trunk_generator1",
             1,
             "tree_branch_generator1",
             1,
-            "HOUDINI_SOP"
+            "SOP"
           ],
           [
-            "6232db25-1265-470f-8780-72c5b06261d7",
+            "61df42e8-8e82-4d86-ac89-e98738885b34",
             "tree_branch_generator1",
             0,
             "tree_leaf_generator1",
             0,
-            "HOUDINI_SOP"
+            "SOP"
           ],
           [
-            "b3c1eecf-fc3e-4e50-9a09-343f05a86037",
+            "a2b55661-7749-4290-9286-d8a91bb3bd18",
             "tree_branch_generator1",
             1,
             "tree_leaf_generator1",
             1,
-            "HOUDINI_SOP"
+            "SOP"
           ],
           [
-            "289dd970-6b11-49c2-a4ee-03a0eff05026",
+            "c6066ff2-5143-4afc-91c7-a6cfc85f3536",
             "tree_leaf_generator1",
             0,
             "output0",
             0,
-            "HOUDINI_SOP"
+            "SOP"
           ],
           [
-            "d720d19d-f644-4dc7-b452-79e4eb2202ca",
+            "78f25f0b-1ee3-439f-b2bc-a4690e79c886",
             "circle1",
             0,
             "merge1",
             0,
-            "HOUDINI_SOP"
+            "SOP"
           ],
           [
-            "4b06b325-4dc9-4cb7-8737-d16d2e044d2d",
+            "9f62344d-82ee-40e0-b3fe-c69aa5149ce6",
             "line1",
             0,
             "merge1",
             1,
-            "HOUDINI_SOP"
+            "SOP"
           ]
         ]
       }
