@@ -1,0 +1,1818 @@
+{
+  "nodes": [
+    {
+      "id": "subnet1",
+      "title": "subnet1",
+      "type": "houdini::Sop::subnet",
+      "pos": [
+        -225.92,
+        180.72
+      ],
+      "flags": {
+        "horizontal": true
+      },
+      "inputs": [
+        {
+          "name": 0,
+          "type": "HOUDINI_SOP",
+          "link": null
+        },
+        {
+          "name": 1,
+          "type": "HOUDINI_SOP",
+          "link": null
+        },
+        {
+          "name": 2,
+          "type": "HOUDINI_SOP",
+          "link": null
+        },
+        {
+          "name": 3,
+          "type": "HOUDINI_SOP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": 0,
+          "type": "HOUDINI_SOP",
+          "link": null
+        }
+      ],
+      "properties": {},
+      "subgraph": {
+        "nodes": [
+          {
+            "id": "tree_trunk_generator1",
+            "title": "tree_trunk_generator1",
+            "type": "houdini::Sop::labs::tree_trunk_generator::1.0",
+            "pos": [
+              0.0,
+              -611.18
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": null
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "3ee4f8ac-2bbc-4000-ac56-83bf281684f5"
+                ]
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "d3c72bce-4199-404b-87f0-2509aee9efec"
+                ]
+              }
+            ],
+            "properties": {
+              "rad_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Bezier"
+                },
+                {
+                  "x": 0.17391304671764374,
+                  "y": 0.5833333134651184,
+                  "basis": "Bezier"
+                },
+                {
+                  "x": 0.5301645398139954,
+                  "y": 0.4166666567325592,
+                  "basis": "Bezier"
+                },
+                {
+                  "x": 1.0,
+                  "y": 0.2708333432674408,
+                  "basis": "Bezier"
+                }
+              ],
+              "bend_profile": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "thigmo_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "roots_toggle": 1,
+              "root_offset_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.11064717918634415,
+                  "y": 0.7666666507720947,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.17745302617549896,
+                  "y": 0.0,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.23173277080059052,
+                  "y": 0.5,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.2967625856399536,
+                  "y": 0.8630136847496033,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.3924843370914459,
+                  "y": 0.4333333373069763,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.4655532240867615,
+                  "y": 0.0,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.519784152507782,
+                  "y": 0.8493150472640991,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.594989538192749,
+                  "y": 0.06666667014360428,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.6534446477890015,
+                  "y": 0.6333333253860474,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.7118998169898987,
+                  "y": 0.0,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.8246346712112427,
+                  "y": 0.03333333507180214,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.849686861038208,
+                  "y": 0.30000001192092896,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 0.8830897808074951,
+                  "y": 0.0,
+                  "basis": "CatmullRom"
+                },
+                {
+                  "x": 1.0,
+                  "y": 0.0,
+                  "basis": "CatmullRom"
+                }
+              ],
+              "root_strength_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 0.36116909980773926,
+                  "y": 0.0,
+                  "basis": "Linear"
+                }
+              ],
+              "twist_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "line_noise_intensity_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "mesh_noise_intensity_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ]
+            }
+          },
+          {
+            "id": "tree_branch_generator1",
+            "title": "tree_branch_generator1",
+            "type": "houdini::Sop::labs::tree_branch_generator::1.1",
+            "pos": [
+              -92.87140000000001,
+              -407.216
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": "3ee4f8ac-2bbc-4000-ac56-83bf281684f5"
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "link": "d3c72bce-4199-404b-87f0-2509aee9efec"
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "6232db25-1265-470f-8780-72c5b06261d7"
+                ]
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "b3c1eecf-fc3e-4e50-9a09-343f05a86037"
+                ]
+              }
+            ],
+            "properties": {
+              "distribution_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "angle_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.23333333432674408,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "lat_length_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Constant"
+                },
+                {
+                  "x": 0.30000001192092896,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Constant"
+                },
+                {
+                  "x": 1.0,
+                  "y": 0.0,
+                  "basis": "Constant"
+                },
+                {
+                  "x": 1.0,
+                  "y": 0.0,
+                  "basis": "Constant"
+                }
+              ],
+              "inherit_length_profile": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "ap_rad_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "lat_rad_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 0.1458333283662796,
+                  "basis": "Linear"
+                }
+              ],
+              "radius_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "bend_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Bezier"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Bezier"
+                }
+              ],
+              "grav_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "light_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "thigmo_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "line_noise_intensity_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "mesh_noise_intensity_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ]
+            }
+          },
+          {
+            "id": "tree_leaf_generator1",
+            "title": "tree_leaf_generator1",
+            "type": "houdini::Sop::labs::tree_leaf_generator::1.0",
+            "pos": [
+              10.9326,
+              -290.16
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": "6232db25-1265-470f-8780-72c5b06261d7"
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "link": "b3c1eecf-fc3e-4e50-9a09-343f05a86037"
+              },
+              {
+                "name": 2,
+                "type": "HOUDINI_SOP",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "289dd970-6b11-49c2-a4ee-03a0eff05026"
+                ]
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "links": []
+              }
+            ],
+            "properties": {
+              "seed": 18,
+              "distribution_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "lat_length_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Constant"
+                },
+                {
+                  "x": 0.11324786394834518,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Constant"
+                },
+                {
+                  "x": 1.0,
+                  "y": 0.0,
+                  "basis": "Constant"
+                }
+              ],
+              "inherit_radius_profile": [
+                {
+                  "x": 0.0,
+                  "y": 0.1875,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 0.2231237292289734,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "roll_profile": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "yaw_profile": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "pitch_profile": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "twist_profile": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "bend_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Bezier"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Bezier"
+                }
+              ],
+              "grav_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "light_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "line_noise_intensity_ramp": [
+                {
+                  "x": 0.0,
+                  "y": 0.0,
+                  "basis": "Linear"
+                },
+                {
+                  "x": 1.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ],
+              "taperprofile": [
+                {
+                  "x": 0.0,
+                  "y": 1.0,
+                  "basis": "Linear"
+                }
+              ]
+            }
+          },
+          {
+            "id": "output0",
+            "title": "output0",
+            "type": "houdini::Sop::output",
+            "pos": [
+              -167.889,
+              -42.6244
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": "289dd970-6b11-49c2-a4ee-03a0eff05026"
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": []
+              }
+            ],
+            "properties": {
+              "outputidx": 0
+            }
+          },
+          {
+            "id": "subnet1",
+            "title": "subnet1",
+            "type": "houdini::Sop::subnet",
+            "pos": [
+              350.214,
+              -494.663
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": null
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "link": null
+              },
+              {
+                "name": 2,
+                "type": "HOUDINI_SOP",
+                "link": null
+              },
+              {
+                "name": 3,
+                "type": "HOUDINI_SOP",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": null
+              }
+            ],
+            "properties": {},
+            "subgraph": {
+              "nodes": [
+                {
+                  "id": "output0",
+                  "title": "output0",
+                  "type": "houdini::Sop::output",
+                  "pos": [
+                    272.417,
+                    90.7527
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "link": "b12c12c0-6a02-4912-82d9-b9ffb5992d8d"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "links": []
+                    }
+                  ],
+                  "properties": {
+                    "outputidx": 0
+                  }
+                },
+                {
+                  "id": "tree_trunk_generator1",
+                  "title": "tree_trunk_generator1",
+                  "type": "houdini::Sop::labs::tree_trunk_generator::1.0",
+                  "pos": [
+                    440.306,
+                    -608.418
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "link": null
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "60cbf0d1-3535-4140-a10e-aaed9bbd3b5f"
+                      ]
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "867f8d9e-1b70-47c6-99cf-b92c7f75103a"
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "rad_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Bezier"
+                      },
+                      {
+                        "x": 0.17391304671764374,
+                        "y": 0.5833333134651184,
+                        "basis": "Bezier"
+                      },
+                      {
+                        "x": 0.5301645398139954,
+                        "y": 0.4166666567325592,
+                        "basis": "Bezier"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.2708333432674408,
+                        "basis": "Bezier"
+                      }
+                    ],
+                    "bend_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "thigmo_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "roots_toggle": 1,
+                    "root_offset_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.11064717918634415,
+                        "y": 0.7666666507720947,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.17745302617549896,
+                        "y": 0.0,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.23173277080059052,
+                        "y": 0.5,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.2967625856399536,
+                        "y": 0.8630136847496033,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.3924843370914459,
+                        "y": 0.4333333373069763,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.4655532240867615,
+                        "y": 0.0,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.519784152507782,
+                        "y": 0.8493150472640991,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.594989538192749,
+                        "y": 0.06666667014360428,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.6534446477890015,
+                        "y": 0.6333333253860474,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.7118998169898987,
+                        "y": 0.0,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.8246346712112427,
+                        "y": 0.03333333507180214,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.849686861038208,
+                        "y": 0.30000001192092896,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 0.8830897808074951,
+                        "y": 0.0,
+                        "basis": "CatmullRom"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "basis": "CatmullRom"
+                      }
+                    ],
+                    "root_strength_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 0.36116909980773926,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "twist_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "line_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "mesh_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "tree_branch_generator1",
+                  "title": "tree_branch_generator1",
+                  "type": "houdini::Sop::labs::tree_branch_generator::1.1",
+                  "pos": [
+                    808.08,
+                    -484.884
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "link": "60cbf0d1-3535-4140-a10e-aaed9bbd3b5f"
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "link": "867f8d9e-1b70-47c6-99cf-b92c7f75103a"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "9518a8fb-7720-4603-9857-3bd8c9dd29ef"
+                      ]
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "09d4336b-0ce5-4bb4-b452-ffca1d0d54d8"
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "distribution_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "angle_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.23333333432674408,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "lat_length_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 0.30000001192092896,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      }
+                    ],
+                    "inherit_length_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "ap_rad_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "lat_rad_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.1458333283662796,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "radius_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "bend_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Bezier"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Bezier"
+                      }
+                    ],
+                    "grav_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "light_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "thigmo_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "line_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "mesh_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "tree_leaf_generator1",
+                  "title": "tree_leaf_generator1",
+                  "type": "houdini::Sop::labs::tree_leaf_generator::1.0",
+                  "pos": [
+                    440.306,
+                    -155.785
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "link": "dbf1bc08-ad8d-4dcf-a9e9-717151289834"
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "link": "257e8e32-9060-4501-a5c2-07a4151de347"
+                    },
+                    {
+                      "name": 2,
+                      "type": "HOUDINI_SOP",
+                      "link": null
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "b12c12c0-6a02-4912-82d9-b9ffb5992d8d"
+                      ]
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "links": []
+                    }
+                  ],
+                  "properties": {
+                    "seed": 18,
+                    "distribution_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "lat_length_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 0.11324786394834518,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      }
+                    ],
+                    "inherit_radius_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 0.1875,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 0.2231237292289734,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "roll_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "yaw_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "pitch_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "twist_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "bend_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Bezier"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Bezier"
+                      }
+                    ],
+                    "grav_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "light_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "line_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "taperprofile": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "tree_branch_generator2",
+                  "title": "tree_branch_generator2",
+                  "type": "houdini::Sop::labs::tree_branch_generator::1.1",
+                  "pos": [
+                    674.2090000000001,
+                    -329.753
+                  ],
+                  "flags": {
+                    "horizontal": true
+                  },
+                  "inputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "link": "9518a8fb-7720-4603-9857-3bd8c9dd29ef"
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "link": "09d4336b-0ce5-4bb4-b452-ffca1d0d54d8"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": 0,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "dbf1bc08-ad8d-4dcf-a9e9-717151289834"
+                      ]
+                    },
+                    {
+                      "name": 1,
+                      "type": "HOUDINI_SOP",
+                      "links": [
+                        "257e8e32-9060-4501-a5c2-07a4151de347"
+                      ]
+                    }
+                  ],
+                  "properties": {
+                    "distribution_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "angle_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.23333333432674408,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "lat_length_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 0.30000001192092896,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0,
+                        "basis": "Constant"
+                      }
+                    ],
+                    "inherit_length_profile": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "ap_rad_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "lat_rad_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.1458333283662796,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "radius_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "bend_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Bezier"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Bezier"
+                      }
+                    ],
+                    "grav_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "light_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "thigmo_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "line_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ],
+                    "mesh_noise_intensity_ramp": [
+                      {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "basis": "Linear"
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "basis": "Linear"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "links": [
+                [
+                  "b12c12c0-6a02-4912-82d9-b9ffb5992d8d",
+                  "tree_leaf_generator1",
+                  0,
+                  "output0",
+                  0,
+                  "HOUDINI_SOP"
+                ],
+                [
+                  "60cbf0d1-3535-4140-a10e-aaed9bbd3b5f",
+                  "tree_trunk_generator1",
+                  0,
+                  "tree_branch_generator1",
+                  0,
+                  "HOUDINI_SOP"
+                ],
+                [
+                  "867f8d9e-1b70-47c6-99cf-b92c7f75103a",
+                  "tree_trunk_generator1",
+                  1,
+                  "tree_branch_generator1",
+                  1,
+                  "HOUDINI_SOP"
+                ],
+                [
+                  "dbf1bc08-ad8d-4dcf-a9e9-717151289834",
+                  "tree_branch_generator2",
+                  0,
+                  "tree_leaf_generator1",
+                  0,
+                  "HOUDINI_SOP"
+                ],
+                [
+                  "257e8e32-9060-4501-a5c2-07a4151de347",
+                  "tree_branch_generator2",
+                  1,
+                  "tree_leaf_generator1",
+                  1,
+                  "HOUDINI_SOP"
+                ],
+                [
+                  "9518a8fb-7720-4603-9857-3bd8c9dd29ef",
+                  "tree_branch_generator1",
+                  0,
+                  "tree_branch_generator2",
+                  0,
+                  "HOUDINI_SOP"
+                ],
+                [
+                  "09d4336b-0ce5-4bb4-b452-ffca1d0d54d8",
+                  "tree_branch_generator1",
+                  1,
+                  "tree_branch_generator2",
+                  1,
+                  "HOUDINI_SOP"
+                ]
+              ]
+            }
+          },
+          {
+            "id": "merge1",
+            "title": "merge1",
+            "type": "houdini::Sop::merge",
+            "pos": [
+              774.667,
+              -512.532
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "link": "d720d19d-f644-4dc7-b452-79e4eb2202ca"
+              },
+              {
+                "name": 1,
+                "type": "HOUDINI_SOP",
+                "link": "4b06b325-4dc9-4cb7-8737-d16d2e044d2d"
+              }
+            ],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": []
+              }
+            ],
+            "properties": {}
+          },
+          {
+            "id": "circle1",
+            "title": "circle1",
+            "type": "houdini::Sop::circle",
+            "pos": [
+              628.269,
+              -753.96
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "d720d19d-f644-4dc7-b452-79e4eb2202ca"
+                ]
+              }
+            ],
+            "properties": {
+              "type": 1
+            }
+          },
+          {
+            "id": "line1",
+            "title": "line1",
+            "type": "houdini::Sop::line",
+            "pos": [
+              1175.34,
+              -700.024
+            ],
+            "flags": {
+              "horizontal": true
+            },
+            "inputs": [],
+            "outputs": [
+              {
+                "name": 0,
+                "type": "HOUDINI_SOP",
+                "links": [
+                  "4b06b325-4dc9-4cb7-8737-d16d2e044d2d"
+                ]
+              }
+            ],
+            "properties": {}
+          }
+        ],
+        "links": [
+          [
+            "3ee4f8ac-2bbc-4000-ac56-83bf281684f5",
+            "tree_trunk_generator1",
+            0,
+            "tree_branch_generator1",
+            0,
+            "HOUDINI_SOP"
+          ],
+          [
+            "d3c72bce-4199-404b-87f0-2509aee9efec",
+            "tree_trunk_generator1",
+            1,
+            "tree_branch_generator1",
+            1,
+            "HOUDINI_SOP"
+          ],
+          [
+            "6232db25-1265-470f-8780-72c5b06261d7",
+            "tree_branch_generator1",
+            0,
+            "tree_leaf_generator1",
+            0,
+            "HOUDINI_SOP"
+          ],
+          [
+            "b3c1eecf-fc3e-4e50-9a09-343f05a86037",
+            "tree_branch_generator1",
+            1,
+            "tree_leaf_generator1",
+            1,
+            "HOUDINI_SOP"
+          ],
+          [
+            "289dd970-6b11-49c2-a4ee-03a0eff05026",
+            "tree_leaf_generator1",
+            0,
+            "output0",
+            0,
+            "HOUDINI_SOP"
+          ],
+          [
+            "d720d19d-f644-4dc7-b452-79e4eb2202ca",
+            "circle1",
+            0,
+            "merge1",
+            0,
+            "HOUDINI_SOP"
+          ],
+          [
+            "4b06b325-4dc9-4cb7-8737-d16d2e044d2d",
+            "line1",
+            0,
+            "merge1",
+            1,
+            "HOUDINI_SOP"
+          ]
+        ]
+      }
+    }
+  ],
+  "links": []
+}
