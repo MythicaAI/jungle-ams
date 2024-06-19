@@ -24,7 +24,7 @@ const NodeEvents = {
 }
 
 const houBaseTypes = function(){
-    class _HoudiniBase  {
+    class _HoudiniBase  {      
         dims = {
             width: 300,
             height:  LiteGraph.NODE_WIDGET_HEIGHT,
@@ -51,7 +51,7 @@ const houBaseTypes = function(){
             this.clearWidgets();
 
             for (const eventType in NodeEvents)
-                !this[eventType] && (this[eventType] = this.#defaultEventHandler(eventType))
+                !this[eventType] && (this[eventType] = this.#defaultEventHandler(eventType))  
         };
         #eventHandlers = {}
 
@@ -90,6 +90,33 @@ const houBaseTypes = function(){
             this.#defaultEventHandler('onDblClick')(e, pos, litegraph_canvas);
         }
 
+        onDrawBackground(ctx,canvas) {
+            const baseclass = this.__proto__.constructor; 
+            if (baseclass.icon && !baseclass.icon_loaded) {
+                baseclass.icon_image = new Image(20,20)
+                baseclass.icon_image.src = baseclass.icon;  // Ensure the path is correct
+                baseclass.icon_image.onload = ()=> baseclass.icon_loaded=true;
+            }
+            this.#defaultEventHandler('onDrawTitle')(ctx,canvas);
+            
+        }
+
+        onDrawTitle(ctx) {
+            const baseclass = this.__proto__.constructor; 
+            if (baseclass.icon_loaded) {
+                let iconX = 5;
+                let iconY = 5-LiteGraph.NODE_TITLE_HEIGHT ;
+                let iconWidth = 20;
+                let iconHeight = 20;
+    
+                ctx.drawImage(baseclass.icon_image, iconX, iconY, iconWidth, iconHeight);
+            }
+            this.#defaultEventHandler('onDrawTitle')(ctx);
+
+        }
+        onDrawTitleBox(...args){
+            this.#defaultEventHandler('onDrawTitleBox')(...args);
+        }
         onDrawForeground(ctx,canvas) {
             this.flags.size = this.size;
             if (this.flags.collapsed_widget) this.clearWidgets();

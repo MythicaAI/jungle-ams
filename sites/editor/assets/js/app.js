@@ -23,7 +23,7 @@ window.onbeforeunload = function(){
 }
 
 window.onload = function () {
-	graph.load('assets/graphs/net.json' );
+	graph.load('/assets/graphs/net.json' );
 }
 function updateEditorHiPPICanvas() {
   const ratio = window.devicePixelRatio;
