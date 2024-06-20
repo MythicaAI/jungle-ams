@@ -9930,7 +9930,7 @@ LGraphNode.prototype.executeAction = function(action)
 								var values = w.options.values;
 								if( values.constructor === Function )
 									values = values();
-								if(values && values.constructor !== Array)
+								if(values && values.constructor === Array)
 									v = values[ w.value ];
 							}
                             ctx.fillText(

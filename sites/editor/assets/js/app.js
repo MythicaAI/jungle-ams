@@ -20,7 +20,12 @@ window.graph = editor.graph;
 window.onload = function () {
 	graph.load('assets/graphs/net.json', ()=>{
 		var loader = document.getElementById('loader');
-		if (loader) loader.style.display = 'none'; // Hide the loader
+		loader.style.opacity = '0'; // Start the fade-out
+
+		// Wait for the transition to finish before setting display to none
+		setTimeout(function() {
+			loader.style.display = 'none';
+		}, 500);
 	})
 };
 

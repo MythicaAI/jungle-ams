@@ -703,8 +703,7 @@ const hou = (function() {
         widgetFactory = () => ({
             type: "combo",
             name: this.label,
-            values: this.default_value, 
-            callback: null, 
+            values: this.menu_labels[this.default_value],
             options: { 
                 values:this.menu_labels,
                 property: this.name
