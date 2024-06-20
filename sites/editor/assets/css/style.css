@@ -258,3 +258,21 @@ textarea {
 	/*touch-action: none; DESIDERABLE: implement zoom and pan*/
 	touch-action: pinch-zoom;
 }
+
+#loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column; /* Align children vertically */
+    z-index: 9999;
+}
+
+#loader img {
+    display: block;
+}

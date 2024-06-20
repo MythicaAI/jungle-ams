@@ -11,6 +11,23 @@ var editor = new LiteGraph.Editor("main",{
 window.graphcanvas = editor.graphcanvas;
 window.graph = editor.graph;
 
+////////////////////////////////////////////
+// MODIFY THIS TO INTEGRATE. 
+//
+// Make it load *.litegraph.json out put
+// from houdini-automation/inspect.py
+//
+window.onload = function () {
+	graph.load('assets/graphs/net.json', ()=>{
+		var loader = document.getElementById('loader');
+		if (loader) loader.style.display = 'none'; // Hide the loader
+	})
+};
+
+//MODIFY THIS TO INTEGRATE 
+////////////////////////////////////////////
+
+
 updateEditorHiPPICanvas();
 window.addEventListener("resize", function() { 
   editor.graphcanvas.resize();
@@ -22,9 +39,6 @@ window.onbeforeunload = function(){
 	localStorage.setItem("litegraphg demo backup", data );
 }
 
-window.onload = function () {
-	graph.load('assets/graphs/net.json' );
-}
 function updateEditorHiPPICanvas() {
   const ratio = window.devicePixelRatio;
   if(ratio == 1) { return }

@@ -29,9 +29,12 @@ const houBaseTypes = function(){
             width: 300,
             height:  LiteGraph.NODE_WIDGET_HEIGHT,
             min_height: LiteGraph.NODE_WIDGET_HEIGHT,
-            font: 12
+            font: 12,
+            icon_margin: 5,
+            icon_size: 20
         }
         constructor() {
+            if (!this.content) this.content = {}
             if (!this.flags) this.flags = {}
             if (!this.properties) this.properties = {}
 
@@ -43,10 +46,10 @@ const houBaseTypes = function(){
                         mixin.prototype[constructor].call(this);
                 });
             
-            this.flags.widgets = this.parmTemplateGroup.getWidgets();
-            this.flags.widgets.forEach(w => this.addCustomWidget(w))        
+            this.content.widgets = this.parmTemplateGroup.getWidgets();
+            this.content.widgets.forEach(w => this.addCustomWidget(w))        
 
-            this.flags.collapsed_widget = true;
+            this.content.collapsed_widget = true;
             this.horizontal = true;
             this.clearWidgets();
 
@@ -66,7 +69,7 @@ const houBaseTypes = function(){
 
         resetWidgets = function(){
             this.widgets = []
-            this.flags.widgets.forEach((widget)=> {
+            this.content.widgets.forEach((widget)=> {
                 if (!widget.is_hidden) 
                     this.widgets.push(widget);
             })                                     
@@ -80,8 +83,8 @@ const houBaseTypes = function(){
 
         onDblClick=(e, pos, litegraph_canvas) => {
             if (pos[1] < 0) {
-                this.flags.collapsed_widget = !this.flags.collapsed_widget
-                if (this.flags.collapsed_widget) {
+                this.content.collapsed_widget = !this.content.collapsed_widget
+                if (this.content.collapsed_widget) {
                     this.clearWidgets();
                 } else {
                     this.resetWidgets();
@@ -104,10 +107,10 @@ const houBaseTypes = function(){
         onDrawTitle(ctx) {
             const baseclass = this.__proto__.constructor; 
             if (baseclass.icon_loaded) {
-                let iconX = 5;
-                let iconY = 5-LiteGraph.NODE_TITLE_HEIGHT ;
-                let iconWidth = 20;
-                let iconHeight = 20;
+                let iconX = this.dims.icon_margin;
+                let iconY = this.dims.icon_margin-LiteGraph.NODE_TITLE_HEIGHT ;
+                let iconWidth = this.dims.icon_size;
+                let iconHeight = this.dims.icon_size;
     
                 ctx.drawImage(baseclass.icon_image, iconX, iconY, iconWidth, iconHeight);
             }
@@ -118,8 +121,8 @@ const houBaseTypes = function(){
             this.#defaultEventHandler('onDrawTitleBox')(...args);
         }
         onDrawForeground(ctx,canvas) {
-            this.flags.size = this.size;
-            if (this.flags.collapsed_widget) this.clearWidgets();
+            this.content.size = this.size;
+            if (this.content.collapsed_widget) this.clearWidgets();
             else this.resetWidgets();
             this.#defaultEventHandler('onDrawForeground')(ctx,canvas);
         }
