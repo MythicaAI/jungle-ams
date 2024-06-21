@@ -278,3 +278,17 @@ textarea {
 #loader img {
     display: block;
 }
+
+.litegraph.lite-search-item {
+    display: flex;              /* Establish flex container */
+    justify-content: space-between; /* Space between items pushes them to either end */
+    align-items: center;        /* Align items vertically in the center */
+    width: 100%;                /* Optional: ensure the div takes full width if not already set */
+}
+
+.litegraph.lite-search-item-type {
+    font-family: Tahoma, sans-serif;
+    font-size: 0.7em;
+    padding-top: 2px;
+    padding-right:4px;
+}

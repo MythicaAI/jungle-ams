@@ -197,7 +197,6 @@ const hou = (function() {
         dims = {
             width: 300,
             height: LiteGraph.NODE_WIDGET_HEIGHT,
-            font: 12
         }
 
         widgets = [];
@@ -704,8 +703,12 @@ const hou = (function() {
             type: "combo",
             name: this.label,
             values: this.menu_labels[this.default_value],
+            callback: null, 
             options: { 
-                values:this.menu_labels,
+                values: this.menu_labels.reduce((acc,current, index) => {
+                    acc[index] = current;
+                    return acc;
+                },{}),
                 property: this.name
             } 
         })
