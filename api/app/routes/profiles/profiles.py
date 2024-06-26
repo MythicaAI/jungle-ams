@@ -1,20 +1,17 @@
 import logging
-import secrets
-import string
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Optional
 from uuid import UUID
-from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError, BaseModel, constr, AnyHttpUrl, EmailStr
 
 from auth.generate_token import generate_token
 from config import app_config
-from db.schema.profiles import Profile, ProfileSession, ProfileKey
+from db.schema.profiles import Profile, ProfileSession
 from db.connection import get_session
-from sqlmodel import select, update, delete, insert, col
+from sqlmodel import select, update, delete
 from routes.responses import ProfileResponse, SessionStartResponse
 from routes.authorization import current_profile
 
@@ -100,9 +97,6 @@ async def create_profile(
         req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     session = get_session()
     try:
-        # if req_profile.profile_base_href is not None:
-        #     url = AnyHttpUrl(req_profile.profile_base_href)
-
         profile = Profile(**req_profile.model_dump())
     except TypeError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e

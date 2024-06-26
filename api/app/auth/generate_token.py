@@ -1,5 +1,4 @@
 import hashlib
-import os
 
 from auth.cookie import profile_to_cookie
 from config import app_config

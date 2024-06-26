@@ -1,14 +1,11 @@
 import hashlib
-import string
 from http import HTTPStatus
-from uuid import UUID
 
 from fastapi.testclient import TestClient
 from munch import munchify
 
 from main import app
 
-from config import app_config
 from tests.shared_test import get_random_string, assert_status_code
 
 client = TestClient(app)

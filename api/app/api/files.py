@@ -10,8 +10,6 @@ from google.cloud import storage
 
 from munch import munchify
 
-import storage
-
 log = logging.getLogger(__name__)
 
 

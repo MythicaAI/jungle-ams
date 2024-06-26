@@ -6,9 +6,9 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from db.schema.profiles import Profile, ProfileSession, ProfileKey
+from db.schema.profiles import Profile, ProfileKey
 from db.connection import get_session
-from sqlmodel import select, update, delete, insert, col
+from sqlmodel import select, update, delete, insert
 
 from routes.authorization import current_profile
 from routes.responses import ValidateEmailState, ValidateEmailResponse

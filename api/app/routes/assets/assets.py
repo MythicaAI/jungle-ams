@@ -3,7 +3,6 @@ import logging
 from typing import Optional, Dict
 
 from pydantic.types import StrictInt
-from pydantic import conlist
 from datetime import datetime
 from http import HTTPStatus
 from uuid import UUID
@@ -121,9 +120,9 @@ def convert_version_input(version: str) -> tuple[int, ...]:
         if len(tuple_version) != VERSION_LEN:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
                                 detail="version must conform to 1.2.3")
-    except TypeError and ValueError as e:
+    except TypeError or ValueError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            detail="version string was malformed")
+                            detail="version string was malformed") from e
     return tuple_version
 
 
@@ -167,7 +166,7 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     }
     location = app_config().mythica_location
     stmt = insert(Event).values(
-        event_type=f"asset_version_updated",
+        event_type="asset_version_updated",
         job_data=job_data,
         owner=avr.owner,
         created_in=location,
@@ -258,7 +257,7 @@ async def create_asset_version(asset_id: UUID,
     """Create or update a single asset version"""
     version_id = convert_version_input(version_str)
     if version_id == ZERO_VERSION:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f"versions with all zeros are not allowed")
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed")
     if not r.contents:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f"asset '{asset_id}' missing content")
 

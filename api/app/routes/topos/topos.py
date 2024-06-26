@@ -2,7 +2,7 @@ from http import HTTPStatus
 from fastapi import HTTPException, Body, Response
 from typing import Any
 
-from db.schema.assets import Topology, AssetRef, AssetVersion, Asset
+from db.schema.assets import Topology, AssetRef
 from sqlmodel import select, update
 from pydantic import BaseModel, Json
 from uuid import UUID
@@ -10,7 +10,6 @@ from db.connection import get_session
 from fastapi import APIRouter, Depends
 
 from db.schema.profiles import Profile, Org
-from routes.assets.assets import AssetVersionResult, asset_join_select
 from routes.authorization import current_profile
 
 import re

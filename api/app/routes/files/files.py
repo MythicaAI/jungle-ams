@@ -3,15 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from db.connection import get_session
-from db.schema.events import Event
 from db.schema.media import FileContent
-from sqlmodel import select, Session
+from sqlmodel import select
 
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
-from routes.cdn import translate_download_url
 from routes.responses import FileUploadResponse
-from routes.file_events import enrich_file, enrich_files
+from routes.file_events import enrich_file
 
 router = APIRouter(prefix="/files", tags=["files"])
 

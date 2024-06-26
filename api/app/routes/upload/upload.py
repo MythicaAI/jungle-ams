@@ -11,11 +11,10 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from http import HTTPStatus
 
 from config import app_config
-from db.schema.events import Event
 from routes.authorization import current_profile
 from routes.cdn import translate_download_url
 from routes.responses import FileUploadResponse
-from routes.file_events import enrich_file, enrich_files
+from routes.file_events import enrich_files
 from storage import gcs_uploader, minio_uploader
 
 import db.index as db_index
