@@ -4,7 +4,6 @@ from uuid import UUID
 
 from fastapi.testclient import TestClient
 
-from api.files import API
 from main import app
 from munch import munchify
 
