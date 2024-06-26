@@ -1,10 +1,22 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Input, Button, List, ListItem, FormControl, FormLabel, Textarea} from '@mui/joy';
+import React, {useState} from 'react';
+import {
+    Box,
+    Input,
+    Button,
+    FormControl,
+    FormLabel,
+    Divider,
+    Sheet,
+    Typography,
+    List,
+    ListItemDecorator, ListItem, ListDivider, ListItemContent
+} from '@mui/joy';
 import {getData, postData} from "./services/backendCommon.ts";
 import {Org} from "./schema_types/profiles.ts";
 import {Form} from "react-router-dom";
-import {ResolvedOrgRef} from 'types/apiTypes.ts';
+import {ResolvedOrgRef} from './types/apiTypes.ts';
 import {useGlobalStore} from "./stores/globalStore.ts";
+import {LucideShield, LucideUser, LucideUser2} from "lucide-react";
 
 const defaultOrg = (): Org => {
     return {
@@ -42,7 +54,25 @@ const OrgsList: React.FC = () => {
     };
 
     const createForm = (
-        <Form>
+        <Sheet
+            variant="outlined"
+            sx={{
+                maxWidth: 400,
+                mx: 'auto', // margin left & right
+                my: 4, // margin top & bottom
+                py: 3, // padding top & bottom
+                px: 2, // padding left & right
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                borderRadius: 'sm',
+                boxShadow: 'md',
+            }}
+        >
+            <Typography level="h4" component="h1">
+                <b>Create Organization</b>
+            </Typography>
+            <Form>
             <FormControl>
                 <FormLabel>Name</FormLabel>
                 <Input name="name" onChange={handleInputChange}></Input>
@@ -51,11 +81,22 @@ const OrgsList: React.FC = () => {
                 <FormLabel>Description</FormLabel>
                 <Input name="description" onChange={handleInputChange}></Input>
             </FormControl>
+
             <Button onClick={createOrg} disabled={creating}>
                 {creating ? 'Creating...' : 'Create'}
             </Button>
-        </Form>
+            </Form>
+        </Sheet>
     );
+
+    const iconForRole = (role: string) => {
+        switch (role) {
+            case "admin":
+                return <LucideShield />
+            default:
+                return <LucideUser />
+        }
+    }
 
     if (orgRoles === undefined) {
         return (<Box className="full-size-box">loading...</Box>);
@@ -64,25 +105,26 @@ const OrgsList: React.FC = () => {
             Would you like to create a new organization? {createForm}</Box>);
     }
     return (<Box className="full-size-box">
-        <table>
-            <thead>
-            <tr>
-                <td>Org</td>
-                <td>Member</td>
-                <td>Role</td>
-            </tr>
-            </thead>
-            <tbody>
-
+        <Typography level="h4" component="h1">
+            <b>Memberships</b>
+        </Typography>
+        <List size={"lg"}>
+            <ListItem key={"header"}>
+                <ListItemDecorator sx={{flex: 1}}>Role</ListItemDecorator>
+                <ListItemDecorator sx={{flex: 1}}>Organization</ListItemDecorator>
+            </ListItem>
             {orgRoles.map(ref => (
-                <tr key={ref.org_id}>
-                    <td>{ref.org_name}</td>
-                    <td>{ref.profile_name}</td>
-                    <td>{ref.role}</td>
-                </tr>))}
-            </tbody>
-        </table>
+                <React.Fragment>
+                    <ListItem key={ref.org_id}>
+                        <ListItemDecorator>{iconForRole(ref.role)}</ListItemDecorator>
+                        <ListItemDecorator>{ref.role}</ListItemDecorator>
+                        <ListItemContent><b>{ref.org_name}</b></ListItemContent>
+                    </ListItem>
+                    <ListDivider inset="startContent" />
+                </React.Fragment>))}
 
+        </List>
+        <Divider/>
         {createForm}
     </Box>);
 };

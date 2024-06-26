@@ -33,7 +33,7 @@ class Client(StorageClient):
         ctx.add_object_locator('gcs', bucket_name, object_name)
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 def create_client():

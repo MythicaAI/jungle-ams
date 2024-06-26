@@ -21,7 +21,7 @@ const Assets = () => {
           <tbody>
             {assets.map(asset => (
                 <tr key={asset.id}>
-                    <td><Link to={"/assets/:assetId:"}>{asset.name}</Link></td>
+                    <td><Link to={"/assets/:assetId"}>{asset.name}</Link></td>
                     <td>{asset.version}</td>
                     <td>{asset.author}</td>
                 </tr>

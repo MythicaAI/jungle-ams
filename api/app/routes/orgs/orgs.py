@@ -56,15 +56,16 @@ def resolve_and_validate(session: Session, profile: Profile, org_id: UUID, requi
     if not validate_roles(required_role, profile_roles):
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail=f"no valid roles in {profile_roles}")
-    pass
 
 
 def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[ResolvedOrgRef]:
+    """Given a list of refs, return the resolved reference with extra data present"""
     org_ids = set()
     profile_ids = set()
     for ref in refs:
         org_ids.add(ref.org_id)
         profile_ids.add(ref.profile_id)
+    # pylint: disable=no-member
     orgs = {org.id: org for org in
             session.exec(select(Org).where(col(Org.id).in_(org_ids))).all()}
     profiles = {profile.id: profile for profile in

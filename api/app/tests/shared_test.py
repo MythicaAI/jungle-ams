@@ -22,7 +22,7 @@ def assert_status_code(response, expected_status_code):
         return
     obj = response.json()
     if type(obj) is dict:
-        detail = response.json().get('detail') or ''
+        detail = response.json().get('detail') or 'no error found'
         message = f"details: {json.dumps(detail)}"
     else:
         message = f"obj: {json.dumps(obj)}"

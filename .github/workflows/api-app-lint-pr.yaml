@@ -35,4 +35,4 @@ jobs:
 
       - name: Run pylint
         run: |
-          poetry run pylint --disable=R,C .
+          poetry run pylint --disable=R,C,fixme .

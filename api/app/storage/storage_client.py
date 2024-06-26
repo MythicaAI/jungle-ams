@@ -5,10 +5,10 @@ from context import RequestContext
 
 class StorageClient:
     def validate(self):
-        raise NotImplemented
+        raise NotImplementedError
     def upload(self, ctx: RequestContext, bucket_name: str):
-        raise NotImplemented
+        raise NotImplementedError
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
-        raise NotImplemented
+        raise NotImplementedError
 

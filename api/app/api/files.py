@@ -1,4 +1,5 @@
 import logging
+from http import HTTPStatus
 from uuid import UUID
 
 from minio import Minio
@@ -7,10 +8,9 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings
 from google.cloud import storage
+from google.cloud.storage import Blob
 
 from munch import munchify
-
-import storage
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ class API(object):
         destination = destination / Path(file_name)
         if backend == 'gcs':
             gcs = storage.Client()
-            download = gcs.bucket(bucket).blob(file_name)
-            download.download_as_stream(str(destination))
+            download: Blob = gcs.bucket(bucket).blob(file_name)
+            download.download_to_filename(str(destination))
             return destination
         elif backend == 'minio':
             minio = create_minio_client()
@@ -71,11 +71,10 @@ class API(object):
     def download_file(self, file_id: UUID, local_path: Path) -> Path:
         """Download a file_id to a local path"""
         url = f"{api_settings().endpoint}/files/{file_id}"
-        doc = self.client.get(url).json()
+        r = self.client.get(url)
+        assert r.status_code == HTTPStatus.OK
+        doc = r.json()
         o = munchify(doc)
-        locators = o.locators
-        for locator in locators:
-            downloaded_path = self.download_file_from_locator(locator, local_path)
-            if downloaded_path is not None and downloaded_path.exists():
-                return downloaded_path
-        raise FileNotFoundError(f"Could not find {file_id} from {locators}")
+        log.info("downloading from %s to %s",
+                 o.download_url,
+                 local_path)

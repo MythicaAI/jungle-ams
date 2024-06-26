@@ -9,14 +9,16 @@ class RequestContext:
     downstream dependencies"""
 
     def __init__(self):
-        self.filename = ''
-        self.local_filepath = ''
-        self.profile_id = UUID(int=0, version=4)
-        self.timestamp = datetime.now(timezone.utc)
-        self.file_size = 0
-        self.content_hash = ''
-        self.extension = ''
-        self.locators = list()
+        self.file_id: UUID | None = None
+        self.event_id: UUID | None = None
+        self.filename: str = ''
+        self.local_filepath: str = ''
+        self.profile_id: UUID = UUID(int=0, version=4)
+        self.timestamp: datetime = datetime.now(timezone.utc)
+        self.file_size: int = 0
+        self.content_hash: str = ''
+        self.extension: str = ''
+        self.locators: list = []
 
     def add_object_locator(self, backend, bucket_name, object_name):
         """Add a backend storage locator reference"""

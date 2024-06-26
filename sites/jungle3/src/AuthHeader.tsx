@@ -1,4 +1,4 @@
-import {Avatar, Grid, Typography} from "@mui/joy";
+import {Avatar, Box, Grid, IconButton, List, ListItemContent, ListItemDecorator, Stack, Typography} from "@mui/joy";
 import {Link, useNavigate} from "react-router-dom";
 import {useCookies} from "react-cookie";
 import {useEffect, useState} from "react";
@@ -7,6 +7,9 @@ import axios from "axios";
 import {defaultProfileResponse, ProfileResponse, ResolvedOrgRef, SessionStartResponse} from './types/apiTypes.ts'
 import {getData} from "./services/backendCommon.ts";
 import {Profile} from "./schema_types/profiles.ts";
+import {ProfileMenu} from "./components/ProfileMenu.tsx";
+import {LucideBell} from "lucide-react";
+import {StatusAlarm} from "./components/StatusAlarm.tsx";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -17,7 +20,9 @@ export const AuthHeader = () => {
     const [needsSession, setNeedsSession] = useState(true);
     const [cookies, ] = useCookies(['profile_id', 'auth_token', 'refresh_token'])
     const {authToken, profile, setAuthToken, setProfile, setOrgRoles} = useGlobalStore();
+    const {errors, warnings, success} = useGlobalStore();
     const navigate = useNavigate();
+    const [lastProfile, setLastProfile] = useState<Profile>(undefined);
 
     useEffect(() => {
         console.log("useEffect - validate login session");
@@ -38,7 +43,7 @@ export const AuthHeader = () => {
     }, [authToken, cookies]);
 
     useEffect(() => {
-        if (needsSession) {
+        if (cookies.profile_id && needsSession) {
             updateSession(cookies.profile_id);
         }
     }, [cookies, needsSession]);
@@ -90,33 +95,32 @@ export const AuthHeader = () => {
     }
 
     return (
-        <Grid container spacing={2} sx={{flexGrow: 1}}>
-            <Grid xs={10}>
-                <Typography level="h2" component="h1" alignContent="left">
-                    HDA Manager
-                </Typography>
-            </Grid>
-            {authToken ?
-                <Grid xs={2}>
-                    <Avatar variant="outlined" alt={profile.name}/>
-                </Grid>
-                :
-                <Grid xs={2}>
-                    <Avatar alt="" variant="soft"/>
-                    <Link to={"/login"}>Not authenticated</Link>
-                </Grid>
-            }
-            <Grid xs={10}>
-                <Link to={"/login"}>
-                    <Typography level="body-xs">
-                        {profile.name ? profile.name : "No Profile"}: {cookies.profile_id}
-                    </Typography>
+        <List orientation={"horizontal"}>
+            <ListItemDecorator>
+                <Link to={"/"}>
+                <Box component="img" src="/mythica-logo.png" alt="Mythica Logo" sx={{
+                    width: '100%',
+                    height: 32, // Adjust this value to set the desired height
+                    objectFit: 'cover',
+                    objectPosition: 'center',
+                    mb: 2, // Adds some margin below the image
+                }} />
                 </Link>
-            </Grid>
-            <Grid xs={2}>
-                <Typography level="body-xs" alignContent="center">
-                    {authToken ? "logged in" : "logged out"}
+            </ListItemDecorator>
+            <ListItemContent>
+                <Typography level="h2" sx={{ flexGrow: 1 }}>
+                    HDA Package Index
                 </Typography>
-            </Grid>
-        </Grid>);
+            </ListItemContent>
+            <ListItemDecorator>
+                <Stack direction="row" spacing={1}>
+                    <StatusAlarm />
+                    {authToken ?
+                        <ProfileMenu name={profile.name}/>
+                        :
+                        <Link to={"/login"}><Avatar alt="?" variant="soft"/></Link>
+                    }
+                </Stack>
+            </ListItemDecorator>
+        </List>);
 }
