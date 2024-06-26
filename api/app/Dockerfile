@@ -8,8 +8,8 @@ COPY Pipfile .
 COPY Pipfile.lock .
 
 # Run all dependent installs before application code layer
-RUN pip install --upgrade pip && pip install pipenv
-RUN pipenv install --system --deploy
+RUN pip install --upgrade pip poetry
+RUN poetry install --system --deploy
 
 # Create the uploads folder
 USER 0
