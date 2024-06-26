@@ -25,6 +25,7 @@ starlette = "*"
 munch = "*"
 pytest = "*"
 flake8 = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.12"
