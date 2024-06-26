@@ -1,0 +1,30 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+minio = "*"
+sqlalchemy = {extras = ["asyncio"], version = "*"}
+alembic = "*"
+asyncpg = "*"
+psycopg2-binary = "*"
+google-auth = "*"
+google-cloud-storage = "*"
+fastapi = "*"
+pydantic-settings = "*"
+python-multipart = "*"
+jinja2 = "*"
+sqlmodel = "*"
+prometheus-fastapi-instrumentator = "*"
+typing-extensions = "*"
+
+[dev-packages]
+httpx = "*"
+starlette = "*"
+munch = "*"
+pytest = "*"
+flake8 = "*"
+
+[requires]
+python_version = "3.12"
