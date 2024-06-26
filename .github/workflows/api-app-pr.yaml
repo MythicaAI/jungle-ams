@@ -5,8 +5,12 @@ on:
     paths:
       - 'api/app/**'
 
+defaults:
+  run:
+    working-directory: api/app
+
 jobs:
-  db-setup:
+  api-app-ci:
     runs-on: ubuntu-latest
 
     env:
@@ -27,12 +31,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd api/app
           python -m pip install --upgrade pip pipenv
           pipenv install --dev
       - name: Static Code Linting with flake8
         run: |
-          cd api/app
           # stop the build if there are Python syntax errors or undefined names
           pipenv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
@@ -44,16 +46,13 @@ jobs:
 
       - name: Initialize Database
         run: |
-          cd api/app
           mkdir alembic_sqlite/versions
           pipenv run alembic -n sqlite revision --autogenerate -m "initial"
 
       - name: Create Schema
         run: |
-          cd api/app
           pipenv run alembic -n sqlite upgrade head
 
       - name: Run tests
         run: |
-          cd api/app
           pipenv run pytest .
