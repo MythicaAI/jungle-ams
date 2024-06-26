@@ -6,7 +6,6 @@ from munch import munchify
 
 from main import app
 from routes.type_adapters import register_adapters
-
 from tests.shared_test import get_random_string, assert_status_code
 
 client = TestClient(app)
@@ -345,6 +344,7 @@ def test_invalid_profile_url():
                                'description': test_profile_description,
                                'profile_base_href': "ht://whatever.com", })
     assert_status_code(response, HTTPStatus.UNPROCESSABLE_ENTITY)
+
 
 def test_blank_profile_url():
     response = client.post(f"{api_base}/profiles",

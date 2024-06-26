@@ -1,25 +1,21 @@
 import json
 import logging
-from typing import Optional, Dict
-
-from pydantic.types import StrictInt
 from datetime import datetime
 from http import HTTPStatus
+from typing import Optional, Dict
 from uuid import UUID
 
 import sqlalchemy
 from fastapi import APIRouter, HTTPException, Depends, Response, status
+from pydantic import BaseModel
+from pydantic.types import StrictInt
 from sqlmodel import select, update, insert, Session, desc
 
 from config import app_config
 from content.locate_content import locate_content_by_id
+from db.connection import get_session
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
-from db.schema.media import FileContent
-from db.connection import get_session
-
-from pydantic import BaseModel
-
 from db.schema.profiles import Profile, Org
 from routes.authorization import current_profile
 
@@ -136,11 +132,11 @@ def select_asset_version(session: Session,
         if asset is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} found")
         results = [(asset, AssetVersion(
-                major=0,
-                minor=0,
-                patch=0,
-                created=None,
-                contents={}))]
+            major=0,
+            minor=0,
+            patch=0,
+            created=None,
+            contents={}))]
     else:
         results = session.exec(select(Asset, AssetVersion).outerjoin(
             AssetVersion, Asset.id == AssetVersion.asset_id).where(
@@ -191,8 +187,7 @@ async def get_assets() -> list[AssetVersionResult]:
     with get_session() as session:
         join_results = session.exec(
             asset_join_select.where(
-                Asset.id == AssetVersion.asset_id).where(
-                AssetVersion.file_id == FileContent.id)).all()
+                Asset.id == AssetVersion.asset_id)).all()
         return process_join_results(join_results)
 
 
@@ -203,8 +198,8 @@ async def get_owned_assets(
     with get_session() as session:
         results = session.exec(
             select(Asset, AssetVersion)
-                .outerjoin(AssetVersion, Asset.id == AssetVersion.asset_id)
-                .where(Asset.owner == profile.id)).all()
+            .outerjoin(AssetVersion, Asset.id == AssetVersion.asset_id)
+            .where(Asset.owner == profile.id)).all()
         return process_join_results(results)
 
 
@@ -259,7 +254,7 @@ async def create_asset_version(asset_id: UUID,
                                r: AssetCreateVersionRequest,
                                response: Response,
                                profile: Profile = Depends(current_profile)) \
-            -> AssetVersionResult:
+        -> AssetVersionResult:
     """Create or update a single asset version"""
     version_id = convert_version_input(version_str)
     if version_id == ZERO_VERSION:
@@ -316,10 +311,10 @@ async def create_asset_version(asset_id: UUID,
                     description=r.description,
                     published=r.published,
                     author=author).where(
-                        Asset.id == asset.id).where(
-                        AssetVersion.major == version_id[0]).where(
-                        AssetVersion.minor == version_id[1]).where(
-                        AssetVersion.patch == version_id[2])
+                    Asset.id == asset.id).where(
+                    AssetVersion.major == version_id[0]).where(
+                    AssetVersion.minor == version_id[1]).where(
+                    AssetVersion.patch == version_id[2])
             session.exec(stmt)
 
             # insert event
