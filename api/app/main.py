@@ -1,6 +1,7 @@
 """Main entrypoint for FastAPI app creation"""
 
 import logging
+import uvicorn
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -57,7 +58,10 @@ def main():
     cfg = app_config()
     print('database validated')
     print(f"temporary upload folder is {cfg.upload_folder}")
-
+    uvicorn.run("main:app",
+                host=cfg.http_listen_addr,
+                port=cfg.http_listen_port,
+                reload=True)
 
 if __name__ == '__main__':
     main()

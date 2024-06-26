@@ -53,10 +53,23 @@ To install all tools:
 For further setup information for terraform or k8s check the README
 files in those subfolders.
 
+### Install with pipenv
+
+`pipenv` is used to install package requirements from an automatically locked
+and hashed set of dependencies. It is a combination of pip and venv so it can
+simplify working with these technologies while ensuring deterministic builds.
+
+From Linux, macOS or Windows:
+
+```bash
+api/app> pipenv install
+```
+
 ## Working on Sites
 
 * Edit site data in sites/<sitename>/content
 * Publish changes with sites/publish.sh <sitename>
+
 
 ### Node based Sites
 

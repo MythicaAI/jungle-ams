@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "mythica-app"
+version = "0.0.1"
+description = "FastAPI service to provide asset services."
+authors = ["Jacob Repp <jacobrepp@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/MythicaAI/infra/api/app"
+repository = "https://github.com/MythicaAI/infra"
+keywords = ["game assets", "file management", "sqlite", "cache", "graph", "games"]
+
+[tool.poetry.dependencies]
+python = "<4.0,>=3.10"
+minio = "^7.2.5"
+sqlalchemy = "2.0.31"
+asyncpg = "^0.29.0"
+psycopg2-binary = "^2.9.9"
+google-auth = "^2.29.0"
+google-cloud-storage = "^2.16.0"
+fastapi = "^0.111.0"
+pydantic-settings = "^2.3.0"
+python-multipart = "^0.0.9"
+jinja2 = "^3.1.4"
+sqlmodel = "^0.0.19"
+prometheus-fastapi-instrumentator = "^7.0.0"
+typing-extensions = "^4.12.2"
+alembic = "^1.13.1"
+asyncio = "3.4.3"
+
+[tool.poetry.extras]
+pgsql = ["psycopg2-binary"]
+sqlalchemy = ["asyncio"]
+
+[tool.poetry.dev-dependencies]
+pytest = "8.0"
+invoke = "2.2.0"
+flake8 = "7.1.0"
+httpx = "0.27.0"
+starlette = "0.37.2"
+munch = "4.0.0"
+pylint = "3.2.3"
+
+# Add development dependencies here
+[tool.poetry.scripts]
+start = "main:start"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

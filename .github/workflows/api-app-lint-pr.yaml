@@ -5,6 +5,10 @@ on:
     paths:
       - 'api/app/**'
 
+defaults:
+  run:
+    working-directory: api/app
+
 jobs:
   pylint:
     runs-on: ubuntu-latest
@@ -26,11 +30,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r api/app/requirements.txt
-          pip install -r api/app/tests/requirements.txt
-          pip install pylint
+          python -m pip install --upgrade pip poetry
+          poetry install --with=dev --no-root
 
       - name: Run pylint
         run: |
-          pylint --disable=R,C api/app
+          poetry run pylint --disable=R,C .
