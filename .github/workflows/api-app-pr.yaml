@@ -27,15 +27,15 @@ jobs:
 
       - name: Install dependencies
         run: |
+          cd api/app
           python -m pip install --upgrade pip
-          pip install -r api/app/requirements.txt
-          pip install -r api/app/tests/requirements.txt
+          pipenv install --dev
       - name: Static Code Linting with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          pipenv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          pipenv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Create SQLite database
         run: |
@@ -45,14 +45,14 @@ jobs:
         run: |
           cd api/app
           mkdir alembic_sqlite/versions
-          alembic -n sqlite revision --autogenerate -m "initial"
+          pipenv run alembic -n sqlite revision --autogenerate -m "initial"
 
       - name: Create Schema
         run: |
           cd api/app
-          alembic -n sqlite upgrade head
+          pipenv run alembic -n sqlite upgrade head
 
       - name: Run tests
         run: |
           cd api/app
-          pytest .
+          pipenv run pytest .
