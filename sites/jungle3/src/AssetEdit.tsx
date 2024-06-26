@@ -59,10 +59,15 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
         updateVersion
     } = useAssetVersionStore();
 
-    // version sanitizing state
+    // version sanitizing state, should only be populated by the sanitizeVersion() function
     const [
         sanitizedVersion,
         setSanitizedVersion] = useState<number[]>([0, 0, 0]);
+
+    // separately manage the user's input version
+    const [
+        userVersion,
+        setUserVersion ] = useState<string>("0.0.0");
 
     const [
         openUploads,
@@ -72,7 +77,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
     // initialize version sanitation
     useEffect(() => {
         sanitizeVersion(version);
-    }, [version]);
+    }, [prop_version]);
 
     // org_id state and initial update to first index
     useEffect(() => {
@@ -111,14 +116,14 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
         // clear files and replace with version response
         updateVersion({
             asset_id: r.asset_id,
-            org_id: r.org_id,
-            author: r.author,
-            package_id: r.package_id,
-            name: r.name,
-            description: r.description,
+            org_id: r.org_id || '',
+            author: r.author || '',
+            package_id: r.package_id || '',
+            name: r.name || '',
+            description: r.description || '',
             version: r.version,
-            commit_ref: r.commit_ref,
-            created: r.created,
+            commit_ref: r.commit_ref || '',
+            created: r.created || '',
             updated: r.updated,
             files: {},
             thumbnails: {},
@@ -182,6 +187,14 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
       console.log(`org updated ${value}`);
     }
 
+    // convert a user version string to a number array
+    const convertUserVersion = (v: string): number[] => {
+        return v
+            .split('.')
+            .map(v => parseInt(v, 10))
+            .filter(v => !isNaN(v));
+    }
+
     // When leaving the version field, split and parse the values and pass it through the version update
     // to sanitize it
     const onVersionBlur = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -189,12 +202,8 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
         if (!event.target) {
             return;
         }
-        const versionStr: string = event.target.value;
-        const parts = versionStr
-            .split('.')
-            .map(v => parseInt(v, 10))
-            .filter(v => !isNaN(v));
-        sanitizeVersion(parts).join('.')
+        const parts = convertUserVersion(event.target.value);
+        setUserVersion(sanitizeVersion(parts).join('.'));
     }
 
     const onUploadDrawerKeyDown = (event: React.KeyboardEvent | React.MouseEvent) => {
@@ -248,7 +257,12 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         <FormLabel>
                             Name
                         </FormLabel>
-                        <Input name="name" variant="outlined" placeholder="Name..." value={name}/>
+                        <Input
+                            name="name"
+                            variant="outlined"
+                            placeholder="Name..."
+                            value={name}
+                            onChange={(e) => updateVersion({name: e.target.value})}/>
                     </FormControl>
 
                     <FormControl>
@@ -276,8 +290,12 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         <Input
                             name="version"
                             variant="outlined"
-                            placeholder="0.0.0"
-                            value={sanitizedVersion.join('.')}
+                            placeholder={sanitizedVersion.join('.')}
+                            value={userVersion}
+                            onChange={(e) => {
+                                setUserVersion(e.target.value);
+                                sanitizeVersion(convertUserVersion(e.target.value));
+                            }}
                             onBlur={onVersionBlur}/>
                     </FormControl>
 
@@ -291,7 +309,8 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                             variant="outlined"
                             size="md"
                             minRows={4}
-                            value={description}/>
+                            value={description}
+                            onChange={(e) => updateVersion({description: e.target.value})}/>
 
                     </FormControl>
 

@@ -63,7 +63,7 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
         if (!event.currentTarget) {
             return;
         }
-        const formData = new FormData(event.currentTarget);
+        const formData = new FormData(event.currentTarget as HTMLFormElement);
         const formJson = Object.fromEntries(formData.entries());
         postData<ProfileResponse>(`profiles/`, formJson).then(r => {
             setProfile(r as unknown as Profile);
