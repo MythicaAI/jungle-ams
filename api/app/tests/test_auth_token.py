@@ -8,7 +8,7 @@ TEST_EMAIL = 'test@test.com'
 
 def test_auth_token():
     profile_id = uuid4()
-    not_sent = 0
+    not_sent = "0"
     profile = Profile(id=profile_id, email=TEST_EMAIL,
                       email_validate_state=not_sent, location='localhost')
     token = generate_token(profile)
