@@ -28,7 +28,6 @@ import {LucideSidebarClose} from "lucide-react";
 import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
 import {AssetEditFileList} from "./components/AssetEditFileList.tsx";
-import {SelectValue} from "@mui/base";
 
 interface AssetEditProps {
     prop_asset_id?: string,
@@ -175,9 +174,12 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             }).catch(err => handleError(err));
     }
 
-    const onUpdateOrg = (_event: never, value: SelectValue<OptionValue, Multiple>) => {
-        updateVersion({org_id: value});
-        console.log(`org updated ${value}`);
+    const onUpdateOrg = (_event: React.SyntheticEvent | null, value: (string | null)) => {
+      if (!value) {
+        return;
+      }
+      updateVersion({org_id: value});
+      console.log(`org updated ${value}`);
     }
 
     // When leaving the version field, split and parse the values and pass it through the version update
@@ -257,6 +259,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                             name="org_id"
                             placeholder={"Choose an existing org..."}
                             value={orgRoles.length > 0 ? orgRoles[0].org_id : ""}
+                            multiple={false}
                             onChange={onUpdateOrg}>
                             {orgRoles.map(role => (
                                 <Option key={role.org_id} value={role.org_id}>
