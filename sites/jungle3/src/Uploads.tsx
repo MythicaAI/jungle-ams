@@ -4,13 +4,12 @@ import {
 } from '@mui/joy';
 
 import {LucidePlusCircle, LucideUploadCloud} from 'lucide-react';
-import React, {useEffect} from "react";
+import {useEffect} from "react";
 import {AssetCreateRequest, AssetCreateResponse, FileUploadResponse} from "./types/apiTypes.ts";
 import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
 import {AssetEdit} from "./AssetEdit.tsx";
 import {AxiosError} from "axios";
-import {StatusStack} from "./components/StatusStack.tsx";
 import {UploadsSubmitList} from "./components/UploadsSubmitList.tsx";
 import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {useStatusStore} from "./stores/statusStore.ts";
@@ -75,7 +74,7 @@ const Uploads = () => {
         }
     }
 
-    const onFileInputChanged = function (_event: React.ChangeEvent<HTMLInputElement>) {
+    const onFileInputChanged = () => {
         const fileList = (document.getElementById("file-input") as HTMLInputElement).files;
         if (!fileList) {
             console.log("no fileList found")

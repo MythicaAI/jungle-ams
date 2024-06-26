@@ -1,4 +1,4 @@
-import {Avatar, Box, Grid, IconButton, List, ListItemContent, ListItemDecorator, Stack, Typography} from "@mui/joy";
+import {Avatar, Box, List, ListItemContent, ListItemDecorator, Stack, Typography} from "@mui/joy";
 import {Link, useNavigate} from "react-router-dom";
 import {useCookies} from "react-cookie";
 import {useEffect, useState} from "react";
@@ -8,7 +8,6 @@ import {defaultProfileResponse, ProfileResponse, ResolvedOrgRef, SessionStartRes
 import {getData} from "./services/backendCommon.ts";
 import {Profile} from "./schema_types/profiles.ts";
 import {ProfileMenu} from "./components/ProfileMenu.tsx";
-import {LucideBell} from "lucide-react";
 import {StatusAlarm} from "./components/StatusAlarm.tsx";
 
 // proxy the auth token from cookies to the auth store
@@ -20,9 +19,7 @@ export const AuthHeader = () => {
     const [needsSession, setNeedsSession] = useState(true);
     const [cookies, ] = useCookies(['profile_id', 'auth_token', 'refresh_token'])
     const {authToken, profile, setAuthToken, setProfile, setOrgRoles} = useGlobalStore();
-    const {errors, warnings, success} = useGlobalStore();
     const navigate = useNavigate();
-    const [lastProfile, setLastProfile] = useState<Profile>(undefined);
 
     useEffect(() => {
         console.log("useEffect - validate login session");
@@ -71,7 +68,7 @@ export const AuthHeader = () => {
             setAuthToken(data.token);
             const input: Partial<ProfileResponse> = data.profile;
             const merged = mergeWithDefaults(defaultProfileResponse(), input)
-            setProfile(merged as Profile);
+            setProfile(merged as unknown as Profile);
             setNeedsSession(false);
         }).catch(err => {
             console.log(`start_session failed ${err}`);
@@ -87,7 +84,7 @@ export const AuthHeader = () => {
         getData<ProfileResponse>(`profiles/${cookies.profile_id}`).then(data=>{
             const input = data as Partial<ProfileResponse>;
             const merged = mergeWithDefaults(defaultProfileResponse(), input)
-            setProfile(merged as Profile);
+            setProfile(merged as unknown as Profile);
         })
         getData<ResolvedOrgRef[]>("orgs/").then(data => {
             setOrgRoles(data)

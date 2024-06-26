@@ -1,9 +1,7 @@
-import {StatusStack} from "./components/StatusStack.tsx";
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {
     Box,
     Chip,
-    Grid,
     List, ListDivider,
     ListItem,
     ListItemButton,
@@ -14,7 +12,6 @@ import {
 import {AssetVersionResponse} from "./types/apiTypes.ts";
 import {AxiosError} from "axios";
 import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
-import {Asset} from "./schema_types/assets.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {Link} from "react-router-dom";
@@ -71,7 +68,7 @@ export const Packages = () => {
                         <LucidePackage/>
                     </ListItemDecorator>
                     <ListItemContent sx={{flex: 1}}>
-                        <Typography level="body" fontWeight="bold">
+                        <Typography level="body-md" fontWeight="bold">
                             {a.name}
                         </Typography>
                         <Chip
@@ -86,7 +83,8 @@ export const Packages = () => {
                     <ListItemDecorator >
                         <Switch
                             checked={a.published}
-                            onChange={(event) => handlePublishToggle(a.asset_id, event.target.checked)}
+                            onChange={(event) =>
+                                handlePublishToggle(a.asset_id, a.version.join('.'), event.target.checked)}
                             color={a.published ? 'success' : 'neutral'}
                              sx={{flex: 1}}
                         />

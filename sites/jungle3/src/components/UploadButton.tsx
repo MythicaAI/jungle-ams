@@ -1,7 +1,6 @@
 import {UploadProgressState, useUploadStore} from "../stores/uploadStore.ts";
 import {Box, Button, LinearProgress} from "@mui/joy";
 import {LucideCloudUpload} from "lucide-react";
-import {useState} from "react";
 
 interface UploadButtonProps {
   onUploadFiles: () => void;

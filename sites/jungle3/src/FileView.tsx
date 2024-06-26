@@ -7,7 +7,6 @@ import { useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
 import {AxiosError} from "axios";
 import {useStatusStore} from "./stores/statusStore.ts";
-import {StatusStack} from "./components/StatusStack.tsx";
 
 interface FileViewProps {
     file_id?: string,

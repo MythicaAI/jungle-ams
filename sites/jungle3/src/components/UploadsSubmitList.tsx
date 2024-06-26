@@ -6,7 +6,6 @@ import {useStatusStore} from "../stores/statusStore.ts";
 import {AxiosError, AxiosProgressEvent, AxiosRequestConfig} from "axios";
 import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
 import {UploadButton} from './UploadButton.tsx'
-import uploads from "../Uploads.tsx";
 
 
 export const UploadsSubmitList = function () {

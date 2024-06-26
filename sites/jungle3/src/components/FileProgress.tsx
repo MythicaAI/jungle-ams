@@ -1,4 +1,4 @@
-import {Box, CircularProgress, CircularProgressProps, LinearProgress, LinearProgressProps, Typography} from "@mui/joy";
+import {Box, CircularProgress, CircularProgressProps} from "@mui/joy";
 
 export const FileProgress = (props: CircularProgressProps & { value: number }) => {
   return (

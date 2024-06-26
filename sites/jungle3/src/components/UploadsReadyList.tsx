@@ -1,23 +1,20 @@
 import {
     Box,
     Card,
-    Checkbox, CircularProgress,
-    Input, List,
+    Checkbox,
+    Input,
+    List,
     ListDivider,
-    ListItem, ListItemContent,
+    ListItem,
+    ListItemContent,
     ListItemDecorator,
-    SvgIcon,
-    Table,
-    Tooltip,
     Typography
 } from "@mui/joy";
-import {Link} from "react-router-dom";
-import React, {FormEvent, useEffect, useState} from "react";
+import {FormEvent, useEffect, useState} from "react";
 import {FileProgress} from "./FileProgress.tsx";
-import {formatRelative} from "../lib/isoDate.ts";
 import {useAssetVersionStore} from "../stores/assetVersionStore.ts";
 import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
-import {LucideCheck, LucideCircleCheck} from "lucide-react";
+import {LucideCircleCheck} from "lucide-react";
 
 export const UploadsReadyList = () => {
     // version store keeps the state of the version being authored, upload store keeps the state of the pending
@@ -39,7 +36,7 @@ export const UploadsReadyList = () => {
     const onUploadFileNameBlur = () => {
     }
 
-    const onFileCheckbox = (event, file_id: string) => {
+    const onFileCheckbox = (file_id: string) => {
         if (file_id in files) {
             removeFile(file_id)
         } else {
@@ -70,8 +67,8 @@ export const UploadsReadyList = () => {
     const UploadListItem = (file: FileUploadStatus) => (
         <ListItem>
             <ListItemDecorator sx={{width: 28}}>
-                <Checkbox onChange={(event) => onFileCheckbox(event, file.file_id)}
-                                          checked={file.file_id in files}/>
+                <Checkbox onChange={() => onFileCheckbox(file.file_id)}
+                          checked={file.file_id in files}/>
             </ListItemDecorator>
             <ListItemDecorator sx={{width: 28}}>
                 <Box component="img"
@@ -83,15 +80,15 @@ export const UploadsReadyList = () => {
             <ListItemDecorator sx={{width: 32}}>
                 {file.file_name === "mushroom_from_curve.hda" ?
                     <FileProgress size="sm" value={file.progress ? file.progress : 50}/>
-                : <LucideCircleCheck />}
+                    : <LucideCircleCheck/>}
             </ListItemDecorator>
         </ListItem>
     );
 
     return <Card>
         <List size="sm">
-            <UploadListHeader />
-            <ListDivider />
+            <UploadListHeader/>
+            <ListDivider/>
             <Input
                 name="file-name"
                 value={uploadNameFilter}
@@ -99,12 +96,12 @@ export const UploadsReadyList = () => {
                 placeholder="Filter..."
                 onChange={onUploadFileNameChanged}
                 onBlur={onUploadFileNameBlur}
-                sx={{marginBottom: '16px', my: 2 }}/>
+                sx={{marginBottom: '16px', my: 2}}/>
             {filteredUploadFiles.map((file, index) => (
                 <UploadListItem key={index} {...file} />
             ))}
-        {/*    </tbody>*/}
-        {/*</Table></Card>*/}
+            {/*    </tbody>*/}
+            {/*</Table></Card>*/}
         </List>
     </Card>
         ;

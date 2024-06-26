@@ -1,4 +1,4 @@
-import {Box, Typography, List, ListItem, Table} from '@mui/joy';
+import {Box, Table} from '@mui/joy';
 import {Link} from "react-router-dom";
 
 const assets = [

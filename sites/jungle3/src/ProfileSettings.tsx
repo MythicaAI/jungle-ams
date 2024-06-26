@@ -20,7 +20,6 @@ import { useSearchParams } from "react-router-dom";
 import {AxiosError} from "axios";
 import {MailCheckIcon, Tag} from "lucide-react";
 import {useStatusStore} from "./stores/statusStore.ts";
-import {StatusStack} from "./components/StatusStack.tsx";
 
 interface ProfileSettingsProps {
     create: boolean,

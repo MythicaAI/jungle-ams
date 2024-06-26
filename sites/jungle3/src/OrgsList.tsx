@@ -16,7 +16,7 @@ import {Org} from "./schema_types/profiles.ts";
 import {Form} from "react-router-dom";
 import {ResolvedOrgRef} from './types/apiTypes.ts';
 import {useGlobalStore} from "./stores/globalStore.ts";
-import {LucideShield, LucideUser, LucideUser2} from "lucide-react";
+import {LucideShield, LucideUser} from "lucide-react";
 
 const defaultOrg = (): Org => {
     return {
