@@ -82,7 +82,7 @@ importers:
         specifier: ^5.2.2
         version: 5.4.5
       vite:
-        specifier: ^5.2.0
+        specifier: ^5.2.11
         version: 5.2.11(@types/node@20.13.0)
 
 packages:
