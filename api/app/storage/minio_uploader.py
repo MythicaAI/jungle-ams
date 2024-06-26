@@ -17,9 +17,9 @@ def _create_bucket(client: Minio, bucket_name: str):
     found = client.bucket_exists(bucket_name)
     if not found:
         client.make_bucket(bucket_name)
-        log.info(f"created bucket {bucket_name}")
+        log.info("created bucket %s", bucket_name)
     else:
-        log.debug(f"bucket {bucket_name} already exists")
+        log.debug("bucket %s already exists", bucket_name)
 
 
 class Client(StorageClient):
@@ -34,7 +34,7 @@ class Client(StorageClient):
         :return: None
         """
         for b in self.minio.list_buckets():
-            log.info(f"validate: {b} bucket available")
+            log.info("validate: %s bucket available", b)
 
     def upload(self, ctx: RequestContext, bucket_name: str):
         """
@@ -50,10 +50,10 @@ class Client(StorageClient):
         try:
             self.minio.fput_object(
                 ctx.bucket_name, ctx.object_name, ctx.local_filepath)
-            log.info(f"{ctx.object_name} uploaded to bucket {ctx.bucket_name}")
+            log.info("%s uploaded to bucket %s", ctx.object_name, ctx.bucket_name)
             ctx.add_object_locator("minio", ctx.bucket_name, ctx.object_name)
         except S3Error as exc:
-            log.exception(f"upload failed to {ctx.bucket_name}:{ctx.object_name}",
+            log.exception("upload failed to %s:%s", ctx.bucket_name, ctx.object_name,
                           exc_info=exc)
             raise
 
@@ -79,9 +79,9 @@ class Client(StorageClient):
 
             # Upload the data
             self.minio.put_object(bucket_name, object_name, data, length=size)
-            log.info(f"{object_name} uploaded to bucket {bucket_name}")
+            log.info("%s uploaded to bucket %s", object_name, bucket_name)
         except S3Error as exc:
-            log.exception(f"Upload failed to {bucket_name}:{object_name}", exc_info=exc)
+            log.exception("upload failed to %s:%s", bucket_name, object_name, exc_info=exc)
             raise
 
         # Finalize hash and location

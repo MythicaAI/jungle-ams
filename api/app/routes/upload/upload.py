@@ -101,15 +101,17 @@ def upload_internal(storage, profile_id, upload_file) -> RequestContext:
 
     with open(ctx.local_filepath, 'wb') as f:
         shutil.copyfileobj(upload_file.file, f)
-    log.info(f'{filename} saved to {ctx.local_filepath}')
+    log.info('%s saved to %s', filename, ctx.local_filepath)
 
     with open(ctx.local_filepath, "rb") as f:
         content = f.read()
         ctx.content_hash = hashlib.sha1(content).hexdigest()
         ctx.file_size = len(content)
 
-    log.info(f"file info: {ctx.local_filepath}, "
-             "size: {ctx.file_size}, hash: {ctx.content_hash}")
+    log.info("file: %s, size: %s, hash: %s",
+             ctx.local_filepath,
+             ctx.file_size,
+             ctx.content_hash)
 
     # Upload to bucket storage
     if cfg.enable_storage:

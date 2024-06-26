@@ -1,4 +1,4 @@
-import os
+"""Database verification utility"""
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

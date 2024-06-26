@@ -172,7 +172,8 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
         created_in=location,
         affinity=location)
     event_result = session.exec(stmt)
-    log.info(f"packaging event for {avr.asset_id} by {avr.owner} -> {event_result}")
+    log.info("packaging event for %s by %s -> %s",
+             avr.asset_id, avr.owner, event_result)
     return event_result
 
 
