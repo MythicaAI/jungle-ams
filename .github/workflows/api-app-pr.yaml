@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd api/app
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip pipenv
           pipenv install --dev
       - name: Static Code Linting with flake8
         run: |
