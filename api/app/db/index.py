@@ -10,21 +10,21 @@ from context import RequestContext
 from db.connection import get_session
 from sqlmodel import insert
 
-
 log = logging.getLogger(__name__)
-
-FILE_UPLOADED_EVENT = 'file_uploaded:hda'
 
 def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
     """Update the database index for the upload"""
     with get_session() as session:
         content_type = f"application/{ctx.extension}"
 
-        # Create a new upload
+        # if the locators format changes we can add a different key
+        locators = {'locators': ctx.locators}
+
+        # create a new upload
         file_content_result = session.exec(insert(FileContent).values(
             {'name': ctx.filename,
              'owner': ctx.profile_id,
-             'locators': ctx.locators,
+             'locators': locators,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
              'content_type': content_type}))
@@ -35,7 +35,7 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
         job_data = {
             'file_id': str(file_id),
             'profile_id': str(ctx.profile_id),
-            'locators': ctx.locators,
+            'locators': locators,
             'content_type': content_type,
             'content_hash': ctx.content_hash,
             'file_size': ctx.file_size,
@@ -43,7 +43,7 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
         }
         location = app_config().mythica_location
         event_result = session.exec(insert(Event).values(
-            event_type=FILE_UPLOADED_EVENT,
+            event_type=f"file_uploaded:{ctx.extension}",
             job_data=job_data,
             owner=ctx.profile_id,
             created_in=location,

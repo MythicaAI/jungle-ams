@@ -14,10 +14,12 @@ import routes.assets.assets
 import routes.files.files
 import routes.orgs.orgs
 import routes.topos.topos
+import routes.validate.validate
 
 import db.connection as db_connection
 import log_config
 from config import app_config
+from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
 # default logging configuration
@@ -44,7 +46,9 @@ app.include_router(routes.assets.assets.router, prefix=api_prefix)
 app.include_router(routes.files.files.router, prefix=api_prefix)
 app.include_router(routes.orgs.orgs.router, prefix=api_prefix)
 app.include_router(routes.topos.topos.router, prefix=api_prefix)
+app.include_router(routes.validate.validate.validate_email_router, prefix=api_prefix)
 
+register_adapters()
 
 @app.get("/")
 def root():

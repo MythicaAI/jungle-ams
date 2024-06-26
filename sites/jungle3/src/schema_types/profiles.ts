@@ -10,6 +10,7 @@
 export interface Profile {
     id: string;
     name: string;
+    full_name: string;
     signature: string;
     created: string;
     updated: string;
@@ -17,7 +18,7 @@ export interface Profile {
     profile_base_href: string;
     description: string;
     email: string;
-    email_verified: boolean;
+    email_validate_state: number;
     location: string;
     login_count: number;
 }
@@ -59,4 +60,12 @@ export interface ProfileFollower {
     follow_id: string;
     created: string;
     deleted: string;
+}
+// Types to represent profiles online
+// Table name: profile_keys
+export interface ProfileKey {
+    key: string;
+    owner: string;
+    expires: string;
+    payload: object;
 }

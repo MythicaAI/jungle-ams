@@ -1,18 +1,21 @@
 import logging
-from datetime import datetime, timezone
+import secrets
+import string
+from datetime import datetime, timezone, timedelta
 from http import HTTPStatus
+from typing import Optional
 from uuid import UUID
+from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import ValidationError, BaseModel
+from pydantic import ValidationError, BaseModel, constr, AnyHttpUrl, EmailStr
 
 from auth.generate_token import generate_token
 from config import app_config
-from db.schema.profiles import Profile, ProfileSession
+from db.schema.profiles import Profile, ProfileSession, ProfileKey
 from db.connection import get_session
-from sqlmodel import select, update, delete
-
-
+from sqlmodel import select, update, delete, insert, col
+from routes.responses import ProfileResponse, SessionStartResponse
 from routes.authorization import current_profile
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
@@ -23,34 +26,12 @@ log = logging.getLogger(__name__)
 # Define a dictionary with the attributes you want to validate
 class CreateUpdateProfileModel(BaseModel):
     """A model with only allowed public properties for profile creation"""
-    name: str = None
-    description: str | None = None
-    signature: str | None = None
-    profile_base_href: str | None = None
+    name: constr(strip_whitespace=True, min_length=3, max_length=20)
+    description: constr(strip_whitespace=True, min_length=0, max_length=400) | None = None
+    signature: constr(min_length=32, max_length=400) | None = None
+    profile_base_href: Optional[AnyHttpUrl] = None
+    email: EmailStr = None
 
-
-class ProfileResponse(BaseModel):
-    """A model with only allowed public properties for profile creation"""
-    id: UUID = None
-    name: str | None = None
-    description: str | None = None
-    email: str | None = None
-    signature: str | None = None
-    profile_base_href: str | None = None
-    active: bool = None
-    created: datetime = None
-    updated: datetime | None = None
-    email_verified: bool = None
-
-
-class SessionStartResponse(BaseModel):
-    token: str
-    profile: ProfileResponse
-    sessions: list[ProfileSession]
-
-
-class ValidateEmailResponse(BaseModel):
-    profile_id: UUID
 
 
 @router.get('/')
@@ -114,27 +95,15 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
         return result
 
 
-@router.get('/validate_email/{profile_id}')
-async def validate_email(profile_id: UUID) -> ValidateEmailResponse:
-    with get_session() as session:
-        stmt = update(Profile).values({Profile.email_verified: True}).where(
-            Profile.id == profile_id)
-        stmt_sql = str(stmt)
-        log.info(stmt_sql)
-        result = session.exec(stmt)
-        if result.rowcount == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND,
-                                detail='profile not found')
-        session.commit()
-        return ValidateEmailResponse(profile_id=profile_id)
-
-
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_profile(
         req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     session = get_session()
     try:
-        profile = Profile(**req_profile.dict())
+        # if req_profile.profile_base_href is not None:
+        #     url = AnyHttpUrl(req_profile.profile_base_href)
+
+        profile = Profile(**req_profile.model_dump())
     except TypeError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
     except ValidationError as e:
@@ -157,7 +126,8 @@ async def update_profile(
                             detail='profile not authenticated')
 
     session = get_session(echo=True)
-    stmt = update(Profile).where(Profile.id == profile_id).values(
+    stmt = update(Profile).where(
+        Profile.id == profile_id).values(
         **req_profile.model_dump())
     result = session.execute(stmt)
     rows_affected = result.rowcount

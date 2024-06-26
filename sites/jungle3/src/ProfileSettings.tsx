@@ -1,70 +1,183 @@
-import {Box, Input, Avatar, FormControl, FormLabel, List, ListItem} from '@mui/joy';
-import {ProfileResponse, ResolvedOrgRef} from "./types/apiTypes.ts";
+import {
+    Box,
+    Input,
+    FormControl,
+    FormLabel,
+    List,
+    ListItem,
+    Button,
+    Card,
+    Typography, CardContent
+} from '@mui/joy';
+import {ProfileResponse} from "./types/apiTypes.ts";
 import {useCookies} from "react-cookie";
 import {useGlobalStore} from "./stores/globalStore.ts";
-import {postData} from "./services/backendCommon.ts";
+import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
 import {Profile} from "./schema_types/profiles.ts";
-import {useState} from "react";
-import {Form} from "react-router-dom";
+import {FormEvent} from "react";
+import {Form, Link} from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import {AxiosError} from "axios";
+import {MailCheckIcon, Tag} from "lucide-react";
+import {useStatusStore} from "./stores/statusStore.ts";
+import {StatusStack} from "./components/StatusStack.tsx";
 
-const Settings = () => {
+interface ProfileSettingsProps {
+    create: boolean,
+}
+
+interface ValidateEmailResponse {
+    profile_id: string
+    code: string
+    link: string
+    state: string
+}
+
+const ProfileSettings = (props: ProfileSettingsProps) => {
     const [cookies, ] = useCookies(['profile_id'])
-    const [profileResponse, setProfileResponse] = useState<ProfileResponse>();
     const {profile, setProfile, orgRoles} = useGlobalStore();
+    const [searchParams] = useSearchParams();
+    const isCreate = searchParams.has("create") || props.create;
+    const {setSuccess, addError, addWarning} = useStatusStore();
 
-    const onUpdateProfile = (formData) => {
-        postData<ProfileResponse>(`profiles/${cookies.profile_id}`, formData).then(r =>
-            {
-                setProfileResponse(r)
-                setProfile(r as Profile);
-            });
+    const handleError = (err: AxiosError) => {
+        addError(translateError(err));
+        extractValidationErrors(err).map(msg => (addWarning(msg)));
     }
 
-    const profileEdit = profile && <Form onSubmit={onUpdateProfile}>
-      <FormControl>
+    const onUpdateProfile = (event: FormEvent) => {
+        event.preventDefault();
+        if (event.currentTarget) {
+            return;
+        }
+        const formData = new FormData(event.currentTarget);
+        const formJson = Object.fromEntries(formData.entries());
+        postData<ProfileResponse>(`profiles/${cookies.profile_id}`, formJson).then(r => {
+            setProfile(r as unknown as Profile);
+            setSuccess("Profile updated");
+            cookies.profile_id = r.id;
+        }).catch(err => handleError(err));
+    }
+
+    const onCreateProfile = (event: FormEvent) => {
+        event.preventDefault();
+        if (event.currentTarget) {
+            return;
+        }
+        const formData = new FormData(event.currentTarget);
+        const formJson = Object.fromEntries(formData.entries());
+        postData<ProfileResponse>(`profiles/`, formJson).then(r => {
+            setProfile(r as unknown as Profile);
+            setSuccess("Profile created");
+            cookies.profile_id = r.id;
+        }).catch(err => handleError(err));
+    }
+
+    const onRequestEmailVerification = () => {
+        getData<ValidateEmailResponse>('validate-email').then(r => {
+            setSuccess(`Email verification requested Debug: ${r.profile_id} ${r.link}`)
+        }).catch(err => handleError(err));
+    }
+
+    const profileName =(<FormControl>
         <FormLabel>
           Name
         </FormLabel>
-        <Input value={profile.name} />
+        <Input name="name" required value={profile.name} />
+      </FormControl>);
 
-      </FormControl>
-      <FormControl>
+    const profileFullName = (<FormControl>
+        <FormLabel>
+            Full Name
+        </FormLabel>
+        <Input name="full_name" value={profile.full_name} />
+    </FormControl>);
+
+    const verifiedLabel = (profile.email_validate_state == 2 ?
+            <Tag color="success"/> : <Button onClick={onRequestEmailVerification}><MailCheckIcon/></Button>);
+
+    const profileEmailValidate =(<FormControl>
+        <FormLabel>
+          Email
+        </FormLabel>
+
+        <Input
+            name="email"
+            required
+            disabled={isCreate}
+            value={profile.email}
+            endDecorator={verifiedLabel}/>
+        <Box>
+            Email Validation State: {profile.email_validate_state}
+        </Box>
+
+      </FormControl>);
+
+    const profileEmailCreate =(<FormControl>
+        <FormLabel>
+          Email
+        </FormLabel>
+
+        <Input
+            name="email"
+            required
+            value={profile.email}/>
+      </FormControl>);
+
+    const profileDescription = (<FormControl>
         <FormLabel>
           Description
         </FormLabel>
-        <Input value={profile.description} />
+        <Input name="description" value={profile.description} />
 
-      </FormControl>
-      <FormControl>
+      </FormControl>);
+
+    const profileOrgs = (<FormControl>
         <FormLabel>
+            Organizations
+        </FormLabel>
+        <Card
+            variant="outlined"
+            sx={{
+                minHeight: '280px',
+                width: 320,
+                backgroundColor: '#fff',
+                borderColor: '#000',
+            }}
+        >
+        <Typography level="h2" fontSize="lg" textColor="#000">
           Organizations
-        </FormLabel>
-        <FormLabel>
-            <List>
-            {orgRoles.map(role => (
-                <ListItem key={role.org_id}>
-                    {role.org_name}
-                </ListItem>)
-            )}
-            </List>
-        </FormLabel>
+        </Typography>
+            <CardContent>
+                <List>
+                    {orgRoles.map(role => (
+                        <ListItem key={role.org_id}>
+                            {role.org_name}
+                        </ListItem>)
+                    )}
+                </List>
+                <Link to="/orgs">Edit</Link>
+            </CardContent>
+        </Card>
+      </FormControl>);
 
-      </FormControl>
-      <FormControl>
-        <FormLabel>
-          Profile Signature
-        </FormLabel>
-        <Input value={profile.signature} />
+    const profileEdit = profile &&
+        <Form onSubmit={onUpdateProfile}>
+            {profileName}
+            {profileFullName}
+            {profileDescription}
+            {profileEmailValidate}
+            {profileOrgs}
+        </Form>
 
-      </FormControl>
-      <FormControl>
-        <FormLabel>
-          Last Online
-        </FormLabel>
-        <Input value={profile.updated} />
-
-      </FormControl>
-    </Form>
+    const profileCreate = (
+        <Form onSubmit={onCreateProfile}>
+            {profileName}
+            {profileFullName}
+            {profileDescription}
+            {profileEmailCreate}
+            <Button type="submit">Create</Button>
+        </Form>);
 
     const profileLoading = <Box>
         Loading
@@ -72,8 +185,8 @@ const Settings = () => {
 
   return (
       <div>
-          {profile ? profileEdit : profileLoading}
+          {isCreate ? profileCreate : (profile ? profileEdit : profileLoading)}
       </div>);
 };
 
-export default Settings;
+export default ProfileSettings;

@@ -1,8 +1,9 @@
 import hashlib
 import os
 import shutil
-import uuid
 import logging
+from datetime import datetime, timezone
+from uuid import UUID
 from functools import lru_cache
 from typing import Annotated
 
@@ -10,7 +11,11 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from http import HTTPStatus
 
 from config import app_config
+from db.schema.events import Event
 from routes.authorization import current_profile
+from routes.cdn import translate_download_url
+from routes.responses import FileUploadResponse
+from routes.file_events import enrich_file, enrich_files
 from storage import gcs_uploader, minio_uploader
 
 import db.index as db_index
@@ -27,6 +32,13 @@ from storage.storage_client import StorageClient
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
+
+EMPTY_UUID = UUID(int=0, version=4)
+
+class UploadResponse(BaseModel):
+    """Response from uploading one or more files"""
+    message: str
+    files: list[FileUploadResponse]
 
 
 @lru_cache
@@ -45,13 +57,6 @@ async def storage_client() -> StorageClient:
     return create_storage_client()
 
 
-class UploadResponse(BaseModel):
-    """Response from uploading one or more files"""
-    message: str
-    files: list[uuid.UUID]
-    events: list[uuid.UUID]
-
-
 @router.post('/store')
 async def upload(
         files: list[UploadFile] = File(...),
@@ -62,29 +67,33 @@ async def upload(
     if not files:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
 
-    contents = list()
-    events = list()
+    response_files = []
     for file in files:
-        file_id, event_id = upload_internal(storage, profile.id, file)
-        contents.append(file_id)
-        events.append(event_id)
+        ctx = upload_internal(storage, profile.id, file)
+        response_files.append(FileUploadResponse(
+            file_id=ctx.file_id,
+            owner=ctx.profile_id,
+            file_name=file.filename,
+            event_ids=[ctx.event_id],
+            size=file.size,
+            content_type=file.content_type,
+            download_url=translate_download_url(ctx.locators, ctx.content_hash),
+            content_hash=ctx.content_hash,
+            created=datetime.now(timezone.utc)))
     return UploadResponse(
-        message=f'uploaded {len(events)} files',
-        files=contents,
-        events=events)
+        message=f'uploaded {len(response_files)} files',
+        files=response_files)
 
 
-def upload_internal(storage, profile_id, upload_file):
+def upload_internal(storage, profile_id, upload_file) -> RequestContext:
+    """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
     ctx = RequestContext()
     ctx.profile_id = profile_id
 
     filename = upload_file.filename
     extension = filename.rpartition(".")[-1].lower()
-    if extension != "hda":
-        raise HTTPException(
-            HTTPStatus.BAD_REQUEST,
-            detail="Only .hda files are currently supported for upload.")
+
     ctx.extension = extension
 
     # stream the file content to a local file path in the upload folder
@@ -115,23 +124,24 @@ def upload_internal(storage, profile_id, upload_file):
 
     # Update database index
     if cfg.enable_db:
-        event_id = db_index.update(ctx)
+        ctx.file_id, ctx.event_id = db_index.update(ctx)
     else:
-        event_id = uuid.UUID(int=0, version=4)
+        ctx.file_id, ctx.event_id = EMPTY_UUID, EMPTY_UUID
 
     if cfg.upload_folder_auto_clean:
         os.remove(ctx.local_filepath)
         log.debug("cleaned local file")
 
-    return event_id
+    return ctx
 
 
 @router.get('/pending')
 async def pending_uploads(
         profile: Annotated[Profile, Depends(current_profile)]
-) -> list[FileContent]:
+) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for
     the current profile"""
-    with get_session() as session:
-        return session.exec(select(FileContent).where(
+    with (get_session() as session):
+        owned_files = session.exec(select(FileContent).where(
             FileContent.owner == profile.id)).all()
+        return enrich_files(session, owned_files, profile)

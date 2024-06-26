@@ -25,6 +25,7 @@ export type UploadAsset = {
 export type ProfileResponse = {
       id: UUID,
       name: string,
+      full_name: string,
       description: string,
       email: string,
       signature: string,
@@ -39,6 +40,7 @@ export const defaultProfileResponse = () => {
       return {
             id: '',
             name: '',
+            full_name: '',
             description: '',
             email: '',
             signature: '',
@@ -57,19 +59,19 @@ export interface SessionStartResponse {
 }
 
 export interface AssetCreateRequest {
-      collection_id: UUID
+      org_id?: UUID
 }
 
 export interface AssetCreateResponse {
       id: UUID,
-      collection_id: UUID,
+      org_id: UUID,
       owner: UUID
 }
 
 export interface AssetCreateVersionRequest {
       author: UUID,
       name: string,
-      commit_ref: string,
+      commit_ref?: string,
       contents: UUID[]
 }
 
@@ -80,16 +82,27 @@ export interface AssetVersionContent {
       size: number,
 }
 
-export interface AssetCreateVersionResponse {
+export type AssetVersionContentMap = {
+      [key: string]: AssetVersionContent
+}
+
+export type AssetVersionContentListMap = {
+      [key: string]: AssetVersionContent[]
+}
+
+export interface AssetVersionResponse {
       asset_id: UUID,
-      collection_id: UUID,
+      org_id: UUID,
       package_id: UUID,
       author: UUID,
       name: string,
+      description: string,
       version: number[],
       commit_ref: string,
+      published: boolean
       created: ISOTime,
-      contents: AssetVersionContent[]
+      updated: ISOTime,
+      contents: AssetVersionContentListMap
 }
 
 export interface ResolvedOrgRef extends OrgRef {
@@ -102,3 +115,20 @@ export type UploadAssetList = Array<UploadAsset>;
 // current placeholder result from the /api/v1/catalog/* APIs
 // will be migrating to a catalog asset
 export type UploadAssetListResponse = ApiResponse<UploadAssetList>
+
+export interface FileUploadResponse {
+      file_id: string,
+      event_ids: string[],
+      file_name: string,
+      size: number,
+      created: string,
+      content_type: string,
+      content_hash: string,
+      download_url: string,
+}
+
+export interface UploadResponse {
+    message: string,
+    files: FileUploadResponse[],
+}
+

@@ -19,6 +19,7 @@ class Profile(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     name: str | None = None
+    full_name: str | None = None
     signature: str | None = None
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
@@ -26,7 +27,7 @@ class Profile(SQLModel, table=True):
     profile_base_href: str | None = None
     description: str | None = None
     email: str | None = None
-    email_verified: bool | None = False
+    email_validate_state: int | None = 0
     location: str | None = None
     login_count: int | None = 0
 
@@ -84,3 +85,15 @@ class ProfileFollower(SQLModel, table=True):
     follow_id: UUID = Field(primary_key=True, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
     deleted: datetime | None = None
+
+
+class ProfileKey(SQLModel, table=True):
+    """
+    Types to represent profiles online
+    """
+    __tablename__ = "profile_keys"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+    key: str = Field(primary_key=True, nullable=False)
+    owner: UUID | None = uuid4()
+    expires: datetime | None = None
+    payload: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
