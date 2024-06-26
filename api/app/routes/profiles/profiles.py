@@ -97,7 +97,10 @@ async def create_profile(
         req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     session = get_session()
     try:
+        # copy over the request parameters as they have been auto validated,
+        # do any remaining fixup
         profile = Profile(**req_profile.model_dump())
+        profile.profile_base_href = str(req_profile.profile_base_href)
     except TypeError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
     except ValidationError as e:
