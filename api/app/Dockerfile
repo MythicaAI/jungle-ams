@@ -1,5 +1,6 @@
 # Basic python runtime. Worth updating at some point
 FROM python:3.12-alpine
+LABEL authors="jrepp"
 
 # Create the uploads folder
 USER 0
