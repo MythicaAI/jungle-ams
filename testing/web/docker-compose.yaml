@@ -5,11 +5,11 @@
 services:
   nginx:
     container_name: nginx
-    image: nginx:latest
+    image: mythica-web-front:latest
     ports:
       - "8080:80"
     volumes:
-      - static:/usr/share/nginx/html
+      - sites:/sites
     networks:
       - web
       - storage
@@ -18,19 +18,16 @@ services:
     image: mythica-app:latest
     ports:
       - "50555:5555"
-    volumes:
-      - static:/static
     networks:
       - web
       - storage
 volumes:
-  static:
+  sites:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: "../../sites"
-  
+      device: "../../sites/"
 networks:
   storage:
     driver: bridge
