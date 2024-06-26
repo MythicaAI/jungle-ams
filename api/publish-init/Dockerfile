@@ -5,7 +5,7 @@ LABEL authors="jrepp"
 COPY Pipfile .
 COPY Pipfile.lock .
 RUN pip install --upgrade pip && pip install pipenv
-RUN pipenv install --dev --system --deploy
+RUN pipenv install --system --deploy
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
