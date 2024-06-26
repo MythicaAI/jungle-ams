@@ -28,6 +28,7 @@ interface GlobalState {
 
   setAuthToken: (token: string) => void;
   setProfile: (profile: Profile) => void;
+  updateProfile: (profile: Partial<Profile>) => void;
   setOrgRoles: (roles: ResolvedOrgRef[]) => void;
 }
 
@@ -41,6 +42,11 @@ export const useGlobalStore = create<GlobalState>((set) => ({
 
   setAuthToken: (authToken: string) => set( {authToken: authToken, isLoggedIn: authToken !== '' }),
   setRefreshToken: (refreshToken: string) => set( {refreshToken: refreshToken}),
-  setProfile: (profile: Profile) => set( {profile: profile}),
+  setProfile: (profile: Profile) => {
+    set({profile: profile})
+  },
   setOrgRoles: (roles) => set({orgRoles: roles}),
+  updateProfile: (partial: Partial<Profile>) => {
+    set((state) => ({profile: {...state.profile, ...partial}}))
+  },
 }));

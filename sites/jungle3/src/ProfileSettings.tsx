@@ -34,7 +34,7 @@ interface ValidateEmailResponse {
 
 const ProfileSettings = (props: ProfileSettingsProps) => {
     const [cookies, ] = useCookies(['profile_id'])
-    const {profile, setProfile, orgRoles} = useGlobalStore();
+    const {profile, setProfile, updateProfile, orgRoles} = useGlobalStore();
     const [searchParams] = useSearchParams();
     const isCreate = searchParams.has("create") || props.create;
     const {setSuccess, addError, addWarning} = useStatusStore();
@@ -60,14 +60,14 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
 
     const onCreateProfile = (event: FormEvent) => {
         event.preventDefault();
-        if (event.currentTarget) {
+        if (!event.currentTarget) {
             return;
         }
         const formData = new FormData(event.currentTarget);
         const formJson = Object.fromEntries(formData.entries());
         postData<ProfileResponse>(`profiles/`, formJson).then(r => {
             setProfile(r as unknown as Profile);
-            setSuccess("Profile created");
+            setSuccess(`Profile created ${r.id}`);
             cookies.profile_id = r.id;
         }).catch(err => handleError(err));
     }
@@ -82,14 +82,18 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
         <FormLabel>
           Name
         </FormLabel>
-        <Input name="name" required value={profile.name} />
+        <Input name="name" required
+               value={profile.name}
+               onChange={(e) => updateProfile({name: e.target.value}) } />
       </FormControl>);
 
     const profileFullName = (<FormControl>
         <FormLabel>
             Full Name
         </FormLabel>
-        <Input name="full_name" value={profile.full_name} />
+        <Input name="full_name"
+               value={profile.full_name}
+               onChange={(e) => updateProfile({full_name: e.target.value})}/>
     </FormControl>);
 
     const verifiedLabel = (profile.email_validate_state == 2 ?
@@ -105,7 +109,8 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
             required
             disabled={isCreate}
             value={profile.email}
-            endDecorator={verifiedLabel}/>
+            onChange={(e) => updateProfile({email: e.target.value}) }
+            endDecorator={verifiedLabel} />
         <Box>
             Email Validation State: {profile.email_validate_state}
         </Box>
@@ -120,14 +125,17 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
         <Input
             name="email"
             required
-            value={profile.email}/>
+            value={profile.email}
+            onChange={(e) => updateProfile({email: e.target.value})} />
       </FormControl>);
 
     const profileDescription = (<FormControl>
         <FormLabel>
           Description
         </FormLabel>
-        <Input name="description" value={profile.description} />
+        <Input name="description"
+               value={profile.description}
+               onChange={(e) => updateProfile({description: e.target.value})}/>
 
       </FormControl>);
 
