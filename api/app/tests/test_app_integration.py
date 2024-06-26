@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from munch import munchify
 
 from main import app
+from routes.type_adapters import register_adapters
 
 from tests.shared_test import get_random_string, assert_status_code
 
@@ -31,6 +32,8 @@ test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 # see localhost/docs for examples
 
 def test_create_profile_and_assets():
+    register_adapters()
+
     response = client.post(f"{api_base}/profiles",
                            json={
                                'name': test_profile_name,
@@ -310,8 +313,8 @@ def test_create_profile_and_assets():
     assert r[1].asset_id == asset_id
     assert r[0].org_id == org_id
     assert r[1].org_id == org_id
-    assert r[0].version == [0, 1, 0]
-    assert r[1].version == [0, 2, 0]
+    assert r[0].version == [0, 2, 0]
+    assert r[1].version == [0, 1, 0]
 
     # update existing asset version
     test_asset_ver_json = {

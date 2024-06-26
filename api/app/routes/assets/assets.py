@@ -9,7 +9,7 @@ from uuid import UUID
 
 import sqlalchemy
 from fastapi import APIRouter, HTTPException, Depends, Response, status
-from sqlmodel import select, update, insert, Session
+from sqlmodel import select, update, insert, Session, desc
 
 from config import app_config
 from content.locate_content import locate_content_by_id
@@ -224,8 +224,13 @@ async def get_asset_by_id(asset_id: UUID) -> list[AssetVersionResult]:
     with get_session() as session:
         return process_join_results(session.exec(
             asset_join_select.where(
-                Asset.id == asset_id).where(
-                Asset.id == AssetVersion.asset_id)))
+                Asset.id == asset_id
+            ).where(
+                Asset.id == AssetVersion.asset_id
+            ).order_by(
+                desc(AssetVersion.major),
+                desc(AssetVersion.minor),
+                desc(AssetVersion.patch))))
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
