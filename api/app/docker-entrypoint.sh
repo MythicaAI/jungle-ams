@@ -1,11 +1,9 @@
 #!/bin/sh
 
-# Env config and defaults
-HTTP_LISTEN_ADDR=${HTTP_LISTEN_ADDR:-0.0.0.0}
-HTTP_LISTEN_PORT=${HTTP_LISTEN_PORT:-5555}
-WORKER_COUNT=${WORKER_COUNT:-3}
-
 set -eof pipefail
+
+# shellcheck disable=SC2046
+. $(poetry env info --path)/bin/activate
 
 ./print_ip_address.py
 
