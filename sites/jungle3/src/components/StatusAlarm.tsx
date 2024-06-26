@@ -1,11 +1,10 @@
 import {StatusStack} from "./StatusStack.tsx";
-import React, {useState} from "react";
 import {LucideBell, LucideBellRing} from "lucide-react";
-import {Dropdown, MenuButton, IconButton, Menu} from "@mui/joy";
+import {Dropdown, MenuButton, Menu} from "@mui/joy";
 import {useStatusStore} from "../stores/statusStore.ts";
 
 
-export const StatusAlarm: React.FC = () => {
+export const StatusAlarm= () => {
     const {hasStatus} = useStatusStore();
     return <Dropdown open={hasStatus()}>
         <MenuButton>

@@ -1,5 +1,4 @@
 import {
-    Box,
     Sheet,
     FormControl,
     FormLabel,
@@ -7,21 +6,20 @@ import {
     List,
     ListItem,
     ListItemDecorator,
-    ListItemContent, ListItemButton, TextField
+    ListItemButton,
+    Textarea
 } from "@mui/joy";
 import {
     LucideCircleMinus,
     LucideDoorClosed,
     LucideEdit,
     LucideEllipsis,
-    LucideExternalLink,
     LucideLink,
     LucideSave
 } from "lucide-react";
-import {Link, useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import React, {useState} from "react";
 import {AssetVersionContent, AssetVersionContentMap} from "../types/apiTypes.ts";
-import {FileUploadStatus} from "../stores/uploadStore.ts";
 
 
 interface AssetEditFileListProps {
@@ -60,10 +58,12 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (props: AssetFileEdi
         <React.Fragment>
             {props.editing ? (
                 <>
-                    <TextField
+                    <Textarea
                         value={path}
                         onChange={(e) => setPath(e.target.value)}
-                        fullWidth
+                        placeholder="Enter File Name..."
+                        minRows={1}
+                        maxRows={3}
                     />
                     <IconButton onClick={handleSave}><LucideSave/></IconButton>
                     <IconButton onClick={handleCancel}><LucideDoorClosed/></IconButton>
@@ -77,6 +77,9 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (props: AssetFileEdi
         </React.Fragment>
     );
 };
+
+const handleEditSave = () => {}
+const handleEditCancel = () => {}
 
 export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
     const navigate = useNavigate();
@@ -99,7 +102,11 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
                             </IconButton>
                         </ListItemDecorator>
                         <ListItemButton role="menuitem">
-                            <AssetFileEditable content={file}/>
+                            <AssetFileEditable
+                                content={file}
+                                editing={false}
+                                save={() => handleEditSave()}
+                                cancel={() => handleEditCancel()} />
                         </ListItemButton>
                         <ListItemDecorator>
                             <IconButton onClick={() => navigate(`/files/${file.file_id}`)}>

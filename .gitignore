@@ -44,4 +44,5 @@ __pycache__
 
 # p/npm artifacts
 **/node_modules
-**/build*
+**/build/
+**/build-*

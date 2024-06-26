@@ -5,9 +5,8 @@ import {useGlobalStore} from "./stores/globalStore.ts";
 import {getData, translateError} from "./services/backendCommon.ts";
 import axios from "axios";
 import {Link, useNavigate} from "react-router-dom";
-import {Alert, Button, Grid, Input, Stack} from "@mui/joy";
+import {Button, Grid, Input, Stack} from "@mui/joy";
 import {useStatusStore} from "./stores/statusStore.ts";
-import {StatusStack} from "./components/StatusStack.tsx";
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
@@ -42,15 +41,6 @@ const Login: React.FC = () => {
       clearCookies();
       addError(translateError(err));
     })
-  };
-
-  const handleForgotPassword = () => {
-    // Handle forgot password logic here
-    console.log('Forgot password');
-  };
-  const handleCreateProfile = () => {
-    // Handle forgot password logic here
-    console.log('Create profile');
   };
 
   return (

@@ -1,4 +1,4 @@
-import {Alert, Box, Divider, IconButton, Stack, Typography} from "@mui/joy";
+import {Alert, Box, IconButton, Stack, Typography} from "@mui/joy";
 import {useStatusStore} from "../stores/statusStore.ts"
 import {LucideXSquare} from "lucide-react";
 import {v4} from "uuid";
