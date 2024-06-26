@@ -75,4 +75,6 @@ class API(object):
         assert r.status_code == HTTPStatus.OK
         doc = r.json()
         o = munchify(doc)
-        log.info("downloading from %s", o.download_url)
+        log.info("downloading from %s to %s",
+                 o.download_url,
+                 local_path)

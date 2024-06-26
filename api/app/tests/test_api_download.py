@@ -1,8 +1,5 @@
 import hashlib
-import pytest
-import tempfile
 from http import HTTPStatus
-from pathlib import Path
 from uuid import UUID
 
 from fastapi.testclient import TestClient
