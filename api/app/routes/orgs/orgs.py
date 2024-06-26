@@ -65,6 +65,7 @@ def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[ResolvedOrgRe
     for ref in refs:
         org_ids.add(ref.org_id)
         profile_ids.add(ref.profile_id)
+    # pylint: disable=no-member
     orgs = {org.id: org for org in
             session.exec(select(Org).where(col(Org.id).in_(org_ids))).all()}
     profiles = {profile.id: profile for profile in

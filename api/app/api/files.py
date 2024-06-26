@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings
 from google.cloud import storage
+from google.cloud.storage import Blob
 
 from munch import munchify
 
@@ -57,8 +58,8 @@ class API(object):
         destination = destination / Path(file_name)
         if backend == 'gcs':
             gcs = storage.Client()
-            download = gcs.bucket(bucket).blob(file_name)
-            download.download_as_stream(str(destination))
+            download: Blob = gcs.bucket(bucket).blob(file_name)
+            download.download_to_filename(str(destination))
             return destination
         elif backend == 'minio':
             minio = create_minio_client()

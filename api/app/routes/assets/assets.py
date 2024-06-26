@@ -120,7 +120,7 @@ def convert_version_input(version: str) -> tuple[int, ...]:
         if len(tuple_version) != VERSION_LEN:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
                                 detail="version must conform to 1.2.3")
-    except TypeError or ValueError as e:
+    except (TypeError, ValueError) as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             detail="version string was malformed") from e
     return tuple_version
