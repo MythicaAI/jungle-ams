@@ -4,14 +4,18 @@ import {LucideEdit, LucideGroup, LucidePackage, LucideUpload} from "lucide-react
 import {Link as RouterLink} from "react-router-dom";
 
 interface ProfileMenuProps {
-    name: string
+    name: string;
 }
 
-const LinkMenuItem = React.forwardRef((props, ref) => (
+interface LinkMenuItemProps {
+    to: string;
+    children: React.ReactNode;
+}
+
+const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => (
   <MenuItem
-    {...props}
-    ref={ref}
     component={RouterLink}
+    to={props.to}
     sx={{
       textDecoration: 'none',
       color: 'inherit',
@@ -19,8 +23,10 @@ const LinkMenuItem = React.forwardRef((props, ref) => (
         textDecoration: 'none',
       },
     }}
-  />
-));
+  >
+      {props.children}
+  </MenuItem>
+);
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({name}) => {
   return (
