@@ -87,7 +87,10 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
     return <FormControl>
         <FormLabel>
             {props.title}
-            <IconButton onClick={() => props.openUploadList(props.category, props.fileFilters)}>
+            <IconButton onClick={(e) => {
+                e.preventDefault();
+                props.openUploadList(props.category, props.fileFilters)
+            }}>
                 <LucideEllipsis/>
             </IconButton>
         </FormLabel>
