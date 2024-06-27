@@ -1,49 +1,26 @@
 import {
-    Button, Divider,
-    Grid, IconButton, List, ListItem, ListItemButton, ListItemContent, ListItemDecorator, Stack, styled, Typography,
+    Divider,
+    List, ListItem, ListItemButton, ListItemContent, ListItemDecorator, Stack, Typography,
 } from '@mui/joy';
 
 import {
-    LucideDownloadCloud,
     LucideFile,
     LucideImage,
-    LucidePlusCircle,
-    LucideTrash,
-    LucideUploadCloud
 } from 'lucide-react';
 import {useEffect} from "react";
-import {AssetCreateRequest, AssetCreateResponse, FileUploadResponse} from "./types/apiTypes.ts";
-import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
+import {FileUploadResponse} from "./types/apiTypes.ts";
+import {extractValidationErrors, getData, translateError} from "./services/backendCommon.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
-import {AssetEdit} from "./AssetEdit.tsx";
 import {AxiosError} from "axios";
-import {UploadsSubmitList} from "./components/UploadsSubmitList.tsx";
-import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
-import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
-import {useNavigate} from "react-router-dom";
 import {DownloadButton} from "./components/DownloadButton.tsx";
 import {DeleteButton} from "./components/DeleteButton.tsx";
 
-const VisuallyHiddenInput = styled('input')`
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    white-space: nowrap;
-    width: 1px;
-`;
-
 const Uploads = () => {
     const {authToken} = useGlobalStore();
-    const {asset_id, updateVersion} = useAssetVersionStore();
     const {addError, addWarning} = useStatusStore();
-    const {trackUploads, uploads, updateUpload, setPendingUploads} = useUploadStore();
-    const navigate = useNavigate();
+    const {trackUploads, uploads, updateUpload} = useUploadStore();
 
     const handleError = (err: AxiosError) => {
         addError(translateError(err));

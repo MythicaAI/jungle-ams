@@ -25,11 +25,10 @@ import {useStatusStore} from "./stores/statusStore.ts";
 import {AxiosError} from "axios";
 import {AssetVersionContentListMap, AssetVersionResponse, FileUploadResponse} from "./types/apiTypes.ts";
 import {Link, useParams, useNavigate} from "react-router-dom";
-import {LucideChevronLeft, LucideInfo, LucidePackage, LucideSidebarClose, LucideStepBack} from "lucide-react";
+import {LucideChevronLeft, LucideInfo, LucidePackage, LucideSidebarClose} from "lucide-react";
 import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
 import {AssetEditFileList} from "./components/AssetEditFileList.tsx";
-import {isValid} from "date-fns";
 
 interface AssetEditProps {
     prop_asset_id?: string,

@@ -1,6 +1,6 @@
 import {IconButton} from '@mui/joy';
 import {LucideDownloadCloud} from "lucide-react";
-import {AxiosError, AxiosResponse} from "axios";
+import {AxiosError} from "axios";
 import {extractValidationErrors, getData, translateError} from "../services/backendCommon.ts";
 import {useStatusStore} from "../stores/statusStore.ts";
 import {DownloadInfoResponse} from "../types/apiTypes.ts";

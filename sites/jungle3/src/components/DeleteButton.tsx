@@ -4,7 +4,7 @@ import {AxiosError} from 'axios';
 import {LucideCheck, LucideTrash, LucideX} from "lucide-react";
 import {deleteData, extractValidationErrors, translateError} from "../services/backendCommon.ts";
 import {useStatusStore} from "../stores/statusStore.ts";
-import {Card, DialogContent, DialogTitle, Modal, ModalClose, ModalDialog, Stack, Typography} from "@mui/joy";
+import {Card, Modal, ModalClose, ModalDialog, Stack, Typography} from "@mui/joy";
 
 interface DeleteButtonProps {
     url: string;
