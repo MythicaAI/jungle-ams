@@ -36,6 +36,7 @@ interface AssetEditProps {
 
 interface OpenUploadsState {
     open: boolean,
+    opened: boolean,
     category?: string,
     fileFilters?: string[]
 }
@@ -216,7 +217,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
     };
 
     const onClickAway = () => {
-        if (openUploads.open) {
+        if (openUploads.open && openUploads.opened) {
             setOpenUploads({open: false});
         }
     };
@@ -229,9 +230,12 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                     <Typography key={v[0]} level="body-xs">{v[0]}: {v[1]}</Typography>
                 ))}
             </Stack>
-            <ClickAwayListener onClickAway={onClickAway}>
+            <ClickAwayListener onClickAway={() => {
+                onClickAway();
+            }}>
                 <Drawer open={openUploads.open}
                         onKeyDown={onUploadDrawerKeyDown}
+                        onClose={() => setOpenUploads({open: false, opened: false})}
                         size="lg">
                     <Sheet
                         sx={{
