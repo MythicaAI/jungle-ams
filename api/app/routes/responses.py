@@ -50,6 +50,5 @@ class FileUploadResponse(BaseModel):
     event_ids: list[UUID]
     size: int
     content_type: str
-    download_url: str = ""
     content_hash: str = ""
     created: datetime

@@ -1,33 +1,35 @@
 import {
-  Box,
-  Button,
-  Drawer,
-  FormControl,
-  FormLabel,
-  IconButton,
-  Input,
-  List,
-  ListItem,
-  Option,
-  Select,
-  Sheet,
-  Stack,
-  Typography
+    Box,
+    Button,
+    Drawer,
+    FormControl,
+    FormHelperText,
+    FormLabel,
+    IconButton,
+    Input,
+    List,
+    ListItem, ListItemContent, ListItemDecorator,
+    Option,
+    Select,
+    Sheet,
+    Stack,
+    Typography
 } from '@mui/joy';
 import {ClickAwayListener} from '@mui/base/ClickAwayListener';
 import Textarea from '@mui/joy/Textarea';
 import {useGlobalStore} from "./stores/globalStore.ts";
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
 import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {AxiosError} from "axios";
 import {AssetVersionContentListMap, AssetVersionResponse, FileUploadResponse} from "./types/apiTypes.ts";
-import {useParams} from "react-router-dom";
-import {LucideSidebarClose} from "lucide-react";
+import {Link, useParams, useNavigate} from "react-router-dom";
+import {LucideChevronLeft, LucideInfo, LucidePackage, LucideSidebarClose, LucideStepBack} from "lucide-react";
 import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
 import {AssetEditFileList} from "./components/AssetEditFileList.tsx";
+import {isValid} from "date-fns";
 
 interface AssetEditProps {
     prop_asset_id?: string,
@@ -59,6 +61,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
         removeThumbnail,
         updateVersion
     } = useAssetVersionStore();
+    const navigate = useNavigate();
 
     // version sanitizing state, should only be populated by the sanitizeVersion() function
     const [
@@ -68,12 +71,12 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
     // separately manage the user's input version
     const [
         userVersion,
-        setUserVersion ] = useState<string>("0.0.0");
+        setUserVersion] = useState<string>("0.0.0");
 
     const [
         openUploads,
         setOpenUploads
-    ] = useState<OpenUploadsState>({open: false});
+    ] = useState<OpenUploadsState>({open: false, opened: false});
 
     // initialize version sanitation
     useEffect(() => {
@@ -130,7 +133,8 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             thumbnails: {},
             links: []
         });
-        sanitizeVersion(r.version);
+        setUserVersion(sanitizeVersion(r.version).join('.'))
+
         if (r.contents) {
             const contentMap: AssetVersionContentListMap = r.contents;
             if ("files" in contentMap) {
@@ -165,14 +169,22 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const contents = {
-            files: Object.values(files),
-            thumbnails: Object.values(thumbnails),
+
+        // Create a plain object from FormData
+        const formJson: {[key: string]: string | object} = {};
+        formJson['contents'] = {
+                files: Object.values(files),
+                thumbnails: Object.values(thumbnails),
         };
-        const formJson = {
-            ...Object.fromEntries(formData.entries()),
-            contents: contents,
-        };
+        formData.forEach((value, key) => {
+            if (key != 'org_id' || value !== '') {
+                formJson[key] = value as string;
+            }
+        });
+        if (isVersionZero()) {
+            addError("Zero versions are not supported");
+            return;
+        }
         postData<AssetVersionResponse>(`assets/${asset_id}/versions/${sanitizedVersion.join('.')}`, formJson).then(
             r => {
                 loadAssetVersionResponse(r);
@@ -181,11 +193,11 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
     }
 
     const onUpdateOrg = (_event: React.SyntheticEvent | null, value: (string | null)) => {
-      if (!value) {
-        return;
-      }
-      updateVersion({org_id: value});
-      console.log(`org updated ${value}`);
+        if (!value) {
+            return;
+        }
+        updateVersion({org_id: value});
+        console.log(`org updated ${value}`);
     }
 
     // convert a user version string to a number array
@@ -196,6 +208,11 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             .filter(v => !isNaN(v));
     }
 
+    // zero versions can be used for asset roots cannot be used to create new versions
+    const isVersionZero = (): boolean => {
+        return sanitizedVersion.every((v) => v === 0)
+    }
+
     // When leaving the version field, split and parse the values and pass it through the version update
     // to sanitize it
     const onVersionBlur = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -204,32 +221,78 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             return;
         }
         const parts = convertUserVersion(event.target.value);
-        setUserVersion(sanitizeVersion(parts).join('.'));
+        const sanitized = sanitizeVersion(parts);
+        updateVersion({version: sanitized});
     }
 
     const onUploadDrawerKeyDown = (event: React.KeyboardEvent | React.MouseEvent) => {
-        if (event.type == "keydown") {
+        if (event.type === "keydown") {
             const key = (event as React.KeyboardEvent).key;
             if (key === 'Escape') {
-                setOpenUploads({open: false})
+                setOpenUploads({open: false, opened: false});
             }
         }
     };
 
     const onClickAway = () => {
         if (openUploads.open && openUploads.opened) {
-            setOpenUploads({open: false});
+            setOpenUploads({open: false, opened: false});
         }
     };
 
+
+    const assetIdentityHeader = <Sheet
+        variant="outlined"
+        sx={{
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+            borderRadius: 0,
+            borderLeft: 'none',
+            borderRight: 'none',
+        }}
+    >
+        <Stack direction="row" spacing={1} alignItems="center">
+            {[['asset_id', asset_id],
+                ['org_id', org_id]].map(v => (
+                <Typography key={v[0]} fontFamily={"code"} level={"body-xs"}>{v[0]} ({v[1]})</Typography>
+            ))}
+        </Stack>
+    </Sheet>;
+
     return (
-        <Sheet sx={{p: 2}} className="full-size-box">
-            <Stack>
-                {[['asset_id', asset_id],
-                    ['org_id', org_id]].map(v => (
-                    <Typography key={v[0]} level="body-xs">{v[0]}: {v[1]}</Typography>
-                ))}
-            </Stack>
+        <Sheet
+            variant="outlined"
+            sx={{
+                maxWidth: 800,
+                mx: 'auto', // margin left & right
+                my: 4, // margin top & bottom
+                py: 3, // padding top & bottom
+                px: 2, // padding left & right
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                borderRadius: 'sm',
+                boxShadow: 'md',
+            }}
+        >
+            <List orientation={"horizontal"}>
+                <ListItemDecorator>
+                    <IconButton onClick={() => navigate('/packages')}>
+                        <LucideChevronLeft />
+                        <LucidePackage />
+                    </IconButton>
+                </ListItemDecorator>
+                <ListItemContent>
+                    <Typography level="h4" component="h1">
+                        <b>Package Editor</b>
+                    </Typography>
+                </ListItemContent>
+            </List>
+
+            {assetIdentityHeader}
+
             <ClickAwayListener onClickAway={() => {
                 onClickAway();
             }}>
@@ -248,7 +311,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         }}
                     >
                         <Typography level="h4">Uploads</Typography>
-                        <IconButton onClick={() => setOpenUploads({open: false})} variant="plain">
+                        <IconButton onClick={() => setOpenUploads({open: false, opened: false})} variant="plain">
                             <LucideSidebarClose/>
                         </IconButton>
                     </Sheet>
@@ -273,21 +336,29 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         <FormLabel>
                             Org / Namespace
                         </FormLabel>
-                        <Select
-                            name="org_id"
-                            placeholder={"Choose an existing org..."}
-                            value={orgRoles.length > 0 ? orgRoles[0].org_id : ""}
-                            multiple={false}
-                            onChange={onUpdateOrg}>
-                            {orgRoles.map(role => (
-                                <Option key={role.org_id} value={role.org_id}>
-                                    {role.org_name}
-                                </Option>)
-                            )}
-                        </Select>
+                        {(!org_id && orgRoles.length == 0) ?
+                            <Link to={"/orgs"}>Create New Organization</Link> : ""}
+                        {orgRoles.length > 0 ?
+                            <Select
+                                variant="soft"
+                                name="org_id"
+                                placeholder={"Choose an existing org..."}
+                                value={org_id}
+                                multiple={false}
+                                onChange={onUpdateOrg}>
+                                {orgRoles.map(role => (
+                                    <Option key={role.org_id} value={role.org_id}>
+                                        {role.org_name}
+                                    </Option>)
+                                )}
+                                {org_id ! in orgRoles ? <Option key={org_id} value={org_id}>
+                                    {org_id} (not a member)
+                                </Option> : ""}
+                            </Select>
+                            : ""}
                     </FormControl>
 
-                    <FormControl>
+                    <FormControl error={isVersionZero()}>
                         <FormLabel>
                             Version
                         </FormLabel>
@@ -301,6 +372,10 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                                 sanitizeVersion(convertUserVersion(e.target.value));
                             }}
                             onBlur={onVersionBlur}/>
+                        {isVersionZero() ? <FormHelperText>
+                            <LucideInfo/>
+                            0.0.0 versions are not supported
+                        </FormHelperText> : ""}
                     </FormControl>
 
                     <FormControl>
@@ -323,7 +398,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         category={"files"}
                         fileFilters={["hda", "hip"]}
                         openUploadList={(category, fileFilters) =>
-                            setOpenUploads({open: true, category: category, fileFilters: fileFilters})}
+                            setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
                         removeFile={removeFile}
                         files={files}/>
 
@@ -332,24 +407,12 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         category={"thumbnails"}
                         fileFilters={["png", "jpg", "jpeg", "gif", "webm"]}
                         openUploadList={(category, fileFilters) =>
-                            setOpenUploads({open: true, category: category, fileFilters: fileFilters})}
+                            setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
                         removeFile={removeThumbnail}
                         files={thumbnails}/>
 
-
-                    <FormControl>
-                        <FormLabel>
-                            Links
-                        </FormLabel>
-                        <Box>
-                            <List id="links">
-                                <ListItem>http://mysite.com</ListItem>
-                            </List>
-                        </Box>
-                    </FormControl>
-
                     <Box>
-                        <Typography level="title-md">Discovered References</Typography>
+                        <Typography level="title-md">References</Typography>
                         <List>
                             <ListItem key={1}>mythica::palm_fan:1.0</ListItem>
                             <ListItem key={2}>mythica::scatter:1.0</ListItem>

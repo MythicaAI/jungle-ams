@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 from http import HTTPStatus
+from operator import or_
 from typing import Optional, Dict
 from uuid import UUID
 
@@ -9,7 +10,7 @@ import sqlalchemy
 from fastapi import APIRouter, HTTPException, Depends, Response, status
 from pydantic import BaseModel
 from pydantic.types import StrictInt
-from sqlmodel import select, update, insert, Session, desc
+from sqlmodel import select, update, insert, delete, Session, desc
 
 from config import app_config
 from content.locate_content import locate_content_by_id
@@ -48,14 +49,19 @@ class AssetVersionContent(BaseModel):
     size: Optional[int] = None
 
 
+# Shorthand for a shallow document that contains pre-serialized JSON
+AssetContentDocument = dict[str, list[str]]
+
+
 class AssetCreateVersionRequest(BaseModel):
     """Create a new version of an asset with its contents"""
     author: Optional[UUID] = None
-    name: str
+    org_id: Optional[UUID] = None
+    name: Optional[str] = None
     description: Optional[str] = None
     published: Optional[bool] = False
     commit_ref: Optional[str] = None
-    contents: Optional[Dict[str, list[AssetVersionContent]]] = None
+    contents: Optional[dict[str, list[AssetVersionContent]]] = None
 
 
 class AssetCreateResult(BaseModel):
@@ -90,7 +96,7 @@ def process_join_results(join_results: list[tuple[Asset, AssetVersion]]) -> list
     for join_result in join_results:
         asset, ver = join_result
         if ver is None:
-            # outer join didn't find a version
+            # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
         avr = AssetVersionResult(
             asset_id=asset.id,
@@ -138,12 +144,13 @@ def select_asset_version(session: Session,
             created=None,
             contents={}))]
     else:
-        results = session.exec(select(Asset, AssetVersion).outerjoin(
-            AssetVersion, Asset.id == AssetVersion.asset_id).where(
-            Asset.id == asset_id).where(
-            AssetVersion.major == version[0]).where(
-            AssetVersion.minor == version[1]).where(
-            AssetVersion.patch == version[2])).all()
+        stmt = select(Asset, AssetVersion).outerjoin(AssetVersion,
+                                                     (Asset.id == AssetVersion.asset_id) &
+                                                     (AssetVersion.major == version[0]) &
+                                                     (AssetVersion.minor == version[1]) &
+                                                     (AssetVersion.patch == version[2])).where(Asset.id == asset_id)
+
+        results = session.exec(stmt).all()
     if not results:
         return None
     processed_results = process_join_results(results)
@@ -179,6 +186,33 @@ def asset_contents_json_to_model(contents: dict[str, list[str]]) -> dict[str, li
     for category, content_list in contents.items():
         converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
     return converted
+
+
+def resolve_contents_as_json(
+        session: Session,
+        in_files_categories: dict[str, list[AssetVersionContent]]) \
+        -> AssetContentDocument:
+    """Convert any partial content references into fully resolved references"""
+    contents = {}
+
+    # resolve all file content types
+    for category, content_list in in_files_categories.items():
+        resolved_content_list = []
+        for asset_content in content_list:
+            try:
+                file = locate_content_by_id(session, asset_content.file_id)
+                content = AssetVersionContent(
+                    file_id=file.id,
+                    file_name=asset_content.file_name,
+                    content_hash=file.content_hash,
+                    size=file.size)
+                resolved_content_list.append(content.model_dump_json())
+            except FileNotFoundError as exc:
+                raise HTTPException(HTTPStatus.NOT_FOUND,
+                                    detail=f"file '{asset_content.file_id}' not found") from exc
+        contents[category] = resolved_content_list
+
+    return contents
 
 
 @router.get('/all')
@@ -259,90 +293,98 @@ async def create_asset_version(asset_id: UUID,
     version_id = convert_version_input(version_str)
     if version_id == ZERO_VERSION:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed")
-    if not r.contents:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f"asset '{asset_id}' missing content")
 
     with get_session(echo=True) as session:
-        # Validate asset ID
-        asset = session.exec(select(Asset).where(Asset.id == asset_id)).first()
-        if asset is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}' not found")
+        # Find an existing asset version
+        avr = select_asset_version(session, asset_id, version_id)
+        if avr is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
 
-        contents = {}
-        for category, content_list in r.contents.items():
-            resolved_content_list = []
-            for asset_content in content_list:
-                try:
-                    file = locate_content_by_id(session, asset_content.file_id)
-                    content = AssetVersionContent(
-                        file_id=file.id,
-                        file_name=asset_content.file_name,
-                        content_hash=file.content_hash,
-                        size=file.size)
-                    resolved_content_list.append(content.model_dump_json())
-                except FileNotFoundError as exc:
-                    raise HTTPException(HTTPStatus.NOT_FOUND,
-                                        detail=f"file '{asset_content.file_id}' not found") from exc
-            contents[category] = resolved_content_list
+        values = r.model_dump(exclude_unset=True)
+
+        # resolve and process contents if they are set in the request they
+        # for any files they will be resolved to real files (or a file not found error will occur)
+        # and converted to json for serialization into storage
+        contents = values.get('contents')
+        if contents is not None:
+            values['contents'] = resolve_contents_as_json(session, r.contents)
+
+        # if the org_id is specified issue an update against the root asset
+        org_id = values.get('org_id')
+        if org_id is not None:
+            update_result = session.exec(update(Asset).values(
+                org_id=r.org_id).where(
+                Asset.id == asset_id).where(
+                Asset.owner == profile.id))
+            if update_result.rowcount != 1:
+                raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
+            values.pop('org_id')
 
         # Create the revision, fails if the revision already exists
+        # this could be optimized more using upsert but this will likely hold
+        # up well enough
         try:
-            # TODO: replace with upsert
-            avr = select_asset_version(session, asset_id, version_id)
-
-            # Use provided author or default to calling profile
+            # Use provided author or default to calling profile on creation
             author = r.author or profile.id
-            if avr is None:
+            if avr.version == ZERO_VERSION:
                 stmt = insert(AssetVersion).values(
-                    asset_id=asset.id,
+                    asset_id=avr.asset_id,
                     major=version_id[0],
                     minor=version_id[1],
                     patch=version_id[2],
-                    commit_ref=r.commit_ref,
-                    contents=contents,
-                    name=r.name,
-                    author=author)
+                    author=author,
+                    **values)
+                result = session.execute(stmt)
+                if result.rowcount != 1:
+                    raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                        detail="insert failed")
+                session.commit()
                 response.status_code = status.HTTP_201_CREATED
+                log.info("asset version created %s, version %s",
+                         asset_id,
+                         version_id)
             else:
                 stmt = update(AssetVersion).values(
-                    commit_ref=r.commit_ref,
-                    contents=contents,
-                    name=r.name,
-                    description=r.description,
-                    published=r.published,
-                    author=author).where(
-                    Asset.id == asset.id).where(
+                    **values).where(
+                    AssetVersion.asset_id == avr.asset_id).where(
                     AssetVersion.major == version_id[0]).where(
                     AssetVersion.minor == version_id[1]).where(
                     AssetVersion.patch == version_id[2])
-            session.exec(stmt)
+                result = session.exec(stmt)
+                if result.rowcount != 1:
+                    raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                        detail="update failed")
+                session.commit()
+                log.info("asset version updated %s, version %s",
+                         asset_id,
+                         version_id)
 
-            # insert event
             session.commit()
+
+            # read back the join result, add and commit the event back
             read_back = select_asset_version(session, asset_id, version_id)
-
-            result = AssetVersionResult(
-                asset_id=asset.id,
-                owner=asset.owner,
-                org_id=asset.org_id,
-                package_id=read_back.package_id,
-                published=read_back.published,
-                author=read_back.author,
-                name=read_back.name,
-                description=read_back.description,
-                version=read_back.version,
-                commit_ref=read_back.commit_ref,
-                created=read_back.created,
-                contents=read_back.contents)
-
-            add_version_packaging_event(session, result)
+            add_version_packaging_event(session, read_back)
             session.commit()
 
-            return result
+            return read_back
         except sqlalchemy.exc.IntegrityError as exc:
-            detail = (f'asset: {asset.id} '
-                      f'version {version_id} exists')
-            raise HTTPException(HTTPStatus.CONFLICT, detail=detail) from exc
+            log.exception("asset database operation failed", exc_info=exc)
+            raise HTTPException(HTTPStatus.CONFLICT,
+                                detail=f'asset: {asset_id} version {version_id} already exists') from exc
+
+
+@router.delete('/{asset_id}/versions/{version_str}')
+async def delete_asset_version(asset_id: UUID, version_str: str, profile: Profile = Depends(current_profile)):
+    """Delete a specific asset version"""
+    with get_session() as session:
+        stmt = delete(AssetVersion).where(
+            AssetVersion.asset_id == asset_id, or_(
+                AssetVersion.author == profile.id, Asset.owner == profile.id))
+        result = session.exec(stmt)
+        if result.rowcount != 1:
+            raise HTTPException(HTTPStatus.FORBIDDEN,
+                                detail="asset version be deleted by the asset owner")
+        session.commit()
 
 
 @router.get('/{asset_id}/versions/{version_str}')

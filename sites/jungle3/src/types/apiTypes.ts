@@ -1,4 +1,5 @@
 import {OrgRef, ProfileSession} from "../schema_types/profiles.ts";
+import {FileContent} from "../schema_types/media.ts";
 
 type ApiResponse<T> = {
       message: string,
@@ -132,3 +133,6 @@ export interface UploadResponse {
     files: FileUploadResponse[],
 }
 
+export interface DownloadInfoResponse extends FileContent {
+      url: string,
+}

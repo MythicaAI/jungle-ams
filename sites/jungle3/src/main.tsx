@@ -8,13 +8,13 @@ import {
 } from "react-router-dom";
 import './index.css'
 import ProfileSettings from "./ProfileSettings.tsx";
-import Uploads from "./Uploads.tsx";
 import Assets from "./Assets.tsx";
 import {AssetEditWrapper} from "./AssetEdit.tsx";
 import Login from "./Login.tsx";
 import OrgsList from "./OrgsList.tsx";
 import {FileViewWrapper} from "./FileView.tsx";
 import {Packages} from "./Packages.tsx";
+import Uploads from "./Uploads.tsx";
 
 
 

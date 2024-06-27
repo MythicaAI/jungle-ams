@@ -1,4 +1,4 @@
-import {Card, Table} from "@mui/joy";
+import {Button, Card, styled, Table} from "@mui/joy";
 import {v4} from "uuid";
 import {extractValidationErrors, postData, translateError} from "../services/backendCommon.ts";
 import {UploadResponse} from "../types/apiTypes.ts";
@@ -6,7 +6,19 @@ import {useStatusStore} from "../stores/statusStore.ts";
 import {AxiosError, AxiosProgressEvent, AxiosRequestConfig} from "axios";
 import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
 import {UploadButton} from './UploadButton.tsx'
+import {LucideUploadCloud} from "lucide-react";
 
+const VisuallyHiddenInput = styled('input')`
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    white-space: nowrap;
+    width: 1px;
+`;
 
 export const UploadsSubmitList = function () {
     const {trackUploads, pendingUploads, setUploadProgress, setPendingUploads} = useUploadStore();
@@ -67,12 +79,30 @@ export const UploadsSubmitList = function () {
                 }, 500)
             });
     };
+    const onFileInputChanged = () => {
+        const fileList = (document.getElementById("file-input") as HTMLInputElement).files;
+        if (!fileList) {
+            console.log("no fileList found")
+            return;
+        }
+        setPendingUploads([...pendingUploads, ...fileList]);
+    };
 
-    if (!pendingUploads || pendingUploads.length == 0) {
-        return "";
-    }
+    const showPendingUploads = () => !(!pendingUploads || pendingUploads.length == 0);
+
     return (<Card>
-        <Table aria-label="basic table">
+        <Button
+                    component="label"
+                    role={undefined}
+                    tabIndex={-1}
+                    variant="plain"
+                    color="neutral"
+                    startDecorator={<LucideUploadCloud/>}>
+                    Upload Files
+                    <VisuallyHiddenInput type="file" id="file-input" multiple={true}
+                                         onChange={onFileInputChanged}/>
+                </Button>
+        { showPendingUploads() ? <> <Table aria-label="basic table">
             <thead>
             <tr>
                 <th align="left">Pending upload</th>
@@ -93,6 +123,6 @@ export const UploadsSubmitList = function () {
             }
             </tbody>
         </Table>
-        <UploadButton onUploadFiles={onUploadFiles} />
+        <UploadButton onUploadFiles={onUploadFiles} /> </> : "" }
     </Card>);
 }

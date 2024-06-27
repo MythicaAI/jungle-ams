@@ -89,6 +89,9 @@ class Client(StorageClient):
         ctx.file_size = size
         ctx.add_object_locator('minio', bucket_name, object_name)
 
+    def download_link(self, bucket_name: str, object_name: str):
+        return self.minio.presigned_get_object(bucket_name, object_name)
+
 
 def create_client():
     cfg = app_config()

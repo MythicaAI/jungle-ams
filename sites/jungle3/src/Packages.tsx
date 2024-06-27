@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {
-    Box,
+    Box, Button,
     Chip,
     List, ListDivider,
     ListItem,
@@ -9,19 +9,22 @@ import {
     ListItemDecorator, Switch,
     Typography
 } from "@mui/joy";
-import {AssetVersionResponse} from "./types/apiTypes.ts";
+import {AssetCreateRequest, AssetCreateResponse, AssetVersionResponse} from "./types/apiTypes.ts";
 import {AxiosError} from "axios";
 import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
 import {useStatusStore} from "./stores/statusStore.ts";
-import {Link} from "react-router-dom";
-import {LucideLink, LucidePackage} from "lucide-react";
+import {Link, useNavigate} from "react-router-dom";
+import {LucideLink, LucidePackage, LucidePlusCircle} from "lucide-react";
+import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
 
 
 export const Packages = () => {
     const [versions, setVersions] = useState<AssetVersionResponse[]>([]);
     const {authToken} = useGlobalStore();
     const {addError, addWarning} = useStatusStore();
+    const {asset_id, updateVersion, clearVersion} = useAssetVersionStore();
+    const navigate = useNavigate();
 
     const handleError = (err: AxiosError) => {
         addError(translateError(err));
@@ -41,6 +44,21 @@ export const Packages = () => {
             .catch(err => handleError(err));
     }
 
+    const createAsset = function() {
+        if (!asset_id || asset_id === "") {
+            const createRequest: AssetCreateRequest = {};
+            postData<AssetCreateResponse>('assets/', createRequest).then(r => {
+                // update the asset edit state
+                clearVersion();
+                updateVersion({
+                    asset_id: r.id,
+                    org_id: r.org_id,
+                });
+                navigate(`/assets/${r.id}/versions/0.0.0`)
+            }).catch(err => handleError(err));
+        }
+    }
+
     useEffect(() => {
         if (!authToken) {
             return;
@@ -52,18 +70,32 @@ export const Packages = () => {
 
     return <Box>
             <List size={"lg"}>
+                <ListItem key={"create-header"}>
+                    <ListItemDecorator>
+                        <Button
+                            component="label"
+                            variant={"plain"}
+                            color={"neutral"}
+                            onMouseDown={createAsset}
+                            startDecorator={<LucidePlusCircle/>}>
+                            Create New Package
+                        </Button>
+                    </ListItemDecorator>
+                </ListItem>
                 <ListItem key={"header"}>
                     <ListItemDecorator sx={{flex: 1}}>Package</ListItemDecorator>
                     <ListItemDecorator sx={{flex: 1}}>ID</ListItemDecorator>
                 </ListItem>
             {versions.map(a => (
                 <ListItemButton
+                    component={Link}
+                    to={`/assets/${a.asset_id}/versions/${a.version.join('.')}`}
                     key={`${a.asset_id}-${a.version.join('.')}`}
-                sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}>
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}>
                     <ListItemDecorator>
                         <LucidePackage/>
                     </ListItemDecorator>
@@ -80,17 +112,17 @@ export const Packages = () => {
                             {a.version.join('.')}
                         </Chip>
                     </ListItemContent>
-                    <ListItemDecorator >
+                    <ListItemDecorator>
+                        <Typography component="span" level="inherit" sx={{ml: '10px'}}>
+                            {a.published ? 'Published' : 'Draft'}
+                        </Typography>
                         <Switch
                             checked={a.published}
                             onChange={(event) =>
                                 handlePublishToggle(a.asset_id, a.version.join('.'), event.target.checked)}
                             color={a.published ? 'success' : 'neutral'}
-                             sx={{flex: 1}}
+                            sx={{flex: 1}}
                         />
-                      <Typography component="span" level="inherit" sx={{ml: '10px'}}>
-                            {a.published ? 'Published' : 'Draft'}
-                        </Typography>
                     </ListItemDecorator>
                     <ListDivider />
                     <ListItemDecorator>

@@ -1,22 +1,15 @@
 import {
-    Sheet,
     FormControl,
     FormLabel,
     IconButton,
     List,
     ListItem,
-    ListItemDecorator,
     ListItemButton,
+    ListItemDecorator,
+    Sheet,
     Textarea
 } from "@mui/joy";
-import {
-    LucideCircleMinus,
-    LucideDoorClosed,
-    LucideEdit,
-    LucideEllipsis,
-    LucideLink,
-    LucideSave
-} from "lucide-react";
+import {LucideCircleMinus, LucideDoorClosed, LucideEdit, LucideEllipsis, LucideLink, LucideSave} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import React, {useState} from "react";
 import {AssetVersionContent, AssetVersionContentMap} from "../types/apiTypes.ts";
@@ -78,8 +71,11 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (props: AssetFileEdi
     );
 };
 
-const handleEditSave = () => {}
-const handleEditCancel = () => {}
+const handleEditSave = () => {
+}
+const handleEditCancel = () => {
+}
+
 
 export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
     const navigate = useNavigate();
@@ -94,10 +90,10 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
                 <LucideEllipsis/>
             </IconButton>
         </FormLabel>
-         <Sheet key={props.category} variant="outlined" sx={{ borderRadius: 'sm' }}>
+        <Sheet key={props.category} variant="outlined" sx={{borderRadius: 'sm'}}>
             <List id={props.category} size={"sm"}>
                 {Object.values(props.files).map(file => (
-                    <ListItem key={file.file_id} >
+                    <ListItem key={file.file_id}>
                         <ListItemDecorator>
                             <IconButton
                                 onClick={() => props.removeFile(file.file_id)}>
@@ -109,16 +105,16 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
                                 content={file}
                                 editing={false}
                                 save={() => handleEditSave()}
-                                cancel={() => handleEditCancel()} />
+                                cancel={() => handleEditCancel()}/>
                         </ListItemButton>
                         <ListItemDecorator>
                             <IconButton onClick={() => navigate(`/files/${file.file_id}`)}>
-                                <LucideLink />
+                                <LucideLink/>
                             </IconButton>
                         </ListItemDecorator>
                     </ListItem>))}
             </List>
-         </Sheet>
+        </Sheet>
     </FormControl>
         ;
 }

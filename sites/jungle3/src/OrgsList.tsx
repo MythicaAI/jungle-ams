@@ -114,8 +114,8 @@ const OrgsList: React.FC = () => {
                 <ListItemDecorator sx={{flex: 1}}>Organization</ListItemDecorator>
             </ListItem>
             {orgRoles.map(ref => (
-                <React.Fragment>
-                    <ListItem key={ref.org_id}>
+                <React.Fragment key={ref.org_id}>
+                    <ListItem>
                         <ListItemDecorator>{iconForRole(ref.role)}</ListItemDecorator>
                         <ListItemDecorator>{ref.role}</ListItemDecorator>
                         <ListItemContent><b>{ref.org_name}</b></ListItemContent>

@@ -15,6 +15,7 @@ import {FileProgress} from "./FileProgress.tsx";
 import {useAssetVersionStore} from "../stores/assetVersionStore.ts";
 import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
 import {LucideCircleCheck} from "lucide-react";
+import {FileUploadResponse} from "../types/apiTypes.ts";
 
 export const UploadsReadyList = () => {
     // version store keeps the state of the version being authored, upload store keeps the state of the pending
@@ -53,6 +54,16 @@ export const UploadsReadyList = () => {
         }
         console.log("default files");
         return Object.values(files);
+    }
+
+    const updateProgressForFiles = (files: FileUploadResponse[]) => {
+        files.forEach(file => {
+            if(file.event_ids.length > 0) {
+                updateUpload(file.file_id, 50);
+            } else {
+                updateUpload(file.file_id, 100);
+            }
+        })
     }
 
     const UploadListHeader = () => (
