@@ -140,19 +140,14 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
       </FormControl>);
 
     const profileOrgs = (<FormControl>
-        <FormLabel>
-            Organizations
-        </FormLabel>
         <Card
             variant="outlined"
             sx={{
                 minHeight: '280px',
                 width: 320,
-                backgroundColor: '#fff',
-                borderColor: '#000',
             }}
         >
-        <Typography level="h2" fontSize="lg" textColor="#000">
+        <Typography level="h2" fontSize="lg">
           Organizations
         </Typography>
             <CardContent>

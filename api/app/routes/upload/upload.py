@@ -1,31 +1,26 @@
 import hashlib
+import logging
 import os
 import shutil
-import logging
 from datetime import datetime, timezone
-from uuid import UUID
-from functools import lru_cache
+from http import HTTPStatus
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
-from http import HTTPStatus
-
-from config import app_config
-from routes.authorization import current_profile
-from routes.cdn import translate_download_url
-from routes.responses import FileUploadResponse
-from routes.file_events import enrich_files
-from storage import gcs_uploader, minio_uploader
+from pydantic import BaseModel
+from sqlmodel import select
 
 import db.index as db_index
-
-from pydantic import BaseModel
+from config import app_config
 from context import RequestContext
-
-from sqlmodel import select
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from routes.authorization import current_profile
+from routes.file_events import enrich_files
+from routes.responses import FileUploadResponse
+from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
@@ -34,26 +29,11 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 
 EMPTY_UUID = UUID(int=0, version=4)
 
+
 class UploadResponse(BaseModel):
     """Response from uploading one or more files"""
     message: str
     files: list[FileUploadResponse]
-
-
-@lru_cache
-def create_storage_client() -> StorageClient:
-    """Get a cached storage client implementation based on app configuration"""
-    cfg = app_config()
-    if not cfg.enable_storage:
-        return StorageClient()
-    if app_config().gcs_service_enable:
-        return gcs_uploader.create_client()
-    return minio_uploader.create_client()
-
-
-async def storage_client() -> StorageClient:
-    """The dependency injection method for APIs needing a storage client"""
-    return create_storage_client()
 
 
 @router.post('/store')
@@ -68,7 +48,10 @@ async def upload(
 
     response_files = []
     for file in files:
+        # do the upload
         ctx = upload_internal(storage, profile.id, file)
+
+        # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
             owner=ctx.profile_id,
@@ -76,7 +59,6 @@ async def upload(
             event_ids=[ctx.event_id],
             size=file.size,
             content_type=file.content_type,
-            download_url=translate_download_url(ctx.locators, ctx.content_hash),
             content_hash=ctx.content_hash,
             created=datetime.now(timezone.utc)))
     return UploadResponse(
@@ -120,8 +102,7 @@ def upload_internal(storage, profile_id, upload_file) -> RequestContext:
     else:
         # for testing provide local file locator, these can't be located outside of the
         # machine they live on, NOTE does not currently work
-        # ctx.add_object_locator("file", '', ctx.local_filepath)
-        pass
+        ctx.add_object_locator("test", cfg.bucket_name, ctx.local_filepath)
 
     # Update database index
     if cfg.enable_db:

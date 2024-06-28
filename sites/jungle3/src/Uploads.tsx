@@ -1,38 +1,32 @@
 import {
-    Button,
-    Grid, styled,
+    Divider,
+    List,
+    ListDivider,
+    ListItem,
+    ListItemButton,
+    ListItemContent,
+    ListItemDecorator,
+    Stack,
+    Typography,
 } from '@mui/joy';
 
-import {LucidePlusCircle, LucideUploadCloud} from 'lucide-react';
-import {useEffect} from "react";
-import {AssetCreateRequest, AssetCreateResponse, FileUploadResponse} from "./types/apiTypes.ts";
-import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
+import {LucideCloudDownload, LucideFile, LucideFiles, LucideImage,} from 'lucide-react';
+import {useEffect, useState} from "react";
+import {FileUploadResponse} from "./types/apiTypes.ts";
+import {extractValidationErrors, getData, translateError} from "./services/backendCommon.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
-import {AssetEdit} from "./AssetEdit.tsx";
 import {AxiosError} from "axios";
-import {UploadsSubmitList} from "./components/UploadsSubmitList.tsx";
-import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
-import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
-
-const VisuallyHiddenInput = styled('input')`
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    white-space: nowrap;
-    width: 1px;
-`;
+import {DownloadButton} from "./components/DownloadButton.tsx";
+import {DeleteButton} from "./components/DeleteButton.tsx";
+import {UploadsSubmitList} from "./components/UploadsSubmitList.tsx";
+import {Link} from "react-router-dom";
 
 const Uploads = () => {
     const {authToken} = useGlobalStore();
-    const {asset_id, updateVersion} = useAssetVersionStore();
     const {addError, addWarning} = useStatusStore();
-    const {trackUploads, updateUpload, setPendingUploads, pendingUploads} = useUploadStore();
+    const {trackUploads, uploads, updateUpload} = useUploadStore();
 
     const handleError = (err: AxiosError) => {
         addError(translateError(err));
@@ -43,18 +37,12 @@ const Uploads = () => {
     // Load the latest pending uploads from the server
     //
     useEffect(() => {
-        if (authToken) {
-            console.log("loading pending uploads")
-            getData<FileUploadResponse[]>("upload/pending").then(files => {
-                trackUploads(files as FileUploadStatus[]);
-                updateProgressForFiles(files);
-            }).catch(err => handleError(err));
-        }
+        refreshFiles();
     }, [authToken])
 
     const updateProgressForFiles = (files: FileUploadResponse[]) => {
         files.forEach(file => {
-            if(file.event_ids.length > 0) {
+            if (file.event_ids.length > 0) {
                 updateUpload(file.file_id, 50);
             } else {
                 updateUpload(file.file_id, 100);
@@ -62,57 +50,84 @@ const Uploads = () => {
         })
     }
 
-    const createAsset = function() {
-        if (!asset_id || asset_id === "") {
-            const createRequest: AssetCreateRequest = {};
-            postData<AssetCreateResponse>('assets/', createRequest).then(r => {
-                updateVersion({
-                    asset_id: r.id,
-                    org_id: r.org_id,
-                })
+    const refreshFiles = () => {
+        if (authToken) {
+            getData<FileUploadResponse[]>("upload/pending").then(files => {
+                trackUploads(files as FileUploadStatus[]);
+                updateProgressForFiles(files);
             }).catch(err => handleError(err));
         }
     }
 
-    const onFileInputChanged = () => {
-        const fileList = (document.getElementById("file-input") as HTMLInputElement).files;
-        if (!fileList) {
-            console.log("no fileList found")
-            return;
-        }
-        setPendingUploads([...pendingUploads, ...fileList]);
-    };
+    const [sort, setSort] = useState("all");
+
+    interface Sort {
+        icon: JSX.Element;
+        name: string;
+        types: string[];
+    }
+
+    const allSorts: { [key: string]: Sort } = {
+        all: {icon: <LucideFiles/>, name: "All Files", types: []},
+        hdas: {icon: <LucideFile/>, name: "HDAs", types: [".hda", ".hip"]},
+        thumbnails: {icon: <LucideImage/>, name: "Thumbnails", types: [".png", ".jpg", ".jpeg", ".gif", ".webm"]},
+    }
+    const fileTypeFilter = ([_key, value]: [string, FileUploadStatus]): boolean => {
+        return fileIsType(sort, value.file_name);
+    }
+
+    const fileIsType = (typeName: string, fileName: string): boolean => {
+        if (typeName === "all")
+            return true;
+
+        const sortType = allSorts[typeName];
+        if (!sortType)
+            return false;
+
+        const types = sortType.types;
+        return types.some((s: string) => fileName.endsWith(s));
+    }
 
     return (
-        <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-            <Grid xs={12}>
-                <Button
-                    component="label"
-                    variant={"plain"}
-                    color={"neutral"}
-                    onMouseDown={createAsset}
-                    startDecorator={<LucidePlusCircle/>}>
-                    New Asset
-                </Button>
-                <Button
-                    component="label"
-                    role={undefined}
-                    tabIndex={-1}
-                    variant="plain"
-                    color="neutral"
-                    startDecorator={<LucideUploadCloud/>}>
-                    Upload Files
-                    <VisuallyHiddenInput type="file" id="file-input" multiple={true}
-                                         onChange={onFileInputChanged}/>
-                </Button>
-            </Grid>
-            {asset_id ? <Grid xs={6}><AssetEdit/></Grid> : ""}
-            <Grid xs={6}>
-                {<UploadsSubmitList />}
-                {<UploadsReadyList/>}
-
-            </Grid>
-        </Grid>
+        <>
+            <UploadsSubmitList/>
+            <List>
+                <ListItem sx={{flexGrow: 1}}>
+                    <List orientation="horizontal" sx={{flexGrow: 1}}>
+                        {Object.entries(allSorts).map(([name, value]) => (
+                            <ListItemButton key={name} onClick={() => setSort(name)}>
+                                <ListItemDecorator>{value.icon}</ListItemDecorator>
+                                <ListItemContent>{value.name}</ListItemContent>
+                            </ListItemButton>))}
+                    </List>
+                </ListItem>
+                <ListDivider/>
+                {Array.from(Object.entries(uploads)).filter(fileTypeFilter).map(([key, value]) => (
+                    <ListItem sx={{flexGrow: 1}} key={key}>
+                        <ListItemDecorator sx={{display: 'flex', alignItems: 'center'}}>
+                            <Stack direction={"row"}>
+                                <DeleteButton
+                                    url={`files/${value.file_id}`}
+                                    name={value.file_name}
+                                    onDeleteSuccess={refreshFiles}/>
+                                <DownloadButton
+                                    icon={<LucideCloudDownload/>}
+                                    file_id={value.file_id}/>
+                            </Stack>
+                        </ListItemDecorator>
+                        <Divider orientation="vertical" sx={{margin: '0 10px'}}/>
+                        <ListItemContent sx={{flexGrow: 1, display: 'flex', alignItems: 'center'}}>
+                            <Typography
+                                sx={{textAlign: 'left'}}>
+                                <Link to={`/files/${value.file_id}`}>
+                                    {value.file_name}
+                                </Link>
+                            </Typography>
+                        </ListItemContent>
+                    </ListItem>
+                ))}
+            </List>
+        </>
     );
 };
 

@@ -1,20 +1,20 @@
 import {
-    Sheet,
     FormControl,
     FormLabel,
     IconButton,
     List,
     ListItem,
-    ListItemDecorator,
     ListItemButton,
-    Textarea
+    ListItemDecorator,
+    Sheet,
+    Textarea, Typography
 } from "@mui/joy";
 import {
     LucideCircleMinus,
     LucideDoorClosed,
     LucideEdit,
-    LucideEllipsis,
     LucideLink,
+    LucidePlusCircle,
     LucideSave
 } from "lucide-react";
 import {useNavigate} from "react-router-dom";
@@ -25,7 +25,7 @@ import {AssetVersionContent, AssetVersionContentMap} from "../types/apiTypes.ts"
 interface AssetEditFileListProps {
     title: string,
     category: string,
-    fileFilters: string[],
+    fileTypeFilters: string[],
     openUploadList: (category: string, fileFilters: string[]) => void;
     removeFile: (file_id: string) => void;
     files: AssetVersionContentMap
@@ -78,26 +78,31 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (props: AssetFileEdi
     );
 };
 
-const handleEditSave = () => {}
-const handleEditCancel = () => {}
+const handleEditSave = () => {
+}
+const handleEditCancel = () => {
+}
+
 
 export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
     const navigate = useNavigate();
 
     return <FormControl>
         <FormLabel>
-            {props.title}
             <IconButton onClick={(e) => {
                 e.preventDefault();
-                props.openUploadList(props.category, props.fileFilters)
+                props.openUploadList(props.category, props.fileTypeFilters)
             }}>
-                <LucideEllipsis/>
+                <LucidePlusCircle />
             </IconButton>
+            <Typography variant="soft" level="title-md" fontWeight={"bold"}>
+                {props.title}
+            </Typography>
         </FormLabel>
-         <Sheet key={props.category} variant="outlined" sx={{ borderRadius: 'sm' }}>
+        <Sheet key={props.category} variant="outlined" sx={{borderRadius: 'sm'}}>
             <List id={props.category} size={"sm"}>
                 {Object.values(props.files).map(file => (
-                    <ListItem key={file.file_id} >
+                    <ListItem key={file.file_id}>
                         <ListItemDecorator>
                             <IconButton
                                 onClick={() => props.removeFile(file.file_id)}>
@@ -109,16 +114,16 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
                                 content={file}
                                 editing={false}
                                 save={() => handleEditSave()}
-                                cancel={() => handleEditCancel()} />
+                                cancel={() => handleEditCancel()}/>
                         </ListItemButton>
                         <ListItemDecorator>
                             <IconButton onClick={() => navigate(`/files/${file.file_id}`)}>
-                                <LucideLink />
+                                <LucideLink/>
                             </IconButton>
                         </ListItemDecorator>
                     </ListItem>))}
             </List>
-         </Sheet>
+        </Sheet>
     </FormControl>
         ;
 }

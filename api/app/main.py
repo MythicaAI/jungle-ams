@@ -1,23 +1,23 @@
 """Main entrypoint for FastAPI app creation"""
 
 import logging
-import uvicorn
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
-import routes.upload.upload
-import routes.editor.editor
-import routes.profiles.profiles
-import routes.assets.assets
-import routes.files.files
-import routes.orgs.orgs
-import routes.topos.topos
-import routes.validate.validate
-
 import db.connection as db_connection
 import log_config
+import routes.assets.assets
+import routes.download.download
+import routes.editor.editor
+import routes.files.files
+import routes.orgs.orgs
+import routes.profiles.profiles
+import routes.topos.topos
+import routes.upload.upload
+import routes.validate.validate
 from config import app_config
 from routes.type_adapters import register_adapters
 
@@ -47,8 +47,10 @@ app.include_router(routes.files.files.router, prefix=api_prefix)
 app.include_router(routes.orgs.orgs.router, prefix=api_prefix)
 app.include_router(routes.topos.topos.router, prefix=api_prefix)
 app.include_router(routes.validate.validate.validate_email_router, prefix=api_prefix)
+app.include_router(routes.download.download.router, prefix=api_prefix)
 
 register_adapters()
+
 
 @app.get("/")
 def root():
@@ -66,6 +68,7 @@ def main():
                 host=cfg.http_listen_addr,
                 port=cfg.http_listen_port,
                 reload=True)
+
 
 if __name__ == '__main__':
     main()

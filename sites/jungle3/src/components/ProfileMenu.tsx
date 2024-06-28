@@ -1,31 +1,32 @@
 import React from 'react';
-import {Avatar, Dropdown, Menu, MenuButton, MenuItem, MenuItemProps} from '@mui/joy';
+import { Avatar, Dropdown, Menu, MenuButton, MenuItem } from '@mui/joy';
 import {LucideEdit, LucideGroup, LucidePackage, LucideUpload} from "lucide-react";
-import {Link as RouterLink, LinkProps} from "react-router-dom";
+import {Link as RouterLink} from "react-router-dom";
 
 interface ProfileMenuProps {
-    name: string
+    name: string;
 }
 
-
-interface LinkMenuItemProps extends MenuItemProps {
-  to: LinkProps['to'];
+interface LinkMenuItemProps {
+    to: string;
+    children: React.ReactNode;
 }
 
-const LinkMenuItem = ({to, ...props}: LinkMenuItemProps) => {
-    return <MenuItem
-        {...props}
-        component={RouterLink}
-        to={to}
-        sx={{
-            textDecoration: 'none',
-            color: 'inherit',
-            '&:hover': {
-                textDecoration: 'none',
-            },
-        }}
-    />;
-};
+const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => (
+  <MenuItem
+    component={RouterLink}
+    to={props.to}
+    sx={{
+      textDecoration: 'none',
+      color: 'inherit',
+      '&:hover': {
+        textDecoration: 'none',
+      },
+    }}
+  >
+      {props.children}
+  </MenuItem>
+);
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({name}) => {
   return (

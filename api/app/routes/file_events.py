@@ -1,9 +1,8 @@
 from sqlmodel import Session, select
 
+from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from db.schema.events import Event
-from routes.cdn import translate_download_url
 from routes.responses import FileUploadResponse
 
 
@@ -24,7 +23,6 @@ def enrich_file(
         created=file.created,
         event_ids=[],
         content_hash=file.content_hash,
-        download_url=translate_download_url(file.locators, file.content_hash),
     )
 
     for oe in owned_events:
@@ -45,12 +43,6 @@ def enrich_files(
         Event.owner == profile.id)).all()
     owned_files_by_id = {}
     for of in files:
-        if type(of.locators) is list:
-            locators = of.locators
-        elif type(of.locators) is dict:
-            locators = of.locators.get('locators', [])
-        else:
-            locators = []
         owned_files_by_id[of.id] = FileUploadResponse(
             file_id=of.id,
             owner=of.owner,
@@ -60,8 +52,6 @@ def enrich_files(
             created=of.created,
             event_ids=[],
             content_hash=of.content_hash,
-            download_url=translate_download_url(
-                locators, of.content_hash),
         )
     for oe in owned_events:
         job_data = oe.job_data

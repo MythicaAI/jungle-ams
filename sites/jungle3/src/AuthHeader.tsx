@@ -17,7 +17,7 @@ import {StatusAlarm} from "./components/StatusAlarm.tsx";
 export const AuthHeader = () => {
     const [needsLogin, setNeedsLogin] = useState(true);
     const [needsSession, setNeedsSession] = useState(true);
-    const [cookies, ] = useCookies(['profile_id', 'auth_token', 'refresh_token'])
+    const [cookies,] = useCookies(['profile_id', 'auth_token', 'refresh_token'])
     const {authToken, profile, setAuthToken, setProfile, setOrgRoles} = useGlobalStore();
     const navigate = useNavigate();
 
@@ -52,12 +52,12 @@ export const AuthHeader = () => {
     }, [needsSession, needsLogin, authToken, cookies]);
 
     function mergeWithDefaults<T extends Partial<ProfileResponse>>(defaultObj: ProfileResponse, inputObj: T): ProfileResponse {
-      return Object.fromEntries(
-        Object.entries(defaultObj).map(([key, value]) => [
-          key,
-          inputObj[key as keyof T] !== null ? inputObj[key as keyof T] : value,
-        ])
-      ) as ProfileResponse;
+        return Object.fromEntries(
+            Object.entries(defaultObj).map(([key, value]) => [
+                key,
+                inputObj[key as keyof T] !== null ? inputObj[key as keyof T] : value,
+            ])
+        ) as ProfileResponse;
     }
 
     const updateSession = (profile_id: string) => {
@@ -81,7 +81,7 @@ export const AuthHeader = () => {
         const authHeader = `Bearer ${auth_token}`;
         console.log("updateProfileData", profile_id, authHeader);
         axios.defaults.headers.common['Authorization'] = authHeader;
-        getData<ProfileResponse>(`profiles/${cookies.profile_id}`).then(data=>{
+        getData<ProfileResponse>(`profiles/${cookies.profile_id}`).then(data => {
             const input = data as Partial<ProfileResponse>;
             const merged = mergeWithDefaults(defaultProfileResponse(), input)
             setProfile(merged as unknown as Profile);
@@ -95,23 +95,22 @@ export const AuthHeader = () => {
         <List orientation={"horizontal"}>
             <ListItemDecorator>
                 <Link to={"/"}>
-                <Box component="img" src="/mythica-logo.png" alt="Mythica Logo" sx={{
-                    width: '100%',
-                    height: 32, // Adjust this value to set the desired height
-                    objectFit: 'cover',
-                    objectPosition: 'center',
-                    mb: 2, // Adds some margin below the image
-                }} />
+                    <Box component="img" src="/mythica-logo.png" alt="Mythica Logo" sx={{
+                        width: '100%',
+                        height: 48, // Adjust this value to set the desired height
+                        objectPosition: 'center',
+                        mb: 2, // Adds some margin below the image
+                    }}/>
                 </Link>
             </ListItemDecorator>
             <ListItemContent>
-                <Typography level="h2" sx={{ flexGrow: 1 }}>
+                <Typography level="h2" sx={{flexGrow: 1}}>
                     HDA Package Index
                 </Typography>
             </ListItemContent>
             <ListItemDecorator>
                 <Stack direction="row" spacing={1}>
-                    <StatusAlarm />
+                    <StatusAlarm/>
                     {authToken ?
                         <ProfileMenu name={profile.name}/>
                         :
