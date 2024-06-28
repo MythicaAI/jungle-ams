@@ -43,12 +43,6 @@ def enrich_files(
         Event.owner == profile.id)).all()
     owned_files_by_id = {}
     for of in files:
-        if type(of.locators) is list:
-            locators = of.locators
-        elif type(of.locators) is dict:
-            locators = of.locators.get('locators', [])
-        else:
-            locators = []
         owned_files_by_id[of.id] = FileUploadResponse(
             file_id=of.id,
             owner=of.owner,

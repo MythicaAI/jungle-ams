@@ -25,22 +25,19 @@ class DownloadInfoResponse(BaseModel):
     url: str
 
 
-def translate_minio(storage, info, content_hash) -> str:
+def translate_minio(storage, info) -> str:
+    """minio download link creator"""
     bucket, object_name = info.split(":")
     return storage.download_link(bucket, object_name)
 
 
-def translate_gcs(storage, info, content_hash) -> str:
-    return f"https://implementme.notadomain/{content_hash}"
-
-
 storage_types = {
     'minio': translate_minio,
-    'gcs': translate_gcs,
 }
 
 
 def translate_download_url(storage, locators: list[str], content_hash: str) -> str:
+    """translate locators to a downloadable URL"""
     for locator in locators:
         log.info("translating %s", locator)
         locator_type, info = locator.split("://")
@@ -54,7 +51,7 @@ def translate_download_url(storage, locators: list[str], content_hash: str) -> s
 
 
 @router.get('/info/{file_id}')
-async def download_file(
+async def download_info(
         file_id: str,
         storage: StorageClient = Depends(storage_client)) -> DownloadInfoResponse:
     """Return information needed to download the file including the temporary URL"""
@@ -70,7 +67,7 @@ async def download_file(
 
 
 @router.get('/{file_id}')
-async def download_file(
+async def download_redirect(
         file_id: str,
         response: Response,
         storage: StorageClient = Depends(storage_client)):

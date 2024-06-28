@@ -398,9 +398,13 @@ async def create_asset_version(asset_id: UUID,
 @router.delete('/{asset_id}/versions/{version_str}')
 async def delete_asset_version(asset_id: UUID, version_str: str, profile: Profile = Depends(current_profile)):
     """Delete a specific asset version"""
-    with get_session() as session:
+    version_id = convert_version_input(version_str)
+    with get_session(echo=True) as session:
         stmt = delete(AssetVersion).where(
-            AssetVersion.asset_id == asset_id, or_(
+            AssetVersion.asset_id == asset_id,
+            AssetVersion.major == version_id[0],
+            AssetVersion.minor == version_id[1],
+            AssetVersion.patch == version_id[2], or_(
                 AssetVersion.author == profile.id, Asset.owner == profile.id))
         result = session.exec(stmt)
         if result.rowcount != 1:
