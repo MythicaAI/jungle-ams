@@ -342,20 +342,19 @@ async def create_asset_version(asset_id: UUID,
                 raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
             values.pop('org_id')
 
+        # Use provided author or default to calling profile on creation
+        values['author'] = r.author or profile.id
+
         # Create the revision, fails if the revision already exists
         # this could be optimized more using upsert but this will likely hold
         # up well enough
         try:
-            # Use provided author or default to calling profile on creation
-            author = r.author or profile.id
-            values.pop('author')
             if avr.version == ZERO_VERSION:
                 stmt = insert(AssetVersion).values(
                     asset_id=avr.asset_id,
                     major=version_id[0],
                     minor=version_id[1],
                     patch=version_id[2],
-                    author=author,
                     **values)
                 result = session.execute(stmt)
                 if result.rowcount != 1:
