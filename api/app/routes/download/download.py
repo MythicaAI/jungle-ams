@@ -31,8 +31,14 @@ def translate_minio(storage, info) -> str:
     return storage.download_link(bucket, object_name)
 
 
+def translate_test(_storage, _info) -> str:
+    """minio download link creator"""
+    return "http://test.notresolved/test.test"
+
+
 storage_types = {
     'minio': translate_minio,
+    'test': translate_test,
 }
 
 

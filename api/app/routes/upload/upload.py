@@ -102,8 +102,7 @@ def upload_internal(storage, profile_id, upload_file) -> RequestContext:
     else:
         # for testing provide local file locator, these can't be located outside of the
         # machine they live on, NOTE does not currently work
-        # ctx.add_object_locator("file", '', ctx.local_filepath)
-        pass
+        ctx.add_object_locator("test", cfg.bucket_name, ctx.local_filepath)
 
     # Update database index
     if cfg.enable_db:
