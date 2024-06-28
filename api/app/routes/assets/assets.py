@@ -78,9 +78,12 @@ class AssetVersionResult(BaseModel):
     when no version has been created. In this case the """
     asset_id: UUID
     owner: UUID
+    owner_name: str
     org_id: UUID | None = None
+    org_name: str | None = None
     package_id: UUID | None = None
     author: UUID | None = None
+    author_name: str | None = None
     name: str | None = None
     description: str | None = None
     published: bool | None = False
@@ -90,7 +93,23 @@ class AssetVersionResult(BaseModel):
     contents: Dict[str, list[AssetVersionContent]] = {}
 
 
-def process_join_results(join_results: list[tuple[Asset, AssetVersion]]) -> list[AssetVersionResult]:
+def resolve_profile_name(session: Session, profile_id: UUID) -> str:
+    """Convert profile_id to profile name"""
+    profile = session.exec(select(Profile).where(Profile.id == profile_id)).one_or_none()
+    if profile:
+        return profile.name
+    return ""
+
+
+def resolve_org_name(session: Session, org_id: UUID) -> str:
+    """Convert org_id to org name"""
+    org = session.exec(select(Org).where(Org.id == org_id)).one_or_none()
+    if org:
+        return org.name
+    return ""
+
+
+def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion]]) -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
     results = list()
     for join_result in join_results:
@@ -101,9 +120,12 @@ def process_join_results(join_results: list[tuple[Asset, AssetVersion]]) -> list
         avr = AssetVersionResult(
             asset_id=asset.id,
             org_id=asset.org_id,
+            org_name=resolve_org_name(session, asset.org_id),
             owner=asset.owner,
+            owner_name=resolve_profile_name(session, asset.owner),
             package_id=ver.package_id,
             author=ver.author,
+            author_name=resolve_profile_name(session, ver.author),
             name=ver.name,
             description=ver.description,
             published=ver.published,
@@ -153,7 +175,7 @@ def select_asset_version(session: Session,
         results = session.exec(stmt).all()
     if not results:
         return None
-    processed_results = process_join_results(results)
+    processed_results = process_join_results(session, results)
     return processed_results[0]
 
 
@@ -222,7 +244,7 @@ async def get_assets() -> list[AssetVersionResult]:
         join_results = session.exec(
             asset_join_select.where(
                 Asset.id == AssetVersion.asset_id)).all()
-        return process_join_results(join_results)
+        return process_join_results(session, join_results)
 
 
 @router.get('/owned')
@@ -234,14 +256,14 @@ async def get_owned_assets(
             select(Asset, AssetVersion)
             .outerjoin(AssetVersion, Asset.id == AssetVersion.asset_id)
             .where(Asset.owner == profile.id)).all()
-        return process_join_results(results)
+        return process_join_results(session, results)
 
 
 @router.get('/named/{asset_name}')
 async def get_asset_by_name(asset_name) -> list[AssetVersionResult]:
     """Get asset by name"""
     with get_session() as session:
-        return process_join_results(session.exec(
+        return process_join_results(session, session.exec(
             asset_join_select.where(
                 Asset.id == AssetVersion.asset_id,
                 AssetVersion.name == asset_name)).all())
@@ -251,7 +273,7 @@ async def get_asset_by_name(asset_name) -> list[AssetVersionResult]:
 async def get_asset_by_id(asset_id: UUID) -> list[AssetVersionResult]:
     """Get asset by id"""
     with get_session() as session:
-        return process_join_results(session.exec(
+        return process_join_results(session, session.exec(
             asset_join_select.where(
                 Asset.id == asset_id
             ).where(

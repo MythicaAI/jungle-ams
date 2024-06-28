@@ -1,15 +1,16 @@
 import {IconButton} from '@mui/joy';
-import {LucideDownloadCloud} from "lucide-react";
 import {AxiosError} from "axios";
 import {extractValidationErrors, getData, translateError} from "../services/backendCommon.ts";
 import {useStatusStore} from "../stores/statusStore.ts";
 import {DownloadInfoResponse} from "../types/apiTypes.ts";
+import {ReactNode} from "react";
 
 interface DownloadButtonProps {
     file_id: string;
+    icon: ReactNode;
 }
 
-export const DownloadButton: React.FC<DownloadButtonProps> = ({file_id}) => {
+export const DownloadButton: React.FC<DownloadButtonProps> = ({file_id, icon}) => {
     const {addError, addWarning} = useStatusStore();
 
     const handleError = (err: AxiosError) => {
@@ -32,7 +33,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({file_id}) => {
 
     return (
         <IconButton onClick={handleDownload}>
-            <LucideDownloadCloud/>
+            {icon}
         </IconButton>
     );
 };

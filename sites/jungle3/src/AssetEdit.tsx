@@ -29,6 +29,7 @@ import {LucideChevronLeft, LucideInfo, LucidePackage, LucideSidebarClose} from "
 import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
 import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
 import {AssetEditFileList} from "./components/AssetEditFileList.tsx";
+import {UploadsSubmitList} from "./components/UploadsSubmitList.tsx";
 
 interface AssetEditProps {
     prop_asset_id?: string,
@@ -314,6 +315,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                             <LucideSidebarClose/>
                         </IconButton>
                     </Sheet>
+                    <UploadsSubmitList />
                     <UploadsReadyList/>
                 </Drawer>
             </ClickAwayListener>

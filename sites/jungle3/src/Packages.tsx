@@ -6,7 +6,7 @@ import {
     ListItem,
     ListItemButton,
     ListItemContent,
-    ListItemDecorator, Switch,
+    ListItemDecorator, Stack, Switch,
     Typography
 } from "@mui/joy";
 import {AssetCreateRequest, AssetCreateResponse, AssetVersionResponse} from "./types/apiTypes.ts";
@@ -17,6 +17,7 @@ import {useStatusStore} from "./stores/statusStore.ts";
 import {Link, useNavigate} from "react-router-dom";
 import {LucideLink, LucidePackage, LucidePlusCircle} from "lucide-react";
 import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
+import {DownloadButton} from "./components/DownloadButton.tsx";
 
 
 export const Packages = () => {
@@ -88,8 +89,6 @@ export const Packages = () => {
                 </ListItem>
             {versions.map(a => (
                 <ListItemButton
-                    component={Link}
-                    to={`/assets/${a.asset_id}/versions/${a.version.join('.')}`}
                     key={`${a.asset_id}-${a.version.join('.')}`}
                     sx={{
                         display: 'flex',
@@ -97,11 +96,21 @@ export const Packages = () => {
                         alignItems: 'center',
                     }}>
                     <ListItemDecorator>
-                        <LucidePackage/>
+                        <Stack spacing={1} alignItems="center">
+                            <Link to={`/assets/${a.asset_id}/versions/${a.version.join('.')}`}>
+
+                            </Link>
+                            {a.package_id ? <DownloadButton icon={<LucidePackage />} file_id={a.package_id} /> : ""}
+                        </Stack>
                     </ListItemDecorator>
+                    <ListDivider orientation={"vertical"} />
                     <ListItemContent sx={{flex: 1}}>
-                        <Typography level="body-md" fontWeight="bold">
-                            {a.name}
+                        <Typography
+                            component={Link}
+                            to={`/assets/${a.asset_id}/versions/${a.version.join('.')}`}
+                            level="body-md"
+                            fontWeight="bold">
+                            {a.org_name}::{a.name}
                         </Typography>
                         <Chip
                             variant="soft"
@@ -111,9 +120,26 @@ export const Packages = () => {
                         >
                             {a.version.join('.')}
                         </Chip>
+                        <Typography level="body-sm" color="neutral">
+                            by {a.author_name}
+                        </Typography>
                     </ListItemContent>
+                    <ListDivider orientation={"vertical"}/>
                     <ListItemDecorator>
-                        <Typography component="span" level="inherit" sx={{ml: '10px'}}>
+                        <Typography fontFamily={"code"} level={"body-xs"}>
+                            {a.asset_id}
+                        </Typography>
+                    </ListItemDecorator>
+                    <ListItemDecorator>
+                        <Typography
+                            component="span"
+                            level="body-md"
+                            sx={{
+                                textAlign: 'right',
+                                ml: '10px',
+                                width: 'auto',
+                                minWidth: '100px'
+                            }}>
                             {a.published ? 'Published' : 'Draft'}
                         </Typography>
                         <Switch
@@ -123,12 +149,6 @@ export const Packages = () => {
                             color={a.published ? 'success' : 'neutral'}
                             sx={{flex: 1}}
                         />
-                    </ListItemDecorator>
-                    <ListDivider />
-                    <ListItemDecorator>
-                        <Link to={`/assets/${a.asset_id}/versions/${a.version.join('.')}`}>
-                            <LucideLink />  {a.asset_id}
-                        </Link>
                     </ListItemDecorator>
                 </ListItemButton>
                 ))}
