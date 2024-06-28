@@ -72,7 +72,7 @@ const Uploads = () => {
         hdas: {icon: <LucideFile/>, name: "HDAs", types: [".hda", ".hip"]},
         thumbnails: {icon: <LucideImage/>, name: "Thumbnails", types: [".png", ".jpg", ".jpeg", ".gif", ".webm"]},
     }
-    const fileTypeFilter = ([_key, value]): boolean => {
+    const fileTypeFilter = ([_key, value]: [string, FileUploadStatus]): boolean => {
         return fileIsType(sort, value.file_name);
     }
 

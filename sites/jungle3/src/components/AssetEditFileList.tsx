@@ -25,7 +25,7 @@ import {AssetVersionContent, AssetVersionContentMap} from "../types/apiTypes.ts"
 interface AssetEditFileListProps {
     title: string,
     category: string,
-    fileFilters: string[],
+    fileTypeFilters: string[],
     openUploadList: (category: string, fileFilters: string[]) => void;
     removeFile: (file_id: string) => void;
     files: AssetVersionContentMap
@@ -87,22 +87,11 @@ const handleEditCancel = () => {
 export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
     const navigate = useNavigate();
 
-    const fileTypeFilter = ([_key, value]: [string, AssetVersionContent]): boolean => {
-        if (!value) {
-            return false; // Add error handling for undefined or incorrect value types
-        }
-        return fileIsType(props.fileFilters, value.file_name);
-    }
-
-    const fileIsType = (filters: string[], fileName: string): boolean => {
-        return filters.some((s: string) => fileName.endsWith(s));
-    }
-
     return <FormControl>
         <FormLabel>
             <IconButton onClick={(e) => {
                 e.preventDefault();
-                props.openUploadList(props.category, props.fileFilters)
+                props.openUploadList(props.category, props.fileTypeFilters)
             }}>
                 <LucidePlusCircle />
             </IconButton>

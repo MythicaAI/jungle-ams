@@ -1,0 +1,78 @@
+import {ClickAwayListener} from "@mui/base/ClickAwayListener";
+import {Drawer, IconButton, Sheet, Typography} from "@mui/joy";
+import {LucideSidebarClose} from "lucide-react";
+import {UploadsSubmitList} from "./UploadsSubmitList.tsx";
+import {UploadsReadyList} from "./UploadsReadyList.tsx";
+import {OpenUploadsState} from "../types/assetEditTypes.ts";
+import {useEffect} from "react";
+import {extractValidationErrors, getData, translateError} from "../services/backendCommon.ts";
+import {FileUploadResponse} from "../types/apiTypes.ts";
+import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
+import {AxiosError} from "axios";
+import {useStatusStore} from "../stores/statusStore.ts";
+
+export interface AssetEditUploadDrawerProps {
+    openUploads: OpenUploadsState;
+    setOpenUploads: (openUploads: OpenUploadsState) => void;
+}
+
+export const AssetEditUploadDrawer: React.FC<AssetEditUploadDrawerProps> = ({openUploads, setOpenUploads}) => {
+    const {trackUploads} = useUploadStore();
+    const {addError, addWarning} = useStatusStore();
+
+    const onUploadDrawerKeyDown = (event: React.KeyboardEvent | React.MouseEvent) => {
+        if (event.type === "keydown") {
+            const key = (event as React.KeyboardEvent).key;
+            if (key === 'Escape') {
+                setOpenUploads({open: false, opened: false});
+            }
+        }
+    };
+
+    const onClickAway = () => {
+        if (openUploads.open && openUploads.opened) {
+            setOpenUploads({open: false, opened: false});
+        }
+    };
+
+    // handle populating the file uploads if the drawer is opened
+    useEffect(() => {
+        if (openUploads.open) {
+            getData<FileUploadResponse[]>("upload/pending").then(files => {
+                trackUploads(files as FileUploadStatus[]);
+            }).catch(err => handleError(err));
+        }
+    }, [openUploads]);
+
+     const handleError = (err: AxiosError) => {
+        addError(translateError(err));
+        extractValidationErrors(err).map(msg => (addWarning(msg)));
+    }
+
+    return <ClickAwayListener onClickAway={() => onClickAway()}>
+        <Drawer open={openUploads.open}
+                onKeyDown={onUploadDrawerKeyDown}
+                onClose={() => setOpenUploads({open: false, opened: false})}
+                size="lg">
+            <Sheet
+                sx={{
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    p: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}
+            >
+                <Typography level="h4">Uploads</Typography>
+                <IconButton onClick={() => setOpenUploads({open: false, opened: false})} variant="plain">
+                    <LucideSidebarClose/>
+                </IconButton>
+            </Sheet>
+            <UploadsSubmitList/>
+            <UploadsReadyList
+                category={openUploads.category}
+                fileTypeFilters={openUploads.fileTypeFilters ? openUploads.fileTypeFilters : []}/>
+        </Drawer>
+    </ClickAwayListener>;
+}

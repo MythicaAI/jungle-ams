@@ -1,12 +1,16 @@
 import {useEffect, useState} from "react";
 import {
-    Box, Button,
+    Box,
+    Button,
     Chip,
-    List, ListDivider,
+    List,
+    ListDivider,
     ListItem,
     ListItemButton,
     ListItemContent,
-    ListItemDecorator, Stack, Switch,
+    ListItemDecorator,
+    Stack,
+    Switch,
     Typography
 } from "@mui/joy";
 import {AssetCreateRequest, AssetCreateResponse, AssetVersionResponse} from "./types/apiTypes.ts";
@@ -19,7 +23,7 @@ import {LucidePackage, LucidePlusCircle} from "lucide-react";
 import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
 import {DownloadButton} from "./components/DownloadButton.tsx";
 
-type VersionCache = {[key: string]: [AssetVersionResponse]}
+type VersionCache = { [key: string]: [AssetVersionResponse] }
 
 export const Packages = () => {
     const [versions, setVersions] = useState<AssetVersionResponse[]>([]);
@@ -35,7 +39,7 @@ export const Packages = () => {
         extractValidationErrors(err).map(msg => (addWarning(msg)));
     }
 
-    const assetVersionsEqual = (a, b) => {
+    const assetVersionsEqual = (a: AssetVersionResponse, b: AssetVersionResponse) => {
         return a.asset_id === b.asset_id
             && a.version[0] === b.version[0]
             && a.version[1] === b.version[1]
@@ -45,7 +49,7 @@ export const Packages = () => {
     // update the versions list, replace only the provided asset version response
     const updateAssetVersion = (a: AssetVersionResponse) => {
         setVersions(
-            versions.map(value=>
+            versions.map(value =>
                 (assetVersionsEqual(a, value)) ? a : value));
     }
 
@@ -69,7 +73,7 @@ export const Packages = () => {
         return versions.sort(compareVersions);
     }
 
-    const createAsset = function() {
+    const createAsset = function () {
         if (!asset_id || asset_id === "") {
             const createRequest: AssetCreateRequest = {};
             postData<AssetCreateResponse>('assets/', createRequest).then(r => {
@@ -125,7 +129,8 @@ export const Packages = () => {
                 <Stack spacing={1} alignItems="center">
                     <Link to={versionUrl}>
                     </Link>
-                    {latestVersion.package_id ? <DownloadButton icon={<LucidePackage/>} file_id={latestVersion.package_id}/> : ""}
+                    {latestVersion.package_id ?
+                        <DownloadButton icon={<LucidePackage/>} file_id={latestVersion.package_id}/> : ""}
                 </Stack>
             </ListItemDecorator>
             <ListDivider orientation={"vertical"}/>
@@ -180,26 +185,26 @@ export const Packages = () => {
     }
 
     return <Box>
-            <List size={"lg"}>
-                <ListItem key={"create-header"}>
-                    <ListItemDecorator>
-                        <Button
-                            component="label"
-                            variant={"plain"}
-                            color={"neutral"}
-                            onMouseDown={createAsset}
-                            startDecorator={<LucidePlusCircle/>}>
-                            Create New Package
-                        </Button>
-                    </ListItemDecorator>
-                </ListItem>
-                <ListItem key={"header"}>
-                    <ListItemDecorator sx={{flex: 1}}>Package</ListItemDecorator>
-                    <ListItemDecorator sx={{flex: 1}}>ID</ListItemDecorator>
-                </ListItem>
-                {Object.entries(versionCache).map(
-                        ([assetId, versionList]) =>
-                            renderLatestVersion(assetId, versionList))}
+        <List size={"lg"}>
+            <ListItem key={"create-header"}>
+                <ListItemDecorator>
+                    <Button
+                        component="label"
+                        variant={"plain"}
+                        color={"neutral"}
+                        onMouseDown={createAsset}
+                        startDecorator={<LucidePlusCircle/>}>
+                        Create New Package
+                    </Button>
+                </ListItemDecorator>
+            </ListItem>
+            <ListItem key={"header"}>
+                <ListItemDecorator sx={{flex: 1}}>Package</ListItemDecorator>
+                <ListItemDecorator sx={{flex: 1}}>ID</ListItemDecorator>
+            </ListItem>
+            {Object.entries(versionCache).map(
+                ([assetId, versionList]) =>
+                    renderLatestVersion(assetId, versionList))}
         </List>
     </Box>;
 

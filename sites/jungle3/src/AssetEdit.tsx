@@ -1,87 +1,41 @@
 import {
-    Box,
     Button,
-    Drawer,
-    FormControl,
-    FormHelperText,
-    FormLabel, Grid,
-    IconButton,
-    Input,
-    List,
-    ListItem, ListItemContent, ListItemDecorator,
-    Option,
-    Select,
+    Grid,
     Sheet,
-    Stack,
-    Typography
 } from '@mui/joy';
-import {ClickAwayListener} from '@mui/base/ClickAwayListener';
-import Textarea from '@mui/joy/Textarea';
 import {useGlobalStore} from "./stores/globalStore.ts";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
 import {extractValidationErrors, getData, postData, translateError} from "./services/backendCommon.ts";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {AxiosError} from "axios";
-import {AssetVersionContentListMap, AssetVersionResponse, FileUploadResponse} from "./types/apiTypes.ts";
-import {Link, useParams, useNavigate} from "react-router-dom";
-import {LucideChevronLeft, LucideInfo, LucidePackage, LucideSidebarClose} from "lucide-react";
-import {UploadsReadyList} from "./components/UploadsReadyList.tsx";
-import {FileUploadStatus, useUploadStore} from "./stores/uploadStore.ts";
-import {AssetEditFileList} from "./components/AssetEditFileList.tsx";
-import {UploadsSubmitList} from "./components/UploadsSubmitList.tsx";
+import {AssetVersionContentListMap, AssetVersionResponse} from "./types/apiTypes.ts";
+import {useParams, useNavigate} from "react-router-dom";
+import {AssetIdentityHeader} from "./components/AssetIdentityHeader.tsx";
+import {convertUserVersion, isVersionZero, sanitizeVersion} from "./types/assetEditTypes.ts";
+import {AssetEditPageHeader} from "./components/AssetEditPageHeader.tsx";
+import {AssetEditDetailControls} from "./components/AssetEditDetailControls.tsx";
+import {AssetEditListControls} from "./components/AssetEditListControls.tsx";
 
 interface AssetEditProps {
-    prop_asset_id?: string,
-    prop_version?: string,
+    assetId?: string,
+    version?: string,
 }
 
-interface OpenUploadsState {
-    open: boolean,
-    opened: boolean,
-    category?: string,
-    fileFilters?: string[]
-}
 
-export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, prop_version = "0.0.0"}) => {
+export const AssetEdit: React.FC<AssetEditProps> = (
+    {assetId: propAssetId = undefined, version: propVersion = "0.0.0"}) => {
     const {orgRoles} = useGlobalStore();
     const {setSuccess, addError, addWarning} = useStatusStore();
-    const {trackUploads} = useUploadStore();
     const {
         asset_id,
-        org_id,
-        name,
-        description,
-        version,
         files,
         thumbnails,
         addFiles,
-        removeFile,
         addThumbnails,
-        removeThumbnail,
         updateVersion
     } = useAssetVersionStore();
     const navigate = useNavigate();
-
-    // version sanitizing state, should only be populated by the sanitizeVersion() function
-    const [
-        sanitizedVersion,
-        setSanitizedVersion] = useState<number[]>([0, 0, 0]);
-
-    // separately manage the user's input version
-    const [
-        userVersion,
-        setUserVersion] = useState<string>("0.0.0");
-
-    const [
-        openUploads,
-        setOpenUploads
-    ] = useState<OpenUploadsState>({open: false, opened: false});
-
-    // initialize version sanitation
-    useEffect(() => {
-        sanitizeVersion(version);
-    }, [prop_version]);
 
     // org_id state and initial update to first index
     useEffect(() => {
@@ -92,22 +46,13 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
 
     // handle populating the form if an asset ID was specified
     useEffect(() => {
-        if (!prop_asset_id) {
+        if (!propAssetId) {
             return;
         }
-        getData<AssetVersionResponse>(`assets/${prop_asset_id}/versions/${prop_version}`).then(r => {
+        getData<AssetVersionResponse>(`assets/${propAssetId}/versions/${propVersion}`).then(r => {
             loadAssetVersionResponse(r);
         }).catch(err => handleError(err));
-    }, [prop_asset_id, prop_version]);
-
-    // handle populating the file uploads if the drawer is opened
-    useEffect(() => {
-        if (openUploads.open) {
-            getData<FileUploadResponse[]>("upload/pending").then(files => {
-                trackUploads(files as FileUploadStatus[]);
-            }).catch(err => handleError(err));
-        }
-    }, [openUploads]);
+    }, [propAssetId, propVersion]);
 
     const handleError = (err: AxiosError) => {
         addError(translateError(err));
@@ -117,6 +62,8 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
     const loadAssetVersionResponse = (r: AssetVersionResponse) => {
         console.log(`loading asset version ${r.asset_id} ${r.version.join('.')}`);
 
+        const sanitized = sanitizeVersion(r.version);
+
         // clear files and replace with version response
         updateVersion({
             asset_id: r.asset_id,
@@ -125,7 +72,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             package_id: r.package_id || '',
             name: r.name || '',
             description: r.description || '',
-            version: r.version,
+            version: sanitized,
             commit_ref: r.commit_ref || '',
             created: r.created || '',
             updated: r.updated,
@@ -133,7 +80,6 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             thumbnails: {},
             links: []
         });
-        setUserVersion(sanitizeVersion(r.version).join('.'))
 
         if (r.contents) {
             const contentMap: AssetVersionContentListMap = r.contents;
@@ -144,25 +90,6 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                 addThumbnails(contentMap["thumbnails"])
             }
         }
-    }
-
-    // version sanitation helper
-    const sanitizeVersion = (version: number[]): number[] => {
-        let sanitized: number[] = [0, 0, 0]
-        if (!version) {
-            setSanitizedVersion(sanitized);
-            return sanitized;
-        }
-        sanitized = version;
-        if (sanitized.length > 3) {
-            sanitized = sanitized.slice(0, 3);
-        }
-        while (sanitized.length < 3) {
-            sanitized.push(0);
-        }
-        setSanitizedVersion(sanitized);
-        // console.log("version:", version, "sanitized:", sanitized);
-        return sanitized;
     }
 
     // handle form submit for the specified version
@@ -181,7 +108,8 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                 formJson[key] = value as string;
             }
         });
-        if (isVersionZero()) {
+        const sanitizedVersion = sanitizeVersion(convertUserVersion(formJson['version'] as string));
+        if (isVersionZero(sanitizedVersion)) {
             addError("Zero versions are not supported");
             return;
         }
@@ -192,221 +120,6 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                 navigate('/packages');
             }).catch(err => handleError(err));
     }
-
-    const onUpdateOrg = (_event: React.SyntheticEvent | null, value: (string | null)) => {
-        if (!value) {
-            return;
-        }
-        updateVersion({org_id: value});
-        console.log(`org updated ${value}`);
-    }
-
-    // convert a user version string to a number array
-    const convertUserVersion = (v: string): number[] => {
-        return v
-            .split('.')
-            .map(v => parseInt(v, 10))
-            .filter(v => !isNaN(v));
-    }
-
-    // zero versions can be used for asset roots cannot be used to create new versions
-    const isVersionZero = (): boolean => {
-        return sanitizedVersion.every((v) => v === 0)
-    }
-
-    // When leaving the version field, split and parse the values and pass it through the version update
-    // to sanitize it
-    const onVersionBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-        event.preventDefault();
-        if (!event.target) {
-            return;
-        }
-        const parts = convertUserVersion(event.target.value);
-        const sanitized = sanitizeVersion(parts);
-        updateVersion({version: sanitized});
-    }
-
-    const onUploadDrawerKeyDown = (event: React.KeyboardEvent | React.MouseEvent) => {
-        if (event.type === "keydown") {
-            const key = (event as React.KeyboardEvent).key;
-            if (key === 'Escape') {
-                setOpenUploads({open: false, opened: false});
-            }
-        }
-    };
-
-    const onClickAway = () => {
-        if (openUploads.open && openUploads.opened) {
-            setOpenUploads({open: false, opened: false});
-        }
-    };
-
-
-    const assetIdentityHeader = <Sheet
-        variant="outlined"
-        sx={{
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            px: 2,
-            borderRadius: 0,
-            borderLeft: 'none',
-            borderRight: 'none',
-        }}
-    >
-        <Stack direction="row" spacing={1} alignItems="center">
-            {[['asset_id', asset_id],
-                ['org_id', org_id]].map(v => (
-                <Typography key={v[0]} fontFamily={"code"} level={"body-xs"}>{v[0]} ({v[1]})</Typography>
-            ))}
-        </Stack>
-    </Sheet>;
-
-    const header = <List orientation={"horizontal"}>
-                <ListItemDecorator>
-                    <IconButton onClick={() => navigate('/packages')}>
-                        <LucideChevronLeft />
-                        <LucidePackage />
-                    </IconButton>
-                </ListItemDecorator>
-                <ListItemContent>
-                    <Typography level="h4" component="h1">
-                        <b>Package Editor</b>
-                    </Typography>
-                </ListItemContent>
-            </List>;
-
-    const drawer = <ClickAwayListener onClickAway={() => {
-                onClickAway();
-            }}>
-                <Drawer open={openUploads.open}
-                        onKeyDown={onUploadDrawerKeyDown}
-                        onClose={() => setOpenUploads({open: false, opened: false})}
-                        size="lg">
-                    <Sheet
-                        sx={{
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            p: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                        }}
-                    >
-                        <Typography level="h4">Uploads</Typography>
-                        <IconButton onClick={() => setOpenUploads({open: false, opened: false})} variant="plain">
-                            <LucideSidebarClose/>
-                        </IconButton>
-                    </Sheet>
-                    <UploadsSubmitList />
-                    <UploadsReadyList/>
-                </Drawer>
-            </ClickAwayListener>;
-
-    const detailsFormControls = <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    <FormControl>
-                        <FormLabel>
-                            Name
-                        </FormLabel>
-                        <Input
-                            name="name"
-                            variant="outlined"
-                            placeholder="Name..."
-                            value={name}
-                            onChange={(e) => updateVersion({name: e.target.value})}/>
-                    </FormControl>
-
-                    <FormControl>
-                        <FormLabel>
-                            Org / Namespace
-                        </FormLabel>
-                        {(!org_id && orgRoles.length == 0) ?
-                            <Link to={"/orgs"}>Create New Organization</Link> : ""}
-                        {orgRoles.length > 0 ?
-                            <Select
-                                variant="soft"
-                                name="org_id"
-                                placeholder={"Choose an existing org..."}
-                                value={org_id}
-                                multiple={false}
-                                onChange={onUpdateOrg}>
-                                {orgRoles.map(role => (
-                                    <Option key={role.org_id} value={role.org_id}>
-                                        {role.org_name}
-                                    </Option>)
-                                )}
-                                {org_id ! in orgRoles ? <Option key={org_id} value={org_id}>
-                                    {org_id} (not a member)
-                                </Option> : ""}
-                            </Select>
-                            : ""}
-                    </FormControl>
-
-                    <FormControl error={isVersionZero()}>
-                        <FormLabel>
-                            Version
-                        </FormLabel>
-                        <Input
-                            name="version"
-                            variant="outlined"
-                            placeholder={sanitizedVersion.join('.')}
-                            value={userVersion}
-                            onChange={(e) => {
-                                setUserVersion(e.target.value);
-                                sanitizeVersion(convertUserVersion(e.target.value));
-                            }}
-                            onBlur={onVersionBlur}/>
-                        {isVersionZero() ? <FormHelperText>
-                            <LucideInfo/>
-                            0.0.0 versions are not supported
-                        </FormHelperText> : ""}
-                    </FormControl>
-
-                    <FormControl>
-                        <FormLabel>
-                            Description
-                        </FormLabel>
-                        <Textarea
-                            name="description"
-                            placeholder="Fill out a description..."
-                            variant="outlined"
-                            size="md"
-                            minRows={4}
-                            value={description}
-                            onChange={(e) => updateVersion({description: e.target.value})}/>
-
-                    </FormControl>
-                </Box>;
-
-    const listEditorControls = <Box>
-        <AssetEditFileList
-            title={"Files"}
-            category={"files"}
-            fileFilters={["hda", "hip"]}
-            openUploadList={(category, fileFilters) =>
-                setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
-            removeFile={removeFile}
-            files={files}/>
-
-        <AssetEditFileList
-            title={"Thumbnails"}
-            category={"thumbnails"}
-            fileFilters={["png", "jpg", "jpeg", "gif", "webm"]}
-            openUploadList={(category, fileFilters) =>
-                setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
-            removeFile={removeThumbnail}
-            files={thumbnails}/>
-
-        <Box>
-            <Typography level="title-md" fontWeight={"bold"}>
-                References
-            </Typography>
-            <List>
-                <ListItem key={1}>mythica::palm_fan:1.0</ListItem>
-                <ListItem key={2}>mythica::scatter:1.0</ListItem>
-            </List>
-        </Box>
-    </Box>;
 
     return (
         <Sheet
@@ -424,19 +137,17 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                 boxShadow: 'md',
             }}
         >
-            {drawer}
-
             <form onSubmit={onSubmit}>
                 <Grid container spacing={2} sx={{ flexGrow: 1 }}>
-                    <Grid xs={12}>{header}</Grid>
-                    <Grid xs={12}>{assetIdentityHeader}</Grid>
+                    <Grid xs={12}><AssetEditPageHeader /></Grid>
+                    <Grid xs={12}><AssetIdentityHeader /></Grid>
 
                     <Grid xs={4}>
-                        {detailsFormControls}
+                        <AssetEditDetailControls />
                     </Grid>
 
                     <Grid xs={8}>
-                        {listEditorControls}
+                        <AssetEditListControls />
                     </Grid>
                     <Grid xs={8}></Grid>
                     <Grid xs={4}>
@@ -451,5 +162,5 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
 
 export const AssetEditWrapper: React.FC = () => {
     const {asset_id, version} = useParams();
-    return <AssetEdit prop_asset_id={asset_id} prop_version={version}/>;
+    return <AssetEdit assetId={asset_id} version={version}/>;
 }

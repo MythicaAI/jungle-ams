@@ -16,32 +16,68 @@ import {useAssetVersionStore} from "../stores/assetVersionStore.ts";
 import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
 import {LucideCircleCheck} from "lucide-react";
 
-export const UploadsReadyList = () => {
+interface UploadsReadyListProps {
+    category?: string;
+    fileTypeFilters: string[]
+}
+export const UploadsReadyList: React.FC<UploadsReadyListProps> = (
+    {category, fileTypeFilters = []}) => {
     // version store keeps the state of the version being authored, upload store keeps the state of the pending
     // uploads that the user has pending
-    const {files, addFile, removeFile} = useAssetVersionStore();
+    const {
+        files,
+        addFile,
+        removeFile,
+        thumbnails,
+        addThumbnail,
+        removeThumbnail } = useAssetVersionStore();
     const {uploads} = useUploadStore();
     const [uploadNameFilter, setUploadNameFilter] = useState<string>("");
     const [filteredUploadFiles, setFilteredUploadFiles] = useState<FileUploadStatus[]>([]);
 
-    useEffect(() => setFilteredUploadFiles(Object.values(uploads)), [uploads]);
+    useEffect(() => {
+        updateFileList(uploadNameFilter);
+    }, [uploads]);
+
+    const getAccessors = () => {
+        if (category === "hdas") {
+            return {items: files, add: addFile, remove: removeFile};
+        } else if (category === "thumbnails") {
+            return {items: thumbnails, add: addThumbnail, remove: removeThumbnail};
+        }
+        return {items: [], add: () => {}, remove: () => {}};
+    }
+    const {items, add, remove} = getAccessors();
+
 
     const onUploadFileNameChanged = (event: FormEvent) => {
         event.preventDefault();
         const target = event.target as HTMLInputElement;
         setUploadNameFilter(target.value);
-        setFilteredUploadFiles(filterSelected(target.value, Object.values(uploads)));
+        updateFileList(target.value);
     }
 
     const onUploadFileNameBlur = () => {
     }
 
     const onFileCheckbox = (file_id: string) => {
-        if (file_id in files) {
-            removeFile(file_id)
+        if (file_id in items) {
+            // remove an item from the file upload status map
+            remove(file_id)
         } else {
-            addFile(uploads[file_id]);
+            // take an item from the filtered uploads list and move it to the specific
+            // mapped file upload status
+            add(uploads[file_id]);
         }
+    }
+    const updateFileList = (filterText: string) => {
+        const filteredByInput = filterSelected(filterText, Object.values(uploads));
+        const filteredByType = filterByFileTypes(filteredByInput);
+        setFilteredUploadFiles(filteredByType);
+    }
+
+    const fileIsType = (filters: string[], fileName: string): boolean => {
+        return filters.some((s: string) => fileName.endsWith(s));
     }
 
     const filterSelected = (filterText: string, files: FileUploadStatus[]): FileUploadStatus[] => {
@@ -53,6 +89,14 @@ export const UploadsReadyList = () => {
         }
         console.log("default files");
         return Object.values(files);
+    }
+
+    const filterByFileTypes = (files: FileUploadStatus[]): FileUploadStatus[] => {
+        if (fileTypeFilters.length > 0) {
+            return Object.values(files).filter((fus) =>
+                fileIsType(fileTypeFilters, fus.file_name))
+        }
+        return files;
     }
 
     // const updateProgressForFiles = (files: FileUploadResponse[]) => {
