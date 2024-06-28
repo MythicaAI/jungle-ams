@@ -7,9 +7,16 @@ import {
     ListItemButton,
     ListItemDecorator,
     Sheet,
-    Textarea
+    Textarea, Typography
 } from "@mui/joy";
-import {LucideCircleMinus, LucideDoorClosed, LucideEdit, LucideEllipsis, LucideLink, LucideSave} from "lucide-react";
+import {
+    LucideCircleMinus,
+    LucideDoorClosed,
+    LucideEdit,
+    LucideLink,
+    LucidePlusCircle,
+    LucideSave
+} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import React, {useState} from "react";
 import {AssetVersionContent, AssetVersionContentMap} from "../types/apiTypes.ts";
@@ -80,15 +87,28 @@ const handleEditCancel = () => {
 export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
     const navigate = useNavigate();
 
+    const fileTypeFilter = ([_key, value]: [string, AssetVersionContent]): boolean => {
+        if (!value) {
+            return false; // Add error handling for undefined or incorrect value types
+        }
+        return fileIsType(props.fileFilters, value.file_name);
+    }
+
+    const fileIsType = (filters: string[], fileName: string): boolean => {
+        return filters.some((s: string) => fileName.endsWith(s));
+    }
+
     return <FormControl>
         <FormLabel>
-            {props.title}
             <IconButton onClick={(e) => {
                 e.preventDefault();
                 props.openUploadList(props.category, props.fileFilters)
             }}>
-                <LucideEllipsis/>
+                <LucidePlusCircle />
             </IconButton>
+            <Typography variant="soft" level="title-md" fontWeight={"bold"}>
+                {props.title}
+            </Typography>
         </FormLabel>
         <Sheet key={props.category} variant="outlined" sx={{borderRadius: 'sm'}}>
             <List id={props.category} size={"sm"}>

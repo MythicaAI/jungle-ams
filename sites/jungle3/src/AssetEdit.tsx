@@ -4,7 +4,7 @@ import {
     Drawer,
     FormControl,
     FormHelperText,
-    FormLabel,
+    FormLabel, Grid,
     IconButton,
     Input,
     List,
@@ -189,6 +189,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
             r => {
                 loadAssetVersionResponse(r);
                 setSuccess(`Version updated ${r.name} ${r.version.join('.')}`);
+                navigate('/packages');
             }).catch(err => handleError(err));
     }
 
@@ -261,23 +262,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
         </Stack>
     </Sheet>;
 
-    return (
-        <Sheet
-            variant="outlined"
-            sx={{
-                maxWidth: 800,
-                mx: 'auto', // margin left & right
-                my: 4, // margin top & bottom
-                py: 3, // padding top & bottom
-                px: 2, // padding left & right
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                borderRadius: 'sm',
-                boxShadow: 'md',
-            }}
-        >
-            <List orientation={"horizontal"}>
+    const header = <List orientation={"horizontal"}>
                 <ListItemDecorator>
                     <IconButton onClick={() => navigate('/packages')}>
                         <LucideChevronLeft />
@@ -289,11 +274,9 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                         <b>Package Editor</b>
                     </Typography>
                 </ListItemContent>
-            </List>
+            </List>;
 
-            {assetIdentityHeader}
-
-            <ClickAwayListener onClickAway={() => {
+    const drawer = <ClickAwayListener onClickAway={() => {
                 onClickAway();
             }}>
                 <Drawer open={openUploads.open}
@@ -318,9 +301,9 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                     <UploadsSubmitList />
                     <UploadsReadyList/>
                 </Drawer>
-            </ClickAwayListener>
-            <form onSubmit={onSubmit}>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+            </ClickAwayListener>;
+
+    const detailsFormControls = <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     <FormControl>
                         <FormLabel>
                             Name
@@ -393,40 +376,76 @@ export const AssetEdit: React.FC<AssetEditProps> = ({prop_asset_id = undefined, 
                             onChange={(e) => updateVersion({description: e.target.value})}/>
 
                     </FormControl>
+                </Box>;
 
-                    <AssetEditFileList
-                        title={"Files"}
-                        category={"files"}
-                        fileFilters={["hda", "hip"]}
-                        openUploadList={(category, fileFilters) =>
-                            setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
-                        removeFile={removeFile}
-                        files={files}/>
+    const listEditorControls = <Box>
+        <AssetEditFileList
+            title={"Files"}
+            category={"files"}
+            fileFilters={["hda", "hip"]}
+            openUploadList={(category, fileFilters) =>
+                setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
+            removeFile={removeFile}
+            files={files}/>
 
-                    <AssetEditFileList
-                        title={"Thumbnails"}
-                        category={"thumbnails"}
-                        fileFilters={["png", "jpg", "jpeg", "gif", "webm"]}
-                        openUploadList={(category, fileFilters) =>
-                            setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
-                        removeFile={removeThumbnail}
-                        files={thumbnails}/>
+        <AssetEditFileList
+            title={"Thumbnails"}
+            category={"thumbnails"}
+            fileFilters={["png", "jpg", "jpeg", "gif", "webm"]}
+            openUploadList={(category, fileFilters) =>
+                setOpenUploads({open: true, opened: false, category: category, fileFilters: fileFilters})}
+            removeFile={removeThumbnail}
+            files={thumbnails}/>
 
-                    <Box>
-                        <Typography level="title-md">References</Typography>
-                        <List>
-                            <ListItem key={1}>mythica::palm_fan:1.0</ListItem>
-                            <ListItem key={2}>mythica::scatter:1.0</ListItem>
-                        </List>
-                    </Box>
+        <Box>
+            <Typography level="title-md" fontWeight={"bold"}>
+                References
+            </Typography>
+            <List>
+                <ListItem key={1}>mythica::palm_fan:1.0</ListItem>
+                <ListItem key={2}>mythica::scatter:1.0</ListItem>
+            </List>
+        </Box>
+    </Box>;
 
-                    <Button type="submit">Update</Button>
+    return (
+        <Sheet
+            variant="outlined"
+            sx={{
+                maxWidth: 1000,
+                mx: 'auto', // margin left & right
+                my: 4, // margin top & bottom
+                py: 3, // padding top & bottom
+                px: 2, // padding left & right
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                borderRadius: 'sm',
+                boxShadow: 'md',
+            }}
+        >
+            {drawer}
 
-                </Box>
+            <form onSubmit={onSubmit}>
+                <Grid container spacing={2} sx={{ flexGrow: 1 }}>
+                    <Grid xs={12}>{header}</Grid>
+                    <Grid xs={12}>{assetIdentityHeader}</Grid>
+
+                    <Grid xs={4}>
+                        {detailsFormControls}
+                    </Grid>
+
+                    <Grid xs={8}>
+                        {listEditorControls}
+                    </Grid>
+                    <Grid xs={8}></Grid>
+                    <Grid xs={4}>
+                        <Button type="submit">Update</Button>
+                    </Grid>
+                </Grid>
             </form>
         </Sheet>
-    )
-        ;
+    );
 };
 
 
