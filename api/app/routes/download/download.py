@@ -44,7 +44,7 @@ def translate_download_url(storage, locators: list[str], content_hash: str) -> s
         translate_func = storage_types.get(locator_type)
         if translate_func is None:
             log.error("unsupported storage type %s", locator_type)
-        url = translate_func(storage, info, content_hash)
+        url = translate_func(storage, info)
         if url is not None:
             return url
     raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, detail="no valid locators for file")
