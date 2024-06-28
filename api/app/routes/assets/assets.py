@@ -348,6 +348,7 @@ async def create_asset_version(asset_id: UUID,
         try:
             # Use provided author or default to calling profile on creation
             author = r.author or profile.id
+            values.pop('author')
             if avr.version == ZERO_VERSION:
                 stmt = insert(AssetVersion).values(
                     asset_id=avr.asset_id,

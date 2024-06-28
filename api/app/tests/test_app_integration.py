@@ -150,7 +150,7 @@ def test_create_profile_and_assets():
         o = munchify(download_info.json())
         assert o.content_hash == test_file_content_hash
         assert o.file_id in file_ids
-        assert o.download_url is not None
+        assert o.url is not None
 
     # create org to contain assets
     org_name = 'org-' + get_random_string(10, digits=False)
