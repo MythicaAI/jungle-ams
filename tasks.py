@@ -38,6 +38,7 @@ IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
     'api/publish-init': {'name': 'mythica-publish-init'},
+    'api/packager': {'name': 'mythica-asset-packager'},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
 }
 
