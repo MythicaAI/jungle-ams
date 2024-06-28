@@ -36,7 +36,7 @@ storage_types = {
 }
 
 
-def translate_download_url(storage, locators: list[str], content_hash: str) -> str:
+def translate_download_url(storage, locators: list[str]) -> str:
     """translate locators to a downloadable URL"""
     for locator in locators:
         log.info("translating %s", locator)
@@ -62,7 +62,7 @@ async def download_info(
         locator_list = file.locators['locators']
         return DownloadInfoResponse(
             file_id=file.id,
-            url=translate_download_url(storage, locator_list, file.content_hash),
+            url=translate_download_url(storage, locator_list),
             **file.model_dump())
 
 
@@ -78,4 +78,4 @@ async def download_redirect(
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
-        response.headers['location'] = translate_download_url(storage, locator_list, file.content_hash)
+        response.headers['location'] = translate_download_url(storage, locator_list)
