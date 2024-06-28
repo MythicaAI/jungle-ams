@@ -48,7 +48,10 @@ async def upload(
 
     response_files = []
     for file in files:
+        # do the upload
         ctx = upload_internal(storage, profile.id, file)
+
+        # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
             owner=ctx.profile_id,

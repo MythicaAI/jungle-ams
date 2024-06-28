@@ -143,6 +143,13 @@ def test_create_profile_and_assets():
         o = munchify(r)
         assert o.content_hash == test_file_content_hash
         assert o.file_id in file_ids
+        # check the download
+        download_info = client.get(
+            f"{api_base}/download/info/{o.file_id}")
+        assert_status_code(download_info, HTTPStatus.OK)
+        o = munchify(download_info.json())
+        assert o.content_hash == test_file_content_hash
+        assert o.file_id in file_ids
         assert o.download_url is not None
 
     # create org to contain assets
