@@ -9,4 +9,4 @@ cd /app
 
 ./api/print_ip_address.py
 
-python3 packager.py "$*"
+python3 packager.py --endpoint=${PACKAGER_ENDPOINT} $*

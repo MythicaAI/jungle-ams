@@ -38,5 +38,7 @@ ENV PYTHONUNBUFFERED=1
 # attached or available, replace this URL to address a different database
 ENV SQL_URL='postgresql+asyncpg://test:test@postgres:5432/upload_pipeline'
 
+ENV PACKAGER_ENDPOINT=http://app:5555
+
 # Entrypoint to bootstrap the published content
 ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
