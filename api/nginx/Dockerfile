@@ -5,6 +5,12 @@
 #
 FROM golang:1.22.3-alpine as builder
 
+LABEL name="mythica-web-front"
+LABEL maintainer="jacobrepp@gmail.com"
+LABEL verison="1.0.0"
+LABEL tier="web"
+LABEL description="NGINX front end configured for mythica services"
+
 RUN apk add git
 
 WORKDIR /sites

@@ -1,6 +1,6 @@
 # This file is intended for invoke, see README.md for install setup instructions
-import re
 import os
+import re
 import subprocess
 
 from invoke import task
@@ -33,12 +33,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 #
 TESTING_STORAGE_DIR = os.path.join(BASE_DIR, 'testing/storage')
 TESTING_WEB_DIR = os.path.join(BASE_DIR, 'testing/web')
+TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
     'api/publish-init': {'name': 'mythica-publish-init'},
+    'api/packager': {'name': 'mythica-packager', 'requires': 'api/app'},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
+    'testing/storage/minio-config': {'name': 'minio-config'},
 }
 
 
@@ -81,12 +84,17 @@ def stop_docker_compose(c, docker_compose_path):
 def build_image(c, image_path):
     """Build a docker image"""
     image_name = IMAGES[image_path]['name']
+    requires = IMAGES[image_path].get('requires')
+    if requires is not None:
+        build_image(c, requires)
+
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(
-            f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .', pty=PTY_SUPPORTED)
+            f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .',
+            pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {
-              image_name}:{commit_hash}', pty=PTY_SUPPORTED)
+        image_name}:{commit_hash}', pty=PTY_SUPPORTED)
 
 
 def deploy_image(c, image_path, target):
@@ -102,9 +110,9 @@ def deploy_image(c, image_path, target):
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(f"docker tag {image_name}:{commit_hash} {
-              repo}/{image_name}:{commit_hash}", pty=PTY_SUPPORTED)
+        repo}/{image_name}:{commit_hash}", pty=PTY_SUPPORTED)
         c.run(f"docker tag {image_name}:{commit_hash} {
-              repo}/{image_name}:latest", pty=PTY_SUPPORTED)
+        repo}/{image_name}:latest", pty=PTY_SUPPORTED)
         c.run(f"docker push {repo}/{image_name} --all-tags", pty=PTY_SUPPORTED)
 
 
@@ -123,7 +131,7 @@ def run_image(c, image_path, background=False):
     else:
         args.append('--interactive --tty')
     c.run(f"docker run {'  '.join(args)} {image_name}:{
-          commit_hash}", pty=PTY_SUPPORTED)
+    commit_hash}", pty=PTY_SUPPORTED)
 
 
 @task
@@ -163,6 +171,16 @@ def web_start(c):
 @task
 def web_stop(c):
     stop_docker_compose(c, TESTING_WEB_DIR)
+
+
+@task
+def auto_start(c):
+    start_docker_compose(c, TESTING_AUTO_DIR)
+
+
+@task
+def auto_stop(c):
+    stop_docker_compose(c, TESTING_AUTO_DIR)
 
 
 def image_path_action(c, image, action, **kwargs):
