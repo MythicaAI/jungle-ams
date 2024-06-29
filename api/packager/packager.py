@@ -1,7 +1,10 @@
 import argparse
+import asyncio
 import datetime
 import os
 import zipfile
+
+from events.events import EventsSession
 
 
 def create_arg_parser():
@@ -50,7 +53,7 @@ def package_directory(input_dir, output_file, algorithm):
                 zipf.write(file_path, arcname)
 
 
-def main():
+async def main():
     parser = create_arg_parser()
     args = parser.parse_args()
 
@@ -80,8 +83,20 @@ def main():
     print(f"Output file: {output_file}")
 
     package_directory(input_dir, output_file, algorithm)
+
     print(f"Package created successfully: {output_file}")
 
 
-if __name__ == "__main__":
-    main()
+async def worker_entrypoint():
+    """Async entrypoint to test worker dequeue, looks for SQL_URL
+        environment variable to form an initial connection"""
+    sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
+    sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
+    with EventsSession(sql_url, sleep_interval, event_type_prefix='asset_version_updated') as session:
+        async for event_id, json_data in session.ack_next():
+            await session.complete(event_id)
+            print(event_id, json_data)
+
+
+if __name__ == '__main__':
+    asyncio.run(worker_entrypoint())

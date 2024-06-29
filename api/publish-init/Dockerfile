@@ -1,5 +1,10 @@
 FROM python:3.12-alpine
-LABEL authors="jrepp"
+
+LABEL name="publish-init"
+LABEL description="Initializes files from the publishing cache bucket"
+LABEL verison="1.0.0"
+LABEL tier="web"
+LABEL maintainer="jacobrepp@gmail.com"
 
 # Build the requirements layer first, it shouldn't be changing very often
 RUN pip install --upgrade pip google-cloud-storage

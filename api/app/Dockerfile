@@ -1,6 +1,10 @@
 # Basic python runtime. Worth updating at some point
 FROM python:3.12-alpine
-LABEL authors="jrepp"
+LABEL maintainer="jacobrepp@gmail.com"
+LABEL name="mythica-app"
+LABEL description="API service for mythica asset version managment"
+LABEL version="1.0.0"
+LABEL tier="web"
 
 # Create the uploads folder
 USER 0

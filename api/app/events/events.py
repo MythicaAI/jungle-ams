@@ -2,10 +2,10 @@
 # https://stackoverflow.com/questions/6507475/job-queue-as-sql-table-with-multiple-consumers-postgresql
 import asyncio
 from uuid import UUID
-from typing_extensions import Self
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
+from typing_extensions import Self
 
 pgsql_dequeue = """
 update 
@@ -20,6 +20,8 @@ where
             events
         where
             acked is null
+            and
+            event_type like '{event_type_prefix}%%'
         order by 
             queued
         limit 1 for update
@@ -40,10 +42,11 @@ class EventsSession(object):
     accessors of the event queue.
     """
 
-    def __init__(self, sql_url, sleep_interval, echo=False):
+    def __init__(self, sql_url, sleep_interval, event_type_prefix='', echo=False):
         self.async_engine = create_async_engine(sql_url, echo=echo)
         self.sleep_interval = sleep_interval
         self.conn = None
+        self.event_type_prefix = event_type_prefix
 
     def __enter__(self) -> Self:
         return self
@@ -56,7 +59,8 @@ class EventsSession(object):
     async def ack_next(self):
         """Asynchronously yield event data from the events table."""
         while True:
-            stmt = text(pgsql_dequeue)
+            stmt = text(pgsql_dequeue.format(
+                event_type_prefix=self.event_type_prefix))
             async with self.async_engine.begin() as conn:
                 result = await conn.execute(stmt)
                 data = result.fetchone()
