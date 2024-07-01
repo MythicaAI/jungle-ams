@@ -3,8 +3,15 @@ import asyncio
 import subprocess
 import os
 import logging
+import requests
+import tempfile
+
+from pathlib import Path
+from munch import munchify
 
 from events.events import EventsSession
+
+from api.files import API
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG,
@@ -46,9 +53,19 @@ def pull_container():
     process_output(*run_docker(['docker', 'pull', IMAGE_NAME]))
 
 
-def launch_container():
-    cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
-    process_output(*run_docker(["docker", "run", "--rm", "-it", IMAGE_NAME, '/bin/sh', '-c', cmd]))
+def launch_container(o):
+    hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
+    api = API(requests)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        
+        output_path = api.download_file(o.file_id, Path(tmp_dir))
+        if output_path is None:
+            raise FileNotFoundError
+
+        downloaded_path = str(output_path)
+        gather_deps_cmd = f"hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/gather_dependencies.py --output-path /output --hda-path={downloaded_path} && hserver -Q"
+
+        process_output(*run_docker(["docker", "run", "--rm", "-it", IMAGE_NAME, '/bin/sh', '-c', gather_deps_cmd]))
 
 
 def parse_job_data(_):
@@ -65,7 +82,8 @@ async def main():
         async for event_id, json_data in session.ack_next():
             try:
                 log.info(f"{event_id}: {json_data}")
-                launch_container()
+                o = munchify(json_data)
+                launch_container(o)
                 await session.complete(event_id)
             except Exception as ex:
                 log.exception("failure running container") 
