@@ -1,44 +1,20 @@
-import {Box, FormControl, FormHelperText, FormLabel, Input, Option, Select} from "@mui/joy";
-import {Link, useParams} from "react-router-dom";
-import {LucideInfo} from "lucide-react";
+import {Box, FormControl, FormLabel, Input, Option, Select} from "@mui/joy";
+import {Link} from "react-router-dom";
 import Textarea from "@mui/joy/Textarea";
 import {useGlobalStore} from "../stores/globalStore.ts";
 import {useAssetVersionStore} from "../stores/assetVersionStore.ts";
-import {convertUserVersion, isVersionZero, sanitizeVersion} from "../types/assetEditTypes.ts";
-import {useEffect, useState} from "react";
+import React from "react";
+import {AssetEditVersionDropdown} from "./AssetEditVersionDropdown.tsx";
 
 
 export const AssetEditDetailControls = () => {
-    const { version: paramVersion} = useParams();
     const {orgRoles} = useGlobalStore();
     const {
         org_id,
         name,
         description,
-        version,
         updateVersion
     } = useAssetVersionStore();
-
-     // version sanitizing state, should only be populated by the sanitizeVersion() function
-    const [
-        sanitizedVersion,
-        setSanitizedVersion] = useState<number[]>([0, 0, 0]);
-
-    // separately manage the user's input version
-    const [
-        userVersion,
-        setUserVersion] = useState<string>("0.0.0");
-
-    // initialize version sanitation
-    useEffect(() => {
-        if (paramVersion) {
-            setSanitizedVersion(convertUserVersion(paramVersion));
-            setUserVersion(paramVersion)
-        }
-        if (version && !isVersionZero(version)) {
-            setSanitizedVersion(sanitizeVersion(version));
-        }
-    }, [paramVersion, version]);
 
 
     const onUpdateOrg = (_event: React.SyntheticEvent | null, value: (string | null)) => {
@@ -47,18 +23,6 @@ export const AssetEditDetailControls = () => {
         }
         updateVersion({org_id: value});
         console.log(`org updated ${value}`);
-    }
-
-    // When leaving the version field, split and parse the values and pass it through the version update
-    // to sanitize it
-    const onVersionBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-        event.preventDefault();
-        if (!event.target) {
-            return;
-        }
-        const parts = convertUserVersion(event.target.value);
-        const sanitized = sanitizeVersion(parts);
-        updateVersion({version: sanitized});
     }
 
     return <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
@@ -100,25 +64,7 @@ export const AssetEditDetailControls = () => {
                 : ""}
         </FormControl>
 
-        <FormControl error={isVersionZero(sanitizedVersion)}>
-            <FormLabel>
-                Version
-            </FormLabel>
-            <Input
-                name="version"
-                variant="outlined"
-                placeholder={sanitizedVersion.join('.')}
-                value={userVersion}
-                onChange={(e) => {
-                    setUserVersion(e.target.value);
-                    setSanitizedVersion(sanitizeVersion(convertUserVersion(e.target.value)));
-                }}
-                onBlur={onVersionBlur}/>
-            {isVersionZero(sanitizedVersion) ? <FormHelperText>
-                <LucideInfo/>
-                0.0.0 versions are not supported
-            </FormHelperText> : ""}
-        </FormControl>
+        <AssetEditVersionDropdown />
 
         <FormControl>
             <FormLabel>

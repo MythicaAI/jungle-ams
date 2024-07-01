@@ -9,6 +9,7 @@ interface AssetVersion {
     package_id: string;
     name: string;
     description: string;
+    published: boolean;
     commit_ref: string;
     version: number[];
     created: string;
@@ -35,6 +36,7 @@ const defaultAssetVersion: Partial<AssetVersion> = {
     package_id: '',
     name: '',
     description: '',
+    published: false,
     commit_ref: '',
     version: [0, 0, 0],
     files: {},
