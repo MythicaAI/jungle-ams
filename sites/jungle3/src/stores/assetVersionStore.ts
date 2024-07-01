@@ -18,12 +18,12 @@ interface AssetVersion {
     thumbnails: AssetVersionContentMap;
     links: string[];
 
-    addFile: (file: AssetVersionContent) => void;
-    addFiles: (files: AssetVersionContent[]) => void;
-    removeFile: (file_id: string) => void;
-    addThumbnail: (file: AssetVersionContent) => void;
-    addThumbnails: (files: AssetVersionContent[]) => void;
-    removeThumbnail: (file_id: string) => void;
+    addFile: (file: AssetVersionContent) => AssetVersionContentMap;
+    addFiles: (files: AssetVersionContent[]) => AssetVersionContentMap;
+    removeFile: (file_id: string) => AssetVersionContentMap;
+    addThumbnail: (file: AssetVersionContent) => AssetVersionContentMap;
+    addThumbnails: (files: AssetVersionContent[]) => AssetVersionContentMap;
+    removeThumbnail: (file_id: string) => AssetVersionContentMap;
     updateVersion: (update: Partial<AssetVersion>) => void;
     clearVersion: () => void;
 }
@@ -67,15 +67,33 @@ const removeFile = (file_id: string, map: AssetVersionContentMap): AssetVersionC
     return newMap
 }
 
-export const useAssetVersionStore = create<AssetVersion>((set) => ({
+export const useAssetVersionStore = create<AssetVersion>((set, get) => ({
     ...createInstance<AssetVersion>(defaultAssetVersion)(),
 
-    addFile: (file: AssetVersionContent) => set((state) => ({files: addFile(file, state.files)})),
-    addFiles: (files: AssetVersionContent[]) => set((state) => ({files: addFiles(files, state.files)})),
-    removeFile: (file_id: string) => set((state) => ({files: removeFile(file_id, state.files)})),
-    addThumbnail: (file: AssetVersionContent) =>  set((state) => ({thumbnails: addFile(file, state.thumbnails)})),
-    addThumbnails: (files: AssetVersionContent[]) =>  set((state) => ({thumbnails: addFiles(files, state.thumbnails)})),
-    removeThumbnail: (file_id: string) => set((state) => ({thumbnails: removeFile(file_id, state.thumbnails)})),
+    addFile: (file: AssetVersionContent) => {
+        set((state) => ({files: addFile(file, state.files)}));
+        return get().files;
+    },
+    addFiles: (files: AssetVersionContent[]) => {
+        set((state) => ({files: addFiles(files, state.files)}));
+        return get().files;
+    },
+    removeFile: (file_id: string) => {
+        set((state) => ({files: removeFile(file_id, state.files)}));
+        return get().files;
+    },
+    addThumbnail: (file: AssetVersionContent) => {
+        set((state) => ({thumbnails: addFile(file, state.thumbnails)}));
+        return get().thumbnails;
+    },
+    addThumbnails: (files: AssetVersionContent[]) => {
+        set((state) => ({thumbnails: addFiles(files, state.thumbnails)}));
+        return get().thumbnails;
+    },
+    removeThumbnail: (file_id: string) => {
+        set((state) => ({thumbnails: removeFile(file_id, state.thumbnails)}));
+        return get().thumbnails;
+    },
 
     updateVersion: (update: Partial<AssetVersion>) => set(
         (state) => ({...state, ...update})),
