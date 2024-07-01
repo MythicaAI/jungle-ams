@@ -100,11 +100,12 @@ export const AssetEditVersionDropdown = () => {
     const id = open ? 'simple-popper' : undefined;
 
 
-    return <FormControl error={isVersionZero(sanitizedVersion)}>
-        <FormLabel>
-            Version
-        </FormLabel>
-        <Stack direction={"row"} alignItems={"center"}>
+    return <Stack direction={"row"} alignItems={"center"}>
+        <FormControl error={isVersionZero(sanitizedVersion)}>
+            <FormLabel>
+                Version
+            </FormLabel>
+
             <Input
                 name="version"
                 variant="outlined"
@@ -157,8 +158,13 @@ export const AssetEditVersionDropdown = () => {
                 </Card>
                 </ClickAwayListener>
             </Popper>
-
-            <Typography
+            {isVersionZero(sanitizedVersion) ? <FormHelperText>
+            <LucideInfo/>
+            0.0.0 versions are not supported
+            </FormHelperText> : ""}
+        </FormControl>
+        <FormControl orientation={"horizontal"}>
+        <Typography
                 component="span"
                 level="body-md"
                 sx={{
@@ -171,8 +177,6 @@ export const AssetEditVersionDropdown = () => {
                 }}>
                 {published ? 'Published' : 'Draft'}
             </Typography>
-
-
             <Switch
                 checked={published}
                 onChange={(event) =>
@@ -185,12 +189,7 @@ export const AssetEditVersionDropdown = () => {
                 name="published"
                 value={published.toString()}
               />
-        </Stack>
+        </FormControl>
+        </Stack>;
 
-
-        {isVersionZero(sanitizedVersion) ? <FormHelperText>
-            <LucideInfo/>
-            0.0.0 versions are not supported
-        </FormHelperText> : ""}
-    </FormControl>;
 }

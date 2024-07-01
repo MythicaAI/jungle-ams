@@ -15,6 +15,7 @@ import {FileProgress} from "./FileProgress.tsx";
 import {useAssetVersionStore} from "../stores/assetVersionStore.ts";
 import {FileUploadStatus, useUploadStore} from "../stores/uploadStore.ts";
 import {LucideCircleCheck} from "lucide-react";
+import {AssetVersionContentMap} from "../types/apiTypes.ts";
 
 interface UploadsReadyListProps {
     category?: string;
@@ -40,15 +41,20 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = (
     }, [uploads]);
 
     const getAccessors = () => {
-        if (category === "hdas") {
-            return {items: files, add: addFile, remove: removeFile};
+        if (category === "files") {
+            return {underlyingFiles: files, add: addFile, remove: removeFile};
         } else if (category === "thumbnails") {
-            return {items: thumbnails, add: addThumbnail, remove: removeThumbnail};
+            return {underlyingFiles: thumbnails, add: addThumbnail, remove: removeThumbnail};
         }
-        return {items: [], add: () => {}, remove: () => {}};
+        return {
+            underlyingFiles: {},
+            add: (): AssetVersionContentMap => {return {}},
+            remove: (): AssetVersionContentMap => {return {}}};
     }
-    const {items, add, remove} = getAccessors();
 
+    // items state represents the referenced list from the asset edit version
+    const {underlyingFiles, add, remove} = getAccessors();
+    const [items, setItems] = useState<AssetVersionContentMap>(underlyingFiles);
 
     const onUploadFileNameChanged = (event: FormEvent) => {
         event.preventDefault();
@@ -60,14 +66,16 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = (
     const onUploadFileNameBlur = () => {
     }
 
-    const onFileCheckbox = (file_id: string) => {
+    const onCheckbox = (file_id: string) => {
         if (file_id in items) {
             // remove an item from the file upload status map
-            remove(file_id)
+            const newItems = remove(file_id);
+            setItems(newItems);
         } else {
             // take an item from the filtered uploads list and move it to the specific
             // mapped file upload status
-            add(uploads[file_id]);
+            const newItems = add(uploads[file_id]);
+            setItems(newItems);
         }
     }
     const updateFileList = (filterText: string) => {
@@ -121,8 +129,8 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = (
     const UploadListItem = (file: FileUploadStatus) => (
         <ListItem>
             <ListItemDecorator sx={{width: 28}}>
-                <Checkbox onChange={() => onFileCheckbox(file.file_id)}
-                          checked={file.file_id in files}/>
+                <Checkbox onChange={() => onCheckbox(file.file_id)}
+                          checked={file.file_id in items}/>
             </ListItemDecorator>
             <ListItemDecorator sx={{width: 28}}>
                 <Box component="img"

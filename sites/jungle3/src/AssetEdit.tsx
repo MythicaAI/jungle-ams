@@ -116,7 +116,7 @@ export const AssetEdit: React.FC<AssetEditProps> = (
         postData<AssetVersionResponse>(`assets/${asset_id}/versions/${sanitizedVersion.join('.')}`, formJson).then(
             r => {
                 loadAssetVersionResponse(r);
-                setSuccess(`Version updated ${r.name} ${r.version.join('.')}`);
+                setSuccess(`${r.name}, ${r.version.join('.')} updated`);
                 navigate('/packages');
             }).catch(err => handleError(err));
     }
@@ -142,15 +142,15 @@ export const AssetEdit: React.FC<AssetEditProps> = (
                     <Grid xs={12}><AssetEditPageHeader /></Grid>
                     <Grid xs={12}><AssetIdentityHeader /></Grid>
 
-                    <Grid xs={4}>
+                    <Grid xs={5}>
                         <AssetEditDetailControls />
                     </Grid>
 
-                    <Grid xs={8}>
+                    <Grid xs={7}>
                         <AssetEditListControls />
                     </Grid>
-                    <Grid xs={8}></Grid>
-                    <Grid xs={4}>
+                    <Grid xs={7}></Grid>
+                    <Grid xs={5}>
                         <Button type="submit">Update</Button>
                     </Grid>
                 </Grid>
