@@ -58,7 +58,6 @@ export const Packages = () => {
         postData<AssetVersionResponse>(`assets/${asset_id}/versions/${version}`, {published: published})
             .then(r => {
                 updateAssetVersion(r as AssetVersionResponse);
-                updateVersionCache(versions);
             })
             .catch(err => handleError(err));
     }
@@ -105,12 +104,16 @@ export const Packages = () => {
     }
 
     useEffect(() => {
+        updateVersionCache(versions);
+    }, [versions]);
+
+    useEffect(() => {
         console.log("packages: load owned assets")
         if (!authToken) {
             return;
         }
         getData<AssetVersionResponse[]>('assets/owned')
-            .then(r => updateVersionCache(r))
+            .then(r => setVersions(r))
             .catch(err => handleError(err));
     }, [authToken]);
 
@@ -144,9 +147,12 @@ export const Packages = () => {
                 </Typography>
                 {sortedVersions.map((av, index) => (
                     <Chip
+                        key={av.version.join('.')}
                         variant="soft"
                         color={index == 0 ? "primary" : "neutral"}
-                        size="sm"
+                        size="lg"
+                        component={Link}
+                        to={`/assets/${av.asset_id}/versions/${av.version.join('.')}`}
                         sx={{borderRadius: 'xl'}}
                     >
                         {av.version.join('.')}
