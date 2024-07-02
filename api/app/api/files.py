@@ -1,6 +1,7 @@
 import logging
 from http import HTTPStatus
 from uuid import UUID
+import json
 
 from minio import Minio
 from functools import lru_cache
@@ -74,7 +75,9 @@ class API(object):
         r = self.client.get(url)
         assert r.status_code == HTTPStatus.OK
         doc = r.json()
+        log.info("response: %s", json.dumps(doc))
         o = munchify(doc)
         log.info("downloading from %s to %s",
                  o.download_url,
                  local_path)
+        return local_path
