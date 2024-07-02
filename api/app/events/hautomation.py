@@ -24,12 +24,12 @@ CONTAINER_REPO = 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-i
 CONTAINER_NAME = 'darol-houdini'
 CONTAINER_TAG = 'latest'
 IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
-IMAGE_NAME = f"hautomation"
+IMAGE_NAME = "hautomation"
 
 
 def run_docker(docker_command: list[str]):
     try:
-        log.info(f"running {' '.join(docker_command)}")
+        log.info("running %s", ' '.join(docker_command))
         result = subprocess.run(
             docker_command,
             capture_output=True,
@@ -42,9 +42,9 @@ def run_docker(docker_command: list[str]):
 
 
 def process_output(stdout, stderr, returncode):
-    log.info(f"output {stdout}")
-    log.info(f"stderr {stderr}")
-    log.info(f"returncode {returncode}")
+    log.info("output %s", stdout)
+    log.info("stderr %s", stderr)
+    log.info("returncode %s", returncode)
     if returncode != 0:
         raise ValueError(f"returncode was {returncode}")
 
@@ -54,7 +54,7 @@ def pull_container():
 
 
 def launch_container(o):
-    hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
+    #hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
     api = API(requests)
     with tempfile.TemporaryDirectory() as tmp_dir:
         
@@ -81,7 +81,7 @@ async def main():
     async with EventsSession(sql_url, sleep_interval) as session:
         async for event_id, json_data in session.ack_next():
             try:
-                log.info(f"{event_id}: {json_data}")
+                log.info("%s: %s", event_id, json_data)
                 o = munchify(json_data)
                 launch_container(o)
                 await session.complete(event_id)
