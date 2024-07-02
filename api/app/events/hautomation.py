@@ -80,13 +80,10 @@ async def main():
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
     async with EventsSession(sql_url, sleep_interval) as session:
         async for event_id, json_data in session.ack_next():
-            try:
-                log.info("%s: %s", event_id, json_data)
-                o = munchify(json_data)
-                launch_container(o)
-                await session.complete(event_id)
-            except Exception as ex:
-                log.exception("failure running container") 
+            log.info("%s: %s", event_id, json_data)
+            o = munchify(json_data)
+            launch_container(o)
+            await session.complete(event_id)
 
 
 if __name__ == '__main__':

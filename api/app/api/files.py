@@ -80,3 +80,4 @@ class API(object):
         log.info("downloading from %s to %s",
                  o.download_url,
                  local_path)
+        return local_path
