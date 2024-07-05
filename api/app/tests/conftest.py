@@ -8,7 +8,7 @@ from munch import munchify
 from main import app
 from routes.orgs.orgs import OrgCreateResponse
 from routes.responses import FileUploadResponse, ProfileResponse, SessionStartResponse
-from tests.shared_test import assert_status_code, TestFileContent, TestProfile
+from tests.shared_test import assert_status_code, FileContentTestObj, ProfileTestObj
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def create_profile(client: TestClient, api_base: str):
             full_name: str = "Test Profile",
             signature: str = 32 * 'X',
             description: str = "Test description",
-            profile_href: str = "https://nothing.com/") -> TestProfile:
+            profile_href: str = "https://nothing.com/") -> ProfileTestObj:
         r = client.post(f"{api_base}/profiles",
                         json={
                             'name': name,
@@ -81,7 +81,7 @@ def uploader(client, api_base):
     def _uploader(
             profile_id: UUID,
             auth_headers,
-            files: list[TestFileContent]) -> dict[UUID, FileUploadResponse]:
+            files: list[FileContentTestObj]) -> dict[UUID, FileUploadResponse]:
 
         file_data = list(map(
             lambda x: ('files', (x.file_name, x.contents, x.content_type)),
