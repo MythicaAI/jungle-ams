@@ -170,7 +170,7 @@ async def worker_entrypoint(endpoint: str):
         environment variable to form an initial connection"""
     sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
-    with EventsSession(sql_url, sleep_interval, event_type_prefix='asset_version_updated') as session:
+    async with EventsSession(sql_url, sleep_interval, event_type_prefix='asset_version_updated') as session:
         async for event_id, job_data in session.ack_next():
             print("event:", event_id, job_data)
             await exec_job(endpoint, job_data)
