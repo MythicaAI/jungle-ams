@@ -1,15 +1,9 @@
 from http import HTTPStatus
-
-from fastapi.testclient import TestClient
-from munch import munchify
 from uuid import uuid4
-from main import app
 
-from .shared_test import api_base, get_random_string
-from .profile_test import create_and_auth
-from .org_test import create_org
+from munch import munchify
 
-client = TestClient(app)
+from .shared_test import get_random_string
 
 json_schema = {
     "type": "object",
@@ -20,12 +14,12 @@ json_schema = {
 }
 
 
-def test_create_update():
+def test_create_update(client, api_base, create_profile, create_org):
     topo_name = "test-topo-" + get_random_string(10)
     topo_name_updated = topo_name + "-updated"
     invalid_org = str(uuid4())
-    test_profile = create_and_auth(client)
-    org_and_admin = create_org(client, test_profile)
+    test_profile = create_profile()
+    org_and_admin = create_org(test_profile)
     org_id = org_and_admin.org.id
     admin_id = org_and_admin.admin.profile_id
     headers = test_profile.authorization_header()

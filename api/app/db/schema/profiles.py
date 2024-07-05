@@ -67,7 +67,6 @@ class ProfileSession(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     refreshed: datetime | None = None
     profile_id: UUID = Field(foreign_key='profiles.id')
     authenticated: bool | None = False

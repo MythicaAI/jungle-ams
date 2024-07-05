@@ -2,18 +2,16 @@ from http import HTTPStatus
 
 from fastapi.testclient import TestClient
 from munch import munchify
+
 from main import app
-
-from .profile_test import create_and_auth
-from .org_test import create_org
-from .shared_test import api_base, assert_status_code
+from .shared_test import assert_status_code
 
 
-def test_create_update():
+def test_create_update(api_base, create_profile, create_org):
     client = TestClient(app)
-    profile_test_info = create_and_auth(client)
-    headers = profile_test_info.authorization_header()
-    o = create_org(client, profile_test_info)
+    test_profile = create_profile()
+    headers = test_profile.authorization_header()
+    o = create_org(test_profile)
     org_id = o.org.id
 
     r = client.post(f"{api_base}/orgs/{org_id}",
