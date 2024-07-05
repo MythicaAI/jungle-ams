@@ -1,4 +1,6 @@
-# pytest disable=redefined-outer-name
+"""Test of file operations"""
+
+# pylint: disable=redefined-outer-name
 
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader

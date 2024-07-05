@@ -1,4 +1,6 @@
-# pytest disable=redefined-outer-name
+"""Topology tests"""
+
+# pylint: disable=redefined-outer-name
 
 from http import HTTPStatus
 from uuid import uuid4, UUID

@@ -1,6 +1,6 @@
 """Test the integration of the mainline APIs together, ideal for CI"""
 
-# pytest disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 
 import json
 from http import HTTPStatus
