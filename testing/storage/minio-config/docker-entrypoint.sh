@@ -5,3 +5,7 @@
 mc alias set local http://${MINIO_ENDPOINT} minio minio123
 mc admin user add local ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY}
 mc admin policy attach local readwrite --user=${MINIO_ACCESS_KEY}
+
+# create a static bucket with anonymous download access
+mc mb ${MINIO_ENDPOINT}/static
+mc anonymous download ${MINIO_ENDPOINT}/static
