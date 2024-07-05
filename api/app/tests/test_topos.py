@@ -3,7 +3,9 @@ from uuid import uuid4, UUID
 
 from munch import munchify
 
-from .shared_test import get_random_string
+from tests.fixtures.create_org import create_org
+from tests.fixtures.create_profile import create_profile
+from tests.shared_test import get_random_string
 
 json_schema = {
     "type": "object",

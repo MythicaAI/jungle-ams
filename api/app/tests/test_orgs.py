@@ -5,7 +5,9 @@ from fastapi.testclient import TestClient
 from munch import munchify
 
 from main import app
-from .shared_test import assert_status_code
+from tests.fixtures.create_org import create_org
+from tests.fixtures.create_profile import create_profile
+from tests.shared_test import assert_status_code
 
 
 def test_create_update(client, api_base, create_profile, create_org):

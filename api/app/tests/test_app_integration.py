@@ -7,6 +7,8 @@ from munch import munchify
 
 from routes.assets.assets import AssetVersionContent
 from routes.type_adapters import register_adapters
+from tests.fixtures.create_profile import create_profile
+from tests.fixtures.uploader import uploader
 from tests.shared_test import get_random_string, assert_status_code, make_random_content
 
 test_profile_name = "test-profile"
