@@ -9,16 +9,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from pydantic import BaseModel
-from sqlmodel import select
+from sqlmodel import select, update
 
 import db.index as db_index
 from config import app_config
 from context import RequestContext
 from db.connection import get_session
+from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from routes.assets.assets import convert_version_input, select_asset_version
 from routes.authorization import current_profile
 from routes.file_events import enrich_files
+from routes.files.files import delete_file_by_id
 from routes.responses import FileUploadResponse
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
@@ -34,36 +37,6 @@ class UploadResponse(BaseModel):
     """Response from uploading one or more files"""
     message: str
     files: list[FileUploadResponse]
-
-
-@router.post('/store')
-async def upload(
-        files: list[UploadFile] = File(...),
-        profile: Profile = Depends(current_profile),
-        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
-    log.info("handling upload for profile: %s", profile)
-
-    if not files:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
-
-    response_files = []
-    for file in files:
-        # do the upload
-        ctx = upload_internal(storage, profile.id, file)
-
-        # create a response file object for the upload
-        response_files.append(FileUploadResponse(
-            file_id=ctx.file_id,
-            owner=ctx.profile_id,
-            file_name=file.filename,
-            event_ids=[ctx.event_id],
-            size=file.size,
-            content_type=file.content_type,
-            content_hash=ctx.content_hash,
-            created=datetime.now(timezone.utc)))
-    return UploadResponse(
-        message=f'uploaded {len(response_files)} files',
-        files=response_files)
 
 
 def upload_internal(storage, profile_id, upload_file) -> RequestContext:
@@ -115,6 +88,95 @@ def upload_internal(storage, profile_id, upload_file) -> RequestContext:
         log.debug("cleaned local file")
 
     return ctx
+
+
+@router.post('/store')
+async def store_files(
+        files: list[UploadFile] = File(...),
+        profile: Profile = Depends(current_profile),
+        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
+    """Store a list of files as a profile"""
+
+    log.info("handling upload for profile: %s", profile)
+
+    if not files:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
+
+    response_files = []
+    for file in files:
+        # do the upload
+        ctx = upload_internal(storage, profile.id, file)
+
+        # create a response file object for the upload
+        response_files.append(FileUploadResponse(
+            file_id=ctx.file_id,
+            owner=ctx.profile_id,
+            file_name=file.filename,
+            event_ids=[ctx.event_id],
+            size=file.size,
+            content_type=file.content_type,
+            content_hash=ctx.content_hash,
+            created=datetime.now(timezone.utc)))
+    return UploadResponse(
+        message=f'uploaded {len(response_files)} files',
+        files=response_files)
+
+
+@router.post('/package/{asset_id}/{version_str}')
+async def store_and_attach_package(
+        asset_id: UUID,
+        version_str: str,
+        files: list[UploadFile] = File(...),
+        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
+    """Provide a package upload to a specific asset and version"""
+    if not files:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
+    if len(files) != 1:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='only one package at a time supported')
+    file = files[0]
+    if file.content_type is None:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f'no content type for file {file.filename}')
+
+    version_id = convert_version_input(version_str)
+
+    log.info("package uploading for asset: %s %s", asset_id, version_id)
+    response_files = []
+
+    # do the upload
+    with get_session(echo=True) as session:
+        avr = select_asset_version(session, asset_id, version_id)
+        if avr is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
+
+        ctx = upload_internal(storage, avr.author, file)
+
+        # create a response file object for the upload
+        response_files.append(FileUploadResponse(
+            file_id=ctx.file_id,
+            owner=ctx.profile_id,
+            file_name=file.filename,
+            event_ids=[ctx.event_id],
+            size=file.size,
+            content_type=file.content_type,
+            content_hash=ctx.content_hash,
+            created=datetime.now(timezone.utc)))
+
+        # if a package existed, mark it as deleted
+        if avr.package_id:
+            await delete_file_by_id(avr.package_id, ctx.profile_id)
+
+        # attach the response to the asset version
+        stmt = update(AssetVersion).values({AssetVersion.package_id: ctx.file_id}).where(
+            AssetVersion.asset_id == asset_id).where(
+            AssetVersion.major == version_id[0]).where(
+            AssetVersion.minor == version_id[1]).where(
+            AssetVersion.patch == version_id[2])
+        session.exec(stmt)
+        session.commit()
+
+    return UploadResponse(
+        message=f'uploaded {len(response_files)} files',
+        files=response_files)
 
 
 @router.get('/pending')

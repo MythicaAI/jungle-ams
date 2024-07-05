@@ -1,19 +1,19 @@
 import logging
-from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError, BaseModel, constr, AnyHttpUrl, EmailStr
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import select, update, delete
 
 from auth.generate_token import generate_token
 from config import app_config
-from db.schema.profiles import Profile, ProfileSession
 from db.connection import get_session
-from sqlmodel import select, update, delete
-from routes.responses import ProfileResponse, SessionStartResponse
+from db.schema.profiles import Profile, ProfileSession
 from routes.authorization import current_profile
+from routes.responses import ProfileResponse, SessionStartResponse, ValidateEmailState
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -30,11 +30,30 @@ class CreateUpdateProfileModel(BaseModel):
     email: EmailStr = None
 
 
+def email_validate_state_enum(email_validation_state: int) -> ValidateEmailState:
+    """Convert the database int to the pydantic enum"""
+    if email_validation_state == 0:
+        return ValidateEmailState.not_validated
+    elif email_validation_state == 1:
+        return ValidateEmailState.link_sent
+    elif email_validation_state == 2:
+        return ValidateEmailState.validated
+    return ValidateEmailState.not_validated
+
+
+def profile_to_profile_response(profile: Profile) -> ProfileResponse:
+    """Convert a profile to a valid profile response object"""
+    profile_data = profile.model_dump()
+    validate_state = email_validate_state_enum(profile.email_validate_state)
+    profile_response = ProfileResponse(**profile_data,
+                                       validate_state=validate_state)
+    return profile_response
+
 
 @router.get('/')
 async def get_profiles() -> list[ProfileResponse]:
     with get_session() as session:
-        return [ProfileResponse(**profile.model_dump())
+        return [profile_to_profile_response(profile)
                 for profile in session.exec(select(Profile))]
 
 
@@ -43,11 +62,12 @@ async def get_profile(profile_id: UUID) -> ProfileResponse:
     with get_session() as session:
         profile = session.exec(select(Profile).where(
             Profile.id == profile_id)).first()
-        return ProfileResponse(**profile.model_dump())
+        return profile_to_profile_response(profile)
 
 
 @router.get('/start_session/{profile_id}')
 async def start_session(profile_id: UUID) -> SessionStartResponse:
+    """Start a session for a profile"""
     with get_session() as session:
         session.begin()
         result = session.exec(update(Profile).values(
@@ -63,16 +83,16 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
             ProfileSession.profile_id == profile_id))
         session.commit()
 
-        # Generate a new token
+        # Generate a new token and profile response
         profile = session.exec(select(Profile).where(
             Profile.id == profile_id)).first()
-        profile_data = profile.model_dump()
+        profile_response = profile_to_profile_response(profile)
         token = generate_token(profile)
 
         # Add a new session
         location = app_config().mythica_location
         profile_session = ProfileSession(profile_id=profile_id,
-                                         refreshed=datetime.now(timezone.utc),
+                                         refreshed=sql_now(),
                                          location=location,
                                          authenticated=False,
                                          auth_token=token)
@@ -83,11 +103,9 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
             ProfileSession.profile_id == profile_id)).all()
         sessions = [ProfileSession(**s.model_dump()) for s in sessions]
 
-        profile_summary = ProfileResponse(**profile_data)
-
         result = SessionStartResponse(
             token=token,
-            profile=profile_summary,
+            profile=profile_response,
             sessions=sessions)
         return result
 
@@ -101,6 +119,7 @@ async def create_profile(
         # do any remaining fixup
         profile = Profile(**req_profile.model_dump())
         profile.profile_base_href = str(req_profile.profile_base_href)
+
     except TypeError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
     except ValidationError as e:
@@ -110,7 +129,7 @@ async def create_profile(
     session.commit()
     session.refresh(profile)
 
-    return ProfileResponse(**profile.model_dump())
+    return profile_to_profile_response(profile)
 
 
 @router.post('/{profile_id}')
@@ -134,4 +153,4 @@ async def update_profile(
 
     updated = session.exec(select(Profile).where(
         Profile.id == profile_id)).one()
-    return ProfileResponse(**updated.model_dump())
+    return profile_to_profile_response(updated)
