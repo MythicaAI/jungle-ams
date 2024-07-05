@@ -3,15 +3,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import Session, select, update, delete, insert, col
 
 import auth.roles as roles
-from auth.data import resolve_profile, resolve_roles
-from db.schema.profiles import Profile, Org, OrgRef
-from db.connection import get_session
-from sqlmodel import Session, select, update, delete, insert, col
-from sqlalchemy.sql.functions import now as sql_now
-from routes.authorization import current_profile
 from auth.authorization import validate_roles
+from auth.data import resolve_profile, resolve_roles
+from db.connection import get_session
+from db.schema.profiles import Profile, Org, OrgRef
+from routes.authorization import current_profile
 
 
 class OrgCreateRequest(BaseModel):
@@ -99,7 +99,8 @@ async def create_org(
         session.refresh(admin)
         session.refresh(org)
 
-        return OrgCreateResponse(org=Org(**org.model_dump()), admin=OrgRef(**admin.model_dump()))
+        response = OrgCreateResponse(org=org, admin=admin)
+        return response
 
 
 @router.post('/{org_id}')

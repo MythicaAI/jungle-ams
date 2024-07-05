@@ -14,7 +14,7 @@ from db.schema.profiles import Profile, ProfileSession
 log = logging.getLogger(__name__)
 
 
-class TestFileContent(BaseModel):
+class FileContentTestObj(BaseModel):
     file_name: str
     file_id: UUID
     contents: bytes
@@ -23,7 +23,7 @@ class TestFileContent(BaseModel):
     size: int
 
 
-class TestProfile(BaseModel):
+class ProfileTestObj(BaseModel):
     auth_token: str
     profile: Profile
     session: ProfileSession
@@ -54,11 +54,11 @@ def assert_status_code(response, expected_status_code):
     assert response.status_code == expected_status_code, message
 
 
-def make_random_content(file_ext: str) -> TestFileContent:
+def make_random_content(file_ext: str) -> FileContentTestObj:
     """Create a random (unresolved TestFileContent object)"""
     file_name = ''.join([secrets.choice(string.ascii_letters) for _ in range(10)])
     test_content = secrets.token_bytes(16)
-    return TestFileContent(
+    return FileContentTestObj(
         file_name=file_name + '.' + file_ext,
         file_id=UUID(int=0),
         contents=test_content,

@@ -5,10 +5,11 @@ import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
+from db.schema.profiles import Org, OrgRef
 from main import app
 from routes.orgs.orgs import OrgCreateResponse
 from routes.responses import FileUploadResponse, ProfileResponse, SessionStartResponse
-from tests.shared_test import assert_status_code, TestFileContent, TestProfile
+from tests.shared_test import assert_status_code, FileContentTestObj, ProfileTestObj
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def create_profile(client: TestClient, api_base: str):
             full_name: str = "Test Profile",
             signature: str = 32 * 'X',
             description: str = "Test description",
-            profile_href: str = "https://nothing.com/") -> TestProfile:
+            profile_href: str = "https://nothing.com/") -> ProfileTestObj:
         r = client.post(f"{api_base}/profiles",
                         json={
                             'name': name,
@@ -54,7 +55,7 @@ def create_profile(client: TestClient, api_base: str):
         assert len(session_response.token) > 0
         auth_token = session_response.token
 
-        return TestProfile(
+        return ProfileTestObj(
             profile=profile,
             session=session_response.sessions[0],
             auth_token=auth_token)
@@ -81,7 +82,7 @@ def uploader(client, api_base):
     def _uploader(
             profile_id: UUID,
             auth_headers,
-            files: list[TestFileContent]) -> dict[UUID, FileUploadResponse]:
+            files: list[FileContentTestObj]) -> dict[UUID, FileUploadResponse]:
 
         file_data = list(map(
             lambda x: ('files', (x.file_name, x.contents, x.content_type)),
@@ -159,11 +160,11 @@ def uploader(client, api_base):
     return _uploader
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def create_org(client: TestClient, api_base):
     """Factory fixture for creating orgs"""
 
-    def _create_org(test_profile: TestProfile) -> OrgCreateResponse:
+    def _create_org(test_profile: ProfileTestObj) -> OrgCreateResponse:
         headers = test_profile.authorization_header()
         test_org_name = 'test-org'
         test_org_description = 'test org description'
@@ -174,14 +175,22 @@ def create_org(client: TestClient, api_base):
                             'description': test_org_description},
                         headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
-        org_resp = OrgCreateResponse(**r.json())
+        org = Org.model_validate(obj=r.json()['org'])
+        admin = OrgRef.model_validate(obj=r.json()['admin'])
+        org_resp = OrgCreateResponse(org=org, admin=admin)
         assert org_resp.org is not None
         assert org_resp.admin is not None
-        assert org_resp.org.name == test_org_name
-        assert org_resp.org.description == test_org_description
-        assert org_resp.org.created is not None
-        assert org_resp.org.updated is None
-        assert org_resp.admin.profile_id == test_profile.profile.id
-        assert org_resp.admin.org_id == org_resp.org.id
-        assert org_resp.admin.role == 'admin'
-        return org_resp
+
+        org = Org.model_validate(obj=org_resp.org.model_dump(), strict=True)
+        admin = OrgRef.model_validate(obj=org_resp.admin.model_dump(), strict=True)
+
+        assert org.name == test_org_name
+        assert org.description == test_org_description
+        assert org.created is not None
+        assert org.updated is None
+        assert admin.profile_id == test_profile.profile.id
+        assert admin.org_id == org_resp.org.id
+        assert admin.role == 'admin'
+        return OrgCreateResponse(org=org, admin=admin)
+
+    return _create_org
