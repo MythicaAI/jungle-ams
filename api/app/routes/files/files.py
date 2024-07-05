@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import select, update, col, and_
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import select, delete
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import select, update, col, and_
 
 from db.connection import get_session
 from db.schema.media import FileContent
@@ -51,9 +52,8 @@ async def delete_file_by_id(file_id, profile_id: UUID = Depends(current_profile_
         try:
             result = session.exec(
                 (update(FileContent)
-                 .values(deleted=sql_now(), ).where(
-                    and_(FileContent.id == file_id,
-                    FileContent.owner == profile_id))))
+                 .values(deleted=sql_now(), )
+                 .where(and_(FileContent.id == file_id, FileContent.owner == profile_id))))
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail="file not found, or not owned")
