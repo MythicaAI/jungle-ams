@@ -1,3 +1,5 @@
+# pytest disable=redefined-outer-name
+
 from http import HTTPStatus
 from uuid import UUID
 

@@ -1,3 +1,5 @@
+# pytest disable=redefined-outer-name
+
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import make_random_content
