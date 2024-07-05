@@ -1,6 +1,6 @@
 """Test of file operations"""
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-import
 
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader

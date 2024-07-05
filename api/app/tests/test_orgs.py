@@ -1,6 +1,6 @@
 """Organization test cases"""
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-import
 
 from http import HTTPStatus
 from uuid import UUID

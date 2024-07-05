@@ -1,6 +1,6 @@
 """Test the integration of the mainline APIs together, ideal for CI"""
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-import
 
 import json
 from http import HTTPStatus
