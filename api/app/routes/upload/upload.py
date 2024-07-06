@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from pydantic import BaseModel
-from sqlmodel import select, update
+from sqlmodel import select, update, and_
 
 import db.index as db_index
 from config import app_config
@@ -186,6 +186,8 @@ async def pending_uploads(
     """Get the list of uploads that have been created for
     the current profile"""
     with (get_session() as session):
-        owned_files = session.exec(select(FileContent).where(
-            FileContent.owner == profile.id)).all()
+        owned_files = session.exec(select(FileContent)
+        .where(
+            and_(FileContent.owner == profile.id,
+                 FileContent.deleted == None))).all()
         return enrich_files(session, owned_files, profile)

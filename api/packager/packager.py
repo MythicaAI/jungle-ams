@@ -7,6 +7,7 @@ or worker mode when connected to an events table.
 
 import argparse
 import asyncio
+import logging
 import os
 import tempfile
 import zipfile
@@ -15,11 +16,14 @@ from uuid import UUID
 
 import requests
 from pydantic import AnyHttpUrl
+from pythonjsonlogger import jsonlogger
 
 from events.events import EventsSession
 from routes.assets.assets import AssetVersionResult, AssetVersionContent
 from routes.download.download import DownloadInfoResponse
 from routes.responses import FileUploadResponse
+
+log = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -59,14 +63,14 @@ def parse_args():
 def get_versions(endpoint: str, asset_id: UUID, version: tuple[int, ...]) -> list[AssetVersionResult]:
     """Get all versions for a given asset"""
     if len(version) != 3:
-        raise Exception("Invalid version format, must be a 3 valued tuple")
+        raise ValueError("Invalid version format, must be a 3 valued tuple")
     if version == (0, 0, 0):
         r = requests.get(f"{endpoint}/api/v1/assets/{asset_id}")
     else:
         version_str = ".".join(map(str, version))
         r = requests.get(f"{endpoint}/api/v1/assets/{asset_id}/versions/{version_str}")
     if r.status_code != 200:
-        raise Exception(r.text)
+        raise ConnectionError(r.text)
     o = r.json()
     if type(o) is list:
         return sorted(map(lambda v: AssetVersionResult(**v), o), key=lambda x: x.version, reverse=True)
@@ -86,11 +90,13 @@ def resolve_contents(endpoint, content: AssetVersionContent) -> DownloadInfoResp
     """"Resolve content by ID to a resolved download URL"""
     r = requests.get(f"{endpoint}/api/v1/download/info/{content.file_id}")
     if r.status_code != 200:
-        raise Exception(r.text)
+        raise ConnectionError(r.text)
     dl_info = DownloadInfoResponse(**r.json())
     assert dl_info.url is not None
     assert dl_info.file_id == content.file_id
-    print(f"resolved {dl_info.name} ({dl_info.content_hash})")
+    log.info("resolved %s (%s)",
+             dl_info.name,
+             dl_info.content_hash)
     return dl_info
 
 
@@ -101,15 +107,16 @@ async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: UUID
     for v in versions:
         version_str = '.'.join(map(str, v.version))
         zip_filename = output_path / f"{asset_id}-{version_str}.zip"
-        print(f"creating package {zip_filename}")
+        log.info("creating package %s", zip_filename)
         with zipfile.ZipFile(zip_filename, 'w') as zip_file:
-            print(v.model_dump())
+            log.info("version data: %s", v.model_dump())
             contents = map(lambda c: resolve_contents(endpoint, c), get_file_contents(v))
             for content in contents:
                 url = AnyHttpUrl(content.url)
                 response = requests.get(url, stream=True)
                 if response.status_code != 200:
-                    raise Exception(f"Failed to download url: {url} {response.text}")
+                    raise ConnectionError(f"{response.status_code}: to download url: {url} {response.text}")
+
                 zip_file.writestr(content.name, response.content)
             manifest = v.model_dump_json()
             zip_file.writestr("manifest.json", manifest.encode("utf-8"))
@@ -124,14 +131,14 @@ async def upload_package(endpoint: str, asset_id: UUID, version_str: str, zip_fi
         response = requests.post(url, files={
             'files': (os.path.basename(zip_filename), file, 'application/zip')})
         if response.status_code != 200:
-            print(f"package upload failed: {response.status_code}")
-            print(f"response: {response.text}")
+            log.error("package upload failed: %s", response.status_code)
+            log.error("response: %s", response.text)
             return
         o = response.json()
         assert 'files' in o and type(o['files']) is list and len(o['files']) == 1
         file_upload = FileUploadResponse(**response.json()['files'][0])
-        print((f"package uploaded for {asset_id} {version_str},"
-               f" package_id: {file_upload.file_id}, content_hash: {file_upload.content_hash}"))
+        log.info("package uploaded for %s %s, package_id: %s, content_hash: %s",
+                 asset_id, version_str, file_upload.file_id, file_upload.content_hash)
 
 
 async def main(output_path: Path, endpoint: str, asset_id: UUID, version: tuple[int, ...]):
@@ -147,17 +154,17 @@ async def exec_job(endpoint, job_data):
     """Given the job data from the event, create the ZIP package"""
     asset_id = job_data.get('asset_id')
     if asset_id is None:
-        print("asset_id is missing from job_data")
+        log.error("asset_id is missing from job_data")
         return
     try:
         asset_id = UUID(asset_id)
     except ValueError as e:
-        print(f"asset_id is not a valid UUID: {asset_id}: {e}")
+        log.exception("asset_id is not a valid UUID: %s", asset_id, exc_info=e)
         return
 
     version = job_data.get('version')
     if version is None:
-        print("version is missing from job_data")
+        log.error("version is missing from job_data")
         return
 
     assert type(version) is list or type(version) is tuple
@@ -170,22 +177,42 @@ async def worker_entrypoint(endpoint: str):
         environment variable to form an initial connection"""
     sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
+    allowed_job_exceptions = (
+        requests.exceptions.ConnectionError,
+        ConnectionError,
+        ValueError)
     async with EventsSession(sql_url, sleep_interval, event_type_prefix='asset_version_updated') as session:
         async for event_id, job_data in session.ack_next():
-            print("event:", event_id, job_data)
-            await exec_job(endpoint, job_data)
-            await session.complete(event_id)
+            log.info("event: %s, %s", event_id, job_data)
+            try:
+                await exec_job(endpoint, job_data)
+                await session.complete(event_id)
+            except allowed_job_exceptions as ex:
+                log.exception("job failed", ex)
+
+
+def setup_logging():
+    """Setup a JSON console logger"""
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    # Create a StreamHandler for console output
+    handler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
 if __name__ == '__main__':
+    setup_logging()
     args = parse_args()
     if args.asset is not None:
-        print("asset provided, running command line mode")
+        log.info("asset provided, running command line mode")
         asyncio.run(main(
             Path(args.output),
             args.endpoint,
             UUID(args.asset),
             tuple(map(int, args.version.split('.')))))
     else:
-        print("no asset provided, running in event worker mode")
+        log.info("no asset provided, running in event worker mode")
         asyncio.run(worker_entrypoint(args.endpoint))
