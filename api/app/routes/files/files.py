@@ -2,6 +2,7 @@ from http import HTTPStatus
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import select, update, col, and_
 
@@ -46,12 +47,14 @@ async def get_file_by_content(
 async def delete_file_by_id(file_id, profile_id: UUID = Depends(current_profile_id)):
     """Delete a file by its ID"""
     with get_session(echo=True) as session:
-        result = session.exec(
-            (update(FileContent)
-                 .values(deleted=sql_now(), ).where(
-                and_(FileContent.id == file_id,
-                FileContent.owner == profile_id))))
-        if result.rowcount != 1:
-            raise HTTPException(HTTPStatus.NOT_FOUND,
-                                detail="file not found, or not owned")
-        session.commit()
+        try:
+            result = session.exec(
+                (update(FileContent)
+                 .values(deleted=sql_now(), )
+                 .where(and_(FileContent.id == file_id, FileContent.owner == profile_id))))
+            if result.rowcount != 1:
+                raise HTTPException(HTTPStatus.NOT_FOUND,
+                                    detail="file not found, or not owned")
+            session.commit()
+        except IntegrityError as e:
+            raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
