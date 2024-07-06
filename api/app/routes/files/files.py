@@ -2,8 +2,6 @@ from http import HTTPStatus
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import select, update, col, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import select, update, col, and_
@@ -58,5 +56,5 @@ async def delete_file_by_id(file_id, profile_id: UUID = Depends(current_profile_
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail="file not found, or not owned")
             session.commit()
-        except IntegrityError:
-            raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced")
+        except IntegrityError as e:
+            raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
