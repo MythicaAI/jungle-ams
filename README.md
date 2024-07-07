@@ -82,3 +82,12 @@ corepack enable pnpm
 asdf reshim nodejs
 pnpm install
 ```
+
+## Code Generation
+
+Schema types can be generated with the codegen project
+
+```bash
+python -m codegen.codegen
+```
+

@@ -1,0 +1,126 @@
+# $schema: meta-schema.json
+#
+name: Asset Schema
+description: Metadata to store relationships and descriptions of assets
+tables:
+  # The immutable asset reference, isomorphic with collections of assets
+  # That is there is always a collection of 1 or N, other assets can be
+  # added to an asset which is itself a collection. This relationship is not
+  # intended to be recursive in order to simplify code that deals with collections.
+  - name: Asset
+    table_name: assets
+    columns:
+      - name: id
+        type: UUID
+        primary_key: true
+        nullable: false
+        auto_create: true
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+      - name: deleted
+        type: TIMESTAMP
+      - name: org_id
+        type: UUID
+        relation: orgs.id
+      - name: owner
+        type: UUID
+        foreign_key: profiles.id
+
+  # Every time metadata of an asset changes it should generate a new revision
+  # if the network or asset is incompatible with a previous version the minor
+  # version should be bumped. Major versions should be bumped for large changes
+  # that are intended to cause a migration or reflect a maturity level (0->1)
+  - name: AssetVersion
+    table_name: asset_versions
+    columns:
+      - name: asset_id
+        type: UUID
+        primary_key: true
+        foreign_key: assets.id
+        nullable: false
+      - name: published
+        type: BOOLEAN
+      - name: major
+        type: INTEGER
+        primary_key: true
+        nullable: false
+      - name: minor
+        type: INTEGER
+        primary_key: true
+        nullable: false
+      - name: patch
+        type: INTEGER
+        primary_key: true
+        nullable: false
+      - name: commit_ref
+        type: TEXT
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: name
+        type: TEXT
+      - name: description
+        type: TEXT
+      - name: author
+        type: UUID
+        nullable: false
+        foreign_key: profiles.id
+      - name: package_id
+        description: FileContent reference for the packaged version of this revision
+        foreign_key: files.id
+        type: UUID
+      - name: contents
+        type: JSON
+
+  # Graph and topology representation
+  - name: Topology
+    table_name: topologies
+    description: Provides a grouping for asset graphs
+    columns:
+      - name: id
+        type: INTEGER
+        primary_key: true
+        auto_create: true
+      - name: owner
+        type: UUID
+        nullable: false
+      - name: org_id
+        type: UUID
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+      - name: name
+        type: TEXT
+      - name: description
+        type: TEXT
+      - name: edge_data_schema
+        type: JSON
+
+  # TODO: graph references should also be versioned
+  - name: AssetRef
+    table_name: asset_refs
+    description: Records relationships between assets
+    columns:
+      - name: topology_id
+        type: INTEGER
+        foreign_key: topologies.id
+        primary_key: true
+      - name: src
+        type: UUID
+        foreign_key: assets.id
+        primary_key: true
+      - name: dst
+        type: UUID
+        foreign_key: assets.id
+        primary_key: true
+      - name: edge_data
+        type: JSON
+
+
