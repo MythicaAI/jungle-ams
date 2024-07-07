@@ -91,9 +91,10 @@ def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> Reques
             raise HTTPException(HTTPStatus.BAD_REQUEST, f'extension {extension} not supported')
         storage.upload(ctx, bucket_name)
     else:
-        # for testing provide local file locator, these can't be located outside of the
-        # machine they live on, NOTE does not currently work
-        ctx.add_object_locator("test", cfg.bucket_name, ctx.local_filepath)
+        # for testing provide local file locator, these can't be located outside the
+        # machine they live on, NOTE files are not actually resolvable, this provides
+        # unit test support
+        ctx.add_object_locator('test', 'local', ctx.local_filepath)
 
     # Update database index
     if cfg.enable_db:
