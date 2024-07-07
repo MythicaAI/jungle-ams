@@ -1,8 +1,9 @@
 """
 Application configuration definitions
 """
-import tempfile
 import functools
+import tempfile
+
 from pydantic_settings import BaseSettings
 
 # See https://docs.pydantic.dev/latest/concepts/pydantic_settings/#installation
@@ -18,7 +19,6 @@ class AppConfig(BaseSettings):
     upload_folder_auto_clean: bool = True
     enable_storage: bool = True
     gcs_service_enable: bool = False
-    bucket_name: str = 'ingest'
     minio_tls_enable: bool = False
     minio_access_key: str = 'foo-access'
     minio_secret_key: str = 'bar-secret'

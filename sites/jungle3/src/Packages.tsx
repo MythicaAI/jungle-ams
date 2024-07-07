@@ -22,6 +22,7 @@ import {Link, useNavigate} from "react-router-dom";
 import {LucidePackage, LucidePlusCircle} from "lucide-react";
 import {useAssetVersionStore} from "./stores/assetVersionStore.ts";
 import {DownloadButton} from "./components/DownloadButton.tsx";
+import {Thumbnail} from "./components/Thumbnail.tsx";
 
 type VersionCache = { [key: string]: [AssetVersionResponse] }
 
@@ -117,6 +118,21 @@ export const Packages = () => {
             .catch(err => handleError(err));
     }, [authToken]);
 
+    const getThumbnail = (version: AssetVersionResponse): JSX.Element => {
+        if (!version || !version.contents || !("thumbnails" in version.contents)) {
+            return <></>;
+        }
+        const thumbnails = version.contents["thumbnails"];
+        if (!thumbnails || !thumbnails.length) {
+            return <></>;
+        }
+        const file_name = thumbnails[0].file_name;
+        const content_hash = thumbnails[0].content_hash;
+        const extension = file_name.split(".")[1]
+        const url = `http://localhost:8080/images/${content_hash}.${extension}`;
+        return <Thumbnail src={url}  alt={version.name}/>
+    }
+
     const renderLatestVersion = (assetId: string, versionList: AssetVersionResponse[]) => {
         const sortedVersions = sortVersions(versionList);
         const latestVersion = sortedVersions[0];
@@ -135,6 +151,9 @@ export const Packages = () => {
                     {latestVersion.package_id ?
                         <DownloadButton icon={<LucidePackage/>} file_id={latestVersion.package_id}/> : ""}
                 </Stack>
+            </ListItemDecorator>
+            <ListItemDecorator>
+                {getThumbnail(latestVersion)}
             </ListItemDecorator>
             <ListDivider orientation={"vertical"}/>
             <ListItemContent sx={{flex: 1}}>
@@ -203,10 +222,6 @@ export const Packages = () => {
                         Create New Package
                     </Button>
                 </ListItemDecorator>
-            </ListItem>
-            <ListItem key={"header"}>
-                <ListItemDecorator sx={{flex: 1}}>Package</ListItemDecorator>
-                <ListItemDecorator sx={{flex: 1}}>ID</ListItemDecorator>
             </ListItem>
             {Object.entries(versionCache).map(
                 ([assetId, versionList]) =>

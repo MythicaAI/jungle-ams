@@ -32,6 +32,15 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 
 EMPTY_UUID = UUID(int=0, version=4)
 
+USER_BUCKET_MAPPINGS = {
+    'images': {'png', 'jpg', 'jpeg', 'gif', 'webm'},
+    'ingest': {'hip', 'hda'}
+}
+
+PACKAGE_BUCKET_MAPPINGS = {
+    'packages': {'zip'}
+}
+
 
 class UploadResponse(BaseModel):
     """Response from uploading one or more files"""
@@ -39,7 +48,14 @@ class UploadResponse(BaseModel):
     files: list[FileUploadResponse]
 
 
-def upload_internal(storage, profile_id, upload_file) -> RequestContext:
+def get_target_bucket(mappings: dict[str, set], extension: str) -> str:
+    """Map an extension to a target bucket used for storage"""
+    for bucket_name, extension_set in mappings.items():
+        if extension in extension_set:
+            return bucket_name
+
+
+def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> RequestContext:
     """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
     ctx = RequestContext()
@@ -70,12 +86,15 @@ def upload_internal(storage, profile_id, upload_file) -> RequestContext:
 
     # Upload to bucket storage
     if cfg.enable_storage:
-        bucket_name = cfg.bucket_name
+        bucket_name = get_target_bucket(bucket_mappings, extension)
+        if bucket_name is None:
+            raise HTTPException(HTTPStatus.BAD_REQUEST, f'extension {extension} not supported')
         storage.upload(ctx, bucket_name)
     else:
-        # for testing provide local file locator, these can't be located outside of the
-        # machine they live on, NOTE does not currently work
-        ctx.add_object_locator("test", cfg.bucket_name, ctx.local_filepath)
+        # for testing provide local file locator, these can't be located outside the
+        # machine they live on, NOTE files are not actually resolvable, this provides
+        # unit test support
+        ctx.add_object_locator('test', 'local', ctx.local_filepath)
 
     # Update database index
     if cfg.enable_db:
@@ -105,7 +124,7 @@ async def store_files(
     response_files = []
     for file in files:
         # do the upload
-        ctx = upload_internal(storage, profile.id, file)
+        ctx = upload_internal(storage, USER_BUCKET_MAPPINGS, profile.id, file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
@@ -148,7 +167,7 @@ async def store_and_attach_package(
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
-        ctx = upload_internal(storage, avr.author, file)
+        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author, file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
