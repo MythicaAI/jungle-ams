@@ -12,7 +12,6 @@ export interface Asset {
     created: string;
     updated: string;
     deleted: string;
-    published: boolean;
     org_id: string;
     owner: string;
 }
@@ -20,12 +19,14 @@ export interface Asset {
 // Table name: asset_versions
 export interface AssetVersion {
     asset_id: string;
+    published: boolean;
     major: number;
     minor: number;
     patch: number;
     commit_ref: string;
     created: string;
     name: string;
+    description: string;
     author: string;
     package_id: string;
     contents: object;

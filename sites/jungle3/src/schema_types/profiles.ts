@@ -45,7 +45,6 @@ export interface Org {
 export interface ProfileSession {
     id: string;
     created: string;
-    updated: string;
     refreshed: string;
     profile_id: string;
     authenticated: boolean;
