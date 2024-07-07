@@ -9,4 +9,7 @@ mc admin policy attach local readwrite --user=${MINIO_ACCESS_KEY}
 # create a static bucket to hold images for the web front end, including
 # user uploaded thumbnails
 mc mb ${MINIO_ENDPOINT}/images
-mc anonymous set download ${MINIO_ENDPOINT}/images
+mc anonymous set download local/images
+
+# create the packages folder
+mc mb ${MINIO_ENDPOINT}/packages

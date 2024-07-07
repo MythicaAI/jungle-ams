@@ -1,16 +1,17 @@
 import logging
 from typing import Tuple
-
 from uuid import UUID
 
-from config import app_config
-from db.schema.media import FileContent
-from db.schema.events import Event
-from context import RequestContext
-from db.connection import get_session
 from sqlmodel import insert
 
+from config import app_config
+from context import RequestContext
+from db.connection import get_session
+from db.schema.events import Event
+from db.schema.media import FileContent
+
 log = logging.getLogger(__name__)
+
 
 def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
     """Update the database index for the upload"""
@@ -27,7 +28,8 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
              'locators': locators,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
-             'content_type': content_type}))
+             'content_type': content_type,
+             'uri': ''}))
         session.commit()
         file_id = file_content_result.inserted_primary_key[0]
 

@@ -5,7 +5,6 @@ from google.cloud import storage
 
 import storage.minio_uploader as minio_uploader
 from config import app_config
-
 from context import RequestContext
 from storage.storage_client import StorageClient
 
