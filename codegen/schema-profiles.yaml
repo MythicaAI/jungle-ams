@@ -1,0 +1,137 @@
+# $schema: meta-schema.json
+name: "Profile schema types"
+description: "Types to represent profiles online"
+tables:
+  - name: Profile
+    table_name: profiles
+    columns:
+      - name: id
+        type: UUID
+        primary_key: true
+        nullable: false
+        auto_create: true
+      - name: name
+        type: TEXT
+      - name: full_name
+        type: TEXT
+      - name: signature
+        type: TEXT
+      - name: created
+        type: TIMESTAMP
+        nullable: true
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        nullable: true
+        auto_update: true
+      - name: active
+        type: BOOLEAN
+      - name: profile_base_href
+        type: TEXT
+      - name: description
+        type: TEXT
+      - name: email
+        type: TEXT
+      - name: email_validate_state
+        type: INTEGER
+      - name: location
+        type: TEXT
+      - name: login_count
+        type: INTEGER
+
+  - name: OrgRef
+    table_name: org_refs
+    columns:
+      - name: org_id
+        type: UUID
+        foreign_key: orgs.id
+        primary_key: true
+      - name: profile_id
+        type: UUID
+        foreign_key: profiles.id
+        primary_key: true
+      - name: role
+        type: TEXT
+        primary_key: true
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: created_by
+        type: UUID
+        foreign_key: profiles.id
+
+  - name: Org
+    table_name: orgs
+    columns:
+      - name: id
+        type: UUID
+        primary_key: true
+        nullable: false
+        auto_create: true
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+      - name: name
+        type: TEXT
+      - name: description
+        type: TEXT
+
+  - name: ProfileSession
+    table_name: profile_sessions
+    columns:
+      - name: id
+        type: UUID
+        primary_key: true
+        nullable: false
+        auto_create: true
+      - name: created
+        description: Also the start time of the session
+        type: TIMESTAMP
+        auto_create: true
+      - name: refreshed
+        type: TIMESTAMP
+      - name: profile_id
+        type: UUID
+        foreign_key: profiles.id
+        nullable: false
+      - name: authenticated
+        type: BOOLEAN
+      - name: auth_token
+        type: TEXT
+      - name: refresh_token
+        type: TEXT
+      - name: location
+        type: TEXT
+
+  - name: ProfileFollower
+    table_name: profile_followers
+    columns:
+      - name: profile_id
+        type: UUID
+        primary_key: true
+        nullable: false
+      - name: follow_id
+        type: UUID
+        primary_key: true
+        nullable: false
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: deleted
+        type: TIMESTAMP
+
+  - name: ProfileKey
+    table_name: profile_keys
+    columns:
+      - name: key
+        type: TEXT
+        primary_key: true
+      - name: owner
+        type: UUID
+      - name: expires
+        type: TIMESTAMP
+      - name: payload
+        type: JSON

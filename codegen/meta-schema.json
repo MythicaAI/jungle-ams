@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mythica.ai/schemas/meta-schema.json",
+  "title": "Meta Database Schema Definition",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Internal type name to represent the table"
+    },
+    "description": {
+      "type": "string",
+      "description": "Schema description"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the table"
+          },
+           "table_name": {
+            "type": "string",
+            "description": "Name to use for the table storage"
+          },
+          "description": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the column"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "UUID",
+                    "INTEGER",
+                    "TEXT",
+                    "REAL",
+                    "BLOB",
+                    "BOOLEAN",
+                    "DATE",
+                    "TIMESTAMP",
+                    "JSON"
+                  ],
+                  "description": "SQL data type of the column"
+                },
+                "primary_key": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether the column is a primary key"
+                },
+                "nullable": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "Whether the column can be null, defaults to true to ease migrations"
+                },
+                "auto_create": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "True if the column should auto populate on creation"
+                },
+                "auto_update": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "True if the column should auto update, e.g. datetime"
+                },
+                "foreign_key": {
+                  "type": "string",
+                  "description": "table.id to use as a foreign key reference"
+                },
+                "relation": {
+                  "type": "string",
+                  "description": "table.id to use as a relation"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Comment for readers, documentation"
+                }
+              },
+              "required": ["name", "type"],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["name", "columns"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["tables"],
+  "additionalProperties": false
+}

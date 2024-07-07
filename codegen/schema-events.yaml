@@ -1,0 +1,35 @@
+name: Asset Schema
+description: Metadata to store relationships and descriptions of assets
+tables:
+  # The media pipeline can be queried per location to find work to do
+  - name: Event
+    table_name: events
+    description: Storage for events that are used to trigger downstream effects
+    columns:
+      - name: id
+        type: UUID
+        primary_key: true
+        auto_create: true
+      - name: event_type
+        type: TEXT
+        nullable: false
+      - name: queued
+        type: TIMESTAMP
+        auto_create: true
+      - name: acked
+        type: TIMESTAMP
+      - name: completed
+        type: TIMESTAMP
+      - name: job_data
+        type: JSON
+        nullable: false
+      - name: owner
+        description: Profile tracking this event
+        type: UUID
+        foreign_key: profiles.id
+      - name: created_in
+        description: Location that event originated
+        type: TEXT
+      - name: affinity
+        description: Affinity for event processing
+        type: TEXT
