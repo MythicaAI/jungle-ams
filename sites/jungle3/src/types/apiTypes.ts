@@ -1,11 +1,6 @@
 import {OrgRef, ProfileSession} from "../schema_types/profiles.ts";
 import {FileContent} from "../schema_types/media.ts";
 
-type ApiResponse<T> = {
-    message: string,
-    data: T,
-};
-
 export type UUID = string;
 export type ISOTime = string;
 
@@ -69,13 +64,6 @@ export interface AssetCreateResponse {
     owner: UUID
 }
 
-export interface AssetCreateVersionRequest {
-    author: UUID,
-    name: string,
-    commit_ref?: string,
-    contents: UUID[]
-}
-
 export interface AssetVersionContent {
     file_id: UUID,
     file_name: string,
@@ -116,10 +104,6 @@ export interface ResolvedOrgRef extends OrgRef {
 }
 
 export type UploadAssetList = Array<UploadAsset>;
-
-// current placeholder result from the /api/v1/catalog/* APIs
-// will be migrating to a catalog asset
-export type UploadAssetListResponse = ApiResponse<UploadAssetList>
 
 export interface FileUploadResponse {
     file_id: string,
