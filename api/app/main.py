@@ -1,5 +1,6 @@
 """Main entrypoint for FastAPI app creation"""
 
+import importlib
 import logging
 
 import uvicorn
@@ -9,19 +10,11 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 import db.connection as db_connection
 import log_config
-import routes.assets.assets
-import routes.download.download
-import routes.editor.editor
-import routes.files.files
-import routes.orgs.orgs
-import routes.topos.topos
-import routes.upload.upload
-import routes.validate.validate
 from config import app_config
 from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
-# default logging configuration
+#  logging configuration
 log_config.configure()
 
 log = logging.getLogger(__name__)
@@ -42,16 +35,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-api_prefix = "/v1"
-app.include_router(routes.upload.upload.router, prefix=api_prefix)
-app.include_router(routes.editor.editor.router, prefix=api_prefix)
-app.include_router(routes.profiles.profiles.router, prefix=api_prefix)
-app.include_router(routes.assets.assets.router, prefix=api_prefix)
-app.include_router(routes.files.files.router, prefix=api_prefix)
-app.include_router(routes.orgs.orgs.router, prefix=api_prefix)
-app.include_router(routes.topos.topos.router, prefix=api_prefix)
-app.include_router(routes.validate.validate.validate_email_router, prefix=api_prefix)
-app.include_router(routes.download.download.router, prefix=api_prefix)
+
+route_names = [
+    'upload',
+    'download',
+    'editor',
+    'profiles',
+    'files',
+    'assets',
+    'orgs',
+    'topos',
+    'validate']
+
+for name in route_names:
+    module = importlib.import_module(f'routes.{name}.{name}')
+    router = getattr(module, 'router')
+    app.include_router(router)
+    print(f'registered router {name} from path: {module.__file__}')
 
 register_adapters()
 

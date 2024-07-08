@@ -12,12 +12,12 @@ from db.schema.profiles import Profile, ProfileKey
 from routes.authorization import current_profile
 from routes.responses import ValidateEmailState, ValidateEmailResponse
 
-validate_email_router = APIRouter(prefix="/validate-email", tags=["profiles"])
+router = APIRouter(prefix="/validate-email", tags=["profiles"])
 
 log = logging.getLogger(__name__)
 
 
-@validate_email_router.get('/')
+@router.get('/')
 async def validate_email_begin(
         profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
     """Start validating an email address stored on the current profile"""
@@ -40,7 +40,7 @@ async def validate_email_begin(
                                      state=ValidateEmailState.link_sent)
 
 
-@validate_email_router.get('/{verification_code}')
+@router.get('/{verification_code}')
 async def validate_email_complete(
         verification_code: str,
         profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:

@@ -33,6 +33,7 @@ FROM nginx:1.25.5-alpine
 
 ENV API_ENDPOINT app:5555
 ENV DEX_ENDPOINT dex:5556
+ENV EXTERNAL_IP 127.0.0.1
 
 COPY conf/variables.template /etc/nginx/templates/10-variables.conf.template
 COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template

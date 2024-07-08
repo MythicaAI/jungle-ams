@@ -6,6 +6,8 @@ services:
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
+    depends_on:
+      - app
     ports:
       - "8080:80"
     volumes:
