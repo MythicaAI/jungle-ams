@@ -44,6 +44,13 @@ IMAGES = {
     'testing/storage/minio-config': {'name': 'minio-config'},
 }
 
+IMAGE_SETS = {
+    'all': set(IMAGES.keys()),
+    'web': {'api/nginx', 'api/app', 'api/publish-init', 'sites/jungle3'},
+    'storage': {'testing/storage/minio-config'},
+    'auto': {'api/packager'},
+}
+
 
 def get_commit_hash(ref='HEAD'):
     """Return a short commit hash for the current HEAD commit"""
@@ -184,8 +191,9 @@ def auto_stop(c):
 
 
 def image_path_action(c, image, action, **kwargs):
-    if image == 'all':
-        for image_path in IMAGES.keys():
+    """Execute some docker image action against an image path or set of image paths"""
+    if image in IMAGE_SETS:
+        for image_path in IMAGE_SETS[image]:
             action(c, image_path)
     else:
         if image not in IMAGES:
