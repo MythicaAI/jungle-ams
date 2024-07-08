@@ -101,7 +101,7 @@ def build_image(c, image_path):
             f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .',
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {
-        image_name}:{commit_hash}', pty=PTY_SUPPORTED)
+            image_name}:{commit_hash}', pty=PTY_SUPPORTED)
 
 
 def deploy_image(c, image_path, target):
@@ -117,9 +117,9 @@ def deploy_image(c, image_path, target):
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(f"docker tag {image_name}:{commit_hash} {
-        repo}/{image_name}:{commit_hash}", pty=PTY_SUPPORTED)
+            repo}/{image_name}:{commit_hash}", pty=PTY_SUPPORTED)
         c.run(f"docker tag {image_name}:{commit_hash} {
-        repo}/{image_name}:latest", pty=PTY_SUPPORTED)
+            repo}/{image_name}:latest", pty=PTY_SUPPORTED)
         c.run(f"docker push {repo}/{image_name} --all-tags", pty=PTY_SUPPORTED)
 
 
@@ -138,7 +138,7 @@ def run_image(c, image_path, background=False):
     else:
         args.append('--interactive --tty')
     c.run(f"docker run {'  '.join(args)} {image_name}:{
-    commit_hash}", pty=PTY_SUPPORTED)
+        commit_hash}", pty=PTY_SUPPORTED)
 
 
 @task
@@ -146,7 +146,7 @@ def docker_cleanup(c):
     c.run('docker container prune -f')
     c.run('docker image prune -f')
     c.run('docker builder prune')
-    c.run('docker system prune -au')
+    c.run('docker system prune -a')
 
 
 @task
