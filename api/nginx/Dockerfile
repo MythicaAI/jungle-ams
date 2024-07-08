@@ -31,12 +31,15 @@ FROM nginx:1.25.5-alpine
 #COPY --from=builder /tmp/bin/gcsfuse /usr/local/bin/gcsfuse
 #COPY --from=builder /tmp/sbin/mount.gcsfuse /usr/sbin/mount.gcsfuse
 
-ENV API_ENDPOINT localhost:5555
-ENV DEX_ENDPOINT localhost:5556
+ENV API_ENDPOINT app:5555
+ENV DEX_ENDPOINT dex:5556
 
 COPY conf/variables.template /etc/nginx/templates/10-variables.conf.template
 COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template
-COPY conf/nginx.conf /etc/nginx/
-COPY content /www/html
+COPY conf/nginx-local.conf /etc/nginx/
+COPY conf/nginx-gke.conf /etc/nginx/
 
 COPY fix_sites_privileges.sh /docker-entrypoint.d/100_fix_sites_privileges.sh
+
+# override the base image, provide a different config for deployment environments
+CMD ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/nginx-local.conf"]

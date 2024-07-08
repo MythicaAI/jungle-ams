@@ -14,7 +14,6 @@ import routes.download.download
 import routes.editor.editor
 import routes.files.files
 import routes.orgs.orgs
-import routes.profiles.profiles
 import routes.topos.topos
 import routes.upload.upload
 import routes.validate.validate
@@ -27,7 +26,12 @@ log_config.configure()
 
 log = logging.getLogger(__name__)
 
-app = FastAPI()
+app = FastAPI(
+    openapi_version='3.1.0',
+    servers=[
+        {'url': 'https://api.mythica.ai/', 'description': 'Production environment'},
+        {'url': 'http://localhost:8080', 'description': 'Local environment'}],
+    root_path='/v1')
 
 Instrumentator().instrument(app).expose(app)
 
@@ -38,7 +42,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-api_prefix = "/api/v1"
+api_prefix = "/v1"
 app.include_router(routes.upload.upload.router, prefix=api_prefix)
 app.include_router(routes.editor.editor.router, prefix=api_prefix)
 app.include_router(routes.profiles.profiles.router, prefix=api_prefix)

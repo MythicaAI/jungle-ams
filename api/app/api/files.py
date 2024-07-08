@@ -1,28 +1,27 @@
-import logging
-from http import HTTPStatus
-from uuid import UUID
 import json
-
-from minio import Minio
+import logging
 from functools import lru_cache
+from http import HTTPStatus
 from pathlib import Path
+from uuid import UUID
 
-from pydantic_settings import BaseSettings
 from google.cloud import storage
 from google.cloud.storage import Blob
-
+from minio import Minio
 from munch import munchify
+from pydantic_settings import BaseSettings
 
 log = logging.getLogger(__name__)
 
 
 class ApiSettings(BaseSettings):
-    endpoint: str = "http://localhost:5555/api/v1"
+    endpoint: str = "http://localhost:5555/v1"
     gcs_client_creds_path: str = "/Users/jrepp/tmp/hautomation-bucket-key.json"
     minio_access_key: str = 'foo-access'
     minio_secret_key: str = 'bar-secret'
     minio_tls_enable: bool = False
     minio_endpoint: str = 'localhost:9000'
+
 
 @lru_cache
 def api_settings() -> ApiSettings:
