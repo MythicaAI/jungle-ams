@@ -38,7 +38,7 @@ spec:
         - name: nginx
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
           command: [ "nginx" ]
-          args: [ "-g", "daemon off;", "-c", "/etc/nginx/nginx-local.conf" ]
+          args: [ "-g", "daemon off;", "-c", "/etc/nginx/nginx-gke.conf" ]
           imagePullPolicy: Always
           env:
             - name: API_ENDPOINT
