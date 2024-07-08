@@ -145,6 +145,8 @@ def run_image(c, image_path, background=False):
 def docker_cleanup(c):
     c.run('docker container prune -f')
     c.run('docker image prune -f')
+    c.run('docker builder prune')
+    c.run('docker system prune -au')
 
 
 @task
