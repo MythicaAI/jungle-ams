@@ -3,17 +3,16 @@ from http import HTTPStatus
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-
-from main import app
 from munch import munchify
 
+from main import app
 from tests.shared_test import assert_status_code
 
 client = TestClient(app)
-api_base = "/api/v1"
+api_base = "/v1"
 test_profile_name = "test-profile"
 test_profile_description = "test-description"
-test_profile_signature = 32*'X'
+test_profile_signature = 32 * 'X'
 test_profile_tags = {"tag-a": "a", "tag-b": "b", "tag-c": "c"}
 test_profile_href = "https://test.com/"
 test_file_name = "test-file.hda"

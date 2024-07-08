@@ -7,7 +7,7 @@ from main import app
 @pytest.fixture(scope='session')
 def api_base() -> str:
     """Return the current api base"""
-    return "/api/v1"
+    return "/v1"
 
 
 @pytest.fixture(scope='module')

@@ -7,9 +7,7 @@ from .shared_test import assert_status_code
 
 client = TestClient(app)
 
-api_base = "/api/v1"
 
-
-def test_asset_all():
+def test_asset_all(api_base):
     response = client.get(f"{api_base}/assets/all")
     assert_status_code(response, HTTPStatus.OK)

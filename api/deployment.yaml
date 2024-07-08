@@ -37,7 +37,16 @@ spec:
       containers:
         - name: nginx
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
+          command: [ "nginx" ]
+          args: [ "-g", "daemon off;", "-c", "/etc/nginx/nginx-local.conf" ]
           imagePullPolicy: Always
+          env:
+            - name: API_ENDPOINT
+              value: "localhost:5555"
+            - name: DEX_ENDPOINT
+              value: "dex:5556"
+            - name: EXTERNAL_IP
+              value: "35.190.85.177"
           resources:
             requests:
               memory: "128Mi"
@@ -51,7 +60,7 @@ spec:
             - name: ephemeral-web-content
               mountPath: /sites
         - name: app
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:latest 
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:latest
           imagePullPolicy: Always
           resources:
             requests:
@@ -78,7 +87,7 @@ spec:
       volumes:
         # Nodal ephemeral volume used by the CSI driver
         - name: ephemeral-web-content
-          emptyDir: {}
+          emptyDir: { }
         - name: ephemeral-upload-content
-          emptyDir: {}
+          emptyDir: { }
       restartPolicy: Always
