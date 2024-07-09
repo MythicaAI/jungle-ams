@@ -129,7 +129,8 @@ export const Packages = () => {
         const file_name = thumbnails[0].file_name;
         const content_hash = thumbnails[0].content_hash;
         const extension = file_name.split(".")[1]
-        const url = `http://localhost:8080/images/${content_hash}.${extension}`;
+        const baseUrl = import.meta.env.VITE_IMAGES_BASE_URL;
+        const url = `${baseUrl}/${content_hash}.${extension}`;
         return <Thumbnail src={url}  alt={version.name}/>
     }
 

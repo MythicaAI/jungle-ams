@@ -24,6 +24,7 @@ from routes.file_events import enrich_files
 from routes.files.files import delete_file_by_id
 from routes.responses import FileUploadResponse
 from routes.storage_client import storage_client
+from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
@@ -32,13 +33,14 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 
 EMPTY_UUID = UUID(int=0, version=4)
 
+DEFAULT_BUCKET_TYPE = BucketType.FILES
+
 USER_BUCKET_MAPPINGS = {
-    'images': {'png', 'jpg', 'jpeg', 'gif', 'webm'},
-    'ingest': {'hip', 'hda'}
+    BucketType.IMAGES: {'png', 'jpg', 'jpeg', 'gif', 'webm'},
 }
 
 PACKAGE_BUCKET_MAPPINGS = {
-    'packages': {'zip'}
+    BucketType.PACKAGES: {'zip'}
 }
 
 
@@ -48,11 +50,12 @@ class UploadResponse(BaseModel):
     files: list[FileUploadResponse]
 
 
-def get_target_bucket(mappings: dict[str, set], extension: str) -> str:
+def get_target_bucket(mappings: dict[BucketType, set], extension: str) -> BucketType:
     """Map an extension to a target bucket used for storage"""
-    for bucket_name, extension_set in mappings.items():
+    for bucket_type, extension_set in mappings.items():
         if extension in extension_set:
-            return bucket_name
+            return bucket_type
+    return DEFAULT_BUCKET_TYPE
 
 
 def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> RequestContext:
@@ -86,10 +89,10 @@ def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> Reques
 
     # Upload to bucket storage
     if cfg.enable_storage:
-        bucket_name = get_target_bucket(bucket_mappings, extension)
-        if bucket_name is None:
-            raise HTTPException(HTTPStatus.BAD_REQUEST, f'extension {extension} not supported')
-        storage.upload(ctx, bucket_name)
+        bucket_type = get_target_bucket(bucket_mappings, extension)
+        if bucket_type is None:
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f'extension {extension} not supported')
+        storage.upload(ctx, bucket_type)
     else:
         # for testing provide local file locator, these can't be located outside the
         # machine they live on, NOTE files are not actually resolvable, this provides
