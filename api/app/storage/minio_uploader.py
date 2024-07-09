@@ -54,7 +54,7 @@ class Client(StorageClient):
             ctx.add_object_locator("minio", ctx.bucket_name, ctx.object_name)
         except S3Error as exc:
             log.exception("upload failed to %s:%s", ctx.bucket_name, ctx.object_name)
-            raise from ex
+            raise exc
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
         _create_bucket(self.minio, bucket_name)
@@ -81,7 +81,7 @@ class Client(StorageClient):
             log.info("%s uploaded to bucket %s", object_name, bucket_name)
         except S3Error as exc:
             log.exception("upload failed to %s:%s", bucket_name, object_name)
-            raise from exc
+            raise exc
 
         # Finalize hash and location
         ctx.content_hash = hash_sha1.hexdigest()
