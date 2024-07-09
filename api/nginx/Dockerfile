@@ -37,10 +37,11 @@ ENV EXTERNAL_IP 127.0.0.1
 
 COPY conf/variables.template /etc/nginx/templates/10-variables.conf.template
 COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template
-COPY conf/nginx-local.conf /etc/nginx/
-COPY conf/nginx-gke.conf /etc/nginx/
+COPY conf/*.conf /etc/nginx/
+COPY ./docker-entrypoint.sh /
 
 COPY fix_sites_privileges.sh /docker-entrypoint.d/100_fix_sites_privileges.sh
 
 # override the base image, provide a different config for deployment environments
-CMD ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/nginx-local.conf"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-c", "/etc/nginx/nginx-local.conf"]

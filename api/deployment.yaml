@@ -37,16 +37,15 @@ spec:
       containers:
         - name: nginx
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
-          command: [ "nginx" ]
-          args: [ "-g", "daemon off;", "-c", "/etc/nginx/nginx-gke.conf" ]
+          args: [ "nginx-debug", "-c", "/etc/nginx/nginx-gke.conf" ]
           imagePullPolicy: Always
           env:
             - name: API_ENDPOINT
-              value: "localhost:5555"
+              value: localhost:5555
             - name: DEX_ENDPOINT
-              value: "dex:5556"
+              value: dex:5556
             - name: EXTERNAL_IP
-              value: "35.190.85.177"
+              value: 35.190.85.177
           resources:
             requests:
               memory: "128Mi"
@@ -72,11 +71,11 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_URL
-            - name: GCP_SERVICE_ENABLE
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
+            - name: GCS_SERVICE_ENABLE
               value: "true"
-            - name: APP_BUCKET_NAME
-              value: "hda-ingest"
-            - name: GUNICORN_WORKER_COUNT
+            - name: WORKER_COUNT
               value: "3"
           ports:
             - containerPort: 5000

@@ -23,4 +23,4 @@ RUN pnpm run build
 EXPOSE 5555
 
 # Command to run the application
-CMD ["pnpm", "run", "build"]
+CMD ["pnpm", "run", "build-production"]

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #
-set -eof pipefail
 set -x
 
 SITE_NAME=${1:-jungle}
@@ -22,6 +21,8 @@ CONTAINER_NAME="mythica-$SITE_NAME-$COMMIT_HASH"
 # If site has a docker file build it
 #
 if [[ -f $SITE_NAME/Dockerfile ]]; then
+  docker rm $CONTAINER_NAME
+
   pushd $SITE_NAME
   docker build -t $IMAGE_TAG .
   popd
