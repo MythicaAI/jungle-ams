@@ -55,7 +55,7 @@ class Client(StorageClient):
             app_config().mythica_location + '.' + ctx.bucket_name,
             object_name)
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_name: str):
+    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
         """Streaming not currently implemented for GCS"""
         raise NotImplementedError
 
