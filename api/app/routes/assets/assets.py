@@ -388,7 +388,7 @@ async def create_asset_version(asset_id: UUID,
 
             return read_back
         except sqlalchemy.exc.IntegrityError as exc:
-            log.exception("asset database operation failed", exc_info=exc)
+            log.exception("asset database operation failed")
             raise HTTPException(HTTPStatus.CONFLICT,
                                 detail=f'asset: {asset_id} version {version_id} already exists') from exc
 
