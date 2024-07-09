@@ -196,7 +196,7 @@ def image_path_action(c, image, action, **kwargs):
     """Execute some docker image action against an image path or set of image paths"""
     if image in IMAGE_SETS:
         for image_path in IMAGE_SETS[image]:
-            action(c, image_path)
+            action(c, image_path, **kwargs)
     else:
         if image not in IMAGES:
             c.help(f'{image} not in {IMAGES.keys()}')
