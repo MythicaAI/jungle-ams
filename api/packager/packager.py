@@ -65,10 +65,10 @@ def get_versions(endpoint: str, asset_id: UUID, version: tuple[int, ...]) -> lis
     if len(version) != 3:
         raise ValueError("Invalid version format, must be a 3 valued tuple")
     if version == (0, 0, 0):
-        r = requests.get(f"{endpoint}/api/v1/assets/{asset_id}")
+        r = requests.get(f"{endpoint}/v1/assets/{asset_id}")
     else:
         version_str = ".".join(map(str, version))
-        r = requests.get(f"{endpoint}/api/v1/assets/{asset_id}/versions/{version_str}")
+        r = requests.get(f"{endpoint}/v1/assets/{asset_id}/versions/{version_str}")
     if r.status_code != 200:
         raise ConnectionError(r.text)
     o = r.json()
@@ -88,7 +88,7 @@ def get_file_contents(v: AssetVersionResult) -> list[AssetVersionContent]:
 
 def resolve_contents(endpoint, content: AssetVersionContent) -> DownloadInfoResponse:
     """"Resolve content by ID to a resolved download URL"""
-    r = requests.get(f"{endpoint}/api/v1/download/info/{content.file_id}")
+    r = requests.get(f"{endpoint}/v1/download/info/{content.file_id}")
     if r.status_code != 200:
         raise ConnectionError(r.text)
     dl_info = DownloadInfoResponse(**r.json())
@@ -126,7 +126,7 @@ async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: UUID
 
 async def upload_package(endpoint: str, asset_id: UUID, version_str: str, zip_filename: Path):
     """Upload a package update to an asset from a specific zip file"""
-    url = f"{endpoint}/api/v1/upload/package/{asset_id}/{version_str}"
+    url = f"{endpoint}/v1/upload/package/{asset_id}/{version_str}"
     with open(zip_filename, 'rb') as file:
         response = requests.post(url, files={
             'files': (os.path.basename(zip_filename), file, 'application/zip')})
