@@ -175,7 +175,8 @@ async def exec_job(endpoint, job_data):
 async def worker_entrypoint(endpoint: str):
     """Async entrypoint to test worker dequeue, looks for SQL_URL
         environment variable to form an initial connection"""
-    sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
+    sql_url = os.environ.get('SQL_URL',
+                             'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline').strip()
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
     allowed_job_exceptions = (
         requests.exceptions.ConnectionError,
