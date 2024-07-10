@@ -31,6 +31,12 @@ parser.add_argument(
     default="0c016413-e1e7-480e-8310-4ebce2fe584e",
     required=False
 )
+parser.add_argument(
+    "-o", "--orgId",
+    help="API orgId",
+    default="52b8a359-a510-4c09-a057-899d299b2c23",
+    required=False
+)
 args = parser.parse_args()
 
 # Create a session
@@ -82,7 +88,8 @@ for package in packages:
         'contents': {"files": []},
         'name': package['name'],
         'description': package['description'],
-        'author': args.profileId
+        'author': args.profileId,
+        'org_id': args.orgId
     }
     response = requests.post(url, headers=headers, json=asset_ver_json)
     if response.status_code != 200:
