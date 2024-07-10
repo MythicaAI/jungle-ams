@@ -7,8 +7,6 @@ import stat
 
 from munch import munchify
 
-dummy_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
-
 packages = [
     {
         'asset_id': "b9febdba-f3e7-4668-8e96-802039d33495",
@@ -65,7 +63,6 @@ for package in packages:
     url = f"{args.endpoint}/v1/assets/{package['asset_id']}/versions/{package['version']}"
     response = requests.get(url)
     if response.status_code == 200:
-        print(response.content)
         print(f"Skipping package {package['name']} already uploaded.")
         continue
     elif response.status_code != 404:
@@ -73,10 +70,15 @@ for package in packages:
         print(f"Request Error: {response.status_code} {response.content}")
         continue
 
+    # Clone the repo
+    print(f"Cloning repo: {package['repo']}")
+    repodir = os.path.join(tempdir, package['name'])
+    repo = git.Repo.clone_from(package['repo'], repodir)
+
     # Create new asset version
     asset_ver_json = {
         'asset_id': package['asset_id'],
-        'commit_ref': dummy_commit_ref,
+        'commit_ref': f"{package['repo']}/{repo.heads.main.commit.hexsha}",
         'contents': {"files": []},
         'name': package['name'],
         'description': package['description'],
@@ -88,19 +90,14 @@ for package in packages:
         print(f"Request Error: {response.status_code} {response.content}")
         continue
 
-    # Clone the repo
-    print(f"Cloning repo: {package['repo']}")
-    repodir = os.path.join(tempdir, package['name'])
-    git.Repo.clone_from(package['repo'], repodir)
-    
     # Upload all files in the target directory
     for root, dirs, files in os.walk(os.path.join(repodir, package['directory'])):
         for file in files:
-            filepath = os.path.join(root, file)
+            filepath = os.path.normpath(os.path.join(root, file))
             print(f"Uploading file: {filepath}")
 
             with open(filepath, 'rb') as f:
-                url = f"{args.endpoint}/v1/upload/store",
+                url = f"{args.endpoint}/v1/upload/package/{package['asset_id']}/{package['version']}"
                 files = {
                     "files": f
                 }
