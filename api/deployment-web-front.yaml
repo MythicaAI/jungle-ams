@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api
+  name: web-front
   namespace: api
 spec:
   replicas: 3
@@ -12,11 +12,14 @@ spec:
       maxSurge: 5
   selector:
     matchLabels:
-      app: api-v1
+      app: web-front
   template:
     metadata:
       labels:
-        app: api-v1
+        app: web-front
+        tier: web
+        version: "1.0"
+        release: production
     spec:
       nodeSelector:
         cloud.google.com/compute-class: "Scale-Out"
@@ -41,7 +44,7 @@ spec:
           imagePullPolicy: Always
           env:
             - name: API_ENDPOINT
-              value: localhost:5555
+              value: api.app:5555
             - name: DEX_ENDPOINT
               value: dex:5556
             - name: EXTERNAL_IP
@@ -58,35 +61,8 @@ spec:
           volumeMounts:
             - name: ephemeral-web-content
               mountPath: /sites
-        - name: app
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:latest
-          imagePullPolicy: Always
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "500m"
-          env:
-            - name: SQL_URL
-              valueFrom:
-                secretKeyRef:
-                  name: secrets
-                  key: SQL_URL
-            - name: MYTHICA_LOCATION
-              value: "gke-us-central1"
-            - name: GCS_SERVICE_ENABLE
-              value: "true"
-            - name: WORKER_COUNT
-              value: "3"
-          ports:
-            - containerPort: 5000
-          volumeMounts:
-            - name: ephemeral-upload-content
-              mountPath: /uploads
-              readOnly: false
       volumes:
         # Nodal ephemeral volume used by the CSI driver
         - name: ephemeral-web-content
-          emptyDir: { }
-        - name: ephemeral-upload-content
           emptyDir: { }
       restartPolicy: Always

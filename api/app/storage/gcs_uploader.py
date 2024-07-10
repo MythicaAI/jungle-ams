@@ -1,4 +1,3 @@
-import os
 from io import BytesIO
 
 from google.cloud import storage
@@ -13,7 +12,7 @@ from storage.storage_client import StorageClient
 
 GCS_BUCKET_NAMES = {
     BucketType.FILES: 'hda-ingest',
-    BucketType.IMAGES: 'hda-ingest',
+    BucketType.IMAGES: 'mythica-public-images',
     BucketType.PACKAGES: 'hda-ingest',
 }
 
@@ -40,13 +39,7 @@ class Client(StorageClient):
         """Upload the object in the request context to the bucket"""
         ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
         bucket = self.gcs.bucket(ctx.bucket_name)
-        ch = ctx.content_hash
-        object_name = os.path.join(
-            ctx.extension,
-            ch[0:2],
-            ch[2:4],
-            ch[4:6],
-            ctx.content_hash + '.' + ctx.extension)
+        object_name = ctx.content_hash + '.' + ctx.extension
 
         blob = bucket.blob(object_name)
         blob.upload_from_filename(ctx.local_filepath)

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcs-proxy
+  namespace: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 5
+  selector:
+    matchLabels:
+      app: gcs-proxy
+  template:
+    metadata:
+      labels:
+        app: gcs-proxy
+        tier: web
+        version: "1.0"
+        release: production
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: api
+      containers:
+        - name: gcs-proxy
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-gcs-proxy:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+              name: http-proxy
+      restartPolicy: Always

@@ -39,6 +39,7 @@ IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
     'api/publish-init': {'name': 'mythica-publish-init'},
+    'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
     'api/packager': {'name': 'mythica-packager', 'requires': 'api/app'},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
@@ -46,9 +47,16 @@ IMAGES = {
 
 IMAGE_SETS = {
     'all': set(IMAGES.keys()),
-    'web': {'api/nginx', 'api/app', 'api/publish-init', 'sites/jungle3'},
-    'storage': {'testing/storage/minio-config'},
-    'auto': {'api/packager'},
+    'web': {
+        'api/nginx',
+        'api/app',
+        'api/publish-init',
+        'api/gcs-proxy',
+        'sites/jungle3'},
+    'storage': {
+        'testing/storage/minio-config'},
+    'auto': {
+        'api/packager'},
 }
 
 
