@@ -39,6 +39,8 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_ASYNC_URL
+            - name: PACKAGER_ENDPOINT
+              value: "http://app.api:80"
             - name: MYTHICA_LOCATION
               value: "gke-us-central1"
           volumeMounts:

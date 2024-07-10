@@ -1,3 +1,4 @@
+from datetime import timedelta
 from io import BytesIO
 
 from google.cloud import storage
@@ -51,6 +52,12 @@ class Client(StorageClient):
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
         """Streaming not currently implemented for GCS"""
         raise NotImplementedError
+
+    def download_link(self, bucket_name: str, object_name: str):
+        """Get a pre-signed URL to down the object"""
+        bucket = self.gcs.bucket(bucket_name)
+        blob = bucket.blob(object_name)
+        return blob.generate_signed_url(version="v4", expiration=timedelta(days=7), method="GET")
 
 
 def create_client():

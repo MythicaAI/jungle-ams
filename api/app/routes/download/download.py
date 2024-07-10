@@ -1,3 +1,4 @@
+"""Routes and helpers providing /download API"""
 import logging
 from http import HTTPStatus
 from uuid import UUID
@@ -31,12 +32,19 @@ def translate_minio(storage, info) -> str:
     return storage.download_link(bucket, object_name)
 
 
+def translate_gcs(storage, info) -> str:
+    """GCS download link creator"""
+    bucket, object_name = info.split(":")
+    return storage.download_link(bucket, object_name)
+
+
 def translate_test(_storage, _info) -> str:
     """minio download link creator"""
     return "http://test.notresolved/test.test"
 
 
 storage_types = {
+    'gcs': translate_gcs,
     'minio': translate_minio,
     'test': translate_test,
 }
@@ -49,7 +57,8 @@ def translate_download_url(storage, locators: list[str]) -> str:
         locator_type, info = locator.split("://")
         translate_func = storage_types.get(locator_type)
         if translate_func is None:
-            log.error("unsupported storage type %s", locator_type)
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "unsupported storage type %s", locator_type)
+
         url = translate_func(storage, info)
         if url is not None:
             return url
