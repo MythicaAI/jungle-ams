@@ -187,8 +187,8 @@ async def worker_entrypoint(endpoint: str):
             try:
                 await exec_job(endpoint, job_data)
                 await session.complete(event_id)
-            except allowed_job_exceptions as ex:
-                log.exception("job failed", ex)
+            except allowed_job_exceptions:
+                log.exception("job failed")
 
 
 def setup_logging():

@@ -14,12 +14,14 @@ GCS_POINTER_PATH=pointers_sites/latest/
 # If the site is based on vite, build it first
 #
 if [[ -f ${SITE_NAME}/vite.config.ts ]]; then
-  pushd ${SITE_NAME}
-  vite build -m production
-  popd
   LOCAL_PATH="${SITE_NAME}/dist"
 else
   LOCAL_PATH="${SITE_NAME}"
+fi
+
+if [[ ! -d ${LOCAL_PATH} ]]; then
+  echo "site must exist, react sites must be built, see build.sh"
+  exit 1
 fi
 
 
