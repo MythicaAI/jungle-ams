@@ -10,9 +10,9 @@ from munch import munchify
 packages = [
     {
         'asset_id': "b9febdba-f3e7-4668-8e96-802039d33495",
-        'version': "1.0.0",
+        'version': "4.0.0",
         'repo': "git@github.com:jamesrobinsonvfx/inspectnodedata.git",
-        'directory': "houdini18.5/hda",    
+        'directory': "houdini18.5/hda",
         'name': "Inspect Node Data",
         'description': "SOP-level HDA for storing, retrieving, and inspecting parameters from nodes."
     }
@@ -68,12 +68,15 @@ for package in packages:
     # Check if the asset version already exists
     url = f"{args.endpoint}/v1/assets/{package['asset_id']}/versions/{package['version']}"
     response = requests.get(url)
-    if response.status_code == 200:
-        print(f"Skipping package {package['name']} already uploaded.")
-        continue
-    elif response.status_code != 404:
-        print(f"Failed to check asset version for {package['name']}")
+    if response.status_code != 200:
+        print(f"Failed to get asset version for {package['name']}")
         print(f"Request Error: {response.status_code} {response.content}")
+        continue
+
+    o = munchify(response.json())
+    version_str = f"{o.version[0]}.{o.version[1]}.{o.version[2]}"
+    if version_str == package['version']:
+        print(f"Skipping package {package['name']} already uploaded.")
         continue
 
     # Clone the repo
