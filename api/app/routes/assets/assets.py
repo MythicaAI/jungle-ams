@@ -205,6 +205,8 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
 def asset_contents_json_to_model(contents: dict[str, list[str]]) -> dict[str, list[AssetVersionContent]]:
     """Convert JSON assert version contents to model objects"""
     converted = {}
+    if type(contents) is not dict:
+        return converted
     for category, content_list in contents.items():
         converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
     return converted

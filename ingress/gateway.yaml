@@ -4,7 +4,7 @@ metadata:
   name: external-gateway
   namespace: ingress
 spec:
-  gatewayClassName: gke-l7-gxlb
+  gatewayClassName: gke-l7-global-external-managed
   addresses:
     - type: NamedAddress
       value: mythica-gke-global-gateway-address
