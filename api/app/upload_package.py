@@ -8,27 +8,19 @@ import stat
 from munch import munchify
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
-'''
+
 packages = [
     {
-        'asset_id': "b9febdba-f3e7-4668-8e96-802039d33495",
-        'version': "8.0.0",
-        'repo': "git@github.com:jamesrobinsonvfx/inspectnodedata.git",
-        'directory': "houdini18.5/hda",
-        'name': "Inspect Node Data",
-        'description': "SOP-level HDA for storing, retrieving, and inspecting parameters from nodes."
-    },
-    {
-        'asset_id': "5a33dff9-7d97-4ed8-ade7-ca938b09fc8e",
-        'version': "2.0.0",
-        'repo': "git@github.com:probiner/DASH.git",
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:kdbra/kdbra-houdini-tools.git",
         'directory': "otls",
-        'name': "Dash",
-        'description': "Granular utilities for SideFX Houdini."
+        'name': "KDBRA Tools",
+        'description': "Kdbra tools are intended to speed up and facilitate VFX artist's routines."
     }
 ]
-'''
 
+'''
 packages = [
     {
         'asset_id': "",
@@ -152,32 +144,6 @@ packages = [
     }
 ]
 '''
-    {
-        'asset_id': "",
-        'version': "1.0.0",
-        'repo': "git@github.com:takavfx/Bento.git",
-        'directory': "",
-        'name': "Bento",
-        'description': ""
-    },
-    {
-        'asset_id': "",
-        'version': "1.0.0",
-        'repo': "git@github.com:Esri/palladio.git",
-        'directory': "",
-        'name': "",
-        'description': ""
-    },
-    {
-        'asset_id': "",
-        'version': "1.0.0",
-        'repo': "git@github.com:vvzen/Houdini-Geospatial-Tools.git",
-        'directory': "",
-        'name': "",
-        'description': ""
-    },
-'''
-
 
 
 parser = argparse.ArgumentParser(description="Upload Package")
@@ -190,13 +156,13 @@ parser.add_argument(
 parser.add_argument(
     "-p", "--profileId",
     help="API profileId",
-    default="7a51a262-1b55-4815-93ca-b6cdbfc47873",
+    default="3efde9d6-a032-4ddf-9121-a959382363f3",
     required=False
 )
 parser.add_argument(
     "-o", "--orgId",
     help="API orgId",
-    default="16ce0694-d732-4071-a1a0-dd2ef3ca0255",
+    default=None,
     required=False
 )
 args = parser.parse_args()
@@ -225,6 +191,48 @@ os.makedirs(tempdir, exist_ok=True)
 for package in packages:
     print(f"=====================================")
     print(f"Processing package: {package['name']}")
+
+    assetId = package['asset_id']
+
+    # Find or create asset
+    def find_asset_id(asset_name):
+        response = requests.get(f"{args.endpoint}/v1/assets/all")
+        if response.status_code != 200:
+            print(f"Failed to get asset list")
+            print(f"Request Error: {response.status_code} {response.content}")
+            return ""
+        
+        o = munchify(response.json())
+        for asset in o:
+            if asset.name == asset_name:
+                return asset.asset_id
+            
+        return ""
+
+    def create_asset(asset_name):
+        asset_json = {
+            "org_id": args.orgId
+        }
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+        response = requests.post(f"{args.endpoint}/v1/assets", headers=headers, json=asset_json)
+        if response.status_code != 201:
+            print(f"Failed to create asset for {asset_name}")
+            print(f"Request Error: {response.status_code} {response.content}")
+            return ""
+
+        o = munchify(response.json())
+        print(f"Created assetId {o.id} for asset {asset_name}")
+        return o.id
+
+    if assetId == "":
+        assetId = find_asset_id(package['name'])
+    if assetId == "":
+        assetId = create_asset(package['name'])
+    if assetId == "":
+        print(f"Failed to create asset for {package['name']}")
+        continue
 
     # Check if the asset version already exists
     asset_url = f"{args.endpoint}/v1/assets/{package['asset_id']}/versions/{package['version']}"
