@@ -6,6 +6,7 @@ import shutil
 import stat
 
 from munch import munchify
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 packages = [
     {
@@ -47,9 +48,7 @@ if response.status_code != 200:
     raise SystemExit
 
 o = munchify(response.json())
-headers = {
-    "Authorization": f"Bearer {o.token}"
-}
+token = o.token
 
 # Create a temp directory
 def remove_readonly(func, path, excinfo):
@@ -94,6 +93,9 @@ for package in packages:
         'author': args.profileId,
         'org_id': args.orgId
     }
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }   
     response = requests.post(url, headers=headers, json=asset_ver_json)
     if response.status_code != 200:
         print(f"Failed to create asset version for package: {package['name']}")
@@ -107,11 +109,15 @@ for package in packages:
             print(f"Uploading file: {filepath}")
 
             with open(filepath, 'rb') as f:
-                url = f"{args.endpoint}/v1/upload/package/{package['asset_id']}/{package['version']}"
-                files = {
-                    "files": f
+                url = f"{args.endpoint}/v1/upload/store"
+                m = MultipartEncoder(
+                    fields={'files': ('jamesr_inspectnodedata.hda', f, 'application/octet-stream')}
+                )
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": m.content_type
                 }
-                response = requests.post(url, headers=headers, files=files)
+                response = requests.post(url, headers=headers, data=m)
                 if response.status_code != 200:
                     print(f"Failed to upload file: {filepath}")
                     print(f"Request Error: {response.status_code} {response.content}")
