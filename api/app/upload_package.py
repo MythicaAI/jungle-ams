@@ -235,7 +235,7 @@ for package in packages:
         continue
 
     # Check if the asset version already exists
-    asset_url = f"{args.endpoint}/v1/assets/{package['asset_id']}/versions/{package['version']}"
+    asset_url = f"{args.endpoint}/v1/assets/{assetId}/versions/{package['version']}"
     response = requests.get(asset_url)
     if response.status_code != 200:
         print(f"Failed to get asset version for {package['name']}")
@@ -285,7 +285,7 @@ for package in packages:
     
     # Create new asset version
     asset_ver_json = {
-        'asset_id': package['asset_id'],
+        'asset_id': assetId,
         'commit_ref': f"{package['repo']}/{repo.head.commit.hexsha}",
         'contents': {"files": asset_contents},
         'name': package['name'],
