@@ -11,11 +11,19 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder
 packages = [
     {
         'asset_id': "b9febdba-f3e7-4668-8e96-802039d33495",
-        'version': "7.0.0",
+        'version': "8.0.0",
         'repo': "git@github.com:jamesrobinsonvfx/inspectnodedata.git",
         'directory': "houdini18.5/hda",
         'name': "Inspect Node Data",
         'description': "SOP-level HDA for storing, retrieving, and inspecting parameters from nodes."
+    },
+    {
+        'asset_id': "5a33dff9-7d97-4ed8-ade7-ca938b09fc8e",
+        'version': "2.0.0",
+        'repo': "git@github.com:probiner/DASH.git",
+        'directory': "otls",
+        'name': "Dash",
+        'description': "Granular utilities for SideFX Houdini."
     }
 ]
 
@@ -62,6 +70,7 @@ os.makedirs(tempdir, exist_ok=True)
 
 # Upload packages
 for package in packages:
+    print(f"=====================================")
     print(f"Processing package: {package['name']}")
 
     # Check if the asset version already exists
@@ -131,3 +140,5 @@ for package in packages:
         print(f"Failed to create asset version for package: {package['name']}")
         print(f"Request Error: {response.status_code} {response.content}")
         continue
+
+    print(f"Succesfully uploaded package: {package['name']}")
