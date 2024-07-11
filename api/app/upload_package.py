@@ -8,6 +8,7 @@ import stat
 from munch import munchify
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
+'''
 packages = [
     {
         'asset_id': "b9febdba-f3e7-4668-8e96-802039d33495",
@@ -26,6 +27,158 @@ packages = [
         'description': "Granular utilities for SideFX Houdini."
     }
 ]
+'''
+
+packages = [
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:kdbra/kdbra-houdini-tools.git",
+        'directory': "otls",
+        'name': "KDBRA Tools",
+        'description': "Kdbra tools are intended to speed up and facilitate VFX artist's routines."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:TrevisanGMW/gt-houdini-assets.git",
+        'directory': "assets",
+        'name': "GT Houdini Assets",
+        'description': "These assets were created with the aim of automating, simplifying or to be used as a learning tool."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:CorvaeOboro/zenv.git",
+        'directory': "hda",
+        'name': "ZENV",
+        'description': "Houdini hda tools focused on procedural modeling environments."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:mifth/mifthtools.git",
+        'directory': "houdini/otls",
+        'name': "MiraTools",
+        'description': "Modern modeling and retopology tools."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:NiklasRosenstein/houdini-library.git",
+        'directory': "otls",
+        'name': "Niklas' Houdini Library",
+        'description': "A collection of digital assets, shelf tools and code snippets."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:LaidlawFX/LaidlawFX.git",
+        'directory': "otls",
+        'name': "LaidlawFX",
+        'description': "A repository of tools developed in production."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:eglaubauf/egLib.git",
+        'directory': "otls",
+        'name': "egLib",
+        'description': "A collection of scripts for SideFx Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:igor-elovikov/hipie.git",
+        'directory': "otls",
+        'name': "Houdini Tools by Igor Elovikov",
+        'description': ""
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:thi-ng/houdini.git",
+        'directory': "hda",
+        'name': "thi.ng Houdini Tools",
+        'description': "Houdini HDAs & sketches (VEX, OpenCL, Python)"
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:ivantitov-zd/Hammer.git",
+        'directory': "otls",
+        'name': "Hammer Tools",
+        'description': "Hammer Tools"
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:sashaouellet/SDMTools.git",
+        'directory': "houdini/otls",
+        'name': "SDMTools",
+        'description': "A collection of shelf tools, HDAs, and menu scripts in its Houdini form."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:captainhammy/Houdini-Toolbox.git",
+        'directory': "houdini/otls",
+        'name': "Houdini Toolbox",
+        'description': "Collection of Houdini tools."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:qLab/qLib.git",
+        'directory': "otls",
+        'name': "qLib",
+        'description': "A procedural asset library for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:joshuazt/JZTREES.git",
+        'directory': "otls",
+        'name': "JZTREES",
+        'description': "Set of tools designed to ease the workflow for generating and applying FX to trees and vegetation."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:demiaster/treegen.git",
+        'directory': "assets",
+        'name': "Treegen",
+        'description': "Vegetation Generation Tool for Houdini."
+    }
+]
+'''
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:takavfx/Bento.git",
+        'directory': "",
+        'name': "Bento",
+        'description': ""
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Esri/palladio.git",
+        'directory': "",
+        'name': "",
+        'description': ""
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:vvzen/Houdini-Geospatial-Tools.git",
+        'directory': "",
+        'name': "",
+        'description': ""
+    },
+'''
+
+
 
 parser = argparse.ArgumentParser(description="Upload Package")
 parser.add_argument(
@@ -37,13 +190,13 @@ parser.add_argument(
 parser.add_argument(
     "-p", "--profileId",
     help="API profileId",
-    default="0c016413-e1e7-480e-8310-4ebce2fe584e",
+    default="7a51a262-1b55-4815-93ca-b6cdbfc47873",
     required=False
 )
 parser.add_argument(
     "-o", "--orgId",
     help="API orgId",
-    default="52b8a359-a510-4c09-a057-899d299b2c23",
+    default="16ce0694-d732-4071-a1a0-dd2ef3ca0255",
     required=False
 )
 args = parser.parse_args()
@@ -125,7 +278,7 @@ for package in packages:
     # Create new asset version
     asset_ver_json = {
         'asset_id': package['asset_id'],
-        'commit_ref': f"{package['repo']}/{repo.heads.main.commit.hexsha}",
+        'commit_ref': f"{package['repo']}/{repo.head.commit.hexsha}",
         'contents': {"files": asset_contents},
         'name': package['name'],
         'description': package['description'],
