@@ -37,18 +37,17 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
                                   signature=test_profile_signature,
                                   description=test_profile_description,
                                   profile_href=test_profile_href)
-    profile_id, token = test_profile.profile.id, test_profile.auth_token
+    profile_id = test_profile.profile.profile_id
     assert profile_id is not None
 
-    headers = {
-        'Authorization': f'Bearer {token}',
-    }
+    # get the bearer token authorization header
+    headers = test_profile.authorization_header()
 
     # validate email
     o = munchify(client.get(
         f"{api_base}/validate-email",
         headers=headers).json())
-    assert UUID(o.owner) == profile_id
+    assert UUID(o.owner_id) == profile_id
     assert len(o.link) > 0
     assert len(o.code) > 0
     assert o.state == 'link_sent'
@@ -57,7 +56,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     o = munchify(client.get(
         f"{api_base}/validate-email/{validate_code}",
         headers=headers).json())
-    assert UUID(o.owner) == profile_id
+    assert UUID(o.owner_id) == profile_id
     assert o.state == 'validated'
 
     # update the profile data
@@ -65,12 +64,12 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         f"{api_base}/profiles/{profile_id}",
         json={"name": test_profile_name + "-updated"},
         headers=headers).json())
-    assert UUID(o.id) == profile_id
+    assert UUID(o.profile_id) == profile_id
     assert o.name == test_profile_name + "-updated"
 
     # validate updated profile existence again
     o = munchify(client.get(f"{api_base}/profiles/{profile_id}").json())
-    assert UUID(o.id) == profile_id
+    assert UUID(o.profile_id) == profile_id
     assert o.name == test_profile_name + "-updated"
 
     # upload content, index FileUploadResponses to AssetVersionContent JSON entries
@@ -90,14 +89,14 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     assert profile_id == UUID(o.admin.profile_id)
-    org_id = UUID(o.org.id)
+    org_id = UUID(o.org.org_id)
 
     # create asset in org
     o = munchify(client.post(
         f"{api_base}/assets",
         json={'org_id': str(org_id)},
         headers=headers).json())
-    asset_id = UUID(o.id)
+    asset_id = UUID(o.asset_id)
 
     # asset object returned, without version information
     r = client.get(
@@ -107,11 +106,11 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert len(r.json()) == 1
     o = munchify(r.json()[0])
     assert UUID(o.asset_id) == asset_id
-    assert UUID(o.owner) == profile_id
+    assert UUID(o.owner_id) == profile_id
     assert UUID(o.org_id) == org_id
     assert o.version == [0, 0, 0]
+    assert o.author_id is None
     assert o.package_id is None
-    assert o.author is None
     assert o.name is None
     assert o.description is None
     assert o.created is None
@@ -125,10 +124,10 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
     assert UUID(o.asset_id) == asset_id
-    assert UUID(o.owner) == profile_id
+    assert UUID(o.owner_id) == profile_id
     assert UUID(o.org_id) == org_id
     assert o.version == [0, 0, 0]
-    assert o.author is None
+    assert o.author_id is None
     assert o.name is None
 
     # add content to asset
@@ -138,7 +137,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         'contents': {"files": asset_contents},
         'name': test_asset_name,
         'description': test_asset_description,
-        'author': str(profile_id),
+        'author_id': str(profile_id),
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.1.0",
@@ -167,7 +166,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         'commit_ref': test_commit_ref + '-updated',
         'contents': {'files': asset_contents[1:]},
         'name': test_asset_name + '-updated',
-        'author': str(profile_id),
+        'author_id': str(profile_id),
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.2.0",
@@ -189,10 +188,10 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
     assert UUID(o.asset_id) == asset_id
-    assert UUID(o.owner) == profile_id
+    assert UUID(o.owner_id) == profile_id
     assert UUID(o.org_id) == org_id
     assert o.version == [0, 0, 0]
-    assert o.author is None
+    assert o.author_id is None
     assert o.name is None
 
     # query specific asset version
@@ -216,8 +215,8 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     for i in items:
         o = munchify(i)
         assert o.asset_id is not None
-        assert o.owner is not None
-        assert o.author is not None
+        assert o.owner_id is not None
+        assert o.author_id is not None
         assert o.org_id is not None
         assert o.name == test_asset_name
         assert o.version == [0, 1, 0]
@@ -230,8 +229,8 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     for r in results:
         o = munchify(r)
         assert UUID(o.asset_id) == asset_id
-        assert UUID(o.owner) == profile_id
-        assert UUID(o.author) == profile_id
+        assert UUID(o.owner_id) == profile_id
+        assert UUID(o.author_id) == profile_id
         assert o.name is not None
         assert o.org_id is not None
 
@@ -252,7 +251,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         'commit_ref': test_commit_ref + '-updated-2',
         'name': test_asset_name + '-updated-2',
         'contents': {'files': []},
-        'author': str(profile_id),
+        'author_id': str(profile_id),
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.2.0",

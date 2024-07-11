@@ -35,8 +35,8 @@ def create_org(client, api_base):
         assert org.description == test_org_description
         assert org.created is not None
         assert org.updated is None
-        assert admin.profile_id == test_profile.profile.id
-        assert admin.org_id == org_resp.org.id
+        assert admin.profile_id == test_profile.profile.profile_id
+        assert admin.org_id == org_resp.org.org_id
         assert admin.role == 'admin'
         return OrgCreateResponse(org=org, admin=admin)
 

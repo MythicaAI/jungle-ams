@@ -29,6 +29,8 @@ class AppConfig(BaseSettings):
     enable_db: bool = True
     sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
     secret_key: str = 'test'
+    id_enc_key: str = 'X' * 8
+    id_hmac_key: str = 'test'
     mythica_location: str = 'localhost'
 
 

@@ -8,7 +8,7 @@
 // Types to represent profiles online
 // Table name: profiles
 export interface Profile {
-    id: string;
+    profile_id: string;
     name: string;
     full_name: string;
     signature: string;
@@ -29,12 +29,12 @@ export interface OrgRef {
     profile_id: string;
     role: string;
     created: string;
-    created_by: string;
+    author_id: string;
 }
 // Types to represent profiles online
 // Table name: orgs
 export interface Org {
-    id: string;
+    org_id: string;
     created: string;
     updated: string;
     name: string;
@@ -43,7 +43,7 @@ export interface Org {
 // Types to represent profiles online
 // Table name: profile_sessions
 export interface ProfileSession {
-    id: string;
+    profile_session_id: string;
     created: string;
     refreshed: string;
     profile_id: string;
@@ -56,7 +56,7 @@ export interface ProfileSession {
 // Table name: profile_followers
 export interface ProfileFollower {
     profile_id: string;
-    follow_id: string;
+    follower_id: string;
     created: string;
     deleted: string;
 }
@@ -64,7 +64,7 @@ export interface ProfileFollower {
 // Table name: profile_keys
 export interface ProfileKey {
     key: string;
-    owner: string;
+    owner_id: string;
     expires: string;
     payload: object;
 }

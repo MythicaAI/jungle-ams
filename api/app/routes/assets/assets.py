@@ -56,7 +56,7 @@ AssetContentDocument = dict[str, list[str]]
 
 class AssetCreateVersionRequest(BaseModel):
     """Create a new version of an asset with its contents"""
-    author: Optional[UUID] = None
+    author_id: Optional[UUID] = None
     org_id: Optional[UUID] = None
     name: Optional[str] = None
     description: Optional[str] = None
@@ -69,21 +69,21 @@ class AssetCreateResult(BaseModel):
     """Request object to create a new asset head object. This object
     is used to store multiple versions of the versioned asset and associate
     it with an organization"""
-    id: UUID
+    asset_id: UUID
     org_id: Optional[UUID] = None
-    owner: UUID
+    owner_id: UUID
 
 
 class AssetVersionResult(BaseModel):
     """Result object for a specific asset version or the asset head object
     when no version has been created. In this case the """
     asset_id: UUID
-    owner: UUID
+    owner_id: UUID
     owner_name: str
     org_id: UUID | None = None
     org_name: str | None = None
     package_id: UUID | None = None
-    author: UUID | None = None
+    author_id: UUID | None = None
     author_name: str | None = None
     name: str | None = None
     description: str | None = None
@@ -96,7 +96,9 @@ class AssetVersionResult(BaseModel):
 
 def resolve_profile_name(session: Session, profile_id: UUID) -> str:
     """Convert profile_id to profile name"""
-    profile = session.exec(select(Profile).where(Profile.id == profile_id)).one_or_none()
+    profile = (session.exec(select(Profile)
+                            .where(Profile.profile_id == profile_id))
+               .one_or_none())
     if profile:
         return profile.name
     return ""
@@ -104,7 +106,7 @@ def resolve_profile_name(session: Session, profile_id: UUID) -> str:
 
 def resolve_org_name(session: Session, org_id: UUID) -> str:
     """Convert org_id to org name"""
-    org = session.exec(select(Org).where(Org.id == org_id)).one_or_none()
+    org = session.exec(select(Org).where(Org.org_id == org_id)).one_or_none()
     if org:
         return org.name
     return ""
@@ -119,14 +121,14 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
         avr = AssetVersionResult(
-            asset_id=asset.id,
+            asset_id=asset.asset_id,
             org_id=asset.org_id,
             org_name=resolve_org_name(session, asset.org_id),
-            owner=asset.owner,
-            owner_name=resolve_profile_name(session, asset.owner),
+            owner_id=asset.owner_id,
+            owner_name=resolve_profile_name(session, asset.owner_id),
             package_id=ver.package_id,
-            author=ver.author,
-            author_name=resolve_profile_name(session, ver.author),
+            author_id=ver.author_id,
+            author_name=resolve_profile_name(session, ver.author_id),
             name=ver.name,
             description=ver.description,
             published=ver.published,
@@ -157,7 +159,7 @@ def select_asset_version(session: Session,
     """Execute a select against the asset versions table"""
     if version == ZERO_VERSION:
         asset = session.exec(select(Asset).where(
-            Asset.id == asset_id)).first()
+            Asset.asset_id == asset_id)).first()
         if asset is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} found")
         results = [(asset, AssetVersion(
@@ -168,10 +170,11 @@ def select_asset_version(session: Session,
             contents={}))]
     else:
         stmt = select(Asset, AssetVersion).outerjoin(AssetVersion,
-                                                     (Asset.id == AssetVersion.asset_id) &
+                                                     (Asset.asset_id == AssetVersion.asset_id) &
                                                      (AssetVersion.major == version[0]) &
                                                      (AssetVersion.minor == version[1]) &
-                                                     (AssetVersion.patch == version[2])).where(Asset.id == asset_id)
+                                                     (AssetVersion.patch == version[2])).where(
+            Asset.asset_id == asset_id)
 
         results = session.exec(stmt).all()
     if not results:
@@ -184,8 +187,8 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     """Add a new event that triggers version packaging"""
     # Create a new pipeline event
     job_data = {
-        'owner': str(avr.owner),
-        'author': str(avr.author),
+        'owner': str(avr.owner_id),
+        'author': str(avr.author_id),
         'asset_id': str(avr.asset_id),
         'version': avr.version,
         'published': avr.published,
@@ -194,12 +197,12 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     stmt = insert(Event).values(
         event_type="asset_version_updated",
         job_data=job_data,
-        owner=avr.owner,
+        owner_id=avr.owner_id,
         created_in=location,
         affinity=location)
     event_result = session.exec(stmt)
     log.info("packaging event for %s by %s -> %s",
-             avr.asset_id, avr.owner, event_result)
+             avr.asset_id, avr.owner_id, event_result)
     return event_result
 
 
@@ -227,7 +230,7 @@ def resolve_contents_as_json(
             try:
                 file = locate_content_by_id(session, asset_content.file_id)
                 content = AssetVersionContent(
-                    file_id=file.id,
+                    file_id=file.file_id,
                     file_name=asset_content.file_name,
                     content_hash=file.content_hash,
                     size=file.size)
@@ -246,7 +249,7 @@ async def get_assets() -> list[AssetVersionResult]:
     with get_session() as session:
         join_results = session.exec(
             asset_join_select.where(
-                Asset.id == AssetVersion.asset_id)).all()
+                Asset.asset_id == AssetVersion.asset_id)).all()
         return process_join_results(session, join_results)
 
 
@@ -272,8 +275,8 @@ async def get_owned_assets(
     with get_session() as session:
         results = session.exec(
             select(Asset, AssetVersion)
-            .outerjoin(AssetVersion, Asset.id == AssetVersion.asset_id)
-            .where(Asset.owner == profile.id)).all()
+            .outerjoin(AssetVersion, Asset.asset_id == AssetVersion.asset_id)
+            .where(Asset.owner_id == profile.profile_id)).all()
         return process_join_results(session, results)
 
 
@@ -283,7 +286,7 @@ async def get_asset_by_name(asset_name) -> list[AssetVersionResult]:
     with get_session() as session:
         return process_join_results(session, session.exec(
             asset_join_select.where(
-                Asset.id == AssetVersion.asset_id,
+                Asset.asset_id == AssetVersion.asset_id,
                 AssetVersion.name == asset_name)).all())
 
 
@@ -301,8 +304,8 @@ async def get_asset_by_id(asset_id: UUID) -> list[AssetVersionResult]:
     """Get asset by id"""
     with get_session() as session:
         results = session.exec(select(Asset, AssetVersion).outerjoin(
-            AssetVersion, Asset.id == AssetVersion.asset_id).where(
-            Asset.id == asset_id).order_by(
+            AssetVersion, Asset.asset_id == AssetVersion.asset_id).where(
+            Asset.asset_id == asset_id).order_by(
             desc(AssetVersion.major),
             desc(AssetVersion.minor),
             desc(AssetVersion.patch)))
@@ -318,15 +321,18 @@ async def create_asset(r: AssetCreateRequest,
         # If the user passes a collection ID ensure that it exists
         if r.org_id is not None:
             col_result = session.exec(select(Org).where(
-                Org.id == r.org_id)).one_or_none()
+                Org.org_id == r.org_id)).one_or_none()
             if col_result is None:
                 raise HTTPException(HTTPStatus.NOT_FOUND, f"org {r.org_id} not found")
 
         asset_result = session.exec(insert(Asset).values(
-            org_id=r.org_id, owner=profile.id))
+            org_id=r.org_id, owner_id=profile.profile_id))
         asset_id = asset_result.inserted_primary_key[0]
         session.commit()
-        return AssetCreateResult(id=asset_id, org_id=r.org_id, owner=profile.id)
+        return AssetCreateResult(
+            asset_id=asset_id,
+            org_id=r.org_id,
+            owner_id=profile.profile_id)
 
 
 @router.post('/{asset_id}/versions/{version_str}')
@@ -361,14 +367,14 @@ async def create_asset_version(asset_id: UUID,
         if org_id is not None:
             update_result = session.exec(update(Asset).values(
                 org_id=r.org_id).where(
-                Asset.id == asset_id).where(
-                Asset.owner == profile.id))
+                Asset.asset_id == asset_id).where(
+                Asset.owner_id == profile.profile_id))
             if update_result.rowcount != 1:
                 raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
             values.pop('org_id')
 
         # Use provided author or default to calling profile on creation
-        values['author'] = r.author or profile.id
+        values['author_id'] = r.author_id or profile.profile_id
 
         # Create the revision, fails if the revision already exists
         # this could be optimized more using upsert but this will likely hold
@@ -430,7 +436,8 @@ async def delete_asset_version(asset_id: UUID, version_str: str, profile: Profil
             AssetVersion.major == version_id[0],
             AssetVersion.minor == version_id[1],
             AssetVersion.patch == version_id[2], or_(
-                AssetVersion.author == profile.id, Asset.owner == profile.id))
+                AssetVersion.author_id == profile.profile_id,
+                Asset.owner_id == profile.profile_id))
         result = session.exec(stmt)
         if result.rowcount != 1:
             raise HTTPException(HTTPStatus.FORBIDDEN,

@@ -71,10 +71,10 @@ def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[ResolvedOrgRe
         org_ids.add(ref.org_id)
         profile_ids.add(ref.profile_id)
     # pylint: disable=no-member
-    orgs = {org.id: org for org in
-            session.exec(select(Org).where(col(Org.id).in_(org_ids))).all()}
-    profiles = {profile.id: profile for profile in
-                session.exec(select(Profile).where(col(Profile.id).in_(profile_ids))).all()}
+    orgs = {org.org_id: org for org in
+            session.exec(select(Org).where(col(Org.org_id).in_(org_ids))).all()}
+    profiles = {profile.profile_id: profile for profile in
+                session.exec(select(Profile).where(col(Profile.profile_id).in_(profile_ids))).all()}
     results = list()
     for ref in refs:
         org = orgs.get(ref.org_id, Org())
@@ -97,8 +97,8 @@ async def create_org(
         session.add(org)
 
         # create the admin from the profile
-        admin = OrgRef(org_id=org.id, profile_id=profile.id,
-                       role='admin', created_by=profile.id)
+        admin = OrgRef(org_id=org.org_id, profile_id=profile.profile_id,
+                       role='admin', author_id=profile.profile_id)
         session.add(admin)
         session.commit()
         session.refresh(admin)
@@ -129,7 +129,7 @@ async def update_org(
 ) -> Org:
     """Update an existing organization"""
     with get_session(echo=True) as session:
-        org = session.exec(select(Org).where(Org.id == org_id)).first()
+        org = session.exec(select(Org).where(Org.org_id == org_id)).first()
         if org is None:
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 f"org: {org_id} not found")
@@ -137,7 +137,7 @@ async def update_org(
         resolve_and_validate(session, profile, org_id, roles.org_update)
 
         r = session.exec(update(Org).where(
-            Org.id == org_id).values(
+            Org.org_id == org_id).values(
             **req.model_dump(), updated=sql_now()))
         if r.rowcount == 0:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -153,7 +153,7 @@ async def delete_org(org_id: UUID, profile: Profile = Depends(current_profile)):
     with get_session() as session:
         resolve_and_validate(session, profile, org_id, roles.org_delete)
         session.exec(update(Org).where(
-            Org.id == org_id).values(
+            Org.org_id == org_id).values(
             deleted=sql_now()))
 
 
@@ -162,19 +162,23 @@ async def get_org(profile: Profile = Depends(current_profile)) -> list[ResolvedO
     """Default get returns roles for the requesting profile"""
     with get_session() as session:
         return resolve_org_refs(session,
-                                session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all())
+                                session.exec(select(OrgRef)
+                                             .where(OrgRef.profile_id == profile.profile_id))
+                                .all())
 
 
 @router.get('/{org_id}')
 async def get_org_by_id(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
     """Get organization by ID"""
-    with get_session() as session:
+    with (get_session() as session):
         if org_id is None:
             if profile is None:
                 raise HTTPException(HTTPStatus.FORBIDDEN,
                                     detail="no valid profile")
-            return session.exec(select(OrgRef).where(OrgRef.profile_id == profile.id)).all()
-        org = session.exec(select(Org).where(Org.id == org_id)).first()
+            return session.exec(select(OrgRef)
+                                .where(OrgRef.profile_id == profile.profile_id)
+                                ).all()
+        org = session.exec(select(Org).where(Org.org_id == org_id)).first()
         return org
 
 
@@ -198,7 +202,7 @@ async def add_role_to_org(
         resolve_and_validate(session, profile, org_id, roles.org_add_role)
 
         session.exec(insert(OrgRef).values(
-            org_id=org_id, profile_id=profile_id, role=role, created_by=profile.id))
+            org_id=org_id, profile_id=profile_id, role=role, author_id=profile.profile_id))
         session.commit()
 
         return resolve_org_refs(

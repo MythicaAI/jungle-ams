@@ -30,7 +30,7 @@ def test_create_update(client, api_base, create_profile, create_org):
     admin_id = org_and_admin.admin.profile_id
     headers = test_profile.authorization_header()
 
-    assert admin_id == test_profile.profile.id
+    assert admin_id == test_profile.profile.profile_id
 
     # validate that topo can't be created with invalid orgs
     r = client.post(f'{api_base}/topos',
@@ -52,7 +52,7 @@ def test_create_update(client, api_base, create_profile, create_org):
     o = munchify(r.json())
     assert o.name == topo_name
     assert UUID(o.org_id) == org_id
-    topo_id = o.id
+    topo_id = o.topology_id
 
     # validate that another topo can't have the same name
     r = client.post(f'{api_base}/topos',
@@ -94,13 +94,13 @@ def test_create_update(client, api_base, create_profile, create_org):
                     headers=headers)
     assert r.status_code == HTTPStatus.CREATED
     o = munchify(r.json())
-    src_asset_id = UUID(o.id)
+    src_asset_id = UUID(o.asset_id)
     r = client.post(f'{api_base}/assets',
                     json={"name": dst_asset_name},
                     headers=headers)
     assert r.status_code == HTTPStatus.CREATED
     o = munchify(r.json())
-    dst_asset_id = UUID(o.id)
+    dst_asset_id = UUID(o.asset_id)
 
     # create a src only ref
     edge_data = {"foo": "bar"}

@@ -1,0 +1,47 @@
+name: Graph Schema
+description: Graph and topology representation
+tables:
+  - name: Topology
+    table_name: topologies
+    description: Provides a grouping for asset graphs
+    columns:
+      - name: topology_id
+        type: BIGINT
+        primary_key: true
+      - name: owner_id
+        type: UUID
+        nullable: false
+      - name: org_id
+        type: UUID
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+      - name: name
+        type: TEXT
+      - name: description
+        type: TEXT
+      - name: edge_data_schema
+        type: JSON
+
+  # TODO: graph references should also be versioned
+  - name: AssetRef
+    table_name: asset_refs
+    description: Records relationships between assets
+    columns:
+      - name: topology_id
+        type: BIGINT
+        foreign_key: topologies.id
+        primary_key: true
+      - name: src_id
+        type: UUID
+        foreign_key: assets.id
+        primary_key: true
+      - name: dst_id
+        type: UUID
+        foreign_key: assets.id
+        primary_key: true
+      - name: edge_data
+        type: JSON

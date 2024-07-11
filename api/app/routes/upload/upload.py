@@ -132,12 +132,12 @@ async def store_files(
     response_files = []
     for file in files:
         # do the upload
-        ctx = upload_internal(storage, USER_BUCKET_MAPPINGS, profile.id, file)
+        ctx = upload_internal(storage, USER_BUCKET_MAPPINGS, profile.profile_id, file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
-            owner=ctx.profile_id,
+            owner_id=ctx.profile_id,
             file_name=file.filename,
             event_ids=[ctx.event_id],
             size=file.size,
@@ -175,12 +175,12 @@ async def store_and_attach_package(
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
-        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author, file)
+        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author_id, file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
-            owner=ctx.profile_id,
+            owner_id=ctx.profile_id,
             file_name=file.filename,
             event_ids=[ctx.event_id],
             size=file.size,
@@ -215,6 +215,6 @@ async def pending_uploads(
     with (get_session() as session):
         owned_files = session.exec(select(FileContent)
         .where(
-            and_(FileContent.owner == profile.id,
+            and_(FileContent.owner_id == profile.profile_id,
                  FileContent.deleted == None))).all()
         return enrich_files(session, owned_files, profile)

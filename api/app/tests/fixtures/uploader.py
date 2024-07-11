@@ -50,7 +50,7 @@ def uploader(client, api_base):
             assert_status_code(r, HTTPStatus.OK)
             o = munchify(r.json())
             assert UUID(o.file_id) == f.file_id
-            assert UUID(o.owner) == profile_id
+            assert UUID(o.owner_id) == profile_id
             assert o.content_hash == test_file.content_hash
             assert o.file_name == test_file.file_name
             assert o.size == len(test_file.contents)

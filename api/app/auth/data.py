@@ -1,6 +1,7 @@
 from http import HTTPStatus
-from fastapi import HTTPException
 from uuid import UUID
+
+from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from auth.cookie import cookie_to_profile
@@ -29,14 +30,14 @@ def get_profile(authorization: str) -> Profile:
 
 def resolve_profile(session, profile: Profile) -> Profile:
     resolved_profile = session.exec(
-        select(Profile).where(Profile.id == profile.id)).first()
+        select(Profile).where(Profile.profile_id == profile.profile_id)).first()
     if resolved_profile is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail=f'Profile {profile.id} not found')
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail=f'Profile {profile.profile_id} not found')
     return resolved_profile
 
 
 def resolve_roles(session: Session, profile: Profile, org_id: UUID) -> set[str]:
     """Get the set of roles for a profile in an org"""
     org_refs = session.exec(select(OrgRef).where(
-        OrgRef.org_id == org_id, OrgRef.profile_id == profile.id)).all()
+        OrgRef.org_id == org_id, OrgRef.profile_id == profile.profile_id)).all()
     return {o.role for o in org_refs}

@@ -12,11 +12,11 @@ def enrich_file(
         profile: Profile) -> FileUploadResponse:
     """Given a file and a profile, enrich with events associated to the file"""
     owned_events = session.exec(select(Event).where(
-        Event.owner == profile.id)).all()
+        Event.owner_id == profile.profile_id)).all()
 
     response = FileUploadResponse(
-        file_id=file.id,
-        owner=file.owner,
+        file_id=file.file_id,
+        owner_id=file.owner_id,
         file_name=file.name,
         content_type=file.content_type,
         size=file.size,
@@ -28,7 +28,7 @@ def enrich_file(
     for oe in owned_events:
         job_data = oe.job_data
         file_id = job_data.get('file_id')
-        if file_id == file.id:
+        if file_id == file.file_id:
             response.event_ids.append(oe.id)
 
     return response
@@ -40,12 +40,12 @@ def enrich_files(
         profile: Profile) -> list[FileUploadResponse]:
     """Given a list of files and a profile, enrich with events associated to the files"""
     owned_events = session.exec(select(Event).where(
-        Event.owner == profile.id)).all()
+        Event.owner_id == profile.profile_id)).all()
     owned_files_by_id = {}
     for of in files:
-        owned_files_by_id[of.id] = FileUploadResponse(
-            file_id=of.id,
-            owner=of.owner,
+        owned_files_by_id[of.file_id] = FileUploadResponse(
+            file_id=of.file_id,
+            owner_id=of.owner_id,
             file_name=of.name,
             content_type=of.content_type,
             size=of.size,

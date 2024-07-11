@@ -17,4 +17,4 @@ async def current_profile_id(authorization: Annotated[str | None, Header()]) -> 
     profile = get_profile(authorization)
     if profile is None:
         return UUID(int=0)
-    return profile.id
+    return profile.profile_id

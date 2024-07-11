@@ -25,7 +25,7 @@ async def get_file_by_id(
         file = session.exec(
             select(FileContent).where(
                 and_(
-                    FileContent.id == file_id,
+                    FileContent.file_id == file_id,
                     FileContent.deleted == None))).first()
         return enrich_file(session, file, profile)
 
@@ -51,7 +51,7 @@ async def delete_file_by_id(file_id, profile_id: UUID = Depends(current_profile_
             result = session.exec(
                 (update(FileContent)
                  .values(deleted=sql_now(), )
-                 .where(and_(FileContent.id == file_id, FileContent.owner == profile_id))))
+                 .where(and_(FileContent.file_id == file_id, FileContent.owner_id == profile_id))))
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail="file not found, or not owned")

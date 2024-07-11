@@ -18,7 +18,7 @@ class ValidateEmailState(str, Enum):
 
 class ProfileResponse(BaseModel):
     """A model with only allowed public properties for profile creation"""
-    id: UUID = None
+    profile_id: UUID = None
     name: str | None = None
     description: str | None = None
     email: str | None = None
@@ -47,7 +47,7 @@ class SessionStartResponse(BaseModel):
 
 
 class ValidateEmailResponse(BaseModel):
-    owner: UUID
+    owner_id: UUID
     code: str
     link: AnyHttpUrl
     state: ValidateEmailState = ValidateEmailState.not_validated
@@ -55,7 +55,7 @@ class ValidateEmailResponse(BaseModel):
 
 class FileUploadResponse(BaseModel):
     file_id: UUID
-    owner: UUID
+    owner_id: UUID
     file_name: str
     event_ids: list[UUID]
     size: int

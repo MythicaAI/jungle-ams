@@ -63,7 +63,7 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
         session.begin()
         result = session.exec(update(Profile).values(
             {'login_count': Profile.login_count + 1, 'active': True}).where(
-            Profile.id == profile_id))
+            Profile.profile_id == profile_id))
         session.commit()
 
         if result.rowcount == 0:
@@ -76,7 +76,7 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
 
         # Generate a new token and profile response
         profile = session.exec(select(Profile).where(
-            Profile.id == profile_id)).first()
+            Profile.profile_id == profile_id)).first()
         if profile is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
         profile_response = profile_to_profile_response(profile, ProfileResponse)
@@ -158,13 +158,13 @@ async def update_profile(
         req_profile: CreateUpdateProfileModel,
         profile: Profile = Depends(current_profile)) -> ProfileResponse:
     """Update the profile of the owning account"""
-    if profile_id != profile.id:
+    if profile_id != profile.profile_id:
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail='profile not authenticated')
 
     session = get_session(echo=True)
     stmt = update(Profile).where(
-        Profile.id == profile_id).values(
+        Profile.profile_id == profile_id).values(
         **req_profile.model_dump())
     result = session.execute(stmt)
     rows_affected = result.rowcount
@@ -173,5 +173,5 @@ async def update_profile(
     session.commit()
 
     updated = session.exec(select(Profile).where(
-        Profile.id == profile_id)).one()
+        Profile.profile_id == profile_id)).one()
     return profile_to_profile_response(updated, ProfileResponse)

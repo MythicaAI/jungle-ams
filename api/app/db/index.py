@@ -24,12 +24,11 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
         # create a new upload
         file_content_result = session.exec(insert(FileContent).values(
             {'name': ctx.filename,
-             'owner': ctx.profile_id,
+             'owner_id': ctx.profile_id,
              'locators': locators,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
-             'content_type': content_type,
-             'uri': ''}))
+             'content_type': content_type}))
         session.commit()
         file_id = file_content_result.inserted_primary_key[0]
 
@@ -47,7 +46,7 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
         event_result = session.exec(insert(Event).values(
             event_type=f"file_uploaded:{ctx.extension}",
             job_data=job_data,
-            owner=ctx.profile_id,
+            owner_id=ctx.profile_id,
             created_in=location,
             affinity=location))
         session.commit()

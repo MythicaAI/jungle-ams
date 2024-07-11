@@ -14,7 +14,7 @@ def profile_to_cookie(profile: Profile) -> bytes:
 
     cookie_str = ':'.join([
         str(_VERSION),
-        str(profile.id),
+        str(profile.profile_id),
         profile_email_token,
         profile_email_validate_token,
         profile_location_token])
@@ -27,4 +27,4 @@ def cookie_to_profile(cookie: str) -> Profile:
     version, profile_id, email, email_validate, location = cookie_str.split(':')
     if int(version) != _VERSION:
         raise ValueError(f"Invalid cookie version: {version}")
-    return Profile(id=UUID(profile_id), email=email, email_validate_state=email_validate, location=location)
+    return Profile(profile_id=UUID(profile_id), email=email, email_validate_state=email_validate, location=location)

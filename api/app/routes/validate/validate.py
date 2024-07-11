@@ -26,7 +26,7 @@ async def validate_email_begin(
         validate_link = f"https://api.mythica.ai/v1/validate_email/{validate_code}"
         session.exec(insert(ProfileKey).values(
             key=validate_code,
-            owner=profile.id,
+            owner_id=profile.profile_id,
             expires=datetime.now(timezone.utc) + timedelta(minutes=60),
             payload={
                 'source': '/validate_email',
@@ -34,7 +34,7 @@ async def validate_email_begin(
             }
         ))
         session.commit()
-        return ValidateEmailResponse(owner=profile.id,
+        return ValidateEmailResponse(owner_id=profile.profile_id,
                                      link=validate_link,
                                      code=validate_code,
                                      state=ValidateEmailState.link_sent)
@@ -47,8 +47,8 @@ async def validate_email_complete(
     """Provide a valid verification code to validate email"""
     with get_session() as session:
         validate_profile = session.exec(select(Profile).where(
-            Profile.id == profile.id)).first()
-        if validate_profile.id != profile.id:
+            Profile.profile_id == profile.profile_id)).first()
+        if validate_profile.profile_id != profile.profile_id:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail='session profile mismatch')
 
         # query the validation key for the profile
@@ -58,7 +58,7 @@ async def validate_email_complete(
             raise HTTPException(HTTPStatus.NOT_FOUND, detail='verification link is missing')
 
         # validate the profile matches up
-        if validate_key.owner != profile.id:
+        if validate_key.owner_id != profile.profile_id:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail='verification profile mismatch')
 
         # extract and validate the payload
@@ -70,7 +70,7 @@ async def validate_email_complete(
         validated = 2  # TODO: enum unification
         session.exec(update(Profile).values(
             {Profile.email_validate_state: validated}).where(
-            Profile.id == profile.id))
+            Profile.profile_id == profile.profile_id))
 
         # remove the verification code
         session.exec(delete(ProfileKey).where(
@@ -80,7 +80,7 @@ async def validate_email_complete(
         session.commit()
 
         return ValidateEmailResponse(
-            owner=profile.id,
+            owner_id=profile.profile_id,
             code=verification_code,
             link='https://api.mythica.ai',
             state=ValidateEmailState.validated)

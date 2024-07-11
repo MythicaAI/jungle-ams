@@ -6,10 +6,9 @@ tables:
   - name: FileContent
     table_name: files
     columns:
-      - name: id
+      - name: file_id
         type: UUID
         primary_key: true
-        auto_create: true
         description: Globally unique ID of this instance of content
       - name: name
         type: TEXT
@@ -28,10 +27,7 @@ tables:
       - name: content_type
         description: Content metadata type
         type: TEXT
-      - name: uri
-        type: TEXT
-        description: Publicly accessible URI for this content
-      - name: owner
+      - name: owner_id
         description: Profile that created this media
         type: UUID
       - name: cache_ttl
