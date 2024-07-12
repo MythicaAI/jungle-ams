@@ -43,7 +43,7 @@ spec:
               value: "gke-us-central1"
             - name: GCS_SERVICE_ENABLE
               value: "true"
-            - name: GCS_SERVICE_KEY
+            - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "/accounts/service-account.json"
             - name: WORKER_COUNT
               value: "3"
