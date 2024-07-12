@@ -15,12 +15,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
       - uses: actions/setup-node@v3
         with:
           node-version: 14
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
-          package-manager: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - run: pnpm run lint
@@ -31,12 +33,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
       - uses: actions/setup-node@v3
         with:
           node-version: 14
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
-          package-manager: 'pnpm'
       - name: install dependencies
         run: pnpm install --frozen-lockfile
       - run: pnpm run test
