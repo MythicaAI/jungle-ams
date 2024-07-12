@@ -1,0 +1,42 @@
+name: sites/jungle3 Code quality
+
+on:
+  pull_request:
+    paths:
+      - 'sites/jungle3/**'
+
+defaults:
+  run:
+    working-directory: sites/jungle3
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+          package-manager: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - run: pnpm run ci:lint
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+          package-manager: 'pnpm'
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+      - run: pnpm run ci:test
