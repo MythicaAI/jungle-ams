@@ -249,7 +249,7 @@ for package in packages:
     license_package_path = license_files[0]
 
     # Gather all files to be included in the package
-    contents = [{license_disk_path, license_package_path}]
+    contents = [(license_disk_path, license_package_path)]
 
     scan_path = os.path.join(repodir, package['directory'])
     for root, dirs, files in os.walk(scan_path):
@@ -268,7 +268,7 @@ for package in packages:
         with open(filepath, 'rb') as f:
             upload_url = f"{args.endpoint}/v1/upload/store"
             m = MultipartEncoder(
-                fields={'files': (file, f, 'application/octet-stream')}
+                fields={'files': (package_path, f, 'application/octet-stream')}
             )
             headers = {
                 "Authorization": f"Bearer {token}",
@@ -283,7 +283,7 @@ for package in packages:
             o = munchify(response.json())
             asset_contents.append({
                 'file_id': o.files[0].file_id,
-                'file_name': package_path,
+                'file_name': o.files[0].file_name,
                 'content_hash': o.files[0].content_hash,
                 'size': o.files[0].size
             })
