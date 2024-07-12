@@ -141,7 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-p", "--profileId",
     help="API profileId",
-    default="3efde9d6-a032-4ddf-9121-a959382363f3",
+    default="417bc6fc-c777-425d-a97c-aff5f074835f",
     required=False
 )
 parser.add_argument(
@@ -239,10 +239,13 @@ for package in packages:
     repo = git.Repo.clone_from(package['repo'], repodir)
 
     # Verify the repo has a license file
-    license_file = os.path.join(repodir, "LICENSE")
-    if not os.path.exists(license_file):
+    license_files = [file for file in os.listdir(repodir) if file.startswith('LICENSE')]
+
+    if len(license_files) == 0:
         print(f"Failed to find license file in repo: {package['repo']}")
         continue
+
+    license_file = os.path.join(repodir, license_files[0])
 
     # Gather all files to be included in the package
     contents = [license_file]
