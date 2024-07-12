@@ -245,20 +245,24 @@ for package in packages:
         print(f"Failed to find license file in repo: {package['repo']}")
         continue
 
-    license_file = os.path.join(repodir, license_files[0])
+    license_disk_path = os.path.join(repodir, license_files[0])
+    license_package_path = license_files[0]
 
     # Gather all files to be included in the package
-    contents = [license_file]
+    contents = [{license_disk_path, license_package_path}]
 
-    for root, dirs, files in os.walk(os.path.join(repodir, package['directory'])):
+    scan_path = os.path.join(repodir, package['directory'])
+    for root, dirs, files in os.walk(scan_path):
         for file in files:
-            contents.append(os.path.join(root, file))
+            disk_path = os.path.join(root, file)
+            package_path = os.path.relpath(disk_path, scan_path)
+            contents.append((disk_path, package_path))
 
     # Upload all files
     asset_contents = []
 
-    for file in contents:
-        filepath = os.path.normpath(file)
+    for (disk_path, package_path) in contents:
+        filepath = os.path.normpath(disk_path)
         print(f"Uploading file: {filepath}")
 
         with open(filepath, 'rb') as f:
@@ -279,7 +283,7 @@ for package in packages:
             o = munchify(response.json())
             asset_contents.append({
                 'file_id': o.files[0].file_id,
-                'file_name': o.files[0].file_name,
+                'file_name': package_path,
                 'content_hash': o.files[0].content_hash,
                 'size': o.files[0].size
             })
