@@ -283,7 +283,7 @@ for package in packages:
             o = munchify(response.json())
             asset_contents.append({
                 'file_id': o.files[0].file_id,
-                'file_name': package_path,
+                'file_name': o.files[0].file_name,
                 'content_hash': o.files[0].content_hash,
                 'size': o.files[0].size
             })
