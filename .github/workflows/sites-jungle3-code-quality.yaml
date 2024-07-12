@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 16
           cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: sites/jungle3/pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - run: pnpm run lint
@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: 16
           cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: sites/jungle3/pnpm-lock.yaml
       - name: install dependencies
         run: pnpm install --frozen-lockfile
       - run: pnpm run test
