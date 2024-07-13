@@ -35,7 +35,7 @@ def translate_minio(storage, info) -> str:
 def translate_gcs(storage, info) -> str:
     """GCS download link creator"""
     region_bucket, object_name = info.split(":")
-    region_name, bucket_name = region_bucket.split('.')
+    _, bucket_name = region_bucket.split('.')
     return storage.download_link(bucket_name, object_name)
 
 
