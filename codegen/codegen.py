@@ -2,9 +2,9 @@ import logging
 import os
 import sys
 
-from fileassetkit.schema.loader import load_name, ASSETS, EVENTS, MEDIA, PROFILE
-from fileassetkit.schema.to_python import schema_to_sqlmodel
-from fileassetkit.schema.to_typescript import schema_to_typescript
+from loader import load_name, ASSETS, EVENTS, MEDIA, PROFILE
+from to_python import schema_to_sqlmodel
+from to_typescript import schema_to_typescript
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ def main():
     os.makedirs(ts_output, exist_ok=True)
 
     def fixup(fp, ext):
+        """Fixup the file path to generate the new name.extension"""
         fp = fp.replace('schema-', '')
         fp = fp.replace('.yaml', ext)
         return fp

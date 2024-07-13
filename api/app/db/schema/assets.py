@@ -18,12 +18,12 @@ class Asset(SQLModel, table=True):
     """
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
-    deleted: datetime | None = None
-    org_id: UUID | None = uuid4()
-    owner: UUID | None = Field(foreign_key='profiles.id')
+    id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    deleted: datetime | None = Field(default=None)
+    org_id: UUID | None = Field(default=uuid4())
+    owner: UUID | None = Field(foreign_key='profiles.id',default=None)
 
 
 class AssetVersion(SQLModel, table=True):
@@ -32,18 +32,18 @@ class AssetVersion(SQLModel, table=True):
     """
     __tablename__ = "asset_versions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    asset_id: UUID = Field(primary_key=True, nullable=False)
-    published: bool | None = False
-    major: int = Field(primary_key=True, nullable=False)
-    minor: int = Field(primary_key=True, nullable=False)
-    patch: int = Field(primary_key=True, nullable=False)
-    commit_ref: str | None = None
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    name: str | None = None
-    description: str | None = None
-    author: UUID = Field(foreign_key='profiles.id')
-    package_id: UUID | None = Field(foreign_key='files.id')
-    contents: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    asset_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    published: bool | None = Field(default=False)
+    major: int = Field(primary_key=True,nullable=False,default=0)
+    minor: int = Field(primary_key=True,nullable=False,default=0)
+    patch: int = Field(primary_key=True,nullable=False,default=0)
+    commit_ref: str | None = Field(default=None)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    name: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    author: UUID = Field(foreign_key='profiles.id',default=None)
+    package_id: UUID | None = Field(foreign_key='files.id',default=None)
+    contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 
 class Topology(SQLModel, table=True):
@@ -52,14 +52,14 @@ class Topology(SQLModel, table=True):
     """
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: int = Field(primary_key=True, nullable=False)
-    owner: UUID = uuid4()
-    org_id: UUID | None = uuid4()
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
-    name: str | None = None
-    description: str | None = None
-    edge_data_schema: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    id: int = Field(primary_key=True,nullable=False,default=0)
+    owner: UUID = Field(default=uuid4())
+    org_id: UUID | None = Field(default=uuid4())
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    name: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    edge_data_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 
 class AssetRef(SQLModel, table=True):
@@ -68,7 +68,7 @@ class AssetRef(SQLModel, table=True):
     """
     __tablename__ = "asset_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    topology_id: int = Field(primary_key=True, nullable=False)
-    src: UUID = Field(primary_key=True, nullable=False)
-    dst: UUID = Field(primary_key=True, nullable=False)
-    edge_data: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    topology_id: int = Field(primary_key=True,nullable=False,default=0)
+    src: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    dst: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    edge_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
