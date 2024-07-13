@@ -12,9 +12,9 @@ from storage.storage_client import StorageClient
 # regional and migrations occur
 
 GCS_BUCKET_NAMES = {
-    BucketType.FILES: 'hda-ingest',
+    BucketType.FILES: 'mythica-public-files',
     BucketType.IMAGES: 'mythica-public-images',
-    BucketType.PACKAGES: 'hda-ingest',
+    BucketType.PACKAGES: 'mythica-public-packages',
 }
 
 
