@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import select, update, col, and_
+from sqlmodel import select, update, and_
 
 from db.connection import get_session
 from db.schema.media import FileContent
@@ -39,7 +39,7 @@ async def get_file_by_content(
         file = session.exec((
             select(FileContent)
             .where(FileContent.content_hash == content_hash)
-            .where(col(FileContent.deleted).is_(None)))).first()
+            .where(FileContent.deleted == None))).first()
         return enrich_file(session, file, profile)
 
 
