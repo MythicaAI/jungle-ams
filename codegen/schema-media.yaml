@@ -37,6 +37,9 @@ tables:
       - name: cache_ttl
         description: Cache TTL in seconds for external CDN
         type: INTEGER
+      - name: downloads
+        description: Count of downloads
+        type: INTEGER
       - name: lifetime
         description: Time in seconds before this media expires
         type: INTEGER

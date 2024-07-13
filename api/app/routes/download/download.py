@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Response, APIRouter
 from pydantic import BaseModel
-from sqlmodel import select
+from sqlmodel import Session, select, update
 
 from db.connection import get_session
 from db.schema.media import FileContent
@@ -44,6 +44,13 @@ def translate_test(_storage, _info) -> str:
     return "http://test.notresolved/test.test"
 
 
+def increment_download_count(session: Session, file_id: UUID):
+    """Increment the download count by one"""
+    session.exec(update(FileContent)
+                 .values(downloads=FileContent.downloads + 1)
+                 .where(FileContent.id == file_id))
+
+
 storage_types = {
     'gcs': translate_gcs,
     'minio': translate_minio,
@@ -76,6 +83,7 @@ async def download_info(
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']
+        increment_download_count(session, UUID(file_id))
         return DownloadInfoResponse(
             file_id=file.id,
             url=translate_download_url(storage, locator_list),
@@ -93,5 +101,6 @@ async def download_redirect(
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']
+        increment_download_count(session, UUID(file_id))
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
         response.headers['location'] = translate_download_url(storage, locator_list)
