@@ -28,6 +28,7 @@ class FileContent(SQLModel, table=True):
     uri: str | None = Field(default=None)
     owner: UUID | None = Field(default=uuid4())
     cache_ttl: int | None = Field(default=0)
+    downloads: int | None = Field(default=0)
     lifetime: int | None = Field(default=0)
     content_hash: str | None = Field(default=None)
     locators: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
