@@ -18,6 +18,7 @@ export interface FileContent {
     uri: string;
     owner: string;
     cache_ttl: number;
+    downloads: number;
     lifetime: number;
     content_hash: string;
     locators: object;
