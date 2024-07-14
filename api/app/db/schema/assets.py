@@ -34,9 +34,9 @@ class AssetVersion(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     asset_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     published: bool | None = Field(default=False)
-    major: int = Field(primary_key=True,nullable=False,default=0)
-    minor: int = Field(primary_key=True,nullable=False,default=0)
-    patch: int = Field(primary_key=True,nullable=False,default=0)
+    major: int = Field(primary_key=True,nullable=False)
+    minor: int = Field(primary_key=True,nullable=False)
+    patch: int = Field(primary_key=True,nullable=False)
     commit_ref: str | None = Field(default=None)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     name: str | None = Field(default=None)
@@ -52,7 +52,7 @@ class Topology(SQLModel, table=True):
     """
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: int = Field(primary_key=True,nullable=False,default=0)
+    id: int = Field(primary_key=True,nullable=False)
     owner: UUID = Field(default=uuid4())
     org_id: UUID | None = Field(default=uuid4())
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
@@ -68,7 +68,7 @@ class AssetRef(SQLModel, table=True):
     """
     __tablename__ = "asset_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    topology_id: int = Field(primary_key=True,nullable=False,default=0)
+    topology_id: int = Field(primary_key=True,nullable=False)
     src: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     dst: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
