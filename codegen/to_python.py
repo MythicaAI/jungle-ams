@@ -111,9 +111,9 @@ def schema_to_sqlmodel(schema: dict[str, Any]) -> str:
                 elif column.get('auto_create'):
                     field_props.extend(autocreate_timestamp_props(column))
 
-            # add default if not yet populated
+            # add default if not yet populated and field is not a primary key
             has_default = any(filter(lambda fp: fp.startswith('default'), field_props))
-            if not has_default:
+            if not has_default and not is_primary_key:
                 field_props.extend(default_prop(py_value))
 
             # validate the field properties before rendering them
