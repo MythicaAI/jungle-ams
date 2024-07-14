@@ -49,6 +49,7 @@ def increment_download_count(session: Session, file_id: UUID):
     session.exec(update(FileContent)
                  .values(downloads=FileContent.downloads + 1)
                  .where(FileContent.id == file_id))
+    session.commit()
 
 
 storage_types = {
