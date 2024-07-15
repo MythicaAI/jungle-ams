@@ -22,5 +22,7 @@ RUN pnpm run build
 # Expose the port your app runs on (adjust if necessary)
 EXPOSE 5555
 
+ENTRYPOINT ["pnpm", "run"]
+
 # Command to run the application
-CMD ["pnpm", "run", "build-production"]
+CMD ["build-dev"]
