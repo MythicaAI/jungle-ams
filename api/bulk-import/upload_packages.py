@@ -141,8 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-p", "--profileId",
     help="API profileId",
-    default="417bc6fc-c777-425d-a97c-aff5f074835f",
-    required=False
+    required=True
 )
 parser.add_argument(
     "-o", "--orgId",
