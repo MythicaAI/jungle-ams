@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Reference the local file relative to the script's directory
 LOCAL_PATH="$SCRIPT_DIR/$SITE_NAME/dist"
 
+rm -rf $LOCAL_PATH
 mkdir -p $LOCAL_PATH
 
 LOCAL_PATH=$(realpath $SITE_NAME)
