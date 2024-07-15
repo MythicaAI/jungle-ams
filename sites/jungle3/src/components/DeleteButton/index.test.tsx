@@ -1,3 +1,5 @@
+// @ts-expect-error TS6133
+import React from 'react';
 import {
   render,
   screen,

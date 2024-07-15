@@ -1,3 +1,5 @@
+// @ts-expect-error TS6133
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DownloadButton } from '.';
