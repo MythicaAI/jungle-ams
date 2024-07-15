@@ -13,7 +13,7 @@ from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileSession
 from routes.authorization import current_profile
-from routes.responses import ProfileResponse, SessionStartResponse, ValidateEmailState
+from routes.responses import ProfileResponse, SessionStartResponse, ValidateEmailState, PublicProfileResponse
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -41,28 +41,24 @@ def email_validate_state_enum(email_validation_state: int) -> ValidateEmailState
     return ValidateEmailState.not_validated
 
 
-def profile_to_profile_response(profile: Profile) -> ProfileResponse:
+def profile_to_profile_response(profile: Profile, model_type: type) \
+        -> ProfileResponse | PublicProfileResponse:
     """Convert a profile to a valid profile response object"""
     profile_data = profile.model_dump()
     validate_state = email_validate_state_enum(profile.email_validate_state)
-    profile_response = ProfileResponse(**profile_data,
-                                       validate_state=validate_state)
+    profile_response = model_type(**profile_data,
+                                  validate_state=validate_state)
     return profile_response
 
 
-@router.get('/')
-async def get_profiles() -> list[ProfileResponse]:
-    with get_session() as session:
-        return [profile_to_profile_response(profile)
-                for profile in session.exec(select(Profile))]
-
-
 @router.get('/{profile_id}')
-async def get_profile(profile_id: UUID) -> ProfileResponse:
+async def get_profile(profile_id: UUID) -> PublicProfileResponse:
     with get_session() as session:
         profile = session.exec(select(Profile).where(
             Profile.id == profile_id)).first()
-        return profile_to_profile_response(profile)
+        if profile is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
+        return profile_to_profile_response(profile, PublicProfileResponse)
 
 
 @router.get('/start_session/{profile_id}')
@@ -86,7 +82,7 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
         # Generate a new token and profile response
         profile = session.exec(select(Profile).where(
             Profile.id == profile_id)).first()
-        profile_response = profile_to_profile_response(profile)
+        profile_response = profile_to_profile_response(profile, ProfileResponse)
         token = generate_token(profile)
 
         # Add a new session
@@ -129,7 +125,7 @@ async def create_profile(
     session.commit()
     session.refresh(profile)
 
-    return profile_to_profile_response(profile)
+    return profile_to_profile_response(profile, ProfileResponse)
 
 
 @router.post('/{profile_id}')
@@ -153,4 +149,4 @@ async def update_profile(
 
     updated = session.exec(select(Profile).where(
         Profile.id == profile_id)).one()
-    return profile_to_profile_response(updated)
+    return profile_to_profile_response(updated, ProfileResponse)
