@@ -1,3 +1,4 @@
+import React from 'react'; // needed for tests to run
 import {
   render,
   screen,
