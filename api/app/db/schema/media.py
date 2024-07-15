@@ -18,16 +18,17 @@ class FileContent(SQLModel, table=True):
     """
     __tablename__ = "files"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True, default_factory=uuid4, nullable=False)
-    name: str | None = None
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_default': sql_now(), 'nullable': False})
-    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True), sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
-    deleted: datetime | None = None
-    size: int | None = 0
-    content_type: str | None = None
-    uri: str | None = None
-    owner: UUID | None = uuid4()
-    cache_ttl: int | None = 0
-    lifetime: int | None = 0
-    content_hash: str | None = None
-    locators: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
+    id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    name: str | None = Field(default=None)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    deleted: datetime | None = Field(default=None)
+    size: int | None = Field(default=0)
+    content_type: str | None = Field(default=None)
+    uri: str | None = Field(default=None)
+    owner: UUID | None = Field(default=uuid4())
+    cache_ttl: int | None = Field(default=0)
+    downloads: int | None = Field(default=0)
+    lifetime: int | None = Field(default=0)
+    content_hash: str | None = Field(default=None)
+    locators: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
