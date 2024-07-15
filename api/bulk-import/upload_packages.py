@@ -141,8 +141,7 @@ parser.add_argument(
 parser.add_argument(
     "-p", "--profileId",
     help="API profileId",
-    default="417bc6fc-c777-425d-a97c-aff5f074835f",
-    required=False
+    required=True
 )
 parser.add_argument(
     "-o", "--orgId",
@@ -295,9 +294,10 @@ for package in packages:
         'contents': {"files": asset_contents},
         'name': package['name'],
         'description': package['description'],
-        'author': args.profileId,
-        'org_id': args.orgId
+        'author': args.profileId
     }
+    if args.orgId is not None:
+        asset_ver_json['org_id'] = args.orgId
     headers = {
         "Authorization": f"Bearer {token}"
     }   
