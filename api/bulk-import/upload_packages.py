@@ -295,9 +295,10 @@ for package in packages:
         'contents': {"files": asset_contents},
         'name': package['name'],
         'description': package['description'],
-        'author': args.profileId,
-        'org_id': args.orgId
+        'author': args.profileId
     }
+    if args.orgId is not None:
+        asset_ver_json['org_id'] = args.orgId
     headers = {
         "Authorization": f"Bearer {token}"
     }   
