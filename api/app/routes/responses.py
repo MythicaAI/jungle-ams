@@ -30,6 +30,16 @@ class ProfileResponse(BaseModel):
     validate_state: ValidateEmailState | int = None
 
 
+class PublicProfileResponse(BaseModel):
+    """A model with only allows anonymous public properties for profile query"""
+    id: UUID = None
+    name: str | None = None
+    description: str | None = None
+    signature: str | None = None
+    profile_base_href: str | None = None
+    created: datetime = None
+
+
 class SessionStartResponse(BaseModel):
     token: str
     profile: ProfileResponse
