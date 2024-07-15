@@ -82,6 +82,8 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
         # Generate a new token and profile response
         profile = session.exec(select(Profile).where(
             Profile.id == profile_id)).first()
+        if profile is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
         profile_response = profile_to_profile_response(profile, ProfileResponse)
         token = generate_token(profile)
 
