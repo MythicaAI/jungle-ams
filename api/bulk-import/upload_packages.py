@@ -128,8 +128,103 @@ packages = [
         'directory': "assets",
         'name': "Treegen",
         'description': "Vegetation Generation Tool for Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:CorvaeOboro/gen_item.git",
+        'directory': "assets",
+        'name': "Gen_Item",
+        'description': "Create item images, a circular workflow of refinement using procgen augmented by neural networks."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:david-rhodes/GSOPs.git",
+        'directory': "assets",
+        'name': "Gaussian Splat Operators (GSOPS)",
+        'description': "Use GSOPs to import, edit, and export gaussian splat models, or generate synthetic training data. Synthetic data is capable of producing high-fidelity models with view-dependent effects, relatively small file sizes, and incredible rendering performance on most modern devices. With GSOPs, you can isolate objects or sections, eliminate noise and floaters, deform and animate models, compose scenes, mesh splats, and conduct feature analysis."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:jamesrobinsonvfx/linewriter.git",
+        'directory': "assets",
+        'name': "Line Writer",
+        'description': "Linewriter quickly creates lines of text geometry in Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:mruegenberg/houdini-principal-curvature.git",
+        'directory': "assets",
+        'name': "Principal Curvature",
+        'description': "A Houdini DSO that extracts the minimal and maximal principal curvature directions from geometry."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:mruegenberg/houdini-transform-matcher.git",
+        'directory': "assets",
+        'name': "Transform Matcher",
+        'description': "A Houdini DSO that extracts the transform between two sets of points using the Procrustes transform."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:aaronsmithtv/Texture-Stamp.git",
+        'directory': "assets",
+        'name': "Texture Stamp",
+        'description': "The Texture Stamp HDA for Houdini is a simple, intuitive and user-friendly tool designed to make projecting an image onto a geometry texture (stamping) easier, in a procedural workflow."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:sideeffects/SideFXLabs.git",
+        'directory': "assets",
+        'name': "SideFX Labs",
+        'description': "SideFX Labs is a free, open-source toolset geared towards assisting Houdini users with a variety of tasks commonly used for digital content creation."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:probiner/DASH.git",
+        'directory': "assets",
+        'name': "DASH",
+        'description': "DASH is a package for SideFX Houdini that proposes small quality of life improvements, standards and workflows through the delivery of nodes, scripts or settings."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:zengchen2015/HOUDINI_HPro.git",
+        'directory': "assets",
+        'name': "Houdini HPro",
+        'description': "A number of HDAs created by zengchen2015."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:DominikLingenover/DMNK-Tools.git",
+        'directory': "assets",
+        'name': "DMNK Shelf",
+        'description': "DMNK Shelf is a set of Python Scripts and HDAs to speed up your workflow. All tools are designed to be easy to use and take away the manual labour involved with daily tasks an artist may face. Render related scripts work with all major engines except Mantra. (Arnold, Octane, Redshift, Renderman, VRay)"
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:firehawkvfx/firehawk-houdini-tools.git",
+        'directory': "assets",
+        'name': "Firehawk Houdini Tools",
+        'description': "A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:firehawkvfx/firehawk-houdini-tools.git",
+        'directory': "assets",
+        'name': "Firehawk Houdini Tools",
+        'description': "A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline."
     }
-]
 
 parser = argparse.ArgumentParser(description="Upload Package")
 parser.add_argument(
