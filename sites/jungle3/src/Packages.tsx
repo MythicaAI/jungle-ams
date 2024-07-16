@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -31,7 +31,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LucidePackage, LucidePlusCircle } from 'lucide-react';
 import { useAssetVersionStore } from './stores/assetVersionStore.ts';
 import { DownloadButton } from './components/DownloadButton/index.tsx';
-import {getThumbnail, getThumbnailImg} from "./lib/packagedAssets.tsx";
+import {getThumbnailImg} from "./lib/packagedAssets.tsx";
 import {Thumbnail} from "./components/Thumbnail.tsx";
 
 type VersionCache = { [key: string]: [AssetVersionResponse] };

@@ -5,7 +5,7 @@ import {AssetVersionResponse} from "./types/apiTypes.ts";
 import {useGlobalStore} from "./stores/globalStore.ts";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {AxiosError} from "axios";
-import {getThumbnail, getThumbnailImg} from "./lib/packagedAssets.tsx";
+import {getThumbnailImg} from "./lib/packagedAssets.tsx";
 import {DownloadButton} from "./components/DownloadButton";
 import {LucidePackage} from "lucide-react";
 
