@@ -31,7 +31,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LucidePackage, LucidePlusCircle } from 'lucide-react';
 import { useAssetVersionStore } from './stores/assetVersionStore.ts';
 import { DownloadButton } from './components/DownloadButton/index.tsx';
-import { Thumbnail } from './components/Thumbnail.tsx';
+import {getThumbnailImg} from "./lib/packagedAssets.tsx";
+import {Thumbnail} from "./components/Thumbnail.tsx";
 
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
@@ -145,22 +146,6 @@ export const Packages = () => {
       .catch((err) => handleError(err));
   }, [authToken]);
 
-  const getThumbnail = (version: AssetVersionResponse): JSX.Element => {
-    if (!version || !version.contents || !('thumbnails' in version.contents)) {
-      return <></>;
-    }
-    const thumbnails = version.contents['thumbnails'];
-    if (!thumbnails || !thumbnails.length) {
-      return <></>;
-    }
-    const file_name = thumbnails[0].file_name;
-    const content_hash = thumbnails[0].content_hash;
-    const extension = file_name.split('.')[1];
-    const baseUrl = import.meta.env.VITE_IMAGES_BASE_URL;
-    const url = `${baseUrl}/${content_hash}.${extension}`;
-    return <Thumbnail src={url} alt={version.name} />;
-  };
-
   const renderLatestVersion = (
     assetId: string,
     versionList: AssetVersionResponse[]
@@ -192,7 +177,9 @@ export const Packages = () => {
             )}
           </Stack>
         </ListItemDecorator>
-        <ListItemDecorator>{getThumbnail(latestVersion)}</ListItemDecorator>
+        <ListItemDecorator>
+          <Thumbnail src={getThumbnailImg(latestVersion)} alt={latestVersion.name} />
+        </ListItemDecorator>
         <ListDivider orientation={'vertical'} />
         <ListItemContent sx={{ flex: 1 }}>
           <Typography

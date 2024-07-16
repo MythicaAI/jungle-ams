@@ -17,6 +17,7 @@ from content.locate_content import locate_content_by_id
 from db.connection import get_session
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
+from db.schema.media import FileContent
 from db.schema.profiles import Profile, Org
 from routes.authorization import current_profile
 
@@ -247,6 +248,21 @@ async def get_assets() -> list[AssetVersionResult]:
             asset_join_select.where(
                 Asset.id == AssetVersion.asset_id)).all()
         return process_join_results(session, join_results)
+
+
+@router.get('/top')
+async def get_top_assets() -> list[AssetVersionResult]:
+    """Get the list of asset headers top of the current profile"""
+    with get_session() as session:
+        results = session.exec(
+            select(Asset, AssetVersion)
+            .outerjoin(AssetVersion, Asset.id == AssetVersion.asset_id)
+            .outerjoin(FileContent, FileContent.id == AssetVersion.package_id)
+            .where(AssetVersion.published == True)
+            .where(AssetVersion.package_id != None)
+            .order_by(desc(FileContent.downloads))
+        ).all()
+        return process_join_results(session, results)
 
 
 @router.get('/owned')
