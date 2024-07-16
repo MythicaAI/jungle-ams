@@ -1,33 +1,57 @@
-import {Box, Table} from '@mui/joy';
-import {Link} from "react-router-dom";
-
-const assets = [
-  { id: 1, name: 'Roof Tool', version: [1, 2 ,1], author: "Kevin" },
-  { id: 2, name: 'Stair Tool', version: [0, 1, 1], author: "Max" },
-  { id: 3, name: 'Flower Tool', version: [3, 0, 1], author: "Tori" }
-];
+import {Box, Card, CardContent, CardCover, Grid, Typography} from '@mui/joy';
+import {useEffect, useState} from "react";
+import {extractValidationErrors, getData, translateError} from "./services/backendCommon.ts";
+import {AssetVersionResponse} from "./types/apiTypes.ts";
+import {useGlobalStore} from "./stores/globalStore.ts";
+import {useStatusStore} from "./stores/statusStore.ts";
+import {AxiosError} from "axios";
+import {getThumbnail, getThumbnailImg} from "./lib/packagedAssets.tsx";
+import {DownloadButton} from "./components/DownloadButton";
+import {LucidePackage} from "lucide-react";
 
 const Assets = () => {
+  const { authToken } = useGlobalStore();
+  const { addError, addWarning } = useStatusStore();
+
+  const [versions, setVersions] = useState<AssetVersionResponse[]>([]);
+
+  const handleError = (err: AxiosError) => {
+    addError(translateError(err));
+    extractValidationErrors(err).map((msg) => addWarning(msg));
+  };
+
+  useEffect(() => {
+    getData<AssetVersionResponse[]>('assets/top')
+      .then((r) => setVersions(r))
+      .catch((err) => handleError(err));
+  }, [authToken]);
+
   return (
-    <Box>
-      <Table>
-          <thead>
-              <tr>
-                  <th>Name</th>
-                  <th>Version</th>
-                  <th>Author</th>
-              </tr>
-          </thead>
-          <tbody>
-            {assets.map(asset => (
-                <tr key={asset.id}>
-                    <td><Link to={"/assets/:assetId"}>{asset.name}</Link></td>
-                    <td>{asset.version}</td>
-                    <td>{asset.author}</td>
-                </tr>
-            ))}
-          </tbody>
-      </Table>
+    <Box sx={{flexGrow: 1, padding: 2}}>
+      <Grid container spacing={2}>
+          {versions.map(av => (
+            <Grid xs={4}>
+              <Card>
+                <CardCover>
+                  <img
+                    height="200"
+                    src={getThumbnailImg(av)}
+                    loading={"lazy"}
+                    alt={av.name}/>
+                </CardCover>
+                <CardContent>
+                  <Typography
+                    level="body-lg"
+                    fontWeight="lg"
+                  mt={{ xs: 12, sm: 18 }}>
+                    {av.name}
+                    <DownloadButton file_id={av.package_id} icon={<LucidePackage/>}/>
+                  </Typography>
+
+                </CardContent>
+              </Card>
+            </Grid>))}
+      </Grid>
     </Box>
   );
 };
