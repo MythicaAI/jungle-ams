@@ -225,7 +225,7 @@ packages = [
         'name': "Firehawk Houdini Tools",
         'description': "A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline."
     }
-
+]
 parser = argparse.ArgumentParser(description="Upload Package")
 parser.add_argument(
     "-e", "--endpoint",
