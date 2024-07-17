@@ -10,7 +10,7 @@ import sqlalchemy
 from fastapi import APIRouter, HTTPException, Depends, Response, status
 from pydantic import BaseModel
 from pydantic.types import StrictInt
-from sqlmodel import select, update, insert, delete, Session, desc
+from sqlmodel import select, update, insert, delete, Session, desc, col
 
 from config import app_config
 from content.locate_content import locate_content_by_id
@@ -285,6 +285,15 @@ async def get_asset_by_name(asset_name) -> list[AssetVersionResult]:
             asset_join_select.where(
                 Asset.id == AssetVersion.asset_id,
                 AssetVersion.name == asset_name)).all())
+
+
+@router.get('/committed_at')
+async def get_assets_by_ref(ref: str) -> list[AssetVersionResult]:
+    """Find any asset versions with commit_ref containing ref"""
+    with get_session() as session:
+        return process_join_results(session, session.exec(
+            asset_join_select.where(Asset.id == AssetVersion.asset_id).where(
+                col(AssetVersion.commit_ref).contains(ref))).all())
 
 
 @router.get('/{asset_id}')
