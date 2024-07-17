@@ -128,6 +128,158 @@ packages = [
         'directory': "assets",
         'name': "Treegen",
         'description': "Vegetation Generation Tool for Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:CorvaeOboro/gen_item.git",
+        'directory': "houdini",
+        'name': "Gen_Item",
+        'description': "Create item images, a circular workflow of refinement using procgen augmented by neural networks."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:david-rhodes/GSOPs.git",
+        'directory': "otls",
+        'name': "Gaussian Splat Operators (GSOPS)",
+        'description': "Use GSOPs to import, edit, and export gaussian splat models, or generate synthetic training data. Synthetic data is capable of producing high-fidelity models with view-dependent effects, relatively small file sizes, and incredible rendering performance on most modern devices. With GSOPs, you can isolate objects or sections, eliminate noise and floaters, deform and animate models, compose scenes, mesh splats, and conduct feature analysis."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:jamesrobinsonvfx/linewriter.git",
+        'directory': "houdini19.0/otls",
+        'name': "Line Writer",
+        'description': "Linewriter quickly creates lines of text geometry in Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:aaronsmithtv/Texture-Stamp.git",
+        'directory': "otls",
+        'name': "Texture Stamp",
+        'description': "The Texture Stamp HDA for Houdini is a simple, intuitive and user-friendly tool designed to make projecting an image onto a geometry texture (stamping) easier, in a procedural workflow."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:probiner/DASH.git",
+        'directory': "otls",
+        'name': "DASH",
+        'description': "DASH is a package for SideFX Houdini that proposes small quality of life improvements, standards and workflows through the delivery of nodes, scripts or settings."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:zengchen2015/HOUDINI_HPro.git",
+        'directory': "otls",
+        'name': "Houdini HPro",
+        'description': "A number of HDAs created by zengchen2015."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:DominikLingenover/DMNK-Tools.git",
+        'directory': "otls",
+        'name': "DMNK Shelf",
+        'description': "DMNK Shelf is a set of Python Scripts and HDAs to speed up your workflow. All tools are designed to be easy to use and take away the manual labour involved with daily tasks an artist may face. Render related scripts work with all major engines except Mantra. (Arnold, Octane, Redshift, Renderman, VRay)"
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:firehawkvfx/firehawk-houdini-tools.git",
+        'directory': "hda",
+        'name': "Firehawk Houdini Tools",
+        'description': "A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Ashheer/YingQ-for-Houdini.git",
+        'directory': "otls",
+        'name': "YingQ for Houdini",
+        'description': "A collection of HDAs."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:maximcapra/MCHoudiniLabs.git",
+        'directory': "otls",
+        'name': "MC Labs - Houdini Tools",
+        'description': "HDAs, Scripts, Shelf Tools and Experiments for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:ShoheiOkazaki/Nagamochi.git",
+        'directory': "common/otls",
+        'name': "Nagamochi",
+        'description': "Nagamochi is a library of Digital Assets, Presets, Shelves, and Scripts for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Njordy/nLib.git",
+        'directory': "otls",
+        'name': "nLib",
+        'description': "A growing collection of digital assets what might be helpful to a beginning Houdini artist. Every tool does a simple operations what is usually very common."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Fe-Elf/FeELib-for-Houdini.git",
+        'directory': "otls",
+        'name': "FE-ELib for Houdini",
+        'description': "A collection of HDAs."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:simonreeves/BeeHou.git",
+        'directory': "hdas",
+        'name': "BeeHou",
+        'description': "Package of tools and scripts for Sidefx Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Aeoll/Aelib.git",
+        'directory': "otls",
+        'name': "Aelib",
+        'description': "A library of Digital Assets, Tools and Scripts for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:WeslieSison/WesLib.git",
+        'directory': "WesLib/otls",
+        'name': "WesLib",
+        'description': "A collection of HDAs."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Aeoll/ae_SVG.git",
+        'directory': "otls",
+        'name': "ae_svg",
+        'description': "Python-based HDAs for importing and exporting SVG files in Houdini"
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:alexnardini/FLAM3_for_SideFX_Houdini.git",
+        'directory': "otls/H20.x",
+        'name': "The Fractal Flame Algorithm",
+        'description': "An implementation of the original fractal flame algorithm inside a procedural environment."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:design-automation/houdarcs.git",
+        'directory': "otls",
+        'name': "Houdarcs",
+        'description': "Houdini Architecture Assets"
     }
 ]
 
@@ -238,7 +390,7 @@ for package in packages:
     repo = git.Repo.clone_from(package['repo'], repodir)
 
     # Verify the repo has a license file
-    license_files = [file for file in os.listdir(repodir) if file.startswith('LICENSE')]
+    license_files = [file for file in os.listdir(repodir) if file.lower().startswith('license')]
 
     if len(license_files) == 0:
         print(f"Failed to find license file in repo: {package['repo']}")
@@ -256,6 +408,10 @@ for package in packages:
             disk_path = os.path.join(root, file)
             package_path = os.path.relpath(disk_path, scan_path)
             contents.append((disk_path, package_path))
+
+    if len(contents) <= 1:
+        print(f"Failed to find any files in directory {package['directory']} for package {package['name']}")
+        continue
 
     # Upload all files
     asset_contents = []
