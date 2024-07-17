@@ -224,6 +224,94 @@ packages = [
         'directory': "assets",
         'name': "Firehawk Houdini Tools",
         'description': "A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Ashheer/YingQ-for-Houdini.git",
+        'directory': "assets",
+        'name': "YingQ for Houdini",
+        'description': "A collection of HDAs."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:maximcapra/MCHoudiniLabs.git",
+        'directory': "assets",
+        'name': "MC Labs - Houdini Tools",
+        'description': "HDAs, Scripts, Shelf Tools and Experiments for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:ShoheiOkazaki/Nagamochi.git",
+        'directory': "assets",
+        'name': "Nagamochi",
+        'description': "Nagamochi is a library of Digital Assets, Presets, Shelves, and Scripts for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Njordy/nLib.git",
+        'directory': "assets",
+        'name': "nLib",
+        'description': "A growing collection of digital assets what might be helpful to a beginning Houdini artist. Every tool does a simple operations what is usually very common."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Fe-Elf/FeELib-for-Houdini.git",
+        'directory': "assets",
+        'name': "FE-ELib for Houdini",
+        'description': "A collection of HDAs."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:simonreeves/BeeHou.git",
+        'directory': "assets",
+        'name': "BeeHou",
+        'description': "Package of tools and scripts for Sidefx Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Aeoll/Aelib.git",
+        'directory': "assets",
+        'name': "Aelib",
+        'description': "A library of Digital Assets, Tools and Scripts for SideFX Houdini."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:WeslieSison/WesLib.git",
+        'directory': "assets",
+        'name': "WesLib",
+        'description': "A collection of HDAs."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:Aeoll/ae_SVG.git",
+        'directory': "assets",
+        'name': "ae_svg",
+        'description': "Python-based HDAs for importing and exporting SVG files in Houdini"
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:alexnardini/FLAM3_for_SideFX_Houdini.git",
+        'directory': "assets",
+        'name': "The Fractal Flame Algorithm",
+        'description': "An implementation of the original fractal flame algorithm inside a procedural environment."
+    },
+    {
+        'asset_id': "",
+        'version': "1.0.0",
+        'repo': "git@github.com:design-automation/houdarcs.git",
+        'directory': "assets",
+        'name': "Houdarcs",
+        'description': "Houdini Architecture Assets"
     }
 ]
 parser = argparse.ArgumentParser(description="Upload Package")
