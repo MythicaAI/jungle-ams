@@ -257,6 +257,10 @@ for package in packages:
             package_path = os.path.relpath(disk_path, scan_path)
             contents.append((disk_path, package_path))
 
+    if len(contents) <= 1:
+        print(f"Failed to find any files in directory {package['directory']} for package {package['name']}")
+        continue
+
     # Upload all files
     asset_contents = []
 
