@@ -238,7 +238,7 @@ for package in packages:
     repo = git.Repo.clone_from(package['repo'], repodir)
 
     # Verify the repo has a license file
-    license_files = [file for file in os.listdir(repodir) if file.startswith('LICENSE')]
+    license_files = [file for file in os.listdir(repodir) if file.lower().startswith('license')]
 
     if len(license_files) == 0:
         print(f"Failed to find license file in repo: {package['repo']}")
