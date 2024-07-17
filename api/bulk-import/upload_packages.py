@@ -3,9 +3,11 @@ import argparse
 import json
 import os
 import tempfile
+from typing import Optional
 
 import git
 import requests
+from github import Github, GitRelease
 from munch import munchify
 from packaging import version
 from requests_toolbelt.multipart.encoder import MultipartEncoder
@@ -35,7 +37,7 @@ def get_repo_versions(repo):
             version.parse(str(tag))
             version_tags.append(tag)
         except version.InvalidVersion:
-            continue
+            print(f"Invalid version: {tag}")
 
     # Sort version tags
     sorted_versions = sorted(version_tags, key=lambda t: version.parse(str(t)), reverse=True)
@@ -43,6 +45,20 @@ def get_repo_versions(repo):
     # Print the sorted releases
     for tag in sorted_versions:
         print(f"Release: {tag}, Date: {tag.commit.committed_datetime}")
+    return sorted_versions[0:]
+
+
+def get_github_latest_release(package) -> Optional[GitRelease]:
+    """Lookup the releases for a project"""
+    with Github() as g:
+        owner, project = get_github_user_project_name(package.repo)
+        repo = g.get_repo(f"{owner}/{project}")
+        releases = repo.get_releases()
+        if releases.totalCount == 0:
+            return None
+        latest_release = releases.reversed.get_page(0)[0]
+        print("latest github release", latest_release)
+        return latest_release
 
 
 class PackageUploader(object):
@@ -63,14 +79,18 @@ class PackageUploader(object):
             required=False
         )
         parser.add_argument(
-            "-r", "--repo-base",
+            "-b", "--repo-base",
             help="Base directory for repo",
             default=None,
             required=False
         )
         args = parser.parse_args()
         self.endpoint = args.endpoint
-        self.repo_base_dir = args.repo_base or tempdir
+        self.repo_base_dir = args.repo_base or tempdir.name
+
+        # prepare the base repo directory
+        if not os.path.exists(self.repo_base_dir):
+            os.makedirs(self.repo_base_dir)
 
     def start_session(self, profile_id):
         """Create a session for the current profile"""
@@ -198,11 +218,22 @@ class PackageUploader(object):
     def clone_repo(self, package: PackageModel):
         """Clone the repo"""
         package.root_disk_path = os.path.join(str(self.repo_base_dir), package.name)
-        print(f"Cloning repo: {package.repo} into {package.root_disk_path}")
+        if os.path.exists(package.root_disk_path):
+        else:
+            repo = git.Repo.clone_from(package.repo, package.root_disk_path)
+            print(f"Cloning repo: {package.repo} into {package.root_disk_path}")
 
-        repo = git.Repo.clone_from(package.repo, package.root_disk_path)
+
         package.commit_ref = repo.head.commit.hexsha
-        get_repo_versions(repo)
+
+        # get the latest release if it exists
+        latest_release = get_github_latest_release(package)
+        if latest_release:
+            repo.git.checkout(latest_release.title)
+            v = version.parse(latest_release.title)
+            package.latest_version = [v.major, v.minor, v.micro]
+        else:
+            package.latest_version = (0, 0, 0)
 
         # Verify the repo has a license file
         license_files = [file
