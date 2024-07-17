@@ -40,8 +40,6 @@ COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template
 COPY conf/*.conf /etc/nginx/
 COPY ./docker-entrypoint.sh /
 
-COPY fix_sites_privileges.sh /docker-entrypoint.d/100_fix_sites_privileges.sh
-
 # override the base image, provide a different config for deployment environments
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-c", "/etc/nginx/nginx-local.conf"]
