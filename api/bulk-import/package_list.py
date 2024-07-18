@@ -1,36 +1,13 @@
 """Bulk import package list"""
 
-from pydantic import BaseModel
-
-
-class PackageModel(BaseModel):
-    """Model to validate the input dictionary"""
-    repo: str
-    directory: str
-    name: str
-    description: str
-
-
-class ProcessedPackageModel(PackageModel):
-    """Instance info filled out by resolving repo and assets"""
-    asset_id: str = ''
-    profile_id: str = ''
-    org_id: str = ''
-    latest_version: list[int] = list()
-    commit_ref: str = ''
-    root_disk_path: str = ''
-
-
 packages = [
     {
-        'asset_id': "",
         'repo': "git@github.com:kdbra/kdbra-houdini-tools.git",
         'directory': "otls",
         'name': "KDBRA Tools",
         'description': "Kdbra tools are intended to speed up and facilitate VFX artist's routines."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:TrevisanGMW/gt-houdini-assets.git",
         'directory': "assets",
         'name': "GT Houdini Assets",
@@ -38,84 +15,72 @@ packages = [
                         "simplifying or to be used as a learning tool.")
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:CorvaeOboro/zenv.git",
         'directory': "hda",
         'name': "ZENV",
         'description': "Houdini hda tools focused on procedural modeling environments."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:mifth/mifthtools.git",
         'directory': "houdini/otls",
         'name': "MiraTools",
         'description': "Modern modeling and retopology tools."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:NiklasRosenstein/houdini-library.git",
         'directory': "otls",
         'name': "Niklas' Houdini Library",
         'description': "A collection of digital assets, shelf tools and code snippets."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:LaidlawFX/LaidlawFX.git",
         'directory': "otls",
         'name': "LaidlawFX",
         'description': "A repository of tools developed in production."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:eglaubauf/egLib.git",
         'directory': "otls",
         'name': "egLib",
         'description': "A collection of scripts for SideFx Houdini."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:igor-elovikov/hipie.git",
         'directory': "otls",
         'name': "Houdini Tools by Igor Elovikov",
         'description': ""
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:thi-ng/houdini.git",
         'directory': "hda",
         'name': "thi.ng Houdini Tools",
         'description': "Houdini HDAs & sketches (VEX, OpenCL, Python)"
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:ivantitov-zd/Hammer.git",
         'directory': "otls",
         'name': "Hammer Tools",
         'description': "Hammer Tools"
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:sashaouellet/SDMTools.git",
         'directory': "houdini/otls",
         'name': "SDMTools",
         'description': "A collection of shelf tools, HDAs, and menu scripts in its Houdini form."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:captainhammy/Houdini-Toolbox.git",
         'directory': "houdini/otls",
         'name': "Houdini Toolbox",
         'description': "Collection of Houdini tools."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:qLab/qLib.git",
         'directory': "otls",
         'name': "qLib",
         'description': "A procedural asset library for SideFX Houdini."
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:joshuazt/JZTREES.git",
         'directory': "otls",
         'name': "JZTREES",
@@ -123,159 +88,138 @@ packages = [
                         "and applying FX to trees and vegetation.")
     },
     {
-        'asset_id': "",
         'repo': "git@github.com:demiaster/treegen.git",
         'directory': "assets",
         'name': "Treegen",
         'description': "Vegetation Generation Tool for Houdini."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:CorvaeOboro/gen_item.git",
         'directory': "houdini",
         'name': "Gen_Item",
-        'description': "Create item images, a circular workflow of refinement using procgen augmented by neural networks."
+        'description': ("Create item images, a circular workflow of refinement"
+                        "using procgen augmented by neural networks.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:david-rhodes/GSOPs.git",
         'directory': "otls",
         'name': "Gaussian Splat Operators (GSOPS)",
-        'description': "Use GSOPs to import, edit, and export gaussian splat models, or generate synthetic training data. Synthetic data is capable of producing high-fidelity models with view-dependent effects, relatively small file sizes, and incredible rendering performance on most modern devices. With GSOPs, you can isolate objects or sections, eliminate noise and floaters, deform and animate models, compose scenes, mesh splats, and conduct feature analysis."
+        'description': ("Use GSOPs to import, edit, and export gaussian splat models,"
+                        " or generate synthetic training data. Synthetic data is capable"
+                        " of producing high-fidelity models with view-dependent effects,"
+                        " relatively small file sizes, and incredible rendering performance"
+                        " on most modern devices. With GSOPs, you can isolate objects or sections,"
+                        " eliminate noise and floaters, deform and animate models, compose scenes,"
+                        " mesh splats, and conduct feature analysis.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:jamesrobinsonvfx/linewriter.git",
         'directory': "houdini19.0/otls",
         'name': "Line Writer",
         'description': "Linewriter quickly creates lines of text geometry in Houdini."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:aaronsmithtv/Texture-Stamp.git",
         'directory': "otls",
         'name': "Texture Stamp",
-        'description': "The Texture Stamp HDA for Houdini is a simple, intuitive and user-friendly tool designed to make projecting an image onto a geometry texture (stamping) easier, in a procedural workflow."
+        'description': ("The Texture Stamp HDA for Houdini is a simple,"
+                        " intuitive and user-friendly tool designed to make projecting"
+                        " an image onto a geometry texture (stamping) easier, in a procedural workflow.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:probiner/DASH.git",
         'directory': "otls",
         'name': "DASH",
-        'description': "DASH is a package for SideFX Houdini that proposes small quality of life improvements, standards and workflows through the delivery of nodes, scripts or settings."
+        'description': ("DASH is a package for SideFX Houdini that proposes small quality of"
+                        " life improvements, standards and workflows through the delivery of nodes,"
+                        " scripts or settings.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:zengchen2015/HOUDINI_HPro.git",
         'directory': "otls",
         'name': "Houdini HPro",
         'description': "A number of HDAs created by zengchen2015."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:DominikLingenover/DMNK-Tools.git",
         'directory': "otls",
         'name': "DMNK Shelf",
-        'description': "DMNK Shelf is a set of Python Scripts and HDAs to speed up your workflow. All tools are designed to be easy to use and take away the manual labour involved with daily tasks an artist may face. Render related scripts work with all major engines except Mantra. (Arnold, Octane, Redshift, Renderman, VRay)"
+        'description': ("DMNK Shelf is a set of Python Scripts and HDAs to speed up your workflow."
+                        " All tools are designed to be easy to use and take away the manual labour"
+                        " involved with daily tasks an artist may face. Render related scripts work"
+                        " with all major engines except Mantra. (Arnold, Octane, Redshift, Renderman, VRay)")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:firehawkvfx/firehawk-houdini-tools.git",
         'directory': "hda",
         'name': "Firehawk Houdini Tools",
         'description': "A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:Ashheer/YingQ-for-Houdini.git",
         'directory': "otls",
         'name': "YingQ for Houdini",
         'description': "A collection of HDAs."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:maximcapra/MCHoudiniLabs.git",
         'directory': "otls",
         'name': "MC Labs - Houdini Tools",
         'description': "HDAs, Scripts, Shelf Tools and Experiments for SideFX Houdini."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:ShoheiOkazaki/Nagamochi.git",
         'directory': "common/otls",
         'name': "Nagamochi",
-        'description': "Nagamochi is a library of Digital Assets, Presets, Shelves, and Scripts for SideFX Houdini."
+        'description': ("Nagamochi is a library of Digital Assets, Presets, Shelves,"
+                        " and Scripts for SideFX Houdini.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:Njordy/nLib.git",
         'directory': "otls",
         'name': "nLib",
-        'description': "A growing collection of digital assets what might be helpful to a beginning Houdini artist. Every tool does a simple operations what is usually very common."
+        'description': ("A growing collection of digital assets what might be helpful"
+                        " to a beginning Houdini artist. Every tool does a simple operations"
+                        " what is usually very common.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:Fe-Elf/FeELib-for-Houdini.git",
         'directory': "otls",
         'name': "FE-ELib for Houdini",
         'description': "A collection of HDAs."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:simonreeves/BeeHou.git",
         'directory': "hdas",
         'name': "BeeHou",
         'description': "Package of tools and scripts for Sidefx Houdini."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:Aeoll/Aelib.git",
         'directory': "otls",
         'name': "Aelib",
         'description': "A library of Digital Assets, Tools and Scripts for SideFX Houdini."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:WeslieSison/WesLib.git",
         'directory': "WesLib/otls",
         'name': "WesLib",
         'description': "A collection of HDAs."
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:Aeoll/ae_SVG.git",
         'directory': "otls",
         'name': "ae_svg",
         'description': "Python-based HDAs for importing and exporting SVG files in Houdini"
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:alexnardini/FLAM3_for_SideFX_Houdini.git",
         'directory': "otls/H20.x",
         'name': "The Fractal Flame Algorithm",
-        'description': "An implementation of the original fractal flame algorithm inside a procedural environment."
+        'description': ("An implementation of the original fractal flame algorithm"
+                        " inside a procedural environment.")
     },
     {
-        'asset_id': "",
-        'version': "1.0.0",
         'repo': "git@github.com:design-automation/houdarcs.git",
         'directory': "otls",
         'name': "Houdarcs",

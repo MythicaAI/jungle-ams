@@ -1,5 +1,6 @@
 """Bulk import package uploader, consumes a package list and uploads them to the package index API"""
 import argparse
+import importlib.util
 import json
 import os
 import tempfile
@@ -12,9 +13,12 @@ from munch import munchify
 from packaging import version
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
-from package_list import packages, PackageModel, ProcessedPackageModel
+from models import PackageModel, ProcessedPackageModel
 
 tempdir = tempfile.TemporaryDirectory()
+
+DEFAULT_STARTING_VERSION = [1, 0, 0]
+ZERO_VERSION = [0, 0, 0]
 
 
 def get_github_user_project_name(ref_url: str) -> tuple[str, str]:
@@ -98,10 +102,36 @@ def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
     return [license_files[0], *readme_files[0:]]
 
 
+def any_upstream_changes(package: ProcessedPackageModel,
+                         new_asset_contents: list[dict]) -> bool:
+    """Detect any changes in the GitHub upstream by doing a count and hash check"""
+    # first index the latest version contents
+    contents_by_hash = {asset_version_content.content_hash: asset_version_content
+                        for asset_version_content in package.latest_version_contents['files']}
+    # validate the file count matches
+    if len(contents_by_hash.keys()) != len(new_asset_contents):
+        print(("Changed due to file count mismatch:"
+               f"{len(contents_by_hash.keys())} != {len(new_asset_contents)}"))
+    # validate all content hashes exist in existing asset version content
+    for new_content in new_asset_contents:
+        new_content_hash = new_content['content_hash']
+        if new_content_hash not in contents_by_hash:
+            print(f"Content hash missing or changed {new_content_hash}")
+            return True
+    return False
+
+
+def bump_package_version(package: ProcessedPackageModel):
+    """Update the package version"""
+    assert package.latest_version != ZERO_VERSION
+    package.latest_version[2] += 1
+
+
 class PackageUploader(object):
     """Processes git repos into packages"""
 
     def __init__(self):
+        self.package_list_file = None
         self.endpoint = ''
         self.token = ''
         self.repo_base_dir = ''
@@ -128,10 +158,17 @@ class PackageUploader(object):
             default=None,
             required=False
         )
+        parser.add_argument(
+            '-l', '--package-list',
+            help='Python file with list of packages to upload',
+            default='package_list.py',
+            required=False
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
         self.github_api_token = args.github_api_token
+        self.package_list_file = args.package_list
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -164,18 +201,31 @@ class PackageUploader(object):
         org = self.find_or_create_org(package)
         package.org_id = org.id
 
-        asset_id = package.asset_id
-        if asset_id is None or asset_id == "":
-            package.asset_id, package.latest_version = self.find_versions_for_repo(package)
-        else:
-            package.asset_id, package.latest_version = self.create_asset(package)
-
-        self.version_exists(package)
+        # First try to resolve the version from the repo link
+        package.asset_id, package.latest_version = self.find_versions_for_repo(package)
+        if package.asset_id is None or package.asset_id == "":
+            package.asset_id = self.create_asset(package)
+            package.latest_version = ZERO_VERSION
 
         asset_contents = self.gather_contents(package)
         if len(asset_contents) == 0:
             print(f"Failed to find any files in directory {package.directory} for package {package.name}")
             return
+
+        if self.latest_version_exists(package):
+            if package.latest_github_version and package.latest_github_version != package.latest_version:
+                package.latest_version = package.latest_github_version
+                print(f"Updating {package.name} to latest github release: {package.latest_github_version}")
+            elif any_upstream_changes(package, asset_contents):
+                bump_package_version(package)
+                print(f"Change detected, bumped {package.name} version to {package.latest_version}")
+            else:
+                print(f"Skipping {package.name}, latest version available")
+                return
+        else:
+            package.latest_version = DEFAULT_STARTING_VERSION
+            print(f"Creating {package.name} {DEFAULT_STARTING_VERSION}")
+
         self.create_version(package, asset_contents)
 
     def find_or_create_org(self, package: PackageModel):
@@ -211,7 +261,7 @@ class PackageUploader(object):
         response.raise_for_status()
         return munchify(response.json())
 
-    def find_versions_for_repo(self, package: PackageModel) -> tuple[str, tuple[int, ...]]:
+    def find_versions_for_repo(self, package: PackageModel) -> tuple[str, list[int]]:
         """Find or create version objects for the repo URL"""
         response = requests.get(f"{self.endpoint}/v1/assets/committed_at?ref={package.repo}")
         response.raise_for_status()
@@ -219,7 +269,7 @@ class PackageUploader(object):
         versions = munchify(response.json())
         sorted_versions = sorted(versions, key=lambda k: k['version'], reverse=True)
         if len(sorted_versions) == 0:
-            return '', (0, 0, 0)
+            return '', ZERO_VERSION
         print(f"Found {len(sorted_versions)} versions for {package.name}")
         print(f"Using latest version: {sorted_versions[0]['version']}")
         latest_version = sorted_versions[0]
@@ -248,16 +298,20 @@ class PackageUploader(object):
         print(f"Created assetId {asset_id} for asset {package.name}")
         return asset_id
 
-    def version_exists(self, package: PackageModel) -> bool:
+    def latest_version_exists(self, package: PackageModel) -> bool:
         """Check if the asset version already exists"""
         assert len(package.latest_version) == 3
-        if package.latest_version == (0, 0, 0):
+        if package.latest_version == ZERO_VERSION:
             return False
 
         version_str = '.'.join(map(str, package.latest_version))
         response = requests.get(f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}")
-        response.raise_for_status()
+        if response.status_code != 200:
+            print(f"Version {version_str} not found for {package.name} ({package.asset_id})")
+            return False
+
         o = munchify(response.json())
+        package.latest_version_contents = o.contents
         if o.version == package.latest_version:
             print(f"Skipping package {package.name} already uploaded.")
             return True
@@ -283,13 +337,12 @@ class PackageUploader(object):
             repo.git.checkout(latest_release.tag_name)
             try:
                 v = version.parse(latest_release.tag_name)
-                package.latest_version = [v.major, v.minor, v.micro]
+                package.latest_github_version = [v.major, v.minor, v.micro]
             except version.InvalidVersion:
-                # non-parsable version, generate a semver version automatically
-                package.latest_version = (0, 0, 0)
+                pass
             package.description += " (Release: " + latest_release.title + ")"
         else:
-            package.latest_version = (0, 0, 0)
+            package.latest_version = ZERO_VERSION
 
     def gather_contents(self, package: ProcessedPackageModel) -> list[dict]:
         """Gather all files to be included in the package"""
@@ -358,6 +411,12 @@ def main():
     """Entrypoint"""
     uploader = PackageUploader()
     uploader.parse_args()
+
+    # load the package list
+    spec = importlib.util.spec_from_file_location('package_list', uploader.package_list_file)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    packages = getattr(module, 'packages', None)
     for package in packages:
         try:
             uploader.process_package(PackageModel(**package))
