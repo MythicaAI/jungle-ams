@@ -2,9 +2,9 @@ import logging
 import os
 import sys
 
-from .loader import load_name, ASSETS, EVENTS, MEDIA, PROFILE, GRAPH
-from .to_python import schema_to_sqlmodel
-from .to_typescript import schema_to_typescript
+from loader import load_name, ASSETS, EVENTS, MEDIA, PROFILE, GRAPH
+from to_python import schema_to_sqlmodel
+from to_typescript import schema_to_typescript
 
 log = logging.getLogger(__name__)
 

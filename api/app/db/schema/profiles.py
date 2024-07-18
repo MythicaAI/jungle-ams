@@ -18,7 +18,7 @@ class Profile(SQLModel, table=True):
     """
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    profile_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     name: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     signature: str | None = Field(default=None)
@@ -43,7 +43,7 @@ class OrgRef(SQLModel, table=True):
     profile_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     role: str = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    created_by: UUID | None = Field(foreign_key='profiles.id',default=None)
+    author_id: UUID | None = Field(foreign_key='profiles.profile_id',default=None)
 
 
 class Org(SQLModel, table=True):
@@ -52,7 +52,7 @@ class Org(SQLModel, table=True):
     """
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    org_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
@@ -65,10 +65,10 @@ class ProfileSession(SQLModel, table=True):
     """
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    profile_session_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     refreshed: datetime | None = Field(default=None)
-    profile_id: UUID = Field(foreign_key='profiles.id',default=None)
+    profile_id: UUID = Field(foreign_key='profiles.profile_id',default=None)
     authenticated: bool | None = Field(default=False)
     auth_token: str | None = Field(default=None)
     refresh_token: str | None = Field(default=None)
@@ -82,7 +82,7 @@ class ProfileFollower(SQLModel, table=True):
     __tablename__ = "profile_followers"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     profile_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
-    follow_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    follower_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     deleted: datetime | None = Field(default=None)
 
@@ -94,6 +94,6 @@ class ProfileKey(SQLModel, table=True):
     __tablename__ = "profile_keys"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     key: str = Field(primary_key=True,nullable=False)
-    owner: UUID | None = Field(default=uuid4())
+    owner_id: UUID | None = Field(default=uuid4())
     expires: datetime | None = Field(default=None)
     payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
