@@ -117,7 +117,7 @@ async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = 
                 Org.name == org_name)).all()
         else:
             results = session.exec(select(Org).where(
-                col(Org.name).contains(org_name))).all()
+                col(Org.name).contains(org_name))).all()  # pylint: disable=no-member
         return results
 
 

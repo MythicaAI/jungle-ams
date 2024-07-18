@@ -293,7 +293,7 @@ async def get_assets_by_ref(ref: str) -> list[AssetVersionResult]:
     with get_session() as session:
         return process_join_results(session, session.exec(
             asset_join_select.where(Asset.id == AssetVersion.asset_id).where(
-                col(AssetVersion.commit_ref).contains(ref))).all())
+                col(AssetVersion.commit_ref).contains(ref))).all())  # pylint: disable=no-member
 
 
 @router.get('/{asset_id}')

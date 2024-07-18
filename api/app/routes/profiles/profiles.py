@@ -1,3 +1,4 @@
+"""Profiles API"""
 import logging
 from http import HTTPStatus
 from typing import Optional
@@ -108,15 +109,19 @@ async def get_profile_by_name(profile_name: profile_name_str, exact_match: Optio
     """Get asset by name"""
     with get_session() as session:
         if exact_match:
-            results = session.exec(select(Profile).where(col(Profile.name) == profile_name)).all()
+            results = session.exec(select(Profile).where(Profile.name == profile_name)).all()
         else:
-            results = session.exec(select(Profile).where(col(Profile.name).contains(profile_name))).all()
+            results = session.exec(select(Profile)
+                                   .where(col(Profile.name)
+                                          .contains(profile_name))  # pylint: disable=no-member
+                                   ).all()
         return [profile_to_profile_response(x, PublicProfileResponse) for x in results]
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_profile(
         req_profile: CreateUpdateProfileModel) -> ProfileResponse:
+    """Create a new profile"""
     session = get_session()
     try:
         # copy over the request parameters as they have been auto validated,
@@ -138,6 +143,7 @@ async def create_profile(
 
 @router.get('/{profile_id}')
 async def get_profile(profile_id: UUID) -> PublicProfileResponse:
+    """Get a profile by ID"""
     with get_session() as session:
         profile = session.exec(select(Profile).where(
             Profile.id == profile_id)).first()
@@ -151,6 +157,7 @@ async def update_profile(
         profile_id: UUID,
         req_profile: CreateUpdateProfileModel,
         profile: Profile = Depends(current_profile)) -> ProfileResponse:
+    """Update the profile of the owning account"""
     if profile_id != profile.id:
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail='profile not authenticated')
