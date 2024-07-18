@@ -48,9 +48,9 @@ def get_repo_versions(repo):
     return sorted_versions[0:]
 
 
-def get_github_latest_release(package) -> Optional[GitRelease]:
+def get_github_latest_release(api_token, package) -> Optional[GitRelease]:
     """Lookup the releases for a project"""
-    with Github() as g:
+    with Github(api_token) as g:
         owner, project = get_github_user_project_name(package.repo)
         repo = g.get_repo(f"{owner}/{project}")
         releases = repo.get_releases()
@@ -61,6 +61,43 @@ def get_github_latest_release(package) -> Optional[GitRelease]:
         return latest_release
 
 
+def get_default_branch(repo):
+    """Get the default branch such as `main`"""
+    # Get the remote origin
+    remote_origin = repo.remotes.origin
+
+    # Fetch remote references
+    remote_refs = remote_origin.refs
+
+    # The HEAD reference of the remote will point to the default branch
+    remote_head = next((ref for ref in remote_refs if ref.name.endswith('HEAD')), None)
+
+    if remote_head:
+        # Extract the default branch from the remote HEAD reference
+        default_branch = remote_head.reference.name.split('/')[-1]
+        return default_branch
+    else:
+        raise ValueError("Cannot determine the default branch.")
+
+
+def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
+    """Get list of local package contents that represent core documentation"""
+    # Verify the repo has a license file
+    license_files = [file
+                     for file in os.listdir(package.root_disk_path)
+                     if file.startswith('LICENSE')]
+    if len(license_files) == 0:
+        raise ValueError(f"Failed to find license file in repo: {package.repo}")
+
+    # Find some documentation, sort readme by shortest name
+    # to prioritize e.g. README.md over README-building.md
+    readme_files = sorted([file
+                           for file in os.listdir(package.root_disk_path)
+                           if file.startswith('README')],
+                          key=lambda n: len(n))
+    return [license_files[0], *readme_files[0:]]
+
+
 class PackageUploader(object):
     """Processes git repos into packages"""
 
@@ -68,6 +105,7 @@ class PackageUploader(object):
         self.endpoint = ''
         self.token = ''
         self.repo_base_dir = ''
+        self.github_api_token = None
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -84,9 +122,16 @@ class PackageUploader(object):
             default=None,
             required=False
         )
+        parser.add_argument(
+            "-G", "--github-api-token",
+            help="GitHub API token",
+            default=None,
+            required=False
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
+        self.github_api_token = args.github_api_token
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -110,7 +155,7 @@ class PackageUploader(object):
 
         package = ProcessedPackageModel(**const_package.model_dump())
 
-        self.clone_repo(package)
+        self.update_local_repo(package)
 
         profile = self.find_or_create_profile(package)
         package.profile_id = profile.id
@@ -215,55 +260,50 @@ class PackageUploader(object):
             return True
         return False
 
-    def clone_repo(self, package: PackageModel):
-        """Clone the repo"""
-        package.root_disk_path = os.path.join(str(self.repo_base_dir), package.name)
+    def update_local_repo(self, package: PackageModel):
+        """Clone or refresh the local repo"""
+        package.root_disk_path = os.path.abspath(os.path.join(str(self.repo_base_dir), package.name))
         if os.path.exists(package.root_disk_path):
+            print(f"Pulling repo {package.repo} in {package.root_disk_path}")
+            repo = git.Repo(package.root_disk_path)
+            repo.git.checkout(get_default_branch(repo))
+            repo.git.pull()
         else:
-            repo = git.Repo.clone_from(package.repo, package.root_disk_path)
             print(f"Cloning repo: {package.repo} into {package.root_disk_path}")
-
+            repo = git.Repo.clone_from(package.repo, package.root_disk_path)
 
         package.commit_ref = repo.head.commit.hexsha
 
         # get the latest release if it exists
-        latest_release = get_github_latest_release(package)
+        latest_release = get_github_latest_release(self.github_api_token, package)
         if latest_release:
-            repo.git.checkout(latest_release.title)
-            v = version.parse(latest_release.title)
-            package.latest_version = [v.major, v.minor, v.micro]
+            repo.git.checkout(latest_release.tag_name)
+            try:
+                v = version.parse(latest_release.tag_name)
+                package.latest_version = [v.major, v.minor, v.micro]
+            except version.InvalidVersion:
+                # non-parsable version, generate a semver version automatically
+                package.latest_version = (0, 0, 0)
+            package.description += " (Release: " + latest_release.title + ")"
         else:
             package.latest_version = (0, 0, 0)
 
-        # Verify the repo has a license file
-        license_files = [file
-                         for file in os.listdir(package.root_disk_path)
-                         if file.startswith('LICENSE')]
-
-        if len(license_files) == 0:
-            raise ValueError(f"Failed to find license file in repo: {package.repo}")
-
-        package.license_disk_path = os.path.join(
-            package.root_disk_path, license_files[0])
-        package.license_package_path = license_files[0]
-
-    def gather_contents(self, package: PackageModel):
+    def gather_contents(self, package: ProcessedPackageModel) -> list:
         """Gather all files to be included in the package"""
-        contents = [(package.license_disk_path,
-                     package.license_package_path)]
+        contents = collect_doc_package_paths(package)
 
         scan_path = os.path.join(package.root_disk_path, package.directory)
         for root, dirs, files in os.walk(scan_path):
             for file in files:
                 disk_path = os.path.join(root, file)
-                package_path = os.path.relpath(disk_path, scan_path)
-                contents.append((disk_path, package_path))
+                package_path = os.path.relpath(disk_path, package.root_disk_path)
+                contents.append(package_path)
 
         # Upload all files
         asset_contents = []
 
-        for (disk_path, package_path) in contents:
-            filepath = os.path.normpath(disk_path)
+        for package_path in contents:
+            filepath = os.path.normpath(os.path.join(package.root_disk_path, package_path))
             print(f"Uploading file: {filepath}")
 
             with open(filepath, 'rb') as f:

@@ -1,3 +1,5 @@
+"""Bulk import package list"""
+
 from pydantic import BaseModel
 
 
@@ -17,8 +19,6 @@ class ProcessedPackageModel(PackageModel):
     latest_version: list[int] = list()
     commit_ref: str = ''
     root_disk_path: str = ''
-    license_disk_path: str = ''
-    license_package_path: str = ''
 
 
 packages = [
@@ -34,7 +34,8 @@ packages = [
         'repo': "git@github.com:TrevisanGMW/gt-houdini-assets.git",
         'directory': "assets",
         'name': "GT Houdini Assets",
-        'description': "These assets were created with the aim of automating, simplifying or to be used as a learning tool."
+        'description': ("These assets were created with the aim of automating,"
+                        "simplifying or to be used as a learning tool.")
     },
     {
         'asset_id': "",
@@ -118,7 +119,8 @@ packages = [
         'repo': "git@github.com:joshuazt/JZTREES.git",
         'directory': "otls",
         'name': "JZTREES",
-        'description': "Set of tools designed to ease the workflow for generating and applying FX to trees and vegetation."
+        'description': ("Set of tools designed to ease the workflow for generating"
+                        "and applying FX to trees and vegetation.")
     },
     {
         'asset_id': "",
