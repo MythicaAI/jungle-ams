@@ -112,8 +112,8 @@ async def get_profile_by_name(profile_name: profile_name_str, exact_match: Optio
             results = session.exec(select(Profile).where(Profile.name == profile_name)).all()
         else:
             results = session.exec(select(Profile)
-                                   .where(col(Profile.name)
-                                          .contains(profile_name))  # pylint: disable=no-member
+                                   .where(col(Profile.name)  # pylint: disable=no-member
+                                          .contains(profile_name))
                                    ).all()
         return [profile_to_profile_response(x, PublicProfileResponse) for x in results]
 
