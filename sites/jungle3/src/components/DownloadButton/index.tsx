@@ -1,14 +1,14 @@
-import React from 'react';
-import { IconButton } from '@mui/joy';
-import { AxiosError } from 'axios';
+import React from "react";
+import { IconButton } from "@mui/joy";
+import { AxiosError } from "axios";
 import {
   extractValidationErrors,
-  getData,
   translateError,
-} from '../../services/backendCommon.ts';
-import { useStatusStore } from '../../stores/statusStore.ts';
-import { DownloadInfoResponse } from '../../types/apiTypes.ts';
-import { ReactNode } from 'react';
+} from "../../services/backendCommon.ts";
+import { useStatusStore } from "../../stores/statusStore.ts";
+import { DownloadInfoResponse } from "../../types/apiTypes.ts";
+import { ReactNode } from "react";
+import { api } from "../../services/api";
 
 interface DownloadButtonProps {
   file_id: string;
@@ -27,11 +27,12 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
   };
 
   const handleDownload = () => {
-    getData<DownloadInfoResponse>(`download/info/${file_id}`)
+    api
+      .get<DownloadInfoResponse>({ path: `download/info/${file_id}` })
       .then((r) => {
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = r.url;
-        link.setAttribute('download', r.name); // Specify the filename for download
+        link.setAttribute("download", r.name); // Specify the filename for download
         document.body.appendChild(link);
         link.click();
         link.remove();

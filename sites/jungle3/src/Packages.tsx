@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -12,27 +12,26 @@ import {
   Stack,
   Switch,
   Typography,
-} from '@mui/joy';
+} from "@mui/joy";
 import {
   AssetCreateRequest,
   AssetCreateResponse,
   AssetVersionResponse,
-} from './types/apiTypes.ts';
-import { AxiosError } from 'axios';
+} from "./types/apiTypes.ts";
+import { AxiosError } from "axios";
 import {
   extractValidationErrors,
-  getData,
-  postData,
   translateError,
-} from './services/backendCommon.ts';
-import { useGlobalStore } from './stores/globalStore.ts';
-import { useStatusStore } from './stores/statusStore.ts';
-import { Link, useNavigate } from 'react-router-dom';
-import { LucidePackage, LucidePlusCircle } from 'lucide-react';
-import { useAssetVersionStore } from './stores/assetVersionStore.ts';
-import { DownloadButton } from './components/DownloadButton/index.tsx';
-import {getThumbnailImg} from "./lib/packagedAssets.tsx";
-import {Thumbnail} from "./components/Thumbnail.tsx";
+} from "./services/backendCommon.ts";
+import { useGlobalStore } from "./stores/globalStore.ts";
+import { useStatusStore } from "./stores/statusStore.ts";
+import { Link, useNavigate } from "react-router-dom";
+import { LucidePackage, LucidePlusCircle } from "lucide-react";
+import { useAssetVersionStore } from "./stores/assetVersionStore.ts";
+import { DownloadButton } from "./components/DownloadButton/index.tsx";
+import { getThumbnailImg } from "./lib/packagedAssets.tsx";
+import { Thumbnail } from "./components/Thumbnail.tsx";
+import { api } from "./services/api/index.ts";
 
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
@@ -52,7 +51,7 @@ export const Packages = () => {
 
   const assetVersionsEqual = (
     a: AssetVersionResponse,
-    b: AssetVersionResponse
+    b: AssetVersionResponse,
   ) => {
     return (
       a.asset_id === b.asset_id &&
@@ -65,19 +64,23 @@ export const Packages = () => {
   // update the versions list, replace only the provided asset version response
   const updateAssetVersion = (a: AssetVersionResponse) => {
     setVersions(
-      versions.map((value) => (assetVersionsEqual(a, value) ? a : value))
+      versions.map((value) => (assetVersionsEqual(a, value) ? a : value)),
     );
   };
 
   const handlePublishToggle = (
     asset_id: string,
     version: string,
-    published: boolean
+    published: boolean,
   ) => {
-    console.log('publish toggle:', asset_id, published);
-    postData<AssetVersionResponse>(`assets/${asset_id}/versions/${version}`, {
-      published: published,
-    })
+    console.log("publish toggle:", asset_id, published);
+    api
+      .post<AssetVersionResponse>({
+        path: `/assets/${asset_id}/versions/${version}`,
+        body: {
+          published,
+        },
+      })
       .then((r) => {
         updateAssetVersion(r as AssetVersionResponse);
       })
@@ -86,7 +89,7 @@ export const Packages = () => {
 
   const compareVersions = (
     a: AssetVersionResponse,
-    b: AssetVersionResponse
+    b: AssetVersionResponse,
   ): number => {
     if (b.version[0] !== a.version[0]) return b.version[0] - a.version[0]; // Compare major versions
     if (b.version[1] !== a.version[1]) return b.version[1] - a.version[1]; // Compare minor versions
@@ -94,15 +97,16 @@ export const Packages = () => {
   };
 
   const sortVersions = (
-    versions: AssetVersionResponse[]
+    versions: AssetVersionResponse[],
   ): AssetVersionResponse[] => {
     return versions.sort(compareVersions);
   };
 
   const createAsset = function () {
-    if (!asset_id || asset_id === '') {
+    if (!asset_id || asset_id === "") {
       const createRequest: AssetCreateRequest = {};
-      postData<AssetCreateResponse>('assets/', createRequest)
+      api
+        .post<AssetCreateResponse>({ path: "/assets/", body: createRequest })
         .then((r) => {
           // update the asset edit state
           clearVersion();
@@ -137,31 +141,32 @@ export const Packages = () => {
   }, [versions]);
 
   useEffect(() => {
-    console.log('packages: load owned assets');
+    console.log("packages: load owned assets");
     if (!authToken) {
       return;
     }
-    getData<AssetVersionResponse[]>('assets/owned')
+    api
+      .get<AssetVersionResponse[]>({ path: "/assets/owned" })
       .then((r) => setVersions(r))
       .catch((err) => handleError(err));
   }, [authToken]);
 
   const renderLatestVersion = (
     assetId: string,
-    versionList: AssetVersionResponse[]
+    versionList: AssetVersionResponse[],
   ) => {
     const sortedVersions = sortVersions(versionList);
     const latestVersion = sortedVersions[0];
     const versionUrl = `/assets/${assetId}/versions/${latestVersion.version.join(
-      '.'
+      ".",
     )}`;
     return (
       <ListItemButton
         key={assetId}
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
         <ListItemDecorator>
@@ -173,14 +178,17 @@ export const Packages = () => {
                 file_id={latestVersion.package_id}
               />
             ) : (
-              ''
+              ""
             )}
           </Stack>
         </ListItemDecorator>
         <ListItemDecorator>
-          <Thumbnail src={getThumbnailImg(latestVersion)} alt={latestVersion.name} />
+          <Thumbnail
+            src={getThumbnailImg(latestVersion)}
+            alt={latestVersion.name}
+          />
         </ListItemDecorator>
-        <ListDivider orientation={'vertical'} />
+        <ListDivider orientation={"vertical"} />
         <ListItemContent sx={{ flex: 1 }}>
           <Typography
             component={Link}
@@ -192,24 +200,24 @@ export const Packages = () => {
           </Typography>
           {sortedVersions.map((av, index) => (
             <Chip
-              key={av.version.join('.')}
+              key={av.version.join(".")}
               variant="soft"
-              color={index == 0 ? 'primary' : 'neutral'}
+              color={index == 0 ? "primary" : "neutral"}
               size="lg"
               component={Link}
-              to={`/assets/${av.asset_id}/versions/${av.version.join('.')}`}
-              sx={{ borderRadius: 'xl' }}
+              to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+              sx={{ borderRadius: "xl" }}
             >
-              {av.version.join('.')}
+              {av.version.join(".")}
             </Chip>
           ))}
           <Typography level="body-sm" color="neutral">
             by {latestVersion.author_name}
           </Typography>
         </ListItemContent>
-        <ListDivider orientation={'vertical'} />
+        <ListDivider orientation={"vertical"} />
         <ListItemDecorator>
-          <Typography fontFamily={'code'} level={'body-xs'}>
+          <Typography fontFamily={"code"} level={"body-xs"}>
             {assetId}
           </Typography>
         </ListItemDecorator>
@@ -218,24 +226,24 @@ export const Packages = () => {
             component="span"
             level="body-md"
             sx={{
-              textAlign: 'right',
-              ml: '10px',
-              width: 'auto',
-              minWidth: '100px',
+              textAlign: "right",
+              ml: "10px",
+              width: "auto",
+              minWidth: "100px",
             }}
           >
-            {latestVersion.published ? 'Published' : 'Draft'}
+            {latestVersion.published ? "Published" : "Draft"}
           </Typography>
           <Switch
             checked={latestVersion.published}
             onChange={(event) =>
               handlePublishToggle(
                 assetId,
-                latestVersion.version.join('.'),
-                event.target.checked
+                latestVersion.version.join("."),
+                event.target.checked,
               )
             }
-            color={latestVersion.published ? 'success' : 'neutral'}
+            color={latestVersion.published ? "success" : "neutral"}
             sx={{ flex: 1 }}
           />
         </ListItemDecorator>
@@ -245,13 +253,13 @@ export const Packages = () => {
 
   return (
     <Box>
-      <List size={'lg'}>
-        <ListItem key={'create-header'}>
+      <List size={"lg"}>
+        <ListItem key={"create-header"}>
           <ListItemDecorator>
             <Button
               component="label"
-              variant={'plain'}
-              color={'neutral'}
+              variant={"plain"}
+              color={"neutral"}
               onMouseDown={createAsset}
               startDecorator={<LucidePlusCircle />}
             >
@@ -260,7 +268,7 @@ export const Packages = () => {
           </ListItemDecorator>
         </ListItem>
         {Object.entries(versionCache).map(([assetId, versionList]) =>
-          renderLatestVersion(assetId, versionList)
+          renderLatestVersion(assetId, versionList),
         )}
       </List>
     </Box>
