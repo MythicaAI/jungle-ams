@@ -1,7 +1,9 @@
 import hashlib
 import logging
 import os
+import random
 import shutil
+import string
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
@@ -71,7 +73,10 @@ def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> Reques
 
     # stream the file content to a local file path in the upload folder
     ctx.filename = filename
-    ctx.local_filepath = os.path.join(cfg.upload_folder, filename)
+
+    random_filename = ''.join(random.choice(string.ascii_letters + string.digits)
+                              for _ in range(20))
+    ctx.local_filepath = os.path.join(cfg.upload_folder, random_filename)
 
     with open(ctx.local_filepath, 'wb') as f:
         shutil.copyfileobj(upload_file.file, f)

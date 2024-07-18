@@ -1,3 +1,4 @@
+"""Profiles API"""
 import logging
 from http import HTTPStatus
 from typing import Optional
@@ -6,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError, BaseModel, constr, AnyHttpUrl, EmailStr
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import select, update, delete
+from sqlmodel import select, update, delete, col
 
 from auth.generate_token import generate_token
 from config import app_config
@@ -19,11 +20,15 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 
 log = logging.getLogger(__name__)
 
+MIN_PROFILE_NAME = 3
+MAX_PROFILE_NAME = 20
+profile_name_str = constr(strip_whitespace=True, min_length=3, max_length=64)
+
 
 # Define a dictionary with the attributes you want to validate
 class CreateUpdateProfileModel(BaseModel):
     """A model with only allowed public properties for profile creation"""
-    name: constr(strip_whitespace=True, min_length=3, max_length=20)
+    name: profile_name_str
     description: constr(strip_whitespace=True, min_length=0, max_length=400) | None = None
     signature: constr(min_length=32, max_length=400) | None = None
     profile_base_href: Optional[AnyHttpUrl] = None
@@ -49,16 +54,6 @@ def profile_to_profile_response(profile: Profile, model_type: type) \
     profile_response = model_type(**profile_data,
                                   validate_state=validate_state)
     return profile_response
-
-
-@router.get('/{profile_id}')
-async def get_profile(profile_id: UUID) -> PublicProfileResponse:
-    with get_session() as session:
-        profile = session.exec(select(Profile).where(
-            Profile.id == profile_id)).first()
-        if profile is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
-        return profile_to_profile_response(profile, PublicProfileResponse)
 
 
 @router.get('/start_session/{profile_id}')
@@ -108,9 +103,25 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
         return result
 
 
+@router.get('/named/{profile_name}')
+async def get_profile_by_name(profile_name: profile_name_str, exact_match: Optional[bool] = False) \
+        -> list[PublicProfileResponse]:
+    """Get asset by name"""
+    with get_session() as session:
+        if exact_match:
+            results = session.exec(select(Profile).where(Profile.name == profile_name)).all()
+        else:
+            results = session.exec(select(Profile)
+                                   .where(col(Profile.name)  # pylint: disable=no-member
+                                          .contains(profile_name))
+                                   ).all()
+        return [profile_to_profile_response(x, PublicProfileResponse) for x in results]
+
+
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_profile(
         req_profile: CreateUpdateProfileModel) -> ProfileResponse:
+    """Create a new profile"""
     session = get_session()
     try:
         # copy over the request parameters as they have been auto validated,
@@ -130,11 +141,23 @@ async def create_profile(
     return profile_to_profile_response(profile, ProfileResponse)
 
 
+@router.get('/{profile_id}')
+async def get_profile(profile_id: UUID) -> PublicProfileResponse:
+    """Get a profile by ID"""
+    with get_session() as session:
+        profile = session.exec(select(Profile).where(
+            Profile.id == profile_id)).first()
+        if profile is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
+        return profile_to_profile_response(profile, PublicProfileResponse)
+
+
 @router.post('/{profile_id}')
 async def update_profile(
         profile_id: UUID,
         req_profile: CreateUpdateProfileModel,
         profile: Profile = Depends(current_profile)) -> ProfileResponse:
+    """Update the profile of the owning account"""
     if profile_id != profile.id:
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail='profile not authenticated')

@@ -1,8 +1,9 @@
 from http import HTTPStatus
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, select, update, delete, insert, col
 
@@ -13,9 +14,13 @@ from db.connection import get_session
 from db.schema.profiles import Profile, Org, OrgRef
 from routes.authorization import current_profile
 
+MIN_ORG_NAME = 3
+MAX_ORG_NAME = 64
+org_name_str = constr(strip_whitespace=True, min_length=MIN_ORG_NAME, max_length=MAX_ORG_NAME)
+
 
 class OrgCreateRequest(BaseModel):
-    name: str
+    name: org_name_str
     description: str | None = None
 
 
@@ -25,7 +30,7 @@ class OrgCreateResponse(BaseModel):
 
 
 class OrgUpdateRequest(BaseModel):
-    name: str
+    name: org_name_str
     description: str | None = None
 
 
@@ -101,6 +106,19 @@ async def create_org(
 
         response = OrgCreateResponse(org=org, admin=admin)
         return response
+
+
+@router.get('/named/{org_name}')
+async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[Org]:
+    """Get organization by name"""
+    with get_session() as session:
+        if exact_match:
+            results = session.exec(select(Org).where(
+                Org.name == org_name)).all()
+        else:
+            results = session.exec(select(Org).where(
+                col(Org.name).contains(org_name))).all()  # pylint: disable=no-member
+        return results
 
 
 @router.post('/{org_id}')
