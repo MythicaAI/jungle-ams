@@ -85,7 +85,7 @@ def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
     # Verify the repo has a license file
     license_files = [file
                      for file in os.listdir(package.root_disk_path)
-                     if file.startswith('LICENSE')]
+                     if file.lower().startswith('license')]
     if len(license_files) == 0:
         raise ValueError(f"Failed to find license file in repo: {package.repo}")
 
@@ -93,7 +93,7 @@ def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
     # to prioritize e.g. README.md over README-building.md
     readme_files = sorted([file
                            for file in os.listdir(package.root_disk_path)
-                           if file.startswith('README')],
+                           if file.lower().startswith('readme')],
                           key=lambda n: len(n))
     return [license_files[0], *readme_files[0:]]
 
@@ -173,6 +173,9 @@ class PackageUploader(object):
         self.version_exists(package)
 
         asset_contents = self.gather_contents(package)
+        if len(asset_contents) == 0:
+            print(f"Failed to find any files in directory {package.directory} for package {package.name}")
+            return
         self.create_version(package, asset_contents)
 
     def find_or_create_org(self, package: PackageModel):
@@ -288,7 +291,7 @@ class PackageUploader(object):
         else:
             package.latest_version = (0, 0, 0)
 
-    def gather_contents(self, package: ProcessedPackageModel) -> list:
+    def gather_contents(self, package: ProcessedPackageModel) -> list[dict]:
         """Gather all files to be included in the package"""
         contents = collect_doc_package_paths(package)
 
