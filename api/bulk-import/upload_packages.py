@@ -102,12 +102,27 @@ def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
     return [license_files[0], *readme_files[0:]]
 
 
+def collect_images_paths(package: ProcessedPackageModel) -> list[str]:
+    """Collect all image package paths"""
+    extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
+    contents = []
+    for root, dirs, files in os.walk(package.root_disk_path):
+        for file in files:
+            name, ext = os.path.splitext(file)
+            if ext in extensions:
+                disk_path = os.path.join(root, file)
+                package_path = os.path.relpath(disk_path, package.root_disk_path)
+                contents.append(package_path)
+    return contents
+
+
 def any_upstream_changes(package: ProcessedPackageModel,
+                         key: str,
                          new_asset_contents: list[dict]) -> bool:
     """Detect any changes in the GitHub upstream by doing a count and hash check"""
     # first index the latest version contents
     contents_by_hash = {asset_version_content.content_hash: asset_version_content
-                        for asset_version_content in package.latest_version_contents['files']}
+                        for asset_version_content in package.latest_version_contents.get(key, [])}
     # validate the file count matches
     if len(contents_by_hash.keys()) != len(new_asset_contents):
         print(("Changed due to file count mismatch:"
@@ -208,7 +223,7 @@ class PackageUploader(object):
             package.latest_version = ZERO_VERSION
 
         asset_contents = self.gather_contents(package)
-        if len(asset_contents) == 0:
+        if len(asset_contents['files']) == 0:
             print(f"Failed to find any files in directory {package.directory} for package {package.name}")
             return
 
@@ -216,9 +231,12 @@ class PackageUploader(object):
             if package.latest_github_version and package.latest_github_version != package.latest_version:
                 package.latest_version = package.latest_github_version
                 print(f"Updating {package.name} to latest github release: {package.latest_github_version}")
-            elif any_upstream_changes(package, asset_contents):
+            elif any_upstream_changes(package, 'files', asset_contents['files']):
                 bump_package_version(package)
-                print(f"Change detected, bumped {package.name} version to {package.latest_version}")
+                print(f"File change detected, bumped {package.name} version to {package.latest_version}")
+            elif any_upstream_changes(package, 'thumbnails', asset_contents['thumbnails']):
+                bump_package_version(package)
+                print(f"Thumbnail change detected, bumped {package.name} version to {package.latest_version}")
             else:
                 print(f"Skipping {package.name}, latest version available")
                 return
@@ -344,54 +362,69 @@ class PackageUploader(object):
         else:
             package.latest_version = ZERO_VERSION
 
-    def gather_contents(self, package: ProcessedPackageModel) -> list[dict]:
+    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list]:
         """Gather all files to be included in the package"""
-        contents = collect_doc_package_paths(package)
+        files_paths = []
+        thumbnail_paths = []
 
+        files_paths.extend(collect_doc_package_paths(package))
+        thumbnail_paths.extend(collect_images_paths(package))
         scan_path = os.path.join(package.root_disk_path, package.directory)
         for root, dirs, files in os.walk(scan_path):
             for file in files:
                 disk_path = os.path.join(root, file)
                 package_path = os.path.relpath(disk_path, package.root_disk_path)
-                contents.append(package_path)
+                files_paths.append(package_path)
+
+        file_contents = []
 
         # Upload all files
-        asset_contents = []
+        for package_path in files_paths:
+            file_contents.append(
+                self.upload_package_path(package, package_path))
+        thumbnail_contents = []
+        for package_path in thumbnail_paths:
+            thumbnail_contents.append(
+                self.upload_package_path(package, package_path))
 
-        for package_path in contents:
-            filepath = os.path.normpath(os.path.join(package.root_disk_path, package_path))
-            print(f"Uploading file: {filepath}")
+        return {
+            'files': file_contents,
+            'thumbnails': thumbnail_contents
+        }
 
-            with open(filepath, 'rb') as f:
-                upload_url = f"{self.endpoint}/v1/upload/store"
-                m = MultipartEncoder(
-                    fields={'files': (package_path, f, 'application/octet-stream')}
-                )
-                headers = {
-                    **self.auth_header(),
-                    "Content-Type": m.content_type,
-                }
-                response = requests.post(upload_url, headers=headers, data=m)
-                if response.status_code != 200:
-                    print(f"Failed to upload file: {filepath}")
-                    print(f"Request Error: {response.status_code} {response.content}")
-                    continue
+    def upload_package_path(self,
+                            package: ProcessedPackageModel,
+                            file_package_path: str) -> dict:
+        """Upload a file from a package path, return it's asset contents"""
+        filepath = os.path.normpath(os.path.join(package.root_disk_path, file_package_path))
+        print(f"Uploading file: {filepath}")
 
-                o = munchify(response.json())
-                asset_contents.append({
-                    'file_id': o.files[0].file_id,
-                    'file_name': o.files[0].file_name,
-                    'content_hash': o.files[0].content_hash,
-                    'size': o.files[0].size
-                })
-        return asset_contents
+        with open(filepath, 'rb') as f:
+            upload_url = f"{self.endpoint}/v1/upload/store"
+            m = MultipartEncoder(
+                fields={'files': (file_package_path, f, 'application/octet-stream')}
+            )
+            headers = {
+                **self.auth_header(),
+                "Content-Type": m.content_type,
+            }
+            response = requests.post(upload_url, headers=headers, data=m)
+            response.raise_for_status()
 
-    def create_version(self, package: PackageModel, asset_contents: list):
+            o = munchify(response.json())
+            return {
+                'file_id': o.files[0].file_id,
+                'file_name': o.files[0].file_name,
+                'content_hash': o.files[0].content_hash,
+                'size': o.files[0].size
+            }
+
+    def create_version(self, package: PackageModel, asset_contents: dict[str, list]) -> dict:
         """Create new asset version"""
         asset_ver_json = {
             'asset_id': package.asset_id,
             'commit_ref': f"{package.repo}/{package.commit_ref}",
-            'contents': {"files": asset_contents},
+            'contents': asset_contents,
             'name': package.name,
             'description': package.description,
             'author': package.profile_id,
