@@ -259,8 +259,8 @@ async def get_top_assets() -> list[AssetVersionResult]:
     with get_session() as session:
         results = session.exec(
             select(Asset, AssetVersion)
-            .outerjoin(AssetVersion, Asset.id == AssetVersion.asset_id)
-            .outerjoin(FileContent, FileContent.id == AssetVersion.package_id)
+            .outerjoin(AssetVersion, Asset.asset_id == AssetVersion.asset_id)
+            .outerjoin(FileContent, FileContent.file_id == AssetVersion.package_id)
             .where(AssetVersion.published == True)
             .where(AssetVersion.package_id != None)
             .order_by(desc(FileContent.downloads))
@@ -295,7 +295,7 @@ async def get_assets_by_ref(ref: str) -> list[AssetVersionResult]:
     """Find any asset versions with commit_ref containing ref"""
     with get_session() as session:
         return process_join_results(session, session.exec(
-            asset_join_select.where(Asset.id == AssetVersion.asset_id).where(
+            asset_join_select.where(Asset.asset_id == AssetVersion.asset_id).where(
                 col(AssetVersion.commit_ref).contains(ref))).all())  # pylint: disable=no-member
 
 

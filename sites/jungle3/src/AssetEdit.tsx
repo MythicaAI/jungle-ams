@@ -81,7 +81,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
     updateVersion({
       asset_id: r.asset_id,
       org_id: r.org_id || "",
-      author: r.author || "",
+      author_id: r.author_id || "",
       package_id: r.package_id || "",
       name: r.name || "",
       description: r.description || "",

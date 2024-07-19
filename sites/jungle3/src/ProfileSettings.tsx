@@ -64,7 +64,7 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
       .then((r) => {
         setProfile(r as unknown as Profile);
         setSuccess("Profile updated");
-        cookies.profile_id = r.id;
+        cookies.profile_id = r.profile_id;
       })
       .catch((err) => handleError(err));
   };
@@ -80,8 +80,8 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
       .post<ProfileResponse>({ path: `/profiles/`, body: formJson })
       .then((r) => {
         setProfile(r as unknown as Profile);
-        setSuccess(`Profile created ${r.id}`);
-        cookies.profile_id = r.id;
+        setSuccess(`Profile created ${r.profile_id}`);
+        cookies.profile_id = r.profile_id;
       })
       .catch((err) => handleError(err));
   };

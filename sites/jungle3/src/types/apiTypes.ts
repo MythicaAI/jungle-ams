@@ -19,7 +19,7 @@ export type UploadAsset = {
 };
 
 export type ProfileResponse = {
-    id: UUID,
+    profile_id: UUID,
     name: string,
     full_name: string,
     description: string,
@@ -34,7 +34,7 @@ export type ProfileResponse = {
 
 export const defaultProfileResponse = () => {
     return {
-        id: '',
+        profile_id: '',
         name: '',
         full_name: '',
         description: '',
@@ -59,9 +59,9 @@ export interface AssetCreateRequest {
 }
 
 export interface AssetCreateResponse {
-    id: UUID,
+    asset_id: UUID,
     org_id: UUID,
-    owner: UUID
+    owner_id: UUID
 }
 
 export interface AssetVersionContent {
@@ -81,12 +81,12 @@ export type AssetVersionContentListMap = {
 
 export interface AssetVersionResponse {
     asset_id: UUID,
-    owner: UUID,
+    owner_id: UUID,
     owner_name: string,
     org_id: UUID,
     org_name: string
     package_id: UUID,
-    author: UUID,
+    author_id: UUID,
     author_name: string,
     name: string,
     description: string,

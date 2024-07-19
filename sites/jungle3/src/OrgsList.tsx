@@ -24,7 +24,7 @@ import { api } from "./services/api";
 
 const defaultOrg = (): Org => {
   return {
-    id: "",
+    org_id: "",
     name: "",
     description: "",
     created: "",

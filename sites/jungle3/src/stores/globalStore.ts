@@ -3,7 +3,7 @@ import {ResolvedOrgRef} from "../types/apiTypes.ts";
 import {Profile} from "../schema_types/profiles.ts";
 
 const defaultProfile: Profile = {
-  id: '',
+    profile_id: '',
     name: '',
     full_name: '',
     signature: '',

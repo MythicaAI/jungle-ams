@@ -4,8 +4,8 @@ import {AssetVersionContent, AssetVersionContentMap} from "../types/apiTypes.ts"
 interface AssetVersion {
     asset_id: string;
     org_id: string;
-    owner: string;
-    author: string;
+    owner_id: string;
+    author_id: string;
     package_id: string;
     name: string;
     description: string;
@@ -31,8 +31,8 @@ interface AssetVersion {
 const defaultAssetVersion: Partial<AssetVersion> = {
     asset_id: '',
     org_id: '',
-    owner: '',
-    author: '',
+    owner_id: '',
+    author_id: '',
     package_id: '',
     name: '',
     description: '',

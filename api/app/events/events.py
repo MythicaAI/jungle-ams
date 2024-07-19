@@ -13,9 +13,9 @@ update
 set 
     acked = current_timestamp
 where
-    id in (
+    event_id in (
         select
-            id
+            event_id
         from
             events
         where
@@ -26,13 +26,13 @@ where
             queued
         limit 1 for update
     )
-    returning id, job_data as result;"""
+    returning event_id, job_data as result;"""
 
 pgsql_complete = """
 update
     events
 set completed = current_timestamp
-where id = :event_id
+where event_id = :event_id
 """
 
 

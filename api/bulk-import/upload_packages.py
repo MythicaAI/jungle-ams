@@ -195,11 +195,11 @@ class PackageUploader(object):
         self.update_local_repo(package)
 
         profile = self.find_or_create_profile(package)
-        package.profile_id = profile.id
+        package.profile_id = profile.profile_id
 
-        self.token = self.start_session(profile.id)
+        self.token = self.start_session(profile.profile_id)
         org = self.find_or_create_org(package)
-        package.org_id = org.id
+        package.org_id = org.org_id
 
         # First try to resolve the version from the repo link
         package.asset_id, package.latest_version = self.find_versions_for_repo(package)
@@ -294,7 +294,7 @@ class PackageUploader(object):
             return ""
 
         o = munchify(response.json())
-        asset_id = o.id
+        asset_id = o.asset_id
         print(f"Created assetId {asset_id} for asset {package.name}")
         return asset_id
 

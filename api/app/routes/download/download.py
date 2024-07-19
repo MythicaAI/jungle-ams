@@ -48,7 +48,7 @@ def increment_download_count(session: Session, file_id: UUID):
     """Increment the download count by one"""
     session.exec(update(FileContent)
                  .values(downloads=FileContent.downloads + 1)
-                 .where(FileContent.id == file_id))
+                 .where(FileContent.file_id == file_id))
     session.commit()
 
 

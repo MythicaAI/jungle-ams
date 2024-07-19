@@ -111,10 +111,10 @@ export const Packages = () => {
           // update the asset edit state
           clearVersion();
           updateVersion({
-            asset_id: r.id,
+            asset_id: r.asset_id,
             org_id: r.org_id,
           });
-          navigate(`/assets/${r.id}/versions/0.0.0`);
+          navigate(`/assets/${r.asset_id}/versions/0.0.0`);
         })
         .catch((err) => handleError(err));
     }
