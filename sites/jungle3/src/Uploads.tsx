@@ -8,29 +8,29 @@ import {
   ListItemDecorator,
   Stack,
   Typography,
-} from '@mui/joy';
+} from "@mui/joy";
 
 import {
   LucideCloudDownload,
   LucideFile,
   LucideFiles,
   LucideImage,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { FileUploadResponse } from './types/apiTypes.ts';
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileUploadResponse } from "./types/apiTypes.ts";
 import {
   extractValidationErrors,
-  getData,
   translateError,
-} from './services/backendCommon.ts';
-import { useGlobalStore } from './stores/globalStore.ts';
-import { AxiosError } from 'axios';
-import { useStatusStore } from './stores/statusStore.ts';
-import { FileUploadStatus, useUploadStore } from './stores/uploadStore.ts';
-import { DownloadButton } from './components/DownloadButton';
-import { DeleteButton } from './components/DeleteButton';
-import { UploadsSubmitList } from './components/UploadsSubmitList.tsx';
-import { Link } from 'react-router-dom';
+} from "./services/backendCommon.ts";
+import { useGlobalStore } from "./stores/globalStore.ts";
+import { AxiosError } from "axios";
+import { useStatusStore } from "./stores/statusStore.ts";
+import { FileUploadStatus, useUploadStore } from "./stores/uploadStore.ts";
+import { DownloadButton } from "./components/DownloadButton";
+import { DeleteButton } from "./components/DeleteButton";
+import { UploadsSubmitList } from "./components/UploadsSubmitList.tsx";
+import { Link } from "react-router-dom";
+import { api } from "./services/api/index.ts";
 
 const Uploads = () => {
   const { authToken } = useGlobalStore();
@@ -61,7 +61,8 @@ const Uploads = () => {
 
   const refreshFiles = () => {
     if (authToken) {
-      getData<FileUploadResponse[]>('upload/pending')
+      api
+        .get<FileUploadResponse[]>({ path: "/upload/pending" })
         .then((files) => {
           trackUploads(files as FileUploadStatus[]);
           updateProgressForFiles(files);
@@ -70,7 +71,7 @@ const Uploads = () => {
     }
   };
 
-  const [sort, setSort] = useState('all');
+  const [sort, setSort] = useState("all");
 
   interface Sort {
     icon: JSX.Element;
@@ -79,23 +80,23 @@ const Uploads = () => {
   }
 
   const allSorts: { [key: string]: Sort } = {
-    all: { icon: <LucideFiles />, name: 'All Files', types: [] },
-    hdas: { icon: <LucideFile />, name: 'HDAs', types: ['.hda', '.hip'] },
+    all: { icon: <LucideFiles />, name: "All Files", types: [] },
+    hdas: { icon: <LucideFile />, name: "HDAs", types: [".hda", ".hip"] },
     thumbnails: {
       icon: <LucideImage />,
-      name: 'Thumbnails',
-      types: ['.png', '.jpg', '.jpeg', '.gif', '.webm'],
+      name: "Thumbnails",
+      types: [".png", ".jpg", ".jpeg", ".gif", ".webm"],
     },
   };
   const fileTypeFilter = ([_key, value]: [
     string,
-    FileUploadStatus
+    FileUploadStatus,
   ]): boolean => {
     return fileIsType(sort, value.file_name);
   };
 
   const fileIsType = (typeName: string, fileName: string): boolean => {
-    if (typeName === 'all') return true;
+    if (typeName === "all") return true;
 
     const sortType = allSorts[typeName];
     if (!sortType) return false;
@@ -123,10 +124,10 @@ const Uploads = () => {
           .filter(fileTypeFilter)
           .map(([key, value]) => (
             <ListItem sx={{ flexGrow: 1 }} key={key}>
-              <ListItemDecorator sx={{ display: 'flex', alignItems: 'center' }}>
-                <Stack direction={'row'}>
+              <ListItemDecorator sx={{ display: "flex", alignItems: "center" }}>
+                <Stack direction={"row"}>
                   <DeleteButton
-                    url={`files/${value.file_id}`}
+                    url={`/files/${value.file_id}`}
                     name={value.file_name}
                     onDeleteSuccess={refreshFiles}
                   />
@@ -136,11 +137,11 @@ const Uploads = () => {
                   />
                 </Stack>
               </ListItemDecorator>
-              <Divider orientation="vertical" sx={{ margin: '0 10px' }} />
+              <Divider orientation="vertical" sx={{ margin: "0 10px" }} />
               <ListItemContent
-                sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}
+                sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}
               >
-                <Typography sx={{ textAlign: 'left' }}>
+                <Typography sx={{ textAlign: "left" }}>
                   <Link to={`/files/${value.file_id}`}>{value.file_name}</Link>
                 </Typography>
               </ListItemContent>
