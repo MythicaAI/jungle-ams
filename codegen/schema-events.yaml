@@ -6,8 +6,8 @@ tables:
     table_name: events
     description: Storage for events that are used to trigger downstream effects
     columns:
-      - name: event_id
-        type: UUID
+      - name: event_seq
+        type: BIGINT
         primary_key: true
       - name: event_type
         type: TEXT
@@ -22,10 +22,10 @@ tables:
       - name: job_data
         type: JSON
         nullable: false
-      - name: owner_id
+      - name: owner_seq
         description: Profile tracking this event
-        type: UUID
-        foreign_key: profiles.profile_id
+        type: BIGINT
+        foreign_key: profiles.profile_seq
       - name: created_in
         description: Location that event originated
         type: TEXT

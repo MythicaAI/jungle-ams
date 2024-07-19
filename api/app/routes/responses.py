@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from enum import Enum
-from uuid import UUID
 
 from pydantic import BaseModel, AnyHttpUrl
 
@@ -18,7 +17,7 @@ class ValidateEmailState(str, Enum):
 
 class ProfileResponse(BaseModel):
     """A model with only allowed public properties for profile creation"""
-    profile_id: UUID = None
+    profile_id: str = None
     name: str | None = None
     description: str | None = None
     email: str | None = None
@@ -32,7 +31,7 @@ class ProfileResponse(BaseModel):
 
 class PublicProfileResponse(BaseModel):
     """A model with only allows anonymous public properties for profile query"""
-    profile_id: UUID = None
+    profile_id: str = None
     name: str | None = None
     description: str | None = None
     signature: str | None = None
@@ -47,17 +46,17 @@ class SessionStartResponse(BaseModel):
 
 
 class ValidateEmailResponse(BaseModel):
-    owner_id: UUID
+    owner_id: str
     code: str
     link: AnyHttpUrl
     state: ValidateEmailState = ValidateEmailState.not_validated
 
 
 class FileUploadResponse(BaseModel):
-    file_id: UUID
-    owner_id: UUID
+    file_id: str
+    owner_id: str
     file_name: str
-    event_ids: list[UUID]
+    event_ids: list[str]
     size: int
     content_type: str
     content_hash: str = ""

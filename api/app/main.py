@@ -39,7 +39,6 @@ app.add_middleware(
 route_names = [
     'upload',
     'download',
-    'editor',
     'profiles',
     'files',
     'assets',

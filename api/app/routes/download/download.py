@@ -1,12 +1,12 @@
 """Routes and helpers providing /download API"""
 import logging
 from http import HTTPStatus
-from uuid import UUID
 
 from fastapi import Depends, HTTPException, Response, APIRouter
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
+from auth.api_id import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/download", tags=["files"])
 
 
 class DownloadInfoResponse(BaseModel):
-    file_id: UUID
+    file_id: str
     name: str
     size: int
     content_type: str
@@ -44,11 +44,11 @@ def translate_test(_storage, _info) -> str:
     return "http://test.notresolved/test.test"
 
 
-def increment_download_count(session: Session, file_id: UUID):
+def increment_download_count(session: Session, file_seq: int):
     """Increment the download count by one"""
     session.exec(update(FileContent)
                  .values(downloads=FileContent.downloads + 1)
-                 .where(FileContent.file_id == file_id))
+                 .where(FileContent.file_seq == file_seq))
     session.commit()
 
 
@@ -80,8 +80,9 @@ async def download_info(
         storage: StorageClient = Depends(storage_client)) -> DownloadInfoResponse:
     """Return information needed to download the file including the temporary URL"""
     with get_session(echo=True) as session:
-        increment_download_count(session, UUID(file_id))
-        file = session.exec(select(FileContent).where(FileContent.file_id == file_id)).one_or_none()
+        file_seq = file_id_to_seq(file_id)
+        increment_download_count(session, file_seq)
+        file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).one_or_none()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']
@@ -97,8 +98,9 @@ async def download_redirect(
         storage: StorageClient = Depends(storage_client)):
     """Redirects to a temporary download link from a valid file_id"""
     with get_session() as session:
-        increment_download_count(session, UUID(file_id))
-        file = session.exec(select(FileContent).where(FileContent.file_id == file_id)).first()
+        file_seq = file_id_to_seq(file_id)
+        increment_download_count(session, file_seq)
+        file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).first()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']

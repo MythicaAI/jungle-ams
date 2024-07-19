@@ -5,14 +5,15 @@ tables:
     table_name: topologies
     description: Provides a grouping for asset graphs
     columns:
-      - name: topology_id
+      - name: topology_seq
         type: BIGINT
         primary_key: true
-      - name: owner_id
-        type: UUID
-        nullable: false
-      - name: org_id
-        type: UUID
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
+      - name: org_seq
+        type: BIGINT
+        foreign_key: orgs.org_seq
       - name: created
         type: TIMESTAMP
         auto_create: true
@@ -31,17 +32,15 @@ tables:
     table_name: asset_refs
     description: Records relationships between assets
     columns:
-      - name: topology_id
+      - name: topology_seq
         type: BIGINT
-        foreign_key: topologies.id
+        foreign_key: topologies.topology_seq
         primary_key: true
       - name: src_id
-        type: UUID
-        foreign_key: assets.id
+        type: TEXT
         primary_key: true
       - name: dst_id
-        type: UUID
-        foreign_key: assets.id
+        type: TEXT
         primary_key: true
       - name: edge_data
         type: JSON

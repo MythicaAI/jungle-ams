@@ -1,11 +1,11 @@
 from http import HTTPStatus
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import select, update, and_
 
+from auth.api_id import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 @router.get("/{file_id}")
 async def get_file_by_id(
-        file_id: UUID,
+        file_id: str,
         profile: Profile = Depends(current_profile)) -> FileUploadResponse:
     """Query a file by ID, returns owner event data"""
     with get_session() as session:
@@ -44,14 +44,15 @@ async def get_file_by_content(
 
 
 @router.delete('/{file_id}')
-async def delete_file_by_id(file_id, profile_id: UUID = Depends(current_profile_id)):
+async def delete_file_by_id(file_id, profile_id: str = Depends(current_profile_id)):
     """Delete a file by its ID"""
     with get_session(echo=True) as session:
         try:
+            file_seq = file_id_to_seq(file_id)
             result = session.exec(
                 (update(FileContent)
                  .values(deleted=sql_now(), )
-                 .where(and_(FileContent.file_id == file_id, FileContent.owner_id == profile_id))))
+                 .where(and_(FileContent.file_seq == file_seq, FileContent.owner_id == profile_id))))
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail="file not found, or not owned")

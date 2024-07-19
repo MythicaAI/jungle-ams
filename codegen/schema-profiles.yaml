@@ -5,8 +5,8 @@ tables:
   - name: Profile
     table_name: profiles
     columns:
-      - name: profile_id
-        type: UUID
+      - name: profile_seq
+        type: BIGINT
         primary_key: true
       - name: name
         type: TEXT
@@ -40,13 +40,13 @@ tables:
   - name: OrgRef
     table_name: org_refs
     columns:
-      - name: org_id
-        type: UUID
-        foreign_key: orgs.id
+      - name: org_seq
+        type: BIGINT
+        foreign_key: orgs.org_seq
         primary_key: true
-      - name: profile_id
+      - name: profile_seq
         type: UUID
-        foreign_key: profiles.profile_id
+        foreign_key: profiles.profile_seq
         primary_key: true
       - name: role
         type: TEXT
@@ -54,15 +54,15 @@ tables:
       - name: created
         type: TIMESTAMP
         auto_create: true
-      - name: author_id
-        type: UUID
-        foreign_key: profiles.profile_id
+      - name: author_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
 
   - name: Org
     table_name: orgs
     columns:
-      - name: org_id
-        type: UUID
+      - name: org_seq
+        type: BIGINT
         primary_key: true
       - name: created
         type: TIMESTAMP
@@ -78,8 +78,8 @@ tables:
   - name: ProfileSession
     table_name: profile_sessions
     columns:
-      - name: profile_session_id
-        type: UUID
+      - name: profile_session_seq
+        type: BIGINT
         primary_key: true
       - name: created
         description: Also the start time of the session
@@ -87,9 +87,9 @@ tables:
         auto_create: true
       - name: refreshed
         type: TIMESTAMP
-      - name: profile_id
-        type: UUID
-        foreign_key: profiles.profile_id
+      - name: profile_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
         nullable: false
       - name: authenticated
         type: BOOLEAN
@@ -103,11 +103,11 @@ tables:
   - name: ProfileFollower
     table_name: profile_followers
     columns:
-      - name: profile_id
-        type: UUID
+      - name: profile_seq
+        type: BIGINT
         primary_key: true
-      - name: follower_id
-        type: UUID
+      - name: follower_seq
+        type: BIGINT
         primary_key: true
       - name: created
         type: TIMESTAMP
@@ -121,8 +121,9 @@ tables:
       - name: key
         type: TEXT
         primary_key: true
-      - name: owner_id
-        type: UUID
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
       - name: expires
         type: TIMESTAMP
       - name: payload

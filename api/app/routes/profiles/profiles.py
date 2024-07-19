@@ -2,13 +2,13 @@
 import logging
 from http import HTTPStatus
 from typing import Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError, BaseModel, constr, AnyHttpUrl, EmailStr
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import select, update, delete, col
 
+from auth.api_id import profile_id_to_seq, profile_seq_to_id
 from auth.generate_token import generate_token
 from config import app_config
 from db.connection import get_session
@@ -52,18 +52,20 @@ def profile_to_profile_response(profile: Profile, model_type: type) \
     profile_data = profile.model_dump()
     validate_state = email_validate_state_enum(profile.email_validate_state)
     profile_response = model_type(**profile_data,
+                                  profile_id=profile_seq_to_id(profile.profile_seq),
                                   validate_state=validate_state)
     return profile_response
 
 
 @router.get('/start_session/{profile_id}')
-async def start_session(profile_id: UUID) -> SessionStartResponse:
+async def start_session(profile_id: str) -> SessionStartResponse:
     """Start a session for a profile"""
     with get_session() as session:
+        profile_seq = profile_id_to_seq(profile_id)
         session.begin()
         result = session.exec(update(Profile).values(
             {'login_count': Profile.login_count + 1, 'active': True}).where(
-            Profile.profile_id == profile_id))
+            Profile.profile_seq == profile_seq))
         session.commit()
 
         if result.rowcount == 0:
@@ -71,12 +73,12 @@ async def start_session(profile_id: UUID) -> SessionStartResponse:
                                 detail='profile not found')
 
         session.exec(delete(ProfileSession).where(
-            ProfileSession.profile_id == profile_id))
+            ProfileSession.profile_seq == profile_seq))
         session.commit()
 
         # Generate a new token and profile response
         profile = session.exec(select(Profile).where(
-            Profile.profile_id == profile_id)).first()
+            Profile.profile_seq == profile_seq)).first()
         if profile is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
         profile_response = profile_to_profile_response(profile, ProfileResponse)
@@ -142,11 +144,12 @@ async def create_profile(
 
 
 @router.get('/{profile_id}')
-async def get_profile(profile_id: UUID) -> PublicProfileResponse:
+async def get_profile(profile_id: str) -> PublicProfileResponse:
     """Get a profile by ID"""
     with get_session() as session:
+        profile_seq = profile_id_to_seq(profile_id)
         profile = session.exec(select(Profile).where(
-            Profile.profile_id == profile_id)).first()
+            Profile.profile_seq == profile_seq)).first()
         if profile is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
         return profile_to_profile_response(profile, PublicProfileResponse)
@@ -154,17 +157,17 @@ async def get_profile(profile_id: UUID) -> PublicProfileResponse:
 
 @router.post('/{profile_id}')
 async def update_profile(
-        profile_id: UUID,
+        profile_id: str,
         req_profile: CreateUpdateProfileModel,
         profile: Profile = Depends(current_profile)) -> ProfileResponse:
     """Update the profile of the owning account"""
     if profile_id != profile.profile_id:
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail='profile not authenticated')
-
+    profile_seq = profile_id_to_seq(profile_id)
     session = get_session(echo=True)
     stmt = update(Profile).where(
-        Profile.profile_id == profile_id).values(
+        Profile.profile_seq == profile_seq).values(
         **req_profile.model_dump())
     result = session.execute(stmt)
     rows_affected = result.rowcount
@@ -173,5 +176,5 @@ async def update_profile(
     session.commit()
 
     updated = session.exec(select(Profile).where(
-        Profile.profile_id == profile_id)).one()
+        Profile.profile_seq == profile_seq)).one()
     return profile_to_profile_response(updated, ProfileResponse)

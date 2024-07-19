@@ -18,12 +18,12 @@ class Event(SQLModel, table=True):
     """
     __tablename__ = "events"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    event_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    event_seq: int = Field(primary_key=True,nullable=False)
     event_type: str = Field(default=None)
     queued: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     acked: datetime | None = Field(default=None)
     completed: datetime | None = Field(default=None)
     job_data: Dict[str, Any] = Field(default_factory=dict,sa_column=Column(JSON))
-    owner_id: UUID | None = Field(foreign_key='profiles.profile_id',default=None)
+    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
     created_in: str | None = Field(default=None)
     affinity: str | None = Field(default=None)

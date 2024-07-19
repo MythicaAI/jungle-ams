@@ -18,9 +18,9 @@ class Topology(SQLModel, table=True):
     """
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    topology_id: int = Field(primary_key=True,nullable=False)
-    owner_id: UUID = Field(default=uuid4())
-    org_id: UUID | None = Field(default=uuid4())
+    topology_seq: int = Field(primary_key=True,nullable=False)
+    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    org_seq: int | None = Field(foreign_key='orgs.org_seq',default=None)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
@@ -34,7 +34,7 @@ class AssetRef(SQLModel, table=True):
     """
     __tablename__ = "asset_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    topology_id: int = Field(primary_key=True,nullable=False)
-    src_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
-    dst_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    topology_seq: int = Field(primary_key=True,nullable=False)
+    src_id: str = Field(primary_key=True,nullable=False)
+    dst_id: str = Field(primary_key=True,nullable=False)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

@@ -4,7 +4,6 @@
 
 import json
 from http import HTTPStatus
-from uuid import UUID
 
 from munch import munchify
 
@@ -47,7 +46,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     o = munchify(client.get(
         f"{api_base}/validate-email",
         headers=headers).json())
-    assert UUID(o.owner_id) == profile_id
+    assert o.owner_id == profile_id
     assert len(o.link) > 0
     assert len(o.code) > 0
     assert o.state == 'link_sent'
@@ -56,7 +55,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     o = munchify(client.get(
         f"{api_base}/validate-email/{validate_code}",
         headers=headers).json())
-    assert UUID(o.owner_id) == profile_id
+    assert o.owner_id == profile_id
     assert o.state == 'validated'
 
     # update the profile data
@@ -64,16 +63,16 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         f"{api_base}/profiles/{profile_id}",
         json={"name": test_profile_name + "-updated"},
         headers=headers).json())
-    assert UUID(o.profile_id) == profile_id
+    assert o.profile_id == profile_id
     assert o.name == test_profile_name + "-updated"
 
     # validate updated profile existence again
     o = munchify(client.get(f"{api_base}/profiles/{profile_id}").json())
-    assert UUID(o.profile_id) == profile_id
+    assert o.profile_id == profile_id
     assert o.name == test_profile_name + "-updated"
 
     # upload content, index FileUploadResponses to AssetVersionContent JSON entries
-    # the AssetVersionContent is pre-serialized to JSON to remove issues with UUID conversion
+    # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
     files = [make_random_content("hda") for _ in range(2)]
     response_files = uploader(profile_id, headers, files)
     asset_contents = list(map(
@@ -88,15 +87,15 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    assert profile_id == UUID(o.admin.profile_id)
-    org_id = UUID(o.org.org_id)
+    assert profile_id == o.admin.profile_id
+    org_id = o.org.org_id
 
     # create asset in org
     o = munchify(client.post(
         f"{api_base}/assets",
         json={'org_id': str(org_id)},
         headers=headers).json())
-    asset_id = UUID(o.asset_id)
+    asset_id = o.asset_id
 
     # asset object returned, without version information
     r = client.get(
@@ -105,9 +104,9 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert_status_code(r, HTTPStatus.OK)
     assert len(r.json()) == 1
     o = munchify(r.json()[0])
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.owner_id) == profile_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.owner_id == profile_id
+    assert o.org_id == org_id
     assert o.version == [0, 0, 0]
     assert o.author_id is None
     assert o.package_id is None
@@ -123,9 +122,9 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.owner_id) == profile_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.owner_id == profile_id
+    assert o.org_id == org_id
     assert o.version == [0, 0, 0]
     assert o.author_id is None
     assert o.name is None
@@ -145,8 +144,8 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.org_id == org_id
     assert o.name == test_asset_name
     assert o.version == [0, 1, 0]
     for f in o.contents['files']:
@@ -158,8 +157,8 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     r = client.get(f"{api_base}/assets/{asset_id}").json()
     assert len(r) == 1
     o = munchify(r[0])
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.org_id == org_id
 
     # create new asset version
     test_asset_ver_json = {
@@ -174,8 +173,8 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.org_id == org_id
     assert o.commit_ref == test_commit_ref + '-updated'
     assert o.name == test_asset_name + '-updated'
     assert o.version == [0, 2, 0]
@@ -187,22 +186,22 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.owner_id) == profile_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.owner_id == profile_id
+    assert o.org_id == org_id
     assert o.version == [0, 0, 0]
     assert o.author_id is None
     assert o.name is None
 
     # query specific asset version
     o = munchify(client.get(f"{api_base}/assets/{asset_id}/versions/0.1.0").json())
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.org_id == org_id
     assert o.version == [0, 1, 0]
 
     o = munchify(client.get(f"{api_base}/assets/{asset_id}/versions/0.2.0").json())
-    assert UUID(o.asset_id) == asset_id
-    assert UUID(o.org_id) == org_id
+    assert o.asset_id == asset_id
+    assert o.org_id == org_id
     assert o.version == [0, 2, 0]
     assert o.name == test_asset_name + '-updated'
     assert len(o.contents['files']) == 1
@@ -228,9 +227,9 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert len(results) == 2
     for r in results:
         o = munchify(r)
-        assert UUID(o.asset_id) == asset_id
-        assert UUID(o.owner_id) == profile_id
-        assert UUID(o.author_id) == profile_id
+        assert o.asset_id == asset_id
+        assert o.owner_id == profile_id
+        assert o.author_id == profile_id
         assert o.name is not None
         assert o.org_id is not None
 
@@ -239,10 +238,10 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert len(r) == 2
     r[0] = munchify(r[0])
     r[1] = munchify(r[1])
-    assert UUID(r[0].asset_id) == asset_id
-    assert UUID(r[1].asset_id) == asset_id
-    assert UUID(r[0].org_id) == org_id
-    assert UUID(r[1].org_id) == org_id
+    assert r[0].asset_id == asset_id
+    assert r[1].asset_id == asset_id
+    assert r[0].org_id == org_id
+    assert r[1].org_id == org_id
     assert r[0].version == [0, 2, 0]
     assert r[1].version == [0, 1, 0]
 

@@ -8,13 +8,13 @@
 // Storage for events that are used to trigger downstream effects
 // Table name: events
 export interface Event {
-    event_id: string;
+    event_seq: number;
     event_type: string;
     queued: string;
     acked: string;
     completed: string;
     job_data: object;
-    owner_id: string;
+    owner_seq: number;
     created_in: string;
     affinity: string;
 }

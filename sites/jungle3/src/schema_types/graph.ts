@@ -8,9 +8,9 @@
 // Provides a grouping for asset graphs
 // Table name: topologies
 export interface Topology {
-    topology_id: number;
-    owner_id: string;
-    org_id: string;
+    topology_seq: number;
+    owner_seq: number;
+    org_seq: number;
     created: string;
     updated: string;
     name: string;
@@ -20,7 +20,7 @@ export interface Topology {
 // Records relationships between assets
 // Table name: asset_refs
 export interface AssetRef {
-    topology_id: number;
+    topology_seq: number;
     src_id: string;
     dst_id: string;
     edge_data: object;

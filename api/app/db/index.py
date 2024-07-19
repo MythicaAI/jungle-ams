@@ -34,8 +34,8 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
 
         # Create a new pipeline event
         job_data = {
-            'file_id': str(file_id),
-            'profile_id': str(ctx.profile_id),
+            'file_id': file_id,
+            'profile_id': ctx.profile_id,
             'locators': locators,
             'content_type': content_type,
             'content_hash': ctx.content_hash,
@@ -50,6 +50,6 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
             created_in=location,
             affinity=location))
         session.commit()
-        event_id = event_result.inserted_primary_key[0]
+        event_id = event_seq_to_id(event_result.inserted_primary_key[0])
 
     return file_id, event_id

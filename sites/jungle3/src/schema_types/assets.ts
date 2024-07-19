@@ -8,17 +8,17 @@
 // Metadata to store relationships and descriptions of assets
 // Table name: assets
 export interface Asset {
-    asset_id: string;
+    asset_seq: number;
     created: string;
     updated: string;
     deleted: string;
-    org_id: string;
-    owner_id: string;
+    org_seq: number;
+    owner_seq: number;
 }
 // Metadata to store relationships and descriptions of assets
 // Table name: asset_versions
 export interface AssetVersion {
-    asset_id: string;
+    asset_seq: number;
     published: boolean;
     major: number;
     minor: number;
@@ -27,7 +27,7 @@ export interface AssetVersion {
     created: string;
     name: string;
     description: string;
-    author_id: string;
-    package_id: string;
+    author_seq: number;
+    package_seq: number;
     contents: object;
 }

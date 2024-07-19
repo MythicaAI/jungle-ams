@@ -8,14 +8,14 @@
 // Types for storing and referencing rich media (images, etc)
 // Table name: files
 export interface FileContent {
-    file_id: string;
+    file_seq: number;
     name: string;
     created: string;
     updated: string;
     deleted: string;
     size: number;
     content_type: string;
-    owner_id: string;
+    owner_seq: number;
     cache_ttl: number;
     downloads: number;
     lifetime: number;

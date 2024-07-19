@@ -18,12 +18,12 @@ class Asset(SQLModel, table=True):
     """
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    asset_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    asset_seq: int = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = Field(default=None)
-    org_id: UUID | None = Field(default=uuid4())
-    owner_id: UUID | None = Field(foreign_key='profiles.profile_id',default=None)
+    org_seq: int | None = Field(default=0)
+    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
 
 
 class AssetVersion(SQLModel, table=True):
@@ -32,7 +32,7 @@ class AssetVersion(SQLModel, table=True):
     """
     __tablename__ = "asset_versions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    asset_id: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    asset_seq: int = Field(primary_key=True,nullable=False)
     published: bool | None = Field(default=False)
     major: int = Field(primary_key=True,nullable=False)
     minor: int = Field(primary_key=True,nullable=False)
@@ -41,6 +41,6 @@ class AssetVersion(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
-    author_id: UUID = Field(foreign_key='profiles.profile_id',default=None)
-    package_id: UUID | None = Field(foreign_key='files.file_id',default=None)
+    author_seq: int = Field(foreign_key='profiles.profile_seq',default=None)
+    package_seq: int | None = Field(foreign_key='files.file_seq',default=None)
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

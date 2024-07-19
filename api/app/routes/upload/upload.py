@@ -7,7 +7,6 @@ import string
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from pydantic import BaseModel
@@ -32,8 +31,6 @@ from storage.storage_client import StorageClient
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
-
-EMPTY_UUID = UUID(int=0, version=4)
 
 DEFAULT_BUCKET_TYPE = BucketType.FILES
 
@@ -108,7 +105,7 @@ def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> Reques
     if cfg.enable_db:
         ctx.file_id, ctx.event_id = db_index.update(ctx)
     else:
-        ctx.file_id, ctx.event_id = EMPTY_UUID, EMPTY_UUID
+        ctx.file_id, ctx.event_id = '', ''
 
     if cfg.upload_folder_auto_clean:
         os.remove(ctx.local_filepath)
@@ -151,7 +148,7 @@ async def store_files(
 
 @router.post('/package/{asset_id}/{version_str}')
 async def store_and_attach_package(
-        asset_id: UUID,
+        asset_id: str,
         version_str: str,
         files: list[UploadFile] = File(...),
         storage: StorageClient = Depends(storage_client)) -> UploadResponse:

@@ -1,6 +1,6 @@
+from datetime import datetime
 from http import HTTPStatus
 from typing import Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, constr
@@ -8,6 +8,7 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, select, update, delete, insert, col
 
 import auth.roles as roles
+from auth.api_id import org_id_to_seq, profile_id_to_seq, org_seq_to_id, profile_seq_to_id
 from auth.authorization import validate_roles
 from auth.data import resolve_profile, resolve_roles
 from db.connection import get_session
@@ -35,14 +36,14 @@ class OrgUpdateRequest(BaseModel):
 
 
 class OrgAddRoleRequest(BaseModel):
-    org_id: UUID
-    profile_id: UUID
+    org_id: str
+    profile_id: str
     role: str
 
 
 class OrgRemoveRoleRequest(BaseModel):
-    org_id: UUID
-    profile_id: UUID
+    org_id: str
+    profile_id: str
     role: str
 
 
@@ -51,13 +52,20 @@ class ResolvedOrgRef(OrgRef):
     profile_name: str
 
 
+class OrgResult(BaseModel):
+    org_id: str
+    name: str
+    description: str | None = None
+    created: datetime | None = None
+
+
 router = APIRouter(prefix="/orgs", tags=["orgs"])
 
 
-def resolve_and_validate(session: Session, profile: Profile, org_id: UUID, required_role: str):
+def resolve_and_validate(session: Session, profile: Profile, org_seq: int, required_role: str):
     # role validation
     profile = resolve_profile(session, profile)
-    profile_roles = resolve_roles(session, profile, org_id)
+    profile_roles = resolve_roles(session, profile, org_seq)
     if not validate_roles(required_role, profile_roles):
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail=f"no valid roles in {profile_roles}")
@@ -65,16 +73,16 @@ def resolve_and_validate(session: Session, profile: Profile, org_id: UUID, requi
 
 def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[ResolvedOrgRef]:
     """Given a list of refs, return the resolved reference with extra data present"""
-    org_ids = set()
-    profile_ids = set()
+    org_seqs = set()
+    profile_seqs = set()
     for ref in refs:
-        org_ids.add(ref.org_id)
-        profile_ids.add(ref.profile_id)
+        org_seqs.add(org_id_to_seq(ref.org_id))
+        profile_seqs.add(profile_id_to_seq(ref.profile_id))
     # pylint: disable=no-member
-    orgs = {org.org_id: org for org in
-            session.exec(select(Org).where(col(Org.org_id).in_(org_ids))).all()}
-    profiles = {profile.profile_id: profile for profile in
-                session.exec(select(Profile).where(col(Profile.profile_id).in_(profile_ids))).all()}
+    orgs = {org_seq_to_id(org.org_seq): org for org in
+            session.exec(select(Org).where(col(Org.org_id).in_(org_seqs))).all()}
+    profiles = {profile_seq_to_id(profile.profile_seq): profile for profile in
+                session.exec(select(Profile).where(col(Profile.profile_seq).in_(profile_seqs))).all()}
     results = list()
     for ref in refs:
         org = orgs.get(ref.org_id, Org())
@@ -97,8 +105,8 @@ async def create_org(
         session.add(org)
 
         # create the admin from the profile
-        admin = OrgRef(org_id=org.org_id, profile_id=profile.profile_id,
-                       role='admin', author_id=profile.profile_id)
+        admin = OrgRef(org_seq=org.org_seq, profile_seq=profile.profile_seq,
+                       role='admin', author_seq=profile.profile_seq)
         session.add(admin)
         session.commit()
         session.refresh(admin)
@@ -109,7 +117,7 @@ async def create_org(
 
 
 @router.get('/named/{org_name}')
-async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[Org]:
+async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[ResolvedOrgRef]:
     """Get organization by name"""
     with get_session() as session:
         if exact_match:
@@ -123,18 +131,19 @@ async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = 
 
 @router.post('/{org_id}')
 async def update_org(
-        org_id: UUID,
+        org_id: str,
         req: OrgUpdateRequest,
         profile: Profile = Depends(current_profile)
 ) -> Org:
     """Update an existing organization"""
     with get_session(echo=True) as session:
-        org = session.exec(select(Org).where(Org.org_id == org_id)).first()
+        org_seq = org_id_to_seq(org_id)
+        org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 f"org: {org_id} not found")
 
-        resolve_and_validate(session, profile, org_id, roles.org_update)
+        resolve_and_validate(session, profile, org_seq, roles.org_update)
 
         r = session.exec(update(Org).where(
             Org.org_id == org_id).values(
@@ -148,7 +157,7 @@ async def update_org(
 
 
 @router.delete('/{org_id}')
-async def delete_org(org_id: UUID, profile: Profile = Depends(current_profile)):
+async def delete_org(org_id: str, profile: Profile = Depends(current_profile)):
     """Removes an existing organization"""
     with get_session() as session:
         resolve_and_validate(session, profile, org_id, roles.org_delete)
@@ -168,7 +177,7 @@ async def get_org(profile: Profile = Depends(current_profile)) -> list[ResolvedO
 
 
 @router.get('/{org_id}')
-async def get_org_by_id(org_id: UUID = None, profile: Profile = Depends(current_profile)) -> Org:
+async def get_org_by_id(org_id: str = None, profile: Profile = Depends(current_profile)) -> OrgResult:
     """Get organization by ID"""
     with (get_session() as session):
         if org_id is None:
@@ -179,50 +188,55 @@ async def get_org_by_id(org_id: UUID = None, profile: Profile = Depends(current_
                                 .where(OrgRef.profile_id == profile.profile_id)
                                 ).all()
         org = session.exec(select(Org).where(Org.org_id == org_id)).first()
-        return org
+        return OrgResult(**org.model_dump(), org_id=org_seq_to_id(org.seq))
 
 
 @router.get('/{org_id}/roles')
-async def get_org_roles(org_id: UUID) -> list[ResolvedOrgRef]:
+async def get_org_roles(org_id: str) -> list[ResolvedOrgRef]:
     """Get all the roles in the organization """
     with get_session() as session:
+        org_seq = org_id_to_seq(org_id)
         return resolve_org_refs(
             session,
-            session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all())
+            session.exec(select(OrgRef).where(OrgRef.org_seq == org_seq)).all())
 
 
 @router.post('/{org_id}/roles/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
 async def add_role_to_org(
-        org_id: UUID,
-        profile_id: UUID,
+        org_id: str,
+        profile_id: str,
         role: str,
         profile: Profile = Depends(current_profile)) -> list[ResolvedOrgRef]:
     """Create a new role for an organization"""
     with get_session() as session:
-        resolve_and_validate(session, profile, org_id, roles.org_add_role)
+        org_seq = org_id_to_seq(org_id)
+        profile_seq = profile_id_to_seq(profile_id)
+        resolve_and_validate(session, profile, org_seq, roles.org_add_role)
 
         session.exec(insert(OrgRef).values(
-            org_id=org_id, profile_id=profile_id, role=role, author_id=profile.profile_id))
+            org_seq=org_seq, profile_seq=profile_seq, role=role, author_seq=profile.profile_seq))
         session.commit()
 
         return resolve_org_refs(
             session,
-            session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all())
+            session.exec(select(OrgRef).where(OrgRef.org_seq == org_seq)).all())
 
 
 @router.delete('/{org_id}/roles/{profile_id}/{role}')
 async def remove_role_from_org(
-        org_id: UUID,
-        profile_id: UUID,
+        org_id: str,
+        profile_id: str,
         role: str,
         profile=Depends(current_profile)) -> list[ResolvedOrgRef]:
     """Delete a role from an organization"""
     with get_session() as session:
-        resolve_and_validate(session, profile, org_id, roles.org_remove_role)
+        org_seq = org_id_to_seq(org_id)
+        profile_seq = profile_id_to_seq(profile_id)
+        resolve_and_validate(session, profile, org_seq, roles.org_remove_role)
         session.exec(delete(OrgRef).where(
-            OrgRef.org_id == org_id, OrgRef.profile_id == profile_id, OrgRef.role == role))
+            OrgRef.org_seq == org_seq, OrgRef.profile_seq == profile_seq, OrgRef.role == role))
         session.commit()
 
         return resolve_org_refs(
             session,
-            session.exec(select(OrgRef).where(OrgRef.org_id == org_id)).all())
+            session.exec(select(OrgRef).where(OrgRef.org_seq == org_seq)).all())
