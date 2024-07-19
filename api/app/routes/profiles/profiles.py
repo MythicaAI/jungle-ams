@@ -146,7 +146,7 @@ async def get_profile(profile_id: UUID) -> PublicProfileResponse:
     """Get a profile by ID"""
     with get_session() as session:
         profile = session.exec(select(Profile).where(
-            Profile.id == profile_id)).first()
+            Profile.profile_id == profile_id)).first()
         if profile is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
         return profile_to_profile_response(profile, PublicProfileResponse)

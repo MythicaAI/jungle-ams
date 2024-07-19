@@ -18,9 +18,10 @@ cipher = Blowfish.new(_ENC_KEY, Blowfish.MODE_ECB)
 log = logging.getLogger(__name__)
 
 
-def obfuscate_serial_number(serial_number):
+def seq_to_id(seq):
     """Given a 64bit integer, return an encrypted version with a fixed HMAC"""
-    encrypted = cipher.encrypt(serial_number.to_bytes(8, 'big'))
+    assert type(seq) is int
+    encrypted = cipher.encrypt(seq.to_bytes(8, 'big'))
     h = hashlib.blake2b(digest_size=DIGEST_SIZE, key=_HMAC_KEY, person=_PERSON)
     h.update(encrypted)
     digest = h.digest()
@@ -32,10 +33,12 @@ def obfuscate_serial_number(serial_number):
     return encoded
 
 
-def deobfuscate_serial_number(obfuscated_serial):
+def id_to_seq(api_id) -> int:
     """Validate and decode an encrypted serial number"""
+    assert type(id) is str
+
     # Base58 decode the obfuscated serial number
-    combined = base58.b58decode(obfuscated_serial)
+    combined = base58.b58decode(api_id)
 
     # Extract the encrypted serial number and HMAC
     encrypted: bytes = combined[0:8]

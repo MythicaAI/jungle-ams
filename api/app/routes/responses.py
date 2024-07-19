@@ -32,7 +32,7 @@ class ProfileResponse(BaseModel):
 
 class PublicProfileResponse(BaseModel):
     """A model with only allows anonymous public properties for profile query"""
-    id: UUID = None
+    profile_id: UUID = None
     name: str | None = None
     description: str | None = None
     signature: str | None = None

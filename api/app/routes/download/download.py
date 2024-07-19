@@ -79,12 +79,12 @@ async def download_info(
         file_id: str,
         storage: StorageClient = Depends(storage_client)) -> DownloadInfoResponse:
     """Return information needed to download the file including the temporary URL"""
-    with get_session() as session:
-        file = session.exec(select(FileContent).where(FileContent.file_id == file_id)).first()
+    with get_session(echo=True) as session:
+        increment_download_count(session, UUID(file_id))
+        file = session.exec(select(FileContent).where(FileContent.file_id == file_id)).one_or_none()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']
-        increment_download_count(session, UUID(file_id))
         return DownloadInfoResponse(
             **file.model_dump(),
             url=translate_download_url(storage, locator_list))
@@ -97,10 +97,10 @@ async def download_redirect(
         storage: StorageClient = Depends(storage_client)):
     """Redirects to a temporary download link from a valid file_id"""
     with get_session() as session:
+        increment_download_count(session, UUID(file_id))
         file = session.exec(select(FileContent).where(FileContent.file_id == file_id)).first()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
         locator_list = file.locators['locators']
-        increment_download_count(session, UUID(file_id))
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
         response.headers['location'] = translate_download_url(storage, locator_list)
