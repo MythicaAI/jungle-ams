@@ -18,7 +18,8 @@ def main():
     """
     self_path = os.path.dirname(os.path.abspath(__file__))
     py_output = os.path.join(self_path, '..', 'api', 'app', 'db', 'schema')
-    ts_output = os.path.join(self_path, '..', 'sites', 'jungle3', 'src', 'schema_types')
+    ts_output = os.path.join(self_path, '..', 'sites',
+                             'jungle3', 'src', 'schema_types')
 
     os.makedirs(py_output, exist_ok=True)
     os.makedirs(ts_output, exist_ok=True)
@@ -41,8 +42,8 @@ def main():
         file_path = fixup(os.path.join(ts_output, n), '.ts')
         log.info(f"TS generating {n} {file_path}")
         ts_content = schema_to_typescript(schema)
-        with open(file_path, 'w+', encoding='utf-8') as f:
-            f.write(ts_content)
+        # with open(file_path, 'w+', encoding='utf-8') as f:
+        # f.write(ts_content)
 
 
 if __name__ == '__main__':

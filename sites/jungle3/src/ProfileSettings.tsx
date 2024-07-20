@@ -17,14 +17,13 @@ import {
   extractValidationErrors,
   translateError,
 } from "./services/backendCommon.ts";
-import { Profile } from "./schema_types/profiles.ts";
 import { FormEvent } from "react";
 import { Form, Link } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { MailCheckIcon, Tag } from "lucide-react";
 import { useStatusStore } from "./stores/statusStore.ts";
-import { api } from "./services/api/index.ts";
+import { api } from "./services/api";
 
 interface ProfileSettingsProps {
   create: boolean;
@@ -62,7 +61,7 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
         body: formJson,
       })
       .then((r) => {
-        setProfile(r as unknown as Profile);
+        setProfile(r as unknown as ProfileResponse);
         setSuccess("Profile updated");
         cookies.profile_id = r.profile_id;
       })
@@ -79,7 +78,7 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
     api
       .post<ProfileResponse>({ path: `/profiles/`, body: formJson })
       .then((r) => {
-        setProfile(r as unknown as Profile);
+        setProfile(r as unknown as ProfileResponse);
         setSuccess(`Profile created ${r.profile_id}`);
         cookies.profile_id = r.profile_id;
       })
@@ -121,7 +120,7 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
   );
 
   const verifiedLabel =
-    profile.email_validate_state == 2 ? (
+    profile.email_verified ? (
       <Tag color="success" />
     ) : (
       <Button onClick={onRequestEmailVerification}>
@@ -141,7 +140,7 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
         onChange={(e) => updateProfile({ email: e.target.value })}
         endDecorator={verifiedLabel}
       />
-      <Box>Email Validation State: {profile.email_validate_state}</Box>
+      <Box>Email Validation State: {profile.email_verified}</Box>
     </FormControl>
   );
 
