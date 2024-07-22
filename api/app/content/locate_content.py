@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlmodel import select, Session
 
 from db.schema.media import FileContent
