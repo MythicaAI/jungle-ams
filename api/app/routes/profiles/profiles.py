@@ -4,9 +4,9 @@ from http import HTTPStatus
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import ValidationError, BaseModel, constr, AnyHttpUrl, EmailStr
+from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import select, update, delete, col
+from sqlmodel import col, delete, select, update
 
 from auth.api_id import profile_id_to_seq, profile_seq_to_id
 from auth.generate_token import generate_token
@@ -14,7 +14,7 @@ from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileSession
 from routes.authorization import current_profile
-from routes.responses import ProfileResponse, SessionStartResponse, ValidateEmailState, PublicProfileResponse
+from routes.responses import ProfileResponse, PublicProfileResponse, SessionStartResponse, ValidateEmailState
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
