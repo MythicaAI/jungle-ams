@@ -88,13 +88,15 @@ export const UploadsSubmitList = function () {
       });
   };
   const onFileInputChanged = () => {
-    const fileList = (document.getElementById("file-input") as HTMLInputElement)
-      .files;
+    const fileInput = document.getElementById("file-input") as HTMLInputElement;
+    const fileList = fileInput.files;
+
     if (!fileList) {
       console.log("no fileList found");
       return;
     }
     setPendingUploads([...pendingUploads, ...fileList]);
+    fileInput.value = "";
   };
 
   const showPendingUploads = () =>
