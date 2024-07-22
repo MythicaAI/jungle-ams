@@ -8,7 +8,7 @@ from typing import Optional
 
 import git
 import requests
-from github import Github, GitRelease
+from github import GitRelease, Github
 from munch import munchify
 from packaging import version
 from requests_toolbelt.multipart.encoder import MultipartEncoder
@@ -259,7 +259,7 @@ class PackageUploader(object):
                                  headers=self.auth_header(),
                                  json=org_json)
         response.raise_for_status()
-        return munchify(response.json()).org
+        return munchify(response.json())
 
     def find_or_create_profile(self, package: PackageModel):
         """Find or create a profile object"""
