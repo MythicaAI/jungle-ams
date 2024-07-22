@@ -72,6 +72,7 @@ async def start_session(profile_id: str) -> SessionStartResponse:
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 detail='profile not found')
 
+        # Delete existing sessions
         session.exec(delete(ProfileSession).where(
             ProfileSession.profile_seq == profile_seq))
         session.commit()
@@ -86,7 +87,7 @@ async def start_session(profile_id: str) -> SessionStartResponse:
 
         # Add a new session
         location = app_config().mythica_location
-        profile_session = ProfileSession(profile_id=profile_id,
+        profile_session = ProfileSession(profile_seq=profile_seq,
                                          refreshed=sql_now(),
                                          location=location,
                                          authenticated=False,
@@ -94,14 +95,9 @@ async def start_session(profile_id: str) -> SessionStartResponse:
         session.add(profile_session)
         session.commit()
 
-        sessions = session.exec(select(ProfileSession).where(
-            ProfileSession.profile_id == profile_id)).all()
-        sessions = [ProfileSession(**s.model_dump()) for s in sessions]
-
         result = SessionStartResponse(
             token=token,
-            profile=profile_response,
-            sessions=sessions)
+            profile=profile_response)
         return result
 
 
@@ -161,7 +157,7 @@ async def update_profile(
         req_profile: CreateUpdateProfileModel,
         profile: Profile = Depends(current_profile)) -> ProfileResponse:
     """Update the profile of the owning account"""
-    if profile_id != profile.profile_id:
+    if profile_id != profile_seq_to_id(profile.profile_seq):
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail='profile not authenticated')
     profile_seq = profile_id_to_seq(profile_id)

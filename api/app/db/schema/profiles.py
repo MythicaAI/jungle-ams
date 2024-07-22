@@ -40,7 +40,7 @@ class OrgRef(SQLModel, table=True):
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     org_seq: int = Field(primary_key=True,nullable=False)
-    profile_seq: UUID = Field(primary_key=True,nullable=False,default_factory=uuid4)
+    profile_seq: int = Field(primary_key=True,nullable=False)
     role: str = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     author_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)

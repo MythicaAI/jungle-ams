@@ -87,13 +87,13 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    assert profile_id == o.admin.profile_id
-    org_id = o.org.org_id
+    assert profile_id == o.profile_id
+    org_id = o.org_id
 
     # create asset in org
     o = munchify(client.post(
         f"{api_base}/assets",
-        json={'org_id': str(org_id)},
+        json={'org_id': org_id},
         headers=headers).json())
     asset_id = o.asset_id
 
@@ -131,12 +131,12 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
 
     # add content to asset
     test_asset_ver_json = {
-        'asset_id': str(asset_id),
+        'asset_id': asset_id,
         'commit_ref': test_commit_ref,
         'contents': {"files": asset_contents},
         'name': test_asset_name,
         'description': test_asset_description,
-        'author_id': str(profile_id),
+        'author_id': profile_id,
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.1.0",
@@ -165,7 +165,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         'commit_ref': test_commit_ref + '-updated',
         'contents': {'files': asset_contents[1:]},
         'name': test_asset_name + '-updated',
-        'author_id': str(profile_id),
+        'author_id': profile_id,
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.2.0",
@@ -250,7 +250,7 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         'commit_ref': test_commit_ref + '-updated-2',
         'name': test_asset_name + '-updated-2',
         'contents': {'files': []},
-        'author_id': str(profile_id),
+        'author_id': profile_id,
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.2.0",

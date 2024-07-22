@@ -45,13 +45,11 @@ def create_profile(client, api_base: str):
         assert_status_code(r, HTTPStatus.OK)
         session_response = SessionStartResponse(**r.json())
         assert session_response.profile.profile_id == profile_id
-        assert len(session_response.sessions) > 0
         assert len(session_response.token) > 0
         auth_token = session_response.token
 
         return ProfileTestObj(
             profile=profile,
-            session=session_response.sessions[0],
             auth_token=auth_token)
 
     return _create_profile

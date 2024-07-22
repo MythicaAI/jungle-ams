@@ -28,11 +28,11 @@ class Topology(SQLModel, table=True):
     edge_data_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 
-class AssetRef(SQLModel, table=True):
+class TopologyRef(SQLModel, table=True):
     """
     Records relationships between assets
     """
-    __tablename__ = "asset_refs"
+    __tablename__ = "topology_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     topology_seq: int = Field(primary_key=True,nullable=False)
     src_id: str = Field(primary_key=True,nullable=False)

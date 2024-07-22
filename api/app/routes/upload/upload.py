@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from sqlmodel import select, update, and_
 
 import db.index as db_index
+from auth.api_id import asset_id_to_seq, profile_seq_to_id
 from config import app_config
 from context import RequestContext
 from db.connection import get_session
@@ -57,7 +58,11 @@ def get_target_bucket(mappings: dict[BucketType, set], extension: str) -> Bucket
     return DEFAULT_BUCKET_TYPE
 
 
-def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> RequestContext:
+def upload_internal(
+        storage: StorageClient,
+        bucket_mappings: dict[BucketType, set],
+        profile_id: str,
+        upload_file: UploadFile) -> RequestContext:
     """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
     ctx = RequestContext()
@@ -129,7 +134,11 @@ async def store_files(
     response_files = []
     for file in files:
         # do the upload
-        ctx = upload_internal(storage, USER_BUCKET_MAPPINGS, profile.profile_id, file)
+        ctx = upload_internal(
+            storage,
+            USER_BUCKET_MAPPINGS,
+            profile_seq_to_id(profile.profile_seq),
+            file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
@@ -190,8 +199,9 @@ async def store_and_attach_package(
             await delete_file_by_id(avr.package_id, ctx.profile_id)
 
         # attach the response to the asset version
+        asset_seq = asset_id_to_seq(asset_id)
         stmt = update(AssetVersion).values({AssetVersion.package_id: ctx.file_id}).where(
-            AssetVersion.asset_id == asset_id).where(
+            AssetVersion.asset_seq == asset_seq).where(
             AssetVersion.major == version_id[0]).where(
             AssetVersion.minor == version_id[1]).where(
             AssetVersion.patch == version_id[2])
@@ -212,6 +222,6 @@ async def pending_uploads(
     with (get_session() as session):
         owned_files = session.exec(select(FileContent)
         .where(
-            and_(FileContent.owner_id == profile.profile_id,
+            and_(FileContent.owner_seq == profile.profile_seq,
                  FileContent.deleted == None))).all()
         return enrich_files(session, owned_files, profile)

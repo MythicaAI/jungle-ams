@@ -5,8 +5,6 @@ from enum import Enum
 
 from pydantic import BaseModel, AnyHttpUrl
 
-from db.schema.profiles import ProfileSession
-
 
 class ValidateEmailState(str, Enum):
     """Email validation states"""
@@ -42,7 +40,6 @@ class PublicProfileResponse(BaseModel):
 class SessionStartResponse(BaseModel):
     token: str
     profile: ProfileResponse
-    sessions: list[ProfileSession]
 
 
 class ValidateEmailResponse(BaseModel):

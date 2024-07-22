@@ -45,7 +45,7 @@ tables:
         foreign_key: orgs.org_seq
         primary_key: true
       - name: profile_seq
-        type: UUID
+        type: BIGINT
         foreign_key: profiles.profile_seq
         primary_key: true
       - name: role

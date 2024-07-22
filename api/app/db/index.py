@@ -1,9 +1,9 @@
 import logging
 from typing import Tuple
-from uuid import UUID
 
 from sqlmodel import insert
 
+from auth.api_id import profile_id_to_seq, event_seq_to_id, file_seq_to_id
 from config import app_config
 from context import RequestContext
 from db.connection import get_session
@@ -13,7 +13,7 @@ from db.schema.media import FileContent
 log = logging.getLogger(__name__)
 
 
-def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
+def update(ctx: RequestContext) -> Tuple[str, str]:
     """Update the database index for the upload"""
     with get_session() as session:
         content_type = f"application/{ctx.extension}"
@@ -24,13 +24,13 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
         # create a new upload
         file_content_result = session.exec(insert(FileContent).values(
             {'name': ctx.filename,
-             'owner_id': ctx.profile_id,
+             'owner_seq': profile_id_to_seq(ctx.profile_id),
              'locators': locators,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
              'content_type': content_type}))
         session.commit()
-        file_id = file_content_result.inserted_primary_key[0]
+        file_id = file_seq_to_id(file_content_result.inserted_primary_key[0])
 
         # Create a new pipeline event
         job_data = {
@@ -46,7 +46,7 @@ def update(ctx: RequestContext) -> Tuple[UUID, UUID]:
         event_result = session.exec(insert(Event).values(
             event_type=f"file_uploaded:{ctx.extension}",
             job_data=job_data,
-            owner_id=ctx.profile_id,
+            owner_seq=profile_id_to_seq(ctx.profile_id),
             created_in=location,
             affinity=location))
         session.commit()

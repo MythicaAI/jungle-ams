@@ -127,7 +127,7 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             owner_id=profile_seq_to_id(asset.owner_seq),
             owner_name=resolve_profile_name(session, asset.owner_seq),
             package_id=file_seq_to_id(ver.package_seq),
-            author_id=profile_seq_to_id(ver.author_id),
+            author_id=profile_seq_to_id(ver.author_seq),
             author_name=resolve_profile_name(session, ver.author_seq),
             name=ver.name,
             description=ver.description,
@@ -197,7 +197,7 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     stmt = insert(Event).values(
         event_type="asset_version_updated",
         job_data=job_data,
-        owner_seq=profile_id_to_seq(avr.owner_seq),
+        owner_seq=profile_id_to_seq(avr.owner_id),
         created_in=location,
         affinity=location)
     event_result = session.exec(stmt)
@@ -276,7 +276,8 @@ async def get_owned_assets(
         results = session.exec(
             select(Asset, AssetVersion)
             .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-            .where(Asset.owner_seq == profile.profile_seq)).all()
+            .where(Asset.owner_seq == profile.profile_seq)
+            .where(Asset.deleted == None)).all()
         return process_join_results(session, results)
 
 
@@ -335,7 +336,7 @@ async def create_asset(r: AssetCreateRequest,
         return AssetCreateResult(
             asset_id=asset_seq_to_id(asset_seq),
             org_id=r.org_id,
-            owner_id=profile_seq_to_id(profile.profile_id))
+            owner_id=profile_seq_to_id(profile.profile_seq))
 
 
 @router.post('/{asset_id}/versions/{version_str}')
@@ -381,6 +382,7 @@ async def create_asset_version(asset_id: str,
         # Use provided author or default to calling profile on creation
         if r.author_id:
             values['author_seq'] = profile_id_to_seq(r.author_id)
+            values.pop('author_id')
         else:
             values['author_seq'] = profile_seq_to_id(profile.profile_seq)
 

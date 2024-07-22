@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, Response, APIRouter
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
-from auth.api_id import file_id_to_seq
+from auth.api_id import file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.connection import get_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client
@@ -19,6 +19,7 @@ router = APIRouter(prefix="/download", tags=["files"])
 
 class DownloadInfoResponse(BaseModel):
     file_id: str
+    owner_id: str
     name: str
     size: int
     content_type: str
@@ -88,6 +89,8 @@ async def download_info(
         locator_list = file.locators['locators']
         return DownloadInfoResponse(
             **file.model_dump(),
+            file_id=file_seq_to_id(file.file_seq),
+            owner_id=profile_seq_to_id(file.owner_seq),
             url=translate_download_url(storage, locator_list))
 
 

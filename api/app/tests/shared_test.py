@@ -9,7 +9,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from db.schema.profiles import Profile, ProfileSession
+from routes.responses import ProfileResponse
 
 log = logging.getLogger(__name__)
 
@@ -25,10 +25,10 @@ class FileContentTestObj(BaseModel):
 
 class ProfileTestObj(BaseModel):
     auth_token: str
-    profile: Profile
-    session: ProfileSession
+    profile: ProfileResponse
 
     def authorization_header(self):
+        """Return the bearer auth header for the cached token"""
         return {"Authorization": f"Bearer {self.auth_token}"}
 
 

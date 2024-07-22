@@ -86,7 +86,7 @@ def create_files() -> list[UUID]:
         files=files,
         headers=headers).json())
     assert len(o.files) == 2
-    file_ids = list(map(lambda f: UUID(f.file_id), o.files))
+    file_ids = list(map(lambda f: f.file_id, o.files))
     return file_ids
 
 # TODO: fix download

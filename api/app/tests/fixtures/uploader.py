@@ -1,5 +1,6 @@
+"""Upload pytest fixture"""
+
 from http import HTTPStatus
-from uuid import UUID
 
 import pytest
 from munch import munchify
@@ -13,9 +14,9 @@ def uploader(client, api_base):
     """Uploader factory fixture test content to API"""
 
     def _uploader(
-            profile_id: UUID,
+            profile_id: str,
             auth_headers,
-            files: list[FileContentTestObj]) -> dict[UUID, FileUploadResponse]:
+            files: list[FileContentTestObj]) -> dict[str, FileUploadResponse]:
 
         file_data = list(map(
             lambda x: ('files', (x.file_name, x.contents, x.content_type)),
@@ -30,7 +31,7 @@ def uploader(client, api_base):
         assert len(o.files) == len(files)
 
         # resolve and update the test files based on the response
-        response_files_by_id: dict[UUID, FileUploadResponse] = {i.file_id: FileUploadResponse(**i) for i in o.files}
+        response_files_by_id: dict[str, FileUploadResponse] = {i.file_id: FileUploadResponse(**i) for i in o.files}
         request_files_by_hash = {i.content_hash: i for i in files}
         for f in response_files_by_id.values():
             test_file = request_files_by_hash[f.content_hash]
@@ -49,8 +50,8 @@ def uploader(client, api_base):
                 headers=auth_headers)
             assert_status_code(r, HTTPStatus.OK)
             o = munchify(r.json())
-            assert UUID(o.file_id) == f.file_id
-            assert UUID(o.owner_id) == profile_id
+            assert o.file_id == f.file_id
+            assert o.owner_id == profile_id
             assert o.content_hash == test_file.content_hash
             assert o.file_name == test_file.file_name
             assert o.size == len(test_file.contents)
@@ -69,14 +70,14 @@ def uploader(client, api_base):
         for r in results:
             o = munchify(r)
             test_file = request_files_by_hash[o.content_hash]
-            assert UUID(o.file_id) == test_file.file_id
+            assert o.file_id == test_file.file_id
 
             # validate download info API
             r = client.get(
                 f"{api_base}/download/info/{o.file_id}")
             assert_status_code(r, HTTPStatus.OK)
             o = munchify(r.json())
-            assert UUID(o.file_id) == test_file.file_id
+            assert o.file_id == test_file.file_id
             assert o.content_hash == test_file.content_hash
             assert o.size == test_file.size
             assert o.name == test_file.file_name

@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import select, update, and_
 
-from auth.api_id import file_id_to_seq
+from auth.api_id import file_id_to_seq, profile_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
@@ -21,11 +21,12 @@ async def get_file_by_id(
         file_id: str,
         profile: Profile = Depends(current_profile)) -> FileUploadResponse:
     """Query a file by ID, returns owner event data"""
+    file_seq = file_id_to_seq(file_id)
     with get_session() as session:
         file = session.exec(
             select(FileContent).where(
                 and_(
-                    FileContent.file_id == file_id,
+                    FileContent.file_seq == file_seq,
                     FileContent.deleted == None))).first()
         return enrich_file(session, file, profile)
 
@@ -46,13 +47,15 @@ async def get_file_by_content(
 @router.delete('/{file_id}')
 async def delete_file_by_id(file_id, profile_id: str = Depends(current_profile_id)):
     """Delete a file by its ID"""
+    profile_seq = profile_id_to_seq(profile_id)
     with get_session(echo=True) as session:
         try:
             file_seq = file_id_to_seq(file_id)
             result = session.exec(
                 (update(FileContent)
                  .values(deleted=sql_now(), )
-                 .where(and_(FileContent.file_seq == file_seq, FileContent.owner_id == profile_id))))
+                 .where(and_(FileContent.file_seq == file_seq,
+                             FileContent.owner_seq == profile_seq))))
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail="file not found, or not owned")

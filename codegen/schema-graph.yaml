@@ -27,9 +27,8 @@ tables:
       - name: edge_data_schema
         type: JSON
 
-  # TODO: graph references should also be versioned
-  - name: AssetRef
-    table_name: asset_refs
+  - name: TopologyRef
+    table_name: topology_refs
     description: Records relationships between assets
     columns:
       - name: topology_seq

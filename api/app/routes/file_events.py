@@ -1,5 +1,6 @@
 from sqlmodel import Session, select
 
+from auth.api_id import file_seq_to_id, profile_seq_to_id, event_seq_to_id
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
@@ -12,11 +13,11 @@ def enrich_file(
         profile: Profile) -> FileUploadResponse:
     """Given a file and a profile, enrich with events associated to the file"""
     owned_events = session.exec(select(Event).where(
-        Event.owner_id == profile.profile_id)).all()
+        Event.owner_seq == profile.profile_seq)).all()
 
     response = FileUploadResponse(
-        file_id=file.file_id,
-        owner_id=file.owner_id,
+        file_id=file_seq_to_id(file.file_seq),
+        owner_id=profile_seq_to_id(file.owner_seq),
         file_name=file.name,
         content_type=file.content_type,
         size=file.size,
@@ -28,8 +29,8 @@ def enrich_file(
     for oe in owned_events:
         job_data = oe.job_data
         file_id = job_data.get('file_id')
-        if file_id == file.file_id:
-            response.event_ids.append(oe.id)
+        if file_id == file_seq_to_id(file.file_seq):
+            response.event_ids.append(event_seq_to_id(oe.event_seq))
 
     return response
 
@@ -40,12 +41,13 @@ def enrich_files(
         profile: Profile) -> list[FileUploadResponse]:
     """Given a list of files and a profile, enrich with events associated to the files"""
     owned_events = session.exec(select(Event).where(
-        Event.owner_id == profile.profile_id)).all()
+        Event.owner_seq == profile.profile_seq)).all()
     owned_files_by_id = {}
     for of in files:
-        owned_files_by_id[of.file_id] = FileUploadResponse(
-            file_id=of.file_id,
-            owner_id=of.owner_id,
+        file_id = file_seq_to_id(of.file_seq)
+        owned_files_by_id[file_id] = FileUploadResponse(
+            file_id=file_id,
+            owner_id=profile_seq_to_id(of.owner_seq),
             file_name=of.name,
             content_type=of.content_type,
             size=of.size,
@@ -61,5 +63,5 @@ def enrich_files(
         of = owned_files_by_id.get(file_id)
         if of is None:
             continue
-        of.event_ids.append(oe.id)
+        of.event_ids.append(event_seq_to_id(oe.event_seq))
     return list(owned_files_by_id.values())

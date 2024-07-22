@@ -3,7 +3,6 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 from http import HTTPStatus
-from uuid import UUID
 
 from fastapi.testclient import TestClient
 from munch import munchify
@@ -18,17 +17,16 @@ def test_create_update(client, api_base, create_profile, create_org):
     test_profile = create_profile()
     headers = test_profile.authorization_header()
     o = create_org(test_profile)
-    org_id = o.org.org_id
+    org_id = o.org_id
 
     r = client.post(f"{api_base}/orgs/{org_id}",
-                    json={'name': 'test-updated'},
+                    json={'name': 'test-updated', 'description': 'test-desc', },
                     headers=headers)
     assert r.status_code == HTTPStatus.OK
     o = munchify(r.json())
-    assert o.name == "test-updated"
-    assert o.description is None
-    assert o.updated is not None
-    assert UUID(o.org_id) == org_id
+    assert o.name == 'test-updated'
+    assert o.description == 'test-desc'
+    assert o.org_id == org_id
 
 
 def test_org_ref_operations(client, api_base, create_profile, create_org):
@@ -39,9 +37,9 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
     org = create_org(admin_profile_test_info)
     org2 = create_org(admin_profile_test_info)
 
-    org_id = org.org.org_id
-    org_id2 = org2.org.org_id
-    admin_id = org.admin.profile_id
+    org_id = org.org_id
+    org_id2 = org2.org_id
+    admin_id = org.profile_id
 
     # create a new role for the admin
     r = client.post(f"{api_base}/orgs/{org_id}/roles/{admin_profile_test_info.profile.profile_id}/dev", headers=headers)
@@ -50,8 +48,8 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
     assert len(roles) == 2
     for ref in roles:
         o = munchify(ref)
-        assert UUID(o.org_id) == org_id
-        assert UUID(o.profile_id) == admin_profile_test_info.profile.profile_id
+        assert o.org_id == org_id
+        assert o.profile_id == admin_profile_test_info.profile.profile_id
         assert o.role in {'admin', 'dev'}
 
     # add two user roles
@@ -67,10 +65,10 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
 
     for role in roles:
         o = munchify(role)
-        assert UUID(o.org_id) == org_id
-        assert UUID(o.author_id) == admin_id
+        assert o.org_id == org_id
+        assert o.author_id == admin_id
 
-        if UUID(o.profile_id) == user_profile_test_info.profile.profile_id:
+        if o.profile_id == user_profile_test_info.profile.profile_id:
             assert o.role in {'user', 'mod'}
 
     # delete a ref
@@ -94,9 +92,9 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
     orgs = list()
     for role in r.json():
         o = munchify(role)
-        assert UUID(o.profile_id) == user_profile_test_info.profile.profile_id
+        assert o.profile_id == user_profile_test_info.profile.profile_id
         assert o.role == 'user'
-        assert UUID(o.org_id) in {org_id, org_id2}
-        orgs.append(UUID(o.org_id))
+        assert o.org_id in {org_id, org_id2}
+        orgs.append(o.org_id)
     assert org_id in orgs
     assert org_id2 in orgs

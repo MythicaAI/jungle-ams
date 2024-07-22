@@ -38,5 +38,5 @@ def resolve_profile(session, profile: Profile) -> Profile:
 def resolve_roles(session: Session, profile: Profile, org_seq: int) -> set[str]:
     """Get the set of roles for a profile in an org"""
     org_refs = session.exec(select(OrgRef).where(
-        OrgRef.org_seq == org_seq, OrgRef.profile_id == profile.profile_id)).all()
+        OrgRef.org_seq == org_seq, OrgRef.profile_seq == profile.profile_seq)).all()
     return {o.role for o in org_refs}
