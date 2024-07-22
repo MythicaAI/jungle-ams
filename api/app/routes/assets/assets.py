@@ -3,23 +3,23 @@ import logging
 from datetime import datetime
 from http import HTTPStatus
 from operator import or_
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import sqlalchemy
-from fastapi import APIRouter, HTTPException, Depends, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 from pydantic.types import StrictInt
-from sqlmodel import select, update, insert, delete, Session, desc, col
+from sqlmodel import Session, col, delete, desc, insert, select, update
 
-from auth.api_id import asset_seq_to_id, profile_seq_to_id, org_seq_to_id, file_seq_to_id, asset_id_to_seq, \
-    profile_id_to_seq, file_id_to_seq, org_id_to_seq
+from auth.api_id import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, org_seq_to_id, \
+    profile_id_to_seq, profile_seq_to_id
 from config import app_config
 from content.locate_content import locate_content_by_seq
 from db.connection import get_session
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
 from db.schema.media import FileContent
-from db.schema.profiles import Profile, Org
+from db.schema.profiles import Org, Profile
 from routes.authorization import current_profile
 
 ZERO_VERSION = (0, 0, 0)
@@ -384,7 +384,7 @@ async def create_asset_version(asset_id: str,
             values['author_seq'] = profile_id_to_seq(r.author_id)
             values.pop('author_id')
         else:
-            values['author_seq'] = profile_seq_to_id(profile.profile_seq)
+            values['author_seq'] = profile.profile_seq
 
         # Create the revision, fails if the revision already exists
         # this could be optimized more using upsert but this will likely hold
