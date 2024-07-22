@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, CardCover, Grid, Typography } from "@mui/joy";
+import {Box, Card, CardContent, CardCover, Chip, Grid, Typography} from "@mui/joy";
 import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
@@ -12,6 +12,7 @@ import { getThumbnailImg } from "./lib/packagedAssets.tsx";
 import { DownloadButton } from "./components/DownloadButton";
 import { LucidePackage } from "lucide-react";
 import { api } from "./services/api";
+import {Link} from "react-router-dom";
 
 const Assets = () => {
   const { authToken } = useGlobalStore();
@@ -52,11 +53,22 @@ const Assets = () => {
                   fontWeight="lg"
                   mt={{ xs: 12, sm: 18 }}
                 >
-                  {av.name}
+                  {av.org_name}::{av.name}
                   <DownloadButton
                     file_id={av.package_id}
                     icon={<LucidePackage />}
                   />
+                  <Chip
+                    key={av.version.join(".")}
+                    variant="soft"
+                    color={"neutral"}
+                    size="lg"
+                    component={Link}
+                    to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+                    sx={{ borderRadius: "xl" }}
+                  >
+                    {av.version.join(".")}
+                  </Chip>
                 </Typography>
               </CardContent>
             </Card>
