@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from loader import load_name, ASSETS, EVENTS, MEDIA, PROFILE
+from loader import load_name, ASSETS, EVENTS, MEDIA, PROFILE, GRAPH
 from to_python import schema_to_sqlmodel
 from to_typescript import schema_to_typescript
 
@@ -18,7 +18,8 @@ def main():
     """
     self_path = os.path.dirname(os.path.abspath(__file__))
     py_output = os.path.join(self_path, '..', 'api', 'app', 'db', 'schema')
-    ts_output = os.path.join(self_path, '..', 'sites', 'jungle3', 'src', 'schema_types')
+    ts_output = os.path.join(self_path, '..', 'sites',
+                             'jungle3', 'src', 'schema_types')
 
     os.makedirs(py_output, exist_ok=True)
     os.makedirs(ts_output, exist_ok=True)
@@ -29,7 +30,7 @@ def main():
         fp = fp.replace('.yaml', ext)
         return fp
 
-    for n in ASSETS, EVENTS, MEDIA, PROFILE:
+    for n in ASSETS, EVENTS, MEDIA, PROFILE, GRAPH:
         log.info(f"load schema {n}")
         schema = load_name(n)
         file_path = fixup(os.path.join(py_output, n), '.py')
@@ -41,8 +42,8 @@ def main():
         file_path = fixup(os.path.join(ts_output, n), '.ts')
         log.info(f"TS generating {n} {file_path}")
         ts_content = schema_to_typescript(schema)
-        with open(file_path, 'w+', encoding='utf-8') as f:
-            f.write(ts_content)
+        # with open(file_path, 'w+', encoding='utf-8') as f:
+        # f.write(ts_content)
 
 
 if __name__ == '__main__':

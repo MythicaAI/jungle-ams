@@ -21,7 +21,7 @@
             "type": "string",
             "description": "Name of the table"
           },
-           "table_name": {
+          "table_name": {
             "type": "string",
             "description": "Name to use for the table storage"
           },
@@ -42,6 +42,7 @@
                   "enum": [
                     "UUID",
                     "INTEGER",
+                    "BIGINT",
                     "TEXT",
                     "REAL",
                     "BLOB",
@@ -83,19 +84,35 @@
                 "description": {
                   "type": "string",
                   "description": "Comment for readers, documentation"
+                },
+                "indexed": {
+                  "type": "boolean",
+                  "description": "True when the field should be indexed"
+                },
+                "max_length": {
+                  "type": "integer",
+                  "description": "For length based types, specify the max length"
                 }
               },
-              "required": ["name", "type"],
+              "required": [
+                "name",
+                "type"
+              ],
               "additionalProperties": false
             },
             "minItems": 1
           }
         },
-        "required": ["name", "columns"],
+        "required": [
+          "name",
+          "columns"
+        ],
         "additionalProperties": false
       }
     }
   },
-  "required": ["tables"],
+  "required": [
+    "tables"
+  ],
   "additionalProperties": false
 }

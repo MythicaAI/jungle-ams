@@ -17,10 +17,9 @@ import {
   ResolvedOrgRef,
   SessionStartResponse,
 } from "./types/apiTypes.ts";
-import { Profile } from "./schema_types/profiles.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { StatusAlarm } from "./components/StatusAlarm.tsx";
-import { api } from "./services/api/index.ts";
+import { api } from "./services/api";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -86,7 +85,7 @@ export const AuthHeader = () => {
         setAuthToken(data.token);
         const input: Partial<ProfileResponse> = data.profile;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
-        setProfile(merged as unknown as Profile);
+        setProfile(merged as unknown as ProfileResponse);
         setNeedsSession(false);
       })
       .catch((err) => {
@@ -102,7 +101,7 @@ export const AuthHeader = () => {
       .then((data) => {
         const input = data as Partial<ProfileResponse>;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
-        setProfile(merged as unknown as Profile);
+        setProfile(merged as unknown as ProfileResponse);
       });
 
     api.get<ResolvedOrgRef[]>({ path: "/orgs/" }).then((data) => {

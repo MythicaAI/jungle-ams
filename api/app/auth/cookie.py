@@ -1,6 +1,6 @@
 import base64
-from uuid import UUID
 
+from auth.api_id import profile_id_to_seq, profile_seq_to_id
 from db.schema.profiles import Profile
 
 _VERSION: int = 1
@@ -14,7 +14,7 @@ def profile_to_cookie(profile: Profile) -> bytes:
 
     cookie_str = ':'.join([
         str(_VERSION),
-        str(profile.id),
+        str(profile_seq_to_id(profile.profile_seq)),
         profile_email_token,
         profile_email_validate_token,
         profile_location_token])
@@ -27,4 +27,8 @@ def cookie_to_profile(cookie: str) -> Profile:
     version, profile_id, email, email_validate, location = cookie_str.split(':')
     if int(version) != _VERSION:
         raise ValueError(f"Invalid cookie version: {version}")
-    return Profile(id=UUID(profile_id), email=email, email_validate_state=email_validate, location=location)
+    return Profile(
+        profile_seq=profile_id_to_seq(profile_id),
+        email=email,
+        email_validate_state=email_validate,
+        location=location)

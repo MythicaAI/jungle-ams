@@ -1,9 +1,8 @@
 import {create} from 'zustand';
-import {ResolvedOrgRef} from "../types/apiTypes.ts";
-import {Profile} from "../schema_types/profiles.ts";
+import {ResolvedOrgRef, ProfileResponse} from "../types/apiTypes.ts";
 
-const defaultProfile: Profile = {
-  id: '',
+const defaultProfile: ProfileResponse = {
+    profile_id: '',
     name: '',
     full_name: '',
     signature: '',
@@ -13,9 +12,7 @@ const defaultProfile: Profile = {
     profile_base_href: '',
     description: '',
     email:  '',
-    email_validate_state: 0,
-    location: '',
-    login_count: 0,
+    email_verified: false,
 }
 
 interface GlobalState {
@@ -23,12 +20,12 @@ interface GlobalState {
   refreshToken: string;
   isLoggedIn: boolean;
 
-  profile: Profile,
+  profile: ProfileResponse,
   orgRoles: ResolvedOrgRef[];
 
   setAuthToken: (token: string) => void;
-  setProfile: (profile: Profile) => void;
-  updateProfile: (profile: Partial<Profile>) => void;
+  setProfile: (profile: ProfileResponse) => void;
+  updateProfile: (profile: Partial<ProfileResponse>) => void;
   setOrgRoles: (roles: ResolvedOrgRef[]) => void;
 }
 
@@ -42,11 +39,11 @@ export const useGlobalStore = create<GlobalState>((set) => ({
 
   setAuthToken: (authToken: string) => set( {authToken: authToken, isLoggedIn: authToken !== '' }),
   setRefreshToken: (refreshToken: string) => set( {refreshToken: refreshToken}),
-  setProfile: (profile: Profile) => {
+  setProfile: (profile: ProfileResponse) => {
     set({profile: profile})
   },
   setOrgRoles: (roles) => set({orgRoles: roles}),
-  updateProfile: (partial: Partial<Profile>) => {
+  updateProfile: (partial: Partial<ProfileResponse>) => {
     set((state) => ({profile: {...state.profile, ...partial}}))
   },
 }));

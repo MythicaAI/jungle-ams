@@ -1,7 +1,6 @@
 """Definitions for request context caching for data that flows from
 an HTTP request through the application request path"""
 from datetime import timezone, datetime
-from uuid import UUID
 
 
 class RequestContext:
@@ -9,11 +8,11 @@ class RequestContext:
     downstream dependencies"""
 
     def __init__(self):
-        self.file_id: UUID | None = None
-        self.event_id: UUID | None = None
+        self.file_id: str | None = None
+        self.event_id: str | None = None
         self.filename: str = ''
         self.local_filepath: str = ''
-        self.profile_id: UUID = UUID(int=0, version=4)
+        self.profile_id: str = ''
         self.timestamp: datetime = datetime.now(timezone.utc)
         self.file_size: int = 0
         self.content_hash: str = ''

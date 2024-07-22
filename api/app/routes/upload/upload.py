@@ -7,13 +7,13 @@ import string
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from pydantic import BaseModel
 from sqlmodel import select, update, and_
 
 import db.index as db_index
+from auth.api_id import asset_id_to_seq, profile_seq_to_id
 from config import app_config
 from context import RequestContext
 from db.connection import get_session
@@ -32,8 +32,6 @@ from storage.storage_client import StorageClient
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
-
-EMPTY_UUID = UUID(int=0, version=4)
 
 DEFAULT_BUCKET_TYPE = BucketType.FILES
 
@@ -60,7 +58,11 @@ def get_target_bucket(mappings: dict[BucketType, set], extension: str) -> Bucket
     return DEFAULT_BUCKET_TYPE
 
 
-def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> RequestContext:
+def upload_internal(
+        storage: StorageClient,
+        bucket_mappings: dict[BucketType, set],
+        profile_id: str,
+        upload_file: UploadFile) -> RequestContext:
     """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
     ctx = RequestContext()
@@ -108,7 +110,7 @@ def upload_internal(storage, bucket_mappings, profile_id, upload_file) -> Reques
     if cfg.enable_db:
         ctx.file_id, ctx.event_id = db_index.update(ctx)
     else:
-        ctx.file_id, ctx.event_id = EMPTY_UUID, EMPTY_UUID
+        ctx.file_id, ctx.event_id = '', ''
 
     if cfg.upload_folder_auto_clean:
         os.remove(ctx.local_filepath)
@@ -132,12 +134,16 @@ async def store_files(
     response_files = []
     for file in files:
         # do the upload
-        ctx = upload_internal(storage, USER_BUCKET_MAPPINGS, profile.id, file)
+        ctx = upload_internal(
+            storage,
+            USER_BUCKET_MAPPINGS,
+            profile_seq_to_id(profile.profile_seq),
+            file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
-            owner=ctx.profile_id,
+            owner_id=ctx.profile_id,
             file_name=file.filename,
             event_ids=[ctx.event_id],
             size=file.size,
@@ -151,7 +157,7 @@ async def store_files(
 
 @router.post('/package/{asset_id}/{version_str}')
 async def store_and_attach_package(
-        asset_id: UUID,
+        asset_id: str,
         version_str: str,
         files: list[UploadFile] = File(...),
         storage: StorageClient = Depends(storage_client)) -> UploadResponse:
@@ -175,12 +181,12 @@ async def store_and_attach_package(
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
-        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author, file)
+        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author_id, file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
-            owner=ctx.profile_id,
+            owner_id=ctx.profile_id,
             file_name=file.filename,
             event_ids=[ctx.event_id],
             size=file.size,
@@ -193,8 +199,9 @@ async def store_and_attach_package(
             await delete_file_by_id(avr.package_id, ctx.profile_id)
 
         # attach the response to the asset version
+        asset_seq = asset_id_to_seq(asset_id)
         stmt = update(AssetVersion).values({AssetVersion.package_id: ctx.file_id}).where(
-            AssetVersion.asset_id == asset_id).where(
+            AssetVersion.asset_seq == asset_seq).where(
             AssetVersion.major == version_id[0]).where(
             AssetVersion.minor == version_id[1]).where(
             AssetVersion.patch == version_id[2])
@@ -215,6 +222,6 @@ async def pending_uploads(
     with (get_session() as session):
         owned_files = session.exec(select(FileContent)
         .where(
-            and_(FileContent.owner == profile.id,
+            and_(FileContent.owner_seq == profile.profile_seq,
                  FileContent.deleted == None))).all()
         return enrich_files(session, owned_files, profile)

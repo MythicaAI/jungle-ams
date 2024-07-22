@@ -47,7 +47,7 @@ def create_files() -> list[UUID]:
 
     # Start session
     o = munchify(client.get(f"{api_base}/profiles/start_session/{profile_id}").json())
-    assert o.profile.id == profile_id
+    assert o.profile.profile_id == profile_id
     assert len(o.sessions) > 0
     assert len(o.token) > 0
     profile_token = o.token
@@ -57,10 +57,10 @@ def create_files() -> list[UUID]:
 
     # validate email
     o = munchify(client.get(f"{api_base}/validate-email", headers=headers).json())
-    assert o.owner == profile_id
+    assert o.owner_id == profile_id
     assert o.code is not None
     o = munchify(client.get(f"{api_base}/validate-email/{o.code}", headers=headers).json())
-    assert o.owner == profile_id
+    assert o.owner_id == profile_id
     assert o.state == 'validated'
 
     # update the profile data
@@ -86,7 +86,7 @@ def create_files() -> list[UUID]:
         files=files,
         headers=headers).json())
     assert len(o.files) == 2
-    file_ids = list(map(lambda f: UUID(f.file_id), o.files))
+    file_ids = list(map(lambda f: f.file_id, o.files))
     return file_ids
 
 # TODO: fix download

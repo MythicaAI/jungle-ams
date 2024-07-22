@@ -2,8 +2,7 @@ from http import HTTPStatus
 
 import pytest
 
-from db.schema.profiles import OrgRef, Org
-from routes.orgs.orgs import OrgCreateResponse
+from routes.orgs.orgs import OrgRefResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
@@ -11,7 +10,7 @@ from tests.shared_test import ProfileTestObj, assert_status_code
 def create_org(client, api_base):
     """Factory fixture for creating orgs"""
 
-    def _create_org(test_profile: ProfileTestObj) -> OrgCreateResponse:
+    def _create_org(test_profile: ProfileTestObj) -> OrgRefResponse:
         headers = test_profile.authorization_header()
         test_org_name = 'test-org'
         test_org_description = 'test org description'
@@ -22,22 +21,16 @@ def create_org(client, api_base):
                             'description': test_org_description},
                         headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
-        org = Org.model_validate(obj=r.json()['org'])
-        admin = OrgRef.model_validate(obj=r.json()['admin'])
-        org_resp = OrgCreateResponse(org=org, admin=admin)
-        assert org_resp.org is not None
-        assert org_resp.admin is not None
-
-        org = Org.model_validate(obj=org_resp.org.model_dump(), strict=True)
-        admin = OrgRef.model_validate(obj=org_resp.admin.model_dump(), strict=True)
-
-        assert org.name == test_org_name
-        assert org.description == test_org_description
-        assert org.created is not None
-        assert org.updated is None
-        assert admin.profile_id == test_profile.profile.id
-        assert admin.org_id == org_resp.org.id
-        assert admin.role == 'admin'
-        return OrgCreateResponse(org=org, admin=admin)
+        org_resp = OrgRefResponse(**r.json())
+        assert org_resp.org_id is not None
+        assert org_resp.org_name is not None
+        assert org_resp.profile_id is not None
+        assert org_resp.profile_id == test_profile.profile.profile_id
+        assert org_resp.profile_name is not None
+        assert org_resp.org_name == test_org_name
+        assert org_resp.description == test_org_description
+        assert org_resp.created is not None
+        assert org_resp.role == 'admin'
+        return org_resp
 
     return _create_org

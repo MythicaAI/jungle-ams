@@ -2,10 +2,10 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from db.schema.media import FileContent
-from db.schema.events import Event
 
 from config import app_config
+from db.schema.events import Event
+from db.schema.media import FileContent
 
 
 def verify():
@@ -23,7 +23,7 @@ def verify():
     session.commit()
 
     # Create a new pipeline event
-    event = Event(upload_id=upload.id, event_type='processing_started', payload={'key': 'value'})
+    event = Event(upload_id=upload.file_id, event_type='processing_started', payload={'key': 'value'})
     session.add(event)
     session.commit()
 

@@ -6,11 +6,10 @@ tables:
   - name: FileContent
     table_name: files
     columns:
-      - name: id
-        type: UUID
+      - name: file_seq
+        type: BIGINT
         primary_key: true
-        auto_create: true
-        description: Globally unique ID of this instance of content
+        description: Sequence of this file data
       - name: name
         type: TEXT
         description: Friendly name of this file
@@ -28,12 +27,10 @@ tables:
       - name: content_type
         description: Content metadata type
         type: TEXT
-      - name: uri
-        type: TEXT
-        description: Publicly accessible URI for this content
-      - name: owner
+      - name: owner_seq
         description: Profile that created this media
-        type: UUID
+        type: BIGINT
+        foreign_key: profiles.profile_seq
       - name: cache_ttl
         description: Cache TTL in seconds for external CDN
         type: INTEGER

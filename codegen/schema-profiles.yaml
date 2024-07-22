@@ -5,11 +5,9 @@ tables:
   - name: Profile
     table_name: profiles
     columns:
-      - name: id
-        type: UUID
+      - name: profile_seq
+        type: BIGINT
         primary_key: true
-        nullable: false
-        auto_create: true
       - name: name
         type: TEXT
       - name: full_name
@@ -42,13 +40,13 @@ tables:
   - name: OrgRef
     table_name: org_refs
     columns:
-      - name: org_id
-        type: UUID
-        foreign_key: orgs.id
+      - name: org_seq
+        type: BIGINT
+        foreign_key: orgs.org_seq
         primary_key: true
-      - name: profile_id
-        type: UUID
-        foreign_key: profiles.id
+      - name: profile_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
         primary_key: true
       - name: role
         type: TEXT
@@ -56,18 +54,16 @@ tables:
       - name: created
         type: TIMESTAMP
         auto_create: true
-      - name: created_by
-        type: UUID
-        foreign_key: profiles.id
+      - name: author_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
 
   - name: Org
     table_name: orgs
     columns:
-      - name: id
-        type: UUID
+      - name: org_seq
+        type: BIGINT
         primary_key: true
-        nullable: false
-        auto_create: true
       - name: created
         type: TIMESTAMP
         auto_create: true
@@ -82,20 +78,18 @@ tables:
   - name: ProfileSession
     table_name: profile_sessions
     columns:
-      - name: id
-        type: UUID
+      - name: profile_session_seq
+        type: BIGINT
         primary_key: true
-        nullable: false
-        auto_create: true
       - name: created
         description: Also the start time of the session
         type: TIMESTAMP
         auto_create: true
       - name: refreshed
         type: TIMESTAMP
-      - name: profile_id
-        type: UUID
-        foreign_key: profiles.id
+      - name: profile_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
         nullable: false
       - name: authenticated
         type: BOOLEAN
@@ -109,14 +103,12 @@ tables:
   - name: ProfileFollower
     table_name: profile_followers
     columns:
-      - name: profile_id
-        type: UUID
+      - name: profile_seq
+        type: BIGINT
         primary_key: true
-        nullable: false
-      - name: follow_id
-        type: UUID
+      - name: follower_seq
+        type: BIGINT
         primary_key: true
-        nullable: false
       - name: created
         type: TIMESTAMP
         auto_create: true
@@ -129,8 +121,9 @@ tables:
       - name: key
         type: TEXT
         primary_key: true
-      - name: owner
-        type: UUID
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
       - name: expires
         type: TIMESTAMP
       - name: payload

@@ -8,17 +8,17 @@
 // Metadata to store relationships and descriptions of assets
 // Table name: assets
 export interface Asset {
-    id: string;
+    asset_seq: number;
     created: string;
     updated: string;
     deleted: string;
-    org_id: string;
-    owner: string;
+    org_seq: number;
+    owner_seq: number;
 }
 // Metadata to store relationships and descriptions of assets
 // Table name: asset_versions
 export interface AssetVersion {
-    asset_id: string;
+    asset_seq: number;
     published: boolean;
     major: number;
     minor: number;
@@ -27,27 +27,7 @@ export interface AssetVersion {
     created: string;
     name: string;
     description: string;
-    author: string;
-    package_id: string;
+    author_seq: number;
+    package_seq: number;
     contents: object;
-}
-// Provides a grouping for asset graphs
-// Table name: topologies
-export interface Topology {
-    id: number;
-    owner: string;
-    org_id: string;
-    created: string;
-    updated: string;
-    name: string;
-    description: string;
-    edge_data_schema: object;
-}
-// Records relationships between assets
-// Table name: asset_refs
-export interface AssetRef {
-    topology_id: number;
-    src: string;
-    dst: string;
-    edge_data: object;
 }

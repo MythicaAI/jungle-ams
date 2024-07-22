@@ -14,17 +14,16 @@ import {
   Sheet,
   Typography,
 } from "@mui/joy";
-import { Org } from "./schema_types/profiles.ts";
 import { Form } from "react-router-dom";
-import { ResolvedOrgRef } from "./types/apiTypes.ts";
+import { ResolvedOrgRef, OrgResponse } from "./types/apiTypes.ts";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { LucideShield, LucideUser } from "lucide-react";
 import React from "react";
 import { api } from "./services/api";
 
-const defaultOrg = (): Org => {
+const defaultOrg = (): OrgResponse => {
   return {
-    id: "",
+    org_id: "",
     name: "",
     description: "",
     created: "",
@@ -33,13 +32,13 @@ const defaultOrg = (): Org => {
 };
 
 const OrgsList: React.FC = () => {
-  const [org, setOrg] = useState<Org>(defaultOrg());
+  const [org, setOrg] = useState<OrgResponse>(defaultOrg());
   const [creating, setCreating] = useState<boolean>(false);
   const { orgRoles, setOrgRoles } = useGlobalStore();
 
   const createOrg = () => {
     setCreating(true);
-    api.post<Org>({ path: "/orgs", body: org }).then((data) => {
+    api.post<OrgResponse>({ path: "/orgs", body: org }).then((data) => {
       setCreating(false);
       setOrg(data);
 

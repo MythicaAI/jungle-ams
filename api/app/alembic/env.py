@@ -1,20 +1,17 @@
-import os
-
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-from alembic import context
-
+from config import app_config
 # import the SQLModels
 from sqlmodel import SQLModel
 from db.schema.profiles import *
 from db.schema.events import *
 from db.schema.media import *
 from db.schema.assets import *
-
-from config import app_config
+from db.schema.graph import *
 
 LOCAL_DB = "postgresql://test:test@localhost:5432/upload_pipeline"
 

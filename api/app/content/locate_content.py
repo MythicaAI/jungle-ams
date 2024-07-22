@@ -1,7 +1,6 @@
-from uuid import UUID
+from sqlmodel import select, Session
 
 from db.schema.media import FileContent
-from sqlmodel import select, Session
 
 
 def locate_content_by_hash(session: Session, content_hash: str) -> [FileContent]:
@@ -10,11 +9,11 @@ def locate_content_by_hash(session: Session, content_hash: str) -> [FileContent]
     return session.exec(stmt).all()
 
 
-def locate_content_by_id(session: Session, file_id: UUID) -> FileContent:
-    """Find file content by its globally unique ID"""
+def locate_content_by_seq(session: Session, file_seq: int) -> FileContent:
+    """Find file content by its file sequence"""
     stmt = select(FileContent).where(
-        FileContent.id == file_id).where(
-            FileContent.deleted is not None)
+        FileContent.file_seq == file_seq).where(
+        FileContent.deleted is not None)
     result = session.exec(stmt)
     file_content = result.one_or_none()
     if file_content is None:

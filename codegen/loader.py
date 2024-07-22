@@ -50,10 +50,3 @@ def load_name(name: str) -> dict[str, Any]:
     self_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
     input_path = Path(self_path, name)
     return load_path(input_path)
-
-
-def load_all() -> dict[str, Any]:
-    """Load all schemas """
-    names = {ASSETS, EVENTS, MEDIA, PROFILE, GRAPH}
-    for name in names:
-        load_name(name)

@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import Header
 
@@ -12,9 +11,9 @@ async def current_profile(authorization: Annotated[str | None, Header()]) -> Pro
     return get_profile(authorization)
 
 
-async def current_profile_id(authorization: Annotated[str | None, Header()]) -> UUID:
+async def current_profile_id(authorization: Annotated[str | None, Header()]) -> str:
     """Dependency that provides the profile UUID for the current authorization header"""
     profile = get_profile(authorization)
     if profile is None:
-        return UUID(int=0)
-    return profile.id
+        return ''
+    return profile.profile_id

@@ -3,18 +3,17 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 from http import HTTPStatus
-from uuid import uuid4, UUID
 
 from munch import munchify
 
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import get_random_string
+from tests.shared_test import get_random_string, assert_status_code
 
 json_schema = {
     "type": "object",
     "properties": {
-        "uuid": {"type": "string"},
+        "id": {"type": "string"},
         "name": {"type": "string"},
     }
 }
@@ -23,67 +22,67 @@ json_schema = {
 def test_create_update(client, api_base, create_profile, create_org):
     topo_name = "test-topo-" + get_random_string(10)
     topo_name_updated = topo_name + "-updated"
-    invalid_org = str(uuid4())
+    invalid_org = 'foobar'
     test_profile = create_profile()
     org_and_admin = create_org(test_profile)
-    org_id = org_and_admin.org.id
-    admin_id = org_and_admin.admin.profile_id
+    org_id = org_and_admin.org_id
+    admin_id = org_and_admin.profile_id
     headers = test_profile.authorization_header()
 
-    assert admin_id == test_profile.profile.id
+    assert admin_id == test_profile.profile.profile_id
 
     # validate that topo can't be created with invalid orgs
     r = client.post(f'{api_base}/topos',
-                    json={'name': topo_name, "org_id": invalid_org},
+                    json={'name': topo_name, 'org_id': invalid_org},
                     headers=headers)
-    assert r.status_code == HTTPStatus.FAILED_DEPENDENCY
+    assert_status_code(r, HTTPStatus.FAILED_DEPENDENCY)
 
     # validate that names conform to schema
     r = client.post(f'{api_base}/topos',
-                    json={'name': "name with space", "org_id": str(org_id)},
+                    json={'name': "name with space", "org_id": org_id},
                     headers=headers)
-    assert r.status_code == HTTPStatus.BAD_REQUEST
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
     # create valid
     r = client.post(f'{api_base}/topos',
-                    json={'name': topo_name, 'org_id': str(org_id)},
+                    json={'name': topo_name, 'org_id': org_id},
                     headers=headers)
-    assert r.status_code == HTTPStatus.CREATED
+    assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     assert o.name == topo_name
-    assert UUID(o.org_id) == org_id
-    topo_id = o.id
+    assert o.org_id == org_id
+    topo_id = o.topology_id
 
     # validate that another topo can't have the same name
     r = client.post(f'{api_base}/topos',
-                    json={'name': topo_name, "org_id": str(org_id)},
+                    json={'name': topo_name, "org_id": org_id},
                     headers=headers)
-    assert r.status_code == HTTPStatus.CONFLICT
+    assert_status_code(r, HTTPStatus.CONFLICT)
 
     # invalid org update
     r = client.post(f'{api_base}/topos/{topo_id}',
                     json={"name": topo_name_updated, "org_id": invalid_org},
                     headers=headers)
-    assert r.status_code == HTTPStatus.FAILED_DEPENDENCY
+    assert_status_code(r, HTTPStatus.FAILED_DEPENDENCY)
 
     # validate that names conform to schema in update
     r = client.post(f'{api_base}/topos',
-                    json={'name': "name with space", "org_id": str(org_id)},
+                    json={'name': "name with space", "org_id": org_id},
                     headers=headers)
-    assert r.status_code == HTTPStatus.BAD_REQUEST
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
     # valid org update
     r = client.post(f'{api_base}/topos/{topo_id}',
-                    json={"name": topo_name_updated, "org_id": str(org_id)},
+                    json={"name": topo_name_updated, "org_id": org_id},
                     headers=headers)
-    assert r.status_code == HTTPStatus.OK
+    assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
     assert o.name == topo_name_updated
-    assert UUID(o.org_id) == org_id
+    assert o.org_id == org_id
 
     # get the zero refs
     r = client.get(f'{api_base}/topos/{topo_id}/refs')
-    assert r.status_code == HTTPStatus.OK
+    assert_status_code(r, HTTPStatus.OK)
     assert len(r.json()) == 0
 
     # create asset refs
@@ -92,28 +91,27 @@ def test_create_update(client, api_base, create_profile, create_org):
     r = client.post(f'{api_base}/assets',
                     json={"name": src_asset_name},
                     headers=headers)
-    assert r.status_code == HTTPStatus.CREATED
+    assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    src_asset_id = UUID(o.id)
+    src_asset_id = o.asset_id
     r = client.post(f'{api_base}/assets',
                     json={"name": dst_asset_name},
                     headers=headers)
-    assert r.status_code == HTTPStatus.CREATED
+    assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    dst_asset_id = UUID(o.id)
+    dst_asset_id = o.asset_id
 
     # create a src only ref
     edge_data = {"foo": "bar"}
     r = client.post(f'{api_base}/topos/{topo_id}/refs/{src_asset_id}/{dst_asset_id}',
                     json=edge_data,
                     headers=headers)
-    assert r.status_code == HTTPStatus.CREATED
+    assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    assert o.topology_id == topo_id
-    assert UUID(o.src) == src_asset_id
-    assert UUID(o.dst) == dst_asset_id
+    assert o.src_id == src_asset_id
+    assert o.dst_id == dst_asset_id
     assert o.edge_data == edge_data
 
     r = client.get(f'{api_base}/topos/{topo_id}/refs')
-    assert r.status_code == HTTPStatus.OK
+    assert_status_code(r, HTTPStatus.OK)
     assert len(r.json()) == 1
