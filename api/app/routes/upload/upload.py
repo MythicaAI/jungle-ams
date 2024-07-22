@@ -8,12 +8,12 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
-from sqlmodel import select, update, and_
+from sqlmodel import and_, select, update
 
 import db.index as db_index
-from auth.api_id import asset_id_to_seq, profile_seq_to_id
+from auth.api_id import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
 from config import app_config
 from context import RequestContext
 from db.connection import get_session
@@ -200,7 +200,8 @@ async def store_and_attach_package(
 
         # attach the response to the asset version
         asset_seq = asset_id_to_seq(asset_id)
-        stmt = update(AssetVersion).values({AssetVersion.package_id: ctx.file_id}).where(
+        stmt = update(AssetVersion).values(
+            {AssetVersion.package_seq: file_id_to_seq(ctx.file_id)}).where(
             AssetVersion.asset_seq == asset_seq).where(
             AssetVersion.major == version_id[0]).where(
             AssetVersion.minor == version_id[1]).where(

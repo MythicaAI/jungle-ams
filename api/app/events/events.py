@@ -1,7 +1,6 @@
 # from https://gist.github.com/mackross/a49b72ad8d24f7cefc32
 # https://stackoverflow.com/questions/6507475/job-queue-as-sql-table-with-multiple-consumers-postgresql
 import asyncio
-from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -13,9 +12,9 @@ update
 set 
     acked = current_timestamp
 where
-    event_id in (
+    event_seq in (
         select
-            event_id
+            event_seq
         from
             events
         where
@@ -26,13 +25,13 @@ where
             queued
         limit 1 for update
     )
-    returning event_id, job_data as result;"""
+    returning event_seq, job_data as result;"""
 
 pgsql_complete = """
 update
     events
 set completed = current_timestamp
-where event_id = :event_id
+where event_seq = :event_seq
 """
 
 
@@ -69,11 +68,11 @@ class EventsSession(object):
                 continue
             yield data[0], data[1]
 
-    async def complete(self, event_id: UUID):
+    async def complete(self, event_seq: int):
         """Asynchronously acknowledge an event."""
         stmt = text(pgsql_complete)
         async with self.async_engine.begin() as conn:
-            await conn.execute(stmt, {'event_id': event_id})
+            await conn.execute(stmt, {'event_seq': event_seq})
 
 
 async def main():
@@ -83,9 +82,9 @@ async def main():
     sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
     async with EventsSession(sql_url, sleep_interval) as session:
-        async for event_id, json_data in session.ack_next():
-            await session.complete(event_id)
-            print(event_id, json_data)
+        async for event_seq, json_data in session.ack_next():
+            await session.complete(event_seq)
+            print(event_seq, json_data)
 
 
 if __name__ == '__main__':

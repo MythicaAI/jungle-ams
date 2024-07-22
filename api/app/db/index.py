@@ -3,7 +3,7 @@ from typing import Tuple
 
 from sqlmodel import insert
 
-from auth.api_id import profile_id_to_seq, event_seq_to_id, file_seq_to_id
+from auth.api_id import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from config import app_config
 from context import RequestContext
 from db.connection import get_session
@@ -50,6 +50,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
             created_in=location,
             affinity=location))
         session.commit()
-        event_id = event_seq_to_id(event_result.inserted_primary_key[0])
+        event_seq = event_result.inserted_primary_key[0]
+        event_id = event_seq_to_id(event_seq)
 
     return file_id, event_id

@@ -12,14 +12,13 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
-from uuid import UUID
 
 import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
 
 from events.events import EventsSession
-from routes.assets.assets import AssetVersionResult, AssetVersionContent
+from routes.assets.assets import AssetVersionContent, AssetVersionResult
 from routes.download.download import DownloadInfoResponse
 from routes.responses import FileUploadResponse
 
@@ -60,7 +59,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_versions(endpoint: str, asset_id: UUID, version: tuple[int, ...]) -> list[AssetVersionResult]:
+def get_versions(endpoint: str, asset_id: str, version: tuple[int, ...]) -> list[AssetVersionResult]:
     """Get all versions for a given asset"""
     if len(version) != 3:
         raise ValueError("Invalid version format, must be a 3 valued tuple")
@@ -100,7 +99,7 @@ def resolve_contents(endpoint, content: AssetVersionContent) -> DownloadInfoResp
     return dl_info
 
 
-async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: UUID, version: tuple[int, ...]):
+async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: str, version: tuple[int, ...]):
     """Given an output zip file name, resolve all the content of the asset_id and create a zip file"""
 
     versions = get_versions(endpoint, asset_id, version)
@@ -124,7 +123,7 @@ async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: UUID
         await upload_package(endpoint, asset_id, version_str, zip_filename)
 
 
-async def upload_package(endpoint: str, asset_id: UUID, version_str: str, zip_filename: Path):
+async def upload_package(endpoint: str, asset_id: str, version_str: str, zip_filename: Path):
     """Upload a package update to an asset from a specific zip file"""
     url = f"{endpoint}/v1/upload/package/{asset_id}/{version_str}"
     with open(zip_filename, 'rb') as file:
@@ -141,7 +140,7 @@ async def upload_package(endpoint: str, asset_id: UUID, version_str: str, zip_fi
                  asset_id, version_str, file_upload.file_id, file_upload.content_hash)
 
 
-async def main(output_path: Path, endpoint: str, asset_id: UUID, version: tuple[int, ...]):
+async def main(output_path: Path, endpoint: str, asset_id: str, version: tuple[int, ...]):
     """Main entrypoint when running with argument overrides (non-worker mode)"""
     await create_zip_from_asset(
         output_path,
@@ -156,12 +155,6 @@ async def exec_job(endpoint, job_data):
     if asset_id is None:
         log.error("asset_id is missing from job_data")
         return
-    try:
-        asset_id = UUID(asset_id)
-    except ValueError as e:
-        log.exception("asset_id is not a valid UUID: %s", asset_id, exc_info=e)
-        return
-
     version = job_data.get('version')
     if version is None:
         log.error("version is missing from job_data")
@@ -183,11 +176,11 @@ async def worker_entrypoint(endpoint: str):
         ConnectionError,
         ValueError)
     async with EventsSession(sql_url, sleep_interval, event_type_prefix='asset_version_updated') as session:
-        async for event_id, job_data in session.ack_next():
-            log.info("event: %s, %s", event_id, job_data)
+        async for event_seq, job_data in session.ack_next():
+            log.info("event: %s, %s", event_seq, job_data)
             try:
                 await exec_job(endpoint, job_data)
-                await session.complete(event_id)
+                await session.complete(event_seq)
             except allowed_job_exceptions:
                 log.exception("job failed")
 
@@ -212,7 +205,7 @@ if __name__ == '__main__':
         asyncio.run(main(
             Path(args.output),
             args.endpoint,
-            UUID(args.asset),
+            args.asset,
             tuple(map(int, args.version.split('.')))))
     else:
         log.info("no asset provided, running in event worker mode")
