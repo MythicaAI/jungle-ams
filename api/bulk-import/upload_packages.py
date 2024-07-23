@@ -219,7 +219,7 @@ class PackageUploader(object):
         package = ProcessedPackageModel(**const_package.model_dump())
 
         if package.name == "":
-            package.name = os.path.basename(os.path.dirname(package.directory))
+            package.name = os.path.basename(os.path.basename(package.repo))
             print(f"Name not set, using directory name: {package.name}")
         if package.description == "":
             package.description = "Test Desciption"
@@ -232,8 +232,12 @@ class PackageUploader(object):
             profile = self.find_or_create_profile(package)
             package.profile_id = profile.profile_id
         else:
-            package.repo = package.directory
-            package.root_disk_path = package.directory
+            # TODO: Derive this from the Perfoce repo
+            package.root_disk_path = package.repo
+
+            package.repo = "LocalRepo_" + package.name
+            package.commit_ref = "unknown"
+
             profile = self.find_or_create_profile_impl("Mythica", "Local import")
             package.profile_id = profile.profile_id
 
