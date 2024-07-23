@@ -223,7 +223,7 @@ class PackageUploader(object):
         package = ProcessedPackageModel(**const_package.model_dump())
 
         if package.name == "":
-            package.name = os.path.basename(os.path.basename(package.repo))
+            package.name = os.path.basename(package.repo)
 
         print(f"=====================================")
         print(f"Processing package: {package.name}")
@@ -244,7 +244,7 @@ class PackageUploader(object):
             package.repo = "MythicaPerforce::" + package.name
 
             user = "Mythica_Automation"
-            user_description = "Upload automation user"
+            user_description = "Upload automation profile"
             org_name = "Mythica"
 
         if package.description == "":
