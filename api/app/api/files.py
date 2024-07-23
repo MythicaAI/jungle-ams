@@ -61,12 +61,12 @@ class API(object):
         log.info("downloading from %s to %s",
                  o.url,
                  local_file_name)
-        bytes = 0
+        downloaded_bytes = 0
         with open(local_file_name, "wb") as f:
             download_req = self.client.get(o.url, stream=True)
             for chunk in download_req.iter_content(chunk_size=1024):
                 if chunk:
-                    bytes += len(chunk)
+                    downloaded_bytes += len(chunk)
                     f.write(chunk)
-        log.info(f"download complete, {bytes} bytes")
+        log.info("download complete, %s bytes", downloaded_bytes)
         return Path(local_file_name)
