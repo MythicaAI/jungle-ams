@@ -1,4 +1,13 @@
-import { Button, Grid, Sheet } from "@mui/joy";
+import {
+  Button,
+  Grid,
+  Sheet,
+  Tabs,
+  TabList,
+  Tab,
+  Box,
+  TabPanel,
+} from "@mui/joy";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { useEffect } from "react";
 import { useAssetVersionStore } from "./stores/assetVersionStore.ts";
@@ -166,17 +175,33 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
             <AssetIdentityHeader />
           </Grid>
 
-          <Grid xs={5}>
-            <AssetEditDetailControls />
-          </Grid>
+          <Tabs aria-label="Basic tabs" defaultValue={0} sx={{ width: "100%" }}>
+            <TabList>
+              <Tab>Details</Tab>
+              <Tab>Files</Tab>
+              <Tab>Thumbnails</Tab>
+            </TabList>
 
-          <Grid xs={7}>
-            <AssetEditListControls />
-          </Grid>
-          <Grid xs={7}></Grid>
-          <Grid xs={5}>
+            <TabPanel value={0}>
+              <AssetEditDetailControls />
+            </TabPanel>
+
+            <TabPanel value={1}>
+              <AssetEditListControls category="files" />
+            </TabPanel>
+
+            <TabPanel value={2}>
+              <AssetEditListControls category="thumbnails" />
+            </TabPanel>
+          </Tabs>
+
+          <Box
+            component="div"
+            mt="20px"
+            sx={{ display: "flex", justifyContent: "center", width: "100%" }}
+          >
             <Button type="submit">Update</Button>
-          </Grid>
+          </Box>
         </Grid>
       </form>
     </Sheet>

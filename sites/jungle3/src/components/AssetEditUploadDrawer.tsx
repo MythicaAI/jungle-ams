@@ -1,5 +1,5 @@
 import { ClickAwayListener } from "@mui/base/ClickAwayListener";
-import { Drawer, IconButton, Sheet, Typography } from "@mui/joy";
+import { Drawer, IconButton, Sheet, Stack, Typography } from "@mui/joy";
 import { LucideSidebarClose } from "lucide-react";
 import { UploadsSubmitList } from "./UploadsSubmitList.tsx";
 import { UploadsReadyList } from "./UploadsReadyList.tsx";
@@ -87,13 +87,15 @@ export const AssetEditUploadDrawer: React.FC<AssetEditUploadDrawerProps> = ({
             <LucideSidebarClose />
           </IconButton>
         </Sheet>
-        <UploadsSubmitList />
-        <UploadsReadyList
-          category={openUploads.category}
-          fileTypeFilters={
-            openUploads.fileTypeFilters ? openUploads.fileTypeFilters : []
-          }
-        />
+        <Stack padding="10px" gap="10px">
+          <UploadsSubmitList />
+          <UploadsReadyList
+            category={openUploads.category}
+            fileTypeFilters={
+              openUploads.fileTypeFilters ? openUploads.fileTypeFilters : []
+            }
+          />
+        </Stack>
       </Drawer>
     </ClickAwayListener>
   );
