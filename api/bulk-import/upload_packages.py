@@ -228,35 +228,35 @@ class PackageUploader(object):
         print(f"=====================================")
         print(f"Processing package: {package.name}")
 
+        user = None
+        user_description = None
+
         if package.repo.startswith("git"):
             self.update_local_repo(package)
 
             user, project = get_github_user_project_name(package.repo)
-
-            profile = self.find_or_create_profile(user, f"imported from {package.commit_ref}")
-            package.profile_id = profile.profile_id
+            user_description = f"imported from {package.commit_ref}"
+            org_name = user
         else:
             # TODO: Read Perforce revision number
             package.root_disk_path = package.repo
             package.commit_ref = "unknown"
-
             package.repo = "MythicaPerforce::" + package.name
 
-            profile = self.find_or_create_profile("Mythica_Automation", "Upload automation user")
-            package.profile_id = profile.profile_id
+            user = "Mythica_Automation"
+            user_description = "Upload automation user"
+            org_name = "Mythica"
 
         if package.description == "":
             package.description = get_description_from_readme(package)
 
+        profile = self.find_or_create_profile(user, user_description)
+        package.profile_id = profile.profile_id
+
         self.token = self.start_session(profile.profile_id)
 
-        if package.repo.startswith("git"):
-            user, project = get_github_user_project_name(package.repo)
-            org = self.find_or_create_org(user)
-            package.org_id = org.org_id
-        else:
-            org = self.find_or_create_org("Mythica")
-            package.org_id = org.org_id
+        org = self.find_or_create_org(user)
+        package.org_id = org.org_id
 
         # First try to resolve the version from the repo link
         package.asset_id, package.latest_version = self.find_versions_for_repo(package)
