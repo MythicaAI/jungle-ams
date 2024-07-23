@@ -243,7 +243,7 @@ class PackageUploader(object):
             package.commit_ref = "unknown"
             package.repo = "MythicaPerforce::" + package.name
 
-            user = "Mythica_Automation"
+            user = "Mythica"
             user_description = "Upload automation profile"
             org_name = "Mythica"
 
