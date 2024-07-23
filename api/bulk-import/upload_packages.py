@@ -145,6 +145,12 @@ def bump_package_version(package: ProcessedPackageModel):
     assert package.latest_version != ZERO_VERSION
     package.latest_version[2] += 1
 
+def get_description_from_readme(package: ProcessedPackageModel):
+    readme_path = os.path.join(package.root_disk_path, "readme.txt")
+    if os.path.exists(readme_path):
+        with open(readme_path, 'r') as f:
+            package.description = f.read()
+
 
 class PackageUploader(object):
     """Processes git repos into packages"""
@@ -213,48 +219,43 @@ class PackageUploader(object):
 
     def process_package(self, const_package: PackageModel):
         """Main entry point for each package definition being processed"""
-        print(f"=====================================")
-        print(f"Processing package: {const_package.name}")
 
         package = ProcessedPackageModel(**const_package.model_dump())
 
         if package.name == "":
             package.name = os.path.basename(os.path.basename(package.repo))
-            print(f"Name not set, using directory name: {package.name}")
-        if package.description == "":
-            readme_path = os.path.join(package.repo, "readme.txt")
-            if os.path.exists(readme_path):
-                with open(readme_path, 'r') as f:
-                    package.description = f.read()
 
-            if package.description == "":
-                print(f"Failed to find readme.txt for description in {package.repo}")
-            else:
-                print(f"Found description in readme.txt: {package.description}")
+        print(f"=====================================")
+        print(f"Processing package: {package.name}")
 
-        # If repo is not set, assume this is a local path to a Mythica owned package
         if package.repo.startswith("git"):
             self.update_local_repo(package)
 
-            profile = self.find_or_create_profile(package)
+            user, project = get_github_user_project_name(package.repo)
+
+            profile = self.find_or_create_profile(user, f"imported from {package.commit_ref}")
             package.profile_id = profile.profile_id
         else:
-            # TODO: Derive this from the Perfoce repo
+            # TODO: Read Perforce revision number
             package.root_disk_path = package.repo
-
-            package.repo = "LocalRepo_" + package.name
             package.commit_ref = "unknown"
 
-            profile = self.find_or_create_profile_impl("Mythica", "Local import")
+            package.repo = "MythicaPerforce::" + package.name
+
+            profile = self.find_or_create_profile("Mythica_Automation", "Upload automation user")
             package.profile_id = profile.profile_id
+
+        if package.description == "":
+            package.description = get_description_from_readme(package)
 
         self.token = self.start_session(profile.profile_id)
 
         if package.repo.startswith("git"):
-            org = self.find_or_create_org(package)
+            user, project = get_github_user_project_name(package.repo)
+            org = self.find_or_create_org(user)
             package.org_id = org.org_id
         else:
-            org = self.find_or_create_org_impl("Mythica")
+            org = self.find_or_create_org("Mythica")
             package.org_id = org.org_id
 
         # First try to resolve the version from the repo link
@@ -287,7 +288,7 @@ class PackageUploader(object):
 
         self.create_version(package, asset_contents)
 
-    def find_or_create_org_impl(self, org_name: str):
+    def find_or_create_org(self, org_name: str):
         """Find or create an organization object"""
         response = requests.get(f"{self.endpoint}/v1/orgs/named/{org_name}?exact=true")
         response.raise_for_status()
@@ -301,12 +302,7 @@ class PackageUploader(object):
         response.raise_for_status()
         return munchify(response.json())
 
-    def find_or_create_org(self, package: PackageModel):
-        """Find or create an organization object"""
-        user, project = get_github_user_project_name(package.repo)
-        self.find_or_create_org_impl(user)
-
-    def find_or_create_profile_impl(self, user: str, description: str):
+    def find_or_create_profile(self, user: str, description: str):
         """Find or create a profile object implementation"""
         response = requests.get(f"{self.endpoint}/v1/profiles/named/{user}?exact=true")
         response.raise_for_status()
@@ -322,12 +318,6 @@ class PackageUploader(object):
         response = requests.post(f"{self.endpoint}/v1/profiles", json=profile_json)
         response.raise_for_status()
         return munchify(response.json())
-
-    def find_or_create_profile(self, package: PackageModel):
-        """Find or create a profile object"""
-        user, project = get_github_user_project_name(package.repo)
-
-        return self.find_or_create_profile_impl(user, f"imported from {package.commit_ref}")
 
     def find_versions_for_repo(self, package: PackageModel) -> tuple[str, list[int]]:
         """Find or create version objects for the repo URL"""
