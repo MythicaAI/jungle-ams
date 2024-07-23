@@ -2,6 +2,7 @@ from typing import Optional
 
 import jwt
 from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, SecurityScopes
 
 from config import app_config
 
@@ -24,6 +25,8 @@ class UnauthenticatedException(HTTPException):
 
 
 class Auth0TokenVerifier(object):
+    """Verify scopes with JWT"""
+
     def __init__(self):
         jwks_url = f'https://{app_config().auth0_domain}/.well-known/jwks.json'
         self.jwks_client = jwt.PyJWKClient(jwks_url)

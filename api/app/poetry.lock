@@ -2331,6 +2331,8 @@ files = [
 ]
 
 [extras]
+authlib = []
+fastapi = []
 pgsql = ["psycopg2-binary"]
 pyjwt = []
 sqlalchemy = ["asyncio"]
@@ -2338,4 +2340,4 @@ sqlalchemy = ["asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.10"
-content-hash = "170b3f3f6dd51310154148abe7c69e5c03e05b25e89b50a9fdeb3cd642108b7e"
+content-hash = "383caf0ce22eb954f9f638733480cc27fc583e766b71252241322e43126b5814"
