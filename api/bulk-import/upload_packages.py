@@ -84,12 +84,16 @@ def get_default_branch(repo):
         raise ValueError("Cannot determine the default branch.")
 
 
-def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
+def collect_doc_package_paths(package: ProcessedPackageModel, default_license: str) -> list[str]:
     """Get list of local package contents that represent core documentation"""
     # Verify the repo has a license file
     license_files = [file
                      for file in os.listdir(package.root_disk_path)
                      if file.lower().startswith('license')]
+
+    if len(license_files) == 0 and default_license != None:
+        license_files.append(default_license)
+
     if len(license_files) == 0:
         raise ValueError(f"Failed to find license file in repo: {package.repo}")
 
@@ -179,11 +183,18 @@ class PackageUploader(object):
             default='package_list.py',
             required=False
         )
+        parser.add_argument(
+            '-i', '--license',
+            help='Default license file to use if package does not contain one',
+            default=None,
+            required=False
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
         self.github_api_token = args.github_api_token
         self.package_list_file = args.package_list
+        self.license = args.license
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -395,7 +406,7 @@ class PackageUploader(object):
         files_paths = []
         thumbnail_paths = []
 
-        files_paths.extend(collect_doc_package_paths(package))
+        files_paths.extend(collect_doc_package_paths(package, self.license))
         thumbnail_paths.extend(collect_images_paths(package))
         scan_path = os.path.join(package.root_disk_path, package.directory)
         for root, dirs, files in os.walk(scan_path):
