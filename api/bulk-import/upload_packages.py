@@ -207,14 +207,33 @@ class PackageUploader(object):
 
         package = ProcessedPackageModel(**const_package.model_dump())
 
-        self.update_local_repo(package)
+        if package.name == "":
+            package.name = os.path.basename(os.path.dirname(package.directory))
+            print(f"Name not set, using directory name: {package.name}")
+        if package.description == "":
+            package.description = "Test Desciption"
+            print(f"Description not set, using default description: {package.description}")
 
-        profile = self.find_or_create_profile(package)
-        package.profile_id = profile.profile_id
+        # If repo is not set, assume this is a local path to a Mythica owned package
+        if package.repo.startswith("git"):
+            self.update_local_repo(package)
+
+            profile = self.find_or_create_profile(package)
+            package.profile_id = profile.profile_id
+        else:
+            package.repo = package.directory
+            package.root_disk_path = package.directory
+            profile = self.find_or_create_profile_impl("Mythica", "Local import")
+            package.profile_id = profile.profile_id
 
         self.token = self.start_session(profile.profile_id)
-        org = self.find_or_create_org(package)
-        package.org_id = org.org_id
+
+        if package.repo.startswith("git"):
+            org = self.find_or_create_org(package)
+            package.org_id = org.org_id
+        else:
+            org = self.find_or_create_org_impl("Mythica")
+            package.org_id = org.org_id
 
         # First try to resolve the version from the repo link
         package.asset_id, package.latest_version = self.find_versions_for_repo(package)
@@ -246,24 +265,27 @@ class PackageUploader(object):
 
         self.create_version(package, asset_contents)
 
-    def find_or_create_org(self, package: PackageModel):
+    def find_or_create_org_impl(self, org_name: str):
         """Find or create an organization object"""
-        user, project = get_github_user_project_name(package.repo)
-        response = requests.get(f"{self.endpoint}/v1/orgs/named/{user}?exact=true")
+        response = requests.get(f"{self.endpoint}/v1/orgs/named/{org_name}?exact=true")
         response.raise_for_status()
         orgs = response.json()
         if len(orgs) == 1:
             return munchify(orgs[0])
-        org_json = {"name": user}
+        org_json = {"name": org_name}
         response = requests.post(f"{self.endpoint}/v1/orgs",
                                  headers=self.auth_header(),
                                  json=org_json)
         response.raise_for_status()
         return munchify(response.json())
 
-    def find_or_create_profile(self, package: PackageModel):
-        """Find or create a profile object"""
+    def find_or_create_org(self, package: PackageModel):
+        """Find or create an organization object"""
         user, project = get_github_user_project_name(package.repo)
+        self.find_or_create_org_impl(user)
+
+    def find_or_create_profile_impl(self, user: str, description: str):
+        """Find or create a profile object implementation"""
         response = requests.get(f"{self.endpoint}/v1/profiles/named/{user}?exact=true")
         response.raise_for_status()
         profiles = response.json()
@@ -273,11 +295,17 @@ class PackageUploader(object):
         profile_json = {
             "name": user,
             "email": "donotreply+importer@mythica.ai",
-            "description": f"imported from {package.commit_ref}",
+            "description": description,
         }
         response = requests.post(f"{self.endpoint}/v1/profiles", json=profile_json)
         response.raise_for_status()
         return munchify(response.json())
+
+    def find_or_create_profile(self, package: PackageModel):
+        """Find or create a profile object"""
+        user, project = get_github_user_project_name(package.repo)
+
+        return self.find_or_create_profile_impl(user, f"imported from {package.commit_ref}")
 
     def find_versions_for_repo(self, package: PackageModel) -> tuple[str, list[int]]:
         """Find or create version objects for the repo URL"""
