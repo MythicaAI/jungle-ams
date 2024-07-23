@@ -222,8 +222,15 @@ class PackageUploader(object):
             package.name = os.path.basename(os.path.basename(package.repo))
             print(f"Name not set, using directory name: {package.name}")
         if package.description == "":
-            package.description = "Test Desciption"
-            print(f"Description not set, using default description: {package.description}")
+            readme_path = os.path.join(package.repo, "readme.txt")
+            if os.path.exists(readme_path):
+                with open(readme_path, 'r') as f:
+                    package.description = f.read()
+
+            if package.description == "":
+                print(f"Failed to find readme.txt for description in {package.repo}")
+            else:
+                print(f"Found description in readme.txt: {package.description}")
 
         # If repo is not set, assume this is a local path to a Mythica owned package
         if package.repo.startswith("git"):
