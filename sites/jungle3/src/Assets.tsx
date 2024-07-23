@@ -28,7 +28,7 @@ const Assets = () => {
 
   useEffect(() => {
     api
-      .get<AssetVersionResponse[]>({ path: "/assets/top" })
+      .get<AssetVersionResponse[]>({ path: "/assets/top", withAuth: false })
       .then((r) => setVersions(r))
       .catch((err) => handleError(err));
   }, [authToken]);
