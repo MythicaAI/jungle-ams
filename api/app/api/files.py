@@ -1,12 +1,10 @@
 import json
 import logging
+import os
 from functools import lru_cache
 from http import HTTPStatus
 from pathlib import Path
-from uuid import UUID
 
-from google.cloud import storage
-from google.cloud.storage import Blob
 from minio import Minio
 from munch import munchify
 from pydantic_settings import BaseSettings
@@ -51,32 +49,24 @@ class API(object):
         self.settings = api_settings()
         self.client = client
 
-    def download_file_from_locator(self, locator: str, destination: Path) -> Path:
-        """Download a file locator to a local destination folder, return path"""
-        # self.locators.append(f"{backend}://{bucket_name}:{object_name}")
-        backend, bucket_file = locator.split('://')
-        bucket, file_name = bucket_file.split(':')
-        destination = destination / Path(file_name)
-        if backend == 'gcs':
-            gcs = storage.Client()
-            download: Blob = gcs.bucket(bucket).blob(file_name)
-            download.download_to_filename(str(destination))
-            return destination
-        elif backend == 'minio':
-            minio = create_minio_client()
-            minio.fget_object(bucket, file_name, str(destination))
-            return destination
-        return None
-
-    def download_file(self, file_id: UUID, local_path: Path) -> Path:
+    def download_file(self, file_id: str, local_path: Path) -> Path:
         """Download a file_id to a local path"""
-        url = f"{api_settings().endpoint}/files/{file_id}"
+        url = f"{api_settings().endpoint}/download/info/{file_id}"
         r = self.client.get(url)
         assert r.status_code == HTTPStatus.OK
         doc = r.json()
         log.info("response: %s", json.dumps(doc))
         o = munchify(doc)
+        local_file_name = os.path.join(local_path, o.name)
         log.info("downloading from %s to %s",
-                 o.download_url,
-                 local_path)
-        return local_path
+                 o.url,
+                 local_file_name)
+        bytes = 0
+        with open(local_file_name, "wb") as f:
+            download_req = self.client.get(o.url, stream=True)
+            for chunk in download_req.iter_content(chunk_size=1024):
+                if chunk:
+                    bytes += len(chunk)
+                    f.write(chunk)
+        log.info(f"download complete, {bytes} bytes")
+        return Path(local_file_name)
