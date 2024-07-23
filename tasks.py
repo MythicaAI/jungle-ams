@@ -39,6 +39,7 @@ IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
     'api/publish-init': {'name': 'mythica-publish-init'},
+    'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
     'api/packager': {'name': 'mythica-packager', 'requires': 'api/app'},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
@@ -51,6 +52,7 @@ IMAGE_SETS = {
         'api/nginx',
         'api/app',
         'api/publish-init',
+        'api/lets-encrypt',
         'api/gcs-proxy',
         'sites/jungle3'},
     'storage': {
@@ -87,7 +89,8 @@ def start_docker_compose(c, docker_compose_path):
     """Cleanly start a docker compose instance"""
     with c.cd(docker_compose_path):
         c.run('docker compose down --timeout 1')
-        c.run('docker compose -f ./docker-compose.yaml up -d', pty=PTY_SUPPORTED)
+        c.run('docker compose -f ./docker-compose.yaml up -d',
+              pty=PTY_SUPPORTED)
 
 
 def stop_docker_compose(c, docker_compose_path):
@@ -108,7 +111,8 @@ def build_image(c, image_path):
         c.run(
             f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .',
             pty=PTY_SUPPORTED)
-        c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}', pty=PTY_SUPPORTED)
+        c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
+              pty=PTY_SUPPORTED)
 
 
 def deploy_image(c, image_path, target):
@@ -123,8 +127,10 @@ def deploy_image(c, image_path, target):
         raise ValueError(f"unknown deployment target {target}")
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:{commit_hash}", pty=PTY_SUPPORTED)
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:latest", pty=PTY_SUPPORTED)
+        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:{commit_hash}",
+              pty=PTY_SUPPORTED)
+        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:latest",
+              pty=PTY_SUPPORTED)
         c.run(f"docker push {repo}/{image_name} --all-tags", pty=PTY_SUPPORTED)
 
 
@@ -142,7 +148,8 @@ def run_image(c, image_path, background=False):
         args.append('--detach')
     else:
         args.append('--interactive --tty')
-    c.run(f"docker run {'  '.join(args)} {image_name}:{commit_hash}", pty=PTY_SUPPORTED)
+    c.run(f"docker run {'  '.join(args)} {image_name}:{commit_hash}",
+          pty=PTY_SUPPORTED)
 
 
 @task
