@@ -84,12 +84,16 @@ def get_default_branch(repo):
         raise ValueError("Cannot determine the default branch.")
 
 
-def collect_doc_package_paths(package: ProcessedPackageModel) -> list[str]:
+def collect_doc_package_paths(package: ProcessedPackageModel, default_license: str) -> list[str]:
     """Get list of local package contents that represent core documentation"""
     # Verify the repo has a license file
     license_files = [file
                      for file in os.listdir(package.root_disk_path)
                      if file.lower().startswith('license')]
+
+    if len(license_files) == 0 and default_license != None:
+        license_files.append(default_license)
+
     if len(license_files) == 0:
         raise ValueError(f"Failed to find license file in repo: {package.repo}")
 
@@ -141,6 +145,12 @@ def bump_package_version(package: ProcessedPackageModel):
     assert package.latest_version != ZERO_VERSION
     package.latest_version[2] += 1
 
+def get_description_from_readme(package: ProcessedPackageModel):
+    readme_path = os.path.join(package.root_disk_path, "readme.txt")
+    if os.path.exists(readme_path):
+        with open(readme_path, 'r') as f:
+            package.description = f.read()
+
 
 class PackageUploader(object):
     """Processes git repos into packages"""
@@ -179,11 +189,18 @@ class PackageUploader(object):
             default='package_list.py',
             required=False
         )
+        parser.add_argument(
+            '-i', '--license',
+            help='Default license file to use if package does not contain one',
+            default=None,
+            required=False
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
         self.github_api_token = args.github_api_token
         self.package_list_file = args.package_list
+        self.license = args.license
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -202,18 +219,43 @@ class PackageUploader(object):
 
     def process_package(self, const_package: PackageModel):
         """Main entry point for each package definition being processed"""
-        print(f"=====================================")
-        print(f"Processing package: {const_package.name}")
 
         package = ProcessedPackageModel(**const_package.model_dump())
 
-        self.update_local_repo(package)
+        if package.name == "":
+            package.name = os.path.basename(package.repo)
 
-        profile = self.find_or_create_profile(package)
+        print(f"=====================================")
+        print(f"Processing package: {package.name}")
+
+        user = None
+        user_description = None
+
+        if package.repo.startswith("git"):
+            self.update_local_repo(package)
+
+            user, project = get_github_user_project_name(package.repo)
+            user_description = f"imported from {package.commit_ref}"
+            org_name = user
+        else:
+            # TODO: Read Perforce revision number
+            package.root_disk_path = package.repo
+            package.commit_ref = "unknown"
+            package.repo = "MythicaPerforce::" + package.name
+
+            user = "Mythica"
+            user_description = "Upload automation profile"
+            org_name = "Mythica"
+
+        if package.description == "":
+            package.description = get_description_from_readme(package)
+
+        profile = self.find_or_create_profile(user, user_description)
         package.profile_id = profile.profile_id
 
         self.token = self.start_session(profile.profile_id)
-        org = self.find_or_create_org(package)
+
+        org = self.find_or_create_org(user)
         package.org_id = org.org_id
 
         # First try to resolve the version from the repo link
@@ -246,24 +288,22 @@ class PackageUploader(object):
 
         self.create_version(package, asset_contents)
 
-    def find_or_create_org(self, package: PackageModel):
+    def find_or_create_org(self, org_name: str):
         """Find or create an organization object"""
-        user, project = get_github_user_project_name(package.repo)
-        response = requests.get(f"{self.endpoint}/v1/orgs/named/{user}?exact=true")
+        response = requests.get(f"{self.endpoint}/v1/orgs/named/{org_name}?exact=true")
         response.raise_for_status()
         orgs = response.json()
         if len(orgs) == 1:
             return munchify(orgs[0])
-        org_json = {"name": user}
+        org_json = {"name": org_name}
         response = requests.post(f"{self.endpoint}/v1/orgs",
                                  headers=self.auth_header(),
                                  json=org_json)
         response.raise_for_status()
         return munchify(response.json())
 
-    def find_or_create_profile(self, package: PackageModel):
-        """Find or create a profile object"""
-        user, project = get_github_user_project_name(package.repo)
+    def find_or_create_profile(self, user: str, description: str):
+        """Find or create a profile object implementation"""
         response = requests.get(f"{self.endpoint}/v1/profiles/named/{user}?exact=true")
         response.raise_for_status()
         profiles = response.json()
@@ -273,7 +313,7 @@ class PackageUploader(object):
         profile_json = {
             "name": user,
             "email": "donotreply+importer@mythica.ai",
-            "description": f"imported from {package.commit_ref}",
+            "description": description,
         }
         response = requests.post(f"{self.endpoint}/v1/profiles", json=profile_json)
         response.raise_for_status()
@@ -367,7 +407,7 @@ class PackageUploader(object):
         files_paths = []
         thumbnail_paths = []
 
-        files_paths.extend(collect_doc_package_paths(package))
+        files_paths.extend(collect_doc_package_paths(package, self.license))
         thumbnail_paths.extend(collect_images_paths(package))
         scan_path = os.path.join(package.root_disk_path, package.directory)
         for root, dirs, files in os.walk(scan_path):
