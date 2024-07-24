@@ -1,7 +1,7 @@
 import {AssetVersionResponse} from "../types/apiTypes.ts";
 import {Card, Box, Stack, Typography, Divider} from "@mui/joy";
 import React from "react";
-import {LucideGitCommitVertical, LucideGithub} from "lucide-react";
+import {LucideGitCommitVertical} from "lucide-react";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (av: AssetVersionResponse) => {
 

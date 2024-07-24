@@ -1,5 +1,5 @@
 import {Box, Grid} from "@mui/joy";
-import {AssetVersionContent, AssetVersionResponse} from "./types/apiTypes.ts";
+import {AssetVersionResponse} from "./types/apiTypes.ts";
 import {
   extractValidationErrors,
   translateError,
@@ -15,7 +15,6 @@ import {PackageViewInfoPanel} from "./components/PackageViewInfoPanel.tsx";
 interface PackageViewProps {
   asset_id?: string;
   version_id?: string
-  thumbnails?
 }
 
 export const PackageView = (props: PackageViewProps) => {
