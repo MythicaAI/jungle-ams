@@ -147,10 +147,11 @@ def bump_package_version(package: ProcessedPackageModel):
 
 def get_description_from_readme(package: ProcessedPackageModel):
     readme_path = os.path.join(package.root_disk_path, "readme.txt")
+    description = ""
     if os.path.exists(readme_path):
         with open(readme_path, 'r') as f:
-            package.description = f.read()
-
+            description = f.read()
+    return description
 
 class PackageUploader(object):
     """Processes git repos into packages"""
