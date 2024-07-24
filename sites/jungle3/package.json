@@ -20,6 +20,7 @@
     "@fontsource/inter": "^5.0.18",
     "@mui/base": "5.0.0-beta.40",
     "@mui/joy": "5.0.0-beta.36",
+    "@mui/material": "^5.16.4",
     "axios": "^1.7.2",
     "date-fns": "^3.6.0",
     "lodash": "^4.17.21",
