@@ -1,4 +1,7 @@
-import {Box, Card, CardContent, CardCover, Chip, Grid, Typography} from "@mui/joy";
+import {
+  Box,
+  Grid,
+} from "@mui/joy";
 import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
@@ -8,11 +11,8 @@ import { AssetVersionResponse } from "./types/apiTypes.ts";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { AxiosError } from "axios";
-import { getThumbnailImg } from "./lib/packagedAssets.tsx";
-import { DownloadButton } from "./components/DownloadButton";
-import { LucidePackage } from "lucide-react";
 import { api } from "./services/api";
-import {Link} from "react-router-dom";
+import {PackageViewCard} from "./components/PackageViewCard";
 
 const Assets = () => {
   const { authToken } = useGlobalStore();
@@ -37,41 +37,8 @@ const Assets = () => {
     <Box sx={{ flexGrow: 1, padding: 2 }}>
       <Grid container spacing={2}>
         {versions.map((av) => (
-          <Grid xs={4}>
-            <Card>
-              <CardCover>
-                <img
-                  height="200"
-                  src={getThumbnailImg(av)}
-                  loading={"lazy"}
-                  alt={av.name}
-                />
-              </CardCover>
-              <CardContent>
-                <Typography
-                  level="body-lg"
-                  fontWeight="lg"
-                  mt={{ xs: 12, sm: 18 }}
-                >
-                  {av.org_name}::{av.name}
-                  <DownloadButton
-                    file_id={av.package_id}
-                    icon={<LucidePackage />}
-                  />
-                  <Chip
-                    key={av.version.join(".")}
-                    variant="soft"
-                    color={"neutral"}
-                    size="lg"
-                    component={Link}
-                    to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-                    sx={{ borderRadius: "xl" }}
-                  >
-                    {av.version.join(".")}
-                  </Chip>
-                </Typography>
-              </CardContent>
-            </Card>
+          <Grid xs={4} key={av.asset_id + "_" + av.version.join('.')}>
+            <PackageViewCard {...av} />
           </Grid>
         ))}
       </Grid>
