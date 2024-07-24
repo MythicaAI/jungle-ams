@@ -10,6 +10,7 @@ services:
       - storage
 networks:
   storage:
+    external: true
     driver: bridge
     name: storage
   web:
