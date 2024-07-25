@@ -12,6 +12,10 @@ spec:
     name: external-gateway
   hostnames:
   - "api.mythica.ai"
+  - "images.mythica.ai"
+  - "cache.mythica.ai"
+  - "pcgindex.mythica.ai"
+  - "files.mythica.ai"
   rules:
   - matches:
     - path:
@@ -19,3 +23,5 @@ spec:
     backendRefs:
     - name: web-front
       port: 80
+    - name: web-front
+      port: 443

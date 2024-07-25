@@ -4,12 +4,12 @@ metadata:
   name: web-front
   namespace: api
 spec:
-  replicas: 3
+  replicas: 5
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 2
-      maxSurge: 5
+      maxSurge: 10
   selector:
     matchLabels:
       app: web-front
@@ -32,7 +32,7 @@ spec:
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:latest
           imagePullPolicy: Always
           volumeMounts:
-            - name: ephemeral-web-content
+            - name: ephemeral-sites-volume
               mountPath: /sites
           env:
             - name: PUBLISH_PATH
@@ -40,7 +40,7 @@ spec:
       containers:
         - name: nginx
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
-          args: [ "nginx-debug", "-c", "/etc/nginx/nginx-gke.conf" ]
+          args: [ "nginx", "-c", "/etc/nginx/nginx-gke.conf" ]
           imagePullPolicy: Always
           env:
             - name: API_ENDPOINT
@@ -59,10 +59,16 @@ spec:
             - containerPort: 443
               name: https
           volumeMounts:
-            - name: ephemeral-web-content
+            - name: ephemeral-sites-volume
               mountPath: /sites
+            - name: letsencrypt-tls
+              mountPath: "/etc/nginx/tls"
+              readOnly: true
       volumes:
-        # Nodal ephemeral volume used by the CSI driver
-        - name: ephemeral-web-content
+        - name: ephemeral-sites-volume
           emptyDir: { }
+        - name: letsencrypt-tls
+          secret:
+            secretName: letsencrypt-tls
+            defaultMode: 0640
       restartPolicy: Always

@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: lets-encrypt-cert
+  namespace: api
+  labels:
+    app: lets-encrypt
+    tier: web
+    version: "1.0"
+    release: production
+spec:
+  schedule: "0 0 */3 * *"  # Run every 3 days at midnight
+  #schedule: "0/5 * * * *" # Run every 5 minutes
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: lets-encrypt
+            tier: web
+            version: "1.0"
+            release: production
+        spec:
+          terminationGracePeriodSeconds: 60
+          serviceAccountName: lets-encrypt
+          containers:
+            - name: lets-encrypt
+              image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-lets-encrypt:latest
+              ports:
+                - containerPort: 80
+                  name: http
+          restartPolicy: Never
+          activeDeadlineSeconds: 3600  # Maximum duration for retries (1 hour)
+      backoffLimit: 0  # Number of retries before considering the job failed

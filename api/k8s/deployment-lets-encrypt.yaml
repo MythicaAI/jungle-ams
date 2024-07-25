@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lets-encrypt
+  namespace: api
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: lets-encrypt
+  template:
+    metadata:
+      labels:
+        app: lets-encrypt
+        tier: web
+        version: "1.0"
+        release: production
+    spec:
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: lets-encrypt
+      containers:
+        - name: letsencrypt
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-lets-encrypt:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: lets-encrypt-storage
+              mountPath: /etc/letsencrypt
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        # Nodal ephemeral volume used by the CSI driver
+        - name: lets-encrypt-storage
+          persistentVolumeClaim:
+            claimName: lets-encrypt
+      restartPolicy: Always
