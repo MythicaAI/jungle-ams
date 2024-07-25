@@ -52,7 +52,7 @@ describe("DownloadButton", () => {
     fireEvent.click(downloadButton);
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledWith({ path: "download/info/1" });
+      expect(mockApiGet).toHaveBeenCalledWith({ path: "/download/info/1" });
       expect(createElementMock).toHaveBeenCalledWith("a");
       const link = createElementMock.mock.results[0].value as HTMLAnchorElement;
       expect(link.setAttribute).toHaveBeenCalledWith("download", name);
