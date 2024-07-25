@@ -79,8 +79,8 @@ export const Thumbnail: React.FC<Props> = ({ file, removeFile, index }) => {
                 fill="none"
                 stroke="#15cb21"
                 stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className="lucide lucide-check"
               >
                 <path d="M10 3 4.5 8.5l-2.5 -2.5" />
