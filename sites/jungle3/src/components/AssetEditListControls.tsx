@@ -4,6 +4,7 @@ import { AssetEditFileList } from "./AssetEditFileList.tsx";
 import { OpenUploadsState } from "../types/assetEditTypes.ts";
 import { AssetEditUploadDrawer } from "./AssetEditUploadDrawer.tsx";
 import { useState } from "react";
+import { AssetEditThumbnails } from "./AssetEditThumbnails/index.tsx";
 
 type Props = {
   category: "files" | "thumbnails";
@@ -43,7 +44,7 @@ export const AssetEditListControls: React.FC<Props> = ({ category }) => {
       )}
 
       {category === "thumbnails" && (
-        <AssetEditFileList
+        <AssetEditThumbnails
           title={"Thumbnails"}
           category={"thumbnails"}
           fileTypeFilters={["png", "jpg", "jpeg", "gif", "webm"]}

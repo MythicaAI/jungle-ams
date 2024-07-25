@@ -29,7 +29,7 @@ export const FileView = (props: FileViewProps) => {
     }
 
     api
-      .get<FileUploadResponse>({ path: `files/${props.file_id}` })
+      .get<FileUploadResponse>({ path: `/files/${props.file_id}` })
       .then((r) => {
         setFile(r as FileUploadResponse);
       })

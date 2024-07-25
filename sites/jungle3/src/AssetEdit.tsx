@@ -46,6 +46,11 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
   const { setSuccess, addError, addWarning } = useStatusStore();
   const {
     asset_id,
+    name,
+    org_id,
+    version,
+    published,
+    description,
     files,
     thumbnails,
     addFiles,
@@ -117,26 +122,25 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
   // handle form submit for the specified version
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
 
-    // Create a plain object from FormData
+    const sanitizedVersion = sanitizeVersion(version);
+
     const formJson: { [key: string]: string | object } = {};
     formJson["contents"] = {
       files: Object.values(files),
       thumbnails: Object.values(thumbnails),
     };
-    formData.forEach((value, key) => {
-      if (key != "org_id" || value !== "") {
-        formJson[key] = value as string;
-      }
-    });
-    const sanitizedVersion = sanitizeVersion(
-      convertUserVersion(formJson["version"] as string),
-    );
+    formJson["description"] = description;
+    formJson["name"] = name;
+    formJson["org_id"] = org_id;
+    formJson["published"] = String(published);
+    formJson["version"] = sanitizedVersion;
+
     if (isVersionZero(sanitizedVersion)) {
       addError("Zero versions are not supported");
       return;
     }
+
     api
       .post<AssetVersionResponse>({
         path: `/assets/${asset_id}/versions/${sanitizedVersion.join(".")}`,
