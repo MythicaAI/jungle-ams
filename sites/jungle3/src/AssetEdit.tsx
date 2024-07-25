@@ -23,11 +23,7 @@ import {
 } from "./types/apiTypes.ts";
 import { useParams, useNavigate } from "react-router-dom";
 import { AssetIdentityHeader } from "./components/AssetIdentityHeader.tsx";
-import {
-  convertUserVersion,
-  isVersionZero,
-  sanitizeVersion,
-} from "./types/assetEditTypes.ts";
+import { isVersionZero, sanitizeVersion } from "./types/assetEditTypes.ts";
 import { AssetEditPageHeader } from "./components/AssetEditPageHeader.tsx";
 import { AssetEditDetailControls } from "./components/AssetEditDetailControls.tsx";
 import { AssetEditListControls } from "./components/AssetEditListControls.tsx";

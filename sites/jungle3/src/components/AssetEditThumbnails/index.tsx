@@ -91,7 +91,9 @@ export const AssetEditThumbnails: React.FC<AssetEditFileListProps> = (
       >
         {thumbnailUrls.length > 0 ? (
           <ReactSortable
+            //@ts-ignore
             list={thumbnailUrls}
+            //@ts-ignore
             setList={setThumbnailUrls}
             ghostClass="dropArea"
             handle=".dragHandle"
