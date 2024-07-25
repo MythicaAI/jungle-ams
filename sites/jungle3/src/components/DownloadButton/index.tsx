@@ -28,7 +28,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
 
   const handleDownload = () => {
     api
-      .get<DownloadInfoResponse>({ path: `download/info/${file_id}` })
+      .get<DownloadInfoResponse>({ path: `/download/info/${file_id}` })
       .then((r) => {
         const link = document.createElement("a");
         link.href = r.url;
