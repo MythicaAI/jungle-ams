@@ -147,6 +147,16 @@ export interface FileUploadResponse {
   download_url: string,
 }
 
+export interface FileInfoResponse {
+  file_id: string,
+  owner_id: string,
+  name: string,
+  size: number,
+  content_type: string,
+  content_hash: string,
+  url: string
+}
+
 export interface UploadResponse {
   message: string,
   files: FileUploadResponse[],
