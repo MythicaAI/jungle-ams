@@ -51,14 +51,12 @@ export const FileView = (props: FileViewProps) => {
   const isSpecialFile = file.name && /^.*\.litegraph\.json$/.test(file.name);
 
   const specialFileView = isSpecialFile ? (
-    <Box style={{ height: '100%', width: '100%' }}>
+    <Box style={{ height: "100%", width: "100%" }}>
       <h2>Network: {file.name}</h2>
       <LitegraphViewer url={file.url} />
     </Box>
   ) : (
-    <Box>
-      {fileHeader}
-    </Box>
+    <Box>{fileHeader}</Box>
   );
 
   const filePending = <Box>Loading</Box>;

@@ -141,6 +141,10 @@ export const Packages = () => {
   }, [versions]);
 
   useEffect(() => {
+    clearVersion();
+  }, []);
+
+  useEffect(() => {
     console.log("packages: load owned assets");
     if (!authToken) {
       return;
@@ -260,7 +264,7 @@ export const Packages = () => {
               component="label"
               variant={"plain"}
               color={"neutral"}
-              onMouseDown={createAsset}
+              onClick={createAsset}
               startDecorator={<LucidePlusCircle />}
             >
               Create New Package
