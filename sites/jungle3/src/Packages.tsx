@@ -44,7 +44,7 @@ export const Packages = () => {
 
   const { authToken } = useGlobalStore();
   const { addError, addWarning } = useStatusStore();
-  const { asset_id, updateVersion, clearVersion } = useAssetVersionStore();
+  const { updateVersion, clearVersion } = useAssetVersionStore();
   const navigate = useNavigate();
 
   const handleError = (err: AxiosError) => {
@@ -107,21 +107,19 @@ export const Packages = () => {
   };
 
   const createAsset = function () {
-    if (!asset_id || asset_id === "") {
-      const createRequest: AssetCreateRequest = {};
-      api
-        .post<AssetCreateResponse>({ path: "/assets/", body: createRequest })
-        .then((r) => {
-          // update the asset edit state
-          clearVersion();
-          updateVersion({
-            asset_id: r.asset_id,
-            org_id: r.org_id,
-          });
-          navigate(`/assets/${r.asset_id}/versions/0.0.0`);
-        })
-        .catch((err) => handleError(err));
-    }
+    const createRequest: AssetCreateRequest = {};
+    api
+      .post<AssetCreateResponse>({ path: "/assets/", body: createRequest })
+      .then((r) => {
+        // update the asset edit state
+        clearVersion();
+        updateVersion({
+          asset_id: r.asset_id,
+          org_id: r.org_id,
+        });
+        navigate(`/assets/${r.asset_id}/versions/0.0.0`);
+      })
+      .catch((err) => handleError(err));
   };
 
   // set the {versions} list and index each asset to a list of versions

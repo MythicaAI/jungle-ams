@@ -13,11 +13,13 @@ import { api } from "../../services/api";
 interface DownloadButtonProps {
   file_id: string;
   icon: ReactNode;
+  text?: string
 }
 
 export const DownloadButton: React.FC<DownloadButtonProps> = ({
   file_id,
   icon,
+  text,
 }) => {
   const { addError, addWarning } = useStatusStore();
 
@@ -42,5 +44,5 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
       });
   };
 
-  return <IconButton onClick={handleDownload}>{icon}</IconButton>;
+  return <IconButton onClick={handleDownload}>{icon} {text?text:""}</IconButton>;
 };

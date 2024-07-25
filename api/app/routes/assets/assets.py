@@ -23,7 +23,7 @@ from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from routes.authorization import current_profile
 
-ZERO_VERSION = (0, 0, 0)
+ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
 
 FILE_TYPE_CATEGORIES = {'files', 'thumbnails'}
@@ -92,10 +92,17 @@ class AssetVersionResult(BaseModel):
     name: str | None = None
     description: str | None = None
     published: bool | None = False
-    version: tuple[int, ...] = ZERO_VERSION
+    version: list[int] = ZERO_VERSION
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetVersionContent | str]] = {}
+
+
+class AssetTopResult(AssetVersionResult):
+    """Result object for a specific asset version or the asset head object
+    when no version has been created. In this case the """
+    downloads: int = 0
+    versions: list[list[int]] = []
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -289,18 +296,56 @@ async def get_assets() -> list[AssetVersionResult]:
 
 
 @router.get('/top')
-async def get_top_assets() -> list[AssetVersionResult]:
+async def get_top_assets() -> list[AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
-    with get_session() as session:
+    with get_session(echo=True) as session:
         results = session.exec(
-            select(Asset, AssetVersion)
+            select(Asset, AssetVersion, FileContent)
             .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
             .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
             .where(AssetVersion.published == True)
             .where(AssetVersion.package_seq != None)
-            .order_by(desc(FileContent.downloads))
         ).all()
-        return process_join_results(session, results)
+
+        def avf_to_top(asset, ver, file, downloads=0, versions=[]):
+            return AssetTopResult(
+                asset_id=asset_seq_to_id(asset.asset_seq),
+                org_id=org_seq_to_id(asset.org_seq),
+                org_name=resolve_org_name(session, asset.org_seq),
+                owner_id=profile_seq_to_id(asset.owner_seq),
+                owner_name=resolve_profile_name(session, asset.owner_seq),
+                package_id=file_seq_to_id(ver.package_seq),
+                author_id=profile_seq_to_id(ver.author_seq),
+                author_name=resolve_profile_name(session, ver.author_seq),
+                name=ver.name,
+                description=ver.description,
+                published=ver.published,
+                version=(ver.major, ver.minor, ver.patch),
+                commit_ref=ver.commit_ref,
+                created=ver.created,
+                contents=asset_contents_json_to_model(ver.contents),
+                versions=versions,
+                downloads=file.downloads, )
+
+        reduced = {}
+        for result in results:
+            asset, ver, file = result
+            if ver is None or file is None:
+                continue
+            atr = reduced.get(asset.asset_seq, None)
+            version_id = [ver.major, ver.minor, ver.patch]
+            if atr is None:
+                reduced[asset.asset_seq] = avf_to_top(
+                    asset, ver, file, file.downloads, [version_id])
+            else:
+                atr.versions.append(version_id)
+                atr.downloads += file.downloads
+                if version_id > atr.version:
+                    reduced[asset.asset_seq] = avf_to_top(
+                        asset, ver, file, atr.downloads, sorted(atr.versions, reverse=True)[0:3])
+
+        sort_results = sorted(reduced.values(), key=lambda x: x.downloads, reverse=True)
+        return sort_results
 
 
 @router.get('/owned')

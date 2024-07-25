@@ -1,31 +1,23 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  CardCover,
-  Chip,
-  IconButton,
-  Typography,
-} from "@mui/joy";
-import { getThumbnailImg } from "../../lib/packagedAssets.tsx";
-import { DownloadButton } from "../DownloadButton";
-import { LucideInfo, LucidePackage } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import {Box, Card, CardContent, CardCover, Chip, IconButton, Typography,} from "@mui/joy";
+import {getThumbnailImg} from "../../lib/packagedAssets.tsx";
+import {DownloadButton} from "../DownloadButton";
+import {LucideInfo, LucidePackage} from "lucide-react";
+import {Link, useNavigate} from "react-router-dom";
 import React from "react";
-import { AssetVersionResponse } from "../../types/apiTypes.ts";
-import { SxProps } from "@mui/joy/styles/types/theme";
+import {AssetTopResponse} from "../../types/apiTypes.ts";
+import {SxProps} from "@mui/joy/styles/types/theme";
 
 type Props = {
-  av: AssetVersionResponse;
+  av: AssetTopResponse;
   sxStyles?: SxProps;
   isTopAsset?: boolean;
 };
 
 export const PackageViewCard: React.FC<Props> = ({
-  av,
-  isTopAsset,
-  sxStyles,
-}) => {
+                                                   av,
+                                                   isTopAsset,
+                                                   sxStyles,
+                                                 }) => {
   const navigate = useNavigate();
   return av ? (
     <Card>
@@ -42,7 +34,7 @@ export const PackageViewCard: React.FC<Props> = ({
           component="span"
           level="body-lg"
           fontWeight="lg"
-          mt={isTopAsset ? 0 : { xs: 12, sm: 18 }}
+          mt={isTopAsset ? 0 : {xs: 12, sm: 18}}
           sx={{
             backgroundColor: "rgba(0, 0, 0, 0.6)", // semi-translucent dark background
             color: "white", // white text color for better contrast
@@ -60,16 +52,16 @@ export const PackageViewCard: React.FC<Props> = ({
               marginTop: "8px",
             }}
           >
-            <DownloadButton file_id={av.package_id} icon={<LucidePackage />} />
+            <DownloadButton file_id={av.package_id} icon={<LucidePackage/>}/>
             <IconButton
-              sx={{ color: "white" }}
+              sx={{color: "white"}}
               onClick={() => {
                 navigate(
                   `/package-view/${av.asset_id}/versions/${av.version.join(".")}`,
                 );
               }}
             >
-              <LucideInfo />
+              <LucideInfo/>
             </IconButton>
             <Chip
               key={av.version.join(".")}
@@ -78,7 +70,7 @@ export const PackageViewCard: React.FC<Props> = ({
               size="lg"
               component={Link}
               to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-              sx={{ borderRadius: "xl" }}
+              sx={{borderRadius: "xl"}}
             >
               {av.version.join(".")}
             </Chip>

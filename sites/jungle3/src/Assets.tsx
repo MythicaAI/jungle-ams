@@ -13,7 +13,7 @@ import {
   extractValidationErrors,
   translateError,
 } from "./services/backendCommon.ts";
-import { AssetVersionResponse } from "./types/apiTypes.ts";
+import {AssetTopResponse} from "./types/apiTypes.ts";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { AxiosError } from "axios";
@@ -33,7 +33,7 @@ const Assets = () => {
   const [isTopAssetsLoading, setIsTopAssetsLoading] = useState(true);
 
   const [topAssets, setTopAssets] = useState<AssetVersionResponse[]>([]);
-  const [allAssets, setAllAssets] = useState<AssetVersionResponse[]>([]);
+  const [allAssets, setAllAssets] = useState<AssetTopResponse[]>([]);
 
   const handleError = (err: AxiosError) => {
     console.log("ERROR: ", err);
@@ -46,7 +46,7 @@ const Assets = () => {
     setIsTopAssetsLoading(true);
 
     api
-      .get<AssetVersionResponse[]>({ path: "/assets/top", withAuth: false })
+      .get<AssetTopResponse[]>({ path: "/assets/top", withAuth: false })
       .then((r) => {
         setTopAssets(r);
         setIsTopAssetsLoading(false);
