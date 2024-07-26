@@ -240,8 +240,12 @@ class PackageUploader(object):
             user_description = f"imported from {package.commit_ref}"
             org_name = user
         else:
+            if os.path.isabs(package.repo):
+                package.root_disk_path = package.repo
+            else:
+                package.root_disk_path = os.path.abspath(os.path.join(os.path.dirname(self.package_list_file), package.repo))
+
             # TODO: Read Perforce revision number
-            package.root_disk_path = package.repo
             package.commit_ref = "unknown"
             package.repo = "MythicaPerforce::" + package.name
 
