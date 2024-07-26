@@ -27,7 +27,9 @@ CONTAINER_NAME = 'darol-houdini'
 CONTAINER_TAG = 'latest'
 IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
 IMAGE_NAME = "hautomation"
-OUTPUT_LOCAL = "./output"
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_LOCAL = os.path.join(SCRIPT_DIR, "output")
 
 
 def run_docker(docker_command: list[str]):
@@ -91,7 +93,7 @@ def launch_container(o):
         gen_network_cmd = ("hserver -S https://www.sidefx.com/license/sesinetd"
                            " && hython /darol/automation/inspect.py"
                            " --output-path /output"
-                           " --hda-path={downloaded_path}"
+                           f" --hda-path={downloaded_path}"
                            " && hserver -Q")
         process_output(*run_docker(["docker", "run",
                                     "--rm",
