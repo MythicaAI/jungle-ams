@@ -26,5 +26,3 @@ spec:
       backendRefs:
         - name: gcs-proxy
           port: 80
-        - name: gcs-proxy
-          port: 443
