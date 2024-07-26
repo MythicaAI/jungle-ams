@@ -54,6 +54,7 @@ class API(object):
         url = f"{api_settings().endpoint}/download/info/{file_id}"
         r = self.client.get(url)
         assert r.status_code == HTTPStatus.OK
+        log.info("response: %s", r.text)
         doc = r.json()
         log.info("response: %s", json.dumps(doc))
         o = munchify(doc)
