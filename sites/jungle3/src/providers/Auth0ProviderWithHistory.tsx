@@ -27,7 +27,9 @@ const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({child
       clientId={clientId}
       onRedirectCallback={redirectHandler}
       authorizationParams={{
-        redirect_uri: window.location.origin
+        redirect_uri: window.location.origin,
+        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+        scope: "read:current_user update:current_user_metadata"
       }}
     >
       {children}
