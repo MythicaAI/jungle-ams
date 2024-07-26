@@ -6,6 +6,7 @@ import {Link, useNavigate} from "react-router-dom";
 import {Box, Button, Card, Grid, Input, Stack} from "@mui/joy";
 import {useStatusStore} from "./stores/statusStore.ts";
 import {useAuthenticationActions} from "./services/hooks/hooks.tsx";
+import {useAuth0} from "@auth0/auth0-react";
 
 const Login: React.FC = () => {
   const [cookies, setCookie] = useCookies([
@@ -13,7 +14,8 @@ const Login: React.FC = () => {
     "auth_token",
     "refresh_token",
   ]);
-  const {logout} = useAuthenticationActions();
+  const {logout: authenticationLogout} = useAuthenticationActions();
+  const {logout: auth0Logout} = useAuth0();
   const {clearAll} = useGlobalStore();
   const {addError} = useStatusStore();
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ const Login: React.FC = () => {
     if (!cookies.profile_id) {
       return;
     }
-    logout(cookies.profile_id)
+    authenticationLogout(cookies.profile_id)
       .then(() => {
         navigate("/");
       })
@@ -34,6 +36,8 @@ const Login: React.FC = () => {
         setCookie("profile_id", "", {path: "/"});
         setCookie("auth_token", "", {path: "/"});
         setCookie("refresh_token", "", {path: "/"});
+
+        auth0Logout({ logoutParams: { returnTo: window.location.origin } });
       });
   };
 
