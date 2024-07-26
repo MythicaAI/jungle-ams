@@ -79,12 +79,10 @@ export const AuthHeader = () => {
         const input: Partial<ProfileResponse> = data.profile;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
         setProfile(merged as unknown as ProfileResponse);
-        setNeedsSession(false);
       })
       .catch((err) => {
         console.log(`start_session failed ${err}`);
         setAuthToken("");
-        setNeedsSession(true);
       });
   };
 
