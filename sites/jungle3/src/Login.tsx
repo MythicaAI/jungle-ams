@@ -31,12 +31,12 @@ const Login: React.FC = () => {
   };
   const handleLogin = (event: React.FormEvent) => {
     event.preventDefault();
-    setCookie("profile_id", username, { path: "/" });
 
     // 32a05c1d-d2c6-47f2-9411-156c3619c71a
 
     login(username)
       .then((r) => {
+        setCookie("profile_id", r.profile.profile_id, { path: "/" });
         setCookie("auth_token", r.token, { path: "/" });
         setCookie("refresh_token", "", { path: "/" });
         setAuthToken(r.token);

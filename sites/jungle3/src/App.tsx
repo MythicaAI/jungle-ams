@@ -13,6 +13,7 @@ import { Layout } from "./components/Layout.tsx";
 import { Notification } from "./components/Notification.tsx";
 import "./App.css";
 import {PackageViewWrapper} from "./PackageView.tsx";
+import Logout from "./Logout.tsx";
 
 const App: React.FC = () => {
   return (
@@ -29,6 +30,7 @@ const App: React.FC = () => {
           />
           <Route path="orgs" element={<OrgsList />} />
           <Route path="login" element={<Login />} />
+          <Route path="logout" element={<Logout/>} />
           <Route path="files/:file_id" element={<FileViewWrapper />} />
           <Route path="package-view/:asset_id/versions/:version_id" element={<PackageViewWrapper />} />
         </Route>

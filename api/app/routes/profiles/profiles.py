@@ -61,8 +61,14 @@ def profile_to_profile_response(profile: Profile, model_type: type) \
 async def start_session(profile_id: str) -> SessionStartResponse:
     """Start a session for a profile"""
     with get_session() as session:
-        profile_seq = profile_id_to_seq(profile_id)
-        session.begin()
+        if '@' in profile_id:
+            profile = session.exec(select(Profile).where(Profile.email == profile_id)).first()
+            if profile is None:
+                raise HTTPException(HTTPStatus.NOT_FOUND, f"profile with email {profile_id} not found")
+            profile_seq = profile.profile_seq
+        else:
+            profile_seq = profile_id_to_seq(profile_id)
+
         result = session.exec(update(Profile).values(
             {'login_count': Profile.login_count + 1, 'active': True}).where(
             Profile.profile_seq == profile_seq))
@@ -99,6 +105,27 @@ async def start_session(profile_id: str) -> SessionStartResponse:
             token=token,
             profile=profile_response)
         return result
+
+
+@router.get('/stop_session/{profile_id}')
+async def stop_session(profile_id: str):
+    """Stop a session for a profile"""
+    with get_session() as session:
+        profile_seq = profile_id_to_seq(profile_id)
+
+        session.begin()
+        result = session.exec(update(Profile).values(
+            {'active': False}).where(
+            Profile.profile_seq == profile_seq))
+
+        session.exec(delete(ProfileSession).where(
+            ProfileSession.profile_seq == profile_seq))
+
+        session.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(HTTPStatus.NOT_FOUND,
+                                detail='profile not found')
 
 
 @router.get('/named/{profile_name}')
