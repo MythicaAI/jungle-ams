@@ -131,6 +131,7 @@ def any_upstream_changes(package: ProcessedPackageModel,
     if len(contents_by_hash.keys()) != len(new_asset_contents):
         print(("Changed due to file count mismatch:"
                f"{len(contents_by_hash.keys())} != {len(new_asset_contents)}"))
+        return True
     # validate all content hashes exist in existing asset version content
     for new_content in new_asset_contents:
         new_content_hash = new_content['content_hash']
