@@ -239,7 +239,6 @@ class PackageUploader(object):
 
             user, project = get_github_user_project_name(package.repo)
             user_description = f"imported from {package.commit_ref}"
-            org_name = user
         else:
             if os.path.isabs(package.repo):
                 package.root_disk_path = package.repo
@@ -252,7 +251,9 @@ class PackageUploader(object):
 
             user = "Mythica"
             user_description = "Upload automation profile"
-            org_name = "Mythica"
+
+        if package.user is not None:
+            user = package.user
 
         if package.description == "":
             package.description = get_description_from_readme(package)
