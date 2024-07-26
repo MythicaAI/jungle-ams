@@ -27,42 +27,32 @@ import {useAuth0} from "@auth0/auth0-react";
 // we need to think about how to do the persistence without exposing the token to XSS
 
 export const AuthHeader = () => {
-  const [needsLogin, setNeedsLogin] = useState(true);
-  const [needsSession, setNeedsSession] = useState(true);
-  const [cookies] = useCookies(["profile_id", "auth_token", "refresh_token"]);
+  const [cookies, setCookie] = useCookies(["profile_id", "auth_token", "refresh_token"]);
   const { authToken, profile, setAuthToken, setProfile, setOrgRoles } =
     useGlobalStore();
-  const navigate = useNavigate();
-  const {loginWithRedirect, user, isAuthenticated, isLoading } = useAuth0();
+  const {loginWithRedirect, getAccessTokenSilently, user, isAuthenticated, isLoading } = useAuth0();
 
+  // Refresh the backend API session based on the Auth0 state (create a new auth token)
   useEffect(() => {
-    console.log("useEffect - validate login session");
-    if (!cookies.profile_id) {
-      setNeedsLogin(true);
-      setNeedsSession(true);
-      navigate("/login");
-      return; // early return, nothing else we can do without a profile_id
-    } else {
-      setNeedsLogin(false);
-    }
-    if (!authToken) {
-      setNeedsSession(true);
-    } else {
-      setNeedsSession(false);
-    }
-  }, [authToken, cookies]);
-
-  useEffect(() => {
-    if (cookies.profile_id && needsSession) {
-      updateSession(cookies.profile_id);
-    }
-  }, [cookies, needsSession]);
-
-  useEffect(() => {
-    if (!needsSession && !needsLogin) {
+    if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
+    } else {
+      // getAccessTokenSilently({
+      //     authorizationParams: {
+      //       audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+      //       scope: 'all',
+      //     },})
+      //   .then((token) => setCookie("auth_token", token, { path: "/" }))
+      //   .catch((error) => console.error("getAccessTokenSilently:", error));
     }
-  }, [needsSession, needsLogin, authToken, cookies]);
+  }, [cookies]);
+
+  // Refresh the profile based on having an API session token
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      updateSession();
+    }
+  }, [isLoading, isAuthenticated]);
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
@@ -76,12 +66,13 @@ export const AuthHeader = () => {
     ) as ProfileResponse;
   }
 
-  const updateSession = (profile_id: string) => {
-    console.log("updateSession", profile_id);
+  const updateSession = () => {
+    console.log("updateSession", user ? user.sub : "undefined");
+
     // Get a new auth_token with the profile_id
     api
       .get<SessionStartResponse>({
-        path: `/profiles/start_session/${profile_id}`,
+        path: `/profiles/start_session/${user.sub}`,
       })
       .then((data) => {
         setAuthToken(data.token);
@@ -104,11 +95,10 @@ export const AuthHeader = () => {
         const input = data as Partial<ProfileResponse>;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
         setProfile(merged as unknown as ProfileResponse);
+        api.get<ResolvedOrgRef[]>({ path: "/orgs/" }).then((data) => {
+          setOrgRoles(data);
+        });
       });
-
-    api.get<ResolvedOrgRef[]>({ path: "/orgs/" }).then((data) => {
-      setOrgRoles(data);
-    });
   };
 
   const LoginAvatarButton = styled('div')({
@@ -144,13 +134,15 @@ export const AuthHeader = () => {
       <ListItemDecorator>
         <Stack direction="row" spacing={1}>
           <StatusAlarm />
-          {authToken ? (
-            <ProfileMenu name={profile.name} />
+          {isAuthenticated ? (
+            <ProfileMenu name={user && user.name ? user.name : ""} />
           ) : (
             <LoginAvatarButton
               role="button"
               tabIndex={0}
-              onClick={() => loginWithRedirect()}>
+              onClick={() => loginWithRedirect()
+                .then(() => {console.log("logged in")})
+                .catch((error) => {console.log("error", error)})}>
               <Avatar alt="?" variant="soft" />
             </LoginAvatarButton>
           )}
