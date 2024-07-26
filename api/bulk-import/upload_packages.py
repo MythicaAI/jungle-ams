@@ -125,12 +125,13 @@ def any_upstream_changes(package: ProcessedPackageModel,
                          new_asset_contents: list[dict]) -> bool:
     """Detect any changes in the GitHub upstream by doing a count and hash check"""
     # first index the latest version contents
+    latest_version_contents = package.latest_version_contents.get(key, [])
     contents_by_hash = {asset_version_content.content_hash: asset_version_content
-                        for asset_version_content in package.latest_version_contents.get(key, [])}
+                        for asset_version_content in latest_version_contents}
     # validate the file count matches
-    if len(contents_by_hash.keys()) != len(new_asset_contents):
+    if len(latest_version_contents) != len(new_asset_contents):
         print(("Changed due to file count mismatch:"
-               f"{len(contents_by_hash.keys())} != {len(new_asset_contents)}"))
+               f"{len(latest_version_contents)} != {len(new_asset_contents)}"))
         return True
     # validate all content hashes exist in existing asset version content
     for new_content in new_asset_contents:
