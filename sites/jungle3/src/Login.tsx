@@ -20,10 +20,6 @@ const Login: React.FC = () => {
   const { addError } = useStatusStore();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setUsername("32a05c1d-d2c6-47f2-9411-156c3619c71a");
-  }, []);
-
   const clearCookies = () => {
     setCookie("auth_token", "", { path: "/" });
     setCookie("refresh_token", "", { path: "/" });

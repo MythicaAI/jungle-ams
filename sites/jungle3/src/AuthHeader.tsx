@@ -1,10 +1,10 @@
 import {
   Avatar,
-  Box,
+  Box, Button,
   List,
   ListItemContent,
   ListItemDecorator,
-  Stack,
+  Stack, styled,
   Typography,
 } from "@mui/joy";
 import { Link, useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ import {
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { StatusAlarm } from "./components/StatusAlarm.tsx";
 import { api } from "./services/api";
+import {useAuth0} from "@auth0/auth0-react";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -32,6 +33,7 @@ export const AuthHeader = () => {
   const { authToken, profile, setAuthToken, setProfile, setOrgRoles } =
     useGlobalStore();
   const navigate = useNavigate();
+  const {loginWithRedirect, user, isAuthenticated, isLoading } = useAuth0();
 
   useEffect(() => {
     console.log("useEffect - validate login session");
@@ -109,6 +111,14 @@ export const AuthHeader = () => {
     });
   };
 
+  const LoginAvatarButton = styled('div')({
+    display: 'inline-block',
+    cursor: 'pointer',
+    '&:focus': {
+      outline: 'none',
+    },
+  });
+
   return (
     <List orientation={"horizontal"}>
       <ListItemDecorator>
@@ -137,9 +147,12 @@ export const AuthHeader = () => {
           {authToken ? (
             <ProfileMenu name={profile.name} />
           ) : (
-            <Link to={"/login"}>
+            <LoginAvatarButton
+              role="button"
+              tabIndex={0}
+              onClick={() => loginWithRedirect()}>
               <Avatar alt="?" variant="soft" />
-            </Link>
+            </LoginAvatarButton>
           )}
         </Stack>
       </ListItemDecorator>
