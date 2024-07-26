@@ -54,6 +54,7 @@ class API(object):
         url = f"{api_settings().endpoint}/download/info/{file_id}"
         r = self.client.get(url)
         assert r.status_code == HTTPStatus.OK
+        log.info("response: %s", r.text)
         doc = r.json()
         log.info("response: %s", json.dumps(doc))
         o = munchify(doc)
@@ -61,8 +62,9 @@ class API(object):
         log.info("downloading from %s to %s",
                  o.url,
                  local_file_name)
+        os.makedirs(os.path.dirname(local_file_name), exist_ok=True)
         downloaded_bytes = 0
-        with open(local_file_name, "wb") as f:
+        with open(local_file_name, "w+b") as f:
             download_req = self.client.get(o.url, stream=True)
             for chunk in download_req.iter_content(chunk_size=1024):
                 if chunk:
