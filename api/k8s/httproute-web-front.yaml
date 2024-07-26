@@ -23,5 +23,3 @@ spec:
     backendRefs:
     - name: web-front
       port: 80
-    - name: web-front
-      port: 443
