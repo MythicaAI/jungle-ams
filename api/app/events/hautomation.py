@@ -63,7 +63,7 @@ def process_output(stdout, stderr, returncode):
     log.info("stderr %s", stderr)
     log.info("returncode %s", returncode)
     if returncode != 0:
-        raise ValueError(f"returncode was {returncode}")
+        log.error("Unable to process HDA. returncode was %s",returncode)
 
 
 def pull_container():
