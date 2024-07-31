@@ -48,7 +48,7 @@ export const PackageView = (props: PackageViewProps) => {
       .catch((err) => handleError(err));
   }, [props.asset_id, props.version_id]);
 
-  const header = !!assetVersion.asset_id ? (
+  const header = assetVersion.asset_id ? (
     <>
       <Grid container spacing={2}>
         <Grid xs={7}>
