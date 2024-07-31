@@ -245,6 +245,44 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert r[0].version == [0, 2, 0]
     assert r[1].version == [0, 1, 0]
 
+    # populate 10 more versions to test top coalesce
+    for i in range(10):
+        test_asset_ver_json['commit_ref'] = test_commit_ref + '-' + str(i)
+        test_asset_ver_json['published'] = True
+        version_str = [1.{i}.0]
+        r = client.post(
+            f"{api_base}/assets/{asset_id}/versions/{version_str}",
+            json=test_asset_ver_json,
+            headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+
+        # create a package for each so they are available via the main index
+        package_file = [make_random_content("zip") for _ in range(1)]
+        uri = f"/package/{asset_id}/{version_str}"
+        response_files = uploader(profile_id, headers, package_file, )
+
+    # query versions for top, assert versions combined into one result
+    r = client.get(f"{api_base}/assets/top")
+    assert_status_code(r, HTTPStatus.OK)
+    results = r.json()
+    assert len(results) > 0
+    count_found = 0
+    for r in results:
+        o = munchify(r)
+        if o.asset_id != asset_id:
+            continue
+        count_found += 1
+        commit_ref: str = str(o.commit_ref)
+        assert 'versions' in o
+        assert 'version' in o
+        assert len(o.versions) == 3  # limit on versions returned
+        assert o.version == [1, 9, 0]  # latest version
+        assert commit_ref.endswith("1.9.0")
+        assert o.versions.contains([1, 8, 0])
+        assert o.versions.contains([1, 7, 0])
+        assert o.versions.contains([1, 6, 0])
+    assert count_found == 1
+
     # update existing asset version
     test_link_update1 = "https://test.test/foo"
     test_link_update2 = "https://test.test/bar"

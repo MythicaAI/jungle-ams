@@ -10,7 +10,7 @@ from tests.shared_test import FileContentTestObj, assert_status_code
 
 
 @pytest.fixture(scope='module')
-def uploader(client, api_base):
+def uploader(client, api_base, storage_uri='/upload/store'):
     """Uploader factory fixture test content to API"""
 
     def _uploader(
@@ -23,7 +23,7 @@ def uploader(client, api_base):
             files))
 
         r = client.post(
-            f"{api_base}/upload/store",
+            f"{api_base}{storage_uri}",
             files=file_data,
             headers=auth_headers)
         assert_status_code(r, HTTPStatus.OK)
