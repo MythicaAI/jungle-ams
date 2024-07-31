@@ -4,6 +4,7 @@ from datetime import datetime
 from http import HTTPStatus
 from operator import or_
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 import sqlalchemy
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -24,6 +25,9 @@ from routes.authorization import current_profile
 
 ZERO_VERSION = (0, 0, 0)
 VERSION_LEN = 3
+
+FILE_TYPE_CATEGORIES = {'files', 'thumbnails'}
+LINK_TYPE_CATEGORIES = {'links'}
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +66,7 @@ class AssetCreateVersionRequest(BaseModel):
     description: Optional[str] = None
     published: Optional[bool] = False
     commit_ref: Optional[str] = None
-    contents: Optional[dict[str, list[AssetVersionContent]]] = None
+    contents: Optional[dict[str, list[AssetVersionContent | str]]] = None
 
 
 class AssetCreateResult(BaseModel):
@@ -91,7 +95,7 @@ class AssetVersionResult(BaseModel):
     version: tuple[int, ...] = ZERO_VERSION
     commit_ref: Optional[str] = None
     created: datetime | None = None
-    contents: Dict[str, list[AssetVersionContent]] = {}
+    contents: Dict[str, list[AssetVersionContent | str]] = {}
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -120,8 +124,9 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
         if ver is None:
             # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
+        asset_id = asset_seq_to_id(asset.asset_seq)
         avr = AssetVersionResult(
-            asset_id=asset_seq_to_id(asset.asset_seq),
+            asset_id=asset_id,
             org_id=org_seq_to_id(asset.org_seq),
             org_name=resolve_org_name(session, asset.org_seq),
             owner_id=profile_seq_to_id(asset.owner_seq),
@@ -135,7 +140,7 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             version=(ver.major, ver.minor, ver.patch),
             commit_ref=ver.commit_ref,
             created=ver.created,
-            contents=asset_contents_json_to_model(ver.contents))
+            contents=asset_contents_json_to_model(asset_id, ver.contents))
         results.append(avr)
     return results
 
@@ -206,38 +211,68 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     return event_result
 
 
-def asset_contents_json_to_model(contents: dict[str, list[str]]) -> dict[str, list[AssetVersionContent]]:
+def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) \
+        -> dict[str, list[AssetVersionContent | str]]:
     """Convert JSON assert version contents to model objects"""
     converted = {}
     if type(contents) is not dict:
+        log.warning("asset: %s content is not a dictionary", asset_id)
         return converted
     for category, content_list in contents.items():
-        converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
+        if category in FILE_TYPE_CATEGORIES:
+            converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
+        elif category in LINK_TYPE_CATEGORIES:
+            converted[category] = content_list
+        else:
+            log.warning("asset: %s contains unknown content category %s", asset_id, category)
     return converted
 
 
-def resolve_contents_as_json(
+def resolve_content_list(
         session: Session,
-        in_files_categories: dict[str, list[AssetVersionContent]]) \
-        -> AssetContentDocument:
-    """Convert any partial content references into fully resolved references"""
-    contents = {}
-
-    # resolve all file content types
-    for category, content_list in in_files_categories.items():
-        resolved_content_list = []
-        for asset_content in content_list:
+        category: str,
+        in_content_list: list[AssetVersionContent | str]):
+    resolved_content_list = []
+    if category in FILE_TYPE_CATEGORIES:
+        for asset_content in in_content_list:
             try:
-                db_file = locate_content_by_seq(session, file_id_to_seq(asset_content.file_id))
+                if type(asset_content) is str:
+                    file_id = asset_content
+                    file_name = None
+                else:
+                    file_id = asset_content.file_id
+                    file_name = asset_content.file_name
+                db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
                 content = AssetVersionContent(
                     file_id=file_seq_to_id(db_file.file_seq),
-                    file_name=asset_content.file_name,
+                    file_name=file_name or db_file.name,
                     content_hash=db_file.content_hash,
                     size=db_file.size)
                 resolved_content_list.append(content.model_dump_json())
             except FileNotFoundError as exc:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail=f"file '{asset_content.file_id}' not found") from exc
+    elif category in LINK_TYPE_CATEGORIES:
+        for link in in_content_list:
+            try:
+                urlparse(link)
+                resolved_content_list.append(link)
+            except ValueError as e:
+                raise HTTPException(HTTPStatus.BAD_REQUEST,
+                                    detail=f"link '{link}' not valid") from e
+    return resolved_content_list
+
+
+def resolve_contents_as_json(
+        session: Session,
+        in_files_categories: dict[str, list[AssetVersionContent | str]]) \
+        -> AssetContentDocument:
+    """Convert any partial content references into fully resolved references"""
+    contents = {}
+
+    # resolve all file content types
+    for category, content_list in in_files_categories.items():
+        resolved_content_list = resolve_content_list(session, category, content_list)
         contents[category] = resolved_content_list
 
     return contents
