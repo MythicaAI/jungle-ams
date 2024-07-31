@@ -26,6 +26,9 @@ from routes.authorization import current_profile
 ZERO_VERSION = (0, 0, 0)
 VERSION_LEN = 3
 
+FILE_TYPE_CATEGORIES = {'files', 'thumbnails'}
+LINK_TYPE_CATEGORIES = {'links'}
+
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/assets", tags=["assets"])
@@ -92,7 +95,7 @@ class AssetVersionResult(BaseModel):
     version: tuple[int, ...] = ZERO_VERSION
     commit_ref: Optional[str] = None
     created: datetime | None = None
-    contents: Dict[str, list[AssetVersionContent]] = {}
+    contents: Dict[str, list[AssetVersionContent | str]] = {}
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -121,8 +124,9 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
         if ver is None:
             # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
+        asset_id = asset_seq_to_id(asset.asset_seq)
         avr = AssetVersionResult(
-            asset_id=asset_seq_to_id(asset.asset_seq),
+            asset_id=asset_id,
             org_id=org_seq_to_id(asset.org_seq),
             org_name=resolve_org_name(session, asset.org_seq),
             owner_id=profile_seq_to_id(asset.owner_seq),
@@ -136,7 +140,7 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             version=(ver.major, ver.minor, ver.patch),
             commit_ref=ver.commit_ref,
             created=ver.created,
-            contents=asset_contents_json_to_model(ver.contents))
+            contents=asset_contents_json_to_model(asset_id, ver.contents))
         results.append(avr)
     return results
 
@@ -207,18 +211,21 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     return event_result
 
 
-def asset_contents_json_to_model(contents: dict[str, list[str]]) -> dict[str, list[AssetVersionContent | str]]:
+def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) \
+        -> dict[str, list[AssetVersionContent | str]]:
     """Convert JSON assert version contents to model objects"""
     converted = {}
     if type(contents) is not dict:
+        log.warning("asset: %s content is not a dictionary", asset_id)
         return converted
     for category, content_list in contents.items():
-        converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
+        if category in FILE_TYPE_CATEGORIES:
+            converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
+        elif category in LINK_TYPE_CATEGORIES:
+            converted[category] = content_list
+        else:
+            log.warning("asset: %s contains unknown content category %s", asset_id, category)
     return converted
-
-
-file_type_categories = {'files', 'thumbnails'}
-link_type_categories = {'links'}
 
 
 def resolve_content_list(
@@ -226,7 +233,7 @@ def resolve_content_list(
         category: str,
         in_content_list: list[AssetVersionContent | str]):
     resolved_content_list = []
-    if category in file_type_categories:
+    if category in FILE_TYPE_CATEGORIES:
         for asset_content in in_content_list:
             try:
                 if type(asset_content) is str:
@@ -245,7 +252,7 @@ def resolve_content_list(
             except FileNotFoundError as exc:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail=f"file '{asset_content.file_id}' not found") from exc
-    elif category in link_type_categories:
+    elif category in LINK_TYPE_CATEGORIES:
         for link in in_content_list:
             try:
                 urlparse(link)
