@@ -3,7 +3,7 @@ Models used for bulk import
 """
 
 from pydantic import BaseModel
-
+from typing import Optional
 
 class PackageModel(BaseModel):
     """Model to validate the input dictionary"""
@@ -11,6 +11,7 @@ class PackageModel(BaseModel):
     directory: str  # directory where OTLs or HDAs are stored
     name: str  # the friendly name of the package
     description: str  # a short description
+    user: Optional[str] = None  # user name override
 
 
 class ProcessedPackageModel(PackageModel):

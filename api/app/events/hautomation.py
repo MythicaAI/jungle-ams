@@ -12,22 +12,25 @@ from munch import munchify
 
 from events.events import EventsSession
 
-from api.files import API
+from api.files import API, api_settings
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 log = logging.getLogger(__name__)
 
-API_ENDPOINT = os.environ.get('ENDPOINT', 'http://localhost:50555')
 CONTAINER_REPO = 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
 CONTAINER_NAME = 'darol-houdini'
 CONTAINER_TAG = 'latest'
 IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
 IMAGE_NAME = "hautomation"
-OUTPUT_LOCAL= "./output"
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_LOCAL = os.path.join(SCRIPT_DIR, "output")
+
 
 def run_docker(docker_command: list[str]):
     try:
@@ -45,7 +48,7 @@ def run_docker(docker_command: list[str]):
 
 def start_session(profile_id):
     """Create a session for the current profile"""
-    url = f"{API_ENDPOINT}/v1/profiles/start_session/{profile_id}"
+    url = f"{api_settings().endpoint}/profiles/start_session/{profile_id}"
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         log.warning("Failed to start session: %s", response.status_code)
@@ -54,12 +57,13 @@ def start_session(profile_id):
     o = munchify(response.json())
     return o.token
 
+
 def process_output(stdout, stderr, returncode):
     log.info("output %s", stdout)
     log.info("stderr %s", stderr)
     log.info("returncode %s", returncode)
     if returncode != 0:
-        raise ValueError(f"returncode was {returncode}")
+        log.error("Unable to process HDA. returncode was %s",returncode)
 
 
 def pull_container():
@@ -67,26 +71,47 @@ def pull_container():
 
 
 def launch_container(o):
-    #hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
+    # hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
     api = API(requests)
     token = start_session(o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
-        
+
         output_path = api.download_file(o.file_id, Path(tmp_dir))
         if output_path is None:
             raise FileNotFoundError
-        
+
         if not str(output_path).endswith('.hda'):
-            log.info("File %s is not an .hda file. Skipping processing.", str(output_path))
+            log.info(
+                "File %s is not an .hda file. Skipping processing.", str(output_path))
             return
-        
+
         downloaded_path = str(output_path)
-        gather_deps_cmd = f"hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/gather_dependencies.py --output-path /output --hda-path={downloaded_path} && hserver -Q"
-        gen_network_cmd = f"hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/inspect.py --output-path /output --hda-path={downloaded_path} && hserver -Q"
-        process_output(*run_docker(["docker", "run", "--rm", "-it", "-v", "/tmp:/tmp", "-v", f"{OUTPUT_LOCAL}:/output", IMAGE_NAME, '/bin/sh', '-c', gather_deps_cmd]))
-        process_output(*run_docker(["docker", "run", "--rm", "-it", "-v", "/tmp:/tmp", "-v", f"{OUTPUT_LOCAL}:/output", IMAGE_NAME, '/bin/sh', '-c', gen_network_cmd]))
+        gather_deps_cmd = ("hserver -S https://www.sidefx.com/license/sesinetd"
+                           " && hython /darol/automation/gather_dependencies.py"
+                           " --output-path /output"
+                           f" --hda-path={downloaded_path} && hserver -Q")
+        gen_network_cmd = ("hserver -S https://www.sidefx.com/license/sesinetd"
+                           " && hython /darol/automation/inspect.py"
+                           " --output-path /output"
+                           f" --hda-path={downloaded_path}"
+                           " && hserver -Q")
+        process_output(*run_docker(["docker", "run",
+                                    "--rm",
+                                    "-it",
+                                    "-v", "/tmp:/tmp",
+                                    "-v", f"{OUTPUT_LOCAL}:/output",
+                                    IMAGE_NAME,
+                                    '/bin/sh', '-c', gather_deps_cmd]))
+        process_output(*run_docker(["docker", "run",
+                                    "--rm",
+                                    "-it",
+                                    "-v", "/tmp:/tmp",
+                                    "-v", f"{OUTPUT_LOCAL}:/output",
+                                    IMAGE_NAME,
+                                    '/bin/sh', '-c', gen_network_cmd]))
 
         upload_results(token)
+
 
 def upload_results(token):
     headers = {"Authorization": "Bearer %s" % token}
@@ -100,16 +125,21 @@ def upload_results(token):
                 shutil.copyfile(file_path, temp_file_path)
 
                 with open(temp_file_path, 'rb') as file:
-                    file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = requests.post("%s/v1/upload/store" % API_ENDPOINT, headers=headers, files=file_data, timeout=10)
+                    file_data = [
+                        ('files', (file_name, file, 'application/octet-stream'))]
+                    response = requests.post(
+                        f"{api_settings().endpoint}/upload/store",
+                        headers=headers, files=file_data, timeout=10)
                     if response.status_code == 200:
                         log.info("Successfully uploaded %s", file_name)
                         try:
                             os.remove(file_path)
                         except OSError as e:
-                            log.warning("Failed to remove %s: %s", file_path, e)
+                            log.warning(
+                                "Failed to remove %s: %s", file_path, e)
                     else:
-                        log.warning("Failed to upload %s. Status code: %s", file_name, response.status_code)
+                        log.warning("Failed to upload %s. Status code: %s",
+                                    file_name, response.status_code)
                         log.warning(response.text)
 
 
@@ -121,7 +151,9 @@ async def main():
     """Async entrypoint to test worker dequeue, looks for SQL_URL
     environment variable to form an initial connection"""
     # pull_container()
-    sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
+    sql_url = os.environ.get(
+        'SQL_URL',
+        'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
     async with EventsSession(sql_url, sleep_interval) as session:
         async for event_id, json_data in session.ack_next():

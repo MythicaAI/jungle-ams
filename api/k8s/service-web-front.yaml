@@ -10,6 +10,7 @@ metadata:
     release: production
   annotations:
     networking.gke.io/load-balancer-type: "Internal"
+    cloud.google.com/neg: '{"exposed_ports": {"80":{}}}'
 spec:
   type: LoadBalancer
   ports:

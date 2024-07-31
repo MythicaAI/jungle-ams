@@ -1,5 +1,5 @@
 import { useAssetVersionStore } from "../stores/assetVersionStore.ts";
-import { Box, List, ListItem, Typography } from "@mui/joy";
+import { Box } from "@mui/joy";
 import { AssetEditFileList } from "./AssetEditFileList.tsx";
 import { OpenUploadsState } from "../types/assetEditTypes.ts";
 import { AssetEditUploadDrawer } from "./AssetEditUploadDrawer.tsx";
@@ -60,16 +60,6 @@ export const AssetEditListControls: React.FC<Props> = ({ category }) => {
           files={thumbnails}
         />
       )}
-
-      <Box>
-        <Typography level="title-md" fontWeight={"bold"}>
-          References
-        </Typography>
-        <List>
-          <ListItem key={1}>mythica::palm_fan:1.0</ListItem>
-          <ListItem key={2}>mythica::scatter:1.0</ListItem>
-        </List>
-      </Box>
     </Box>
   );
 };

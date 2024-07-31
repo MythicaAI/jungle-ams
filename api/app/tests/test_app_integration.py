@@ -11,7 +11,7 @@ from routes.assets.assets import AssetVersionContent
 from routes.type_adapters import register_adapters
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import get_random_string, assert_status_code, make_random_content
+from tests.shared_test import assert_status_code, get_random_string, make_random_content
 
 test_profile_name = "test-profile"
 test_profile_full_name = "test-profile-full-name"
@@ -246,10 +246,13 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert r[1].version == [0, 1, 0]
 
     # update existing asset version
+    test_link_update1 = "https://test.test/foo"
+    test_link_update2 = "https://test.test/bar"
     test_asset_ver_json = {
         'commit_ref': test_commit_ref + '-updated-2',
         'name': test_asset_name + '-updated-2',
-        'contents': {'files': []},
+        'contents': {'files': [],
+                     'links': [test_link_update1, test_link_update2]},
         'author_id': profile_id,
     }
     r = client.post(
@@ -261,6 +264,15 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.commit_ref == test_commit_ref + '-updated-2'
     assert o.name == test_asset_name + '-updated-2'
     assert len(o.contents['files']) == 0
+
+    r = client.get(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0")
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert 'links' in o.contents
+    assert len(o.contents['links']) == 2
+    assert o.contents['links'][0] == test_link_update1
+    assert o.contents['links'][1] == test_link_update2
 
 
 def test_invalid_profile_url(client, api_base):
