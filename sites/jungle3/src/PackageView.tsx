@@ -1,5 +1,5 @@
-import {Box, Grid} from "@mui/joy";
-import {AssetVersionResponse} from "./types/apiTypes.ts";
+import { Box, CircularProgress, Grid } from "@mui/joy";
+import { AssetVersionResponse } from "./types/apiTypes.ts";
 import {
   extractValidationErrors,
   translateError,
@@ -10,20 +10,24 @@ import { AxiosError } from "axios";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { api } from "./services/api";
 import PackageViewCarousel from "./components/PackageViewCarousel.tsx";
-import {PackageViewInfoPanel} from "./components/PackageViewInfoPanel.tsx";
+import { PackageViewInfoPanel } from "./components/PackageViewInfoPanel.tsx";
 
 interface PackageViewProps {
   asset_id?: string;
-  version_id?: string
+  version_id?: string;
 }
 
 export const PackageView = (props: PackageViewProps) => {
   const { addError, addWarning } = useStatusStore();
-  const [assetVersion, setAssetVersion] = useState({} as unknown as AssetVersionResponse);
+  const [assetVersion, setAssetVersion] = useState(
+    {} as unknown as AssetVersionResponse,
+  );
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -31,27 +35,39 @@ export const PackageView = (props: PackageViewProps) => {
       return;
     }
 
+    setIsLoading(true);
+
     api
-      .get<AssetVersionResponse>({ path: `/assets/${props.asset_id}/versions/${props.version_id}` })
+      .get<AssetVersionResponse>({
+        path: `/assets/${props.asset_id}/versions/${props.version_id}`,
+      })
       .then((r) => {
         setAssetVersion(r as AssetVersionResponse);
+        setIsLoading(false);
       })
       .catch((err) => handleError(err));
   }, [props.asset_id, props.version_id]);
 
-  const header = assetVersion ? (
-    <Grid container spacing={2}>
-      <Grid xs={7}>
-        <PackageViewCarousel {...assetVersion} /></Grid>
-      <Grid xs={5}>
-        <PackageViewInfoPanel {...assetVersion} />
+  const header = !!assetVersion.asset_id ? (
+    <>
+      <Grid container spacing={2}>
+        <Grid xs={7}>
+          <PackageViewCarousel {...assetVersion} />
+        </Grid>
+        <Grid xs={5}>
+          <PackageViewInfoPanel {...assetVersion} />
+        </Grid>
       </Grid>
-    </Grid>
+    </>
   ) : (
     ""
   );
   const fileView = <Box>{header}</Box>;
   const filePending = <Box>Loading</Box>;
+
+  if (isLoading) {
+    return <CircularProgress />;
+  }
 
   return <div>{assetVersion ? fileView : filePending}</div>;
 };

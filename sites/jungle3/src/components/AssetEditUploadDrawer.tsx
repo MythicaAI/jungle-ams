@@ -90,6 +90,7 @@ export const AssetEditUploadDrawer: React.FC<AssetEditUploadDrawerProps> = ({
         <Stack padding="10px" gap="10px">
           <UploadsSubmitList />
           <UploadsReadyList
+            isDrawerOpen={openUploads.open}
             category={openUploads.category}
             fileTypeFilters={
               openUploads.fileTypeFilters ? openUploads.fileTypeFilters : []

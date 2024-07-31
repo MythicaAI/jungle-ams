@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
+  Card,
   Chip,
+  CircularProgress,
   List,
   ListDivider,
   ListItem,
@@ -36,6 +38,7 @@ import { api } from "./services/api/index.ts";
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
 export const Packages = () => {
+  const [isLoading, setIsLoading] = useState(false);
   const [versions, setVersions] = useState<AssetVersionResponse[]>([]);
   const [versionCache, setVersionCache] = useState<VersionCache>({});
 
@@ -47,6 +50,7 @@ export const Packages = () => {
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
+    setIsLoading(false);
   };
 
   const assetVersionsEqual = (
@@ -149,10 +153,17 @@ export const Packages = () => {
     if (!authToken) {
       return;
     }
+    setIsLoading(true);
+
     api
       .get<AssetVersionResponse[]>({ path: "/assets/owned" })
-      .then((r) => setVersions(r))
-      .catch((err) => handleError(err));
+      .then((r) => {
+        setVersions(r);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        handleError(err);
+      });
   }, [authToken]);
 
   const renderLatestVersion = (
@@ -173,84 +184,87 @@ export const Packages = () => {
           alignItems: "center",
         }}
       >
-        <ListItemDecorator>
-          <Stack spacing={1} alignItems="center">
-            <Link to={versionUrl}></Link>
-            {latestVersion.package_id ? (
-              <DownloadButton
-                icon={<LucidePackage />}
-                file_id={latestVersion.package_id}
-              />
-            ) : (
-              ""
-            )}
-          </Stack>
-        </ListItemDecorator>
-        <ListItemDecorator>
-          <Thumbnail
-            src={getThumbnailImg(latestVersion)}
-            alt={latestVersion.name}
-          />
-        </ListItemDecorator>
-        <ListDivider orientation={"vertical"} />
-        <ListItemContent sx={{ flex: 1 }}>
-          <Typography
-            component={Link}
-            to={versionUrl}
-            level="body-md"
-            fontWeight="bold"
-          >
-            {latestVersion.org_name}::{latestVersion.name}
-          </Typography>
-          {sortedVersions.map((av, index) => (
-            <Chip
-              key={av.version.join(".")}
-              variant="soft"
-              color={index == 0 ? "primary" : "neutral"}
-              size="lg"
+        <Card sx={{ flexDirection: "row", width: "100%", cursor: "auto" }}>
+          <ListItemDecorator>
+            <Stack spacing={1} alignItems="center">
+              <Link to={versionUrl}></Link>
+              {latestVersion.package_id ? (
+                <DownloadButton
+                  icon={<LucidePackage />}
+                  file_id={latestVersion.package_id}
+                />
+              ) : (
+                ""
+              )}
+            </Stack>
+          </ListItemDecorator>
+          <ListItemDecorator>
+            <Thumbnail
+              src={getThumbnailImg(latestVersion)}
+              alt={latestVersion.name}
+            />
+          </ListItemDecorator>
+          <ListDivider orientation={"vertical"} />
+          <ListItemContent sx={{ flex: 1 }}>
+            <Typography
               component={Link}
-              to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-              sx={{ borderRadius: "xl" }}
+              to={versionUrl}
+              level="body-md"
+              fontWeight="bold"
             >
-              {av.version.join(".")}
-            </Chip>
-          ))}
-          <Typography level="body-sm" color="neutral">
-            by {latestVersion.author_name}
-          </Typography>
-        </ListItemContent>
-        <ListDivider orientation={"vertical"} />
-        <ListItemDecorator>
-          <Typography fontFamily={"code"} level={"body-xs"}>
-            {assetId}
-          </Typography>
-        </ListItemDecorator>
-        <ListItemDecorator>
-          <Typography
-            component="span"
-            level="body-md"
-            sx={{
-              textAlign: "right",
-              ml: "10px",
-              width: "auto",
-              minWidth: "100px",
-            }}
-          >
-            {latestVersion.published ? "Published" : "Draft"}
-          </Typography>
-          <Switch
-            checked={latestVersion.published}
-            onChange={(event) =>
-              handlePublishToggle(
-                assetId,
-                latestVersion.version.join("."),
-                event.target.checked,
-              )
-            }
-            color={latestVersion.published ? "success" : "neutral"}
-            sx={{ flex: 1 }}
-          />
-        </ListItemDecorator>
+              {latestVersion.org_name}::{latestVersion.name}
+            </Typography>
+            {sortedVersions.map((av, index) => (
+              <Chip
+                key={av.version.join(".")}
+                variant="soft"
+                color={index == 0 ? "primary" : "neutral"}
+                size="lg"
+                component={Link}
+                to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+                sx={{ borderRadius: "xl" }}
+              >
+                {av.version.join(".")}
+              </Chip>
+            ))}
+            <Typography level="body-sm" color="neutral">
+              by {latestVersion.author_name}
+            </Typography>
+          </ListItemContent>
+          <ListDivider orientation={"vertical"} />
+          <ListItemDecorator>
+            <Typography fontFamily={"code"} level={"body-xs"}>
+              {assetId}
+            </Typography>
+          </ListItemDecorator>
+          <ListItemDecorator>
+            <Typography
+              component="span"
+              level="body-md"
+              sx={{
+                textAlign: "right",
+                ml: "10px",
+                width: "auto",
+                minWidth: "50px",
+                mr: "5px",
+              }}
+            >
+              {latestVersion.published ? "Published" : "Draft"}
+            </Typography>
+            <Switch
+              checked={latestVersion.published}
+              onChange={(event) =>
+                handlePublishToggle(
+                  assetId,
+                  latestVersion.version.join("."),
+                  event.target.checked,
+                )
+              }
+              color={latestVersion.published ? "success" : "neutral"}
+              sx={{ flex: 1 }}
+            />
+          </ListItemDecorator>
+        </Card>
       </ListItemButton>
     );
   };
@@ -271,8 +285,15 @@ export const Packages = () => {
             </Button>
           </ListItemDecorator>
         </ListItem>
-        {Object.entries(versionCache).map(([assetId, versionList]) =>
-          renderLatestVersion(assetId, versionList),
+
+        {isLoading ? (
+          <Stack direction="row" width="100%" justifyContent="center">
+            <CircularProgress />
+          </Stack>
+        ) : (
+          Object.entries(versionCache).map(([assetId, versionList]) =>
+            renderLatestVersion(assetId, versionList),
+          )
         )}
       </List>
     </Box>
