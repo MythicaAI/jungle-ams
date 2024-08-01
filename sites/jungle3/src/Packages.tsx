@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
+  Card,
   Chip,
+  CircularProgress,
   List,
   ListDivider,
   ListItem,
@@ -36,6 +38,7 @@ import { api } from "./services/api/index.ts";
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
 export const Packages = () => {
+  const [isLoading, setIsLoading] = useState(false);
   const [versions, setVersions] = useState<AssetVersionResponse[]>([]);
   const [versionCache, setVersionCache] = useState<VersionCache>({});
 
@@ -47,6 +50,7 @@ export const Packages = () => {
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
+    setIsLoading(false);
   };
 
   const assetVersionsEqual = (
@@ -149,10 +153,17 @@ export const Packages = () => {
     if (!authToken) {
       return;
     }
+    setIsLoading(true);
+
     api
       .get<AssetVersionResponse[]>({ path: "/assets/owned" })
-      .then((r) => setVersions(r))
-      .catch((err) => handleError(err));
+      .then((r) => {
+        setVersions(r);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        handleError(err);
+      });
   }, [authToken]);
 
   const renderLatestVersion = (
@@ -171,86 +182,121 @@ export const Packages = () => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          ":hover": { backgroundColor: "transparent !important" },
         }}
       >
-        <ListItemDecorator>
-          <Stack spacing={1} alignItems="center">
-            <Link to={versionUrl}></Link>
-            {latestVersion.package_id ? (
-              <DownloadButton
-                icon={<LucidePackage />}
-                file_id={latestVersion.package_id}
-              />
-            ) : (
-              ""
-            )}
+        <Card
+          sx={{
+            flexDirection: { xs: "column", md: "row" },
+            width: "100%",
+            cursor: "auto",
+            justifyContent: {
+              xs: "flex-start !important",
+              md: "space-between !important",
+            },
+          }}
+        >
+          <Stack direction={{ xs: "row", sm: "row" }} gap="30px">
+            <Stack direction={{ xs: "column-reverse", sm: "row" }} gap="10px">
+              <ListItemDecorator sx={{ display: { xs: "none", md: "flex" } }}>
+                <Stack spacing={1} alignItems="center">
+                  <Link to={versionUrl}></Link>
+                  {latestVersion.package_id ? (
+                    <DownloadButton
+                      icon={<LucidePackage />}
+                      file_id={latestVersion.package_id}
+                    />
+                  ) : (
+                    ""
+                  )}
+                </Stack>
+              </ListItemDecorator>
+              <ListItemDecorator>
+                <Thumbnail
+                  src={getThumbnailImg(latestVersion)}
+                  alt={latestVersion.name}
+                />
+              </ListItemDecorator>
+            </Stack>
+            <ListDivider
+              sx={{ display: { xs: "none", sm: "block" } }}
+              orientation={"vertical"}
+            />
+            <ListItemContent sx={{ flex: 1 }}>
+              <Typography
+                component={Link}
+                to={versionUrl}
+                level="body-md"
+                fontWeight="bold"
+              >
+                {latestVersion.org_name}::{latestVersion.name}
+              </Typography>
+              {sortedVersions.map((av, index) => (
+                <Chip
+                  key={av.version.join(".")}
+                  variant="soft"
+                  color={index == 0 ? "primary" : "neutral"}
+                  size="lg"
+                  component={Link}
+                  to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+                  sx={{ borderRadius: "xl" }}
+                >
+                  {av.version.join(".")}
+                </Chip>
+              ))}
+              <Typography level="body-sm" color="neutral">
+                by {latestVersion.author_name}
+              </Typography>
+            </ListItemContent>
           </Stack>
-        </ListItemDecorator>
-        <ListItemDecorator>
-          <Thumbnail
-            src={getThumbnailImg(latestVersion)}
-            alt={latestVersion.name}
-          />
-        </ListItemDecorator>
-        <ListDivider orientation={"vertical"} />
-        <ListItemContent sx={{ flex: 1 }}>
-          <Typography
-            component={Link}
-            to={versionUrl}
-            level="body-md"
-            fontWeight="bold"
+          <Stack
+            direction={{ md: "row", xs: "column" }}
+            gap="10px"
+            alignItems={{ xs: "flex-start", md: "center" }}
           >
-            {latestVersion.org_name}::{latestVersion.name}
-          </Typography>
-          {sortedVersions.map((av, index) => (
-            <Chip
-              key={av.version.join(".")}
-              variant="soft"
-              color={index == 0 ? "primary" : "neutral"}
-              size="lg"
-              component={Link}
-              to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-              sx={{ borderRadius: "xl" }}
-            >
-              {av.version.join(".")}
-            </Chip>
-          ))}
-          <Typography level="body-sm" color="neutral">
-            by {latestVersion.author_name}
-          </Typography>
-        </ListItemContent>
-        <ListDivider orientation={"vertical"} />
-        <ListItemDecorator>
-          <Typography fontFamily={"code"} level={"body-xs"}>
-            {assetId}
-          </Typography>
-        </ListItemDecorator>
-        <ListItemDecorator>
-          <Typography
-            component="span"
-            level="body-md"
-            sx={{
-              textAlign: "right",
-              ml: "10px",
-              width: "auto",
-              minWidth: "100px",
-            }}
-          >
-            {latestVersion.published ? "Published" : "Draft"}
-          </Typography>
-          <Switch
-            checked={latestVersion.published}
-            onChange={(event) =>
-              handlePublishToggle(
-                assetId,
-                latestVersion.version.join("."),
-                event.target.checked,
-              )
-            }
-            color={latestVersion.published ? "success" : "neutral"}
-            sx={{ flex: 1 }}
-          />
-        </ListItemDecorator>
+            <ListDivider
+              orientation={"vertical"}
+              sx={{ display: { xs: "none", sm: "block" } }}
+            />
+            <Typography fontFamily={"code"} level={"body-xs"}>
+              {assetId}
+            </Typography>
+
+            <Stack direction="row" alignItems="center">
+              {latestVersion.package_id && (
+                <Box display={{ xs: "block", md: "none" }}>
+                  <DownloadButton
+                    icon={<LucidePackage />}
+                    file_id={latestVersion.package_id}
+                  />
+                </Box>
+              )}
+              <Typography
+                component="span"
+                level="body-md"
+                sx={{
+                  textAlign: "right",
+                  width: "auto",
+                  mr: "5px",
+                }}
+              >
+                {latestVersion.published ? "Published" : "Draft"}
+              </Typography>
+              <Switch
+                checked={latestVersion.published}
+                onChange={(event) =>
+                  handlePublishToggle(
+                    assetId,
+                    latestVersion.version.join("."),
+                    event.target.checked,
+                  )
+                }
+                color={latestVersion.published ? "success" : "neutral"}
+                sx={{ flex: 1 }}
+              />
+            </Stack>
+          </Stack>
+        </Card>
       </ListItemButton>
     );
   };
@@ -271,8 +317,15 @@ export const Packages = () => {
             </Button>
           </ListItemDecorator>
         </ListItem>
-        {Object.entries(versionCache).map(([assetId, versionList]) =>
-          renderLatestVersion(assetId, versionList),
+
+        {isLoading ? (
+          <Stack direction="row" width="100%" justifyContent="center">
+            <CircularProgress />
+          </Stack>
+        ) : (
+          Object.entries(versionCache).map(([assetId, versionList]) =>
+            renderLatestVersion(assetId, versionList),
+          )
         )}
       </List>
     </Box>

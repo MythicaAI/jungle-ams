@@ -20,10 +20,12 @@ import { AssetVersionContentMap } from "../types/apiTypes.ts";
 interface UploadsReadyListProps {
   category?: string;
   fileTypeFilters: string[];
+  isDrawerOpen: boolean;
 }
 export const UploadsReadyList: React.FC<UploadsReadyListProps> = ({
   category,
   fileTypeFilters = [],
+  isDrawerOpen,
 }) => {
   // version store keeps the state of the version being authored, upload store keeps the state of the pending
   // uploads that the user has pending
@@ -69,6 +71,10 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = ({
   // items state represents the referenced list from the asset edit version
   const { underlyingFiles, add, remove } = getAccessors();
   const [items, setItems] = useState<AssetVersionContentMap>(underlyingFiles);
+
+  useEffect(() => {
+    setItems(underlyingFiles);
+  }, [isDrawerOpen]);
 
   const onUploadFileNameChanged = (event: FormEvent) => {
     event.preventDefault();
