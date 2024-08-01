@@ -109,10 +109,13 @@ export const AssetEditVersionDropdown = () => {
   const id = open ? "simple-popper" : undefined;
 
   return (
-    <Stack direction={"row"} alignItems={"center"}>
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      alignItems={{ xs: "flex-start", sm: "center" }}
+      gap="15px"
+    >
       <FormControl error={isVersionZero(sanitizedVersion)}>
         <FormLabel>Version</FormLabel>
-
         <Input
           name="version"
           variant="outlined"
@@ -189,10 +192,8 @@ export const AssetEditVersionDropdown = () => {
           sx={{
             textAlign: "right",
             alignItems: "center",
-            ml: "10px",
             pr: "5px",
             width: "auto",
-            minWidth: "100px",
           }}
         >
           {published ? "Published" : "Draft"}

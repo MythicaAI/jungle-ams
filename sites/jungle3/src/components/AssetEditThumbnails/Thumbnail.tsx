@@ -78,7 +78,7 @@ export const Thumbnail: React.FC<Props> = ({ file, removeFile, index }) => {
                 viewBox="0 0 12 12"
                 fill="none"
                 stroke="#15cb21"
-                stroke-width="2"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="lucide lucide-check"
