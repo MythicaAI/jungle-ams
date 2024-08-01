@@ -112,7 +112,12 @@ const Assets = () => {
               return sorting === "oldest" ? aDate - bDate : bDate - aDate;
             })
             .map((av) => (
-              <Grid xs={4} key={av.asset_id + "_" + av.version.join(".")}>
+              <Grid
+                xs={12}
+                sm={6}
+                md={4}
+                key={av.asset_id + "_" + av.version.join(".")}
+              >
                 <PackageViewCard av={av} />
               </Grid>
             ))}
