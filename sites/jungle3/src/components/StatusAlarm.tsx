@@ -5,7 +5,7 @@ import { Dropdown, Menu, MenuButton } from "@mui/joy";
 export const StatusAlarm = () => {
   return (
     <Dropdown>
-      <MenuButton>
+      <MenuButton sx={{ display: { xs: "none", sm: "block" } }}>
         <LucideBell />
       </MenuButton>
       <Menu placement="bottom-end">
