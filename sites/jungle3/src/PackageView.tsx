@@ -50,11 +50,15 @@ export const PackageView = (props: PackageViewProps) => {
 
   const header = assetVersion.asset_id ? (
     <>
-      <Grid container spacing={2}>
-        <Grid xs={7}>
+      <Grid
+        direction={{ xs: "column-reverse", md: "row" }}
+        container
+        spacing={2}
+      >
+        <Grid xs={12} md={7}>
           <PackageViewCarousel {...assetVersion} />
         </Grid>
-        <Grid xs={5}>
+        <Grid xs={12} md={5}>
           <PackageViewInfoPanel {...assetVersion} />
         </Grid>
       </Grid>
