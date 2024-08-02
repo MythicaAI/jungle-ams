@@ -125,7 +125,7 @@ const Uploads = () => {
           .map(([key, value]) => (
             <ListItem sx={{ flexGrow: 1 }} key={key}>
               <ListItemDecorator sx={{ display: "flex", alignItems: "center" }}>
-                <Stack direction={"row"}>
+                <Stack direction={"row"} minWidth="72px">
                   <DeleteButton
                     url={`/files/${value.file_id}`}
                     name={value.file_name}
@@ -139,9 +139,13 @@ const Uploads = () => {
               </ListItemDecorator>
               <Divider orientation="vertical" sx={{ margin: "0 10px" }} />
               <ListItemContent
-                sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}
+                sx={{
+                  width: "calc(100% - 82px)",
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                <Typography sx={{ textAlign: "left" }}>
+                <Typography sx={{ textAlign: "left" }} noWrap>
                   <Link to={`/files/${value.file_id}`}>{value.file_name}</Link>
                 </Typography>
               </ListItemContent>
