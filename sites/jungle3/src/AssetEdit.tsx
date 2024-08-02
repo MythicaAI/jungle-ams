@@ -118,7 +118,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
       if ("links" in contentMap) {
         const formattedLinks = contentMap["links"].map((item, idx) => ({
           name: `linkInput-${idx}`,
-          value: item.link,
+          value: item as unknown as string,
         }));
 
         setLinks(formattedLinks);
@@ -134,7 +134,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
     const filteredLinks = links.filter((link) => link.value !== "");
     const formattedLinks =
       filteredLinks && filteredLinks.length > 0
-        ? filteredLinks.map((link) => ({ link: link.value }))
+        ? filteredLinks.map((link) => link.value)
         : null;
 
     const formJson: { [key: string]: string | object } = {};
