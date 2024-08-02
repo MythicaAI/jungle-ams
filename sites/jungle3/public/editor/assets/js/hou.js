@@ -1,6 +1,5 @@
 import parmTemplates from "./hou.parmTemplate.js";
 import houBaseTypes from "./hou.baseTypes.js";
-import houNodeTypesFactory from "./hou.nodeTypes.js";
 
 class SuperClass {
     constructor(superclass){
@@ -14,25 +13,19 @@ class SuperClass {
 
 
 const hou = function() {
-    
-    function init() {
-        this.nodeTypes = houNodeTypesFactory(this);
-
-        Object.keys(this.nodeTypes).forEach(key => {
-            const nt = this.nodeTypes[key];
-    
-            LiteGraph.registerNodeType(nt.id,nt);
-        });
-    
+        
+    function registerType(typeName, classDef) {
+        LiteGraph.registerNodeType(typeName,classDef);
+        return;
     }
-    
+
     function extend(superclass) {
         return new SuperClass(superclass);
     }
 
     return {
-        init,
         extend,
+        registerType,
         ...parmTemplates,
         ...houBaseTypes,
     } 
@@ -73,5 +66,74 @@ LGraphCanvas.prototype.drawSubgraphPanel = function (ctx) {
 
 }
 
+LGraph.prototype.load = function(url, callback) {
+    var that = this;
+
+    async function loadModuleWithHou(url) {
+        const module = await import(url);
+        if (typeof module.default === 'function') {
+            module.default(window.hou);
+        } else {
+            console.error(`Module ${url} does not have a default export function.`);
+        }
+    }
+
+    async function loadNodeTypes(nodes) {
+        let classesLoaded = new Set();
+
+        async function collectAndLoadScripts(nodes) {
+            for (let node of nodes) {
+                if (node.class && !classesLoaded.has(node.class)) {
+                    let modulePath = `./nodes/${node.class}.js`;
+                    try {
+                        await loadModuleWithHou(modulePath);
+                        classesLoaded.add(node.class);
+                    } catch (error) {
+                        console.error(`Failed to load module ${modulePath}:`, error);
+                    }
+                }
+                if (node.subgraph && node.subgraph.nodes) {
+                    await collectAndLoadScripts(node.subgraph.nodes);
+                }
+            }
+        }
+
+        await collectAndLoadScripts(nodes);
+    }
+
+    // from file
+    if (url.constructor === File || url.constructor === Blob) {
+        var reader = new FileReader();
+        reader.addEventListener('load', async function(event) {
+            var data = JSON.parse(event.target.result);
+            await loadNodeTypes(data.nodes);
+            that.configure(data);
+            if (callback) callback();
+        });
+        reader.readAsText(url);
+        return;
+    }
+
+    // is a string, then an URL
+    var req = new XMLHttpRequest();
+    req.open("GET", url, true);
+    req.send(null);
+    req.onload = async function(oEvent) {
+        if (req.status !== 200) {
+            console.error("Error loading graph:", req.status, req.response);
+            return;
+        }
+        var data = JSON.parse(req.response);
+        await loadNodeTypes(data.nodes);
+        that.configure(data);
+        if (callback) callback();
+    };
+    req.onerror = function(err) {
+        console.error("Error loading graph:", err);
+    };
+};
+
+
+
+
 window.hou = hou();
-window.hou.init();

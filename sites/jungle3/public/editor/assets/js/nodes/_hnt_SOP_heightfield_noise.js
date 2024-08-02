@@ -1,0 +1,160 @@
+
+export default function (hou) {
+    class _hnt_SOP_heightfield_noise extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SOP/Environments/Terrain/heightfield_noise';
+        static category = '/SOP';
+        static houdiniType = 'heightfield_noise';
+        static title = 'HeightField Noise';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_heightfield_noise.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP', 'SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "layer", label: "Noise Layer", num_components: 1, default_value: ["height"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "import terraintoolutils \n\nreturn terraintoolutils.buildNameMenu(kwargs['node'])", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "masklayer", label: "Mask Layer", num_components: 1, default_value: ["mask"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "import terraintoolutils \n\nreturn terraintoolutils.buildNameMenu(kwargs['node'], input_num=1)", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ hasinput(1) == 0 }");
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "script_action": "import terraintoolutils\n\nterraintoolutils.createMaskPaint(kwargs)", "script_action_help": "Add a Mask Paint", "script_action_icon": "SOP_paint"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "combine", label: "Combine Method", menu_items: ["replace", "add", "subtract", "diff", "multiply", "max", "min", "blend"], menu_labels: ["Replace", "Add", "Subtract", "Difference", "Multiply", "Maximum", "Minimum", "Blend"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "blend", label: "Blend", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ combine != blend }");
+			hou_parm_template.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "centernoise", label: "Center Noise", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "amp", label: "Amplitude", num_components: 1, default_value: [500], min: 0, max: 2000, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex", "units": "m1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "elementsize", label: "Element Size", num_components: 1, default_value: [500], min: 0, max: 1000, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex", "units": "m1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "elementscale", label: "Scale", num_components: 3, default_value: [1, 1, 1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "offset", label: "Offset", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex", "units": "m1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "noise", label: "Noise Settings", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			let hou_parm_template2 = new hou.StringParmTemplate({name: "basis", label: "Noise Type", num_components: 1, default_value: ["sparse"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["sine", "perlin", "pperlin", "simplex", "sparse", "flow", "pflow", "worleyFA", "worleyFB", "mworleyFA", "mworleyFB", "cworleyFA", "cworleyFB", "alligator"], menu_labels: ["Sinusoid", "Perlin", "Periodic Perlin", "Simplex", "Sparse Convolution", "Perlin Flow", "Periodic Perlin Flow", "Worley Cellular F1", "Worley Cellular F2-F1", "Manhattan Cellular F1", "Manhattan Cellular F2-F1", "Chebyshev Cellular F1", "Chebyshev Cellular F2-F1", "Alligator"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "fractal", label: "Fractal", num_components: 1, default_value: ["hmfT"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["none", "fBm", "mfT", "hmfT"], menu_labels: ["None", "Standard (fBm)", "Terrain", "Hybrid Terrain"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "period", label: "Period", num_components: 3, default_value: [2, 2, 2], min: 0, max: 10000, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ basis != pperlin basis != pflow }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "oct", label: "Max Octaves", num_components: 1, default_value: [8], min: 0, max: 16, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ fractal == none } { fractal == none }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "lac", label: "Lacunarity", num_components: 1, default_value: [1.841], min: 0, max: 4, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ fractal == none }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "rough", label: "Roughness", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ fractal == none }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "flowrot", label: "Flow Rotation", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ basis != flow basis != pflow }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "output", label: "Post Processing", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "collapsible"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "fold", label: "Fold", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "complement", label: "Complement", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "dogain", label: "Enable Gain", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "gain", label: "Gain", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ dogain == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "dobias", label: "Enable Bias", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "bias", label: "Bias", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ dobias == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "Clipping", label: "Clipping", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"group_type": "simple"});
+			let hou_parm_template3 = new hou.FloatParmTemplate({name: "clipmin", label: "Clipping Minimum", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "clipmax", label: "Clipping Maximum", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "distortion", label: "Distortion", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "collapsible"});
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "latticewarp", label: "Lattice Warp", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"group_type": "simple"});
+			hou_parm_template3 = new hou.ToggleParmTemplate({name: "dolwarp", label: "Enable Lattice Warp", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ToggleParmTemplate({name: "accuml", label: "Accumulate Lattice Warp", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ dolwarp == 0 } { fractal == none }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "disp", label: "Lattice Warp", num_components: 1, default_value: [0.1405], min: null, max: 0.5, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ dolwarp == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "dispfreq", label: "Freq", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ dolwarp == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "folder1", label: "Gradient Warp", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"group_type": "simple"});
+			hou_parm_template3 = new hou.ToggleParmTemplate({name: "dogwarp", label: "Enable Gradient Warp", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ToggleParmTemplate({name: "accumg", label: "Accumulate Gradient Warp", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ dogwarp == 0 } { fractal == none }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "gflow", label: "Gradient Warp", num_components: 1, default_value: [0], min: null, max: 0.5, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ dogwarp == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Environments/Terrain/heightfield_noise',_hnt_SOP_heightfield_noise)
+    return _hnt_SOP_heightfield_noise
+}
+        

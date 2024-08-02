@@ -1,0 +1,160 @@
+
+export default function (hou) {
+    class _hnt_SOP_linearsolver extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'SOP/Other/linearsolver';
+        static category = '/SOP';
+        static houdiniType = 'linearsolver';
+        static title = 'Linear Solver';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_linearsolver.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP', 'SOP', 'SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.MenuParmTemplate({name: "mode", label: "Mode", menu_items: ["linearsystemsolve", "decompose", "solvewithdecomposition", "multiply"], menu_labels: ["Linear System Solve", "Decompose", "Solve with Decomposition", "Multiply"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setJoinWithNext(true);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "cookinplace", label: "Cook In-Place", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "precision", label: "Precision", menu_items: ["auto", "32", "64"], menu_labels: ["Auto", "32-bit", "64-bit"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0", label: "Solver Settings", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ mode == multiply } { mode == solvewithdecomposition }");
+			hou_parm_template.setTags({"group_default": "1", "group_type": "collapsible"});
+			let hou_parm_template2 = new hou.MenuParmTemplate({name: "densedirectsolver", label: "Direct Solver", menu_items: ["partialpivlu", "fullpivlu", "householderqr", "colpivhouseholderqr", "fullpivhouseholderqr", "completeorthogonaldecomposition", "llt", "ldlt", "bdcsvd", "jacobisvd", "eigensolver", "selfadjointeigensolver"], menu_labels: ["PartialPivLU", "FullPivLU", "HouseholderQR", "ColPivHouseholderQR", "FullPivHouseholderQR", "CompleteOrthogonalDecomposition", "LLT", "LDLT", "BDCSVD", "JacobiSVD", "EigenSolver", "SelfAdjointEigenSolver"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ mode == linearsystemsolve useiterativesolver == 1 } { mode == decompose useeigensolver == 1 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ matrixstorage == detail detailencoding != densecol detailencoding != denserow } { matrixstorage == points pointsprimsencoding != densecol pointsprimsencoding != denserow } { matrixstorage == primitives pointsprimsencoding != densecol pointsprimsencoding != denserow }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sparsedirectsolver", label: "Direct Solver", menu_items: ["llt", "ldlt", "lu", "qr"], menu_labels: ["LLT", "LDLT", "LU", "QR"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useiterativesolver == 1 } { useeigensolver == 1 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ matrixstorage == volume } { matrixstorage == detail detailencoding == densecol } { matrixstorage == detail detailencoding == denserow } { matrixstorage == points pointsprimsencoding == denserow } { matrixstorage == primitives pointsprimsencoding == denserow } { matrixstorage == points pointsprimsencoding == densecol } { matrixstorage == primitives pointsprimsencoding == densecol }");
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sparsedirectsolverbackend", label: "Backend", menu_items: ["pardisoaccelerate", "eigen"], menu_labels: ["Pardiso / Accelerate", "Eigen"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ mode == linearsystemsolve useiterativesolver == 1 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ matrixstorage == volume } { matrixstorage == detail detailencoding == densecol } { matrixstorage == detail detailencoding == denserow } { matrixstorage == points pointsprimsencoding == denserow } { matrixstorage == primitives pointsprimsencoding == denserow } { matrixstorage == points pointsprimsencoding == densecol } { matrixstorage == primitives pointsprimsencoding == densecol } { mode == decompose }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "useiterativesolver", label: "Use Iterative Solver", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == decompose }");
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "iterativesolver", label: "Iterative Solver", menu_items: ["gmres", "dgmres", "minres", "conjugategradient", "leastsquaresconjugategradient", "bicgstab", "idrs"], menu_labels: ["GMRES", "DGMRES", "MINRES", "ConjugateGradient", "LeastSquaresConjugateGradient", "BiCGSTAB", "IDRS"], default_value: 5, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useiterativesolver == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != linearsystemsolve }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "densepreconditioner", label: "Preconditioner", menu_items: ["identity", "diagonal"], menu_labels: ["Identity", "Diagonal"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useiterativesolver == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != linearsystemsolve } { matrixstorage == detail detailencoding != densecol detailencoding != denserow } { matrixstorage == points pointsprimsencoding != densecol pointsprimsencoding != denserow } { matrixstorage == primitives pointsprimsencoding != densecol pointsprimsencoding != denserow }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sparsepreconditioner", label: "Preconditioner", menu_items: ["identity", "diagonal", "incompletelut", "incompletecholesky"], menu_labels: ["Identity", "Diagonal", "IncompleteLUT", "IncompleteCholesky"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useiterativesolver == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != linearsystemsolve } { matrixstorage == volume } { matrixstorage == detail detailencoding == densecol } { matrixstorage == detail detailencoding == denserow } { matrixstorage == points pointsprimsencoding == denserow } { matrixstorage == primitives pointsprimsencoding == denserow } { matrixstorage == points pointsprimsencoding == densecol } { matrixstorage == primitives pointsprimsencoding == densecol }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "solvewithguess", label: "Solve with Guess", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useiterativesolver == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != linearsystemsolve }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "useeigensolver", label: "Use Eigensolver", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != decompose }");
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "spectraeigensolver", label: "Eigensolver", menu_items: ["geneigssolver", "symeigssolver", "geneigsrealshiftsolver", "symeigsshiftsolver"], menu_labels: ["GenEigsSolver", "SymEigsSolver", "GenEigsRealShiftSolver", "SymEigsShiftSolver"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useeigensolver == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != decompose }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "numeigenpairs", label: "Num Eigenpairs", num_components: 1, default_value: [0], min: 1, max: 128, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useeigensolver == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != decompose }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "shift", label: "Shift", num_components: 1, default_value: [null], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useeigensolver == 0 } { spectraeigensolver != geneigsrealshiftsolver spectraeigensolver != symeigsshiftsolver }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode != decompose }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "solvertolerance", label: "Tolerance", num_components: 1, default_value: [0.0001], min: 0, max: 0.1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useiterativesolver == 0 useeigensolver == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder1", label: "Matrix", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ mode == solvewithdecomposition }");
+			hou_parm_template.setTags({"group_default": "1", "group_type": "collapsible"});
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "matrixstorage", label: "Storage", menu_items: ["volume", "points", "primitives", "detail"], menu_labels: ["Volume", "Points", "Primitives", "Detail"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "volumeencoding", label: "Encoding", menu_items: ["densecol", "denserow"], menu_labels: ["Dense Col-Major", "Dense Row-Major"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ matrixstorage != volume }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "pointsprimsencoding", label: "Encoding", menu_items: ["densecol", "denserow", "coo", "lilcol", "lilrow"], menu_labels: ["Dense Col-Major", "Dense Row-Major", "COO", "LIL Col-Major", "LIL Row-Major"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ matrixstorage != points matrixstorage != primitives }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "detailencoding", label: "Encoding", menu_items: ["densecol", "denserow", "coo"], menu_labels: ["Dense Col-Major", "Dense Row-Major", "COO"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ matrixstorage != detail }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "squarematrix", label: "Square Matrix", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ matrixstorage == volume } { matrixstorage == points pointsprimsencoding == densecol } { matrixstorage == primitives pointsprimsencoding == densecol } { matrixstorage == points pointsprimsencoding == denserow } { matrixstorage == primitives pointsprimsencoding == denserow }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "rows", label: "Rows", num_components: 1, default_value: [512], min: 1, max: 1024, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ matrixstorage == volume } { matrixstorage == points pointsprimsencoding != lilcol pointsprimsencoding != coo } { matrixstorage == primitives pointsprimsencoding != lilcol pointsprimsencoding != coo } { squarematrix == 1 matrixstorage == points pointsprimsencoding != coo } { squarematrix == 1 matrixstorage == primitives pointsprimsencoding != coo } { squarematrix == 1 matrixstorage == detail detailencoding != coo }");
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "cols", label: "Cols", num_components: 1, default_value: [512], min: 1, max: 1024, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ matrixstorage == volume } { matrixstorage == points pointsprimsencoding != lilrow pointsprimsencoding != coo } { matrixstorage == primitives pointsprimsencoding != lilrow pointsprimsencoding != coo } { squarematrix == 1 matrixstorage == points } { squarematrix == 1 matrixstorage == primitives } { squarematrix == 1 matrixstorage == detail }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "rowattr", label: "Row Attribute", num_components: 1, default_value: ["row"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ matrixstorage == volume } { matrixstorage == points pointsprimsencoding == lilrow } { matrixstorage == primitives pointsprimsencoding == lilrow } { matrixstorage == detail } { matrixstorage == points pointsprimsencoding == denserow } { matrixstorage == primitives pointsprimsencoding == denserow } { matrixstorage == points pointsprimsencoding == densecol } { matrixstorage == primitives pointsprimsencoding == densecol }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "colattr", label: "Col Attribute", num_components: 1, default_value: ["col"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ matrixstorage == volume } { matrixstorage == points pointsprimsencoding == lilcol } { matrixstorage == primitives pointsprimsencoding == lilcol } { matrixstorage == detail } { matrixstorage == points pointsprimsencoding == denserow } { matrixstorage == primitives pointsprimsencoding == denserow } { matrixstorage == points pointsprimsencoding == densecol } { matrixstorage == primitives pointsprimsencoding == densecol }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "matrixvalueattr", label: "Value Attribute", num_components: 1, default_value: ["value"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder2", label: "Known Vector", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ mode == decompose }");
+			hou_parm_template.setTags({"group_default": "1", "group_type": "collapsible"});
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "vectorsrcstorage", label: "Storage", menu_items: ["points", "primitives", "detail"], menu_labels: ["Points", "Primitives", "Detail"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vectorsrcattr", label: "Value Attribute", num_components: 1, default_value: ["known"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder3", label: "Unknown Vector", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_default": "1", "group_type": "collapsible"});
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "vectordststorage", label: "Storage", menu_items: ["points", "primitives", "detail"], menu_labels: ["Points", "Primitives", "Detail"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vectordstattr", label: "Value Attribute", num_components: 1, default_value: ["unknown"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ mode == decompose }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "pinnedgroup", label: "Pinned Group", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "geo = kwargs[\"node\"].inputGeometry(2)\nif geo is None: geo = kwargs[\"node\"].inputGeometry(0)\ngrptype = 3 if kwargs[\'node\'].parm(\'vectordststorage\').evalAsInt() == 0 else 4\ngeotypes = (None, None, None, hou.geometryType.Points, None) if kwargs[\'node\'].parm(\'vectordststorage\').evalAsInt() == 0 else (None, None, None, None, hou.geometryType.Primitives)\nreturn geo.generateGroupMenu(geotypes[grptype])", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ vectordststorage == detail } { mode == multiply }");
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"script_action": "import soputils\nkwargs['geometrytype'] = (hou.geometryType.Points,) if kwargs['node'].parm('vectordststorage').evalAsInt() == 0 else (hou.geometryType.Primitives,)\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "reducerows", label: "Reduce Rows", default_value: true});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ vectordststorage == detail } { mode == multiply } { pinnedgroup == \\\"\\\" }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "scale", label: "Scale", num_components: 1, default_value: [1], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ mode == decompose }");
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "accumulateresult", label: "Accumulate Result", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ mode == decompose }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Other/linearsolver',_hnt_SOP_linearsolver)
+    return _hnt_SOP_linearsolver
+}
+        

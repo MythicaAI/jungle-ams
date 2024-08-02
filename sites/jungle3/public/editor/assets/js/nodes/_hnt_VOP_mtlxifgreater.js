@@ -1,0 +1,138 @@
+
+export default function (hou) {
+    class _hnt_VOP_mtlxifgreater extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'VOP/MaterialX/Conditional/mtlxifgreater';
+        static category = '/VOP';
+        static houdiniType = 'mtlxifgreater';
+        static title = 'MtlX If Greater';
+        static icon = '/editor/assets/imgs/nodes/_hnt_VOP_mtlxifgreater.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['VOP', 'VOP', 'VOP', 'VOP'];
+            const outputs = ['VOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "signature", label: "Signature", num_components: 1, default_value: ["default"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setTags({"sidefx::shader_isparm": "0"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "value1", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value1_color3I", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value1_color4I", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value1_floatI", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value1_vector2I", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value1_vector3I", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value1_vector4I", label: "Value 1", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "value2", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value2_color3I", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value2_color4I", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value2_floatI", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value2_vector2I", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value2_vector3I", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "value2_vector4I", label: "Value 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "value2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1", label: "Input 1", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_color3", label: "Input 1", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_color3I", label: "Input 1", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_color4", label: "Input 1", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_color4I", label: "Input 1", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_vector2", label: "Input 1", num_components: 2, default_value: [0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_vector2I", label: "Input 1", num_components: 2, default_value: [0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_vector3", label: "Input 1", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_vector3I", label: "Input 1", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_vector4", label: "Input 1", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in1_vector4I", label: "Input 1", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in1"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2", label: "Input 2", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_color3", label: "Input 2", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_color3I", label: "Input 2", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_color4", label: "Input 2", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_color4I", label: "Input 2", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_vector2", label: "Input 2", num_components: 2, default_value: [0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_vector2I", label: "Input 2", num_components: 2, default_value: [0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_vector3", label: "Input 2", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_vector3I", label: "Input 2", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_vector4", label: "Input 2", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "in2_vector4I", label: "Input 2", num_components: 4, default_value: [0, 0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setTags({"sidefx::shader_parmname": "in2"});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('VOP/MaterialX/Conditional/mtlxifgreater',_hnt_VOP_mtlxifgreater)
+    return _hnt_VOP_mtlxifgreater
+}
+        

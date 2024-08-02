@@ -1,0 +1,164 @@
+
+export default function (hou) {
+    class _hnt_SOP_labs__pathfinding_global__1_0 extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SOP/Labs/World Building/Road/labs::pathfinding_global::1.0';
+        static category = '/SOP/labs';
+        static houdiniType = 'labs::pathfinding_global::1.0';
+        static title = 'Labs Pathfinding Global (Beta)';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_labs__pathfinding_global__1_0.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP', 'SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.FolderParmTemplate({name: "fd_settings", label: "Pathfinding", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			let hou_parm_template2 = new hou.FolderParmTemplate({name: "fd_pointcloud", label: "Point Cloud", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"group_type": "simple"});
+			let hou_parm_template3 = new hou.MenuParmTemplate({name: "source", label: "Source", menu_items: ["0", "1"], menu_labels: ["Existing Grid Points", "Scattered Points"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.SeparatorParmTemplate({name: "sepparm2"});
+			hou_parm_template3.setConditional(hou.parmCondType.HideWhen, "{ source == 0 }");
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FolderParmTemplate({name: "fd_scatteredpoints", label: "Scattered Points", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template3.setConditional(hou.parmCondType.HideWhen, "{ source == 0 }");
+			hou_parm_template3.setTags({"group_type": "simple", "sidefx::look": "blank"});
+			let hou_parm_template4 = new hou.MenuParmTemplate({name: "generatepoints", label: "Generate", menu_items: ["0", "1"], menu_labels: ["Total Count", "By Density"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template4 = new hou.IntParmTemplate({name: "numberofpoints", label: "Number of Points", num_components: 1, default_value: [50000], min: 0, max: 100000, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template4.setConditional(hou.parmCondType.HideWhen, "{ generatepoints == 1 }");
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template4 = new hou.FloatParmTemplate({name: "density", label: "Density", num_components: 1, default_value: [0.1], min: 0, max: 2, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template4.setConditional(hou.parmCondType.HideWhen, "{ generatepoints == 0 }");
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template4 = new hou.SeparatorParmTemplate({name: "sepparm3"});
+			hou_parm_template4.setConditional(hou.parmCondType.HideWhen, "{ source == 1 }");
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template4 = new hou.IntParmTemplate({name: "relaxiterations", label: "Relax Iterations", num_components: 1, default_value: [10], min: 0, max: 100, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FolderParmTemplate({name: "fd_noise", label: "Noise", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template3.setConditional(hou.parmCondType.HideWhen, "{ source == 1 }");
+			hou_parm_template3.setTags({"group_type": "simple", "sidefx::look": "blank"});
+			hou_parm_template4 = new hou.FloatParmTemplate({name: "noiseamplitude", label: "Noise Amplitude", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: true, max_is_strict: true, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template4.setConditional(hou.parmCondType.HideWhen, "{ source == 1 }");
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "fd_costcalculation", label: "Path Cost Calculation", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"group_type": "simple"});
+			hou_parm_template3 = new hou.StringParmTemplate({name: "endpoints", label: "End Points", num_components: 1, default_value: ["endpoints"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.SeparatorParmTemplate({name: "sepparm"});
+			hou_parm_template3.setTags({"sidefx::layout_height": "small", "sidefx::look": "blank"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FolderParmTemplate({name: "costattributes", label: "Cost Attributes", folder_type: hou.folderType.MultiparmBlock, default_value: 1, ends_tab_group: false});
+			hou_parm_template4 = new hou.StringParmTemplate({name: "attributename#", label: "Attribute Name", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "r = []\nnode = hou.pwd()\ninputs = node.inputs()\nif inputs and inputs[0]:\n    geo = inputs[1].geometry()\n    if geo:\n        attrs = geo.pointAttribs()\n        for a in attrs:            \n            # if a.dataType() == hou.attribData.Float and not a.isArrayType() and a.size() in [1, 3]:\n                r.extend([a.name(), a.name()])\nr.sort()\nreturn r", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template4 = new hou.FloatParmTemplate({name: "attributeweight#", label: "Attribute Weight", num_components: 1, default_value: [1], min: 0, max: 100, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FolderParmTemplate({name: "fd_avoidance", label: "Avoidance", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template3.setTags({"group_type": "simple"});
+			hou_parm_template4 = new hou.ToggleParmTemplate({name: "enableavoidance", label: "Enable Avoidance", default_value: false});
+			hou_parm_template4.hideLabel(true);
+			hou_parm_template4.setJoinWithNext(true);
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template4 = new hou.StringParmTemplate({name: "avoidanceattribute", label: "Avoidance", num_components: 1, default_value: ["avoid"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template4.setConditional(hou.parmCondType.DisableWhen, "{ enableavoidance == 0 }");
+			hou_parm_template4.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template4.setTags({"script_callback_language": "python"});
+			hou_parm_template3.addParmTemplate(hou_parm_template4);
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "fd_settings_1", label: "Output Attributes", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "outputdistance", label: "Output Distance", default_value: false});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "distancename", label: "Distance", num_components: 1, default_value: ["distance"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ outputdistance == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "fd_settings_2", label: "Visualization", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "visualizesettlements", label: "Visualize Settlements", default_value: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "settlementsize", label: "Settlement Size", num_components: 1, default_value: [5], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ visualizesettlements == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "settlementcolor", label: "Settlement Color", num_components: 3, default_value: [1, 1, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ visualizesettlements == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.SeparatorParmTemplate({name: "sepparm4"});
+			hou_parm_template2.setTags({"sidefx::layout_height": "small", "sidefx::look": "blank"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "visualizepointcloud", label: "Visualize Point Cloud", default_value: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "pointcloudcolor", label: "Point Cloud Color", num_components: 3, default_value: [1, 0.5, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ visualizepointcloud == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.SeparatorParmTemplate({name: "sepparm5"});
+			hou_parm_template2.setTags({"sidefx::layout_height": "small", "sidefx::look": "blank"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "visualizeterrain", label: "Visualize Terrain", default_value: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "terraincolor", label: "Terrain Color", num_components: 3, default_value: [0.1, 0.1, 0.1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ visualizeterrain == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Labs/World Building/Road/labs::pathfinding_global::1.0',_hnt_SOP_labs__pathfinding_global__1_0)
+    return _hnt_SOP_labs__pathfinding_global__1_0
+}
+        

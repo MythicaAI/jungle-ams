@@ -1,0 +1,167 @@
+
+export default function (hou) {
+    class _hnt_DOP_sourcevolume extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'DOP/Relationships/sourcevolume';
+        static category = '/DOP';
+        static houdiniType = 'sourcevolume';
+        static title = 'Source Volume';
+        static icon = '/editor/assets/imgs/nodes/_hnt_DOP_sourcevolume.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['DOP'];
+            const outputs = ['DOP', 'DOP', 'DOP', 'DOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.MenuParmTemplate({name: "initialize", label: "Initialize", menu_items: ["sourcing", "sourcefluid", "sink", "collision", "pump", "expand", "sourcefuel", "sourceflip", "sinkfluid", "sinkflip", "sourceoceanlayer"], menu_labels: ["Source Smoke", "Source Fluid", "Sink", "Collision", "Pump", "Expand", "Source Fuel", "Source FLIP", "Sink Fluid", "Sink FLIP", "Source Ocean Layer"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setScriptCallback("hou.node(\".\").hdaModule().set()");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback": "hou.node(\".\").hdaModule().set()", "script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "source_path", label: "Volume Path", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.NodeReference, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "opfilter": "!!SOP!!", "oprelative": "."});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "activation", label: "Activation", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "scale_source", label: "Scale Source Volume", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "scale_temperature", label: "Scale Temperature", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "scale_velocity", label: "Scale Velocity", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "use_object_transform", label: "Use Object Transform", default_value: true});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "operation", label: "Volume Operation", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			let hou_parm_template2 = new hou.MenuParmTemplate({name: "source_merge", label: "Source Volume", menu_items: ["copy", "add", "sub", "mul", "div", "max", "min", "average", "none"], menu_labels: ["Copy", "Add", "Clamp Sub    ", "Multiply", "Divide", "Maximum", "Minimum", "Average             ", "None"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "normalizesource", label: "Normalize", default_value: true});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ source_merge == none }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "temperature_merge", label: "Temperature", menu_items: ["copy", "add", "sub", "mul", "div", "max", "min", "average", "none"], menu_labels: ["Copy", "Add", "Subtract", "Multiply", "Divide", "Maximum", "Minimum", "Average             ", "None"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "normalizetemp", label: "Normalize", default_value: true});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ temperature_merge == none }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "velocity_merge", label: "Velocity", menu_items: ["copy", "add", "sub", "mul", "div", "max", "min", "blended_average", "none"], menu_labels: ["Copy", "Add", "Subtract", "Multiply", "Divide", "Maximum", "Minimum", "Blended Average ", "None"], default_value: 0, default_expression: "weighted_average", default_expression_language: hou.scriptLanguage.Hscript, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "normalizevel", label: "Normalize", default_value: true});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ velocity_merge == none }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "tspeed", label: "Target Speed", num_components: 1, default_value: [2], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ velocity_merge != blended_average }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "iscale", label: "Target Influence", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ velocity_merge != blended_average }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "maccel", label: "Max Acceleration", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ velocity_merge != blended_average }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "operation_1", label: "Particle Operation", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "sourceparticles", label: "Source Particles", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "ptgroup", label: "Source Group", num_components: 1, default_value: ["particles"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "particlefluidobjectname", label: "Particle Fluid Object", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.NodeReference, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 }");
+			hou_parm_template2.setTags({"opfilter": "!!DOP!!", "oprelative": "."});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "offsetscale", label: "Time Offset Scale", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "offsetseed", label: "Time Offset Seed", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "dolife", label: "Life Expectancy", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 }");
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "life", label: "Life Expectancy", num_components: 1, default_value: [100], min: 0, max: 100, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 } { dolife == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "lifevar", label: "Life Variance", num_components: 1, default_value: [0], min: 0, max: 5, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 } { dolife == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "killinside", label: "Kill Inside", default_value: false});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "killinsidesource", label: "Kill Inside", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ killinside == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "streamname", label: "Stream Name", num_components: 1, default_value: ["$OS"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ sourceparticles == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "operation_2", label: "Masks", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.LabelParmTemplate({name: "masklabel", label: "Volume", column_labels: ["DOP Field To Use As Mask"]});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "source_mask", label: "Source Volume", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "source_abs", label: "Absolute", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "temperature_mask", label: "Temperature Volume", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "temp_abs", label: "Absolute", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vel_mask", label: "Velocity Volume", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "vel_abs", label: "Absolute", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "operation_3", label: "SOP To DOP Bindings", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.StringParmTemplate({name: "source_name", label: "Source Volume", num_components: 1, default_value: ["density"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vol_sourcedest", label: "Add To Field", num_components: 1, default_value: ["density"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["density", "fuel"], menu_labels: ["density", "fuel"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "temp_name", label: "Temperature Volume", num_components: 1, default_value: ["temperature"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vol_tempdest", label: "Add To Field", num_components: 1, default_value: ["temperature"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["temperature"], menu_labels: ["temperature"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vel_name", label: "Velocity Volume", num_components: 1, default_value: ["vel"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vol_veldest", label: "Add To Field", num_components: 1, default_value: ["vel"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["vel"], menu_labels: ["vel"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "operation_4", label: "Instancing", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "instancing", label: "Instancing", menu_items: ["auto", "off", "on"], menu_labels: ["Auto Detect", "Off", "On"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "operation_5", label: "Clear", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.StringParmTemplate({name: "fields_to_clear", label: "Fields To Clear", num_components: 1, default_value: ["tempvel source sourcelength"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('DOP/Relationships/sourcevolume',_hnt_DOP_sourcevolume)
+    return _hnt_DOP_sourcevolume
+}
+        

@@ -1,0 +1,161 @@
+
+export default function (hou) {
+    class _hnt_DOP_gasdisturb__2_0 extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'DOP/Micro Solvers/gasdisturb::2.0';
+        static category = '/DOP';
+        static houdiniType = 'gasdisturb::2.0';
+        static title = 'Gas Disturb';
+        static icon = '/editor/assets/imgs/nodes/_hnt_DOP_gasdisturb__2_0.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = [];
+            const outputs = ['DOP', 'DOP', 'DOP', 'DOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.FloatParmTemplate({name: "timescale", label: "Time Scale", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "rotateonly", label: "Rotational Force", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0", label: "Settings", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			let hou_parm_template2 = new hou.FloatParmTemplate({name: "strength", label: "Strength", num_components: 1, default_value: [25], min: 0, max: 50, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "threshenable", label: "Threshold Range", default_value: true});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "threshrange", label: "Threshold Range", num_components: 2, default_value: [0.05, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.MinMax});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ threshenable == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.SeparatorParmTemplate({name: "sepparm"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "mode", label: "Mode", menu_items: ["cont", "blocks"], menu_labels: ["Continuous", "Block-Based"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "refscale", label: "Reference Scale", num_components: 1, default_value: [0.2], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == blocks }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "blocksize", label: "Base Block Size", num_components: 1, default_value: [0.2], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == cont }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "pulselength", label: "Pulse Length", num_components: 1, default_value: [0.2], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == cont }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "lacunarity", label: "Lacunarity", num_components: 1, default_value: [2.1], min: 1, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == cont }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "rough", label: "Roughness", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == cont }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "maxoct", label: "Max Octaves", num_components: 1, default_value: [3], min: 1, max: 10, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ mode == cont }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0_1", label: "Control", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "usecontrol", label: "Use Control Field", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "controlfield", label: "Control Field", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usecontrol == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "controlrange", label: "Control Range", num_components: 2, default_value: [0, 1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.MinMax});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usecontrol == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "remapcontrol", label: "Remap Control Field", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usecontrol == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.RampParmTemplate({name: "controlramp", label: "Control Field Ramp", ramp_parm_type: hou.rampParmType.Float, default_value: 2, default_basis: null, color_type: null});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usecontrol == 0 } { remapcontrol == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "parmvop": "1", "rampbasis_var": "Control_ramp_the_basis_strings", "rampbasisdefault": "linear", "rampfloatdefault": "1pos ( 0 ) 1value ( 0 ) 1interp ( linear ) 2pos ( 1 ) 2value ( 1 ) 2interp ( linear )", "rampkeys_var": "Control_ramp_the_key_positions", "rampshowcontrolsdefault": "0", "rampvalues_var": "Control_ramp_the_key_values", "shaderparmcontexts": "cvex"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0_2", label: "Visualization", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "visualize", label: "Visualize Disturbance", default_value: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "vistype", label: "Visualization Type", menu_items: ["strength", "delta"], menu_labels: ["Strength", "Force"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "vismode", label: "Mode", menu_items: ["smoke", "plane"], menu_labels: ["Smoke", "Plane"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vistype == delta }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "visdensity", label: "Smoke Density", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vismode != smoke } { vistype != strength }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "visplane", label: "Plane Orientation", menu_items: ["xy", "yz", "zx"], menu_labels: ["XY Plane", "YZ Plane", "ZX Plane"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vistype != delta vismode != plane }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "visplaneposition", label: "Plane Position", num_components: 1, default_value: [0], min: null, max: 1, min_is_strict: true, max_is_strict: true, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vistype != delta vismode != plane }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "viscolormode", label: "Color Mapping", menu_items: ["none", "false", "pink", "mono", "blackbody", "bipartite"], menu_labels: ["No Mapping", "Infra-Red", "White to Red", "Grayscale", "Blackbody", "Two-Tone"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vistype != delta vismode != plane }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "visstreamerlen", label: "Streamer Length", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vistype != delta }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "visrange", label: "Guide Range", num_components: 2, default_value: [0, 1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ vistype != delta vismode != plane }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0_3", label: "Bindings", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.StringParmTemplate({name: "field", label: "Disturb Field", num_components: 1, default_value: ["vel"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "threshfield", label: "Threshold Field", num_components: 1, default_value: ["density"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "visfield", label: "Visualization Field", num_components: 1, default_value: ["diststrength"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ visualize == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "stencilfield", label: "Stencil Field", num_components: 1, default_value: ["active"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ opencl == 1 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0_4", label: "Advanced", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "opencl", label: "Use OpenCL", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('DOP/Micro Solvers/gasdisturb::2.0',_hnt_DOP_gasdisturb__2_0)
+    return _hnt_DOP_gasdisturb__2_0
+}
+        
