@@ -24,6 +24,7 @@ import {
 } from "./services/backendCommon.ts";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { AxiosError } from "axios";
+import { Helmet } from "react-helmet-async";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { FileUploadStatus, useUploadStore } from "./stores/uploadStore.ts";
 import { DownloadButton } from "./components/DownloadButton";
@@ -107,6 +108,9 @@ const Uploads = () => {
 
   return (
     <>
+      <Helmet>
+        <title>Mythica • My Uploads</title>
+      </Helmet>
       <UploadsSubmitList />
       <List>
         <ListItem sx={{ flexGrow: 1 }}>

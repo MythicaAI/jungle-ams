@@ -17,6 +17,7 @@ import {
 } from "./services/backendCommon.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { AxiosError } from "axios";
+import { Helmet } from "react-helmet-async";
 import {
   AssetVersionContentListMap,
   AssetVersionResponse,
@@ -166,6 +167,9 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
         boxShadow: "md",
       }}
     >
+      <Helmet>
+        <title>Mythica • Edit package</title>
+      </Helmet>
       <form onSubmit={onSubmit}>
         <Grid container spacing={2} sx={{ flexGrow: 1 }}>
           <Grid xs={12}>

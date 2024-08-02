@@ -22,6 +22,7 @@ import { Form, Link } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { MailCheckIcon, Tag } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { api } from "./services/api";
 
@@ -119,14 +120,13 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
     </FormControl>
   );
 
-  const verifiedLabel =
-    profile.email_verified ? (
-      <Tag color="success" />
-    ) : (
-      <Button onClick={onRequestEmailVerification}>
-        <MailCheckIcon />
-      </Button>
-    );
+  const verifiedLabel = profile.email_verified ? (
+    <Tag color="success" />
+  ) : (
+    <Button onClick={onRequestEmailVerification}>
+      <MailCheckIcon />
+    </Button>
+  );
 
   const profileEmailValidate = (
     <FormControl>
@@ -218,6 +218,9 @@ const ProfileSettings = (props: ProfileSettingsProps) => {
 
   return (
     <div>
+      <Helmet>
+        <title>Mythica • My Profile</title>
+      </Helmet>
       {isCreate ? profileCreate : profile ? profileEdit : profileLoading}
     </div>
   );

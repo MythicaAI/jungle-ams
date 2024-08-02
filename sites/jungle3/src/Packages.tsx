@@ -28,6 +28,7 @@ import {
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { LucidePackage, LucidePlusCircle } from "lucide-react";
 import { useAssetVersionStore } from "./stores/assetVersionStore.ts";
 import { DownloadButton } from "./components/DownloadButton/index.tsx";
@@ -303,6 +304,9 @@ export const Packages = () => {
 
   return (
     <Box>
+      <Helmet>
+        <title>Mythica • My Packages</title>
+      </Helmet>
       <List size={"lg"}>
         <ListItem key={"create-header"}>
           <ListItemDecorator>
