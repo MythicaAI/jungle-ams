@@ -69,7 +69,7 @@ const Assets = () => {
       <Stack direction="row" gap="10px" mb="15px">
         <Input
           startDecorator={<LucideSearch width="16px" />}
-          placeholder="Search all assets..."
+          placeholder="Package name filter..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ width: "90%" }}
@@ -91,14 +91,14 @@ const Assets = () => {
 
       <Stack mb="15px">
         <Typography level="h4" textAlign="start">
-          Top Assets
+          Top Packages
         </Typography>
         <TopAssetsSlider assets={topAssets} />
       </Stack>
 
       <Stack>
         <Typography level="h4" textAlign="start">
-          All Assets
+          All Packages
         </Typography>
         <Grid container spacing={2}>
           {allAssets
