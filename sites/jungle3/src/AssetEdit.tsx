@@ -28,6 +28,7 @@ import { AssetEditPageHeader } from "./components/AssetEditPageHeader.tsx";
 import { AssetEditDetailControls } from "./components/AssetEditDetailControls.tsx";
 import { AssetEditListControls } from "./components/AssetEditListControls.tsx";
 import { api } from "./services/api/index.ts";
+import { AssetEditLinks } from "./components/AssetEditLinks.tsx";
 
 interface AssetEditProps {
   assetId?: string;
@@ -51,7 +52,9 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
     thumbnails,
     addFiles,
     addThumbnails,
+    setLinks,
     updateVersion,
+    links,
   } = useAssetVersionStore();
   const navigate = useNavigate();
 
@@ -112,6 +115,14 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
       if ("thumbnails" in contentMap) {
         addThumbnails(contentMap["thumbnails"]);
       }
+      if ("links" in contentMap) {
+        const formattedLinks = contentMap["links"].map((item, idx) => ({
+          name: `linkInput-${idx}`,
+          value: item as unknown as string,
+        }));
+
+        setLinks(formattedLinks);
+      }
     }
   };
 
@@ -120,12 +131,27 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
     event.preventDefault();
 
     const sanitizedVersion = sanitizeVersion(version);
+    const filteredLinks = links.filter((link) => link.value !== "");
+    const formattedLinks =
+      filteredLinks && filteredLinks.length > 0
+        ? filteredLinks.map((link) => link.value)
+        : null;
 
     const formJson: { [key: string]: string | object } = {};
+
     formJson["contents"] = {
       files: Object.values(files),
       thumbnails: Object.values(thumbnails),
     };
+
+    if (formattedLinks) {
+      formJson["contents"] = {
+        files: Object.values(files),
+        thumbnails: Object.values(thumbnails),
+        links: formattedLinks,
+      };
+    }
+
     formJson["description"] = description;
     formJson["name"] = name;
     formJson["org_id"] = org_id;
@@ -180,6 +206,7 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
               <Tab>Details</Tab>
               <Tab>Files</Tab>
               <Tab>Thumbnails</Tab>
+              <Tab>Links</Tab>
             </TabList>
 
             <TabPanel value={0}>
@@ -192,6 +219,10 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
 
             <TabPanel value={2}>
               <AssetEditListControls category="thumbnails" />
+            </TabPanel>
+
+            <TabPanel value={3}>
+              <AssetEditLinks />
             </TabPanel>
           </Tabs>
 

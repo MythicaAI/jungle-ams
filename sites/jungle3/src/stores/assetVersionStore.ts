@@ -4,6 +4,11 @@ import {
   AssetVersionContentMap,
 } from "../types/apiTypes.ts";
 
+type Link = {
+  name: string;
+  value: string;
+};
+
 interface AssetVersion {
   asset_id: string;
   org_id: string;
@@ -19,7 +24,7 @@ interface AssetVersion {
   updated: string;
   files: AssetVersionContentMap;
   thumbnails: AssetVersionContentMap;
-  links: string[];
+  links: Link[];
 
   addFile: (file: AssetVersionContent) => AssetVersionContentMap;
   addFiles: (files: AssetVersionContent[]) => AssetVersionContentMap;
@@ -28,6 +33,8 @@ interface AssetVersion {
   addThumbnails: (files: AssetVersionContent[]) => AssetVersionContentMap;
   removeThumbnail: (file_id: string) => AssetVersionContentMap;
   removeThumbnails: () => AssetVersionContentMap;
+  setLinks: (links: Link[]) => Link[];
+  removeLinks: () => AssetVersionContentMap;
   updateVersion: (update: Partial<AssetVersion>) => void;
   clearVersion: () => void;
 }
@@ -114,6 +121,14 @@ export const useAssetVersionStore = create<AssetVersion>((set, get) => ({
   removeThumbnails: () => {
     set(() => ({ thumbnails: {} }));
     return get().thumbnails;
+  },
+  setLinks: (data: Link[]) => {
+    set(() => ({ links: data }));
+    return get().links;
+  },
+  clearLinks: () => {
+    set(() => ({ links: [] }));
+    return get().links;
   },
 
   updateVersion: (update: Partial<AssetVersion>) =>
