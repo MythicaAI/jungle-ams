@@ -20,7 +20,7 @@ export const PackageViewCard: React.FC<Props> = ({
                                                  }) => {
   const navigate = useNavigate();
   return av ? (
-    <Card>
+    <Card sx={{ height: "100%" }}>
       <CardCover>
         <img
           height="200"
@@ -29,7 +29,7 @@ export const PackageViewCard: React.FC<Props> = ({
           alt={av.name}
         />
       </CardCover>
-      <CardContent sx={sxStyles ?? undefined}>
+      <CardContent sx={sxStyles ?? { justifyContent: "flex-end" }}>
         <Typography
           component="span"
           level="body-lg"
