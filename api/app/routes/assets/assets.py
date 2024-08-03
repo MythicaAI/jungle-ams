@@ -307,7 +307,7 @@ async def get_top_assets() -> list[AssetTopResult]:
             .where(AssetVersion.package_seq != None)
         ).all()
 
-        def avf_to_top(asset, ver, downloads=0, versions=[]):
+        def avf_to_top(asset, ver, downloads, sorted_versions):
             asset_id = asset_seq_to_id(asset.asset_seq)
             return AssetTopResult(
                 asset_id=asset_id,
@@ -325,7 +325,7 @@ async def get_top_assets() -> list[AssetTopResult]:
                 commit_ref=ver.commit_ref,
                 created=ver.created,
                 contents=asset_contents_json_to_model(asset_id, ver.contents),
-                versions=versions,
+                versions=sorted_versions,
                 downloads=downloads, )
 
         reduced = {}
