@@ -5,7 +5,6 @@ import json
 import logging
 import secrets
 import string
-from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -16,7 +15,7 @@ log = logging.getLogger(__name__)
 
 class FileContentTestObj(BaseModel):
     file_name: str
-    file_id: UUID
+    file_id: str
     contents: bytes
     content_hash: str
     content_type: str
@@ -60,7 +59,7 @@ def make_random_content(file_ext: str) -> FileContentTestObj:
     test_content = secrets.token_bytes(16)
     return FileContentTestObj(
         file_name=file_name + '.' + file_ext,
-        file_id=UUID(int=0),
+        file_id='',
         contents=test_content,
         content_hash=hashlib.sha1(test_content).hexdigest(),
         content_type=f"application/{file_ext}",
