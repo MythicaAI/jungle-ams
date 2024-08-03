@@ -19,6 +19,7 @@ import { ResolvedOrgRef, OrgResponse } from "./types/apiTypes.ts";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { LucideShield, LucideUser } from "lucide-react";
 import React from "react";
+import { Helmet } from "react-helmet-async";
 import { api } from "./services/api";
 
 const defaultOrg = (): OrgResponse => {
@@ -145,6 +146,9 @@ const OrgsList: React.FC = () => {
         boxShadow: "md",
       }}
     >
+      <Helmet>
+        <title>Mythica • Organizations</title>
+      </Helmet>
       <Typography level="h4" component="h1">
         <b>Memberships</b>
       </Typography>
