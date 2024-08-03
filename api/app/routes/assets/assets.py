@@ -101,8 +101,8 @@ class AssetVersionResult(BaseModel):
 class AssetTopResult(AssetVersionResult):
     """Result object for a specific asset version or the asset head object
     when no version has been created. In this case the """
-    downloads: int = 0
-    versions: list[list[int]] = []
+    downloads: int = 0  # Sum of all downloads
+    versions: list[list[int]] = []  # Previously available versions
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -307,9 +307,10 @@ async def get_top_assets() -> list[AssetTopResult]:
             .where(AssetVersion.package_seq != None)
         ).all()
 
-        def avf_to_top(asset, ver, file, downloads=0, versions=[]):
+        def avf_to_top(asset, ver, downloads=0, versions=[]):
+            asset_id = asset_seq_to_id(asset.asset_seq)
             return AssetTopResult(
-                asset_id=asset_seq_to_id(asset.asset_seq),
+                asset_id=asset_id,
                 org_id=org_seq_to_id(asset.org_seq),
                 org_name=resolve_org_name(session, asset.org_seq),
                 owner_id=profile_seq_to_id(asset.owner_seq),
@@ -323,9 +324,9 @@ async def get_top_assets() -> list[AssetTopResult]:
                 version=(ver.major, ver.minor, ver.patch),
                 commit_ref=ver.commit_ref,
                 created=ver.created,
-                contents=asset_contents_json_to_model(ver.contents),
+                contents=asset_contents_json_to_model(asset_id, ver.contents),
                 versions=versions,
-                downloads=file.downloads, )
+                downloads=downloads, )
 
         reduced = {}
         for result in results:
@@ -336,13 +337,15 @@ async def get_top_assets() -> list[AssetTopResult]:
             version_id = [ver.major, ver.minor, ver.patch]
             if atr is None:
                 reduced[asset.asset_seq] = avf_to_top(
-                    asset, ver, file, file.downloads, [version_id])
+                    asset, ver, file.downloads, [])
             else:
-                atr.versions.append(version_id)
+                versions = atr.versions
+                versions.append(version_id)
+                atr.versions = sorted(atr.versions, reverse=True)[0:4]
                 atr.downloads += file.downloads
                 if version_id > atr.version:
                     reduced[asset.asset_seq] = avf_to_top(
-                        asset, ver, file, atr.downloads, sorted(atr.versions, reverse=True)[0:3])
+                        asset, ver, atr.downloads, atr.versions)
 
         sort_results = sorted(reduced.values(), key=lambda x: x.downloads, reverse=True)
         return sort_results

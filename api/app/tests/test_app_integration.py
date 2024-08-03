@@ -247,9 +247,9 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
 
     # populate 10 more versions to test top coalesce
     for i in range(10):
-        test_asset_ver_json['commit_ref'] = test_commit_ref + '-' + str(i)
         test_asset_ver_json['published'] = True
-        version_str = [1.{i}.0]
+        version_str = '.'.join(map(str, [1, i, 0]))
+        test_asset_ver_json['commit_ref'] = test_commit_ref + '-' + version_str
         r = client.post(
             f"{api_base}/assets/{asset_id}/versions/{version_str}",
             json=test_asset_ver_json,
@@ -258,8 +258,9 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
 
         # create a package for each so they are available via the main index
         package_file = [make_random_content("zip") for _ in range(1)]
-        uri = f"/package/{asset_id}/{version_str}"
-        response_files = uploader(profile_id, headers, package_file, )
+        uri = f"/upload/package/{asset_id}/{version_str}"
+        response_files = uploader(profile_id, headers, package_file, uri)
+        assert len(response_files) == 1
 
     # query versions for top, assert versions combined into one result
     r = client.get(f"{api_base}/assets/top")
@@ -275,12 +276,13 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
         commit_ref: str = str(o.commit_ref)
         assert 'versions' in o
         assert 'version' in o
-        assert len(o.versions) == 3  # limit on versions returned
+        assert len(o.versions) == 4  # limit on versions returned
         assert o.version == [1, 9, 0]  # latest version
+        assert o.versions[0] == [1, 9, 0]
         assert commit_ref.endswith("1.9.0")
-        assert o.versions.contains([1, 8, 0])
-        assert o.versions.contains([1, 7, 0])
-        assert o.versions.contains([1, 6, 0])
+        assert [1, 8, 0] in o.versions
+        assert [1, 7, 0] in o.versions
+        assert [1, 6, 0] in o.versions
     assert count_found == 1
 
     # update existing asset version

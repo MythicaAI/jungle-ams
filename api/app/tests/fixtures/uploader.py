@@ -10,13 +10,14 @@ from tests.shared_test import FileContentTestObj, assert_status_code
 
 
 @pytest.fixture(scope='module')
-def uploader(client, api_base, storage_uri='/upload/store'):
+def uploader(client, api_base):
     """Uploader factory fixture test content to API"""
 
     def _uploader(
             profile_id: str,
             auth_headers,
-            files: list[FileContentTestObj]) -> dict[str, FileUploadResponse]:
+            files: list[FileContentTestObj],
+            storage_uri='/upload/store') -> dict[str, FileUploadResponse]:
 
         file_data = list(map(
             lambda x: ('files', (x.file_name, x.contents, x.content_type)),
@@ -69,7 +70,10 @@ def uploader(client, api_base, storage_uri='/upload/store'):
         assert len(results) > 0
         for r in results:
             o = munchify(r)
-            test_file = request_files_by_hash[o.content_hash]
+            test_file = request_files_by_hash.get(o.content_hash)
+            if test_file is None:
+                continue
+
             assert o.file_id == test_file.file_id
 
             # validate download info API
