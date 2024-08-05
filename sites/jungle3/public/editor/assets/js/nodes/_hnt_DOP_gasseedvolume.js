@@ -1,0 +1,162 @@
+
+export default function (hou) {
+    class _hnt_DOP_gasseedvolume extends hou.extend(hou._HoudiniBase).with(hou._MultiInputMixin) {
+        static is_root = false;
+        static id = 'DOP/Other/gasseedvolume';
+        static category = '/DOP';
+        static houdiniType = 'gasseedvolume';
+        static title = 'Gas Seed Volume';
+        static icon = '/editor/assets/imgs/nodes/_hnt_DOP_gasseedvolume.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['DOP'];
+            const outputs = ['DOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.MenuParmTemplate({name: "parmop_geo", label: "Particles", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "geo", label: "Particles", num_components: 1, default_value: ["Geometry"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_surface", label: "Surface", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "surface", label: "Surface", num_components: 1, default_value: ["surface"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_newvolume", label: "New Volume Field", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 1 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "newvolume", label: "New Volume Field", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 1 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_velocity", label: "Velocity Field", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 1 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "velocity", label: "Velocity Field", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 1 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_indexfield", label: "Slice Index Field", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "indexfield", label: "Slice Index Field", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_velocityattribute", label: "Particle Velocity Attribute", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 1 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "velocityattribute", label: "Particle Velocity Attribute", num_components: 1, default_value: ["v"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 1 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_particlespervoxel", label: "Particles Per Voxel", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "particlespervoxel", label: "Particles Per Voxel", num_components: 1, default_value: [20], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_oversampling", label: "Surface Oversampling", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "oversampling", label: "Surface Oversampling", num_components: 1, default_value: [1], min: 1, max: 2, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_oversamplingbandwidth", label: "Oversampling Bandwidth", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "oversamplingbandwidth", label: "Oversampling Bandwidth", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_oversamplebounds", label: "Oversample At Boundaries", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "oversamplebounds", label: "Oversample At Boundaries", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_pscaletoggle", label: "Use PScale Attribute", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "pscaletoggle", label: "Use PScale Attribute", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_particleradius", label: "Surface Offset", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ pscaletoggle == 1 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "particleradius", label: "Surface Offset", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ pscaletoggle == 1 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_volumesize", label: "Volume Size", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "volumesize", label: "Volume Size", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_volumecenter", label: "Volume Center", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "volumecenter", label: "Volume Center", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_flagnewparticles", label: "Flag New Particles", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "flagnewparticles", label: "Flag New Particles", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_newparticleattribute", label: "New Particle Flag Attribute", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ flagnewparticles == 0 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "newparticleattribute", label: "New Particle Flag Attribute", num_components: 1, default_value: ["newpart"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ flagnewparticles == 0 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_usewaterline", label: "Use Waterline", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "usewaterline", label: "Use Waterline", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_waterline", label: "Waterline", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 0 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "waterline", label: "Waterline", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 0 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_waterlinedirection", label: "Waterline Direction", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 0 }");
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "waterlinedirection", label: "Waterline Direction", num_components: 3, default_value: [0, 1, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ usewaterline == 0 }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_seed", label: "Seed", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "seed", label: "Seed", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "parmop_slice", label: "Slice Number", menu_items: ["initial", "always", "never", "default"], menu_labels: ["![BUTTONS_set_initial]Set Initial", "![BUTTONS_set_or_create]Set Always", "![BUTTONS_set_block]Set Never", "![BUTTONS_set_nothing]Use Default"], default_value: 3, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.ControlNextParameter, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"sidefx::look": "icon"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "slice", label: "Slice Number", num_components: 1, default_value: [null], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "defaultparmop", label: "Default Operation", menu_items: ["initial", "always", "never"], menu_labels: ["Set Initial", "Set Always", "Set Never"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "addaffectors", label: "Make Objects Mutual Affectors", default_value: true});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "group", label: "Group", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "dataname", label: "Data Name", num_components: 1, default_value: ["$OS"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "uniquedataname", label: "Unique Data Name", default_value: true});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "solverperobject", label: "Solver Per Object", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('DOP/Other/gasseedvolume',_hnt_DOP_gasseedvolume)
+    return _hnt_DOP_gasseedvolume
+}
+        

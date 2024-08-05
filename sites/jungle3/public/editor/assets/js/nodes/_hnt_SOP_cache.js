@@ -1,0 +1,57 @@
+
+export default function (hou) {
+    class _hnt_SOP_cache extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'SOP/Other/cache';
+        static category = '/SOP';
+        static houdiniType = 'cache';
+        static title = 'Cache';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_cache.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP', 'SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.ToggleParmTemplate({name: "anyframe", label: "Cache Any Frame", default_value: true});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "maxframes", label: "Max Frames to Cache", num_components: 1, default_value: [2500], min: 0, max: 10000, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "range", label: "Start/End/Inc", num_components: 3, default_value: [1, 240, 1], default_expression: ["$FSTART", "$FEND", ""], default_expression_language: [hou.scriptLanguage.Hscript, hou.scriptLanguage.Hscript, hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "index", label: "Index", num_components: 1, default_value: [0], default_expression: ["$F"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "param", label: "Index Param Name", num_components: 1, default_value: ["i"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "indextime", label: "Set Frame to Index When Caching", default_value: true});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "loadmethod", label: "Load", menu_items: ["needed", "nextcook"], menu_labels: ["As Needed", "All on Next Cook"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "clearonchange", label: "Clear Cache When Change Upstream", default_value: true});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "cachepoints", label: "Cache Points Only", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "blendpos", label: "Blend Position", default_value: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ButtonParmTemplate({name: "reload", label: "Reload All Cache"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ButtonParmTemplate({name: "clear", label: "Clear Cache"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ButtonParmTemplate({name: "clearframe", label: "Clear Current Frame Cache"});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Other/cache',_hnt_SOP_cache)
+    return _hnt_SOP_cache
+}
+        

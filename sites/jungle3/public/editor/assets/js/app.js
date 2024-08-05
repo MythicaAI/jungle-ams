@@ -1,6 +1,7 @@
 var webgl_canvas = null;
 
 LiteGraph.node_images_path = "/editor/assets/imgs";
+LiteGraph.classes_path = "/editor/assets/js/types";
 
 var editor = new LiteGraph.Editor("main", {
     miniwindow: false,
@@ -19,9 +20,16 @@ window.graph = editor.graph;
 window.onload = function () {
     // Get the file URL from the query string
     const urlParams = new URLSearchParams(window.location.search);
-    const fileUrl = urlParams.get('file_url');
-	//const fileUrl = '/editor/assets/graphs/net.json';
+    //const fileUrl = urlParams.get('file_url');
+	const fileUrl = '/editor/assets/graphs/net_new.json';
 
+    /* 
+    Need to:
+    1) Generate new nodetypes def file with just class stubs 
+    2) Overload Litegraph load method so that classes that are not yet loaded 
+       can be loaded 
+    3) Overload Litegraph addNode method for the same. 
+    */
     if (fileUrl) {
 		graph.load(fileUrl, ()=>{
 			var loader = document.getElementById('loader');
@@ -77,18 +85,14 @@ elem.className = "selector";
 elem.innerHTML = "";
 elem.innerHTML += "<img style='height:30px' src='assets/imgs/mythica_logo.png'> ";
 elem.innerHTML += "<img style='height:30px' src='assets/imgs/mythica.png'> ";
-/*
+
 elem.innerHTML += "<button class='btn' id='save'>Save</button>";
 elem.innerHTML += "<button class='btn' id='load'>Load</button>";
 elem.innerHTML += "<button class='btn' id='download'>Download</button>";
-elem.innerHTML += " | ";
-elem.innerHTML += "<button class='btn' id='webgl'>WebGL</button>";
-elem.innerHTML += "<button class='btn' id='multiview'>Multiview</button>";
-elem.querySelector("#webgl").addEventListener("click", enableWebGL );
-elem.querySelector("#multiview").addEventListener("click", function(){ editor.addMultiview()  } );
-*/
+
+
 editor.tools.appendChild(elem);
-/*
+
 elem.querySelector("#save").addEventListener("click", function () {
     console.log("saved");
     localStorage.setItem("graphdemo_save", JSON.stringify(graph.serialize()));
@@ -114,77 +118,9 @@ elem.querySelector("#download").addEventListener("click", function () {
     document.body.removeChild(element);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000 * 60); //wait one minute to revoke url    
 });
-*/
-//allows to use the WebGL nodes like textures
-function enableWebGL() {
-    if (webgl_canvas) {
-        webgl_canvas.style.display = (webgl_canvas.style.display == "none" ? "block" : "none");
-        return;
-    }
 
-    var libs = [
-        "js/libs/gl-matrix-min.js",
-        "js/libs/litegl.js",
-        "../src/nodes/gltextures.js",
-        "../src/nodes/glfx.js",
-        "../src/nodes/glshaders.js",
-        "../src/nodes/geometry.js"
-    ];
-
-    function fetchJS() {
-        if (libs.length == 0)
-            return on_ready();
-
-        var script = null;
-        script = document.createElement("script");
-        script.onload = fetchJS;
-        script.src = libs.shift();
-        document.head.appendChild(script);
-    }
-
-    fetchJS();
-
-    function on_ready() {
-        console.log(this.src);
-        if (!window.GL)
-            return;
-        webgl_canvas = document.createElement("canvas");
-        webgl_canvas.width = 400;
-        webgl_canvas.height = 300;
-        webgl_canvas.style.position = "absolute";
-        webgl_canvas.style.top = "0px";
-        webgl_canvas.style.right = "0px";
-        webgl_canvas.style.border = "1px solid #AAA";
-
-        webgl_canvas.addEventListener("click", function () {
-            var rect = webgl_canvas.parentNode.getBoundingClientRect();
-            if (webgl_canvas.width != rect.width) {
-                webgl_canvas.width = rect.width;
-                webgl_canvas.height = rect.height;
-            }
-            else {
-                webgl_canvas.width = 400;
-                webgl_canvas.height = 300;
-            }
-        });
-
-        var parent = document.querySelector(".editor-area");
-        parent.appendChild(webgl_canvas);
-        var gl = GL.create({ canvas: webgl_canvas });
-        if (!gl)
-            return;
-
-        editor.graph.onBeforeStep = ondraw;
-
-        console.log("webgl ready");
-        function ondraw() {
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        }
-    }
-}
-
+/*
 // Tests
 // CopyPasteWithConnectionToUnselectedOutputTest();
 // demo();
+*/

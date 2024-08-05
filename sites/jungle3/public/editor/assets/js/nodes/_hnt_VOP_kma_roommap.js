@@ -1,0 +1,168 @@
+
+export default function (hou) {
+    class _hnt_VOP_kma_roommap extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'VOP/MaterialX/Houdini/kma_roommap';
+        static category = '/VOP';
+        static houdiniType = 'kma_roommap';
+        static title = 'Karma Room Map';
+        static icon = '/editor/assets/imgs/nodes/_hnt_VOP_kma_roommap.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP'];
+            const outputs = ['VOP', 'VOP', 'VOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "sourceColorSpace", label: "Source Color Space", num_components: 1, default_value: ["auto"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["raw", "sRGB", "auto"], menu_labels: ["Raw", "sRGB", "Auto"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setTags({"sidefx::shader_parmtype": "token"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "file", label: "File", num_components: 1, default_value: ["karma/roommap_debug.exr"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.FileReference, file_type: hou.fileType.Image, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "signature", label: "Signature", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.hide(true);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "position", label: "Position", num_components: 2, default_value: [0, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "room_offset", label: "Offset UDIM", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "room_scale", label: "Scale", num_components: 3, default_value: [1, 1, 1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "room_uniform_scale", label: "Uniform Scale", num_components: 1, default_value: [1], min: 1, max: 2, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "window_shift", label: "Window Shift", num_components: 2, default_value: [0, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "mix_normal", label: "Mix Normals", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: false, max_is_strict: true, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.SeparatorParmTemplate({name: "sepparm"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "slice1", label: "Slice 1", default_value: false});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "slice1_offset", label: "Slice Offset UDIM", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice1 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice1_position", label: "Slice Position", num_components: 3, default_value: [0, 0, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice1 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice1 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice1_scale", label: "Slice Scale", num_components: 2, default_value: [1, 1], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice1 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice1 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "slice2", label: "Slice 2", default_value: true});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "slice2_offset", label: "Slice Offset UDIM", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice2 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice2 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice2_position", label: "Slice Position", num_components: 3, default_value: [0, 0, 0.2], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice2 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice2 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice2_scale", label: "Slice Scale", num_components: 2, default_value: [1, 1], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice2 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice2 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "slice3", label: "Slice 3", default_value: true});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "slice3_offset", label: "Slice Offset UDIM", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice3 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice3 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice3_position", label: "Slice Position", num_components: 3, default_value: [0, 0, 0.4], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice3 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice3 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice3_scale", label: "Slice Scale", num_components: 2, default_value: [1, 1], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice3 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice3 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "slice4", label: "Slice 4", default_value: true});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "slice4_offset", label: "Slice Offset UDIM", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice4 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice4 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice4_position", label: "Slice Position", num_components: 3, default_value: [0, 0, 0.6], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice4 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice4 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "slice4_scale", label: "Slice Scale", num_components: 2, default_value: [1, 1], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ slice4 == 0 }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ slice4 == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "surf_normal", label: "Surface Normal", num_components: 3, default_value: [0, 0, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "fallback", label: "Fallback Color", num_components: 3, default_value: [0, 0, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "worldspace", label: "World Space", default_value: true});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('VOP/MaterialX/Houdini/kma_roommap',_hnt_VOP_kma_roommap)
+    return _hnt_VOP_kma_roommap
+}
+        

@@ -1,0 +1,98 @@
+
+export default function (hou) {
+    class _hnt_VOP_kma_hextiled_texture extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'VOP/MaterialX/Houdini/kma_hextiled_texture';
+        static category = '/VOP';
+        static houdiniType = 'kma_hextiled_texture';
+        static title = 'Karma Hex-Tiled Texture';
+        static icon = '/editor/assets/imgs/nodes/_hnt_VOP_kma_hextiled_texture.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP'];
+            const outputs = ['VOP', 'VOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "signature", label: "Signature", num_components: 1, default_value: ["default"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setTags({"sidefx::shader_isparm": "0"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "file", label: "File", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.FileReference, file_type: hou.fileType.Image, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "size", label: "Size", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "rand_scale", label: "Random Scale", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "rand_rot", label: "Random Rotation", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "seed", label: "Seed", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.SeparatorParmTemplate({name: "sepparm"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "contrast", label: "Contrast", num_components: 1, default_value: [0.5], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "contrast_falloff", label: "Falloff", num_components: 1, default_value: [0.6], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "weightexp", label: "Weight Exp", num_components: 1, default_value: [7], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.SeparatorParmTemplate({name: "sepparm2"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "sourceColorSpace", label: "Source Color Space", num_components: 1, default_value: ["auto"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["raw", "sRGB", "auto"], menu_labels: ["Raw", "sRGB", "Auto"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ signature == normals }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ signature == normals }");
+			hou_parm_template.setTags({"sidefx::shader_parmtype": "token"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "space", label: "Transfrom Space", num_components: 1, default_value: ["tangent"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["tangent", "object"], menu_labels: ["tangent", "object"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ signature == default }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ signature == default }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "height", label: "Normal Map Height", num_components: 1, default_value: [0.1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ signature == default }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ signature == default }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "invert", label: "Invert Profile", default_value: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ signature == default }");
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ signature == default }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "texcoord", label: "Tex Coord", num_components: 2, default_value: [0, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "tangent", label: "Tangent", num_components: 3, default_value: [0, 0, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "normal", label: "Normal", num_components: 3, default_value: [0, 0, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('VOP/MaterialX/Houdini/kma_hextiled_texture',_hnt_VOP_kma_hextiled_texture)
+    return _hnt_VOP_kma_hextiled_texture
+}
+        
