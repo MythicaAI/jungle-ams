@@ -1,3 +1,4 @@
+import React from "react";
 import {
   FormControl,
   FormLabel,
@@ -7,8 +8,7 @@ import {
   Typography,
 } from "@mui/joy";
 import { LucideCircleMinus, LucidePlusCircle } from "lucide-react";
-import React from "react";
-import { useAssetVersionStore } from "../stores/assetVersionStore";
+import { useAssetVersionStore } from "../../stores/assetVersionStore";
 
 export const AssetEditLinks = () => {
   const { setLinks, links } = useAssetVersionStore();
