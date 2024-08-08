@@ -20,7 +20,7 @@ WORKDIR /app/api
 RUN pip install --upgrade pip poetry
 RUN poetry check && \
     poetry env use python3 && \
-    poetry install --compile --all-extras --without=dev --no-root
+    poetry install --compile --all-extras --no-root
 
 WORKDIR /app
 

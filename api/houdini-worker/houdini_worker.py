@@ -12,7 +12,7 @@ from munch import munchify
 
 from events.events import EventsSession
 
-from api.files import API, api_settings
+from api.api.files import API, api_settings
 
 # Configure logging
 logging.basicConfig(
