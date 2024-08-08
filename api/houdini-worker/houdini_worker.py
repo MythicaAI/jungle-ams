@@ -1,4 +1,5 @@
 """Wrapper script to invoke hautomation from events"""
+import argparse
 import asyncio
 import subprocess
 import os
@@ -19,31 +20,23 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-
 log = logging.getLogger(__name__)
-
-CONTAINER_REPO = 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
-CONTAINER_NAME = 'darol-houdini'
-CONTAINER_TAG = 'latest'
-IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
-IMAGE_NAME = "hautomation"
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_LOCAL = os.path.join(SCRIPT_DIR, "output")
 
+def parse_args():
+    """Parse command line arguments and provide the args structure"""
+    parser = argparse.ArgumentParser(description="Packager")
 
-def run_docker(docker_command: list[str]):
-    try:
-        log.info("running %s", ' '.join(docker_command))
-        result = subprocess.run(
-            docker_command,
-            capture_output=True,
-            text=True,
-            check=False  # Set to True if you want it to raise an exception on non-zero return code
-        )
-        return result.stdout, result.stderr, result.returncode
-    except subprocess.CalledProcessError as e:
-        return e.stdout, e.stderr, e.returncode
+    parser.add_argument(
+        "-e", "--endpoint",
+        help="API endpoint",
+        default="http://localhost:5555",
+        required=False
+    )
+
+    return parser.parse_args()
 
 
 def start_session(profile_id):
@@ -58,21 +51,9 @@ def start_session(profile_id):
     return o.token
 
 
-def process_output(stdout, stderr, returncode):
-    log.info("output %s", stdout)
-    log.info("stderr %s", stderr)
-    log.info("returncode %s", returncode)
-    if returncode != 0:
-        log.error("Unable to process HDA. returncode was %s",returncode)
-
-
-def pull_container():
-    process_output(*run_docker(['docker', 'pull', IMAGE_NAME]))
-
-
-def launch_container(o):
+def process_event(o, endpoint: str):
     # hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
-    api = API(requests)
+    api = API(requests, endpoint)
     token = start_session(o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -85,35 +66,17 @@ def launch_container(o):
                 "File %s is not an .hda file. Skipping processing.", str(output_path))
             return
 
-        downloaded_path = str(output_path)
-        gather_deps_cmd = ("hserver -S https://www.sidefx.com/license/sesinetd"
-                           " && hython /darol/automation/gather_dependencies.py"
-                           " --output-path /output"
-                           f" --hda-path={downloaded_path} && hserver -Q")
-        gen_network_cmd = ("hserver -S https://www.sidefx.com/license/sesinetd"
-                           " && hython /darol/automation/inspect.py"
-                           " --output-path /output"
-                           f" --hda-path={downloaded_path}"
-                           " && hserver -Q")
-        process_output(*run_docker(["docker", "run",
-                                    "--rm",
-                                    "-it",
-                                    "-v", "/tmp:/tmp",
-                                    "-v", f"{OUTPUT_LOCAL}:/output",
-                                    IMAGE_NAME,
-                                    '/bin/sh', '-c', gather_deps_cmd]))
-        process_output(*run_docker(["docker", "run",
-                                    "--rm",
-                                    "-it",
-                                    "-v", "/tmp:/tmp",
-                                    "-v", f"{OUTPUT_LOCAL}:/output",
-                                    IMAGE_NAME,
-                                    '/bin/sh', '-c', gen_network_cmd]))
+        # Write out a test file
+        os.makedirs(OUTPUT_LOCAL, exist_ok=True)
 
-        upload_results(token)
+        testfile_path = f"{OUTPUT_LOCAL}/testfile.txt"
+        with open(testfile_path, 'w') as file:
+            file.write("Hello, World!")
+
+        upload_results(token, endpoint)
 
 
-def upload_results(token):
+def upload_results(token, endpoint: str):
     headers = {"Authorization": "Bearer %s" % token}
     with tempfile.TemporaryDirectory() as tmp_dir:
         for root, _, files in os.walk(OUTPUT_LOCAL):
@@ -128,7 +91,7 @@ def upload_results(token):
                     file_data = [
                         ('files', (file_name, file, 'application/octet-stream'))]
                     response = requests.post(
-                        f"{api_settings().endpoint}/upload/store",
+                        f"{endpoint}/upload/store",
                         headers=headers, files=file_data, timeout=10)
                     if response.status_code == 200:
                         log.info("Successfully uploaded %s", file_name)
@@ -143,14 +106,10 @@ def upload_results(token):
                         log.warning(response.text)
 
 
-def parse_job_data(_):
-    pass
-
-
 async def main():
     """Async entrypoint to test worker dequeue, looks for SQL_URL
     environment variable to form an initial connection"""
-    # pull_container()
+    args = parse_args()
     sql_url = os.environ.get(
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
@@ -159,7 +118,7 @@ async def main():
         async for event_id, json_data in session.ack_next():
             log.info("%s: %s", event_id, json_data)
             o = munchify(json_data)
-            launch_container(o)
+            process_event(o, args.endpoint)
             await session.complete(event_id)
 
 
