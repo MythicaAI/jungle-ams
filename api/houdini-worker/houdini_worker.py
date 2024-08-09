@@ -7,6 +7,7 @@ import os
 import logging
 import requests
 import tempfile
+import subprocess
 import shutil
 
 from http import HTTPStatus
@@ -89,12 +90,14 @@ def process_event(o, endpoint: str):
                 "File %s is not an .hda file. Skipping processing.", str(output_path))
             return
 
-        # Write out a test file
-        os.makedirs(OUTPUT_LOCAL, exist_ok=True)
-
-        testfile_path = f"{OUTPUT_LOCAL}/testfile.txt"
-        with open(testfile_path, 'w') as file:
-            file.write("Hello, World!")
+        cmd = ['/bin/bash','-c']
+        export_cmd = (
+            f"hserver -S https://www.sidefx.com/license/sesinetd && "
+            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_LOCAL} --format=fbx --hda-path={str(output_path)} && "
+            f"hserver -Q"
+        )
+        cmd.append(export_cmd)
+        subprocess.run(cmd)
 
         upload_results(token, endpoint)
 
