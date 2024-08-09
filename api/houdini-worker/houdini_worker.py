@@ -139,7 +139,7 @@ async def main():
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
-    async with EventsSession(sql_url, sleep_interval, event_type_prefix='file_uploaded') as session:
+    async with EventsSession(sql_url, sleep_interval, event_type_prefix='generate_mesh_requested') as session:
         async for event_id, json_data in session.ack_next():
             log.info("%s: %s", event_id, json_data)
             o = munchify(json_data)

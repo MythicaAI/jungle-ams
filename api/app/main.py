@@ -41,6 +41,7 @@ route_names = [
     'download',
     'profiles',
     'files',
+    'jobs',
     'assets',
     'orgs',
     'topos',
