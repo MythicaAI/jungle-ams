@@ -1,6 +1,7 @@
 """Wrapper script to invoke hautomation from events"""
 import argparse
 import asyncio
+import json
 import subprocess
 import os
 import logging
@@ -8,12 +9,11 @@ import requests
 import tempfile
 import shutil
 
+from http import HTTPStatus
 from pathlib import Path
 from munch import munchify
 
 from events.events import EventsSession
-
-from api.api.files import API, api_settings
 
 # Configure logging
 logging.basicConfig(
@@ -39,9 +39,9 @@ def parse_args():
     return parser.parse_args()
 
 
-def start_session(profile_id):
+def start_session(endpoint: str, profile_id: str):
     """Create a session for the current profile"""
-    url = f"{api_settings().endpoint}/profiles/start_session/{profile_id}"
+    url = f"{endpoint}/profiles/start_session/{profile_id}"
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         log.warning("Failed to start session: %s", response.status_code)
@@ -51,13 +51,36 @@ def start_session(profile_id):
     return o.token
 
 
+def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
+    """Download a file_id to a local path"""
+    url = f"{endpoint}/download/info/{file_id}"
+    r = requests.get(url)
+    assert r.status_code == HTTPStatus.OK
+    log.info("response: %s", r.text)
+    doc = r.json()
+    log.info("response: %s", json.dumps(doc))
+    o = munchify(doc)
+    local_file_name = os.path.join(local_path, o.name)
+    log.info("downloading from %s to %s",
+                o.url,
+                local_file_name)
+    os.makedirs(os.path.dirname(local_file_name), exist_ok=True)
+    downloaded_bytes = 0
+    with open(local_file_name, "w+b") as f:
+        download_req = requests.get(o.url, stream=True)
+        for chunk in download_req.iter_content(chunk_size=1024):
+            if chunk:
+                downloaded_bytes += len(chunk)
+                f.write(chunk)
+    log.info("download complete, %s bytes", downloaded_bytes)
+    return Path(local_file_name)
+
+
 def process_event(o, endpoint: str):
-    # hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
-    api = API(requests, endpoint)
-    token = start_session(o.profile_id)
+    token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
-        output_path = api.download_file(o.file_id, Path(tmp_dir))
+        output_path = download_file(endpoint, o.file_id, Path(tmp_dir))
         if output_path is None:
             raise FileNotFoundError
 

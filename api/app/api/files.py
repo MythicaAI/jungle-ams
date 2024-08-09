@@ -45,14 +45,13 @@ class API(object):
     API wrapper
     """
 
-    def __init__(self, client, endpoint):
+    def __init__(self, client):
         self.settings = api_settings()
-        self.settings.endpoint = endpoint
         self.client = client
 
     def download_file(self, file_id: str, local_path: Path) -> Path:
         """Download a file_id to a local path"""
-        url = f"{self.settings.endpoint}/download/info/{file_id}"
+        url = f"{api_settings().endpoint}/download/info/{file_id}"
         r = self.client.get(url)
         assert r.status_code == HTTPStatus.OK
         log.info("response: %s", r.text)

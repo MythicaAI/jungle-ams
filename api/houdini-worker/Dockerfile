@@ -1,6 +1,6 @@
-FROM mythica-app:latest as api
+FROM mythica-app:latest AS api
 
-FROM python:3.12-alpine
+FROM hautomation:latest
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL version="1.0.0"
 LABEL name="mythica-houdini-worker"
@@ -10,17 +10,19 @@ LABEL tier="automation"
 # Build the requirements layer first, it shouldn't be changing very often
 # RUN pip install --upgrade pip google-cloud-storage
 
-
+# Install system dependencies
+RUN apt-get update && apt-get install -y python3-asyncpg python3-munch python3-typing-extensions python3-requests-toolbelt python3-sqlalchemy \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy API from the mythica app image for the packager to interface
 COPY --from=api /app /app/api
 ENV PYTHONPATH=/app/api
 
 WORKDIR /app/api
-RUN pip install --upgrade pip poetry
-RUN poetry check && \
-    poetry env use python3 && \
-    poetry install --compile --all-extras --no-root
+#RUN pip install --upgrade pip poetry
+#RUN poetry check && \
+#    poetry env use python3 && \
+#    poetry install --compile --all-extras --no-root
 
 WORKDIR /app
 
