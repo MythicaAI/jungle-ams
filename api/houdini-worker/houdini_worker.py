@@ -2,7 +2,6 @@
 import argparse
 import asyncio
 import json
-import subprocess
 import os
 import logging
 import requests
@@ -24,7 +23,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_LOCAL = os.path.join(SCRIPT_DIR, "output")
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 
 def parse_args():
     """Parse command line arguments and provide the args structure"""
@@ -81,19 +80,19 @@ def process_event(o, endpoint: str):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
-        output_path = download_file(endpoint, o.file_id, Path(tmp_dir))
-        if output_path is None:
+        file_path = download_file(endpoint, o.file_id, Path(tmp_dir))
+        if file_path is None:
             raise FileNotFoundError
 
-        if not str(output_path).endswith('.hda'):
+        if not str(file_path).endswith('.hda'):
             log.info(
-                "File %s is not an .hda file. Skipping processing.", str(output_path))
+                "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
         cmd = ['/bin/bash','-c']
         export_cmd = (
             f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_LOCAL} --format=fbx --hda-path={str(output_path)} && "
+            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --format=fbx --hda-path={str(file_path)} && "
             f"hserver -Q"
         )
         cmd.append(export_cmd)
@@ -105,7 +104,7 @@ def process_event(o, endpoint: str):
 def upload_results(token, endpoint: str):
     headers = {"Authorization": "Bearer %s" % token}
     with tempfile.TemporaryDirectory() as tmp_dir:
-        for root, _, files in os.walk(OUTPUT_LOCAL):
+        for root, _, files in os.walk(OUTPUT_DIR):
             for file_name in files:
                 file_path = os.path.join(root, file_name)
                 temp_file_path = os.path.join(tmp_dir, file_name)
@@ -140,7 +139,7 @@ async def main():
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
-    async with EventsSession(sql_url, sleep_interval) as session:
+    async with EventsSession(sql_url, sleep_interval, event_type_prefix='file_uploaded') as session:
         async for event_id, json_data in session.ack_next():
             log.info("%s: %s", event_id, json_data)
             o = munchify(json_data)

@@ -4,7 +4,7 @@ FROM hautomation:latest
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL version="1.0.0"
 LABEL name="mythica-houdini-worker"
-LABEL description="Automates the packaging of asset versions"
+LABEL description="Houdini worker that runs hautomation jobs based on service events"
 LABEL tier="automation"
 
 # Build the requirements layer first, it shouldn't be changing very often
