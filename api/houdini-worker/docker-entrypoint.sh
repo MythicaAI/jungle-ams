@@ -3,8 +3,8 @@
 #set -eof pipefail
 
 # shellcheck disable=SC2046
-#cd /app/api
-#. $(poetry env info --path)/bin/activate
+cd /app/api
+. $(poetry env info --path)/bin/activate
 cd /app
 
 ./api/print_ip_address.py

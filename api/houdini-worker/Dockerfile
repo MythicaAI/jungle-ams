@@ -11,7 +11,7 @@ LABEL tier="automation"
 # RUN pip install --upgrade pip google-cloud-storage
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y python3-asyncpg python3-munch python3-typing-extensions python3-requests-toolbelt python3-sqlalchemy \
+RUN apt-get update && apt-get install -y python3-poetry python3-trove-classifiers \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy API from the mythica app image for the packager to interface
@@ -19,10 +19,9 @@ COPY --from=api /app /app/api
 ENV PYTHONPATH=/app/api
 
 WORKDIR /app/api
-#RUN pip install --upgrade pip poetry
-#RUN poetry check && \
-#    poetry env use python3 && \
-#    poetry install --compile --all-extras --no-root
+RUN poetry check && \
+    poetry env use python3 && \
+    poetry install --all-extras --no-root
 
 WORKDIR /app
 
