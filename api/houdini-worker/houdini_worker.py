@@ -89,10 +89,14 @@ def process_event(o, endpoint: str):
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
+        params_file = os.path.join(tmp_dir, 'params.json')
+        with open(params_file, 'w') as f:
+            f.write(json.dumps(o.params))
+
         cmd = ['/bin/bash','-c']
         export_cmd = (
             f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --format=fbx --hda-path={str(file_path)} && "
+            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --format=fbx --hda-path={str(file_path)} --parms={params_file} && "
             f"hserver -Q"
         )
         cmd.append(export_cmd)
