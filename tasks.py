@@ -42,7 +42,7 @@ IMAGES = {
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
     'api/packager': {'name': 'mythica-packager', 'requires': 'api/app'},
-    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': 'api/app'},
+#    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': 'api/app'},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
 }
@@ -59,8 +59,8 @@ IMAGE_SETS = {
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
-        'api/packager',
-        'api/houdini-worker'},
+#        'api/houdini-worker',
+        'api/packager'},
 }
 
 
