@@ -29,6 +29,13 @@ IMAGE_PLATFORM = "linux/amd64"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #
+# Houdini variables
+#
+
+SFX_CLIENT_ID = os.environ.get('SFX_CLIENT_ID')
+SFX_CLIENT_SECRET = os.environ.get('SFX_CLIENT_SECRET')
+
+#
 # Integration testing directories
 #
 TESTING_STORAGE_DIR = os.path.join(BASE_DIR, 'testing/storage')
@@ -38,11 +45,18 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
+    'api/houdini': {
+        'name': 'hautomation',
+        'buildargs': { 
+            'SFX_CLIENT_ID': SFX_CLIENT_ID,
+            'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET
+        },
+    },
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
-    'api/packager': {'name': 'mythica-packager', 'requires': 'api/app'},
-#    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': 'api/app'},
+    'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
+    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': ['api/app', 'api/houdini']},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
 }
@@ -59,7 +73,8 @@ IMAGE_SETS = {
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
-#        'api/houdini-worker',
+        'api/houdini',
+        'api/houdini-worker',
         'api/packager'},
 }
 
@@ -106,12 +121,18 @@ def build_image(c, image_path):
     image_name = IMAGES[image_path]['name']
     requires = IMAGES[image_path].get('requires')
     if requires is not None:
-        build_image(c, requires)
+        for image in requires:
+            build_image(c, image)
+
+    buildarg_str = ''
+    buildargs = IMAGES[image_path].get('buildargs')
+    if buildargs is not None:
+        buildarg_str = ' '.join([f'--build-arg {key}={value}' for key, value in buildargs.items()])
 
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(
-            f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .',
+            f'docker build --platform={IMAGE_PLATFORM} {buildarg_str} -t {image_name}:latest .',
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
