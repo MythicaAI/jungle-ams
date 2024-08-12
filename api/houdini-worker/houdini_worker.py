@@ -89,10 +89,14 @@ def process_event(o, endpoint: str):
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
+        params_file = os.path.join(tmp_dir, 'params.json')
+        with open(params_file, 'w') as f:
+            f.write(json.dumps(o.params))
+
         cmd = ['/bin/bash','-c']
         export_cmd = (
             f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --format=fbx --hda-path={str(file_path)} && "
+            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --format=fbx --hda-path={str(file_path)} --parms={params_file} && "
             f"hserver -Q"
         )
         cmd.append(export_cmd)
@@ -139,7 +143,7 @@ async def main():
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
-    async with EventsSession(sql_url, sleep_interval, event_type_prefix='file_uploaded') as session:
+    async with EventsSession(sql_url, sleep_interval, event_type_prefix='generate_mesh_requested') as session:
         async for event_id, json_data in session.ack_next():
             log.info("%s: %s", event_id, json_data)
             o = munchify(json_data)
