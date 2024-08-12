@@ -38,6 +38,7 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
+    'api/darol/houdini-config': {'name': 'hautomation'},
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
@@ -59,6 +60,7 @@ IMAGE_SETS = {
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
+        'api/darol/houdini-config',
 #        'api/houdini-worker',
         'api/packager'},
 }
