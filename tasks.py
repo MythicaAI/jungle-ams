@@ -29,6 +29,13 @@ IMAGE_PLATFORM = "linux/amd64"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 #
+# Houdini variables
+#
+
+SFX_CLIENT_ID = os.environ.get('SFX_CLIENT_ID')
+SFX_CLIENT_SECRET = os.environ.get('SFX_CLIENT_SECRET')
+
+#
 # Integration testing directories
 #
 TESTING_STORAGE_DIR = os.path.join(BASE_DIR, 'testing/storage')
@@ -38,7 +45,13 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
-    'api/darol/houdini-config': {'name': 'hautomation'},
+    'api/darol/houdini-config': {
+        'name': 'hautomation',
+        'buildargs': { 
+            'SFX_CLIENT_ID': SFX_CLIENT_ID,
+            'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET
+        },
+    },
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
@@ -111,10 +124,15 @@ def build_image(c, image_path):
         for image in requires:
             build_image(c, image)
 
+    buildarg_str = ''
+    buildargs = IMAGES[image_path].get('buildargs')
+    if buildargs is not None:
+        buildarg_str = ' '.join([f'--build-arg {key}={value}' for key, value in buildargs.items()])
+
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(
-            f'docker build --platform={IMAGE_PLATFORM} -t {image_name}:latest .',
+            f'docker build --platform={IMAGE_PLATFORM} {buildarg_str} -t {image_name}:latest .',
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
