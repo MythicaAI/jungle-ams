@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <toolshelf name="mythica_darol1" label="Mythica Darol">
+    <memberTool name="network_exporter"/>
+    <memberTool name="network_importer"/>
+    <memberTool name="nodetype_exporter"/>
+  </toolshelf>
+
+  <tool name="network_exporter" label="Network Exporter" icon="$MYTHICA_DAROL/images/mythica/mythica_green.png">
+    <script scriptType="python"><![CDATA[import hou
+import json
+import importlib
+from PySide2 import QtWidgets, QtGui, QtCore
+from mythica import network as mythica_net
+
+importlib.reload(mythica_net)
+
+class NetworkExportPanel(QtWidgets.QWidget):
+    def __init__(self, on_close_callback):
+        super(NetworkExportPanel, self).__init__()
+
+        self.on_close_callback = on_close_callback
+        
+        self.setWindowTitle("JSON Network Exporter")
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
+        layout = QtWidgets.QVBoxLayout()
+
+        self.text_edit = QtWidgets.QTextEdit()
+        # Set a fixed-width font
+        fixed_font = QtGui.QFont("Courier", 10)  # "Courier" is a common fixed-width font
+        self.text_edit.setFont(fixed_font)
+        layout.addWidget(self.text_edit)
+
+        self.copy_button = QtWidgets.QPushButton("Copy to Clipboard")
+        self.copy_button.clicked.connect(self._copy_to_clipboard)
+        layout.addWidget(self.copy_button)
+
+        # Add a current_node_checkbox
+        self.current_node_checkbox = QtWidgets.QCheckBox("Export Only Current Node")
+        self.current_node_checkbox.stateChanged.connect(self._toggle_export)
+        layout.addWidget(self.current_node_checkbox)
+
+        # Add a current_node_checkbox
+        self.export_subnet = QtWidgets.QCheckBox("Export Subnetworks")
+        self.export_subnet.stateChanged.connect(self._toggle_export)
+        layout.addWidget(self.export_subnet)
+
+        self.setLayout(layout)
+        self.generate_export()
+
+    def _copy_to_clipboard(self):
+        clipboard = QtGui.QGuiApplication.clipboard()
+        clipboard.setText(self.text_edit.toPlainText())
+
+    def _toggle_export(self, state):
+        self.generate_export()
+
+    def generate_export(self):
+        # Handle the current_node_checkbox state change here
+        graph_data = mythica_net.get_network(
+            hou.selectedNodes() if self.current_node_checkbox.isChecked() else hou.node('/'),
+            self.export_subnet.isChecked(),
+            False,
+            False
+        ) 
+
+        self.text_edit.setPlainText(graph_data)
+
+    def closeEvent(self, event):
+        self.on_close_callback()
+        super(NetworkExportPanel, self).closeEvent(event)   
+
+
+
+def hidePanel():
+    hou.ui.removeSelectionCallback(refreshPanel)
+    hou.session.network_export_panel = None
+    
+def showPanel():
+    # Use Houdini's session to store the panel instance
+    if not hasattr(hou.session, 'network_export_panel'):
+        hou.session.network_export_panel = None
+
+    if hou.session.network_export_panel is None:
+        # If no panel exists, create one
+        hou.session.network_export_panel = NetworkExportPanel(hidePanel)
+        hou.session.network_export_panel.show()
+        
+    else:
+        # If a panel exists, bring it to the front
+        hou.session.network_export_panel.raise_()
+
+def refreshPanel(selection):
+    if hasattr(hou.session, 'network_export_panel') and hou.session.network_export_panel is not None:
+        hou.session.network_export_panel.generate_export()
+    
+hou.ui.addSelectionCallback(refreshPanel)
+
+# Show the panel
+showPanel()
+
+]]></script>
+  </tool>
+
+  <tool name="network_importer" label="Network Importer" icon="$MYTHICA_DAROL/images/mythica/mythica_yellow.png">
+    <script scriptType="python"><![CDATA[import hou
+import json
+import importlib
+from PySide2 import QtWidgets, QtGui, QtCore
+from mythica import network as mythica_net
+
+importlib.reload(mythica_net)
+
+class NetworkImportPanel(QtWidgets.QWidget):
+    def __init__(self, on_close_callback):
+        super(NetworkImportPanel, self).__init__()
+
+        self.on_close_callback = on_close_callback
+
+        self.setWindowTitle("JSON Network Importer")
+        #self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        
+        layout = QtWidgets.QVBoxLayout()
+
+        self.text_edit = QtWidgets.QTextEdit()
+        # Set a fixed-width font
+        fixed_font = QtGui.QFont("Courier", 10)  # "Courier" is a common fixed-width font
+        self.text_edit.setFont(fixed_font)
+        layout.addWidget(self.text_edit)
+
+        # Button to select target node
+        self.selected_node = hou.node('/')
+        self.target_node_button = QtWidgets.QPushButton(f"Target Node: {self.selected_node}")
+        self.target_node_button.clicked.connect(self.select_target_node)
+        layout.addWidget(self.target_node_button)
+
+        self.import_button = QtWidgets.QPushButton("Import Network")
+        self.import_button.clicked.connect(self._create_network)
+        layout.addWidget(self.import_button)
+
+        self.setLayout(layout)
+
+    def _create_network(self):
+        try:
+            json_data = self.text_edit.toPlainText()
+
+            data = json.loads(json_data)
+            mythica_net.create_network(data, self.selected_node)
+            
+            if self.selected_node.isNetwork():
+                self.selected_node.layoutChildren()
+            self.close()
+        except Exception as e:
+            # Show error in a message box
+            QtWidgets.QMessageBox.critical(self, "Import Error", f"{str(e)}")
+
+            
+
+    def select_target_node(self):
+        selected_node = hou.ui.selectNode()
+        if selected_node:
+            self.selected_node = hou.node(selected_node)
+            self.target_node_button.setText(f"Target Node: {self.selected_node}")
+        
+        self.raise_()
+        
+    def closeEvent(self, event):
+        self.on_close_callback()
+        super(NetworkImportPanel, self).closeEvent(event)    
+  
+
+def hidePanel():
+    hou.session.network_import_panel = None
+
+def showPanel():
+    # Use Houdini's session to store the panel instance
+    if not hasattr(hou.session, 'network_import_panel'):
+        hou.session.network_import_panel = None
+
+    if hou.session.network_import_panel is None:
+        # If no panel exists, create one
+        hou.session.network_import_panel = NetworkImportPanel(hidePanel)
+        hou.session.network_import_panel.show()
+    else:
+        # If a panel exists, bring it to the front
+        hou.session.network_import_panel.raise_()
+        hou.session.network_import_panel.activateWindow()
+             
+# Show the panel
+showPanel()
+]]></script>
+  </tool>
+
+  <tool name="nodetype_exporter" label="Export Node Types" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[import hou
+import json
+import importlib
+from PySide2 import QtWidgets, QtGui, QtCore
+from mythica import network as mythica_net
+
+importlib.reload(mythica_net)
+
+class NetworkExportPanel(QtWidgets.QWidget):
+    def __init__(self, on_close_callback):
+        super(NetworkExportPanel, self).__init__()
+
+        self.on_close_callback = on_close_callback
+        
+        self.setWindowTitle("JSON NodeType Exporter")
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
+        layout = QtWidgets.QVBoxLayout()
+
+        self.text_edit = QtWidgets.QTextEdit()
+        # Set a fixed-width font
+        fixed_font = QtGui.QFont("Courier", 10)  # "Courier" is a common fixed-width font
+        self.text_edit.setFont(fixed_font)
+        layout.addWidget(self.text_edit)
+
+        self.copy_button = QtWidgets.QPushButton("Copy to Clipboard")
+        self.copy_button.clicked.connect(self._copy_to_clipboard)
+        layout.addWidget(self.copy_button)
+
+        self.setLayout(layout)
+        self.generate_export()
+
+    def _copy_to_clipboard(self):
+        clipboard = QtGui.QGuiApplication.clipboard()
+        clipboard.setText(self.text_edit.toPlainText())
+
+    def _toggle_export(self, state):
+        self.generate_export()
+
+    def generate_export(self):
+        # Handle the current_node_checkbox state change here
+        graph_data = mythica_net.get_node_types() 
+
+        self.text_edit.setPlainText(graph_data)
+
+    def closeEvent(self, event):
+        self.on_close_callback()
+        super(NetworkExportPanel, self).closeEvent(event)   
+
+
+
+def hidePanel():
+    hou.ui.removeSelectionCallback(refreshPanel)
+    hou.session.network_export_panel = None
+    
+def showPanel():
+    # Use Houdini's session to store the panel instance
+    if not hasattr(hou.session, 'network_export_panel'):
+        hou.session.network_export_panel = None
+
+    if hou.session.network_export_panel is None:
+        # If no panel exists, create one
+        hou.session.network_export_panel = NetworkExportPanel(hidePanel)
+        hou.session.network_export_panel.show()
+        
+    else:
+        # If a panel exists, bring it to the front
+        hou.session.network_export_panel.raise_()
+
+def refreshPanel(selection):
+    if hasattr(hou.session, 'network_export_panel') and hou.session.network_export_panel is not None:
+        hou.session.network_export_panel.generate_export()
+    
+hou.ui.addSelectionCallback(refreshPanel)
+
+# Show the panel
+showPanel()
+
+]]></script>
+  </tool>
+</shelfDocument>
