@@ -74,7 +74,7 @@ async def get_generate_mesh_status_by_id(
             # HACK: Add method of associating resulting mesh with event
             query = (
                 select(FileContent)
-                .where(FileContent.name.like('%.fbx'))
+                .where(FileContent.name.like('%.fbx')) # pylint: disable=E1101
                 .order_by(desc(FileContent.created))
                 .limit(1)
             )
