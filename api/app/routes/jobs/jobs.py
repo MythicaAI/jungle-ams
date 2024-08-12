@@ -1,11 +1,10 @@
 import logging
-from http import HTTPStatus
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, desc, insert
 from pydantic import BaseModel
 
-from auth.api_id import event_seq_to_id, event_id_to_seq, file_id_to_seq, file_seq_to_id, profile_seq_to_id
+from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id
 from config import app_config
 from db.connection import get_session
 from db.schema.events import Event
@@ -53,7 +52,6 @@ async def generate_mesh_file_by_id(
     profile: Profile = Depends(current_profile)) -> GenerateMeshResponse:
     """Generates a mesh based on the file content"""
 
-    file_seq = file_id_to_seq(request.file_id)
     with get_session() as session:
         event_result = add_generate_mesh_event(session, request, profile.profile_seq)
         session.commit()
@@ -76,7 +74,7 @@ async def get_generate_mesh_status_by_id(
             # HACK: Add method of associating resulting mesh with event
             query = (
                 select(FileContent)
-                .where(FileContent.name.like('%.fbx'))
+                .where(FileContent.name.like('%.fbx')) # pylint: disable=E1101
                 .order_by(desc(FileContent.created))
                 .limit(1)
             )
