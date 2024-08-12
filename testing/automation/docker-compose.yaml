@@ -8,6 +8,12 @@ services:
     networks:
       - web
       - storage
+#  houdini-worker:
+#    container_name: houdini-worker
+#    image: mythica-houdini-worker:latest
+#    networks:
+#      - web
+#      - storage
 networks:
   storage:
     driver: bridge
