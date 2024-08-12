@@ -35,7 +35,6 @@ def add_generate_mesh_event(session: Session, request: GenerateMeshRequest, prof
         'profile_id': profile_seq_to_id(profile_seq),
         'params': request.params
     }
-    print(f"JobData: {job_data}")
     location = app_config().mythica_location
     stmt = insert(Event).values(
         event_type="generate_mesh_requested",
