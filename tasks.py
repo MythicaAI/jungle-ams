@@ -42,8 +42,8 @@ IMAGES = {
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
-    'api/packager': {'name': 'mythica-packager', 'requires': 'api/app'},
-#    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': 'api/app'},
+    'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
+    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': ['api/app', 'api/darol/houdini-config']},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
 }
@@ -61,7 +61,7 @@ IMAGE_SETS = {
         'testing/storage/minio-config'},
     'auto': {
         'api/darol/houdini-config',
-#        'api/houdini-worker',
+        'api/houdini-worker',
         'api/packager'},
 }
 
@@ -108,7 +108,8 @@ def build_image(c, image_path):
     image_name = IMAGES[image_path]['name']
     requires = IMAGES[image_path].get('requires')
     if requires is not None:
-        build_image(c, requires)
+        for image in requires:
+            build_image(c, image)
 
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
