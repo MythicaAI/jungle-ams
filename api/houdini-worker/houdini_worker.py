@@ -118,26 +118,16 @@ def process_hda_uploaded_event(o, endpoint: str):
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
-        # TODO: Run Houdini to extract interface data from hda file
-        interface = {
-            "parameters": [
-                {
-                    "name": "frond_count",
-                    "label": "Frond Count",
-                    "default": 5
-                },
-                {
-                    "name": "base_scale",
-                    "label": "Spacing",
-                    "default": 0.1
-                }
-            ]
-        }
+        output_file_name = f"{o.file_id}_interface.json"
 
-        os.makedirs(OUTPUT_DIR, exist_ok=True)
-        params_file = os.path.join(OUTPUT_DIR, f"{o.file_id}_interface.json")
-        with open(params_file, 'w') as f:
-            f.write(json.dumps(interface))
+        cmd = ['/bin/bash','-c']
+        export_cmd = (
+            f"hserver -S https://www.sidefx.com/license/sesinetd && "
+            f"hython /darol/automation/interface.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --hda-path={str(file_path)} && "
+            f"hserver -Q"
+        )
+        cmd.append(export_cmd)
+        subprocess.run(cmd)
 
         upload_results(token, endpoint)
 
