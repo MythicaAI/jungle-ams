@@ -18,6 +18,9 @@ class GenerateMeshRequest(BaseModel):
     file_id: str
     params: dict[str, str]
 
+class GenerateMeshInterfaceResponse(BaseModel):
+    file_id: str
+
 class GenerateMeshResponse(BaseModel):
     event_id: str
 
@@ -47,8 +50,8 @@ def add_generate_mesh_event(session: Session, request: GenerateMeshRequest, prof
     return event_result
 
 @router.get("/generate-mesh/interface/{file_id}")
-async def get_generate_mesh_status_by_id(
-    file_id: str) -> GenerateMeshStatusResponse:
+async def get_generate_mesh_interface_by_id(
+    file_id: str) -> GenerateMeshInterfaceResponse:
     """Gets the interface definition for a file"""
 
     with get_session() as session:
@@ -61,9 +64,9 @@ async def get_generate_mesh_status_by_id(
 
         file = session.exec(query).one_or_none()
         if file is not None:
-            return GenerateMeshStatusResponse(file_id=file_seq_to_id(file.file_seq))
+            return GenerateMeshInterfaceResponse(file_id=file_seq_to_id(file.file_seq))
 
-    return GenerateMeshStatusResponse(file_id="")
+    return GenerateMeshInterfaceResponse(file_id="")
 
 @router.post("/generate-mesh")
 async def generate_mesh_file_by_id(
