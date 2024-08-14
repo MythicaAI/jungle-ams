@@ -60,7 +60,8 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
     doc = r.json()
     log.info("response: %s", json.dumps(doc))
     o = munchify(doc)
-    local_file_name = os.path.join(local_path, o.name)
+    file_name = o.name.replace('\\', '_').replace('/', '_')
+    local_file_name = os.path.join(local_path, file_name)
     log.info("downloading from %s to %s",
                 o.url,
                 local_file_name)
