@@ -46,6 +46,26 @@ def add_generate_mesh_event(session: Session, request: GenerateMeshRequest, prof
              request.file_id, profile_seq, event_result)
     return event_result
 
+@router.get("/generate-mesh/parameters/{file_id}")
+async def get_generate_mesh_status_by_id(
+    file_id: str) -> GenerateMeshStatusResponse:
+    """Gets the parameters interface for a file"""
+
+    with get_session() as session:
+        # HACK: Add method of associating interface json with a file
+        query = (
+            select(FileContent)
+            .where(FileContent.name.like('%.fbx')) # pylint: disable=E1101
+            .order_by(desc(FileContent.created))
+            .limit(1)
+        )
+
+        file = session.exec(query).one_or_none()
+        if file is not None:
+            return GenerateMeshStatusResponse(file_id=file_seq_to_id(file.file_seq))
+
+    return GenerateMeshStatusResponse(file_id="")
+
 @router.post("/generate-mesh")
 async def generate_mesh_file_by_id(
     request: GenerateMeshRequest,
