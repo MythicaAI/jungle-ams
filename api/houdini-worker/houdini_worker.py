@@ -77,7 +77,7 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
     return Path(local_file_name)
 
 
-def process_event(o, endpoint: str):
+def process_generate_mesh_event(o, endpoint: str):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -105,6 +105,41 @@ def process_event(o, endpoint: str):
 
         upload_results(token, endpoint)
 
+def process_hda_uploaded_event(o, endpoint: str):
+    token = start_session(endpoint, o.profile_id)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+
+        file_path = download_file(endpoint, o.file_id, Path(tmp_dir))
+        if file_path is None:
+            raise FileNotFoundError
+
+        if not str(file_path).endswith('.hda'):
+            log.info(
+                "File %s is not an .hda file. Skipping processing.", str(file_path))
+            return
+
+        # TODO: Run Houdini to extract interface data from hda file
+        interface = {
+            "parameters": [
+                {
+                    "name": "frond_count",
+                    "label": "Frond Count",
+                    "default": 5
+                },
+                {
+                    "name": "base_scale",
+                    "label": "Spacing",
+                    "default": 0.1
+                }
+            ]
+        }
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        params_file = os.path.join(OUTPUT_DIR, f"{o.file_id}_interface.json")
+        with open(params_file, 'w') as f:
+            f.write(json.dumps(interface))
+
+        upload_results(token, endpoint)
 
 def upload_results(token, endpoint: str):
     headers = {"Authorization": "Bearer %s" % token}
@@ -144,11 +179,16 @@ async def main():
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
-    async with EventsSession(sql_url, sleep_interval, event_type_prefix='generate_mesh_requested') as session:
-        async for event_id, json_data in session.ack_next():
-            log.info("%s: %s", event_id, json_data)
+    async with EventsSession(sql_url, sleep_interval, event_type_prefix='') as session:
+        async for event_id, event_type, json_data in session.ack_next():
+            log.info("%s: %s %s", event_id, event_type, json_data)
             o = munchify(json_data)
-            process_event(o, args.endpoint)
+
+            if event_type == 'generate_mesh_requested':
+                process_generate_mesh_event(o, args.endpoint)
+            elif event_type == 'file_uploaded:hda':
+                process_hda_uploaded_event(o, args.endpoint)
+
             await session.complete(event_id)
 
 
