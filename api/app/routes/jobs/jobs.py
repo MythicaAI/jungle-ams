@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends
-from sqlmodel import Session, select, desc, insert
+from sqlmodel import Session, select, insert
 from pydantic import BaseModel
 
 from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id
