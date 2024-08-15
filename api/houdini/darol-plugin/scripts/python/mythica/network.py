@@ -104,24 +104,22 @@ def get_node_types():
 
     return node_types
 
-def get_node_type(node_type):
-    print(node_type)
+def get_node_type(node_type, include_code = True):
     # Get standard names for category, namespace, name, version, type, classes
     node_type_strs = _get_node_type_strings(node_type)
 
     nt = {
         "root": node_type.isManager(),
-        "subnet": node_type.childTypeCategory() or '',
+        "subnet": node_type.childTypeCategory().name() or '',
         "help": node_type.embeddedHelp(),
         "icon": node_type.icon(),
         "inputs": node_type.maxNumInputs(),  # Gather inputs
         "outputs": node_type.maxNumOutputs(),  # Gather outputs
         "defaults": {},  # parameters
-        "code": node_type.parmTemplateGroup().asCode(),
     }
+    if include_code:
+        nt["code"] = node_type.parmTemplateGroup().asCode()
     nt.update(node_type_strs)
-
-
 
     # Loop through all the parameters of the node for defaults and to
     # sort out ramp parms. 
@@ -129,8 +127,17 @@ def get_node_type(node_type):
         
         if _isValueParm(parmtemp):
             defaults = _get_parm_defaults(parmtemp)
-            if defaults is not None:
-                nt["defaults"][parmtemp.name()] = defaults
+            if defaults is None:
+                continue
+
+            defaults["label"] = parmtemp.label()
+
+            if hasattr(parmtemp, "minValue"):
+                defaults["min"] = parmtemp.minValue()
+            if hasattr(parmtemp, "maxValue"):
+                defaults["max"] = parmtemp.maxValue()
+
+            nt["defaults"][parmtemp.name()] = defaults
     
     return nt
 
