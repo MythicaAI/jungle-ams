@@ -104,24 +104,22 @@ def get_node_types():
 
     return node_types
 
-def get_node_type(node_type):
-    print(node_type)
+def get_node_type(node_type, include_code = True):
     # Get standard names for category, namespace, name, version, type, classes
     node_type_strs = _get_node_type_strings(node_type)
 
     nt = {
         "root": node_type.isManager(),
-        "subnet": node_type.childTypeCategory() or '',
+        "subnet": node_type.childTypeCategory().name() or '',
         "help": node_type.embeddedHelp(),
         "icon": node_type.icon(),
         "inputs": node_type.maxNumInputs(),  # Gather inputs
         "outputs": node_type.maxNumOutputs(),  # Gather outputs
         "defaults": {},  # parameters
-        "code": node_type.parmTemplateGroup().asCode(),
     }
+    if include_code:
+        nt["code"] = node_type.parmTemplateGroup().asCode()
     nt.update(node_type_strs)
-
-
 
     # Loop through all the parameters of the node for defaults and to
     # sort out ramp parms. 
@@ -131,7 +129,7 @@ def get_node_type(node_type):
             defaults = _get_parm_defaults(parmtemp)
             if defaults is not None:
                 nt["defaults"][parmtemp.name()] = defaults
-    
+
     return nt
 
 def get_network(start_here, 
@@ -916,7 +914,12 @@ def _get_litegraph_tab_menu(nt):
 def _get_parm_defaults(parmtemp):
     _parm = {
         "type":parmtemp.type().name(),
+        "label":parmtemp.label(),
     }
+    if hasattr(parmtemp, "minValue"):
+        _parm["min"] = parmtemp.minValue()
+    if hasattr(parmtemp, "maxValue"):
+        _parm["max"] = parmtemp.maxValue()
 
     default = None
     if isinstance(parmtemp, hou.RampParmTemplate):
@@ -929,7 +932,6 @@ def _get_parm_defaults(parmtemp):
     else: 
         default = parmtemp.defaultValue()
 
-    
     _parm["default"] = _normalizeList(default)
 
     if default is None:
