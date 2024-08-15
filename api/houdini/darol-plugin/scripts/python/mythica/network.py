@@ -127,18 +127,9 @@ def get_node_type(node_type, include_code = True):
         
         if _isValueParm(parmtemp):
             defaults = _get_parm_defaults(parmtemp)
-            if defaults is None:
-                continue
+            if defaults is not None:
+                nt["defaults"][parmtemp.name()] = defaults
 
-            defaults["label"] = parmtemp.label()
-
-            if hasattr(parmtemp, "minValue"):
-                defaults["min"] = parmtemp.minValue()
-            if hasattr(parmtemp, "maxValue"):
-                defaults["max"] = parmtemp.maxValue()
-
-            nt["defaults"][parmtemp.name()] = defaults
-    
     return nt
 
 def get_network(start_here, 
@@ -923,7 +914,12 @@ def _get_litegraph_tab_menu(nt):
 def _get_parm_defaults(parmtemp):
     _parm = {
         "type":parmtemp.type().name(),
+        "label":parmtemp.label(),
     }
+    if hasattr(parmtemp, "minValue"):
+        _parm["min"] = parmtemp.minValue()
+    if hasattr(parmtemp, "maxValue"):
+        _parm["max"] = parmtemp.maxValue()
 
     default = None
     if isinstance(parmtemp, hou.RampParmTemplate):
@@ -936,7 +932,6 @@ def _get_parm_defaults(parmtemp):
     else: 
         default = parmtemp.defaultValue()
 
-    
     _parm["default"] = _normalizeList(default)
 
     if default is None:
