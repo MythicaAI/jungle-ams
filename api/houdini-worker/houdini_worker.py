@@ -9,6 +9,7 @@ import tempfile
 import subprocess
 import shutil
 
+from auth.api_id import event_seq_to_id
 from http import HTTPStatus
 from pathlib import Path
 from munch import munchify
@@ -77,7 +78,7 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
     return Path(local_file_name)
 
 
-def process_generate_mesh_event(o, endpoint: str):
+def process_generate_mesh_event(o, endpoint: str, event_seq: int):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -94,10 +95,12 @@ def process_generate_mesh_event(o, endpoint: str):
         with open(params_file, 'w') as f:
             f.write(json.dumps(o.params))
 
+        output_file_name = f"{event_seq_to_id(event_seq)}_mesh"
+
         cmd = ['/bin/bash','-c']
         export_cmd = (
             f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --format=fbx --hda-path={str(file_path)} --parms={params_file} && "
+            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --format=fbx --hda-path={str(file_path)} --parms={params_file} && "
             f"hserver -Q"
         )
         cmd.append(export_cmd)
@@ -170,16 +173,16 @@ async def main():
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
     async with EventsSession(sql_url, sleep_interval, event_type_prefix='') as session:
-        async for event_id, event_type, json_data in session.ack_next():
-            log.info("%s: %s %s", event_id, event_type, json_data)
+        async for event_seq, event_type, json_data in session.ack_next():
+            log.info("%s: %s %s", event_seq, event_type, json_data)
             o = munchify(json_data)
 
             if event_type == 'generate_mesh_requested':
-                process_generate_mesh_event(o, args.endpoint)
+                process_generate_mesh_event(o, args.endpoint, event_seq)
             elif event_type == 'file_uploaded:hda':
                 process_hda_uploaded_event(o, args.endpoint)
 
-            await session.complete(event_id)
+            await session.complete(event_seq)
 
 
 if __name__ == '__main__':

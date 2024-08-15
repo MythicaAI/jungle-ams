@@ -20,6 +20,12 @@ parser.add_argument(
     help="Output directory for writing out the FBX. (this path must be accessible inside the Docker container)",
 )
 parser.add_argument(
+    "--output-file-name",
+    type=str,
+    required=True,
+    help="File name for the output file",
+)
+parser.add_argument(
     '--format', 
     required=True,
     choices=['fbx', 'glb'], 
@@ -36,6 +42,7 @@ hdapath = args.hda_path.name
 parms_path = args.parms.name
 
 output_path = args.output_path
+output_file_name = args.output_file_name
 
 os.makedirs(output_path, exist_ok=True)
 
@@ -66,7 +73,7 @@ for assetdef in hou.hda.definitionsInFile(hdapath):
 out = hou.node('out')
 
 if args.format == 'fbx':
-    output_file_path = os.path.join(output_path, f"{os.path.basename(hdapath)}.fbx")
+    output_file_path = os.path.join(output_path, f"{output_file_name}.fbx")
 
     fbx_node = out.createNode("filmboxfbx","fbx_node")
     fbx_node.parm("sopoutput").set(output_file_path)
@@ -75,7 +82,7 @@ if args.format == 'fbx':
     fbx_node.parm("execute").pressButton()
 elif args.format == 'glb':
     # gltf vs glb export is inferred from the output extension
-    output_file_path = os.path.join(output_path, f"{os.path.basename(hdapath)}.glb")
+    output_file_path = os.path.join(output_path, f"{output_file_name}.glb")
 
     gltf_node = out.createNode("gltf","gltf_node")
     gltf_node.parm("file").set(output_file_path)

@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends
-from sqlmodel import Session, select, desc, insert
+from sqlmodel import Session, select, insert
 from pydantic import BaseModel
 
 from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id
@@ -96,8 +96,7 @@ async def get_generate_mesh_status_by_id(
             # HACK: Add method of associating resulting mesh with event
             query = (
                 select(FileContent)
-                .where(FileContent.name.like('%.fbx')) # pylint: disable=E1101
-                .order_by(desc(FileContent.created))
+                .where(FileContent.name.like(f"{event_id}_mesh.fbx")) # pylint: disable=E1101
                 .limit(1)
             )
 
