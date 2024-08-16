@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, insert
 from pydantic import BaseModel
+from typing import Any
 
 from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id
 from config import app_config
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 
 class GenerateMeshRequest(BaseModel):
     file_id: str
-    params: dict[str, str]
+    params: dict[str, Any]
 
 class GenerateMeshInterfaceResponse(BaseModel):
     file_id: str
