@@ -64,10 +64,15 @@ geo = obj.createNode('geo','geometry')
 
 for assetdef in hou.hda.definitionsInFile(hdapath):
     asset = geo.createNode(assetdef.nodeTypeName())
-    for key, value in parms.items():
-        parm = asset.parm(key)
-        if parm:
-            parm.set(value)
+    for k, v in parms.items():
+        # TODO: Support ramp parameters
+        if not isinstance(v, dict):
+            val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
+            parm = asset.parmTuple(k)
+            if parm:
+                parm.set(val)
+            else:
+                print(f"Parameter {k} not found in {assetdef.nodeTypeName()}")
 
 # Export
 out = hou.node('out')
