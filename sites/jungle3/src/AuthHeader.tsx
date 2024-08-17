@@ -20,30 +20,47 @@ import {
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { StatusAlarm } from "./components/StatusAlarm.tsx";
 import { api } from "./services/api";
-import {useAuth0} from "@auth0/auth0-react";
+import { useAuth0 } from "@auth0/auth0-react";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
 // we need to think about how to do the persistence without exposing the token to XSS
 
 export const AuthHeader = () => {
-  const [cookies, setCookie] = useCookies(["profile_id", "auth_token", "refresh_token"]);
+  const [cookies, setCookie] = useCookies([
+    "profile_id",
+    "auth_token",
+    "refresh_token",
+  ]);
   const { authToken, profile, setAuthToken, setProfile, setOrgRoles } =
     useGlobalStore();
-  const {loginWithRedirect, getAccessTokenSilently, user, isAuthenticated, isLoading } = useAuth0();
+  const {
+    loginWithRedirect,
+    getAccessTokenSilently,
+    user,
+    isAuthenticated,
+    isLoading,
+  } = useAuth0();
+
+  console.log("user: ", user);
+  console.log("isAuthenticated: ", isAuthenticated);
 
   // Refresh the backend API session based on the Auth0 state (create a new auth token)
   useEffect(() => {
     if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
     } else {
-      // getAccessTokenSilently({
-      //     authorizationParams: {
-      //       audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-      //       scope: 'all',
-      //     },})
-      //   .then((token) => setCookie("auth_token", token, { path: "/" }))
-      //   .catch((error) => console.error("getAccessTokenSilently:", error));
+      getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "all",
+        },
+      })
+        .then((token) => {
+          console.log("token: ", token);
+          setCookie("auth_token", token, { path: "/" });
+        })
+        .catch((error) => console.error("getAccessTokenSilently:", error));
     }
   }, [cookies]);
 
@@ -72,7 +89,7 @@ export const AuthHeader = () => {
     // Get a new auth_token with the profile_id
     api
       .get<SessionStartResponse>({
-        path: `/profiles/start_session/${user.sub}`,
+        path: `/profiles/start_session/${user?.sub}`,
       })
       .then((data) => {
         setAuthToken(data.token);
@@ -99,11 +116,11 @@ export const AuthHeader = () => {
       });
   };
 
-  const LoginAvatarButton = styled('div')({
-    display: 'inline-block',
-    cursor: 'pointer',
-    '&:focus': {
-      outline: 'none',
+  const LoginAvatarButton = styled("div")({
+    display: "inline-block",
+    cursor: "pointer",
+    "&:focus": {
+      outline: "none",
     },
   });
 
@@ -138,9 +155,17 @@ export const AuthHeader = () => {
             <LoginAvatarButton
               role="button"
               tabIndex={0}
-              onClick={() => loginWithRedirect()
-                .then(() => {console.log("logged in")})
-                .catch((error) => {console.log("error", error)})}>
+              onClick={() =>
+                loginWithRedirect()
+                  .then((res) => {
+                    console.log("LOGIN RES: ", res);
+                    console.log("logged in");
+                  })
+                  .catch((error) => {
+                    console.log("error", error);
+                  })
+              }
+            >
               <Avatar alt="?" variant="soft" />
             </LoginAvatarButton>
           )}

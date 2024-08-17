@@ -23,7 +23,9 @@ export const generateOptions: GenerateOptions = ({
     path: `${import.meta.env.VITE_API_BASE_URL}${path}${
       query ? `?${qs.stringify(query)}` : ""
     }`,
+
     options: {
+      mode: "no-cors", // needs to be removed later on
       headers: {
         ...(!upload && body && !contentType
           ? { "Content-Type": "application/json" }
