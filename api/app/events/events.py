@@ -41,11 +41,11 @@ class EventsSession(object):
     accessors of the event queue.
     """
 
-    def __init__(self, sql_url, sleep_interval, event_type_prefixes=[''], echo=False):
+    def __init__(self, sql_url, sleep_interval, event_type_prefixes, echo=False):
         self.async_engine = create_async_engine(sql_url, echo=echo)
         self.sleep_interval = sleep_interval
         self.conn = None
-        self.event_type_condition = ' or '.join([f"event_type like '{prefix}%%'" for prefix in event_type_prefixes])
+        self.event_type_condition = ' or '.join([f"event_type like '{prefix}%%'" for prefix in event_type_prefixes]) or 'TRUE'
 
     async def __aenter__(self) -> Self:
         return self
