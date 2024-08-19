@@ -28,7 +28,7 @@ parser.add_argument(
 parser.add_argument(
     '--format', 
     required=True,
-    choices=['fbx', 'glb'], 
+    choices=['fbx', 'glb', 'usdz'], 
     help="The export format."
 )
 parser.add_argument(
@@ -39,7 +39,6 @@ parser.add_argument(
 )   
 args, unknown = parser.parse_known_args()
 hdapath = args.hda_path.name
-parms_path = args.parms.name
 
 output_path = args.output_path
 output_file_name = args.output_file_name
@@ -55,24 +54,25 @@ hou.hda.installFile(hdapath,force_use_assets=True)
 # Load parameters from file
 parms = {}
 if args.parms:
-    with open(parms_path) as f:
+    with open(args.parms.name) as f:
         parms = json.load(f)
 
 # Geometry
 obj = hou.node('obj')
 geo = obj.createNode('geo','geometry')
 
-for assetdef in hou.hda.definitionsInFile(hdapath):
-    asset = geo.createNode(assetdef.nodeTypeName())
-    for k, v in parms.items():
-        # TODO: Support ramp parameters
-        if not isinstance(v, dict):
-            val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
-            parm = asset.parmTuple(k)
-            if parm:
-                parm.set(val)
-            else:
-                print(f"Parameter {k} not found in {assetdef.nodeTypeName()}")
+# TODO: Support specifying which definition inside the hda file to use
+assetdef = hou.hda.definitionsInFile(hdapath)[0]
+asset = geo.createNode(assetdef.nodeTypeName())
+for k, v in parms.items():
+    # TODO: Support ramp parameters
+    if not isinstance(v, dict):
+        val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
+        parm = asset.parmTuple(k)
+        if parm:
+            parm.set(val)
+        else:
+            print(f"Parameter {k} not found in {assetdef.nodeTypeName()}")
 
 # Export
 out = hou.node('out')
@@ -93,5 +93,20 @@ elif args.format == 'glb':
     gltf_node.parm("file").set(output_file_path)
 
     gltf_node.parm("execute").pressButton()
+elif args.format == 'usdz':
+    # Export to USD
+    output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
+    usd_node = geo.createNode("usdexport","usd_node")
+    usd_node.parm("lopoutput").set(output_file_path)
+    usd_node.setInput(0, asset, 0)
+    usd_node.parm("execute").pressButton()
+
+    # Convert to USDZ format
+    output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
+    usdz_node = out.createNode("usdzip","usdz_node")
+    usdz_node.parm("infile1").set(output_file_path)
+    usdz_node.parm("outfile1").set(output_zip_file_path)
+    usdz_node.parm("execute").pressButton()
+    os.remove(output_file_path)
 
 mdarol.end_houdini(hip)
