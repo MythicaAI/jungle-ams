@@ -110,3 +110,4 @@ elif args.format == 'usdz':
     os.remove(output_file_path)
 
 mdarol.end_houdini(hip)
+mdarol.remove_file(hip)
