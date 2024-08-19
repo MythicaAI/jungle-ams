@@ -100,7 +100,7 @@ def process_generate_mesh_event(o, endpoint: str, event_seq: int):
         cmd = ['/bin/bash','-c']
         export_cmd = (
             f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --format=fbx --hda-path={str(file_path)} --parms={params_file} && "
+            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --format=usdz --hda-path={str(file_path)} --parms={params_file} && "
             f"hserver -Q"
         )
         cmd.append(export_cmd)
