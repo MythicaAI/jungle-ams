@@ -81,7 +81,7 @@ async def main():
     import os
     sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
-    async with EventsSession(sql_url, sleep_interval) as session:
+    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=[]) as session:
         async for event_seq, event_type, json_data in session.ack_next():
             await session.complete(event_seq)
             print(event_seq, event_type, json_data)
