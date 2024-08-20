@@ -61,8 +61,6 @@ def export_mesh(args):
 
         gltf_node.parm("execute").pressButton()
     elif format == 'usdz':
-        print(f"Child: Starting bake")
-
         # Export to USD
         output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
         usd_node = geo.createNode("usdexport","usd_node")
@@ -77,8 +75,6 @@ def export_mesh(args):
         usdz_node.parm("outfile1").set(output_zip_file_path)
         usdz_node.parm("execute").pressButton()
         os.remove(output_file_path)
-
-        print(f"Child: Finished bake")
 
     hou.hda.uninstallFile(hdapath)
 
