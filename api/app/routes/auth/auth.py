@@ -2,16 +2,18 @@ from http import HTTPStatus
 from urllib.parse import quote_plus, urlencode
 
 from fastapi import APIRouter, Depends, Response, Security
+from fastapi.security import HTTPBearer
 from fastapi_auth0 import Auth0, Auth0User
 
+from auth.auth0_token_verifier import Auth0TokenVerifier
 from config import app_config
 
 auth = Auth0(
     domain=app_config().auth0_domain,
-    api_audience='your-api-identifier',
+    api_audience=app_config().auth0_audience,
     scopes={'read:blabla': ''})
 
-# auth = Auth0TokenVerifier()
+verifier = Auth0TokenVerifier()
 
 router = APIRouter(
     prefix="/auth",
@@ -79,3 +81,11 @@ async def callback(response: Response):
 @router.get('/private-2', dependencies=[Depends(auth.implicit_scheme)])
 def private_2(user: Auth0User = Security(auth.get_user, scopes=['read:blabla'])):
     return {"message": f"{user}"}
+
+
+token_auth_scheme = HTTPBearer()
+
+
+@router.get('/private-3')
+def private_3(auth_result=Security(verifier.verify)):
+    return {"message": f"{auth_result}"}

@@ -62,7 +62,7 @@ export const AuthHeader = () => {
           console.log("token: ", token);
           setCookie("auth_token", token, { path: "/" });
         })
-        .catch((error) => console.error("getAccessTokenSilently:", error));
+        .catch((error) => console.error("getAccessTokenSilently failed with:", error));
     }
   }, [cookies]);
 

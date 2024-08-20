@@ -27,7 +27,7 @@ export const StatusStack = () => {
                         <LucideXSquare/>
                     </IconButton></Box>
                     {success ?
-                        <Alert color="success">
+                        <Alert key={v4()} color="success">
                             {success}
                         </Alert> : ""}
 
