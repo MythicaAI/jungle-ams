@@ -111,7 +111,7 @@ def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
 
         upload_results(token, endpoint)
 
-def process_hda_uploaded_event(o, endpoint: str):
+def process_hda_uploaded_event(runner, o, endpoint: str):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -126,14 +126,15 @@ def process_hda_uploaded_event(o, endpoint: str):
 
         output_file_name = f"{o.file_id}_interface.json"
 
-        cmd = ['/bin/bash','-c']
-        export_cmd = (
-            f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/interface.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --hda-path={str(file_path)} && "
-            f"hserver -Q"
-        )
-        cmd.append(export_cmd)
-        subprocess.run(cmd)
+        job = {
+            'type': "interface",
+            'args': {
+                'output-path': OUTPUT_DIR,
+                'output-file-name': output_file_name,
+                'hda-path': str(file_path)
+            }
+        }
+        runner.send_job(json.dumps(job))
 
         upload_results(token, endpoint)
 
@@ -232,7 +233,7 @@ async def main():
                 if event_type == 'generate_mesh_requested':
                     process_generate_mesh_event(runner, o, args.endpoint, event_seq)
                 elif event_type == 'file_uploaded:hda':
-                    process_hda_uploaded_event(o, args.endpoint)
+                    process_hda_uploaded_event(runner, o, args.endpoint)
 
                 await session.complete(event_seq)
 

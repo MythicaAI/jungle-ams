@@ -1,13 +1,17 @@
 import json
 import os
 import sys
+
 from export_mesh import export_mesh
+from interface import interface
 
 def process_job(job):
     type = job["type"]
     args = job["args"]
     if type == "export_mesh":
         export_mesh(args["hda-path"], args["output-path"], args["output-file-name"], args["format"], args["parms"])
+    elif type == "interface":
+        interface(args["hda-path"], args["output-path"], args["output-file-name"])
     else:
         print(f"Unknown job type: {type}")
 
