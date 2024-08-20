@@ -1,3 +1,7 @@
+"""API key test cases"""
+
+# pylint: disable=redefined-outer-name, unused-import
+
 from datetime import datetime, timezone
 from http import HTTPStatus
 
@@ -8,6 +12,8 @@ from tests.shared_test import assert_status_code
 
 
 def test_api_keys(client, api_base, create_profile):
+    """This test generates a profile and a set of keys, it then removes
+    a key and ensures that worked. Data is validated along the way"""
     profile = create_profile()
     headers = profile.authorization_header()
 

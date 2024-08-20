@@ -87,6 +87,7 @@ async def delete_key(key: str, profile: Profile = Depends(current_profile)):
 async def get_keys(profile: Profile = Depends(current_profile)) -> list[KeyGenerateResponse]:
     """Get all API keys for this profile"""
     with get_session() as session:
+        # pylint: disable=no-member
         stmt = select(ProfileKey).where(ProfileKey.owner_seq == profile.profile_seq).where(
             col(ProfileKey.key).startswith(KEY_PREFIX))
         rows = session.exec(stmt).all()
