@@ -23,7 +23,7 @@ import React, { useState } from "react";
 import {
   AssetVersionContent,
   AssetVersionContentMap,
-} from "../types/apiTypes.ts";
+} from "../../types/apiTypes.ts";
 
 interface AssetEditFileListProps {
   title: string;
@@ -100,6 +100,7 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
             e.preventDefault();
             props.openUploadList(props.category, props.fileTypeFilters);
           }}
+          data-testid="add-btn"
         >
           <LucidePlusCircle />
         </IconButton>
@@ -117,11 +118,14 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
             Object.values(props.files).map((file) => (
               <ListItem key={file.file_id}>
                 <ListItemDecorator>
-                  <IconButton onClick={() => props.removeFile(file.file_id)}>
+                  <IconButton
+                    onClick={() => props.removeFile(file.file_id)}
+                    data-testid={`remove-button-${file.file_id}`}
+                  >
                     <LucideCircleMinus />
                   </IconButton>
                 </ListItemDecorator>
-                <ListItemButton role="menuitem">
+                <ListItemButton role="menuitem" data-testid="assetFileEditable">
                   <AssetFileEditable
                     content={file}
                     editing={false}
