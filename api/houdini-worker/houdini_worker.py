@@ -176,7 +176,7 @@ class HoudiniJobRunner:
         self.child_to_parent_write = None
 
     def __enter__(self):
-        log.info("Starting Houdini server")
+        log.info("Starting license server")
         cmd = ['/bin/bash','-c', 'hserver -S https://www.sidefx.com/license/sesinetd']
         result = subprocess.run(cmd)
         if result.returncode != 0:
@@ -185,7 +185,7 @@ class HoudiniJobRunner:
         self.parent_to_child_read, self.parent_to_child_write = os.pipe()
         self.child_to_parent_read, self.child_to_parent_write = os.pipe()
 
-        log.info("Starting Hython process")
+        log.info("Starting hython process")
         cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py {self.parent_to_child_read} {self.child_to_parent_write}"]
         self.process = subprocess.Popen(cmd, pass_fds=(self.parent_to_child_read, self.child_to_parent_write))
 
@@ -195,13 +195,14 @@ class HoudiniJobRunner:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        log.info("Shutting down hython process")
         os.close(self.parent_to_child_write)
         os.close(self.child_to_parent_read)
-
         if self.process:
             self.process.terminate()
             self.process.wait()
 
+        log.info("Shutting down license server")
         cmd = ['/bin/bash','-c', 'hserver -Q']
         result = subprocess.run(cmd)
         if result.returncode != 0:
@@ -224,18 +225,18 @@ async def main():
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
-    with HoudiniJobRunner() as runner:
-        async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['generate_mesh_requested', 'file_uploaded:hda']) as session:
-            async for event_seq, event_type, json_data in session.ack_next():
-                log.info("%s: %s %s", event_seq, event_type, json_data)
-                o = munchify(json_data)
+    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['generate_mesh_requested', 'file_uploaded:hda']) as session:
+        async for event_seq, event_type, json_data in session.ack_next():
+            log.info("%s: %s %s", event_seq, event_type, json_data)
+            o = munchify(json_data)
 
+            with HoudiniJobRunner() as runner:
                 if event_type == 'generate_mesh_requested':
                     process_generate_mesh_event(runner, o, args.endpoint, event_seq)
                 elif event_type == 'file_uploaded:hda':
                     process_hda_uploaded_event(runner, o, args.endpoint)
 
-                await session.complete(event_seq)
+            await session.complete(event_seq)
 
 
 if __name__ == '__main__':
