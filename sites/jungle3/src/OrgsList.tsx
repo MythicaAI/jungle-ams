@@ -32,6 +32,33 @@ const defaultOrg = (): OrgResponse => {
   };
 };
 
+export const RolesList = ({ orgRoles }: { orgRoles: ResolvedOrgRef[] }) => {
+  const iconForRole = (role: string) => {
+    switch (role) {
+      case "admin":
+        return <LucideShield />;
+      default:
+        return <LucideUser />;
+    }
+  };
+
+  return (
+    <List size={"lg"}>
+      {orgRoles.map((ref) => (
+        <React.Fragment key={ref.org_id}>
+          <ListItem>
+            <ListItemDecorator>{iconForRole(ref.role)}</ListItemDecorator>
+            <ListItemDecorator>
+              {ref.org_name} ({ref.role})
+            </ListItemDecorator>
+          </ListItem>
+          <ListDivider inset="startContent" />
+        </React.Fragment>
+      ))}
+    </List>
+  );
+};
+
 const OrgsList: React.FC = () => {
   const [org, setOrg] = useState<OrgResponse>(defaultOrg());
   const [creating, setCreating] = useState<boolean>(false);
@@ -95,31 +122,6 @@ const OrgsList: React.FC = () => {
     </Sheet>
   );
 
-  const iconForRole = (role: string) => {
-    switch (role) {
-      case "admin":
-        return <LucideShield />;
-      default:
-        return <LucideUser />;
-    }
-  };
-
-  const rolesList = (
-    <List size={"lg"}>
-      {orgRoles.map((ref) => (
-        <React.Fragment key={ref.org_id}>
-          <ListItem>
-            <ListItemDecorator>{iconForRole(ref.role)}</ListItemDecorator>
-            <ListItemDecorator>
-              {ref.org_name} ({ref.role})
-            </ListItemDecorator>
-          </ListItem>
-          <ListDivider inset="startContent" />
-        </React.Fragment>
-      ))}
-    </List>
-  );
-
   if (!orgRoles) {
     return <Box className="full-size-box">loading...</Box>;
   } else if (orgRoles.length === 0) {
@@ -152,7 +154,9 @@ const OrgsList: React.FC = () => {
       <Typography level="h4" component="h1">
         <b>Memberships</b>
       </Typography>
-      <Card>{rolesList}</Card>
+      <Card>
+        <RolesList orgRoles={orgRoles} />
+      </Card>
       <Divider />
       {createForm}
     </Sheet>
