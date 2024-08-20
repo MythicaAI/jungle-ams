@@ -6,7 +6,7 @@ import time
 import mythica.darol as mdarol
 
 def process_job_export_mesh(args):
-    print(f"Child: Executing export_mesh job", file=sys.stderr)
+    print(f"Child: Executing export_mesh job")
     hdapath = args["hda-path"]
 
     output_path = args["output-path"]
@@ -41,7 +41,7 @@ def process_job_export_mesh(args):
             if parm:
                 parm.set(val)
             else:
-                print(f"Parameter {k} not found in {assetdef.nodeTypeName()}", file=sys.stderr)
+                print(f"Parameter {k} not found in {assetdef.nodeTypeName()}")
 
     # Export
     out = hou.node('out')
@@ -63,7 +63,7 @@ def process_job_export_mesh(args):
 
         gltf_node.parm("execute").pressButton()
     elif args["format"] == 'usdz':
-        print(f"Child: Starting bake", file=sys.stderr)
+        print(f"Child: Starting bake")
 
         # Export to USD
         output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
@@ -80,7 +80,7 @@ def process_job_export_mesh(args):
         usdz_node.parm("execute").pressButton()
         os.remove(output_file_path)
 
-        print(f"Child: Finished bake", file=sys.stderr)
+        print(f"Child: Finished bake")
 
     hou.hda.uninstallFile(hdapath)
 
@@ -89,22 +89,22 @@ def process_job_export_mesh(args):
 
 
 def process_job(job):
-    print(f"Child: Processing job: {job}", file=sys.stderr)
+    print(f"Child: Processing job: {job}")
     if job["type"] == "export_mesh":
         process_job_export_mesh(job["args"])
     else:
-        print(f"Child: Unknown job type", file=sys.stderr)
-    print(f"Child: Process job completed", file=sys.stderr)
+        print(f"Child: Unknown job type")
+    print(f"Child: Process job completed")
 
 def main():
     parent_to_child_read = int(sys.argv[1])
     child_to_parent_write = int(sys.argv[2])
 
-    print(f"Child: Listening for jobs", file=sys.stderr)
+    print(f"Child: Listening for jobs")
     with os.fdopen(parent_to_child_read) as pipe:
         while True:
             job_data = pipe.readline().strip()
-            print(f"Child: Recieved data {job_data}", file=sys.stderr)
+            print(f"Child: Recieved data {job_data}")
             job = json.loads(job_data)
             if job:
                 process_job(job)
@@ -115,7 +115,7 @@ def main():
 
     os.close(parent_to_child_read)
     os.close(child_to_parent_write)
-    print(f"Child: Closing process", file=sys.stderr)
+    print(f"Child: Closing process")
 
 if __name__ == "__main__":
     main()
