@@ -15,12 +15,12 @@ def start_houdini(hip):
 def end_houdini(hip):
     # Save the file.
     hou.hipFile.save(file_name=hip)
-    print(f"File saved to {hip}")
+    #print(f"File saved to {hip}")
 
 def remove_file(hip):
     try:
         os.remove(hip)
-        print(f"File {hip} has been removed successfully.")
+        #print(f"File {hip} has been removed successfully.")
     except FileNotFoundError:
         print(f"File {hip} not found.")
     except Exception as e:

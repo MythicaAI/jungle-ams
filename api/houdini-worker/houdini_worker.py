@@ -78,7 +78,7 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
     return Path(local_file_name)
 
 
-def process_generate_mesh_event(o, endpoint: str, event_seq: int):
+def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -97,14 +97,17 @@ def process_generate_mesh_event(o, endpoint: str, event_seq: int):
 
         output_file_name = f"{event_seq_to_id(event_seq)}_mesh"
 
-        cmd = ['/bin/bash','-c']
-        export_cmd = (
-            f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --format=usdz --hda-path={str(file_path)} --parms={params_file} && "
-            f"hserver -Q"
-        )
-        cmd.append(export_cmd)
-        subprocess.run(cmd)
+        job = {
+            'type': "export_mesh",
+            'args': {
+                'output-path': OUTPUT_DIR,
+                'output-file-name': output_file_name,
+                'format': 'usdz',
+                'hda-path': str(file_path),
+                'parms': params_file
+            }
+        }
+        runner.send_job(json.dumps(job))
 
         upload_results(token, endpoint)
 
@@ -163,6 +166,47 @@ def upload_results(token, endpoint: str):
                                     file_name, response.status_code)
                         log.warning(response.text)
 
+class HoudiniJobRunner:
+    def __init__(self):
+        self.process = None
+
+    def __enter__(self):
+        print("Starting hserver")
+        cmd = ['/bin/bash','-c', 'hserver -S https://www.sidefx.com/license/sesinetd']
+        result = subprocess.run(cmd)
+        if result.returncode != 0:
+            raise Exception("Failed to start hserver")
+        print("Houdini server started")
+
+        cmd = ['/bin/bash','-c', 'hython /darol/automation/job_runner.py']
+        self.process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        print(f"Runner subprocess started with PID: {self.process.pid}")
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+
+        cmd = ['/bin/bash','-c', 'hserver -Q']
+        result = subprocess.run(cmd)
+        if result.returncode != 0:
+            raise Exception("Failed to stop hserver")
+
+        return False
+    
+    def send_job(self, job):
+        print(f"Parent: Sending job: {job}")
+        self.process.stdin.write(job)
+        self.process.stdin.write('\n')
+        self.process.stdin.flush()
+
+        print("Parent: Waiting for job completion")
+        result = self.process.stdout.readline().strip()
+
+        print(f"Parent: Job completed with result: {result}")
+
 
 async def main():
     """Async entrypoint to test worker dequeue, looks for SQL_URL
@@ -171,18 +215,19 @@ async def main():
     sql_url = os.environ.get(
         'SQL_URL',
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
-    sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
-    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['generate_mesh_requested', 'file_uploaded:hda']) as session:
-        async for event_seq, event_type, json_data in session.ack_next():
-            log.info("%s: %s %s", event_seq, event_type, json_data)
-            o = munchify(json_data)
+    sleep_interval = os.environ.get('SLEEP_INTERVAL', 0.01)
+    with HoudiniJobRunner() as runner:
+        async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['generate_mesh_requested', 'file_uploaded:hda']) as session:
+            async for event_seq, event_type, json_data in session.ack_next():
+                log.info("%s: %s %s", event_seq, event_type, json_data)
+                o = munchify(json_data)
 
-            if event_type == 'generate_mesh_requested':
-                process_generate_mesh_event(o, args.endpoint, event_seq)
-            elif event_type == 'file_uploaded:hda':
-                process_hda_uploaded_event(o, args.endpoint)
+                if event_type == 'generate_mesh_requested':
+                    process_generate_mesh_event(runner, o, args.endpoint, event_seq)
+                elif event_type == 'file_uploaded:hda':
+                    process_hda_uploaded_event(o, args.endpoint)
 
-            await session.complete(event_seq)
+                await session.complete(event_seq)
 
 
 if __name__ == '__main__':
