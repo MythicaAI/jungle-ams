@@ -97,15 +97,24 @@ def process_job(job):
     print(f"Child: Process job completed", file=sys.stderr)
 
 def main():
+    parent_to_child_read = int(sys.argv[1])
+    child_to_parent_write = int(sys.argv[2])
+
     print(f"Child: Listening for jobs", file=sys.stderr)
-    for line in sys.stdin:
-        print(f"Child: Reading job data", file=sys.stderr)
-        job = json.loads(line.strip())
-        if job:
-            process_job(job)
-        
-        sys.stdout.write("Job completed\n")
-        sys.stdout.flush()
+    with os.fdopen(parent_to_child_read) as pipe:
+        while True:
+            job_data = pipe.readline().strip()
+            print(f"Child: Recieved data {job_data}", file=sys.stderr)
+            job = json.loads(job_data)
+            if job:
+                process_job(job)
+            else:
+                break
+
+            os.write(child_to_parent_write, "Job completed".encode())
+
+    os.close(parent_to_child_read)
+    os.close(child_to_parent_write)
     print(f"Child: Closing process", file=sys.stderr)
 
 if __name__ == "__main__":
