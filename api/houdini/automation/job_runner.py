@@ -1,12 +1,14 @@
 import json
 import os
 import sys
-from actions import export_mesh
+from export_mesh import export_mesh
 
 def process_job(job):
     print(f"Child: Processing job: {job}")
-    if job["type"] == "export_mesh":
-        export_mesh(job["args"])
+    type = job["type"]
+    args = job["args"]
+    if type == "export_mesh":
+        export_mesh(args["hda-path"], args["output-path"], args["output-file-name"], args["format"], args["parms"])
     else:
         print(f"Child: Unknown job type")
     print(f"Child: Process job completed")
