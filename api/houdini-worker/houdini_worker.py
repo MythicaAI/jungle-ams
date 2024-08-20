@@ -78,7 +78,7 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
     return Path(local_file_name)
 
 
-def process_generate_mesh_event(o, endpoint: str, event_seq: int):
+def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -97,18 +97,21 @@ def process_generate_mesh_event(o, endpoint: str, event_seq: int):
 
         output_file_name = f"{event_seq_to_id(event_seq)}_mesh"
 
-        cmd = ['/bin/bash','-c']
-        export_cmd = (
-            f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/export_mesh.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --format=usdz --hda-path={str(file_path)} --parms={params_file} && "
-            f"hserver -Q"
-        )
-        cmd.append(export_cmd)
-        subprocess.run(cmd)
+        job = {
+            'type': "export_mesh",
+            'args': {
+                'output-path': OUTPUT_DIR,
+                'output-file-name': output_file_name,
+                'format': 'usdz',
+                'hda-path': str(file_path),
+                'parms': params_file
+            }
+        }
+        runner.send_job(json.dumps(job))
 
         upload_results(token, endpoint)
 
-def process_hda_uploaded_event(o, endpoint: str):
+def process_hda_uploaded_event(runner, o, endpoint: str):
     token = start_session(endpoint, o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
 
@@ -123,14 +126,15 @@ def process_hda_uploaded_event(o, endpoint: str):
 
         output_file_name = f"{o.file_id}_interface.json"
 
-        cmd = ['/bin/bash','-c']
-        export_cmd = (
-            f"hserver -S https://www.sidefx.com/license/sesinetd && "
-            f"hython /darol/automation/interface.py --output-path {OUTPUT_DIR} --output-file-name={output_file_name} --hda-path={str(file_path)} && "
-            f"hserver -Q"
-        )
-        cmd.append(export_cmd)
-        subprocess.run(cmd)
+        job = {
+            'type': "interface",
+            'args': {
+                'output-path': OUTPUT_DIR,
+                'output-file-name': output_file_name,
+                'hda-path': str(file_path)
+            }
+        }
+        runner.send_job(json.dumps(job))
 
         upload_results(token, endpoint)
 
@@ -163,6 +167,55 @@ def upload_results(token, endpoint: str):
                                     file_name, response.status_code)
                         log.warning(response.text)
 
+class HoudiniJobRunner:
+    def __init__(self):
+        self.process = None
+        self.parent_to_child_read = None
+        self.parent_to_child_write = None
+        self.child_to_parent_read = None
+        self.child_to_parent_write = None
+
+    def __enter__(self):
+        log.info("Starting license server")
+        cmd = ['/bin/bash','-c', 'hserver -S https://www.sidefx.com/license/sesinetd']
+        result = subprocess.run(cmd)
+        if result.returncode != 0:
+            raise Exception("Failed to start hserver")
+
+        self.parent_to_child_read, self.parent_to_child_write = os.pipe()
+        self.child_to_parent_read, self.child_to_parent_write = os.pipe()
+
+        log.info("Starting hython process")
+        cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py --pipe-read={self.parent_to_child_read} --pipe-write={self.child_to_parent_write}"]
+        self.process = subprocess.Popen(cmd, pass_fds=(self.parent_to_child_read, self.child_to_parent_write))
+
+        os.close(self.parent_to_child_read)
+        os.close(self.child_to_parent_write)
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        log.info("Shutting down hython process")
+        os.close(self.parent_to_child_write)
+        os.close(self.child_to_parent_read)
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+
+        log.info("Shutting down license server")
+        cmd = ['/bin/bash','-c', 'hserver -Q']
+        result = subprocess.run(cmd)
+        if result.returncode != 0:
+            raise Exception("Failed to stop hserver")
+
+        return False
+    
+    def send_job(self, job):
+        log.info("Processing job: %s", job)
+        os.write(self.parent_to_child_write, job.encode() + b'\n')
+        os.read(self.child_to_parent_read, 1024).decode().strip()
+        log.info("Job completed")
+
 
 async def main():
     """Async entrypoint to test worker dequeue, looks for SQL_URL
@@ -177,10 +230,11 @@ async def main():
             log.info("%s: %s %s", event_seq, event_type, json_data)
             o = munchify(json_data)
 
-            if event_type == 'generate_mesh_requested':
-                process_generate_mesh_event(o, args.endpoint, event_seq)
-            elif event_type == 'file_uploaded:hda':
-                process_hda_uploaded_event(o, args.endpoint)
+            with HoudiniJobRunner() as runner:
+                if event_type == 'generate_mesh_requested':
+                    process_generate_mesh_event(runner, o, args.endpoint, event_seq)
+                elif event_type == 'file_uploaded:hda':
+                    process_hda_uploaded_event(runner, o, args.endpoint)
 
             await session.complete(event_seq)
 
