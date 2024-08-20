@@ -124,6 +124,9 @@ tables:
       - name: owner_seq
         type: BIGINT
         foreign_key: profiles.profile_seq
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
       - name: expires
         type: TIMESTAMP
       - name: payload
