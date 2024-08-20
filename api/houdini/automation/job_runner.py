@@ -4,35 +4,31 @@ import sys
 from export_mesh import export_mesh
 
 def process_job(job):
-    print(f"Child: Processing job: {job}")
     type = job["type"]
     args = job["args"]
     if type == "export_mesh":
         export_mesh(args["hda-path"], args["output-path"], args["output-file-name"], args["format"], args["parms"])
     else:
-        print(f"Child: Unknown job type")
-    print(f"Child: Process job completed")
+        print(f"Unknown job type: {type}")
 
 def main():
     parent_to_child_read = int(sys.argv[1])
     child_to_parent_write = int(sys.argv[2])
 
-    print(f"Child: Listening for jobs")
+    print("Job runner listening for jobs")
     with os.fdopen(parent_to_child_read) as pipe:
         while True:
-            job_data = pipe.readline().strip()
-            print(f"Child: Recieved data {job_data}")
-            job = json.loads(job_data)
-            if job:
-                process_job(job)
-            else:
+            job = json.loads(pipe.readline().strip())
+            if job is None:
                 break
 
+            print(f"Executing job: {job}")
+            process_job(job)
             os.write(child_to_parent_write, "Job completed".encode())
 
+    print("Job runner shutting down")
     os.close(parent_to_child_read)
     os.close(child_to_parent_write)
-    print(f"Child: Closing process")
 
 if __name__ == "__main__":
     main()

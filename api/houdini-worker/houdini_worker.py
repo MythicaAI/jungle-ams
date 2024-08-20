@@ -175,19 +175,18 @@ class HoudiniJobRunner:
         self.child_to_parent_write = None
 
     def __enter__(self):
-        print("Starting hserver")
+        log.info("Starting Houdini server")
         cmd = ['/bin/bash','-c', 'hserver -S https://www.sidefx.com/license/sesinetd']
         result = subprocess.run(cmd)
         if result.returncode != 0:
             raise Exception("Failed to start hserver")
-        print("Houdini server started")
 
         self.parent_to_child_read, self.parent_to_child_write = os.pipe()
         self.child_to_parent_read, self.child_to_parent_write = os.pipe()
 
+        log.info("Starting Hython process")
         cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py {self.parent_to_child_read} {self.child_to_parent_write}"]
         self.process = subprocess.Popen(cmd, pass_fds=(self.parent_to_child_read, self.child_to_parent_write))
-        print(f"Runner subprocess started with PID: {self.process.pid}")
 
         os.close(self.parent_to_child_read)
         os.close(self.child_to_parent_write)
@@ -210,13 +209,10 @@ class HoudiniJobRunner:
         return False
     
     def send_job(self, job):
-        print(f"Parent: Sending job: {job}")
+        log.info("Processing job: %s", job)
         os.write(self.parent_to_child_write, job.encode() + b'\n')
-
-        print("Parent: Waiting for job completion")
-        result = os.read(self.child_to_parent_read, 1024).decode().strip()
-
-        print(f"Parent: Job completed with result: {result}")
+        os.read(self.child_to_parent_read, 1024).decode().strip()
+        log.info("Job completed")
 
 
 async def main():
