@@ -1,21 +1,23 @@
 import logging
 import secrets
 import string
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import select, update, delete, insert
+from sqlmodel import delete, insert, select, update
 
 from auth.api_id import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
 from routes.authorization import current_profile
-from routes.responses import ValidateEmailState, ValidateEmailResponse
+from routes.responses import ValidateEmailResponse, ValidateEmailState
 
 router = APIRouter(prefix="/validate-email", tags=["profiles"])
 
 log = logging.getLogger(__name__)
+
+KEY_PREFIX = 'v_'
 
 
 @router.get('/')
@@ -23,7 +25,7 @@ async def validate_email_begin(
         profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
     """Start validating an email address stored on the current profile"""
     with get_session() as session:
-        validate_code = ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
+        validate_code = KEY_PREFIX + ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
         validate_link = f"https://api.mythica.ai/v1/validate_email/{validate_code}"
         session.exec(insert(ProfileKey).values(
             key=validate_code,

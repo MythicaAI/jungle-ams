@@ -45,7 +45,8 @@ route_names = [
     'assets',
     'orgs',
     'topos',
-    'validate']
+    'validate',
+    'keys']
 
 for name in route_names:
     module = importlib.import_module(f'routes.{name}.{name}')
