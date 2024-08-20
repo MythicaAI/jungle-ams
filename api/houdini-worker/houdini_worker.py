@@ -186,7 +186,7 @@ class HoudiniJobRunner:
         self.child_to_parent_read, self.child_to_parent_write = os.pipe()
 
         log.info("Starting hython process")
-        cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py {self.parent_to_child_read} {self.child_to_parent_write}"]
+        cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py --pipe-read={self.parent_to_child_read} --pipe-write={self.child_to_parent_write}"]
         self.process = subprocess.Popen(cmd, pass_fds=(self.parent_to_child_read, self.child_to_parent_write))
 
         os.close(self.parent_to_child_read)
