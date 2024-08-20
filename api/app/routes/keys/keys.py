@@ -69,7 +69,7 @@ async def generate_key(
         return KeyGenerateResponse(
             name=create.name,
             value=key,
-            created=result.created,
+            created=result.created.astimezone(timezone.utc),  # ensure timezone aware
             expires=result.expires,
             description=result.payload['description'])
 
@@ -92,7 +92,7 @@ async def get_keys(profile: Profile = Depends(current_profile)) -> list[KeyGener
             col(ProfileKey.key).startswith(KEY_PREFIX))
         rows = session.exec(stmt).all()
         response = [KeyGenerateResponse(
-            created=r.created,
+            created=r.created.astimezone(timezone.utc),  # ensure timezone aware
             expires=r.expires,
             value=r.key,
             name=r.payload['name'],
