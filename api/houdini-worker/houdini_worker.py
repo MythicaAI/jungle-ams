@@ -170,7 +170,7 @@ def upload_results(token, endpoint: str):
 
 class HoudiniJobRunner:
     def __init__(self):
-        self.job_timeout = 30.0
+        self.job_timeout = 60.0
         self.process = None
         self.parent_to_child_read = None
         self.parent_to_child_write = None
@@ -231,7 +231,12 @@ class HoudiniJobRunner:
             return False
         
         result = os.read(self.child_to_parent_read, 1024).decode()
-        assert result == "Job completed"
+        if result != "Job completed":
+            log.error("Job encountered an error")
+            self.stop_process()
+            self.start_process()
+            return False
+
         log.info("Job completed")
         return True
 
