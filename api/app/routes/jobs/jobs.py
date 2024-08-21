@@ -1,12 +1,14 @@
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select, insert
 from pydantic import BaseModel
 from typing import Any
 
 from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id
 from config import app_config
+from enum import Enum
+from http import HTTPStatus
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
@@ -25,8 +27,16 @@ class GenerateMeshInterfaceResponse(BaseModel):
 class GenerateMeshResponse(BaseModel):
     event_id: str
 
+class GenerateMeshState(str, Enum):
+    """Generate mesh request states"""
+    queued = "queued"
+    processing = "processing"
+    failed = "failed"
+    completed = "completed"
+
 class GenerateMeshStatusResponse(BaseModel):
-    file_id: str
+    state: GenerateMeshState = GenerateMeshState.queued
+    file_id: str | None = None
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -89,11 +99,20 @@ async def get_generate_mesh_status_by_id(
     event_id: str) -> GenerateMeshStatusResponse:
     """Gets the results of a generate mesh request"""
 
-    event_seq = event_id_to_seq(event_id)
-
     with get_session() as session:
+        event_seq = event_id_to_seq(event_id)
         event = session.exec(select(Event).where(Event.event_seq == event_seq)).one_or_none()
-        if event.completed is not None:
+        if event is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail="event_id not found")
+
+        state = GenerateMeshState.queued
+        file_id = None
+
+        if not event.acked:
+            state = GenerateMeshState.queued
+        elif not event.completed:
+            state = GenerateMeshState.processing
+        else:
             # HACK: Add method of associating resulting mesh with event
             query = (
                 select(FileContent)
@@ -103,6 +122,9 @@ async def get_generate_mesh_status_by_id(
 
             file = session.exec(query).one_or_none()
             if file is not None:
-                return GenerateMeshStatusResponse(file_id=file_seq_to_id(file.file_seq))
+                file_id = file_seq_to_id(file.file_seq)
+                state = GenerateMeshState.completed
+            else:
+                state = GenerateMeshState.failed
 
-    return GenerateMeshStatusResponse(file_id="")
+        return GenerateMeshStatusResponse(state=state, file_id=file_id)
