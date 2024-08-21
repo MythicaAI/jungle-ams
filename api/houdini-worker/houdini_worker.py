@@ -6,6 +6,7 @@ import os
 import logging
 import requests
 import tempfile
+import select
 import subprocess
 import shutil
 
@@ -169,6 +170,7 @@ def upload_results(token, endpoint: str):
 
 class HoudiniJobRunner:
     def __init__(self):
+        self.job_timeout = 30.0
         self.process = None
         self.parent_to_child_read = None
         self.parent_to_child_write = None
@@ -182,25 +184,11 @@ class HoudiniJobRunner:
         if result.returncode != 0:
             raise Exception("Failed to start hserver")
 
-        self.parent_to_child_read, self.parent_to_child_write = os.pipe()
-        self.child_to_parent_read, self.child_to_parent_write = os.pipe()
-
-        log.info("Starting hython process")
-        cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py --pipe-read={self.parent_to_child_read} --pipe-write={self.child_to_parent_write}"]
-        self.process = subprocess.Popen(cmd, pass_fds=(self.parent_to_child_read, self.child_to_parent_write))
-
-        os.close(self.parent_to_child_read)
-        os.close(self.child_to_parent_write)
-
+        self.start_process()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        log.info("Shutting down hython process")
-        os.close(self.parent_to_child_write)
-        os.close(self.child_to_parent_read)
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
+        self.stop_process()
 
         log.info("Shutting down license server")
         cmd = ['/bin/bash','-c', 'hserver -Q']
@@ -210,12 +198,42 @@ class HoudiniJobRunner:
 
         return False
     
-    def send_job(self, job):
+    def start_process(self):
+        log.info("Starting hython process")
+
+        self.parent_to_child_read, self.parent_to_child_write = os.pipe()
+        self.child_to_parent_read, self.child_to_parent_write = os.pipe()
+
+        cmd = ['/bin/bash','-c', f"hython /darol/automation/job_runner.py --pipe-read={self.parent_to_child_read} --pipe-write={self.child_to_parent_write}"]
+        self.process = subprocess.Popen(cmd, pass_fds=(self.parent_to_child_read, self.child_to_parent_write))
+
+        os.close(self.parent_to_child_read)
+        os.close(self.child_to_parent_write)
+
+    def stop_process(self):
+        log.info("Shutting down hython process")
+        os.close(self.parent_to_child_write)
+        os.close(self.child_to_parent_read)
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+            self.process = None
+
+    def send_job(self, job) -> bool:
         log.info("Processing job: %s", job)
         os.write(self.parent_to_child_write, job.encode() + b'\n')
-        os.read(self.child_to_parent_read, 1024).decode().strip()
-        log.info("Job completed")
 
+        ready, _, _ = select.select([self.child_to_parent_read], [], [], self.job_timeout)
+        if not ready:
+            log.error("Job timed out")
+            self.stop_process()
+            self.start_process()
+            return False
+        
+        result = os.read(self.child_to_parent_read, 1024).decode()
+        assert result == "Job completed"
+        log.info("Job completed")
+        return True
 
 async def main():
     """Async entrypoint to test worker dequeue, looks for SQL_URL
