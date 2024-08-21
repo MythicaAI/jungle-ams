@@ -152,13 +152,7 @@ const OwnedPackageListItem: React.FC<{
             </Typography>
             <Switch
               checked={latestVersion.published}
-              onChange={(event) =>
-                handlePublishToggle(
-                  assetId,
-                  latestVersion.version.join("."),
-                  event.target.checked,
-                )
-              }
+              onChange={() => handlePublishToggle()}
               color={latestVersion.published ? "success" : "neutral"}
               sx={{ flex: 1 }}
             />

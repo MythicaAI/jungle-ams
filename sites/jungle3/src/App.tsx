@@ -12,7 +12,8 @@ import Uploads from "./Uploads.tsx";
 import { Layout } from "./components/Layout.tsx";
 import { Notification } from "./components/Notification.tsx";
 import "./App.css";
-import {PackageViewWrapper} from "./PackageView.tsx";
+import { PackageViewWrapper } from "./PackageView.tsx";
+import { ApiKeys } from "./components/ApiKeys.tsx";
 
 const App: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ const App: React.FC = () => {
           <Route path="profile" element={<ProfileSettings create={false} />} />
           <Route path="packages" element={<Packages />} />
           <Route path="uploads" element={<Uploads />} />
+          <Route path="api-keys" element={<ApiKeys />} />
           <Route
             path="assets/:asset_id/versions/:version"
             element={<AssetEditWrapper />}
@@ -30,7 +32,10 @@ const App: React.FC = () => {
           <Route path="orgs" element={<OrgsList />} />
           <Route path="login" element={<Login />} />
           <Route path="files/:file_id" element={<FileViewWrapper />} />
-          <Route path="package-view/:asset_id/versions/:version_id" element={<PackageViewWrapper />} />
+          <Route
+            path="package-view/:asset_id/versions/:version_id"
+            element={<PackageViewWrapper />}
+          />
         </Route>
       </Routes>
       <Notification />
