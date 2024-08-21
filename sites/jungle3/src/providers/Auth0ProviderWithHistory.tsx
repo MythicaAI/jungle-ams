@@ -7,8 +7,6 @@ interface Auth0ProviderWithConfigProps {
 const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({children}) => {
   const domain = import.meta.env.VITE_AUTH0_DOMAIN;
   const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
-  const audience = import.meta.env.VITE_AUTH0_AUTH0_AUDIENCE;
-  // const redirectUrl = import.meta.env.VITE_AUTH0_AUTH0_REDIRECT_URL;
 
   const redirectHandler = (appState?: AppState, userState?: User) => {
     console.log(appState);

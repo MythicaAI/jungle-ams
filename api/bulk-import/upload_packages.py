@@ -145,6 +145,7 @@ def bump_package_version(package: ProcessedPackageModel):
     assert package.latest_version != ZERO_VERSION
     package.latest_version[2] += 1
 
+
 def get_description_from_readme(package: ProcessedPackageModel):
     readme_path = os.path.join(package.root_disk_path, "readme.txt")
     description = ""
@@ -152,6 +153,7 @@ def get_description_from_readme(package: ProcessedPackageModel):
         with open(readme_path, 'r') as f:
             description = f.read()
     return description
+
 
 class PackageUploader(object):
     """Processes git repos into packages"""
@@ -209,7 +211,7 @@ class PackageUploader(object):
 
     def start_session(self, profile_id):
         """Create a session for the current profile"""
-        url = f"{self.endpoint}/v1/profiles/start_session/{profile_id}"
+        url = f"{self.endpoint}/v1/sessions/direct/{profile_id}"
         response = requests.get(url)
         if response.status_code != 200:
             print(f"Failed to start session: {response.status_code}")

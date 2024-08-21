@@ -51,18 +51,6 @@ export const AuthHeader = () => {
   useEffect(() => {
     if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
-    } else {
-      getAccessTokenSilently({
-        authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-          scope: "all",
-        },
-      })
-        .then((token) => {
-          console.log("token: ", token);
-          setCookie("auth_token", token, { path: "/" });
-        })
-        .catch((error) => console.error("getAccessTokenSilently failed with:", error));
     }
   }, [cookies]);
 
@@ -72,6 +60,56 @@ export const AuthHeader = () => {
       updateSession();
     }
   }, [isLoading, isAuthenticated]);
+
+  useEffect(() => {
+    const getUserMetadata = async () => {
+      const domain = import.meta.env.VITE_AUTH0_DOMAIN;
+
+      try {
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: `https://${domain}/api/v2/`,
+            scope: "read:current_user",
+          },
+        });
+
+        const userDetailsByIdUrl = `https://${domain}/api/v2/users/${user?.sub}`;
+
+        const metadataResponse = await fetch(userDetailsByIdUrl, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        const doc = await metadataResponse.json();
+        const {user_id, name, nickname, picture, email, email_verified} = doc;
+        //setUserMetadata(user_metadata);
+        console.log(user_id, name, nickname, picture, email, email_verified);
+
+        api
+          .post<SessionStartResponse>({
+            path: `/sessions/auth0_spa/${accessToken}`,
+            body: {doc}
+          })
+          .then((data) => {
+            setAuthToken(data.token);
+            const input: Partial<ProfileResponse> = data.profile;
+            const merged = mergeWithDefaults(defaultProfileResponse(), input);
+            setProfile(merged as unknown as ProfileResponse);
+          })
+          .catch((err) => {
+            console.log(`session start failed ${err}`);
+            setAuthToken("");
+          });
+
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
+    if (user && user.sub) {
+      getUserMetadata();
+    }
+  }, [getAccessTokenSilently, user]);
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
@@ -84,26 +122,6 @@ export const AuthHeader = () => {
       ]),
     ) as ProfileResponse;
   }
-
-  const updateSession = () => {
-    console.log("updateSession", user ? user.sub : "undefined");
-
-    // Get a new auth_token with the profile_id
-    api
-      .get<SessionStartResponse>({
-        path: `/profiles/start_session/${user?.sub}`,
-      })
-      .then((data) => {
-        setAuthToken(data.token);
-        const input: Partial<ProfileResponse> = data.profile;
-        const merged = mergeWithDefaults(defaultProfileResponse(), input);
-        setProfile(merged as unknown as ProfileResponse);
-      })
-      .catch((err) => {
-        console.log(`start_session failed ${err}`);
-        setAuthToken("");
-      });
-  };
 
   const updateProfileData = () => {
     api
@@ -161,10 +179,9 @@ export const AuthHeader = () => {
                 loginWithRedirect()
                   .then((res) => {
                     console.log("LOGIN RES: ", res);
-                    console.log("logged in");
                   })
                   .catch((error) => {
-                    console.log("error", error);
+                    console.log("LOGIN ERR", error);
                   })
               }
             >

@@ -3,6 +3,7 @@ import { useStatusStore } from "../../stores/statusStore";
 import { SessionStartResponse } from "../../types/apiTypes";
 import { Auth } from "./services";
 import { Snackbar, Alert, Stack } from "@mui/joy";
+import {v4} from "uuid";
 
 export const useAuthenticationActions = () => {
   const login = async (username: string) =>
@@ -97,15 +98,15 @@ export const useNotification = () => {
       }}
     >
       <Stack gap="15px">
-        {success && <Alert color={getColor()}>{success}</Alert>}
+        {success && <Alert key={v4()} color={getColor()}>{success}</Alert>}
         {errors &&
           errors.length > 0 &&
-          errors.map((msg) => <Alert color={getColor()}>Error: {msg}</Alert>)}
+          errors.map((msg) => <Alert key={v4()} color={getColor()}>Error: {msg}</Alert>)}
 
         {warnings &&
           warnings.length > 0 &&
           warnings.map((msg) => (
-            <Alert color={getColor()}>Warning: {msg}</Alert>
+            <Alert key={v4()} color={getColor()}>Warning: {msg}</Alert>
           ))}
       </Stack>
     </Snackbar>

@@ -5,16 +5,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import col, delete, select, update
+from sqlmodel import col, select, update
 
 from auth.api_id import profile_id_to_seq, profile_seq_to_id
-from auth.generate_token import generate_token
-from config import app_config
 from db.connection import get_session
-from db.schema.profiles import Profile, ProfileSession
+from db.schema.profiles import Profile
 from routes.authorization import current_profile
-from routes.responses import ProfileResponse, PublicProfileResponse, SessionStartResponse, ValidateEmailState
+from routes.responses import ProfileResponse, PublicProfileResponse, profile_to_profile_response
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -33,99 +30,6 @@ class CreateUpdateProfileModel(BaseModel):
     signature: constr(min_length=32, max_length=400) | None = None
     profile_base_href: Optional[AnyHttpUrl] = None
     email: EmailStr = None
-
-
-def email_validate_state_enum(email_validation_state: int) -> ValidateEmailState:
-    """Convert the database int to the pydantic enum"""
-    if email_validation_state == 0:
-        return ValidateEmailState.not_validated
-    elif email_validation_state == 1:
-        return ValidateEmailState.link_sent
-    elif email_validation_state == 2:
-        return ValidateEmailState.validated
-    return ValidateEmailState.not_validated
-
-
-def profile_to_profile_response(profile: Profile, model_type: type) \
-        -> ProfileResponse | PublicProfileResponse:
-    """Convert a profile to a valid profile response object"""
-    profile_data = profile.model_dump()
-    validate_state = email_validate_state_enum(profile.email_validate_state)
-    profile_response = model_type(**profile_data,
-                                  profile_id=profile_seq_to_id(profile.profile_seq),
-                                  validate_state=validate_state)
-    return profile_response
-
-
-@router.get('/start_session/{profile_id}')
-async def start_session(profile_id: str) -> SessionStartResponse:
-    """Start a session for a profile"""
-    with get_session() as session:
-        if '@' in profile_id:
-            profile = session.exec(select(Profile).where(Profile.email == profile_id)).first()
-            if profile is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND, f"profile with email {profile_id} not found")
-            profile_seq = profile.profile_seq
-        else:
-            profile_seq = profile_id_to_seq(profile_id)
-
-        result = session.exec(update(Profile).values(
-            {'login_count': Profile.login_count + 1, 'active': True}).where(
-            Profile.profile_seq == profile_seq))
-        session.commit()
-
-        if result.rowcount == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND,
-                                detail='profile not found')
-
-        # Delete existing sessions
-        session.exec(delete(ProfileSession).where(
-            ProfileSession.profile_seq == profile_seq))
-        session.commit()
-
-        # Generate a new token and profile response
-        profile = session.exec(select(Profile).where(
-            Profile.profile_seq == profile_seq)).first()
-        if profile is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
-        profile_response = profile_to_profile_response(profile, ProfileResponse)
-        token = generate_token(profile)
-
-        # Add a new session
-        location = app_config().mythica_location
-        profile_session = ProfileSession(profile_seq=profile_seq,
-                                         refreshed=sql_now(),
-                                         location=location,
-                                         authenticated=False,
-                                         auth_token=token)
-        session.add(profile_session)
-        session.commit()
-
-        result = SessionStartResponse(
-            token=token,
-            profile=profile_response)
-        return result
-
-
-@router.get('/stop_session/{profile_id}')
-async def stop_session(profile_id: str):
-    """Stop a session for a profile"""
-    with get_session() as session:
-        profile_seq = profile_id_to_seq(profile_id)
-
-        session.begin()
-        result = session.exec(update(Profile).values(
-            {'active': False}).where(
-            Profile.profile_seq == profile_seq))
-
-        session.exec(delete(ProfileSession).where(
-            ProfileSession.profile_seq == profile_seq))
-
-        session.commit()
-
-        if result.rowcount == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND,
-                                detail='profile not found')
 
 
 @router.get('/named/{profile_name}')

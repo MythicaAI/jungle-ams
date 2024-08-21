@@ -1,23 +1,21 @@
 """Wrapper script to invoke hautomation from events"""
 import asyncio
-import subprocess
-import os
 import logging
-import requests
-import tempfile
+import os
 import shutil
-
+import subprocess
+import tempfile
 from pathlib import Path
+
+import requests
 from munch import munchify
 
-from events.events import EventsSession
-
 from api.files import API
+from events.events import EventsSession
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +25,8 @@ CONTAINER_NAME = 'darol-houdini'
 CONTAINER_TAG = 'latest'
 IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
 IMAGE_NAME = "hautomation"
-OUTPUT_LOCAL= "./output"
+OUTPUT_LOCAL = "./output"
+
 
 def run_docker(docker_command: list[str]):
     try:
@@ -45,7 +44,7 @@ def run_docker(docker_command: list[str]):
 
 def start_session(profile_id):
     """Create a session for the current profile"""
-    url = f"{API_ENDPOINT}/v1/profiles/start_session/{profile_id}"
+    url = f"{API_ENDPOINT}/v1/sessions/direct/{profile_id}"
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         log.warning("Failed to start session: %s", response.status_code)
@@ -53,6 +52,7 @@ def start_session(profile_id):
 
     o = munchify(response.json())
     return o.token
+
 
 def process_output(stdout, stderr, returncode):
     log.info("output %s", stdout)
@@ -67,26 +67,31 @@ def pull_container():
 
 
 def launch_container(o):
-    #hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
+    # hello_world_cmd = "hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/helloworld.py && hserver -Q"
     api = API(requests)
     token = start_session(o.profile_id)
     with tempfile.TemporaryDirectory() as tmp_dir:
-        
+
         output_path = api.download_file(o.file_id, Path(tmp_dir))
         if output_path is None:
             raise FileNotFoundError
-        
+
         if not str(output_path).endswith('.hda'):
             log.info("File %s is not an .hda file. Skipping processing.", str(output_path))
             return
-        
+
         downloaded_path = str(output_path)
         gather_deps_cmd = f"hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/gather_dependencies.py --output-path /output --hda-path={downloaded_path} && hserver -Q"
         gen_network_cmd = f"hserver -S https://www.sidefx.com/license/sesinetd && hython /darol/automation/inspect.py --output-path /output --hda-path={downloaded_path} && hserver -Q"
-        process_output(*run_docker(["docker", "run", "--rm", "-it", "-v", "/tmp:/tmp", "-v", f"{OUTPUT_LOCAL}:/output", IMAGE_NAME, '/bin/sh', '-c', gather_deps_cmd]))
-        process_output(*run_docker(["docker", "run", "--rm", "-it", "-v", "/tmp:/tmp", "-v", f"{OUTPUT_LOCAL}:/output", IMAGE_NAME, '/bin/sh', '-c', gen_network_cmd]))
+        process_output(*run_docker(
+            ["docker", "run", "--rm", "-it", "-v", "/tmp:/tmp", "-v", f"{OUTPUT_LOCAL}:/output", IMAGE_NAME, '/bin/sh',
+             '-c', gather_deps_cmd]))
+        process_output(*run_docker(
+            ["docker", "run", "--rm", "-it", "-v", "/tmp:/tmp", "-v", f"{OUTPUT_LOCAL}:/output", IMAGE_NAME, '/bin/sh',
+             '-c', gen_network_cmd]))
 
         upload_results(token)
+
 
 def upload_results(token):
     headers = {"Authorization": "Bearer %s" % token}
@@ -101,7 +106,8 @@ def upload_results(token):
 
                 with open(temp_file_path, 'rb') as file:
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = requests.post("%s/v1/upload/store" % API_ENDPOINT, headers=headers, files=file_data, timeout=10)
+                    response = requests.post("%s/v1/upload/store" % API_ENDPOINT, headers=headers, files=file_data,
+                                             timeout=10)
                     if response.status_code == 200:
                         log.info("Successfully uploaded %s", file_name)
                         try:
