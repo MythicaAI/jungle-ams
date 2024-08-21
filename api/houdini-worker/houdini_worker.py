@@ -108,7 +108,7 @@ def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
                 'parms': params_file
             }
         }
-        runner.send_job(json.dumps(job))
+        runner.execute_job(json.dumps(job))
 
         upload_results(token, endpoint)
 
@@ -135,7 +135,7 @@ def process_hda_uploaded_event(runner, o, endpoint: str):
                 'hda-path': str(file_path)
             }
         }
-        runner.send_job(json.dumps(job))
+        runner.execute_job(json.dumps(job))
 
         upload_results(token, endpoint)
 
@@ -184,11 +184,11 @@ class HoudiniJobRunner:
         if result.returncode != 0:
             raise Exception("Failed to start hserver")
 
-        self.start_process()
+        self._start_process()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stop_process()
+        self._stop_process()
 
         log.info("Shutting down license server")
         cmd = ['/bin/bash','-c', 'hserver -Q']
@@ -198,7 +198,7 @@ class HoudiniJobRunner:
 
         return False
     
-    def start_process(self):
+    def _start_process(self):
         log.info("Starting hython process")
 
         self.parent_to_child_read, self.parent_to_child_write = os.pipe()
@@ -210,7 +210,7 @@ class HoudiniJobRunner:
         os.close(self.parent_to_child_read)
         os.close(self.child_to_parent_write)
 
-    def stop_process(self):
+    def _stop_process(self):
         log.info("Shutting down hython process")
         os.close(self.parent_to_child_write)
         os.close(self.child_to_parent_read)
@@ -219,24 +219,31 @@ class HoudiniJobRunner:
             self.process.wait()
             self.process = None
 
-    def send_job(self, job) -> bool:
-        log.info("Processing job: %s", job)
+    def _execute_job_impl(self, job) -> bool:
         os.write(self.parent_to_child_write, job.encode() + b'\n')
 
         ready, _, _ = select.select([self.child_to_parent_read], [], [], self.job_timeout)
         if not ready:
             log.error("Job timed out")
-            self.stop_process()
-            self.start_process()
             return False
         
         result = os.read(self.child_to_parent_read, 1024).decode()
         if result != "Job completed":
             log.error("Job encountered an error")
-            self.stop_process()
-            self.start_process()
             return False
 
+        return True
+
+    def execute_job(self, job) -> bool:
+        log.info("Processing job: %s", job)
+
+        success = self._execute_job_impl(job)
+        if not success:
+            log.info("Job failed, restarting hython process")
+            self._stop_process()
+            self._start_process()
+            return False
+        
         log.info("Job completed")
         return True
 
