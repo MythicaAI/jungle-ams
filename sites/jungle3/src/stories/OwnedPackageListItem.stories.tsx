@@ -43,7 +43,11 @@ const OwnedPackageListItem: React.FC<{
   const latestVersion = sortedVersions[0];
   const versionUrl = `/assets/${assetId}/versions/${latestVersion.version.join(".")}`;
 
-  const handlePublishToggle = () => {
+  const handlePublishToggle = (
+    _asset_id: string,
+    _version: string,
+    _published: boolean,
+  ) => {
     // Handle publish toggle action here
   };
 
