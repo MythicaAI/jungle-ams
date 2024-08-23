@@ -16,13 +16,14 @@ import { useGlobalStore } from "./stores/globalStore.ts";
 import {
   defaultProfileResponse,
   ProfileResponse,
-  ResolvedOrgRef,
+  ResolvedOrgRef, SessionStartAuth0Request,
   SessionStartResponse,
 } from "./types/apiTypes.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { StatusAlarm } from "./components/StatusAlarm.tsx";
 import { api } from "./services/api";
 import { useAuth0 } from "@auth0/auth0-react";
+import {useStatusStore} from "./stores/statusStore.ts";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -43,6 +44,7 @@ export const AuthHeader = () => {
     isAuthenticated,
     isLoading,
   } = useAuth0();
+  const {addError} = useStatusStore();
 
   console.log("user: ", user);
   console.log("isAuthenticated: ", isAuthenticated);
@@ -54,42 +56,19 @@ export const AuthHeader = () => {
     }
   }, [cookies]);
 
-  // Refresh the profile based on having an API session token
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      updateSession();
-    }
-  }, [isLoading, isAuthenticated]);
-
-  useEffect(() => {
-    const getUserMetadata = async () => {
-      const domain = import.meta.env.VITE_AUTH0_DOMAIN;
-
+    const getUserMetadata = async (user_id: string) => {
       try {
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: `https://${domain}/api/v2/`,
-            scope: "read:current_user",
-          },
-        });
-
-        const userDetailsByIdUrl = `https://${domain}/api/v2/users/${user?.sub}`;
-
-        const metadataResponse = await fetch(userDetailsByIdUrl, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        const doc = await metadataResponse.json();
-        const {user_id, name, nickname, picture, email, email_verified} = doc;
-        //setUserMetadata(user_metadata);
-        console.log(user_id, name, nickname, picture, email, email_verified);
-
+        // get the access token, this uses cached authentication parameters under the hood
+        const accessToken = await getAccessTokenSilently();
+        const sessionStartReq: SessionStartAuth0Request = {
+          access_token: accessToken,
+          user_id: user_id,
+        };
         api
           .post<SessionStartResponse>({
-            path: `/sessions/auth0_spa/${accessToken}`,
-            body: {doc}
+            path: `/sessions/auth0-spa`,
+            body: sessionStartReq,
           })
           .then((data) => {
             setAuthToken(data.token);
@@ -98,18 +77,19 @@ export const AuthHeader = () => {
             setProfile(merged as unknown as ProfileResponse);
           })
           .catch((err) => {
-            console.log(`session start failed ${err}`);
+            addError(`session start failed ${err}`);
             setAuthToken("");
           });
 
       } catch (e) {
-        console.log(e.message);
+        addError("Token exception: " + e.message);
+        console.error(e.message);
       }
     };
-    if (user && user.sub) {
-      getUserMetadata();
+    if (isAuthenticated && user && user.sub) {
+      getUserMetadata(user.sub);
     }
-  }, [getAccessTokenSilently, user]);
+  }, [getAccessTokenSilently, isAuthenticated, user]);
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
