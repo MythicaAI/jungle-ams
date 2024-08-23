@@ -52,3 +52,5 @@ __pycache__
 
 #App specific
 **/output
+
+*.local
