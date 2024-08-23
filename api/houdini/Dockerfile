@@ -15,10 +15,6 @@ ARG SFX_CLIENT_SECRET
 RUN apt-get update && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Install OpenCL
-ENV HOUDINI_OCL_DEVICETYPE=CPU
-ENV HOUDINI_USE_HFS_OCL=0
-
 # Install python dependencies
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages
 
