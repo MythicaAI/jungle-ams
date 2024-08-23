@@ -99,7 +99,7 @@ cmd = []
 ### For development 
 if args.docker:
     print(f"Docker Environment being provided. Using Houdini version: {args.docker_version}")
-    docker_image = f"kevincalderone/hbuild:{args.docker_version}"
+    docker_image = f"aaronsmithtv/hbuild:{args.docker_version}"
 
     result = subprocess.run(["docker", "pull", docker_image], capture_output=True, text=True)
     if result.returncode != 0:
