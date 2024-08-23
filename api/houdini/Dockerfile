@@ -36,7 +36,7 @@ RUN echo "ClientSecret=${SFX_CLIENT_SECRET}" >>  /root/houdini20.5/hserver.ini
 
 RUN echo HOUDINI_ERRORLOG_LEVEL = 0 >> /root/houdini20.5/houdini.env
 RUN echo HOUDINI_ERRORLOG_FILENAME = /output/log.txt >> /root/houdini20.5/houdini.env
-RUN echo 'HOUDINI_OTLSCAN_PATH = @/otls;/darol/automation/otls;/darol/automation/otls/Flora/otls;/darol/automation/otls/Utilities/otls' >> /root/houdini20.5/houdini.env
+RUN echo 'HOUDINI_OTLSCAN_PATH = @/otls;/darol/tests/otls' >> /root/houdini20.5/houdini.env
 
 # Install Houdini SideFX Labs package
 ARG SIDE_FX_LABS_VERSION=20.5.332
@@ -52,3 +52,4 @@ RUN sed -i 's|"$HOUDINI_PACKAGE_PATH/SideFXLabs20.5"|"/sideFXLabs"|g' /root/houd
 # copy the runner over. 
 COPY ./run.py /darol/run.py
 COPY ./automation /darol/automation
+COPY ./tests /darol/tests
