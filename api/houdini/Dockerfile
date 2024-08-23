@@ -15,6 +15,9 @@ ARG SFX_CLIENT_SECRET
 RUN apt-get update && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 
+# Suppress benign OpenCL warnings
+ENV HOUDINI_OCL_DEVICETYPE=CPU
+
 # Install python dependencies
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages
 
