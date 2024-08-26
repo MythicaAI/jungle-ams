@@ -21,6 +21,7 @@ import { ProfileMenu } from "./components/ProfileMenu.tsx";
 import { StatusAlarm } from "./components/StatusAlarm.tsx";
 import { api } from "./services/api";
 import { useAuth0 } from "@auth0/auth0-react";
+import {useStatusStore} from "./stores/statusStore.ts";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -34,6 +35,7 @@ export const AuthHeader = () => {
   ]);
   const { setAuthToken, setProfile, setOrgRoles } =
     useGlobalStore();
+  const { addError } = useStatusStore();
   const {
     loginWithRedirect,
     getAccessTokenSilently,
@@ -60,7 +62,7 @@ export const AuthHeader = () => {
           console.log("token: ", token);
           setCookie("auth_token", token, { path: "/" });
         })
-        .catch((error) => console.error("getAccessTokenSilently:", error));
+        .catch((error) => addError("getAccessTokenSilently:" + error));
     }
   }, [cookies]);
 
