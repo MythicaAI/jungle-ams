@@ -24,6 +24,8 @@ class AppConfig(BaseSettings):
     minio_secret_key: str = 'bar-secret'
     minio_endpoint: str = 'localhost:9000'
 
+    auth0_algorithm: str = 'RS256'
+    auth0_audience: str = 'https://api.mythica.ai'
     auth0_domain: str = 'dev-dtvqj0iuc5rnb6x2.us.auth0.com'
     auth0_client_id: str = '4CZhQWoNm1WH8l8042LeF38qHrUTR2ax'
     auth0_client_secret: str = '-vxSQgFB0y82_LGpO8FB-A59HTbiElKSgOleFu_Mt1qO7NXjWf67NDYIqLAHyGuO'

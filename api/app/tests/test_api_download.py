@@ -46,7 +46,7 @@ def create_files() -> list[UUID]:
     assert o.id == profile_id
 
     # Start session
-    o = munchify(client.get(f"{api_base}/profiles/start_session/{profile_id}").json())
+    o = munchify(client.get(f"{api_base}/sessions/direct/{profile_id}").json())
     assert o.profile.profile_id == profile_id
     assert len(o.sessions) > 0
     assert len(o.token) > 0

@@ -46,3 +46,16 @@ class Auth0TokenVerifier(object):
             raise UnauthorizedException(str(error))
         except jwt.exceptions.DecodeError as error:
             raise UnauthorizedException(str(error))
+
+        try:
+            payload = jwt.decode(
+                token.credentials,
+                signing_key,
+                algorithms=app_config().auth0_algorithms,
+                audience=app_config().auth0_audience,
+                issuer=f"https://{app_config().auth0_domain}/",
+            )
+        except Exception as error:
+            raise UnauthorizedException(str(error))
+
+        return payload

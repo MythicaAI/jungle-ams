@@ -14,7 +14,7 @@ import { useGlobalStore } from "./stores/globalStore.ts";
 import {
   defaultProfileResponse,
   ProfileResponse,
-  ResolvedOrgRef,
+  ResolvedOrgRef, SessionStartAuth0Request,
   SessionStartResponse,
 } from "./types/apiTypes.ts";
 import { ProfileMenu } from "./components/ProfileMenu.tsx";
@@ -43,6 +43,7 @@ export const AuthHeader = () => {
     isAuthenticated,
     isLoading,
   } = useAuth0();
+  const {addError} = useStatusStore();
 
   console.log("user: ", user);
   console.log("isAuthenticated: ", isAuthenticated);
@@ -66,12 +67,40 @@ export const AuthHeader = () => {
     }
   }, [cookies]);
 
-  // Refresh the profile based on having an API session token
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      updateSession();
+    const getUserMetadata = async (user_id: string) => {
+      try {
+        // get the access token, this uses cached authentication parameters under the hood
+        const accessToken = await getAccessTokenSilently();
+        const sessionStartReq: SessionStartAuth0Request = {
+          access_token: accessToken,
+          user_id: user_id,
+        };
+        api
+          .post<SessionStartResponse>({
+            path: `/sessions/auth0-spa`,
+            body: sessionStartReq,
+          })
+          .then((data) => {
+            setAuthToken(data.token);
+            const input: Partial<ProfileResponse> = data.profile;
+            const merged = mergeWithDefaults(defaultProfileResponse(), input);
+            setProfile(merged as unknown as ProfileResponse);
+          })
+          .catch((err) => {
+            addError(`session start failed ${err}`);
+            setAuthToken("");
+          });
+
+      } catch (e) {
+        addError("Token exception: " + e.message);
+        console.error(e.message);
+      }
+    };
+    if (isAuthenticated && user && user.sub) {
+      getUserMetadata(user.sub);
     }
-  }, [isLoading, isAuthenticated]);
+  }, [getAccessTokenSilently, isAuthenticated, user]);
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
@@ -84,26 +113,6 @@ export const AuthHeader = () => {
       ]),
     ) as ProfileResponse;
   }
-
-  const updateSession = () => {
-    console.log("updateSession", user ? user.sub : "undefined");
-
-    // Get a new auth_token with the profile_id
-    api
-      .get<SessionStartResponse>({
-        path: `/profiles/start_session/${user?.sub}`,
-      })
-      .then((data) => {
-        setAuthToken(data.token);
-        const input: Partial<ProfileResponse> = data.profile;
-        const merged = mergeWithDefaults(defaultProfileResponse(), input);
-        setProfile(merged as unknown as ProfileResponse);
-      })
-      .catch((err) => {
-        console.log(`start_session failed ${err}`);
-        setAuthToken("");
-      });
-  };
 
   const updateProfileData = () => {
     api
@@ -161,10 +170,9 @@ export const AuthHeader = () => {
                 loginWithRedirect()
                   .then((res) => {
                     console.log("LOGIN RES: ", res);
-                    console.log("logged in");
                   })
                   .catch((error) => {
-                    console.log("error", error);
+                    console.log("LOGIN ERR", error);
                   })
               }
             >

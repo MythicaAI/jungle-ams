@@ -41,7 +41,7 @@ def create_profile(client, api_base: str):
         assert profile.profile_id == profile_id
 
         # Start session
-        r = client.get(f"{api_base}/profiles/start_session/{profile_id}")
+        r = client.get(f"{api_base}/sessions/direct/{profile_id}")
         assert_status_code(r, HTTPStatus.OK)
         session_response = SessionStartResponse(**r.json())
         assert session_response.profile.profile_id == profile_id

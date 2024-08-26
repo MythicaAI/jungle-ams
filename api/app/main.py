@@ -46,6 +46,7 @@ route_names = [
     'assets',
     'orgs',
     'topos',
+    'sessions',
     'validate',
     'keys']
 

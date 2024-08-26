@@ -191,3 +191,8 @@ export interface DownloadInfoResponse {
   content_hash: string;
   url: string,
 }
+
+export interface SessionStartAuth0Request {
+  access_token: string,
+  user_id: string,
+}
