@@ -9,14 +9,14 @@ RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
 # Build the primary image
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
 
-ARG SFX_CLIENT_ID
-ARG SFX_CLIENT_SECRET
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Setup Houdini environment
+ARG SFX_CLIENT_ID
+ARG SFX_CLIENT_SECRET
+
 RUN echo "ClientID=${SFX_CLIENT_ID}" >  /root/houdini20.5/hserver.ini
 RUN echo "ClientSecret=${SFX_CLIENT_SECRET}" >>  /root/houdini20.5/hserver.ini
 
