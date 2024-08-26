@@ -3,7 +3,9 @@ ARG HOUDINI_VERSION=20.5.332
 # Gather darol python dependencies on the version that matches Houdini
 FROM python:3.11-slim AS python-dependency-downloader
 
-RUN pip install --upgrade --no-cache-dir grpcio grpcio-tools msgpack
+COPY ./darol-plugin/requirements.txt /tmp/requirements.txt
+
+RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
 
 # Build the primary image
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
