@@ -1,6 +1,6 @@
 import { useAssetVersionStore } from "../stores/assetVersionStore.ts";
 import { Box } from "@mui/joy";
-import { AssetEditFileList } from "./AssetEditFileList.tsx";
+import { AssetEditFileList } from "./AssetEditFileList";
 import { OpenUploadsState } from "../types/assetEditTypes.ts";
 import { AssetEditUploadDrawer } from "./AssetEditUploadDrawer.tsx";
 import { useState } from "react";

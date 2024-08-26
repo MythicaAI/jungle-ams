@@ -41,6 +41,9 @@ def schema_to_sqlmodel(schema: dict[str, Any]) -> str:
             'sa_type=TIMESTAMP(timezone=True)',
             'sa_column_kwargs={\'server_default\': sql_now(), \'nullable\': False}']
 
+    def timestamp_props(c) -> list[str]:
+        return ['sa_type=TIMESTAMP(timezone=True)']
+
     def autocreate_uuid_props(c) -> [str]:
         return ["default_factory=uuid4"]
 
@@ -110,6 +113,8 @@ def schema_to_sqlmodel(schema: dict[str, Any]) -> str:
                     field_props.extend(autoupdate_timestamp_props(column))
                 elif column.get('auto_create'):
                     field_props.extend(autocreate_timestamp_props(column))
+                else:
+                    field_props.extend(timestamp_props(column))
 
             # add default if not yet populated and field is not a primary key
             has_default = any(filter(lambda fp: fp.startswith('default'), field_props))

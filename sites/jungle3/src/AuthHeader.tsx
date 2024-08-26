@@ -1,15 +1,15 @@
 import {
   Avatar,
-  Box, Button,
+  Box,
   List,
   ListItemContent,
   ListItemDecorator,
   Stack, styled,
   Typography,
 } from "@mui/joy";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, } from "react-router-dom";
 import { useCookies } from "react-cookie";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import {
   defaultProfileResponse,
@@ -32,7 +32,7 @@ export const AuthHeader = () => {
     "auth_token",
     "refresh_token",
   ]);
-  const { authToken, profile, setAuthToken, setProfile, setOrgRoles } =
+  const { setAuthToken, setProfile, setOrgRoles } =
     useGlobalStore();
   const {
     loginWithRedirect,

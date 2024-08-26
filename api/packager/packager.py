@@ -175,8 +175,8 @@ async def worker_entrypoint(endpoint: str):
         requests.exceptions.ConnectionError,
         ConnectionError,
         ValueError)
-    async with EventsSession(sql_url, sleep_interval, event_type_prefix='asset_version_updated') as session:
-        async for event_seq, job_data in session.ack_next():
+    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['asset_version_updated']) as session:
+        async for event_seq, _, job_data in session.ack_next():
             log.info("event: %s, %s", event_seq, job_data)
             try:
                 await exec_job(endpoint, job_data)

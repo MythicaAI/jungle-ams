@@ -3,7 +3,7 @@ import "slick-carousel/slick/slick-theme.css";
 import Slider, { CustomArrowProps } from "react-slick";
 import { Box } from "@mui/joy";
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
-import { AssetVersionResponse } from "../../types/apiTypes";
+import { AssetTopResponse } from "../../types/apiTypes";
 import { PackageViewCard } from "../PackageViewCard";
 
 import "./slickCarousel.css";
@@ -51,7 +51,7 @@ const PrevArrow: React.FC<CustomArrowProps> = ({ onClick }) => {
 };
 
 type Props = {
-  assets: AssetVersionResponse[];
+  assets: AssetTopResponse[];
 };
 
 export const TopAssetsSlider: React.FC<Props> = ({ assets }) => {

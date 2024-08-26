@@ -55,7 +55,8 @@ const houBaseTypes = function(){
 
             for (const eventType in NodeEvents)
                 !this[eventType] && (this[eventType] = this.#defaultEventHandler(eventType))  
-        };
+        }
+        
         #eventHandlers = {}
 
         _addEventHandler(handlerType,handler){

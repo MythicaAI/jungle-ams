@@ -1,0 +1,10 @@
+{
+  "hpath": ["$DAROL"],
+  "load_package_once": true,
+  "version": "20.0",
+  "enable": true,  
+  "env": [
+    {"DAROL" : "/path/to/darol/repoclone/houdini-package"},
+    {"PYTHONPATH" : "/path/to/python/Lib/site-packages"}
+  ]
+}    

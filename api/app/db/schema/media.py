@@ -22,7 +22,7 @@ class FileContent(SQLModel, table=True):
     name: str | None = Field(default=None)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
-    deleted: datetime | None = Field(default=None)
+    deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     size: int | None = Field(default=0)
     content_type: str | None = Field(default=None)
     owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)

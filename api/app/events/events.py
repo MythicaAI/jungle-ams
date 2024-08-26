@@ -20,12 +20,12 @@ where
         where
             acked is null
             and
-            event_type like '{event_type_prefix}%%'
+            ({event_type_condition})
         order by 
             queued
         limit 1 for update
     )
-    returning event_seq, job_data as result;"""
+    returning event_seq, event_type, job_data as result;"""
 
 pgsql_complete = """
 update
@@ -41,11 +41,11 @@ class EventsSession(object):
     accessors of the event queue.
     """
 
-    def __init__(self, sql_url, sleep_interval, event_type_prefix='', echo=False):
+    def __init__(self, sql_url, sleep_interval, event_type_prefixes, echo=False):
         self.async_engine = create_async_engine(sql_url, echo=echo)
         self.sleep_interval = sleep_interval
         self.conn = None
-        self.event_type_prefix = event_type_prefix
+        self.event_type_condition = ' or '.join([f"event_type like '{prefix}%%'" for prefix in event_type_prefixes]) or 'TRUE'
 
     async def __aenter__(self) -> Self:
         return self
@@ -59,14 +59,14 @@ class EventsSession(object):
         """Asynchronously yield event data from the events table."""
         while True:
             stmt = text(pgsql_dequeue.format(
-                event_type_prefix=self.event_type_prefix))
+                event_type_condition=self.event_type_condition))
             async with self.async_engine.begin() as conn:
                 result = await conn.execute(stmt)
                 data = result.fetchone()
             if data is None:
                 await asyncio.sleep(self.sleep_interval)
                 continue
-            yield data[0], data[1]
+            yield data[0], data[1], data[2]
 
     async def complete(self, event_seq: int):
         """Asynchronously acknowledge an event."""
@@ -81,10 +81,10 @@ async def main():
     import os
     sql_url = os.environ.get('SQL_URL', 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
-    async with EventsSession(sql_url, sleep_interval) as session:
-        async for event_seq, json_data in session.ack_next():
+    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=[]) as session:
+        async for event_seq, event_type, json_data in session.ack_next():
             await session.complete(event_seq)
-            print(event_seq, json_data)
+            print(event_seq, event_type, json_data)
 
 
 if __name__ == '__main__':

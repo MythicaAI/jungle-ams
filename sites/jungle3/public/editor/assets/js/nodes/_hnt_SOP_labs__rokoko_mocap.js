@@ -1,0 +1,164 @@
+
+export default function (hou) {
+    class _hnt_SOP_labs__rokoko_mocap extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SOP/Labs/Character & Animation/Performance Capture/labs::rokoko_mocap';
+        static category = '/SOP/labs';
+        static houdiniType = 'labs::rokoko_mocap';
+        static title = 'Labs Rokoko Mocap';
+        static icon = 'None';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = [];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.ButtonParmTemplate({name: "connect_server", label: "Connect"});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ connected == 1 }");
+			hou_parm_template.setScriptCallback("hou.pwd().hm().start_server(hou.pwd())");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback": "hou.pwd().hm().start_server(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ButtonParmTemplate({name: "disconnect_server", label: "Disconnect"});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ connected == 0 }");
+			hou_parm_template.setScriptCallback("hou.pwd().hm().disconnect_server(hou.pwd())");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback": "hou.pwd().hm().disconnect_server(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder0", label: "Connection Settings", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			let hou_parm_template2 = new hou.StringParmTemplate({name: "rokoko_ip", label: "IP", num_components: 1, default_value: ["127.0.0.1"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "rokoko_port", label: "Port", num_components: 1, default_value: ["14043"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "rokoko_actor_indexxx", label: "Actor Index", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder1_1", label: "Command API", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template.hide(true);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "commands_folder", label: "Commands", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setTags({"group_type": "simple"});
+			let hou_parm_template3 = new hou.StringParmTemplate({name: "smartsuit_name", label: "Smartsuit name", num_components: 1, default_value: ["E46"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "recording_filename", label: "Recording filename", num_components: 1, default_value: ["C:\\houdini_recording"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.FileReference, file_type: hou.fileType.Any, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "countdown_delay", label: "Calibration delay", num_components: 1, default_value: ["3"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.SeparatorParmTemplate({name: "sepparm"});
+			hou_parm_template3.hide(true);
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ButtonParmTemplate({name: "restart_btn", label: "Restart"});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setJoinWithNext(true);
+			hou_parm_template3.setScriptCallback("hou.pwd().hm().restart(hou.pwd())");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback": "hou.pwd().hm().restart(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ButtonParmTemplate({name: "calibrate_btn", label: "Calibrate"});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setJoinWithNext(true);
+			hou_parm_template3.setScriptCallback("hou.pwd().hm().calibrate(hou.pwd())");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback": "hou.pwd().hm().calibrate(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ButtonParmTemplate({name: "start_recording_btn", label: "Start recording"});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setJoinWithNext(true);
+			hou_parm_template3.setScriptCallback("hou.pwd().hm().start_recording(hou.pwd())");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback": "hou.pwd().hm().start_recording(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ButtonParmTemplate({name: "stop_recording_btn", label: "Stop recording"});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setJoinWithNext(true);
+			hou_parm_template3.setScriptCallback("hou.pwd().hm().stop_recording(hou.pwd())");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback": "hou.pwd().hm().stop_recording(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ButtonParmTemplate({name: "unicast_btn", label: "Unicast"});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setJoinWithNext(true);
+			hou_parm_template3.setScriptCallback("hou.pwd().hm().unicast(hou.pwd())");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback": "hou.pwd().hm().unicast(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ButtonParmTemplate({name: "broadcast_btn", label: "Broadcast"});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallback("hou.pwd().hm().unicast(hou.pwd())");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback": "hou.pwd().hm().unicast(hou.pwd())", "script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "rokoko_api_connection", label: "Connection Settings", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setTags({"group_type": "collapsible"});
+			hou_parm_template3 = new hou.StringParmTemplate({name: "api_ip", label: "IP", num_components: 1, default_value: ["127.0.0.1"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "api_port", label: "Port", num_components: 1, default_value: ["14053"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "api_key", label: "Key", num_components: 1, default_value: ["ne9a"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.hide(true);
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "connected", label: "connected", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.hide(true);
+			hou_parm_template.hideLabel(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "tpose", label: "TPose", num_components: 1, default_value: ["{\"version\":2,\"timestamp\":611.252197265625,\"playbackTimestamp\":1.6831681728363038,\"props\":[],\"trackers\":[],\"faces\":[],\"actors\":[{\"name\":\"121\",\"timestamp\":0.0,\"id\":\"121\",\"isLive\":false,\"profileName\":\"DemoProfile\",\"hipHeight\":1.0249717235565186,\"totalHeight\":1.9299999475479127,\"color\":{\"x\":0.0,\"y\":0.5411764979362488,\"z\":0.5960784554481506},\"hip\":{\"position\":{\"x\":-0.0009566446533426642,\"y\":0.9448990821838379,\"z\":0.024475011974573137},\"rotation\":{\"x\":-8.429370268459025e-8,\"y\":-1.1724467002051679e-15,\"z\":9.473120132094345e-16,\"w\":-1.0}},\"spine\":{\"position\":{\"x\":-0.0009569840040057898,\"y\":1.0374070405960084,\"z\":-0.01857699826359749},\"rotation\":{\"x\":-1.172453476468746e-15,\"y\":5.611308324660058e-7,\"z\":-1.0,\"w\":-5.590661526704635e-22}},\"chest\":{\"position\":{\"x\":0.0014623558381572366,\"y\":1.2029484510421754,\"z\":-0.02019418776035309},\"rotation\":{\"x\":-9.60149750437139e-16,\"y\":5.611308324660058e-7,\"z\":-1.0,\"w\":3.7834979593753817e-10}},\"neck\":{\"position\":{\"x\":0.0014627632917836309,\"y\":1.563732624053955,\"z\":-0.020194310694932939},\"rotation\":{\"x\":-9.60149750437139e-16,\"y\":5.611308324660058e-7,\"z\":-1.0,\"w\":3.7834979593753817e-10}},\"head\":{\"position\":{\"x\":0.001462882966734469,\"y\":1.6777009963989258,\"z\":-0.020194150507450105},\"rotation\":{\"x\":-1.4827435620255064e-15,\"y\":5.611308324660058e-7,\"z\":-1.0,\"w\":-5.529727786779404e-10}},\"leftShoulder\":{\"position\":{\"x\":-0.07530201226472855,\"y\":1.4783892631530762,\"z\":0.0006837863475084305},\"rotation\":{\"x\":-0.09229612350463867,\"y\":0.09229542315006256,\"z\":0.7010573744773865,\"w\":-0.701057493686676}},\"leftUpperArm\":{\"position\":{\"x\":-0.21873386204242707,\"y\":1.4783891439437867,\"z\":-0.03774859011173248},\"rotation\":{\"x\":-0.5000001192092896,\"y\":-0.5000004172325134,\"z\":0.49999985098838808,\"w\":-0.5}},\"leftLowerArm\":{\"position\":{\"x\":-0.503326952457428,\"y\":1.4783885478973389,\"z\":-0.03774774447083473},\"rotation\":{\"x\":-0.5000001788139343,\"y\":-0.5000004768371582,\"z\":0.49999985098838808,\"w\":-0.4999999701976776}},\"leftHand\":{\"position\":{\"x\":-0.8167062401771545,\"y\":1.4783883094787598,\"z\":-0.037748269736766818},\"rotation\":{\"x\":-0.5000001788139343,\"y\":-0.5000004768371582,\"z\":0.49999985098838808,\"w\":-0.4999999701976776}},\"rightShoulder\":{\"position\":{\"x\":0.07822749018669129,\"y\":1.4783892631530762,\"z\":0.0006836391985416412},\"rotation\":{\"x\":0.09229615330696106,\"y\":0.09229541569948197,\"z\":0.7010574340820313,\"w\":0.7010574340820313}},\"rightUpperArm\":{\"position\":{\"x\":0.22165927290916444,\"y\":1.4783892631530762,\"z\":-0.03774871677160263},\"rotation\":{\"x\":0.5000002980232239,\"y\":-0.5000002980232239,\"z\":0.4999999701976776,\"w\":0.4999997913837433}},\"rightLowerArm\":{\"position\":{\"x\":0.5062523484230042,\"y\":1.478388786315918,\"z\":-0.037748537957668307},\"rotation\":{\"x\":0.5000003576278687,\"y\":-0.5000002980232239,\"z\":0.5,\"w\":0.49999964237213137}},\"rightHand\":{\"position\":{\"x\":0.8196319937705994,\"y\":1.4783883094787598,\"z\":-0.037748999893665317},\"rotation\":{\"x\":0.5000003576278687,\"y\":-0.5000002980232239,\"z\":0.5,\"w\":0.49999964237213137}},\"leftUpLeg\":{\"position\":{\"x\":-0.08927863836288452,\"y\":0.9448990821838379,\"z\":0.024475010111927987},\"rotation\":{\"x\":1.4210854715202005e-14,\"y\":0.7071064114570618,\"z\":4.2146844236867767e-8,\"w\":0.7071071267127991}},\"leftLeg\":{\"position\":{\"x\":-0.08927846699953079,\"y\":0.4738483130931854,\"z\":0.02447517402470112},\"rotation\":{\"x\":-9.898790267470759e-7,\"y\":0.7071064114570618,\"z\":7.540666047134437e-7,\"w\":0.7071071267127991}},\"leftFoot\":{\"position\":{\"x\":-0.089959517121315,\"y\":0.001707613468170166,\"z\":0.024475498124957086},\"rotation\":{\"x\":-2.384184938364342e-7,\"y\":0.7071061730384827,\"z\":-0.7071073651313782,\"w\":0.0000014007091522216797}},\"leftToe\":{\"position\":{\"x\":-0.08995942771434784,\"y\":-0.06623721122741699,\"z\":0.16788539290428163},\"rotation\":{\"x\":-1.1920922560193503e-7,\"y\":0.7071067690849304,\"z\":-0.7071067690849304,\"w\":0.0000014007091522216797}},\"leftToeEnd\":{\"position\":{\"x\":-0.089959517121315,\"y\":-0.07992720603942871,\"z\":0.24896612763404847},\"rotation\":{\"x\":-1.1920922560193503e-7,\"y\":0.7071067690849304,\"z\":-0.7071067690849304,\"w\":0.0000014007091522216797}},\"rightUpLeg\":{\"position\":{\"x\":0.08736534416675568,\"y\":0.9448990821838379,\"z\":0.024475006386637689},\"rotation\":{\"x\":0.0,\"y\":-0.7071067094802856,\"z\":-4.214684778958144e-8,\"w\":0.7071068286895752}},\"rightLeg\":{\"position\":{\"x\":0.08736526221036911,\"y\":0.4738483428955078,\"z\":0.024475164711475374},\"rotation\":{\"x\":0.0,\"y\":-0.7071067094802856,\"z\":-4.214684778958144e-8,\"w\":0.7071068286895752}},\"rightFoot\":{\"position\":{\"x\":0.0880473256111145,\"y\":0.0017077326774597169,\"z\":0.024475248530507089},\"rotation\":{\"x\":2.980232949312267e-8,\"y\":-0.7071065902709961,\"z\":0.7071069478988648,\"w\":-1.0132529987575898e-15}},\"rightToe\":{\"position\":{\"x\":0.0880473330616951,\"y\":-0.06623733043670654,\"z\":0.16788510978221894},\"rotation\":{\"x\":1.935551176122539e-15,\"y\":-0.7071067690849304,\"z\":0.7071068286895752,\"w\":1.4988956332966986e-15}},\"rightToeEnd\":{\"position\":{\"x\":0.0880473330616951,\"y\":-0.07992720603942871,\"z\":0.24896582961082459},\"rotation\":{\"x\":1.935551176122539e-15,\"y\":-0.7071067690849304,\"z\":0.7071068286895752,\"w\":1.4988956332966986e-15}},\"leftThumbProximal\":{\"position\":{\"x\":-0.8396787047386169,\"y\":1.4772498607635499,\"z\":-0.006961006671190262},\"rotation\":{\"x\":-0.5609855055809021,\"y\":-0.7010575532913208,\"z\":0.4304591119289398,\"w\":-0.09229713678359986}},\"leftThumbMedial\":{\"position\":{\"x\":-0.8774058818817139,\"y\":1.4772496223449708,\"z\":0.014820677228271962},\"rotation\":{\"x\":-0.6532812118530273,\"y\":-0.6532812118530273,\"z\":0.27059850096702578,\"w\":-0.2705995440483093}},\"leftThumbDistal\":{\"position\":{\"x\":-0.9104712009429932,\"y\":1.4772496223449708,\"z\":0.014820788986980915},\"rotation\":{\"x\":-0.6532810926437378,\"y\":-0.6532812118530273,\"z\":0.27059850096702578,\"w\":-0.2705995738506317}},\"leftThumbTip\":{\"position\":{\"x\":-0.9482452273368836,\"y\":1.4772497415542603,\"z\":0.01482097152620554},\"rotation\":{\"x\":-0.6532818078994751,\"y\":-0.6532805562019348,\"z\":0.27060049772262576,\"w\":-0.2705972194671631}},\"leftIndexProximal\":{\"position\":{\"x\":-0.9056264162063599,\"y\":1.4772499799728394,\"z\":-0.009500525891780854},\"rotation\":{\"x\":-0.5000007748603821,\"y\":-0.5000008344650269,\"z\":0.49999934434890749,\"w\":-0.49999937415122988}},\"leftIndexMedial\":{\"position\":{\"x\":-0.9567685723304749,\"y\":1.4772499799728394,\"z\":-0.009500507265329361},\"rotation\":{\"x\":-0.5000008940696716,\"y\":-0.5000007152557373,\"z\":0.4999995231628418,\"w\":-0.49999919533729555}},\"leftIndexDistal\":{\"position\":{\"x\":-0.9882324934005737,\"y\":1.4772499799728394,\"z\":-0.009500671178102494},\"rotation\":{\"x\":-0.5000010132789612,\"y\":-0.5000005960464478,\"z\":0.49999964237213137,\"w\":-0.49999913573265078}},\"leftIndexTip\":{\"position\":{\"x\":-1.019067406654358,\"y\":1.477250576019287,\"z\":-0.009501099586486817},\"rotation\":{\"x\":-0.5000002384185791,\"y\":-0.4999997019767761,\"z\":0.5000006556510925,\"w\":-0.4999997019767761}},\"leftMiddleProximal\":{\"position\":{\"x\":-0.9066113829612732,\"y\":1.4772499799728394,\"z\":-0.03172650560736656},\"rotation\":{\"x\":-0.5000003576278687,\"y\":-0.5000004768371582,\"z\":0.49999985098838808,\"w\":-0.49999958276748659}},\"leftMiddleMedial\":{\"position\":{\"x\":-0.9585705399513245,\"y\":1.477250337600708,\"z\":-0.03172645345330238},\"rotation\":{\"x\":-0.5000007152557373,\"y\":-0.5000004172325134,\"z\":0.5,\"w\":-0.4999993145465851}},\"leftMiddleDistal\":{\"position\":{\"x\":-0.9928415417671204,\"y\":1.477250337600708,\"z\":-0.03172653168439865},\"rotation\":{\"x\":-0.500000536441803,\"y\":-0.5000001192092896,\"z\":0.5000001192092896,\"w\":-0.49999958276748659}},\"leftMiddleTip\":{\"position\":{\"x\":-1.0259875059127808,\"y\":1.477250576019287,\"z\":-0.031726717948913577},\"rotation\":{\"x\":-0.5000006556510925,\"y\":-0.4999999403953552,\"z\":0.5000002384185791,\"w\":-0.499999463558197}},\"leftRingProximal\":{\"position\":{\"x\":-0.9026934504508972,\"y\":1.4772495031356812,\"z\":-0.05361667647957802},\"rotation\":{\"x\":-0.5000009536743164,\"y\":-0.5000011324882507,\"z\":0.49999910593032839,\"w\":-0.4999992549419403}},\"leftRingMedial\":{\"position\":{\"x\":-0.9517333507537842,\"y\":1.4772496223449708,\"z\":-0.053616706281900409},\"rotation\":{\"x\":-0.5000009536743164,\"y\":-0.5000011324882507,\"z\":0.49999910593032839,\"w\":-0.4999992549419403}},\"leftRingDistal\":{\"position\":{\"x\":-0.983360230922699,\"y\":1.4772493839263917,\"z\":-0.0536167286336422},\"rotation\":{\"x\":-0.5000009536743164,\"y\":-0.5000011324882507,\"z\":0.49999910593032839,\"w\":-0.4999992549419403}},\"leftRingTip\":{\"position\":{\"x\":-1.0141527652740479,\"y\":1.4772499799728394,\"z\":-0.05361681804060936},\"rotation\":{\"x\":-0.5000011324882507,\"y\":-0.5000008940696716,\"z\":0.49999934434890749,\"w\":-0.49999913573265078}},\"leftLittleProximal\":{\"position\":{\"x\":-0.8940079212188721,\"y\":1.4772499799728394,\"z\":-0.07231931388378144},\"rotation\":{\"x\":-0.4999997913837433,\"y\":-0.4999997019767761,\"z\":0.5000005960464478,\"w\":-0.5000002384185791}},\"leftLittleMedial\":{\"position\":{\"x\":-0.9355942010879517,\"y\":1.4772497415542603,\"z\":-0.07231943309307099},\"rotation\":{\"x\":-0.5000013113021851,\"y\":-0.5000007748603821,\"z\":0.49999910593032839,\"w\":-0.49999913573265078}},\"leftLittleDistal\":{\"position\":{\"x\":-0.9617341160774231,\"y\":1.4772498607635499,\"z\":-0.07231932878494263},\"rotation\":{\"x\":-0.5000013709068298,\"y\":-0.5000008344650269,\"z\":0.4999992251396179,\"w\":-0.49999895691871645}},\"leftLittleTip\":{\"position\":{\"x\":-0.988360583782196,\"y\":1.4772498607635499,\"z\":-0.07231950759887696},\"rotation\":{\"x\":-0.5000011920928955,\"y\":-0.5000008344650269,\"z\":0.4999992251396179,\"w\":-0.499999076128006}},\"rightThumbProximal\":{\"position\":{\"x\":0.8426045775413513,\"y\":1.4772497415542603,\"z\":-0.0069616734981536869},\"rotation\":{\"x\":0.5609851479530335,\"y\":-0.701058030128479,\"z\":0.4304591119289398,\"w\":0.0922972559928894}},\"rightThumbMedial\":{\"position\":{\"x\":0.8803313970565796,\"y\":1.4772496223449708,\"z\":0.014820020645856858},\"rotation\":{\"x\":0.6532809138298035,\"y\":-0.6532816290855408,\"z\":0.27059799432754519,\"w\":0.2705996632575989}},\"rightThumbDistal\":{\"position\":{\"x\":0.913396954536438,\"y\":1.4772493839263917,\"z\":0.014820130541920662},\"rotation\":{\"x\":0.6532807946205139,\"y\":-0.6532816290855408,\"z\":0.27059823274612429,\"w\":0.2705996632575989}},\"rightThumbTip\":{\"position\":{\"x\":0.9511709213256836,\"y\":1.4772495031356812,\"z\":0.014820331707596779},\"rotation\":{\"x\":0.6532815098762512,\"y\":-0.653281033039093,\"z\":0.27059996128082278,\"w\":0.270597904920578}},\"rightIndexProximal\":{\"position\":{\"x\":0.9085521101951599,\"y\":1.4772498607635499,\"z\":-0.009501229971647263},\"rotation\":{\"x\":0.49999958276748659,\"y\":-0.5000002980232239,\"z\":0.5000002384185791,\"w\":0.5000001192092896}},\"rightIndexMedial\":{\"position\":{\"x\":0.9596942663192749,\"y\":1.4772498607635499,\"z\":-0.009501174092292786},\"rotation\":{\"x\":0.49999964237213137,\"y\":-0.5000001788139343,\"z\":0.5000002384185791,\"w\":0.5000001788139343}},\"rightIndexDistal\":{\"position\":{\"x\":0.9911581873893738,\"y\":1.4772498607635499,\"z\":-0.009501326829195023},\"rotation\":{\"x\":0.49999964237213137,\"y\":-0.5000001788139343,\"z\":0.5000002980232239,\"w\":0.5000001788139343}},\"rightIndexTip\":{\"position\":{\"x\":1.0219929218292237,\"y\":1.4772504568099976,\"z\":-0.009501751512289048},\"rotation\":{\"x\":0.49999964237213137,\"y\":-0.4999999403953552,\"z\":0.5000004768371582,\"w\":0.5000002384185791}},\"rightMiddleProximal\":{\"position\":{\"x\":0.9095370173454285,\"y\":1.4772498607635499,\"z\":-0.03172707185149193},\"rotation\":{\"x\":0.4999995231628418,\"y\":-0.5000002980232239,\"z\":0.5000002384185791,\"w\":0.5000001192092896}},\"rightMiddleMedial\":{\"position\":{\"x\":0.9614964127540588,\"y\":1.4772502183914185,\"z\":-0.03172709420323372},\"rotation\":{\"x\":0.4999995231628418,\"y\":-0.5000002980232239,\"z\":0.5000001788139343,\"w\":0.5000001788139343}},\"rightMiddleDistal\":{\"position\":{\"x\":0.9957675933837891,\"y\":1.477250099182129,\"z\":-0.031727153807878497},\"rotation\":{\"x\":0.4999997019767761,\"y\":-0.5000002980232239,\"z\":0.5000002384185791,\"w\":0.5}},\"rightMiddleTip\":{\"position\":{\"x\":1.0289133787155152,\"y\":1.477250337600708,\"z\":-0.031727273017168048},\"rotation\":{\"x\":0.4999999403953552,\"y\":-0.5000001788139343,\"z\":0.5000004172325134,\"w\":0.49999991059303286}},\"rightRingProximal\":{\"position\":{\"x\":0.905619204044342,\"y\":1.4772495031356812,\"z\":-0.05361739173531532},\"rotation\":{\"x\":0.49999964237213137,\"y\":-0.5000002384185791,\"z\":0.5000002384185791,\"w\":0.5000002384185791}},\"rightRingMedial\":{\"position\":{\"x\":0.9546589851379395,\"y\":1.4772496223449708,\"z\":-0.05361735448241234},\"rotation\":{\"x\":0.49999964237213137,\"y\":-0.5000001788139343,\"z\":0.5000001788139343,\"w\":0.5000001788139343}},\"rightRingDistal\":{\"position\":{\"x\":0.9862858653068543,\"y\":1.4772493839263917,\"z\":-0.053617339581251147},\"rotation\":{\"x\":0.49999964237213137,\"y\":-0.5000001788139343,\"z\":0.5000002384185791,\"w\":0.5000001788139343}},\"rightRingTip\":{\"position\":{\"x\":1.0170782804489136,\"y\":1.4772499799728394,\"z\":-0.053617436438798907},\"rotation\":{\"x\":0.4999997019767761,\"y\":-0.5000001192092896,\"z\":0.5000002980232239,\"w\":0.5000001192092896}},\"rightLittleProximal\":{\"position\":{\"x\":0.8969334363937378,\"y\":1.4772498607635499,\"z\":-0.07231996953487396},\"rotation\":{\"x\":0.4999997019767761,\"y\":-0.5000002980232239,\"z\":0.5000001788139343,\"w\":0.5000001192092896}},\"rightLittleMedial\":{\"position\":{\"x\":0.9385199546813965,\"y\":1.4772496223449708,\"z\":-0.07232008874416352},\"rotation\":{\"x\":0.4999997019767761,\"y\":-0.5000002980232239,\"z\":0.5000001788139343,\"w\":0.5000000596046448}},\"rightLittleDistal\":{\"position\":{\"x\":0.9646596312522888,\"y\":1.4772498607635499,\"z\":-0.07231995463371277},\"rotation\":{\"x\":0.4999998211860657,\"y\":-0.5000001192092896,\"z\":0.5000003576278687,\"w\":0.5}},\"rightLittleTip\":{\"position\":{\"x\":0.991286039352417,\"y\":1.4772498607635499,\"z\":-0.07232010364532471},\"rotation\":{\"x\":0.4999998211860657,\"y\":-0.5000001192092896,\"z\":0.5000003576278687,\"w\":0.5}}}]}"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder1", label: "Visualization", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.hide(true);
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "color", label: "Color", num_components: 3, default_value: [1, 1, 1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Labs/Character & Animation/Performance Capture/labs::rokoko_mocap',_hnt_SOP_labs__rokoko_mocap)
+    return _hnt_SOP_labs__rokoko_mocap
+}
+        

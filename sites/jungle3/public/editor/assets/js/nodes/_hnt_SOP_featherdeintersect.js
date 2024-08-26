@@ -1,0 +1,163 @@
+
+export default function (hou) {
+    class _hnt_SOP_featherdeintersect extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SOP/Character FX/Feathers/featherdeintersect';
+        static category = '/SOP';
+        static houdiniType = 'featherdeintersect';
+        static title = 'Feather Deintersect';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_featherdeintersect.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP', 'SOP', 'SOP'];
+            const outputs = ['SOP', 'SOP', 'SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "group", label: "Group", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "opmenu -l -a delete1 group", item_generator_script_language: hou.scriptLanguage.Hscript, menu_type: hou.menuType.StringToggle});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "script_action": "import soputils\nkwargs['geometrytype'] = hou.geometryType.Primitives\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "ordermode", label: "Order Mode", menu_items: ["findneighbors", "layerattrib", "neighborarrays"], menu_labels: ["Automatic (Find Neighbors)", "Layer Attribute", "Neighbor Arrays"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "layerattrib", label: "Layer Attribute", num_components: 1, default_value: ["layer"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ ordermode != layerattrib }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "frontneighborsattrib", label: "Front Neighbors Attribute", num_components: 1, default_value: ["frontneighbors"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ ordermode != neighborarrays }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "rearneighborsattrib", label: "Rear Neighbors Attribute", num_components: 1, default_value: ["rearneighbors"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ ordermode != neighborarrays }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "iterations", label: "Iterations", num_components: 1, default_value: [5], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "smoothdeform", label: "Smooth Deformation", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "smoothiters", label: "Smoothing Iterations", num_components: 1, default_value: [1], min: 0, max: 20, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ smoothdeform == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ToggleParmTemplate({name: "relax", label: "Relax", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "relaxiters", label: "Relax Iterations", num_components: 1, default_value: [20], min: 0, max: 20, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template.setConditional(hou.parmCondType.DisableWhen, "{ relax == 0 }");
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder_neighborsearch", label: "Neighbor Search", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ ordermode != findneighbors }");
+			hou_parm_template.setTags({"group_type": "collapsible"});
+			let hou_parm_template2 = new hou.FloatParmTemplate({name: "neighborradius", label: "Search Radius", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "sideconeangle", label: "Side Cone Angle", num_components: 1, default_value: [30], min: 0, max: 90, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sidelayeringmode", label: "Side Layering Mode", menu_items: ["posattrib", "dirattrib"], menu_labels: ["Position Attribute", "Direction Attribute"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "sidelayeringposattrib", label: "Side Layering Position Attribute", num_components: 1, default_value: ["P"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ sidelayeringmode != posattrib }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "sidelayeringdirattrib", label: "Side Layering Direction Attribute", num_components: 1, default_value: ["layerdir"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ sidelayeringmode != dirattrib }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sidelayeringposattribcomp", label: "Component", menu_items: ["x", "y", "z"], menu_labels: ["X", "Y", "Z"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: true, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ sidelayeringmode != posattrib }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "sidelayeringposattribabs", label: "Use Absolute Value", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ sidelayeringmode != posattrib }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "sidelayeringreverse", label: "Reverse Layering", default_value: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder_feathergeo", label: "Feather Geometry", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "collapsible"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "showguide", label: "Show Guide Geometry", default_value: true});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "thickness", label: "Thickness", num_components: 1, default_value: [0.01], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Logarithmic, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "resampleshaft", label: "Resample Shaft", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "shaftsegs", label: "Shaft Segments", num_components: 1, default_value: [1], min: 1, max: 50, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ resampleshaft == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "shaftbarbsegs", label: "Barb Rows", num_components: 1, default_value: [8], min: 1, max: 16, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ resampleshaft == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "resamplebarbs", label: "Resample Barbs", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "barbsegs", label: "Barb Columns", num_components: 1, default_value: [3], min: 1, max: 5, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ resamplebarbs == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "barbsegsreduce", label: "Reduce Barb Segments", default_value: true});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "barbsegsreduceamount", label: "Reduction Amount", num_components: 1, default_value: [1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ barbsegsreduce == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "barbsegsreducebias", label: "Reduction Bias", num_components: 1, default_value: [1], min: 0, max: 3, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ barbsegsreduce == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Character FX/Feathers/featherdeintersect',_hnt_SOP_featherdeintersect)
+    return _hnt_SOP_featherdeintersect
+}
+        

@@ -25,7 +25,6 @@ export const generateOptions: GenerateOptions = ({
     }`,
 
     options: {
-      mode: "no-cors", // needs to be removed later on
       headers: {
         ...(!upload && body && !contentType
           ? { "Content-Type": "application/json" }

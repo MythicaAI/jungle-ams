@@ -67,7 +67,7 @@ class ProfileSession(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     profile_session_seq: int = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    refreshed: datetime | None = Field(default=None)
+    refreshed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     profile_seq: int = Field(foreign_key='profiles.profile_seq',default=None)
     authenticated: bool | None = Field(default=False)
     auth_token: str | None = Field(default=None)
@@ -84,7 +84,7 @@ class ProfileFollower(SQLModel, table=True):
     profile_seq: int = Field(primary_key=True,nullable=False)
     follower_seq: int = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    deleted: datetime | None = Field(default=None)
+    deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
 
 class ProfileKey(SQLModel, table=True):
@@ -95,5 +95,6 @@ class ProfileKey(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
     key: str = Field(primary_key=True,nullable=False)
     owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
-    expires: datetime | None = Field(default=None)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

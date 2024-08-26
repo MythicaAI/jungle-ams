@@ -1,0 +1,167 @@
+
+export default function (hou) {
+    class _hnt_SOP_triangulate2d__3_0 extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'SOP/Other/triangulate2d::3.0';
+        static category = '/SOP';
+        static houdiniType = 'triangulate2d::3.0';
+        static title = 'Triangulate2D';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_triangulate2d__3_0.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "points", label: "Point Group", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template.setTags({"script_action": "import soputils\nkwargs['geometrytype'] = (hou.geometryType.Points,)\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "planepossrc", label: "2D Positions", menu_items: ["fitplane", "setprojplane", "useattrib"], menu_labels: ["Fit Plane", "Select Projection Plane", "Use Attribute"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "origin", label: "Origin", num_components: 3, default_value: [0, 0, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ planepossrc != setprojplane }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "dist", label: "Distance", num_components: 1, default_value: [0], min: null, max: 5, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ planepossrc != setprojplane }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "dir", label: "Direction", num_components: 3, default_value: [0, 1, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Vector, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ planepossrc != setprojplane }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "pos2attrib", label: "Attribute Name", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.setConditional(hou.parmCondType.HideWhen, "{ planepossrc != useattrib }");
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "options", label: "Constraints", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			let hou_parm_template2 = new hou.ToggleParmTemplate({name: "useconstredges", label: "useconstredges", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "constredges", label: "Edges", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstredges == 0 }");
+			hou_parm_template2.setTags({"script_action": "import soputils\nkwargs['geometrytype'] = (hou.geometryType.Edges,)\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "useconstrpolys", label: "useconstrpolys", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "constrpolys", label: "Polygons", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstrpolys == 0 }");
+			hou_parm_template2.setTags({"script_action": "import soputils\nkwargs['geometrytype'] = (hou.geometryType.Primitives,)\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "ignorepolybridges", label: "Ignore Polygon Bridge Edges", default_value: false, default_expression: "true", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstrpolys == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "usesilhouettepolys", label: "usesilhouettepolys", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "silhouettepolys", label: "Silhouette", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usesilhouettepolys == 0 }");
+			hou_parm_template2.setTags({"script_action": "import soputils\nkwargs['geometrytype'] = (hou.geometryType.Primitives,)\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "allowconstrsplit", label: "Allow Splitting of Crossing Constraints", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "useexactconstruction", label: "Use Exact Construction for Constraint Split Points", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ allowconstrsplit == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "ignorenonconstrpts", label: "Ignore Non-Constraint Points", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstredges == 0 useconstrpolys == 0 usesilhouettepolys == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "outsideremoval", label: "Outside Removal", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "removefromconvexhull", label: "Flood from Convex Hull Boundary", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstredges == 0 useconstrpolys == 0 usesilhouettepolys == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "removefromconstrpolys", label: "Remove Outside of Constraint Polygons", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstrpolys == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "removeoutsidesilhouette", label: "Remove Outside of Silhouette", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usesilhouettepolys == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "refinement", label: "Refinement", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "refine", label: "Refine", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "allowrefineonstrsplit", label: "Allow Splitting of Constraint Edges", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "encroachangle", label: "Encroach Angle", num_components: 1, default_value: [180], min: 90, max: 180, min_is_strict: true, max_is_strict: true, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ allowrefineonstrsplit == 1 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "minangle", label: "Minimum Angle", num_components: 1, default_value: [0], min: 0, max: 30, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "trianglesize", label: "Triangle Sizes", menu_items: ["unrestricted", "capmaxarea", "settargetedgelength"], menu_labels: ["Unrestricted", "Cap Maximum Area", "Set Target Edge Length"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "maxarea", label: "Maximum Area", num_components: 1, default_value: [10000], min: 1e-07, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ trianglesize != capmaxarea }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "targetedgelength", label: "Target Edge Length", num_components: 1, default_value: [100], min: 0.0001, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ trianglesize != settargetedgelength }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "minedgelength", label: "Minimum Edge Length", num_components: 1, default_value: [0.0001], min: 0.0001, max: 0.1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "maxnewpts", label: "Maximum New Points", num_components: 1, default_value: [5000], min: 0, max: 20000, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "lloydsteps", label: "Regularization Steps", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "allowmovinginteriorpts", label: "Allow Movement of Interior Input Points", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ refine == 0 } { lloydsteps == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "outputgeo", label: "Output Geometry", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "restorepos", label: "Restore Original Point Positions", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "keepprims", label: "Keep Primitives", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "updatenmls", label: "Recompute Point Normals", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "removeunusedpoints", label: "Remove Unused Points", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "removeduplicatepoints", label: "Remove Duplicate Points from Triangulation", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "outputgrps", label: "Output Groups", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "usecontrsplitptgrp", label: "usecontrsplitptgrp", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ allowconstrsplit == 0 }");
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "constrsplitptgrp", label: "Split Points", num_components: 1, default_value: ["constrsplitpts"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ usecontrsplitptgrp == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "useconstrdedges", label: "useconstrdedges", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "constrdedges", label: "Constrained Edges", num_components: 1, default_value: ["constrdedges"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ useconstrdedges == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.IntParmTemplate({name: "randseed", label: "Random Seed", num_components: 1, default_value: [5678], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Other/triangulate2d::3.0',_hnt_SOP_triangulate2d__3_0)
+    return _hnt_SOP_triangulate2d__3_0
+}
+        

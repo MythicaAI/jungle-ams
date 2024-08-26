@@ -1,7 +1,14 @@
-import React from 'react';
-import {Avatar, Divider, Dropdown, Menu, MenuButton, MenuItem} from '@mui/joy';
-import {LucideEdit, LucideGroup, LucideLogOut, LucidePackage, LucideUpload} from "lucide-react";
-import {Link as RouterLink} from "react-router-dom";
+import React from "react";
+import { Avatar, Divider, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
+import {
+  LucideEdit,
+  LucideGroup,
+  LucideKeyRound,
+  LucideLogOut,
+  LucidePackage,
+  LucideUpload,
+} from "lucide-react";
+import { Link as RouterLink } from "react-router-dom";
 
 interface ProfileMenuProps {
   name: string;
@@ -17,10 +24,10 @@ const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => (
     component={RouterLink}
     to={props.to}
     sx={{
-      textDecoration: 'none',
-      color: 'inherit',
-      '&:hover': {
-        textDecoration: 'none',
+      textDecoration: "none",
+      color: "inherit",
+      "&:hover": {
+        textDecoration: "none",
       },
     }}
   >
@@ -28,15 +35,15 @@ const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => (
   </MenuItem>
 );
 
-export const ProfileMenu: React.FC<ProfileMenuProps> = ({name}) => {
+export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
   return (
     <Dropdown>
       <MenuButton
         sx={{
-          cursor: 'pointer',
+          cursor: "pointer",
         }}
+>
 
-      >
         <Avatar variant="outlined" alt={name}></Avatar>
       </MenuButton>
       <Menu placement="bottom-end">
@@ -54,7 +61,10 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({name}) => {
         </LinkMenuItem>
         <LinkMenuItem to={"/orgs"}>
           <LucideGroup/>
-          Manage Organizations
+          Manage Organizations</LinkMenuItem>
+        <LinkMenuItem to={"/api-keys"}>
+          <LucideKeyRound />
+          API keys
         </LinkMenuItem>
         <Divider orientation="horizontal"/>
         <LinkMenuItem to={"/logout"}>
@@ -65,3 +75,4 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({name}) => {
     </Dropdown>
   );
 }
+;

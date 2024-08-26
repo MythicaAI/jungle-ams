@@ -1,10 +1,11 @@
-import {Box, Card, CardContent, CardCover, Chip, IconButton, Stack, Typography} from "@mui/joy";
-import {getThumbnailImg} from "../../lib/packagedAssets.tsx";
-import {DownloadButton} from "../DownloadButton";
-import {LucideInfo, LucidePackage} from "lucide-react";
-import {Link, useNavigate} from "react-router-dom";
+import {Box, Card, CardContent, CardCover, Chip, IconButton, Stack, Typography
+} from "@mui/joy";
+import { getThumbnailImg } from "../../lib/packagedAssets.tsx";
+import { DownloadButton } from "../DownloadButton";
+import { LucideInfo, LucidePackage } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import React from "react";
-import {AssetVersionResponse} from "../../types/apiTypes.ts";
+import { AssetVersionResponse} from "../../types/apiTypes.ts";
 
 export const PackageViewCard: React.FC<AssetVersionResponse> = (av: AssetVersionResponse) => {
   const navigate = useNavigate();
@@ -48,10 +49,10 @@ export const PackageViewCard: React.FC<AssetVersionResponse> = (av: AssetVersion
               icon={<LucidePackage/>}
             />
             <IconButton
-              sx={{color: 'white'}}
+              sx={{ color: 'white'}}
               onClick={() => {navigate(`/package-view/${av.asset_id}/versions/${av.version.join('.')}`)}}
             >
-              <LucideInfo/>
+              <LucideInfo />
             </IconButton>
             <Chip
               key={av.version.join(".")}
@@ -60,7 +61,7 @@ export const PackageViewCard: React.FC<AssetVersionResponse> = (av: AssetVersion
               size="lg"
               component={Link}
               to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-              sx={{borderRadius: "xl"}}
+              sx={{ borderRadius: "xl" }}
             >
               {av.version.join(".")}
             </Chip>

@@ -108,6 +108,7 @@ export const AssetEditThumbnails: React.FC<AssetEditFileListProps> = (
                 file={file}
                 removeFile={props.removeFile}
                 index={idx}
+                data-testid={`thumbnail-${file.file_id}`}
               />
             ))}
           </ReactSortable>

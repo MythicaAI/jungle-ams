@@ -2,13 +2,16 @@ import { CssBaseline, CssVarsProvider } from "@mui/joy";
 import { CookiesProvider } from "react-cookie";
 import App from "./App";
 import Auth0ProviderWithHistory from "./providers/Auth0ProviderWithHistory.tsx";
+import {HelmetProvider} from "react-helmet-async";
 
 const Root = () => (
-  <CssVarsProvider defaultMode="system" modeStorageKey="my-app-mode">
+  <CssVarsProvider modeStorageKey="my-app-mode">
     <CookiesProvider>
       <Auth0ProviderWithHistory>
-        <CssBaseline/>
-        <App/>
+        <HelmetProvider>
+          <CssBaseline/>
+          <App/>
+        </HelmetProvider>
       </Auth0ProviderWithHistory>
     </CookiesProvider>
   </CssVarsProvider>

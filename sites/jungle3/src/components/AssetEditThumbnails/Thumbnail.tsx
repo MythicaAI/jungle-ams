@@ -1,6 +1,6 @@
+import React from "react";
 import AspectRatio from "@mui/joy/AspectRatio";
 import Card from "@mui/joy/Card";
-
 import Typography from "@mui/joy/Typography";
 import { Box, IconButton, Stack } from "@mui/joy";
 import { GripVertical, LucideCircleMinus, LucideLink } from "lucide-react";
@@ -56,10 +56,16 @@ export const Thumbnail: React.FC<Props> = ({ file, removeFile, index }) => {
           mb="10px"
         >
           <Stack flexDirection="row" justifyContent="flex-start" gap="10px">
-            <IconButton onClick={() => navigate(`/files/${file.file_id}`)}>
+            <IconButton
+              onClick={() => navigate(`/files/${file.file_id}`)}
+              data-testid="linkBtn"
+            >
               <LucideLink />
             </IconButton>
-            <IconButton onClick={() => removeFile(file.file_id)}>
+            <IconButton
+              onClick={() => removeFile(file.file_id)}
+              data-testid="removeBtn"
+            >
               <LucideCircleMinus />
             </IconButton>
           </Stack>
@@ -92,7 +98,7 @@ export const Thumbnail: React.FC<Props> = ({ file, removeFile, index }) => {
           <Box
             component="img"
             src={file.url}
-            alt=""
+            alt="thumbnail"
             sx={{ objectPosition: "center" }}
           />
         </AspectRatio>

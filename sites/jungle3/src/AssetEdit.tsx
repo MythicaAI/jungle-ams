@@ -29,7 +29,7 @@ import { AssetEditPageHeader } from "./components/AssetEditPageHeader.tsx";
 import { AssetEditDetailControls } from "./components/AssetEditDetailControls.tsx";
 import { AssetEditListControls } from "./components/AssetEditListControls.tsx";
 import { api } from "./services/api/index.ts";
-import { AssetEditLinks } from "./components/AssetEditLinks.tsx";
+import { AssetEditLinks } from "./components/AssetEditLinks";
 
 interface AssetEditProps {
   assetId?: string;
