@@ -5,6 +5,9 @@ if [[ ! -d .infra ]]; then
 fi	
 
 . .infra/bin/activate
+if [[ -e .env.local ]]; then
+    export $(grep -v '^#' .env.local | xargs)
+fi
 pip install -r local_requirements.txt
 echo "// .infra virtual env activated and updated, use 'deativate' to exit"
 echo "// use 'invoke <task-name> [or] inv <task-name>' to get started..."

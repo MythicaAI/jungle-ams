@@ -18,9 +18,12 @@ Ensure you have [Python3](https://python.org) installed
 
 Setup python `virtual environment` and `invoke`
 
+NB: `/.env.local` supports setting required `env` vars for the infrastructure that are loaded by the next step. The required vars are defined in `/.env`
+
 ```bash
 . ./env.sh
 ```
+
 
 Services are split into tiers:
 
