@@ -1,0 +1,11 @@
+{
+  "hpath": ["$NIM"],
+  "load_package_once": true,
+  "version": "20.5",
+  "enable": true,  
+  "env": [
+    {"NIM" : "/path/to/nim-plugin/repoclone/"},
+    {"NIM_API_KEY" : "generate-at-https://build.nvidia.com/explore/discover"},
+    {"PYTHONPATH" : "$NIM/.nim/lib/python3.11/site-packages"}
+  ]
+}    

@@ -1,0 +1,14 @@
+certifi==2024.7.4
+charset-normalizer==3.3.2
+filelock==3.15.4
+fsspec==2024.6.1
+huggingface-hub==0.24.5
+idna==3.7
+numpy==2.0.1
+packaging==24.1
+pillow==10.4.0
+PyYAML==6.0.2
+requests==2.32.3
+tqdm==4.66.5
+typing_extensions==4.12.2
+urllib3==2.2.2

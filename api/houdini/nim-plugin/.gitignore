@@ -1,0 +1,15 @@
+*.pyc
+
+/otls/backup/
+hip/backup/
+hip/out/
+
+#ignore other unimportant expanded HDA files
+*.OPfallbacks
+*.OPdummydefs
+*.createtimes
+*.modtimes
+*.local
+
+.nim
+.vscode
