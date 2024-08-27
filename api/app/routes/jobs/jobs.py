@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 class GenerateMeshRequest(BaseModel):
     file_id: str
     params: dict[str, Any]
+    material_params: dict[str, Any] | None = None
 
 class GenerateMeshInterfaceResponse(BaseModel):
     file_id: str
@@ -46,7 +47,8 @@ def add_generate_mesh_event(session: Session, request: GenerateMeshRequest, prof
     job_data = {
         'file_id': request.file_id,
         'profile_id': profile_seq_to_id(profile_seq),
-        'params': request.params
+        'params': request.params,
+        'material_params': request.material_params
     }
     location = app_config().mythica_location
     stmt = insert(Event).values(

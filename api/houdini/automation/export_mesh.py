@@ -2,6 +2,7 @@ import os
 import hou
 import json
 import argparse
+import shutil
 import mythica.darol as mdarol
 
 def parse_args():
@@ -39,7 +40,7 @@ def parse_args():
         required=False,
         type=argparse.FileType("r"),
         help="HDA parameters json file."
-    )   
+    )
     return parser.parse_args()
 
 def export_mesh(hdapath, output_path, output_file_name, format, parms_file):    
@@ -64,7 +65,7 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
     # TODO: Support specifying which definition inside the hda file to use
     assetdef = hou.hda.definitionsInFile(hdapath)[0]
     asset = geo.createNode(assetdef.nodeTypeName())
-    for k, v in parms.items():
+    for k, v in parms['mesh_parms'].items():
         # TODO: Support ramp parameters
         if not isinstance(v, dict):
             val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
@@ -94,20 +95,31 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
 
         gltf_node.parm("execute").pressButton()
     elif format == 'usdz':
-        # Export to USD
-        output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
-        usd_node = geo.createNode("usdexport","usd_node")
-        usd_node.parm("lopoutput").set(output_file_path)
-        usd_node.setInput(0, asset, 0)
-        usd_node.parm("execute").pressButton()
+        # Generate material
+        if parms['material_parms'] is not None:
+            print("Generating material")
+            generator = geo.createNode('seamless_texture_generator','generator')
+            generator.parm("prompt").set(parms['material_parms']['prompt'])
+            generator.parm("execute").pressButton()
 
-        # Convert to USDZ format
-        output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
-        usdz_node = out.createNode("usdzip","usdz_node")
-        usdz_node.parm("infile1").set(output_file_path)
-        usdz_node.parm("outfile1").set(output_zip_file_path)
-        usdz_node.parm("execute").pressButton()
-        os.remove(output_file_path)
+            output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
+            shutil.move(os.path.join(output_path, "out/generated.material.usdz"), output_zip_file_path)
+        else:
+            print("Generating mesh")
+            # Export to USD
+            output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
+            usd_node = geo.createNode("usdexport","usd_node")
+            usd_node.parm("lopoutput").set(output_file_path)
+            usd_node.setInput(0, asset, 0)
+            usd_node.parm("execute").pressButton()
+
+            # Convert to USDZ format
+            output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
+            usdz_node = out.createNode("usdzip","usdz_node")
+            usdz_node.parm("infile1").set(output_file_path)
+            usdz_node.parm("outfile1").set(output_zip_file_path)
+            usdz_node.parm("execute").pressButton()
+            os.remove(output_file_path)
 
     hou.hda.uninstallFile(hdapath)
 

@@ -92,9 +92,14 @@ def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
+        parms_data = {
+            'mesh_parms': o.params,
+            'material_parms': getattr(o, 'material_params', None)
+        }
+
         params_file = os.path.join(tmp_dir, 'params.json')
         with open(params_file, 'w') as f:
-            f.write(json.dumps(o.params))
+            f.write(json.dumps(parms_data))
 
         output_file_name = f"{event_seq_to_id(event_seq)}_mesh"
 
