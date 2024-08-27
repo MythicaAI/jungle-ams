@@ -1,9 +1,14 @@
 ARG HOUDINI_VERSION=20.5.332
 
-# Gather darol python dependencies on the version that matches Houdini
-FROM python:3.11-slim AS python-dependency-downloader
+# Gather plugin python dependencies on the version that matches Houdini
+FROM python:3.11-slim AS darol-dependency-downloader
 
 COPY ./darol-plugin/requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
+
+FROM python:3.11-slim AS nim-dependency-downloader
+
+COPY ./nim-plugin/requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
 
 # Build the primary image
@@ -28,11 +33,19 @@ RUN mkdir -p /root/houdini20.5/packages/
 
 # Install darol plugin
 COPY ./darol-plugin/ /darol-plugin/
-COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages
+COPY --from=darol-dependency-downloader /usr/local/lib/python3.11/site-packages /darol-plugin/site-packages
 
 RUN cp /darol-plugin/darol.json /root/houdini20.5/packages/darol.json
 RUN sed -i 's|"/path/to/darol/repoclone/houdini-package"|"/darol-plugin"|g' /root/houdini20.5/packages/darol.json
-RUN sed -i 's|"/path/to/python/Lib/site-packages"|"/darol/site-packages"|g' /root/houdini20.5/packages/darol.json
+RUN sed -i 's|"/path/to/python/Lib/site-packages"|"/darol-plugin/site-packages"|g' /root/houdini20.5/packages/darol.json
+
+# Install nim plugin
+COPY ./nim-plugin/ /nim-plugin/
+COPY --from=nim-dependency-downloader /usr/local/lib/python3.11/site-packages /nim-plugin/site-packages
+
+RUN cp /nim-plugin/nim.json /root/houdini20.5/packages/nim.json
+RUN sed -i 's|"/path/to/nim-plugin/repoclone/"|"/nim-plugin"|g' /root/houdini20.5/packages/nim.json
+RUN sed -i 's|"\$NIM/.nim/lib/python3.11/site-packages"|"/nim-plugin/site-packages"|g' /root/houdini20.5/packages/nim.json
 
 # Install Houdini SideFX Labs package
 ARG SIDE_FX_LABS_VERSION=20.5.332
