@@ -5,6 +5,10 @@ on:
     paths:
       - 'sites/jungle3/**'
 
+defaults:
+  run:
+    working-directory: sites/jungle3      
+
 jobs:
   setup:
     runs-on: ubuntu-latest
