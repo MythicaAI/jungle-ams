@@ -7,7 +7,7 @@ def parse_args():
     """Parse command line arguments and provide the args structure"""
 
     description="""
-    Mateiral generator.
+    Material generator.
     """
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
@@ -31,6 +31,8 @@ def export_material(output_path):
     # Generate material
     generator = geo.createNode('seamless_texture_generator','generator')
     generator.parm("output_path").set(output_path)
+    generator.parm("prompt").set("red brick")
+    generator.parm("neg_prompt").set("low resolution")
     generator.parm("execute").pressButton()
 
     mdarol.end_houdini(hip)
