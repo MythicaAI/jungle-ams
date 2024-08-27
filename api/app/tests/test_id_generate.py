@@ -1,15 +1,45 @@
 import random
 
-from auth.api_id import seq_to_id, id_to_seq, IdType
+import pytest
+
+from auth.api_id import IdError, IdType, SequenceError, id_to_seq, id_type, seq_to_id
+
+
+def profile_id():
+    """Generate a profile ID"""
+    n = 1234567890123456789
+    return n, seq_to_id(IdType.PROFILE, n)
 
 
 def test_round_trip():
-    n = 1234567890123456789
-    api_id = seq_to_id(IdType.PROFILE, n)
-    seq = id_to_seq(api_id)
-    assert seq.seq == n
-    assert seq.id_type == IdType.PROFILE
-    assert seq.prefix == b'\01\00\00\00\00\00\00\00'
+    n, api_id = profile_id()
+    seq = id_to_seq(api_id, IdType.PROFILE)
+    assert seq == n
+
+
+def test_invalid_type():
+    n, api_id = profile_id()
+    api_id = api_id.replace("prf", "foo")
+    with pytest.raises(IdError):
+        id_to_seq(api_id, IdType.PROFILE)
+
+
+def test_invalid_format():
+    n, api_id = profile_id()
+    api_id = api_id.replace("_", ":")
+    with pytest.raises(IdError):
+        id_to_seq(api_id, IdType.PROFILE)
+
+
+def test_corrupt_id():
+    n, api_id = profile_id()
+    with pytest.raises(IdError):
+        id_to_seq(api_id[0:len(api_id) - 1], IdType.PROFILE)
+
+
+def test_invalid_seq():
+    with pytest.raises(SequenceError):
+        seq_to_id(IdType.PROFILE, None)
 
 
 def test_multiple():
@@ -17,6 +47,6 @@ def test_multiple():
     sequences = [i for i in range(2 ^ 32, (2 ^ 32) + 10_000)]
     ids = [seq_to_id(random.choice(enum_values), seq)
            for seq in sequences]
-    decoded = [id_to_seq(id) for id in ids]
-    decoded_seqs = [seq.seq for seq in decoded]
+    decoded = [id_to_seq(id, id_type(id)) for id in ids]
+    decoded_seqs = [seq for seq in decoded]
     assert sequences == decoded_seqs
