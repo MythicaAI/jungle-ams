@@ -90,16 +90,22 @@ async def start_auth0_spa_session(req: Auth0SpaStartRequest) -> SessionStartResp
     authorization_header = {
         'Authorization': f'Bearer {req.access_token}'
     }
+
     async with httpx.AsyncClient() as client:
         response = await client.get(user_info_url, headers=authorization_header)
         log.info(response.status_code)
 
+    header = jwt.get_unverified_header(req.access_token)
+
+    kid = header['kid']
     jwks_url = f'https://{app_config().auth0_domain}/.well-known/jwks.json'
     jwks_client = jwt.PyJWKClient(jwks_url)
-    signing_key = jwks_client.get_signing_key(req.access_token)
+    signing_key = jwks_client.get_signing_key(kid)
+
     payload = jwt.decode(
         req.access_token,
         signing_key,
+        algorithms=[header['alg']],
         audience=app_config().auth0_audience,
         issuer="https://" + app_config().auth0_domain)
     log.info("payload: %s", payload)
