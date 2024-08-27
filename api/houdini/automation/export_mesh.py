@@ -77,6 +77,7 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
 
     # Export
     out = hou.node('out')
+    stage = hou.node('stage')
 
     if format == 'fbx':
         output_file_path = os.path.join(output_path, f"{output_file_name}.fbx")
@@ -95,31 +96,49 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
 
         gltf_node.parm("execute").pressButton()
     elif format == 'usdz':
-        # Generate material
+        # Generate mesh
+        print("Generating mesh")
+        mesh_file = os.path.join(output_path, "mesh.usd")
+        usd_node = geo.createNode("usdexport","usd_node")
+        usd_node.parm("lopoutput").set(mesh_file)
+        usd_node.setInput(0, asset, 0)
+        usd_node.parm("execute").pressButton()
+
         if parms['material_parms'] is not None:
-            print("Generating material")
+            # Generate material
+            print("Generating mesh")
             generator = geo.createNode('seamless_texture_generator','generator')
             generator.parm("prompt").set(parms['material_parms']['prompt'])
             generator.parm("execute").pressButton()
 
-            output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
-            shutil.move(os.path.join(output_path, "out/generated.material.usdz"), output_zip_file_path)
-        else:
-            print("Generating mesh")
-            # Export to USD
-            output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
-            usd_node = geo.createNode("usdexport","usd_node")
-            usd_node.parm("lopoutput").set(output_file_path)
-            usd_node.setInput(0, asset, 0)
-            usd_node.parm("execute").pressButton()
+            material_file = os.path.join(output_path, "out/generated.material.usdz")
 
-            # Convert to USDZ format
-            output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
-            usdz_node = out.createNode("usdzip","usdz_node")
-            usdz_node.parm("infile1").set(output_file_path)
-            usdz_node.parm("outfile1").set(output_zip_file_path)
-            usdz_node.parm("execute").pressButton()
-            os.remove(output_file_path)
+            # Bind material to the mesh
+            print("Binding material")
+            sublayer_node = stage.createNode("sublayer", "sublayer_node")
+            sublayer_node.parm("num_files").set(2)
+            sublayer_node.parm("filepath1").set(mesh_file)
+            sublayer_node.parm("filepath2").set(material_file)
+    
+            assign_node = stage.createNode("assignmaterial", "assign_node")
+            assign_node.parm("matspecpath1").set("/materials/principledshader1") 
+            assign_node.setInput(0, sublayer_node, 0)
+
+            combined_file = os.path.join(output_path, f"combined.usd")
+            render_node = stage.createNode("usd_rop", "assign_node")
+            render_node.parm("lopoutput").set(combined_file) 
+            render_node.setInput(0, assign_node, 0)
+            render_node.parm("execute").pressButton()
+
+            mesh_file = combined_file
+
+        # Convert to USDZ format
+        output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
+        usdz_node = out.createNode("usdzip","usdz_node")
+        usdz_node.parm("infile1").set(mesh_file)
+        usdz_node.parm("outfile1").set(output_zip_file_path)
+        usdz_node.parm("execute").pressButton()
+        os.remove(mesh_file)
 
     hou.hda.uninstallFile(hdapath)
 
