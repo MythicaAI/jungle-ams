@@ -1,16 +1,14 @@
 import { Box, CircularProgress, Grid } from "@mui/joy";
-import { AssetVersionResponse } from "./types/apiTypes.ts";
 import {
   extractValidationErrors,
   translateError,
 } from "./services/backendCommon.ts";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { AxiosError } from "axios";
 import { useStatusStore } from "./stores/statusStore.ts";
-import { api } from "./services/api";
 import PackageViewCarousel from "./components/PackageViewCarousel.tsx";
 import { PackageViewInfoPanel } from "./components/PackageViewInfoPanel.tsx";
+import { useGetAssetByVersion } from "./queries";
 
 interface PackageViewProps {
   asset_id?: string;
@@ -19,36 +17,25 @@ interface PackageViewProps {
 
 export const PackageView = (props: PackageViewProps) => {
   const { addError, addWarning } = useStatusStore();
-  const [assetVersion, setAssetVersion] = useState(
-    {} as unknown as AssetVersionResponse,
-  );
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleError = (err: AxiosError) => {
+  const {
+    data: assetVersion,
+    isLoading,
+    error,
+  } = useGetAssetByVersion(props?.asset_id, props?.version_id);
+
+  const handleError = (err: any) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
-    setIsLoading(false);
   };
 
   useEffect(() => {
-    if (!props.asset_id) {
-      return;
+    if (error) {
+      handleError(error);
     }
+  }, [error]);
 
-    setIsLoading(true);
-
-    api
-      .get<AssetVersionResponse>({
-        path: `/assets/${props.asset_id}/versions/${props.version_id}`,
-      })
-      .then((r) => {
-        setAssetVersion(r as AssetVersionResponse);
-        setIsLoading(false);
-      })
-      .catch((err) => handleError(err));
-  }, [props.asset_id, props.version_id]);
-
-  const header = assetVersion.asset_id ? (
+  const header = assetVersion?.asset_id ? (
     <>
       <Grid
         direction={{ xs: "column-reverse", md: "row" }}

@@ -1,5 +1,6 @@
 import {
   Divider,
+  IconButton,
   List,
   ListDivider,
   ListItem,
@@ -15,6 +16,7 @@ import {
   LucideFile,
   LucideFiles,
   LucideImage,
+  LucideTrash,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FileUploadResponse } from "./types/apiTypes.ts";
@@ -22,33 +24,51 @@ import {
   extractValidationErrors,
   translateError,
 } from "./services/backendCommon.ts";
-import { useGlobalStore } from "./stores/globalStore.ts";
-import { AxiosError } from "axios";
 import { Helmet } from "react-helmet-async";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { FileUploadStatus, useUploadStore } from "./stores/uploadStore.ts";
 import { DownloadButton } from "./components/DownloadButton";
-import { DeleteButton } from "./components/DeleteButton";
 import { UploadsSubmitList } from "./components/UploadsSubmitList.tsx";
 import { Link } from "react-router-dom";
-import { api } from "./services/api/index.ts";
+import { useDeleteUpload, useGetPendingUploads } from "./queries";
+import { DeleteModal } from "./components/DeleteModal";
 
 const Uploads = () => {
-  const { authToken } = useGlobalStore();
   const { addError, addWarning } = useStatusStore();
   const { trackUploads, uploads, updateUpload } = useUploadStore();
+  const [deleteModal, setDeleteModal] = useState<{
+    selectedFile: string;
+    isOpen: boolean;
+  }>({ selectedFile: "", isOpen: false });
+  const { data: pendingUploads, error } = useGetPendingUploads();
+  const { mutate: deleteUpload, error: deleteError } = useDeleteUpload();
 
-  const handleError = (err: AxiosError) => {
+  const handleError = (err: any) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
+  };
+
+  const handleDeleteCleaup = () => {
+    setDeleteModal({ isOpen: false, selectedFile: "" });
   };
 
   //
   // Load the latest pending uploads from the server
   //
   useEffect(() => {
-    refreshFiles();
-  }, [authToken]);
+    if (pendingUploads) {
+      refreshFiles(pendingUploads);
+    }
+  }, [pendingUploads]);
+
+  useEffect(() => {
+    if (error) {
+      handleError(error);
+    }
+    if (deleteError) {
+      handleError(deleteError);
+    }
+  }, [error, deleteError]);
 
   const updateProgressForFiles = (files: FileUploadResponse[]) => {
     files.forEach((file) => {
@@ -60,16 +80,9 @@ const Uploads = () => {
     });
   };
 
-  const refreshFiles = () => {
-    if (authToken) {
-      api
-        .get<FileUploadResponse[]>({ path: "/upload/pending" })
-        .then((files) => {
-          trackUploads(files as FileUploadStatus[]);
-          updateProgressForFiles(files);
-        })
-        .catch((err) => handleError(err));
-    }
+  const refreshFiles = (files: FileUploadResponse[]) => {
+    trackUploads(files as FileUploadStatus[]);
+    updateProgressForFiles(files);
   };
 
   const [sort, setSort] = useState("all");
@@ -130,11 +143,16 @@ const Uploads = () => {
             <ListItem sx={{ flexGrow: 1 }} key={key}>
               <ListItemDecorator sx={{ display: "flex", alignItems: "center" }}>
                 <Stack direction={"row"} minWidth="72px">
-                  <DeleteButton
-                    url={`/files/${value.file_id}`}
-                    name={value.file_name}
-                    onDeleteSuccess={refreshFiles}
-                  />
+                  <IconButton
+                    onClick={() =>
+                      setDeleteModal({
+                        isOpen: true,
+                        selectedFile: value.file_id,
+                      })
+                    }
+                  >
+                    <LucideTrash />
+                  </IconButton>
                   <DownloadButton
                     icon={<LucideCloudDownload />}
                     file_id={value.file_id}
@@ -156,6 +174,15 @@ const Uploads = () => {
             </ListItem>
           ))}
       </List>
+      <DeleteModal
+        open={deleteModal.isOpen}
+        handleClose={handleDeleteCleaup}
+        handleConfirm={() => {
+          deleteUpload(deleteModal.selectedFile, {
+            onSettled: () => handleDeleteCleaup(),
+          });
+        }}
+      />
     </>
   );
 };
