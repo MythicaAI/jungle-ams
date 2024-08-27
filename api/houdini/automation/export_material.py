@@ -13,11 +13,17 @@ def parse_args():
     parser.add_argument(
         "--output-path",
         type=str,
-        help="Output directory for writing out the FBX. (this path must be accessible inside the Docker container)",
+        help="Output directory for writing out the material. (this path must be accessible inside the Docker container)",
+    )
+    parser.add_argument(
+        "--prompt",
+        type=str,
+        required=True,
+        help="Prompt for the material generator",
     )
     return parser.parse_args()
 
-def export_material(output_path):    
+def export_material(output_path, prompt):
     os.makedirs(output_path, exist_ok=True)
 
     hip = os.path.join(output_path,f'export_material.hip')
@@ -31,15 +37,14 @@ def export_material(output_path):
     # Generate material
     generator = geo.createNode('seamless_texture_generator','generator')
     generator.parm("output_path").set(output_path)
-    generator.parm("prompt").set("red brick")
-    generator.parm("neg_prompt").set("low resolution")
+    generator.parm("prompt").set(prompt)
     generator.parm("execute").pressButton()
 
     mdarol.end_houdini(hip)
 
 def main():
     args = parse_args()
-    export_material(args.output_path)
+    export_material(args.output_path, args.prompt)
 
 if __name__ == "__main__":
     main()

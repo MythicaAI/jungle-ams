@@ -4,7 +4,7 @@ hython /darol/automation/render.py --output-path /output --hda-path=/darol/tests
 hython /darol/automation/render.py --output-path /output --hda-path=/darol/tests/otls/test_labs.hda
 hython /darol/automation/render.py --output-path /output --hda-path=/darol/tests/otls/test_opencl.hda
 hython /darol/automation/render.py --output-path /output --hda-path=/darol/tests/otls/test_darol.hda
-hython /darol/automation/export_material.py --output-path /output
+hython /darol/automation/export_material.py --output-path /output --prompt="red,brick"
 hserver -Q
 
 file_count=$(find /output -type f -name "*.png" | wc -l)
