@@ -104,10 +104,10 @@ async def start_auth0_spa_session(req: Auth0SpaStartRequest) -> SessionStartResp
 
     payload = jwt.decode(
         req.access_token,
-        signing_key,
+        signing_key.key,
         algorithms=[header['alg']],
         audience=app_config().auth0_audience,
-        issuer="https://" + app_config().auth0_domain)
+        issuer=f"https://{app_config().auth0_domain}/")
     log.info("payload: %s", payload)
 
     stmt = select(Profile).where(col(Profile.email) == req.email)

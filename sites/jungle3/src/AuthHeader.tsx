@@ -41,9 +41,7 @@ export const AuthHeader = () => {
     getAccessTokenSilently,
     user,
     isAuthenticated,
-    isLoading,
   } = useAuth0();
-  const {addError} = useStatusStore();
 
   console.log("user: ", user);
   console.log("isAuthenticated: ", isAuthenticated);
@@ -92,7 +90,7 @@ export const AuthHeader = () => {
             setAuthToken("");
           });
 
-      } catch (e) {
+      } catch (e: any) {
         addError("Token exception: " + e.message);
         console.error(e.message);
       }
