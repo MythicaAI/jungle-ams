@@ -5,41 +5,38 @@ on:
     paths:
       - 'sites/jungle3/**'
 
-defaults:
-  run:
-    working-directory: sites/jungle3
-
 jobs:
-  lint:
+  setup:
     runs-on: ubuntu-latest
-
+    outputs:
+      node-version: ${{ steps.node.outputs.node-version }}
+    
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 8
       - uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: 'pnpm'
           cache-dependency-path: sites/jungle3/pnpm-lock.yaml
+      - name: Install pnpm
+        run: npm install -g pnpm
       - name: Install dependencies
         run: pnpm install
-      - run: pnpm run lint
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Lint code
+        run: pnpm run lint
 
   test:
     runs-on: ubuntu-latest
+    needs: setup
 
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 8
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: 'pnpm'
-          cache-dependency-path: sites/jungle3/pnpm-lock.yaml
-      - name: install dependencies
-        run: pnpm install
-      - run: pnpm run test
+      - name: Run tests
+        run: pnpm run test
