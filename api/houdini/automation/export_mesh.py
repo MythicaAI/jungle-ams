@@ -97,16 +97,14 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
         gltf_node.parm("execute").pressButton()
     elif format == 'usdz':
         # Generate mesh
-        print("Generating mesh")
         mesh_file = os.path.join(output_path, "mesh.usd")
         usd_node = geo.createNode("usdexport","usd_node")
         usd_node.parm("lopoutput").set(mesh_file)
         usd_node.setInput(0, asset, 0)
         usd_node.parm("execute").pressButton()
 
-        if parms['material_parms'] is not None:
+        if parms['material_parms'] is not None and len(parms['material_parms']['prompt']) > 0:
             # Generate material
-            print("Generating mesh")
             generator = geo.createNode('seamless_texture_generator','generator')
             generator.parm("prompt").set(parms['material_parms']['prompt'])
             generator.parm("execute").pressButton()
@@ -114,7 +112,6 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
             material_file = os.path.join(output_path, "out/generated.material.usdz")
 
             # Bind material to the mesh
-            print("Binding material")
             sublayer_node = stage.createNode("sublayer", "sublayer_node")
             sublayer_node.parm("num_files").set(2)
             sublayer_node.parm("filepath1").set(mesh_file)
