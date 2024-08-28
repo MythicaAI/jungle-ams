@@ -96,8 +96,11 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
 
         gltf_node.parm("execute").pressButton()
     elif format == 'usdz':
+        temp_dir = os.path.join(output_path, "out")
+        os.makedirs(temp_dir, exist_ok=True)
+
         # Generate mesh
-        mesh_file = os.path.join(output_path, "mesh.usd")
+        mesh_file = os.path.join(temp_dir, "mesh.usd")
         usd_node = geo.createNode("usdexport","usd_node")
         usd_node.parm("lopoutput").set(mesh_file)
         usd_node.setInput(0, asset, 0)
@@ -105,11 +108,10 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
 
         if parms['material_parms'] is not None and len(parms['material_parms']['prompt']) > 0:
             # Generate material
+            material_file = os.path.join(temp_dir, "generated.material.usdz")
             generator = geo.createNode('seamless_texture_generator','generator')
             generator.parm("prompt").set(parms['material_parms']['prompt'])
             generator.parm("execute").pressButton()
-
-            material_file = os.path.join(output_path, "out/generated.material.usdz")
 
             # Bind material to the mesh
             sublayer_node = stage.createNode("sublayer", "sublayer_node")
@@ -121,7 +123,7 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
             assign_node.parm("matspecpath1").set("/materials/principledshader1") 
             assign_node.setInput(0, sublayer_node, 0)
 
-            combined_file = os.path.join(output_path, f"combined.usd")
+            combined_file = os.path.join(temp_dir, f"combined.usd")
             render_node = stage.createNode("usd_rop", "assign_node")
             render_node.parm("lopoutput").set(combined_file) 
             render_node.setInput(0, assign_node, 0)
@@ -135,7 +137,9 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
         usdz_node.parm("infile1").set(mesh_file)
         usdz_node.parm("outfile1").set(output_zip_file_path)
         usdz_node.parm("execute").pressButton()
-        os.remove(mesh_file)
+
+        # Clean up intermediate files
+        shutil.rmtree(temp_dir)
 
     hou.hda.uninstallFile(hdapath)
 
