@@ -16,7 +16,6 @@ import {
   translateError,
 } from "./services/backendCommon.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
-import { AxiosError } from "axios";
 import { Helmet } from "react-helmet-async";
 import {
   AssetVersionContentListMap,
@@ -28,8 +27,8 @@ import { isVersionZero, sanitizeVersion } from "./types/assetEditTypes.ts";
 import { AssetEditPageHeader } from "./components/AssetEditPageHeader.tsx";
 import { AssetEditDetailControls } from "./components/AssetEditDetailControls.tsx";
 import { AssetEditListControls } from "./components/AssetEditListControls.tsx";
-import { api } from "./services/api/index.ts";
 import { AssetEditLinks } from "./components/AssetEditLinks";
+import { useGetAssetByVersion, useUpdateAsset } from "./queries/packages";
 
 interface AssetEditProps {
   assetId?: string;
@@ -58,6 +57,11 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
     links,
   } = useAssetVersionStore();
   const navigate = useNavigate();
+  const { data: assetData, error } = useGetAssetByVersion(
+    propAssetId,
+    propVersion,
+  );
+  const { mutate: updateAsset } = useUpdateAsset();
 
   // org_id state and initial update to first index
   useEffect(() => {
@@ -68,20 +72,16 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
 
   // handle populating the form if an asset ID was specified
   useEffect(() => {
-    if (!propAssetId) {
-      return;
+    if (error) {
+      handleError(error);
     }
-    api
-      .get<AssetVersionResponse>({
-        path: `/assets/${propAssetId}/versions/${propVersion}`,
-      })
-      .then((r) => {
-        loadAssetVersionResponse(r);
-      })
-      .catch((err) => handleError(err));
-  }, [propAssetId, propVersion]);
 
-  const handleError = (err: AxiosError) => {
+    if (assetData) {
+      loadAssetVersionResponse(assetData);
+    }
+  }, [assetData, error]);
+
+  const handleError = (err: any) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
   };
@@ -164,17 +164,21 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
       return;
     }
 
-    api
-      .post<AssetVersionResponse>({
-        path: `/assets/${asset_id}/versions/${sanitizedVersion.join(".")}`,
-        body: formJson,
-      })
-      .then((r) => {
-        loadAssetVersionResponse(r);
-        setSuccess(`${r.name}, ${r.version.join(".")} updated`);
-        navigate("/packages");
-      })
-      .catch((err) => handleError(err));
+    updateAsset(
+      {
+        payload: formJson,
+        assetId: asset_id,
+        assetVersion: sanitizedVersion.join("."),
+      },
+      {
+        onSuccess: (r) => {
+          loadAssetVersionResponse(r);
+          setSuccess(`${r.name}, ${r.version.join(".")} updated`);
+          navigate("/packages");
+        },
+        onError: (err) => handleError(err),
+      },
+    );
   };
 
   return (

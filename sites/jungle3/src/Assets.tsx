@@ -13,55 +13,46 @@ import {
   extractValidationErrors,
   translateError,
 } from "./services/backendCommon.ts";
-import { AssetTopResponse } from "./types/apiTypes.ts";
-import { useGlobalStore } from "./stores/globalStore.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
-import { AxiosError } from "axios";
-import { api } from "./services/api";
 import { PackageViewCard } from "./components/PackageViewCard";
 import { LucideSearch } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { TopAssetsSlider } from "./components/TopAssetsCarousel/TopAssetsSlider.tsx";
+import { useGetAllAssets } from "./queries/assets";
+import { AssetTopResponse } from "./types/apiTypes.ts";
 
 type SortType = "latest" | "oldest";
 
 const Assets = () => {
-  const { authToken } = useGlobalStore();
   const { addError, addWarning } = useStatusStore();
   const [search, setSearch] = useState<string>("");
   const [sorting, setSorting] = useState<SortType>("latest");
-  const [isAllAssetsLoading, setIsAllAssetsLoading] = useState(true);
-  const [isTopAssetsLoading, setIsTopAssetsLoading] = useState(true);
 
-  const [topAssets, setTopAssets] = useState<AssetTopResponse[]>([]);
-  const [allAssets, setAllAssets] = useState<AssetTopResponse[]>([]);
+  const {
+    data: allAssets,
+    isLoading: isAllAssetsLoading,
+    error: allAssetsError,
+  } = useGetAllAssets();
+  const {
+    data: topAssets,
+    isLoading: isTopAssetsLoading,
+    error: topAssetsError,
+  } = useGetAllAssets();
 
-  const handleError = (err: AxiosError) => {
+  const handleError = (err: any) => {
     console.log("ERROR: ", err);
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
   };
 
   useEffect(() => {
-    setIsAllAssetsLoading(true);
-    setIsTopAssetsLoading(true);
-
-    api
-      .get<AssetTopResponse[]>({ path: "/assets/top", withAuth: false })
-      .then((r) => {
-        setTopAssets(r);
-        setIsTopAssetsLoading(false);
-      })
-      .catch((err) => handleError(err));
-
-    api
-      .get<AssetTopResponse[]>({ path: "/assets/all", withAuth: false })
-      .then((r) => {
-        setAllAssets(r);
-        setIsAllAssetsLoading(false);
-      })
-      .catch((err) => handleError(err));
-  }, [authToken]);
+    if (topAssetsError) {
+      handleError(topAssetsError);
+    }
+    if (allAssetsError) {
+      handleError(allAssetsError);
+    }
+  }, [topAssetsError, allAssetsError]);
 
   return (
     <>
@@ -100,7 +91,7 @@ const Assets = () => {
             <Typography level="h4" textAlign="start">
               Top Packages
             </Typography>
-            <TopAssetsSlider assets={topAssets} />
+            <TopAssetsSlider assets={topAssets as AssetTopResponse[]} />
           </Stack>
 
           <Stack>
@@ -108,26 +99,27 @@ const Assets = () => {
               All Packages
             </Typography>
             <Grid container spacing={2}>
-              {allAssets
-                .filter((version) =>
-                  version.name.toLowerCase().includes(search.toLowerCase()),
-                )
-                .sort((a, b) => {
-                  const aDate = new Date(a.created).getTime();
-                  const bDate = new Date(b.created).getTime();
+              {allAssets &&
+                allAssets
+                  .filter((version) =>
+                    version.name.toLowerCase().includes(search.toLowerCase()),
+                  )
+                  .sort((a, b) => {
+                    const aDate = new Date(a.created).getTime();
+                    const bDate = new Date(b.created).getTime();
 
-                  return sorting === "oldest" ? aDate - bDate : bDate - aDate;
-                })
-                .map((av) => (
-                  <Grid
-                    xs={12}
-                    sm={6}
-                    md={4}
-                    key={av.asset_id + "_" + av.version.join(".")}
-                  >
-                    <PackageViewCard av={av} />
-                  </Grid>
-                ))}
+                    return sorting === "oldest" ? aDate - bDate : bDate - aDate;
+                  })
+                  .map((av) => (
+                    <Grid
+                      xs={12}
+                      sm={6}
+                      md={4}
+                      key={av.asset_id + "_" + av.version.join(".")}
+                    >
+                      <PackageViewCard av={av} />
+                    </Grid>
+                  ))}
             </Grid>
           </Stack>
         </Box>
