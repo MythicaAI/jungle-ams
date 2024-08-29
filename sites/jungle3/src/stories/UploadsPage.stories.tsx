@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from "@storybook/react";
-import Uploads from "../Uploads";
+import Uploads from "../pages/Uploads";
 import { MemoryRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 

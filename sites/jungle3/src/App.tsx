@@ -1,19 +1,19 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import ErrorPage from "./ErrorPage.tsx";
-import ProfileSettings from "./ProfileSettings.tsx";
-import Assets from "./Assets.tsx";
-import { AssetEditWrapper } from "./AssetEdit.tsx";
-import Login from "./Login.tsx";
-import OrgsList from "./OrgsList.tsx";
-import { FileViewWrapper } from "./FileView.tsx";
-import { Packages } from "./Packages.tsx";
-import Uploads from "./Uploads.tsx";
-import { Layout } from "./components/Layout.tsx";
+import ErrorPage from "./pages/ErrorPage.tsx";
+import ProfileSettings from "./pages/ProfileSettings.tsx";
+import Assets from "./pages/Assets.tsx";
+import { AssetEditWrapper } from "./pages/AssetEdit.tsx";
+import Login from "./pages/Login.tsx";
+import OrgsList from "./pages/OrgsList.tsx";
+import { FileViewWrapper } from "./pages/FileView.tsx";
+import { Packages } from "./pages/Packages.tsx";
+import Uploads from "./pages/Uploads.tsx";
+import { Layout } from "./components/common/Layout.tsx";
 import { Notification } from "./components/Notification.tsx";
-import "./App.css";
-import { PackageViewWrapper } from "./PackageView.tsx";
-import { ApiKeys } from "./components/ApiKeys.tsx";
+import "./styles/App.css";
+import { PackageViewWrapper } from "./pages/PackageView.tsx";
+import { ApiKeys } from "./pages/ApiKeys.tsx";
 
 const App: React.FC = () => {
   return (

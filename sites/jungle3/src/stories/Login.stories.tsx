@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from "@storybook/react";
 import { MemoryRouter } from "react-router-dom";
-import Login from "../Login";
+import Login from "../pages/Login";
 
 export default {
   title: "Components/Login",

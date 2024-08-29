@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "../../services/api";
+import { api } from "@services/api";
 import { UploadsApiPath, UploadsQuery } from "./enums";
-import { FileUploadResponse } from "../../types/apiTypes";
+import { FileUploadResponse } from "types/apiTypes";
 
 export const useGetPendingUploads = () => {
   return useQuery<FileUploadResponse[]>({

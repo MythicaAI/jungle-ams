@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Box,
   Card,
@@ -7,12 +8,11 @@ import {
   IconButton,
   Typography,
 } from "@mui/joy";
-import { getThumbnailImg } from "../../lib/packagedAssets.tsx";
-import { DownloadButton } from "../DownloadButton";
+import { getThumbnailImg } from "@lib/packagedAssets";
+import { DownloadButton } from "@components/common/DownloadButton";
 import { LucideInfo, LucidePackage } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import React from "react";
-import { AssetTopResponse } from "../../types/apiTypes.ts";
+import { AssetTopResponse } from "types/apiTypes";
 import { SxProps } from "@mui/joy/styles/types/theme";
 
 type Props = {
