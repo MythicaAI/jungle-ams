@@ -2,11 +2,11 @@ import { Box, CircularProgress, Grid } from "@mui/joy";
 import {
   extractValidationErrors,
   translateError,
-} from "../services/backendCommon.ts";
+} from "@services/backendCommon";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useStatusStore } from "@store/statusStore";
-import PackageViewCarousel from "../components/PackageView/PackageViewCarousel";
+import PackageViewCarousel from "@components/PackageView/PackageViewCarousel";
 import { PackageViewInfoPanel } from "@components/PackageView/PackageViewInfoPanel";
 import { useGetAssetByVersion } from "@queries/packages";
 
