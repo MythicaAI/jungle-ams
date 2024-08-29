@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 import pytest
 
-from routes.responses import ProfileResponse, SessionStartResponse
+from profiles.responses import ProfileResponse, SessionStartResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 

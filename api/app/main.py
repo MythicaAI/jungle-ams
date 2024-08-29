@@ -11,6 +11,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 import db.connection as db_connection
 import log_config
 from config import app_config
+from exceptions import register_exceptions
 from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
@@ -57,16 +58,17 @@ for name in route_names:
     print(f'registered router {name} from path: {module.__file__}')
 
 register_adapters()
+register_exceptions(app)
 
 
 @app.get("/")
 def root():
-    log.info('Root endpoint hit')
+    """Health check"""
     return "Alive and well"
 
 
 def main():
-    # setup logging and validate dependencies before serving clients
+    """Main entry point setup core systems and validate dependencies before serving clients"""
     db_connection.validate()
     cfg = app_config()
     print('database validated')

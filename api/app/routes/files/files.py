@@ -3,15 +3,14 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import select, update, and_
+from sqlmodel import and_, select, update
 
 from auth.api_id import file_id_to_seq, profile_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.authorization import current_profile, current_profile_id
-from routes.file_events import enrich_file
-from routes.responses import FileUploadResponse
+from routes.file_uploads import FileUploadResponse, enrich_file
 
 router = APIRouter(prefix="/files", tags=["files"])
 

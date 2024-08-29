@@ -1,5 +1,4 @@
 import {AppState, Auth0Provider, User} from '@auth0/auth0-react';
-import {useLocation} from "react-router-dom";
 
 interface Auth0ProviderWithConfigProps {
   children: React.ReactNode;
@@ -30,7 +29,7 @@ const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({child
       authorizationParams={{
           redirect_uri: window.location.origin,
           audience: audience,
-          scope: "openid read:current_user update:current_user_metadata"
+          scope: "openid profile email"
       }}
     >
       {children}

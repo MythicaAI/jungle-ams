@@ -10,8 +10,8 @@ from sqlmodel import col, select, update
 from auth.api_id import profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile
+from profiles.responses import ProfileResponse, PublicProfileResponse, profile_to_profile_response
 from routes.authorization import current_profile
-from routes.responses import ProfileResponse, PublicProfileResponse, profile_to_profile_response
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 

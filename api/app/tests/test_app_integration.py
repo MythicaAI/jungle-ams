@@ -26,7 +26,7 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-# see localhost/docs for examples
+# see http://localhost:8080/docs for examples
 
 def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     register_adapters()
