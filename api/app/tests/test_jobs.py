@@ -58,9 +58,8 @@ def test_create_update(client, api_base, create_profile):
     job_id = o.job_id
 
     # Complete the job
-    r = client.post(f'{api_base}/jobs/results',
+    r = client.post(f'{api_base}/jobs/results/{job_id}',
                 json={
-                    'job_id': job_id,
                     'created_in': 'houdini-worker',
                     'result_data': {
                         'file': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
@@ -71,11 +70,7 @@ def test_create_update(client, api_base, create_profile):
     o = munchify(r.json())
 
     # Get the result data
-    r = client.get(f'{api_base}/jobs/results',
-                json={
-                    'job_id': job_id
-                },
-                headers=headers)
+    r = client.get(f'{api_base}/jobs/results/{job_id}', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     results = r.json()
     assert len(results) == 1

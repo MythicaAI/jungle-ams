@@ -131,7 +131,7 @@ async def get_generate_mesh_status_by_id(
         return GenerateMeshStatusResponse(state=state, file_id=file_id)
 
 
-class JobDefinitionModel(BaseModel):
+class JobDefinitionRequest(BaseModel):
     job_type: str
     name: str
     description: str
@@ -139,75 +139,85 @@ class JobDefinitionModel(BaseModel):
     params_schema: dict[str, Any]
 
 
-class JobDefinitionResult(JobDefinitionModel):
+class JobDefinitionResponse(BaseModel):
     job_def_id: str
 
 
-class JobModel(BaseModel):
+class JobDefinitionModel(JobDefinitionRequest):
+    job_def_id: str
+
+
+class JobRequest(BaseModel):
     job_def_id: str
     params: dict[str, Any]
 
 
-class JobCreateResult(BaseModel):
+class JobResponse(BaseModel):
     job_id: str
 
 
-class JobResultModel(BaseModel):
-    job_id: str
+class JobResultRequest(BaseModel):
     created_in: str
     result_data: dict[str, Any]
 
 
-class JobResultResult(JobResultModel):
+class JobResultResponse(BaseModel):
+    job_result_id: str
+
+
+class JobResultModel(JobResultRequest):
+    job_id: str
     job_result_id: str
 
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def create_job_def(
-    request: JobDefinitionModel) -> JobDefinitionResult:
+    request: JobDefinitionRequest) -> JobDefinitionResponse:
     with get_session() as session:
         job_def = JobDefinition(**request.model_dump())
         session.add(job_def)
         session.commit()
         session.refresh(job_def)
-        return JobDefinitionResult(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
+        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
 
 @router.get('/definitions')
-async def get_job_defs() -> list[JobDefinitionResult]:
+async def get_job_defs() -> list[JobDefinitionModel]:
     with get_session() as session:
         job_defs = session.exec(select(JobDefinition)).all()
-        return [JobDefinitionResult(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump()) 
+        return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump()) 
                 for job_def in job_defs]
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_job(
-    request: JobModel) -> JobCreateResult:
+    request: JobRequest) -> JobResponse:
     with get_session() as session:
         job = session.exec(insert(Job).values(
             job_def_seq=job_def_id_to_seq(request.job_def_id),
             params=request.params))
         job_seq = job.inserted_primary_key[0]
         session.commit()
-        return JobCreateResult(job_id=job_seq_to_id(job_seq))
+        return JobResponse(job_id=job_seq_to_id(job_seq))
 
-@router.post('/results', status_code=HTTPStatus.CREATED)
+@router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
 async def create_job_result(
-    request: JobResultModel) -> JobResultModel:
+    job_id: str,
+    request: JobResultRequest) -> JobResultResponse:
     with get_session() as session:
         job_result = session.exec(insert(JobResult).values(
-            job_seq=job_id_to_seq(request.job_id),
+            job_seq=job_id_to_seq(job_id),
             created_in=request.created_in,
             result_data=request.result_data))
         job_result_seq = job_result.inserted_primary_key[0]
         session.commit()
-        return JobResultModel(job_result_id=job_result_seq_to_id(job_result_seq))
+        return JobResultResponse(job_result_id=job_result_seq_to_id(job_result_seq))
 
-@router.get('/results')
-async def get_job_results(
-    request: str) -> list[JobResultModel]:
+@router.get('/results/{job_id}')
+async def get_job_results(job_id: str) -> list[JobResultModel]:
     with get_session() as session:
         job_results = session.exec(select(JobResult)
-                .where(JobResult.job_seq == job_id_to_seq(request.job_id))).all()
-        return [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_seq), **job_result.model_dump()) 
+                .where(JobResult.job_seq == job_id_to_seq(job_id))).all()
+        return [JobResultModel(job_id=job_seq_to_id(job_result.job_seq),
+                               job_result_id=job_result_seq_to_id(job_result.job_result_seq),
+                                **job_result.model_dump()) 
                 for job_result in job_results]
 
