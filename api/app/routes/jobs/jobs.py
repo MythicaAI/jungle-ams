@@ -5,12 +5,13 @@ from sqlmodel import Session, select, insert
 from pydantic import BaseModel
 from typing import Any
 
-from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id
+from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id, job_def_seq_to_id, job_def_id_to_seq, job_seq_to_id, job_id_to_seq, job_result_seq_to_id
 from config import app_config
 from enum import Enum
 from http import HTTPStatus
 from db.connection import get_session
 from db.schema.events import Event
+from db.schema.jobs import JobDefinition, Job, JobResult
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
@@ -128,3 +129,85 @@ async def get_generate_mesh_status_by_id(
                 state = GenerateMeshState.failed
 
         return GenerateMeshStatusResponse(state=state, file_id=file_id)
+
+
+class JobDefinitionModel(BaseModel):
+    job_type: str
+    name: str
+    description: str
+    config: dict[str, Any]
+    params_schema: dict[str, Any]
+
+
+class JobDefinitionResult(JobDefinitionModel):
+    job_def_id: str
+
+
+class JobModel(BaseModel):
+    job_def_id: str
+    params: dict[str, Any]
+
+
+class JobCreateResult(BaseModel):
+    job_id: str
+
+
+class JobResultModel(BaseModel):
+    job_id: str
+    created_in: str
+    result_data: dict[str, Any]
+
+
+class JobResultResult(JobResultModel):
+    job_result_id: str
+
+
+@router.post('/definitions', status_code=HTTPStatus.CREATED)
+async def create_job_def(
+    request: JobDefinitionModel) -> JobDefinitionResult:
+    with get_session() as session:
+        job_def = JobDefinition(**request.model_dump())
+        session.add(job_def)
+        session.commit()
+        session.refresh(job_def)
+        return JobDefinitionResult(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
+
+@router.get('/definitions')
+async def get_job_defs() -> list[JobDefinitionResult]:
+    with get_session() as session:
+        job_defs = session.exec(select(JobDefinition)).all()
+        return [JobDefinitionResult(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump()) 
+                for job_def in job_defs]
+
+@router.post('/', status_code=HTTPStatus.CREATED)
+async def create_job(
+    request: JobModel) -> JobCreateResult:
+    with get_session() as session:
+        job = session.exec(insert(Job).values(
+            job_def_seq=job_def_id_to_seq(request.job_def_id),
+            params=request.params))
+        job_seq = job.inserted_primary_key[0]
+        session.commit()
+        return JobCreateResult(job_id=job_seq_to_id(job_seq))
+
+@router.post('/results', status_code=HTTPStatus.CREATED)
+async def create_job_result(
+    request: JobResultModel) -> JobResultModel:
+    with get_session() as session:
+        job_result = session.exec(insert(JobResult).values(
+            job_seq=job_id_to_seq(request.job_id),
+            created_in=request.created_in,
+            result_data=request.result_data))
+        job_result_seq = job_result.inserted_primary_key[0]
+        session.commit()
+        return JobResultModel(job_result_id=job_result_seq_to_id(job_result_seq))
+
+@router.get('/results')
+async def get_job_results(
+    request: str) -> list[JobResultModel]:
+    with get_session() as session:
+        job_results = session.exec(select(JobResult)
+                .where(JobResult.job_seq == job_id_to_seq(request.job_id))).all()
+        return [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_seq), **job_result.model_dump()) 
+                for job_result in job_results]
+
