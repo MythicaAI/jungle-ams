@@ -3,13 +3,14 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import delete, select, update
 
 from auth.api_id import profile_id_to_seq
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey, ProfileSession
+from profiles.auth0_validator import Auth0Validator
 from profiles.responses import SessionStartResponse
 from profiles.start_session import start_session, start_session_with_token_validator
 
@@ -55,13 +56,16 @@ async def start_session_key(api_key: str) -> SessionStartResponse:
         return start_session(session, key_result.owner_seq)
 
 
-validator = Auth0Validator()
+async def get_auth_validator():
+    """Dependency provider for auth token validation"""
+    return Auth0Validator()
 
 
 @router.post('/auth0-spa')
-async def start_session_auth0_spa(req: Auth0SpaStartRequest) -> SessionStartResponse:
+async def start_session_auth0_spa(req: Auth0SpaStartRequest,
+                                  validator=Depends(get_auth_validator)) -> SessionStartResponse:
     """Post the auth0 user metadata with the access token to begin an API session"""
-    await start_session_with_token_validator(req.access_token, validator)
+    return await start_session_with_token_validator(req.access_token, validator)
 
 
 @router.delete('{profile_id}')
