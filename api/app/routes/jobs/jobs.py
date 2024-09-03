@@ -1,32 +1,37 @@
 import logging
-
-from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select, insert
-from pydantic import BaseModel
-from typing import Any
-
-from auth.api_id import event_seq_to_id, event_id_to_seq, file_seq_to_id, profile_seq_to_id, job_def_seq_to_id, job_def_id_to_seq, job_seq_to_id, job_id_to_seq, job_result_seq_to_id
-from config import app_config
 from enum import Enum
 from http import HTTPStatus
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlmodel import Session, insert, select
+
+from auth.api_id import event_id_to_seq, event_seq_to_id, file_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
+    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
+from config import app_config
 from db.connection import get_session
 from db.schema.events import Event
-from db.schema.jobs import JobDefinition, Job, JobResult
+from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
 
 log = logging.getLogger(__name__)
 
+
 class GenerateMeshRequest(BaseModel):
     file_id: str
     params: dict[str, Any]
 
+
 class GenerateMeshInterfaceResponse(BaseModel):
     file_id: str
 
+
 class GenerateMeshResponse(BaseModel):
     event_id: str
+
 
 class GenerateMeshState(str, Enum):
     """Generate mesh request states"""
@@ -35,11 +40,14 @@ class GenerateMeshState(str, Enum):
     failed = "failed"
     completed = "completed"
 
+
 class GenerateMeshStatusResponse(BaseModel):
     state: GenerateMeshState = GenerateMeshState.queued
     file_id: str | None = None
 
+
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
 
 def add_generate_mesh_event(session: Session, request: GenerateMeshRequest, profile_seq: int):
     """Add a new event that triggers mesh generation"""
@@ -61,16 +69,17 @@ def add_generate_mesh_event(session: Session, request: GenerateMeshRequest, prof
              request.file_id, profile_seq, event_result)
     return event_result
 
+
 @router.get("/generate-mesh/interface/{file_id}")
 async def get_generate_mesh_interface_by_id(
-    file_id: str) -> GenerateMeshInterfaceResponse:
+        file_id: str) -> GenerateMeshInterfaceResponse:
     """Gets the interface definition for a file"""
 
     with get_session() as session:
         # HACK: Add method of associating interface json with a file
         query = (
             select(FileContent)
-            .where(FileContent.name.like(f"{file_id}_interface.json")) # pylint: disable=E1101
+            .where(FileContent.name.like(f"{file_id}_interface.json"))  # pylint: disable=E1101
             .limit(1)
         )
 
@@ -80,10 +89,11 @@ async def get_generate_mesh_interface_by_id(
 
     return GenerateMeshInterfaceResponse(file_id="")
 
+
 @router.post("/generate-mesh")
 async def generate_mesh_file_by_id(
-    request: GenerateMeshRequest,
-    profile: Profile = Depends(current_profile)) -> GenerateMeshResponse:
+        request: GenerateMeshRequest,
+        profile: Profile = Depends(current_profile)) -> GenerateMeshResponse:
     """Generates a mesh based on the file content"""
 
     with get_session() as session:
@@ -95,9 +105,10 @@ async def generate_mesh_file_by_id(
 
         return GenerateMeshResponse(event_id=event_id)
 
+
 @router.get("/generate-mesh/status/{event_id}")
 async def get_generate_mesh_status_by_id(
-    event_id: str) -> GenerateMeshStatusResponse:
+        event_id: str) -> GenerateMeshStatusResponse:
     """Gets the results of a generate mesh request"""
 
     with get_session() as session:
@@ -117,7 +128,7 @@ async def get_generate_mesh_status_by_id(
             # HACK: Add method of associating resulting mesh with event
             query = (
                 select(FileContent)
-                .where(FileContent.name.like(f"{event_id}_mesh.%%")) # pylint: disable=E1101
+                .where(FileContent.name.like(f"{event_id}_mesh.%%"))  # pylint: disable=E1101
                 .limit(1)
             )
 
@@ -154,6 +165,7 @@ class JobRequest(BaseModel):
 
 class JobResponse(BaseModel):
     job_id: str
+    job_def_id: str
 
 
 class JobResultRequest(BaseModel):
@@ -172,7 +184,7 @@ class JobResultModel(JobResultRequest):
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def create_job_def(
-    request: JobDefinitionRequest) -> JobDefinitionResponse:
+        request: JobDefinitionRequest) -> JobDefinitionResponse:
     with get_session() as session:
         job_def = JobDefinition(**request.model_dump())
         session.add(job_def)
@@ -180,28 +192,33 @@ async def create_job_def(
         session.refresh(job_def)
         return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
 
+
 @router.get('/definitions')
 async def get_job_defs() -> list[JobDefinitionModel]:
     with get_session() as session:
         job_defs = session.exec(select(JobDefinition)).all()
-        return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump()) 
+        return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
                 for job_def in job_defs]
+
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_job(
-    request: JobRequest) -> JobResponse:
+        request: JobRequest) -> JobResponse:
     with get_session() as session:
         job = session.exec(insert(Job).values(
             job_def_seq=job_def_id_to_seq(request.job_def_id),
             params=request.params))
         job_seq = job.inserted_primary_key[0]
         session.commit()
-        return JobResponse(job_id=job_seq_to_id(job_seq))
+        return JobResponse(
+            job_id=job_seq_to_id(job_seq),
+            job_def_id=request.job_def_id)
+
 
 @router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
 async def create_job_result(
-    job_id: str,
-    request: JobResultRequest) -> JobResultResponse:
+        job_id: str,
+        request: JobResultRequest) -> JobResultResponse:
     with get_session() as session:
         job_result = session.exec(insert(JobResult).values(
             job_seq=job_id_to_seq(job_id),
@@ -211,13 +228,13 @@ async def create_job_result(
         session.commit()
         return JobResultResponse(job_result_id=job_result_seq_to_id(job_result_seq))
 
+
 @router.get('/results/{job_id}')
 async def get_job_results(job_id: str) -> list[JobResultModel]:
     with get_session() as session:
         job_results = session.exec(select(JobResult)
-                .where(JobResult.job_seq == job_id_to_seq(job_id))).all()
+                                   .where(JobResult.job_seq == job_id_to_seq(job_id))).all()
         return [JobResultModel(job_id=job_seq_to_id(job_result.job_seq),
                                job_result_id=job_result_seq_to_id(job_result.job_result_seq),
-                                **job_result.model_dump()) 
+                               **job_result.model_dump())
                 for job_result in job_results]
-

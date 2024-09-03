@@ -3,7 +3,10 @@
 #
 # pylint: disable=unused-import
 from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.sql.schema import Sequence
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -12,6 +15,10 @@ from uuid import UUID, uuid4
 
 {{#tables}}
 
+# sequences for table {{table_name}}
+{{#sequences}}
+{{name}}: Sequence = {{py_sequence_def}}
+{{/sequences}}
 
 class {{name}}(SQLModel, table=True):
     """
@@ -19,6 +26,7 @@ class {{name}}(SQLModel, table=True):
     """
     __tablename__ = "{{table_name}}"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
 {{#columns}}
     {{name}}: {{py_type}} = {{sqlmodel}}
 {{/columns}}

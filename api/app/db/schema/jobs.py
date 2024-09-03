@@ -3,7 +3,10 @@
 #
 # pylint: disable=unused-import
 from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.sql.schema import Sequence
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -11,6 +14,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+# sequences for table job_defs
 
 class JobDefinition(SQLModel, table=True):
     """
@@ -18,13 +22,15 @@ class JobDefinition(SQLModel, table=True):
     """
     __tablename__ = "job_defs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    job_def_seq: int = Field(primary_key=True,nullable=False)
+
+    job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger,primary_key=True))
     job_type: str | None = Field(default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
     config: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     params_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
+# sequences for table jobs
 
 class Job(SQLModel, table=True):
     """
@@ -32,14 +38,17 @@ class Job(SQLModel, table=True):
     """
     __tablename__ = "jobs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    job_seq: int = Field(primary_key=True,nullable=False)
-    job_def_seq: int = Field(foreign_key='job_defs.job_def_seq',default=None)
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+
+    job_seq: int = Field(sa_column=Column('job_seq',BigInteger,primary_key=True))
+    job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger),default=0)
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger),default=0)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     completed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     params: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
+# sequences for table job_results
+job_results_job_result_seq_seq: Sequence = Sequence(name='job_results_job_result_seq_seq', start=1)
 
 class JobResult(SQLModel, table=True):
     """
@@ -47,7 +56,8 @@ class JobResult(SQLModel, table=True):
     """
     __tablename__ = "job_results"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    job_seq: int = Field(primary_key=True,nullable=False)
-    job_result_seq: int = Field(primary_key=True,nullable=False)
+
+    job_seq: int = Field(sa_column=Column('job_seq',BigInteger,primary_key=True))
+    job_result_seq: int = Field(sa_column=Column('job_result_seq',BigInteger,job_results_job_result_seq_seq,primary_key=True))
     created_in: str | None = Field(default=None)
     result_data: Dict[str, Any] = Field(default_factory=dict,sa_column=Column(JSON))

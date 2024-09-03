@@ -3,7 +3,10 @@
 #
 # pylint: disable=unused-import
 from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.sql.schema import Sequence
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -11,6 +14,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+# sequences for table assets
 
 class Asset(SQLModel, table=True):
     """
@@ -18,13 +22,15 @@ class Asset(SQLModel, table=True):
     """
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    asset_seq: int = Field(primary_key=True,nullable=False)
+
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger,primary_key=True))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    org_seq: int | None = Field(default=0)
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger),default=0)
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger),default=0)
 
+# sequences for table asset_versions
 
 class AssetVersion(SQLModel, table=True):
     """
@@ -32,15 +38,16 @@ class AssetVersion(SQLModel, table=True):
     """
     __tablename__ = "asset_versions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    asset_seq: int = Field(primary_key=True,nullable=False)
+
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger,primary_key=True))
     published: bool | None = Field(default=False)
-    major: int = Field(primary_key=True,nullable=False)
-    minor: int = Field(primary_key=True,nullable=False)
-    patch: int = Field(primary_key=True,nullable=False)
+    major: int = Field(sa_column=Column('major',Integer,primary_key=True))
+    minor: int = Field(sa_column=Column('minor',Integer,primary_key=True))
+    patch: int = Field(sa_column=Column('patch',Integer,primary_key=True))
     commit_ref: str | None = Field(default=None)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
-    author_seq: int = Field(foreign_key='profiles.profile_seq',default=None)
-    package_seq: int | None = Field(foreign_key='files.file_seq',default=None)
+    author_seq: int = Field(sa_column=Column('author_seq',BigInteger),default=0)
+    package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger),default=0)
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

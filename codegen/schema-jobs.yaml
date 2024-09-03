@@ -59,6 +59,7 @@ tables:
       - name: job_result_seq
         type: BIGINT
         primary_key: true
+        auto_update: true   # required when creating composite primary keys
       - name: created_in
         description: Location that result originated
         type: TEXT
