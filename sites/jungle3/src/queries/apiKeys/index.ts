@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "../../services/api";
+import { api } from "@services/api";
 import { ApiKeysApiPath, ApiKeysQuery } from "./enums";
 
 export type Key = {

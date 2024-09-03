@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from "@storybook/react";
 import { Box } from "@mui/joy";
-import { PackageViewInfoPanel } from "../components/PackageViewInfoPanel";
-import { AssetVersionResponse } from "../types/apiTypes";
+import { PackageViewInfoPanel } from "@components/PackageView/PackageViewInfoPanel";
+import { AssetVersionResponse } from "types/apiTypes";
 import { BrowserRouter } from "react-router-dom";
 
 const meta: Meta<typeof PackageViewInfoPanel> = {

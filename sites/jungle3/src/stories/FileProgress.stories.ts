@@ -1,19 +1,19 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { FileProgress } from '../components/FileProgress';
+import { Meta, StoryObj } from "@storybook/react";
+import { FileProgress } from "../components/common/FileProgress";
 
 const meta: Meta<typeof FileProgress> = {
-  title: 'Components/FileProgress',
+  title: "Components/FileProgress",
   component: FileProgress,
   argTypes: {
     value: {
-      control: { type: 'number', min: 0, max: 100 },
-      description: 'Progress value',
+      control: { type: "number", min: 0, max: 100 },
+      description: "Progress value",
       defaultValue: 50,
     },
     size: {
-      control: { type: 'select', options: ['sm', 'md', 'lg'] },
-      description: 'Size of the progress circle',
-      defaultValue: 'sm',
+      control: { type: "select", options: ["sm", "md", "lg"] },
+      description: "Size of the progress circle",
+      defaultValue: "sm",
     },
   },
 };
@@ -25,20 +25,20 @@ type Story = StoryObj<typeof FileProgress>;
 export const Default: Story = {
   args: {
     value: 50,
-    size: 'sm',
+    size: "sm",
   },
 };
 
 export const Medium: Story = {
   args: {
     value: 60,
-    size: 'md',
+    size: "md",
   },
 };
 
 export const Large: Story = {
   args: {
     value: 80,
-    size: 'lg',
+    size: "lg",
   },
 };

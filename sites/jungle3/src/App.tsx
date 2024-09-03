@@ -1,19 +1,19 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import ErrorPage from "./ErrorPage.tsx";
-import ProfileSettings from "./ProfileSettings.tsx";
-import Assets from "./Assets.tsx";
-import { AssetEditWrapper } from "./AssetEdit.tsx";
-import Login from "./Login.tsx";
-import OrgsList from "./OrgsList.tsx";
-import { FileViewWrapper } from "./FileView.tsx";
-import { Packages } from "./Packages.tsx";
-import Uploads from "./Uploads.tsx";
-import { Layout } from "./components/Layout.tsx";
-import { Notification } from "./components/Notification.tsx";
-import "./App.css";
-import { PackageViewWrapper } from "./PackageView.tsx";
-import { ApiKeys } from "./components/ApiKeys.tsx";
+import ErrorPage from "@pages/ErrorPage";
+import ProfileSettings from "@pages/ProfileSettings";
+import Assets from "@pages/Assets";
+import { AssetEditWrapper } from "@pages/AssetEdit";
+import Login from "@pages/Login";
+import OrgsList from "@pages/OrgsList";
+import { FileViewWrapper } from "@pages/FileView";
+import { Packages } from "@pages/Packages";
+import Uploads from "@pages/Uploads";
+import { Layout } from "./components/common/Layout";
+import { Notification } from "./components/Notification";
+import { PackageViewWrapper } from "@pages/PackageView";
+import { ApiKeys } from "@pages/ApiKeys";
+import "./styles/App.css";
 
 const App: React.FC = () => {
   return (

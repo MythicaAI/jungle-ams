@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "../../services/api";
+import { api } from "@services/api";
 import { PackagesApiPath, PackagesQuery } from "./enums";
-import { AssetCreateRequest, AssetVersionResponse } from "../../types/apiTypes";
+import { AssetCreateRequest, AssetVersionResponse } from "types/apiTypes";
 
 export const useGetOwnedPackages = () => {
   return useQuery<AssetVersionResponse[]>({

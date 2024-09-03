@@ -3,7 +3,7 @@ import "slick-carousel/slick/slick-theme.css";
 import Slider, { CustomArrowProps } from "react-slick";
 import { Box } from "@mui/joy";
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
-import { AssetTopResponse } from "../../types/apiTypes";
+import { AssetTopResponse } from "types/apiTypes";
 import { PackageViewCard } from "../PackageViewCard";
 
 import "./slickCarousel.css";

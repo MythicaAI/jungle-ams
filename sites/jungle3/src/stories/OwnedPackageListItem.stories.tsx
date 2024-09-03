@@ -1,3 +1,4 @@
+import React from "react";
 import { Meta, StoryObj } from "@storybook/react";
 import {
   Card,
@@ -13,11 +14,10 @@ import {
 } from "@mui/joy";
 import { BrowserRouter, Link } from "react-router-dom";
 import { LucidePackage } from "lucide-react";
-import { DownloadButton } from "../components/DownloadButton";
-import { getThumbnailImg } from "../lib/packagedAssets";
-import { AssetVersionResponse } from "../types/apiTypes";
-import React from "react";
-import { Thumbnail } from "../components/Thumbnail";
+import { DownloadButton } from "@components/common/DownloadButton";
+import { getThumbnailImg } from "@lib/packagedAssets";
+import { AssetVersionResponse } from "types/apiTypes";
+import { Thumbnail } from "@components/Thumbnail";
 
 const compareVersions = (
   a: AssetVersionResponse,

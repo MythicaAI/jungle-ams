@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../services/api";
-import { FileInfoResponse } from "../../types/apiTypes";
+import { api } from "@services/api";
+import { FileInfoResponse } from "types/apiTypes";
 import { FilesApiPath, FilesQuery } from "./enums";
 
 export const useGetFile = (id?: string) => {

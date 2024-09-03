@@ -1,5 +1,5 @@
 import { Sheet, Stack, Typography } from "@mui/joy";
-import { useAssetVersionStore } from "../stores/assetVersionStore.ts";
+import { useAssetVersionStore } from "@store/assetVersionStore";
 
 export const AssetIdentityHeader = () => {
   const { asset_id, org_id } = useAssetVersionStore();

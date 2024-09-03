@@ -1,8 +1,5 @@
 import { create } from "zustand";
-import {
-  AssetVersionContent,
-  AssetVersionContentMap,
-} from "../types/apiTypes.ts";
+import { AssetVersionContent, AssetVersionContentMap } from "types/apiTypes";
 
 type Link = {
   name: string;
