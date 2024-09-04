@@ -3,12 +3,11 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { DownloadButton } from ".";
-import { api } from "../../services/api";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useDownloadFile } from "../../queries/common/index.ts";
 
-jest.mock("../../services/api", () => ({
-  api: {
-    get: jest.fn(),
-  },
+jest.mock("../../queries/common/index.ts", () => ({
+  useDownloadFile: jest.fn(),
 }));
 
 jest.mock("../../services/backendCommon", () => ({
@@ -16,27 +15,35 @@ jest.mock("../../services/backendCommon", () => ({
   extractValidationErrors: jest.fn(() => []),
 }));
 
-const mockApiGet = api.get as jest.Mock;
+const mockUseDownloadFile = useDownloadFile as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockApiGet.mockReset();
+
+  mockUseDownloadFile.mockReturnValue({
+    data: null,
+    error: null,
+  });
 });
 
 describe("DownloadButton", () => {
   it("should trigger download on button click", async () => {
-    // Mock the response for a successful download
+    const queryClient = new QueryClient();
     const url = "https://example.com/file.zip";
     const name = "file.zip";
 
-    mockApiGet.mockResolvedValueOnce({
-      url,
-      name,
-    });
-
-    render(<DownloadButton file_id="1" icon={<span>Download</span>} />);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <DownloadButton file_id="1" icon={<span>Download</span>} />
+      </QueryClientProvider>,
+    );
 
     const downloadButton = screen.getByRole("button", { name: /download/i });
+
+    const appendChildMock = jest
+      .spyOn(document.body, "appendChild")
+      //@ts-ignore
+      .mockImplementation(() => {});
 
     const createElementMock = jest
       .spyOn(document, "createElement")
@@ -49,14 +56,31 @@ describe("DownloadButton", () => {
         } as unknown as HTMLAnchorElement;
       });
 
+    mockUseDownloadFile.mockReturnValueOnce({
+      data: { url, name },
+      error: null,
+    });
+
     fireEvent.click(downloadButton);
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledWith({ path: "/download/info/1" });
+      console.log(
+        "Mock return after button click:",
+        mockUseDownloadFile.mock.results,
+      );
+
       expect(createElementMock).toHaveBeenCalledWith("a");
+
       const link = createElementMock.mock.results[0].value as HTMLAnchorElement;
       expect(link.setAttribute).toHaveBeenCalledWith("download", name);
       expect(link.href).toBe(url);
+      expect(link.click).toHaveBeenCalled();
+      expect(link.remove).toHaveBeenCalled();
+
+      expect(appendChildMock).toHaveBeenCalledWith(link);
     });
+
+    createElementMock.mockRestore();
+    appendChildMock.mockRestore();
   });
 });

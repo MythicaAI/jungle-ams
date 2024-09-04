@@ -20,61 +20,47 @@ import {
 } from "@mui/joy";
 import { addDays } from "date-fns";
 
-import { LucideCirclePlus, LucideCopy, LucideKeyRound } from "lucide-react";
+import {
+  LucideCirclePlus,
+  LucideCopy,
+  LucideKeyRound,
+  LucideTrash,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
   translateError,
 } from "../services/backendCommon.ts";
-import { useGlobalStore } from "../stores/globalStore.ts";
-import { AxiosError } from "axios";
 import { Helmet } from "react-helmet-async";
 import { useStatusStore } from "../stores/statusStore.ts";
-import { DeleteButton } from "./DeleteButton/index.tsx";
-import { api } from "../services/api";
-
-export type Key = {
-  created: string;
-  description: string;
-  expires: string;
-  name: string;
-  value: string;
-};
+import { Key, useAddApiKey, useDeleteApiKey, useGetApiKeys } from "../queries";
+import { DeleteModal } from "./DeleteModal";
 
 export const ApiKeys = () => {
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const { authToken } = useGlobalStore();
-  const [keys, setKeys] = useState<Key[]>([]);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    selectedKey: "",
+  });
   const { addError, addWarning } = useStatusStore();
+  const { data: keys, isLoading, error } = useGetApiKeys();
+  const { mutate: addKey } = useAddApiKey();
+  const { mutate: deleteKey } = useDeleteApiKey();
 
-  const handleError = (err: AxiosError) => {
+  const handleError = (err: any) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
   };
 
-  const fetchKeys = () => {
-    setIsLoading(true);
-
-    api
-      .get({ path: "/keys" })
-      .then((r) => {
-        setKeys(r);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        handleError(err);
-        setIsLoading(false);
-      });
+  const handleDeleteCleaup = () => {
+    setDeleteModal({ open: false, selectedKey: "" });
   };
 
   useEffect(() => {
-    if (!authToken) {
-      return;
+    if (error) {
+      handleError(error);
     }
-
-    fetchKeys();
-  }, [authToken]);
+  }, [error]);
 
   return (
     <>
@@ -86,7 +72,7 @@ export const ApiKeys = () => {
           variant="plain"
           color="neutral"
           startDecorator={<LucideCirclePlus />}
-          onClick={() => setOpen(true)}
+          onClick={() => setCreateModalOpen(true)}
           sx={{ width: "fit-content" }}
         >
           Generate new key
@@ -99,7 +85,7 @@ export const ApiKeys = () => {
           </Stack>
         )}
         {keys &&
-          keys.map((key) => (
+          keys.map((key: Key) => (
             <ListItem sx={{ flexGrow: 1 }} key={key.value}>
               <Card sx={{ width: "100%", flexDirection: "row" }}>
                 <ListItemContent
@@ -130,18 +116,21 @@ export const ApiKeys = () => {
                         onClick={() => navigator.clipboard.writeText(key.value)}
                       />
                     </IconButton>
-                    <DeleteButton
-                      url={`/keys/${key.value}`}
-                      name={key.name}
-                      onDeleteSuccess={fetchKeys}
-                    />
+
+                    <IconButton
+                      onClick={() =>
+                        setDeleteModal({ open: true, selectedKey: key.value })
+                      }
+                    >
+                      <LucideTrash />
+                    </IconButton>
                   </Stack>
                 </ListItemDecorator>
               </Card>
             </ListItem>
           ))}
       </List>
-      <Modal open={open} onClose={() => setOpen(false)}>
+      <Modal open={createModalOpen} onClose={() => setCreateModalOpen(false)}>
         <ModalDialog sx={{ width: "100%", maxWidth: "500px" }}>
           <DialogTitle>Generate new key</DialogTitle>
 
@@ -158,10 +147,13 @@ export const ApiKeys = () => {
               ).toISOString();
               event.preventDefault();
 
-              api
-                .post({ path: "/keys", body: formJson })
-                .then(() => fetchKeys());
-              setOpen(false);
+              addKey({
+                name: formJson.name,
+                description: formJson.description,
+                expires: formJson.expires,
+              });
+
+              setCreateModalOpen(false);
             }}
           >
             <Stack spacing={2}>
@@ -187,6 +179,16 @@ export const ApiKeys = () => {
           </form>
         </ModalDialog>
       </Modal>
+      <DeleteModal
+        open={deleteModal.open}
+        handleClose={handleDeleteCleaup}
+        handleConfirm={() => {
+          deleteKey(deleteModal.selectedKey, {
+            onSuccess: () => handleDeleteCleaup(),
+            onError: () => handleDeleteCleaup(),
+          });
+        }}
+      />
     </>
   );
 };

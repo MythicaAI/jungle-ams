@@ -15,17 +15,12 @@ import {
   Switch,
   Typography,
 } from "@mui/joy";
-import {
-  AssetCreateRequest,
-  AssetCreateResponse,
-  AssetVersionResponse,
-} from "./types/apiTypes.ts";
+import { AssetCreateRequest, AssetVersionResponse } from "./types/apiTypes.ts";
 import { AxiosError } from "axios";
 import {
   extractValidationErrors,
   translateError,
 } from "./services/backendCommon.ts";
-import { useGlobalStore } from "./stores/globalStore.ts";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -34,16 +29,20 @@ import { useAssetVersionStore } from "./stores/assetVersionStore.ts";
 import { DownloadButton } from "./components/DownloadButton/index.tsx";
 import { getThumbnailImg } from "./lib/packagedAssets.tsx";
 import { Thumbnail } from "./components/Thumbnail.tsx";
-import { api } from "./services/api/index.ts";
+import {
+  useCreateAsset,
+  useGetOwnedPackages,
+  usePublishToggle,
+} from "./queries";
 
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
 export const Packages = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [versions, setVersions] = useState<AssetVersionResponse[]>([]);
+  const { data: versions, isLoading, error } = useGetOwnedPackages();
+  const { mutate: togglePublish } = usePublishToggle();
+  const { mutate: createAssetMutation } = useCreateAsset();
   const [versionCache, setVersionCache] = useState<VersionCache>({});
 
-  const { authToken } = useGlobalStore();
   const { addError, addWarning } = useStatusStore();
   const { updateVersion, clearVersion } = useAssetVersionStore();
   const navigate = useNavigate();
@@ -51,26 +50,6 @@ export const Packages = () => {
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
-    setIsLoading(false);
-  };
-
-  const assetVersionsEqual = (
-    a: AssetVersionResponse,
-    b: AssetVersionResponse,
-  ) => {
-    return (
-      a.asset_id === b.asset_id &&
-      a.version[0] === b.version[0] &&
-      a.version[1] === b.version[1] &&
-      a.version[2] === b.version[2]
-    );
-  };
-
-  // update the versions list, replace only the provided asset version response
-  const updateAssetVersion = (a: AssetVersionResponse) => {
-    setVersions(
-      versions.map((value) => (assetVersionsEqual(a, value) ? a : value)),
-    );
   };
 
   const handlePublishToggle = (
@@ -78,18 +57,10 @@ export const Packages = () => {
     version: string,
     published: boolean,
   ) => {
-    console.log("publish toggle:", asset_id, published);
-    api
-      .post<AssetVersionResponse>({
-        path: `/assets/${asset_id}/versions/${version}`,
-        body: {
-          published,
-        },
-      })
-      .then((r) => {
-        updateAssetVersion(r as AssetVersionResponse);
-      })
-      .catch((err) => handleError(err));
+    togglePublish(
+      { asset_id, version, published },
+      { onError: (err) => handleError(err as any) },
+    );
   };
 
   const compareVersions = (
@@ -109,24 +80,22 @@ export const Packages = () => {
 
   const createAsset = function () {
     const createRequest: AssetCreateRequest = {};
-    api
-      .post<AssetCreateResponse>({ path: "/assets/", body: createRequest })
-      .then((r) => {
-        // update the asset edit state
+    createAssetMutation(createRequest, {
+      onSuccess: (res) => {
         clearVersion();
         updateVersion({
-          asset_id: r.asset_id,
-          org_id: r.org_id,
+          asset_id: res.asset_id,
+          org_id: res.org_id,
         });
-        navigate(`/assets/${r.asset_id}/versions/0.0.0`);
-      })
-      .catch((err) => handleError(err));
+        navigate(`/assets/${res.asset_id}/versions/0.0.0`);
+      },
+      onError: (err) => handleError(err as any),
+    });
   };
 
   // set the {versions} list and index each asset to a list of versions
   // in the {versionCache}
   const updateVersionCache = (versions: AssetVersionResponse[]) => {
-    setVersions(versions);
     const newVersionCache: VersionCache = {};
     versions.forEach((v) => {
       const existingVersions = newVersionCache[v.asset_id];
@@ -140,30 +109,20 @@ export const Packages = () => {
   };
 
   useEffect(() => {
-    updateVersionCache(versions);
+    if (versions) {
+      updateVersionCache(versions as AssetVersionResponse[]);
+    }
   }, [versions]);
+
+  useEffect(() => {
+    if (error) {
+      handleError(error as any);
+    }
+  }, [error]);
 
   useEffect(() => {
     clearVersion();
   }, []);
-
-  useEffect(() => {
-    console.log("packages: load owned assets");
-    if (!authToken) {
-      return;
-    }
-    setIsLoading(true);
-
-    api
-      .get<AssetVersionResponse[]>({ path: "/assets/owned" })
-      .then((r) => {
-        setVersions(r);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        handleError(err);
-      });
-  }, [authToken]);
 
   const renderLatestVersion = (
     assetId: string,

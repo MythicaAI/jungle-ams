@@ -1,19 +1,17 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { IconButton } from "@mui/joy";
-import { AxiosError } from "axios";
 import {
   extractValidationErrors,
   translateError,
 } from "../../services/backendCommon.ts";
 import { useStatusStore } from "../../stores/statusStore.ts";
-import { DownloadInfoResponse } from "../../types/apiTypes.ts";
 import { ReactNode } from "react";
-import { api } from "../../services/api";
+import { useDownloadFile } from "../../queries/common/index.ts";
 
 interface DownloadButtonProps {
   file_id: string;
   icon: ReactNode;
-  text?: string
+  text?: string;
 }
 
 export const DownloadButton: React.FC<DownloadButtonProps> = ({
@@ -22,27 +20,43 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
   text,
 }) => {
   const { addError, addWarning } = useStatusStore();
+  const [shouldDownload, setShouldDownload] = useState(false);
+  const { data: downloadedFile, error } = useDownloadFile({
+    id: file_id,
+    shouldDownload,
+  });
 
-  const handleError = (err: AxiosError) => {
+  const handleError = (err: any) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
   };
 
+  useEffect(() => {
+    if (error) {
+      handleError(error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (downloadedFile) {
+      const link = document.createElement("a");
+      link.href = downloadedFile.url;
+      link.setAttribute("download", downloadedFile.name); // Specify the filename for download
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      setShouldDownload(false);
+    }
+  }, [downloadedFile]);
+
   const handleDownload = () => {
-    api
-      .get<DownloadInfoResponse>({ path: `/download/info/${file_id}` })
-      .then((r) => {
-        const link = document.createElement("a");
-        link.href = r.url;
-        link.setAttribute("download", r.name); // Specify the filename for download
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      })
-      .catch((err) => {
-        handleError(err);
-      });
+    setShouldDownload(true);
   };
 
-  return <IconButton onClick={handleDownload}>{icon} {text?text:""}</IconButton>;
+  return (
+    <IconButton onClick={handleDownload}>
+      {icon} {text ? text : ""}
+    </IconButton>
+  );
 };
