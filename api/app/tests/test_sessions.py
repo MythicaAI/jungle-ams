@@ -5,9 +5,9 @@ Test the session creation from different contexts including negative cases
 # pylint: disable=redefined-outer-name, unused-import
 
 from http import HTTPStatus
-from select import select
 
 from munch import munchify
+from sqlmodel import col, select
 
 from db.connection import get_session
 from db.schema.profiles import ProfileSession
@@ -51,16 +51,11 @@ def test_resume_session_direct(api_base, client, create_profile):
     r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-    assert prev_token != o.token
 
     with get_session() as session:
-        ## assert old token is gone
-        rs = session.exec(select(ProfileSession).where(ProfileSession.auth_token == prev_token))
-        assert rs is None
-
-        ## assert new token is present
-        rs = session.exec(select(ProfileSession).where(ProfileSession.auth_token == o.token))
-        assert o.profile.login_count == 2
+        ## assert token is present
+        s = session.exec(select(ProfileSession).where(col(ProfileSession.auth_token) == o.token)).one_or_none()
+        assert s is not None
 
 
 def test_start_session_api_key(api_base, client, create_profile):

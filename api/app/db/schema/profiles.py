@@ -2,14 +2,13 @@
 #
 #
 # pylint: disable=unused-import
-from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from datetime import datetime
+from typing import Any, Dict
+
+from pydantic import ConfigDict
+from sqlalchemy import Column, JSON, TIMESTAMP
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Field, SQLModel
-from pydantic import ConfigDict
-from typing import Any, Dict
-from datetime import datetime
-from uuid import UUID, uuid4
-
 
 
 class Profile(SQLModel, table=True):
@@ -18,12 +17,14 @@ class Profile(SQLModel, table=True):
     """
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    profile_seq: int = Field(primary_key=True,nullable=False)
+    profile_seq: int = Field(primary_key=True, nullable=False)
     name: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     signature: str | None = Field(default=None)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_default': sql_now(), 'nullable': False}, default=None)
+    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     active: bool | None = Field(default=False)
     profile_base_href: str | None = Field(default=None)
     description: str | None = Field(default=None)
@@ -39,11 +40,12 @@ class OrgRef(SQLModel, table=True):
     """
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    org_seq: int = Field(primary_key=True,nullable=False)
-    profile_seq: int = Field(primary_key=True,nullable=False)
-    role: str = Field(primary_key=True,nullable=False)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    author_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    org_seq: int = Field(primary_key=True, nullable=False)
+    profile_seq: int = Field(primary_key=True, nullable=False)
+    role: str = Field(primary_key=True, nullable=False)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_default': sql_now(), 'nullable': False}, default=None)
+    author_seq: int | None = Field(foreign_key='profiles.profile_seq', default=None)
 
 
 class Org(SQLModel, table=True):
@@ -52,9 +54,11 @@ class Org(SQLModel, table=True):
     """
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    org_seq: int = Field(primary_key=True,nullable=False)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    org_seq: int = Field(primary_key=True, nullable=False)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_default': sql_now(), 'nullable': False}, default=None)
+    updated: datetime | None = Field(default=None, sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
 
@@ -65,10 +69,11 @@ class ProfileSession(SQLModel, table=True):
     """
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    profile_session_seq: int = Field(primary_key=True,nullable=False)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    refreshed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    profile_seq: int = Field(foreign_key='profiles.profile_seq',default=None)
+    profile_session_seq: int = Field(primary_key=True, nullable=False)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_default': sql_now(), 'nullable': False}, default=None)
+    refreshed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), default=None)
+    profile_seq: int = Field(foreign_key='profiles.profile_seq', default=None)
     authenticated: bool | None = Field(default=False)
     auth_token: str | None = Field(default=None)
     refresh_token: str | None = Field(default=None)
@@ -81,10 +86,11 @@ class ProfileFollower(SQLModel, table=True):
     """
     __tablename__ = "profile_followers"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    profile_seq: int = Field(primary_key=True,nullable=False)
-    follower_seq: int = Field(primary_key=True,nullable=False)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
+    profile_seq: int = Field(primary_key=True, nullable=False)
+    follower_seq: int = Field(primary_key=True, nullable=False)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_default': sql_now(), 'nullable': False}, default=None)
+    deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), default=None)
 
 
 class ProfileKey(SQLModel, table=True):
@@ -93,11 +99,12 @@ class ProfileKey(SQLModel, table=True):
     """
     __tablename__ = "profile_keys"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    key: str = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+    key: str = Field(primary_key=True, nullable=False)
+    owner_seq: int | None = Field(foreign_key='profiles.profile_seq', default=None)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),
+                                     sa_column_kwargs={'server_default': sql_now(), 'nullable': False}, default=None)
+    expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True), default=None)
+    payload: Dict[str, Any] | None = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class ProfileLocatorOID(SQLModel, table=True):
@@ -106,5 +113,5 @@ class ProfileLocatorOID(SQLModel, table=True):
     """
     __tablename__ = "profile_locators_oid"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    sub: str = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    sub: str = Field(primary_key=True, nullable=False)
+    owner_seq: int | None = Field(foreign_key='profiles.profile_seq', default=None)

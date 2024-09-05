@@ -61,7 +61,10 @@ export const AuthHeader = () => {
           console.log("token: ", token);
           setCookie("auth_token", token, { path: "/" });
         })
-        .catch((error) => addError("getAccessTokenSilently:" + error));
+        .catch((error) => {
+          console.error("getAccessTokenSilently:" + error);
+          doLoginWithRedirect();
+        });
     }
   }, [cookies]);
 
@@ -99,6 +102,16 @@ export const AuthHeader = () => {
       getUserMetadata(user.sub);
     }
   }, [getAccessTokenSilently, isAuthenticated, user]);
+
+  const doLoginWithRedirect = () => {
+    loginWithRedirect()
+      .then((res) => {
+        console.log("LOGIN RES: ", res);
+      })
+      .catch((error) => {
+        addError("Login error: " + error);
+      })
+  }
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
@@ -164,16 +177,7 @@ export const AuthHeader = () => {
             <LoginAvatarButton
               role="button"
               tabIndex={0}
-              onClick={() =>
-                loginWithRedirect()
-                  .then((res) => {
-                    console.log("LOGIN RES: ", res);
-                  })
-                  .catch((error) => {
-                    console.log("LOGIN ERR", error);
-                  })
-              }
-            >
+              onClick={() => doLoginWithRedirect()}>
               <Avatar alt="?" variant="soft" />
             </LoginAvatarButton>
           )}

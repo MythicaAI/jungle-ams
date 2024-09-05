@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime, timezone
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlmodel import delete, select, update
+from sqlmodel import col, delete, select, update
 
 from auth.api_id import profile_id_to_seq
 from db.connection import get_session
@@ -23,9 +24,20 @@ class Auth0SpaStartRequest(BaseModel):
     user_id: Optional[str] = None
 
 
+def get_client_ip(request: Request) -> str:
+    """Get the IP address of the requesting client"""
+    client_ip = request.headers.get('X-Forwarded-For')
+    if client_ip:
+        # In case there are multiple IPs, take the first one
+        return client_ip.split(",")[0]
+    else:
+        return request.client.host
+
+
 @router.get('/direct/{profile_id}')
-async def start_session_direct(profile_id: str) -> SessionStartResponse:
+async def start_session_direct(request: Request, profile_id: str) -> SessionStartResponse:
     """Start a session directly for a profile"""
+    client_ip = get_client_ip(request)
     with get_session() as session:
         if '@' in profile_id:
             profile = session.exec(select(Profile).where(Profile.email == profile_id)).first()
@@ -35,11 +47,13 @@ async def start_session_direct(profile_id: str) -> SessionStartResponse:
         else:
             profile_seq = profile_id_to_seq(profile_id)
 
-        return start_session(session, profile_seq)
+        return start_session(session, profile_seq, client_ip)
 
 
 @router.get('/key/{api_key}')
-async def start_session_key(api_key: str) -> SessionStartResponse:
+async def start_session_key(request: Request, api_key: str) -> SessionStartResponse:
+    """Start a new session by providing an API key"""
+    client_ip = get_client_ip(request)
     with get_session() as session:
         # pylint: disable=no-member
         key_result = session.exec(select(ProfileKey).where(ProfileKey.key == api_key)).one_or_none()
@@ -48,14 +62,15 @@ async def start_session_key(api_key: str) -> SessionStartResponse:
 
         # test for key expiration and remove expired key
         if key_result.expires <= datetime.now(timezone.utc):
-            session.exec(delete(ProfileKey).where(ProfileKey.key == api_key))
+            session.exec(delete(ProfileKey).where(col(ProfileKey.key) == api_key))
             session.commit()
             raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} expired")
 
         # start the session using the key
-        return start_session(session, key_result.owner_seq)
+        return start_session(session, key_result.owner_seq, client_ip)
 
 
+@lru_cache
 async def get_auth_validator():
     """Dependency provider for auth token validation"""
     return Auth0Validator()
@@ -65,7 +80,8 @@ async def get_auth_validator():
 async def start_session_auth0_spa(req: Auth0SpaStartRequest,
                                   validator=Depends(get_auth_validator)) -> SessionStartResponse:
     """Post the auth0 user metadata with the access token to begin an API session"""
-    return await start_session_with_token_validator(req.access_token, validator)
+    session_start = await start_session_with_token_validator(req.access_token, validator)
+    return session_start
 
 
 @router.delete('{profile_id}')
@@ -77,10 +93,10 @@ async def stop_session(profile_id: str):
         session.begin()
         result = session.exec(update(Profile).values(
             {'active': False}).where(
-            Profile.profile_seq == profile_seq))
+            col(Profile.profile_seq) == profile_seq))
 
         session.exec(delete(ProfileSession).where(
-            ProfileSession.profile_seq == profile_seq))
+            col(ProfileSession.profile_seq) == profile_seq))
 
         session.commit()
 

@@ -6,44 +6,50 @@ import logging
 from http import HTTPStatus
 
 from fastapi import HTTPException
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, col, delete, insert, select, update
-
+from sqlalchemy.sql.functions import func, now as sql_now
+from sqlmodel import Session, asc, col, delete, insert, select, update
 
 from auth.api_id import profile_seq_to_id
 from auth.generate_token import generate_token
 from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileLocatorOID, ProfileSession
-from profiles.auth0_validator import AuthTokenValidator, TokenValidatorResponse
+from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
 
 log = logging.getLogger(__name__)
 
 
-def start_session(session: Session, profile_seq: int) -> SessionStartResponse:
+def start_session(session: Session, profile_seq: int, location: str) -> SessionStartResponse:
     """Given a database session start a new session"""
     profile_id = profile_seq_to_id(profile_seq)
-    # Delete existing sessions
     result = session.exec(update(Profile).values(
-        {'login_count': Profile.login_count + 1, 'active': True}).where(
-        Profile.profile_seq == profile_seq))
+        login_count=func.coalesce(Profile.login_count, 0) + 1,
+        active=True,
+        location=location).where(Profile.profile_seq == profile_seq))
     if result.rowcount == 0:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             detail='profile not found')
     session.commit()
 
+    #
+    # Delete existing sessions
+    #
     session.exec(delete(ProfileSession).where(
         ProfileSession.profile_seq == profile_seq))
     session.commit()
 
-    # Generate a new token and profile response
+    #
+    # Generate a new token
+    #
     profile = session.exec(select(Profile).where(
         Profile.profile_seq == profile_seq)).first()
     if profile is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
-    profile_response = profile_to_profile_response(profile, ProfileResponse)
     token = generate_token(profile)
+
+    # Convert db profile to profile response
+    profile_response = profile_to_profile_response(profile, ProfileResponse)
 
     # Add a new session
     location = app_config().mythica_location
@@ -62,99 +68,118 @@ def start_session(session: Session, profile_seq: int) -> SessionStartResponse:
     return result
 
 
-async def start_session_with_token_validator(token: str, validator: AuthTokenValidator):
+async def start_session_with_token_validator(token: str, validator: AuthTokenValidator) -> SessionStartResponse:
     """Given a token and a validator, validate the token - the token validator must
     return the user metadata which will be used to locate a profile and continue
     with the session logic"""
     log.info("starting session with token: %s", token)
-    response = await validator.validate(token)
+    valid_token = await validator.validate(token)
+    user_profile = await validator.query_user_profile(token)
 
     with (get_session() as session):
+        #
         # get all profiles with the email, with the oldest profile as the first result
+        #
         profiles = session.exec(select(Profile)
-                                .where(col(Profile.email) == response.email)
-                                .order_by(Profile.created.ascending)).all()
+                                .where(col(Profile.email) == user_profile.email)
+                                .order_by(asc(Profile.created))).all()
         if profiles is None or len(profiles) == 0:
             # if there are no profiles, attempt to associate the sub to a new profile
-            profile_seq = await create_profile_for_oid(session, response)
-            await create_profile_locator_oid(session, response, profile_seq)
-        else:
-            # at least one profile exists, look for an existing association of the unique sub key
-            locator_oid = session.exec(select(ProfileLocatorOID)
-                                       .where(col(ProfileLocatorOID.sub) == response.sub)).one_or_none()
-            top_profile = profiles[0]
-            if locator_oid is not None:
-                if locator_oid.owner_seq == top_profile.profile_seq:
-                    start_session(session, top_profile.profile_seq, locator_oid.sub)
-            else:
-                await associate_profile(session, top_profile, response)
+            profile_seq = await create_profile_for_oid(session, valid_token, user_profile)
+            session_start = await create_profile_locator_oid(session, valid_token, profile_seq)
+            return session_start
+
+        #
+        # at least one profile exists, look for an existing association of the unique sub key
+        #
+        locator_oid = session.exec(select(ProfileLocatorOID)
+                                   .where(col(ProfileLocatorOID.sub) == valid_token.sub)).one_or_none()
+        if locator_oid is not None:
+            # found a locator, find an existing profile
+            for profile in profiles:
+                if profile.profile_seq == locator_oid.owner_seq:
+                    session_start = start_session(session, profile.profile_seq, locator_oid.sub)
+                    return session_start
+
+        #
+        # a locator does not exist for the token subject, in this case we will associate all profiles
+        # bearing the verified email with the subject, TODO: this should be done in a two step process
+        # with an email verification on our side before allowing the new sub to take over the profile
+        # select the oldest profile, what to do with the rest?
+        oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
+        session_start = await associate_profile(session, oldest_profile, valid_token, user_profile)
+        return session_start
 
 
-
-async def associate_profile(session: Session, response: TokenValidatorResponse):
-    r = session.exec(select(Profile).where(col(Profile.email) == response.email)).all()
-    for profile in r:
-        if response.email_verified:
-            validate_email_state = 1
-        else:
-            validate_email_state = 0
-        insert_stmt = insert(Profile).values(
-            name=response.nickname,
-            full_name=response.name,
-            email=response.email,
-            email_validate_state=validate_email_state,
-        )
-        session.execute(insert_stmt)
-        session.commit()
-        profile = session.exec(select(Profile).where(Profile.email == validator_response.email)).one_or_none()
-    if profile is None:
-        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
-    return start_session(session, profile.profile_seq)
-
-
-async def merge_profile(session: Session, response: TokenValidatorResponse, locator_oid: ProfileLocatorOID):
-    results = session.exec(select(Profile).where(col(Profile.email) == response.email)).all()
-    if results is None or len(results) == 0:
-        owner_seq = await create_profile_for_oid(session, response)
-        await create_profile_locator_oid(session, response, owner_seq)
-    elif len(results) > 1:
-        profile = next(sorted(results, key=lambda p: p.profile_seq))
+async def associate_profile(
+        session: Session,
+        profile: Profile,
+        valid_token: ValidTokenPayload,
+        user_profile: UserProfile) -> SessionStartResponse:
+    if user_profile.email_verified:
+        validate_email_state = 1
     else:
-        profile = results[0]
+        validate_email_state = 0
+    profile_insert = session.exec(insert(Profile).values(
+        name=user_profile.nickname,
+        full_name=user_profile.name,
+        email=user_profile.email,
+        email_validate_state=validate_email_state,
+        location=valid_token.sub,
+    ))
+    profile_seq = profile_insert.inserted_primary_key[0]
+
+    locator_insert = session.exec(insert(ProfileLocatorOID).values(
+        sub=valid_token.sub,
+        owner_seq=profile_seq,
+    ))
+    session.commit()
+
+    profile = session.exec(select(Profile).where(Profile.profile_seq == profile_seq)).one_or_none()
+    if profile is None:
+        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
+    return start_session(session, profile.profile_seq, valid_token.sub)
+
+
+async def merge_profile(
+        session: Session,
+        valid_token: ValidTokenPayload,
+        user_profile: UserProfile,
+        locator_oid: ProfileLocatorOID) -> SessionStartResponse:
+    results = session.exec(select(Profile).where(col(Profile.email) == user_profile.email)).all()
+    if results is None or len(results) == 0:
+        owner_seq = await create_profile_for_oid(session, valid_token)
+        await create_profile_locator_oid(session, valid_token, owner_seq)
+    else:
+        profile = next(sorted(results, key=lambda p: p.profile_seq))
 
     if profile is None:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
-    return start_session(session, profile.profile_seq)
+    return start_session(session, profile.profile_seq, valid_token.sub)
 
 
-def email_validate_state(email_verified):
+def email_validate_state(email_verified) -> int:
     if email_verified:
         return 1
     else:
         return 0
 
-def find_best_profile(profiles: list[Profile], sub: str):
-    best_profile = None
-    for profile in profiles:
-        if profile.location == sub:
-            best_profile = profile
-        else:
-            if best_profile is None or best_profile.location == sub: < profile.login_count
 
-async def create_profile_locator_oid(session: Session, response: TokenValidatorResponse, owner_seq):
-    r = session.exec(insert(ProfileLocatorOID).values(sub=response.sub, owner_seq=owner_seq))
+async def create_profile_locator_oid(session: Session, valid_token: ValidTokenPayload, owner_seq: int):
+    r = session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
     if r is None or r.rowcount == 0:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "OID locator could not be created")
 
 
 async def create_profile_for_oid(
         session: Session,
-        response: TokenValidatorResponse) -> int:
+        valid_token: ValidTokenPayload,
+        user_profile: UserProfile) -> int:
     r = session.exec(insert(Profile).values(
-        name=response.nickname,
-        full_name=response.name,
-        email=response.email,
-        email_validate_state=email_validate_state(response.email_verified),
+        name=user_profile.nickname,
+        full_name=user_profile.name,
+        email=user_profile.email,
+        email_validate_state=email_validate_state(user_profile.email_verified),
     ))
     if r.rowcount == 0:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be created")
