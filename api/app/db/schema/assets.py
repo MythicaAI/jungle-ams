@@ -7,6 +7,7 @@ from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
 from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -23,6 +24,11 @@ class Asset(SQLModel, table=True):
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
+
     asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
@@ -38,6 +44,11 @@ class AssetVersion(SQLModel, table=True):
     """
     __tablename__ = "asset_versions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
 
     asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     published: bool | None = Field(default=False)

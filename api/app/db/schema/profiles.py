@@ -7,6 +7,7 @@ from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
 from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -22,6 +23,11 @@ class Profile(SQLModel, table=True):
     """
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
 
     profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     name: str | None = Field(default=None)
@@ -46,6 +52,11 @@ class OrgRef(SQLModel, table=True):
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
+
     org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     role: str = Field(primary_key=True,nullable=False)
@@ -61,6 +72,11 @@ class Org(SQLModel, table=True):
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
+
     org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
@@ -75,6 +91,11 @@ class ProfileSession(SQLModel, table=True):
     """
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
 
     profile_session_seq: int = Field(sa_column=Column('profile_session_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
@@ -94,6 +115,11 @@ class ProfileFollower(SQLModel, table=True):
     __tablename__ = "profile_followers"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
+
     profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     follower_seq: int = Field(sa_column=Column('follower_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
@@ -107,6 +133,11 @@ class ProfileKey(SQLModel, table=True):
     """
     __tablename__ = "profile_keys"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
 
     key: str = Field(primary_key=True,nullable=False)
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))

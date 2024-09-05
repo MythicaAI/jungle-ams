@@ -7,6 +7,7 @@ from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
 from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -22,6 +23,11 @@ class FileContent(SQLModel, table=True):
     """
     __tablename__ = "files"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
 
     file_seq: int = Field(sa_column=Column('file_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     name: str | None = Field(default=None)

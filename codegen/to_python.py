@@ -110,6 +110,11 @@ def sa_column_props(table, c, sa_col_type, is_auto_update, field_props) -> [str]
         sa_col_type,
         sa_sequence_name(table, c) if is_auto_update else "", ]
 
+    # Add additional field_props - special case for integers that are not automatically PK
+    # incremented but need the behavior for sqlite which does not use the underlying sequence
+    if is_auto_update:
+        field_props.append("autoincrement=True")
+
     # Do property specific replacements
     cleaned_field_props = [sa_foreign_key(x)
                            if x.startswith('foreign_key') else x

@@ -7,6 +7,7 @@ from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
 from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -23,6 +24,11 @@ class JobDefinition(SQLModel, table=True):
     __tablename__ = "job_defs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
+
     job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     job_type: str | None = Field(default=None)
     name: str | None = Field(default=None)
@@ -38,6 +44,11 @@ class Job(SQLModel, table=True):
     """
     __tablename__ = "jobs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
 
     job_seq: int = Field(sa_column=Column('job_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('job_defs.job_def_seq'),default=None))
@@ -57,7 +68,12 @@ class JobResult(SQLModel, table=True):
     __tablename__ = "job_results"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return ({'sqlite_autoincrement': True}, )
+
     job_seq: int = Field(sa_column=Column('job_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    job_result_seq: int = Field(sa_column=Column('job_result_seq',BigInteger().with_variant(Integer, 'sqlite'),job_results_job_result_seq_seq,primary_key=True,nullable=False))
+    job_result_seq: int = Field(sa_column=Column('job_result_seq',BigInteger().with_variant(Integer, 'sqlite'),job_results_job_result_seq_seq,primary_key=True,nullable=False,autoincrement=True))
     created_in: str | None = Field(default=None)
     result_data: Dict[str, Any] = Field(default_factory=dict,sa_column=Column(JSON))
