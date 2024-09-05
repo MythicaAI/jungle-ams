@@ -21,7 +21,7 @@ py_types = {
 
 sa_int_types = {
     'INTEGER': 'Integer',
-    'BIGINT': 'BigInteger',
+    'BIGINT': 'BigInteger().with_variant(Integer, \'sqlite\')',
 }
 
 
@@ -114,7 +114,7 @@ def sa_column_props(table, c, sa_col_type, is_auto_update, field_props) -> [str]
     cleaned_field_props = [sa_foreign_key(x)
                            if x.startswith('foreign_key') else x
                            for x in field_props]
-    
+
     # Pass remaining props to Column() constructor
     new_field_props.extend(cleaned_field_props)
 

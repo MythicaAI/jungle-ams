@@ -23,14 +23,14 @@ class FileContent(SQLModel, table=True):
     __tablename__ = "files"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    file_seq: int = Field(sa_column=Column('file_seq',BigInteger,primary_key=True,nullable=False))
+    file_seq: int = Field(sa_column=Column('file_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     name: str | None = Field(default=None)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     size: int | None = Field(sa_column=Column('size',Integer,default=0))
     content_type: str | None = Field(default=None)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     cache_ttl: int | None = Field(sa_column=Column('cache_ttl',Integer,default=0))
     downloads: int | None = Field(sa_column=Column('downloads',Integer,default=0))
     lifetime: int | None = Field(sa_column=Column('lifetime',Integer,default=0))

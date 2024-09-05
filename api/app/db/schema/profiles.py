@@ -23,7 +23,7 @@ class Profile(SQLModel, table=True):
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger,primary_key=True,nullable=False))
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     name: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     signature: str | None = Field(default=None)
@@ -46,11 +46,11 @@ class OrgRef(SQLModel, table=True):
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    org_seq: int = Field(sa_column=Column('org_seq',BigInteger,primary_key=True,nullable=False))
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger,primary_key=True,nullable=False))
+    org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     role: str = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    author_seq: int | None = Field(sa_column=Column('author_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    author_seq: int | None = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
 
 # sequences for table orgs
 
@@ -61,7 +61,7 @@ class Org(SQLModel, table=True):
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    org_seq: int = Field(sa_column=Column('org_seq',BigInteger,primary_key=True,nullable=False))
+    org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
@@ -76,10 +76,10 @@ class ProfileSession(SQLModel, table=True):
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    profile_session_seq: int = Field(sa_column=Column('profile_session_seq',BigInteger,primary_key=True,nullable=False))
+    profile_session_seq: int = Field(sa_column=Column('profile_session_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     refreshed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     authenticated: bool | None = Field(default=False)
     auth_token: str | None = Field(default=None)
     refresh_token: str | None = Field(default=None)
@@ -94,8 +94,8 @@ class ProfileFollower(SQLModel, table=True):
     __tablename__ = "profile_followers"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger,primary_key=True,nullable=False))
-    follower_seq: int = Field(sa_column=Column('follower_seq',BigInteger,primary_key=True,nullable=False))
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    follower_seq: int = Field(sa_column=Column('follower_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
@@ -109,7 +109,7 @@ class ProfileKey(SQLModel, table=True):
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
     key: str = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

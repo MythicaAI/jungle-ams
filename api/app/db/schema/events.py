@@ -23,12 +23,12 @@ class Event(SQLModel, table=True):
     __tablename__ = "events"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    event_seq: int = Field(sa_column=Column('event_seq',BigInteger,primary_key=True,nullable=False))
+    event_seq: int = Field(sa_column=Column('event_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     event_type: str = Field(default=None)
     queued: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     acked: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     completed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     job_data: Dict[str, Any] = Field(default_factory=dict,sa_column=Column(JSON))
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     created_in: str | None = Field(default=None)
     affinity: str | None = Field(default=None)

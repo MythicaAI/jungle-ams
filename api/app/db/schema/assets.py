@@ -23,12 +23,12 @@ class Asset(SQLModel, table=True):
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger,primary_key=True,nullable=False))
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger,default=0))
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),default=0))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
 
 # sequences for table asset_versions
 
@@ -39,7 +39,7 @@ class AssetVersion(SQLModel, table=True):
     __tablename__ = "asset_versions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger,primary_key=True,nullable=False))
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     published: bool | None = Field(default=False)
     major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
     minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
@@ -48,6 +48,6 @@ class AssetVersion(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
-    author_seq: int = Field(sa_column=Column('author_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
-    package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger,ForeignKey('files.file_seq'),default=None))
+    author_seq: int = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
