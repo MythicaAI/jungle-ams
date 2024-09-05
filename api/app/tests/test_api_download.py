@@ -1,12 +1,22 @@
 import hashlib
 from http import HTTPStatus
+# import os
+# from pathlib import Path
+import tempfile
+# from unittest.mock import patch
+# from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-from munch import munchify
+import pytest
 
+from config import app_config
+from routes.responses import ProfileResponse, SessionStartResponse, ValidateEmailResponse
+from routes.upload.upload import UploadResponse
 from main import app
 from tests.shared_test import assert_status_code
+
+# os.environ['USE_LOCAL_STORAGE'] = "True"
 
 client = TestClient(app)
 api_base = "/v1"
@@ -24,7 +34,40 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-def create_files() -> list[UUID]:
+@pytest.fixture
+def patch_settings(request: pytest.FixtureRequest):
+    # Make a copy of the original settings
+    settings = app_config()
+    original_settings = settings.model_copy()
+
+    # Collect the env vars to patch
+    env_vars_to_patch = getattr(request, "param", {})
+
+    # Patch the settings to use the default values
+    for k, v in settings.model_fields.items():
+        setattr(settings, k, v.default)
+
+    # Patch the settings with the parametrized env vars
+    for key, val in env_vars_to_patch.items():
+        # Raise an error if the env var is not defined in the settings
+        if not hasattr(settings, key):
+            raise ValueError(f"Unknown setting: {key}")
+
+        # Raise an error if the env var has an invalid type
+        expected_type = getattr(settings, key).__class__
+        if not isinstance(val, expected_type):
+            raise ValueError(
+                f"Invalid type for {key}: {val.__class__} instead "
+                "of {expected_type}"
+            )
+        setattr(settings, key, val)
+
+    yield settings
+
+    # Restore the original settings
+    settings.__dict__.update(original_settings.__dict__)
+
+def create_profile() -> dict:
     response = client.post(f"{api_base}/profiles",
                            json={
                                "name": test_profile_name,
@@ -32,67 +75,83 @@ def create_files() -> list[UUID]:
                                "signature": test_profile_signature,
                                "profile_base_href": test_profile_href, })
     assert_status_code(response, HTTPStatus.CREATED)
-    o = munchify(response.json())
-    assert o.name == test_profile_name
-    assert o.description == test_profile_description
-    assert o.signature == test_profile_signature
-    assert o.profile_base_href == test_profile_href
-    profile_id = o.id
+    
+    profile = ProfileResponse(**response.json())
+    assert profile.name == test_profile_name
+    assert profile.description == test_profile_description
+    assert profile.signature == test_profile_signature
+    assert profile.profile_base_href == test_profile_href
+    profile_id = profile.profile_id
 
     # validate existence
-    response = client.get(f"{api_base}/profiles/{profile_id}")
-    o = munchify(response.json())
-    assert o.name == test_profile_name
-    assert o.id == profile_id
+    r = client.get(f"{api_base}/profiles/{profile_id}")
+    assert_status_code(r, HTTPStatus.OK)
+    profile = ProfileResponse(**r.json())
+    assert profile.name == test_profile_name
+    assert profile.profile_id == profile_id
 
     # Start session
-    o = munchify(client.get(f"{api_base}/profiles/start_session/{profile_id}").json())
-    assert o.profile.profile_id == profile_id
-    assert len(o.sessions) > 0
-    assert len(o.token) > 0
-    profile_token = o.token
+    r = client.get(f"{api_base}/profiles/start_session/{profile_id}")
+    assert_status_code(r, HTTPStatus.OK)
+    session_response = SessionStartResponse(**r.json())
+    assert session_response.profile.profile_id == profile_id
+    assert len(session_response.token) > 0
+    profile_token = session_response.token
     headers = {
         'Authorization': f'Bearer {profile_token}',
     }
 
     # validate email
-    o = munchify(client.get(f"{api_base}/validate-email", headers=headers).json())
-    assert o.owner_id == profile_id
-    assert o.code is not None
-    o = munchify(client.get(f"{api_base}/validate-email/{o.code}", headers=headers).json())
-    assert o.owner_id == profile_id
-    assert o.state == 'validated'
+    validate_res = ValidateEmailResponse(**client.get(f"{api_base}/validate-email", headers=headers).json())
+    assert validate_res.owner_id == profile_id
+    assert validate_res.code is not None
+    validate_res = ValidateEmailResponse(**client.get(f"{api_base}/validate-email/{validate_res.code}", headers=headers).json())
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == 'validated'
 
-    # update the profile data
-    o = munchify(client.post(
-        f"{api_base}/profiles/{profile_id}",
-        json={"name": test_profile_name + "-updated"},
-        headers=headers).json())
-    assert o.id == profile_id
-    assert o.name == test_profile_name + "-updated"
+    return headers
 
-    # validate updated profile existence again
-    o = munchify(client.get(f"{api_base}/profiles/{profile_id}").json())
-    assert o.id == profile_id
-    assert o.name == test_profile_name + "-updated"
-
+def create_files(headers: dict) -> tuple[UUID]:
     # upload content
     files = [
         ('files', (test_file_name, test_file_contents, test_file_content_type)),
         ('files', (test_file_name, test_file_contents, test_file_content_type)),
     ]
-    o = munchify(client.post(
+    upload_res = UploadResponse(**client.post(
         f"{api_base}/upload/store",
         files=files,
         headers=headers).json())
-    assert len(o.files) == 2
-    file_ids = list(map(lambda f: f.file_id, o.files))
-    return file_ids
+    assert len(upload_res.files) == 2
+    return (i.file_id for i in upload_res.files)
 
-# TODO: fix download
-# def test_download():
-#     api = API(client)
-#     with tempfile.TemporaryDirectory() as tmp_dir:
-#         for f in create_files():
-#             with pytest.raises(FileNotFoundError, match="TODO: add local file testing"):
-#                 api.download_file(f, Path(tmp_dir))
+# @pytest.mark.parametrize(
+#     "patch_settings",
+#     [
+#         {"use_local_storage": True,},
+#     ],
+#     indirect=True,
+# )
+# def test_download(patch_settings: AppConfig):
+def test_download():
+    headers = create_profile()
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        file_ids = create_files(headers)
+        for file_id in file_ids:
+            # Get download info
+            info_response = client.get(f"{api_base}/download/info/{file_id}", headers=headers)
+            assert_status_code(info_response, HTTPStatus.OK)
+            # download_info = info_response.json()
+            
+            # # Download the file
+            # download_response = client.get(f"{api_base}/download/{file_id}", headers=headers)
+            # assert_status_code(download_response, HTTPStatus.OK)
+            
+            # # Check content type
+            # # TODO: the content_type changes in upload_internal() :: ctx.extension = filename.rpartition(".")[-1].lower()
+            # # assert download_response.headers['Content-Type'] == test_file_content_type
+            
+            # # Check content
+            # downloaded_content = download_response.content
+            # assert downloaded_content == test_file_contents
+

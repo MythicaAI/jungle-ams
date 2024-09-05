@@ -19,6 +19,7 @@ class AppConfig(BaseSettings):
     upload_folder_auto_clean: bool = True
     enable_storage: bool = True
     gcs_service_enable: bool = False
+    use_local_storage: bool = False
     minio_tls_enable: bool = False
     minio_access_key: str = 'foo-access'
     minio_secret_key: str = 'bar-secret'

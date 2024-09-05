@@ -1,8 +1,10 @@
 """Routes and helpers providing /download API"""
 import logging
 from http import HTTPStatus
+from pathlib import Path
 
 from fastapi import Depends, HTTPException, Response, APIRouter
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
@@ -11,6 +13,7 @@ from db.connection import get_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
+from storage.local_file_uploader import LocalFileStorageClient
 
 log = logging.getLogger(__name__)
 
@@ -40,9 +43,10 @@ def translate_gcs(storage, info) -> str:
     return storage.download_link(bucket_name, object_name)
 
 
-def translate_test(_storage, _info) -> str:
+def translate_test(storage: LocalFileStorageClient, info: str) -> str:
     """minio download link creator"""
-    return "http://test.notresolved/test.test"
+    _, object_name = info.split(":")
+    return object_name
 
 
 def increment_download_count(session: Session, file_seq: int):
@@ -106,6 +110,11 @@ async def download_redirect(
         file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).first()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
+        if isinstance(storage, LocalFileStorageClient):
+            locator_list = file.locators['locators']
+            object_name = translate_download_url(storage, locator_list)
+            file_path = Path(storage.base_path) / object_name
+            return FileResponse(file_path, filename=file.name, media_type=file.content_type)
         locator_list = file.locators['locators']
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
         response.headers['location'] = translate_download_url(storage, locator_list)

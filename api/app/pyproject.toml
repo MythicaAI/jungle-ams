@@ -28,6 +28,7 @@ alembic = "^1.13.1"
 asyncio = "3.4.3"
 python-json-logger = "2.0.7"
 base58 = "2.1.1"
+coverage = "^7.6.1"
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]
@@ -49,3 +50,9 @@ start = "main:start"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.report]
+fail_under = 88
+omit = [
+    "tests/*",
+]
