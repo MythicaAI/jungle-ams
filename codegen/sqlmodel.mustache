@@ -5,7 +5,7 @@
 from sqlalchemy import JSON, TIMESTAMP, Column, func, text
 from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
-from sqlalchemy.sql.schema import Sequence
+from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict

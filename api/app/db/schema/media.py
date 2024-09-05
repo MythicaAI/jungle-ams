@@ -5,7 +5,7 @@
 from sqlalchemy import JSON, TIMESTAMP, Column, func, text
 from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
-from sqlalchemy.sql.schema import Sequence
+from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
@@ -23,16 +23,16 @@ class FileContent(SQLModel, table=True):
     __tablename__ = "files"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    file_seq: int = Field(sa_column=Column('file_seq',BigInteger,primary_key=True))
+    file_seq: int = Field(sa_column=Column('file_seq',BigInteger,primary_key=True,nullable=False))
     name: str | None = Field(default=None)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    size: int | None = Field(sa_column=Column('size',Integer),default=0)
+    size: int | None = Field(sa_column=Column('size',Integer,default=0))
     content_type: str | None = Field(default=None)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger),default=0)
-    cache_ttl: int | None = Field(sa_column=Column('cache_ttl',Integer),default=0)
-    downloads: int | None = Field(sa_column=Column('downloads',Integer),default=0)
-    lifetime: int | None = Field(sa_column=Column('lifetime',Integer),default=0)
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    cache_ttl: int | None = Field(sa_column=Column('cache_ttl',Integer,default=0))
+    downloads: int | None = Field(sa_column=Column('downloads',Integer,default=0))
+    lifetime: int | None = Field(sa_column=Column('lifetime',Integer,default=0))
     content_hash: str | None = Field(default=None)
     locators: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

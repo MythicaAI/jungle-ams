@@ -5,7 +5,7 @@
 from sqlalchemy import JSON, TIMESTAMP, Column, func, text
 from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
-from sqlalchemy.sql.schema import Sequence
+from sqlalchemy.sql.schema import Sequence, ForeignKey
 from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
@@ -23,9 +23,9 @@ class Topology(SQLModel, table=True):
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger,primary_key=True))
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger),default=0)
-    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger),default=0)
+    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger,primary_key=True,nullable=False))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger,ForeignKey('profiles.profile_seq'),default=None))
+    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger,ForeignKey('orgs.org_seq'),default=None))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
@@ -41,7 +41,7 @@ class TopologyRef(SQLModel, table=True):
     __tablename__ = "topology_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
-    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger,primary_key=True))
+    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger,primary_key=True,nullable=False))
     src_id: str = Field(primary_key=True,nullable=False)
     dst_id: str = Field(primary_key=True,nullable=False)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

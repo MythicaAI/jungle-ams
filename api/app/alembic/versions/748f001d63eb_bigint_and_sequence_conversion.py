@@ -1,20 +1,20 @@
 """bigint and sequence conversion
 
-Revision ID: 46f88d1b7bd4
+Revision ID: 748f001d63eb
 Revises: 52d8ee71f1ef
-Create Date: 2024-09-03 22:44:30.962018+00:00
+Create Date: 2024-09-05 18:15:07.818655+00:00
 
 """
-from typing import Union
+from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.schema import CreateSequence, DropSequence, Sequence
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
 
 from db.schema.jobs import job_results_job_result_seq_seq
 
 # revision identifiers, used by Alembic.
-revision: str = '46f88d1b7bd4'
+revision: str = '748f001d63eb'
 down_revision: Union[str, None] = '52d8ee71f1ef'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,8 +34,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('asset_versions_author_seq_fkey', 'asset_versions', type_='foreignkey')
-    op.drop_constraint('asset_versions_package_seq_fkey', 'asset_versions', type_='foreignkey')
     op.alter_column('assets', 'asset_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -49,7 +47,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('assets_owner_seq_fkey', 'assets', type_='foreignkey')
     op.alter_column('events', 'event_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -59,7 +56,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('events_owner_seq_fkey', 'events', type_='foreignkey')
     op.alter_column('files', 'file_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -69,7 +65,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('files_owner_seq_fkey', 'files', type_='foreignkey')
     op.alter_column('job_defs', 'job_def_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -96,8 +91,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('jobs_owner_seq_fkey', 'jobs', type_='foreignkey')
-    op.drop_constraint('jobs_job_def_seq_fkey', 'jobs', type_='foreignkey')
     op.alter_column('org_refs', 'org_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -110,7 +103,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('org_refs_author_seq_fkey', 'org_refs', type_='foreignkey')
     op.alter_column('orgs', 'org_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -129,7 +121,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('profile_keys_owner_seq_fkey', 'profile_keys', type_='foreignkey')
     op.alter_column('profile_sessions', 'profile_session_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -139,7 +130,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     nullable=True)
-    op.drop_constraint('profile_sessions_profile_seq_fkey', 'profile_sessions', type_='foreignkey')
     op.alter_column('profiles', 'profile_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -159,8 +149,6 @@ def upgrade() -> None:
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
                     existing_nullable=True)
-    op.drop_constraint('topologies_owner_seq_fkey', 'topologies', type_='foreignkey')
-    op.drop_constraint('topologies_org_seq_fkey', 'topologies', type_='foreignkey')
     op.alter_column('topology_refs', 'topology_seq',
                     existing_type=sa.INTEGER(),
                     type_=sa.BigInteger(),
@@ -175,8 +163,6 @@ def downgrade() -> None:
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
                     existing_nullable=False)
-    op.create_foreign_key('topologies_org_seq_fkey', 'topologies', 'orgs', ['org_seq'], ['org_seq'])
-    op.create_foreign_key('topologies_owner_seq_fkey', 'topologies', 'profiles', ['owner_seq'], ['profile_seq'])
     op.alter_column('topologies', 'org_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -196,8 +182,6 @@ def downgrade() -> None:
                     existing_nullable=False,
                     autoincrement=True,
                     existing_server_default=sa.text("nextval('profiles_profile_seq_seq'::regclass)"))
-    op.create_foreign_key('profile_sessions_profile_seq_fkey', 'profile_sessions', 'profiles', ['profile_seq'],
-                          ['profile_seq'])
     op.alter_column('profile_sessions', 'profile_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -207,7 +191,6 @@ def downgrade() -> None:
                     type_=sa.INTEGER(),
                     existing_nullable=False,
                     autoincrement=True)
-    op.create_foreign_key('profile_keys_owner_seq_fkey', 'profile_keys', 'profiles', ['owner_seq'], ['profile_seq'])
     op.alter_column('profile_keys', 'owner_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -226,7 +209,6 @@ def downgrade() -> None:
                     existing_nullable=False,
                     autoincrement=True,
                     existing_server_default=sa.text("nextval('orgs_org_seq_seq'::regclass)"))
-    op.create_foreign_key('org_refs_author_seq_fkey', 'org_refs', 'profiles', ['author_seq'], ['profile_seq'])
     op.alter_column('org_refs', 'author_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -239,8 +221,6 @@ def downgrade() -> None:
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
                     existing_nullable=False)
-    op.create_foreign_key('jobs_job_def_seq_fkey', 'jobs', 'job_defs', ['job_def_seq'], ['job_def_seq'])
-    op.create_foreign_key('jobs_owner_seq_fkey', 'jobs', 'profiles', ['owner_seq'], ['profile_seq'])
     op.alter_column('jobs', 'owner_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -267,7 +247,6 @@ def downgrade() -> None:
                     type_=sa.INTEGER(),
                     existing_nullable=False,
                     autoincrement=True)
-    op.create_foreign_key('files_owner_seq_fkey', 'files', 'profiles', ['owner_seq'], ['profile_seq'])
     op.alter_column('files', 'owner_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -277,7 +256,6 @@ def downgrade() -> None:
                     type_=sa.INTEGER(),
                     existing_nullable=False,
                     autoincrement=True)
-    op.create_foreign_key('events_owner_seq_fkey', 'events', 'profiles', ['owner_seq'], ['profile_seq'])
     op.alter_column('events', 'owner_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -287,7 +265,6 @@ def downgrade() -> None:
                     type_=sa.INTEGER(),
                     existing_nullable=False,
                     autoincrement=True)
-    op.create_foreign_key('assets_owner_seq_fkey', 'assets', 'profiles', ['owner_seq'], ['profile_seq'])
     op.alter_column('assets', 'owner_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -301,9 +278,6 @@ def downgrade() -> None:
                     type_=sa.INTEGER(),
                     existing_nullable=False,
                     autoincrement=True)
-    op.create_foreign_key('asset_versions_package_seq_fkey', 'asset_versions', 'files', ['package_seq'], ['file_seq'])
-    op.create_foreign_key('asset_versions_author_seq_fkey', 'asset_versions', 'profiles', ['author_seq'],
-                          ['profile_seq'])
     op.alter_column('asset_versions', 'package_seq',
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
@@ -316,11 +290,5 @@ def downgrade() -> None:
                     existing_type=sa.BigInteger(),
                     type_=sa.INTEGER(),
                     existing_nullable=False)
-
-    ######
-    # drop sequences that are part of this automatic migration
-    # https://stackoverflow.com/questions/17196234/how-to-create-postgresqls-sequences-in-alembic
-    ######
     op.execute(DropSequence(job_results_job_result_seq_seq))
-
     # ### end Alembic commands ###
