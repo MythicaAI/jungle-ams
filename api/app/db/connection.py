@@ -25,8 +25,7 @@ TZ = ZoneInfo(app_config().db_timezone)
 #
 if engine.dialect.name == "sqlite":
     @event.listens_for(engine, "connect")
-    def enable_sqlite_foreign_keys(dbapi_connection, connection_record):
-        global TZ
+    def enable_sqlite_foreign_keys(dbapi_connection, _):
         cursor = dbapi_connection.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
         cursor.close()
