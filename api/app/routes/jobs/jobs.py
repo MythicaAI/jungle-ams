@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlmodel import Session, insert, select
+from sqlmodel import Session, insert, select, text
 
 from auth.api_id import event_id_to_seq, event_seq_to_id, file_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
@@ -215,15 +215,43 @@ async def create_job(
             job_def_id=request.job_def_id)
 
 
+def job_result_insert(session: Session, job_id: str, request: JobResultRequest):
+    """Generate the job result insert with fallback for databases without sequences
+    support on composite primary keys"""
+    from db.connection import engine
+    # fallback for composite primary key auto increment in SQLite
+    # see the db connection code for the definition of this fallback
+    requires_app_sequences = {'sqlite'}
+    if engine.dialect.name in requires_app_sequences:
+        # generate the next sequence value, uses a custom upsert as this pattern is not
+        # natively supported in SQLAlchemy
+        upsert_query = text("""
+                    INSERT INTO app_sequences (name) VALUES (:name)
+                    ON CONFLICT(name) DO UPDATE SET seq = seq + 1
+                    RETURNING seq;
+                """)
+        next_job_result_seq = session.exec(
+            statement=upsert_query,
+            params={"name": "job_result_seq_seq"}).scalar()
+
+        return session.exec(insert(JobResult).values(
+            job_seq=job_id_to_seq(job_id),
+            job_result_seq=next_job_result_seq,
+            created_in=request.created_in,
+            result_data=request.result_data))
+    else:
+        return session.exec(insert(JobResult).values(
+            job_seq=job_id_to_seq(job_id),
+            created_in=request.created_in,
+            result_data=request.result_data))
+
+
 @router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
 async def create_job_result(
         job_id: str,
         request: JobResultRequest) -> JobResultResponse:
     with get_session() as session:
-        job_result = session.exec(insert(JobResult).values(
-            job_seq=job_id_to_seq(job_id),
-            created_in=request.created_in,
-            result_data=request.result_data))
+        job_result = job_result_insert(session, job_id, request)
         job_result_seq = job_result.inserted_primary_key[0]
         session.commit()
         return JobResultResponse(job_result_id=job_result_seq_to_id(job_result_seq))
