@@ -20,6 +20,7 @@ class AppConfig(BaseSettings):
     enable_storage: bool = True
     gcs_service_enable: bool = False
     use_local_storage: bool = False
+    local_storage_path: str = '/tmp/local_storage'
     minio_tls_enable: bool = False
     minio_access_key: str = 'foo-access'
     minio_secret_key: str = 'bar-secret'

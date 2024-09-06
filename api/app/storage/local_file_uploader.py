@@ -23,8 +23,7 @@ class LocalFileStorageClient(StorageClient):
 
     def upload(self, ctx: RequestContext, bucket_type: BucketType):
         file_id = str(uuid4())
-        object_name = ctx.content_hash + '.' + ctx.extension
-        file_path = self.base_path / object_name
+        file_path = self.base_path / f"{ctx.content_hash}.{ctx.extension}"
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         log.info(f"Attempting to upload file: {ctx.local_filepath} to {file_path}")
@@ -43,7 +42,7 @@ class LocalFileStorageClient(StorageClient):
         ctx.add_object_locator(
             'test',
             "local",
-            object_name)
+            file_path)
         return file_id
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
@@ -59,6 +58,5 @@ class LocalFileStorageClient(StorageClient):
 
 def create_client() -> StorageClient:
     cfg = app_config()
-    cfg.use_local_storage = True
-    base_path = os.environ.get('LOCAL_STORAGE_PATH', '/tmp/local_storage')
+    base_path = cfg.local_storage_path
     return LocalFileStorageClient(base_path)

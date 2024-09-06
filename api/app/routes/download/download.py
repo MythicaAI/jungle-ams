@@ -110,11 +110,6 @@ async def download_redirect(
         file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).first()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
-        if isinstance(storage, LocalFileStorageClient):
-            locator_list = file.locators['locators']
-            object_name = translate_download_url(storage, locator_list)
-            file_path = Path(storage.base_path) / object_name
-            return FileResponse(file_path, filename=file.name, media_type=file.content_type)
         locator_list = file.locators['locators']
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
         response.headers['location'] = translate_download_url(storage, locator_list)

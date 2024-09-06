@@ -56,3 +56,4 @@ __pycache__
 **/output
 
 *.local
+api/app/.coverage
