@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: "${{ github.workspace }}/api/app"
+      LOCAL_STORAGE_PATH: /tmp/local_storage
+      USE_LOCAL_STORAGE: true
 
     strategy:
       matrix:

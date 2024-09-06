@@ -1,7 +1,6 @@
 import hashlib
 from http import HTTPStatus
 from pathlib import Path
-import tempfile
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -33,31 +32,6 @@ test_asset_name = "test-asset"
 test_asset_collection_name = "test-collection"
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
-
-@pytest.fixture
-def patch_settings(request: pytest.FixtureRequest):
-    """Override app's setting"""
-    settings = app_config()
-    original_settings = settings.model_copy()
-
-    env_vars_to_patch = getattr(request, "param", {})
-
-    # Patch the settings with the parametrized env vars
-    for key, val in env_vars_to_patch.items():
-        if not hasattr(settings, key):
-            raise ValueError(f"Unknown setting: {key}")
-
-        expected_type = getattr(settings, key).__class__
-        if not isinstance(val, expected_type):
-            raise ValueError(
-                f"Invalid type for {key}: {val.__class__} instead " "of {expected_type}"
-            )
-        setattr(settings, key, val)
-
-    yield settings
-
-    # Restore the original settings
-    settings.__dict__.update(original_settings.__dict__)
 
 
 def create_profile() -> dict:
@@ -127,16 +101,8 @@ def create_files(headers: dict) -> tuple[UUID]:
     return (i.file_id for i in upload_res.files)
 
 
-@pytest.mark.parametrize(
-    "patch_settings",
-    [
-        {
-            "use_local_storage": True,
-        },
-    ],
-    indirect=True,
-)
-def test_download(patch_settings: AppConfig):
+def test_download(patch_settings_local_storage):
+    assert patch_settings_local_storage.use_local_storage is True
     headers = create_profile()
     file_ids = create_files(headers)
 

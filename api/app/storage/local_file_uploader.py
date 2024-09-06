@@ -26,17 +26,17 @@ class LocalFileStorageClient(StorageClient):
         file_path = self.base_path / f"{ctx.content_hash}.{ctx.extension}"
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        log.info(f"Attempting to upload file: {ctx.local_filepath} to {file_path}")
+        log.info("Attempting to upload file: %s to %s", ctx.local_filepath, file_path)
 
         if not os.path.exists(ctx.local_filepath):
-            log.error(f"Source file does not exist: {ctx.local_filepath}")
+            log.error("Source file does not exist: %s", ctx.local_filepath)
             raise FileNotFoundError(f"Source file does not exist: {ctx.local_filepath}")
 
         try:
             shutil.copy2(ctx.local_filepath, file_path)
-            log.debug(f"File successfully copied to {file_path}")
+            log.debug("File successfully copied to %s", file_path)
         except Exception as e:
-            log.error(f"Error copying file: {str(e)}")
+            log.error("Error copying file: %s", str(e))
             raise
 
         ctx.add_object_locator(
@@ -52,9 +52,9 @@ class LocalFileStorageClient(StorageClient):
             f.write(stream.getvalue())
         return file_id
 
-    def download_link(self, bucket_name: str, object_name: str):
-        file_path = Path(self.base_path) / object_name
-        return str(file_path.absolute())
+    def download_link(self, bucket_name: str, object_name: str) -> str:
+        return object_name
+
 
 def create_client() -> StorageClient:
     cfg = app_config()

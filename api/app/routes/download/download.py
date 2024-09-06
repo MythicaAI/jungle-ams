@@ -1,10 +1,8 @@
 """Routes and helpers providing /download API"""
 import logging
 from http import HTTPStatus
-from pathlib import Path
 
 from fastapi import Depends, HTTPException, Response, APIRouter
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
@@ -44,9 +42,8 @@ def translate_gcs(storage, info) -> str:
 
 
 def translate_test(storage: LocalFileStorageClient, info: str) -> str:
-    """minio download link creator"""
-    _, object_name = info.split(":")
-    return object_name
+    """LocalStorage download link creator"""
+    return storage.download_link(*info.split(":"))
 
 
 def increment_download_count(session: Session, file_seq: int):
