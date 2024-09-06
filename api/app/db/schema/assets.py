@@ -24,6 +24,7 @@ class Asset(SQLModel, table=True):
     __tablename__ = "assets"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
@@ -45,6 +46,7 @@ class AssetVersion(SQLModel, table=True):
     __tablename__ = "asset_versions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns

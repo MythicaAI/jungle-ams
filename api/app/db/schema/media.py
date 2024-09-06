@@ -24,6 +24,7 @@ class FileContent(SQLModel, table=True):
     __tablename__ = "files"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns

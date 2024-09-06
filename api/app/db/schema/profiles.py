@@ -24,6 +24,7 @@ class Profile(SQLModel, table=True):
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
@@ -52,6 +53,7 @@ class OrgRef(SQLModel, table=True):
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
@@ -72,6 +74,7 @@ class Org(SQLModel, table=True):
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
@@ -92,6 +95,7 @@ class ProfileSession(SQLModel, table=True):
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
@@ -115,6 +119,7 @@ class ProfileFollower(SQLModel, table=True):
     __tablename__ = "profile_followers"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
@@ -134,6 +139,7 @@ class ProfileKey(SQLModel, table=True):
     __tablename__ = "profile_keys"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
+    # pylint: disable=no-self-argument
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
