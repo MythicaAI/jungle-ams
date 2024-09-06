@@ -113,7 +113,10 @@ def sa_column_props(table, c, sa_col_type, is_auto_update, field_props) -> [str]
     # Add additional field_props - special case for integers that are not automatically PK
     # incremented but need the behavior for sqlite which does not use the underlying sequence
     if is_auto_update:
-        field_props.append("autoincrement=True")
+        # for SQLite compatibility
+        table.setdefault("table_args", []).append(
+            f"UniqueConstraint('{c['name']}')",
+        )
 
     # Do property specific replacements
     cleaned_field_props = [sa_foreign_key(x)
@@ -154,6 +157,14 @@ def schema_to_sqlmodel(schema: dict[str, Any]) -> str:
     for table in schema["tables"]:
         for column in table["columns"]:
             enrich_data(table, column)
+
+        # Flatten table arguments for autoincrement unique constraints in SQLite
+        table_args = table.get('table_args', [])
+        if table_args:
+            table_args.append("{'sqlite_autoincrement': True}")
+            table['table_args'] = '(' + ','.join(table_args) + ', )'
+        else:
+            table['table_args'] = 'None'
 
     # Do the template code generation
     template_file = Path(__file__).parent / Path('sqlmodel.mustache')
