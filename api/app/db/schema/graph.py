@@ -2,7 +2,7 @@
 #
 #
 # pylint: disable=unused-import
-from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy import JSON, TIMESTAMP, Column, func, text, UniqueConstraint
 from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
 from sqlalchemy.sql.schema import Sequence, ForeignKey
@@ -27,7 +27,7 @@ class Topology(SQLModel, table=True):
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
-        return ({'sqlite_autoincrement': True}, )
+        return None
 
     topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
@@ -50,7 +50,7 @@ class TopologyRef(SQLModel, table=True):
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
-        return ({'sqlite_autoincrement': True}, )
+        return None
 
     topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     src_id: str = Field(primary_key=True,nullable=False)
