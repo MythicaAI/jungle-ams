@@ -27,6 +27,7 @@ class AppConfig(BaseSettings):
     http_listen_addr: str = '0.0.0.0'
     http_listen_port: int = 5555
     enable_db: bool = True
+    db_timezone: str = 'UTC'
     sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
     secret_key: str = 'test'
     id_enc_key: str = 'X' * 8

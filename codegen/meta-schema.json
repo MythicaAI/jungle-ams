@@ -71,7 +71,7 @@
                 "auto_update": {
                   "type": "boolean",
                   "default": true,
-                  "description": "True if the column should auto update, e.g. datetime"
+                  "description": "True if the column should auto update, e.g. datetime, bigint composites"
                 },
                 "foreign_key": {
                   "type": "string",

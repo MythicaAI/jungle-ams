@@ -2,8 +2,12 @@
 #
 #
 # pylint: disable=unused-import
-from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy import JSON, TIMESTAMP, Column, func, text, UniqueConstraint
+from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.sql.schema import Sequence, ForeignKey
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -11,6 +15,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+# sequences for table profiles
 
 class Profile(SQLModel, table=True):
     """
@@ -18,7 +23,14 @@ class Profile(SQLModel, table=True):
     """
     __tablename__ = "profiles"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    profile_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     name: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     signature: str | None = Field(default=None)
@@ -28,10 +40,11 @@ class Profile(SQLModel, table=True):
     profile_base_href: str | None = Field(default=None)
     description: str | None = Field(default=None)
     email: str | None = Field(default=None)
-    email_validate_state: int | None = Field(default=0)
+    email_validate_state: int | None = Field(sa_column=Column('email_validate_state',Integer,default=0))
     location: str | None = Field(default=None)
-    login_count: int | None = Field(default=0)
+    login_count: int | None = Field(sa_column=Column('login_count',Integer,default=0))
 
+# sequences for table org_refs
 
 class OrgRef(SQLModel, table=True):
     """
@@ -39,12 +52,20 @@ class OrgRef(SQLModel, table=True):
     """
     __tablename__ = "org_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    org_seq: int = Field(primary_key=True,nullable=False)
-    profile_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     role: str = Field(primary_key=True,nullable=False)
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    author_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    author_seq: int | None = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
 
+# sequences for table orgs
 
 class Org(SQLModel, table=True):
     """
@@ -52,12 +73,20 @@ class Org(SQLModel, table=True):
     """
     __tablename__ = "orgs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    org_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
 
+# sequences for table profile_sessions
 
 class ProfileSession(SQLModel, table=True):
     """
@@ -65,15 +94,23 @@ class ProfileSession(SQLModel, table=True):
     """
     __tablename__ = "profile_sessions"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    profile_session_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    profile_session_seq: int = Field(sa_column=Column('profile_session_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     refreshed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    profile_seq: int = Field(foreign_key='profiles.profile_seq',default=None)
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     authenticated: bool | None = Field(default=False)
     auth_token: str | None = Field(default=None)
     refresh_token: str | None = Field(default=None)
     location: str | None = Field(default=None)
 
+# sequences for table profile_followers
 
 class ProfileFollower(SQLModel, table=True):
     """
@@ -81,11 +118,19 @@ class ProfileFollower(SQLModel, table=True):
     """
     __tablename__ = "profile_followers"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    profile_seq: int = Field(primary_key=True,nullable=False)
-    follower_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    follower_seq: int = Field(sa_column=Column('follower_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
+# sequences for table profile_keys
 
 class ProfileKey(SQLModel, table=True):
     """
@@ -93,8 +138,15 @@ class ProfileKey(SQLModel, table=True):
     """
     __tablename__ = "profile_keys"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
     key: str = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

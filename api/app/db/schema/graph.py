@@ -2,8 +2,12 @@
 #
 #
 # pylint: disable=unused-import
-from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy import JSON, TIMESTAMP, Column, func, text, UniqueConstraint
+from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.sql.schema import Sequence, ForeignKey
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -11,6 +15,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+# sequences for table topologies
 
 class Topology(SQLModel, table=True):
     """
@@ -18,15 +23,23 @@ class Topology(SQLModel, table=True):
     """
     __tablename__ = "topologies"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    topology_seq: int = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
-    org_seq: int | None = Field(foreign_key='orgs.org_seq',default=None)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('orgs.org_seq'),default=None))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
     edge_data_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
+# sequences for table topology_refs
 
 class TopologyRef(SQLModel, table=True):
     """
@@ -34,7 +47,14 @@ class TopologyRef(SQLModel, table=True):
     """
     __tablename__ = "topology_refs"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    topology_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     src_id: str = Field(primary_key=True,nullable=False)
     dst_id: str = Field(primary_key=True,nullable=False)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

@@ -43,8 +43,9 @@ def test_api_keys(client, api_base, create_profile):
             if i % 2 == 0:
                 assert o.description is not None
         assert len(o.value) > 16
-        assert datetime.fromisoformat(o.created) <= datetime.now(timezone.utc)
-        assert datetime.fromisoformat(o.expires) >= datetime.now(timezone.utc)
+        now_utc = datetime.now(timezone.utc)
+        assert datetime.fromisoformat(o.created) <= now_utc
+        assert datetime.fromisoformat(o.expires) >= datetime.fromisoformat(o.created)
         key_values.add(o.value)
 
     # validate the list response
