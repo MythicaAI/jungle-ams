@@ -4,9 +4,8 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-import pytest
 
-from config import AppConfig, app_config
+from config import app_config
 from routes.responses import (
     ProfileResponse,
     SessionStartResponse,
