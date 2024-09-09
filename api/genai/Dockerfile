@@ -68,7 +68,7 @@ ENV HF_TOKEN=${HF_AUTHTOKEN}
 
 #This is an expensive project to test, unless you comment this out. 
 #But leave it in for prod builds as it makes hte container faster to load
-RUN ./docker-entrypoint-webapi.sh initialize
+RUN ./docker-entrypoint.sh initialize
 
 # Application server listen port, see ./docker-entrypoint.sh
 EXPOSE 5556
