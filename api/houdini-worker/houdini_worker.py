@@ -81,6 +81,7 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
 
 def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, token: str):
     with tempfile.TemporaryDirectory() as tmp_dir:
+        # Download the HDA file
         file_path = download_file(endpoint, o.config.hda_file, Path(tmp_dir))
         if file_path is None:
             raise FileNotFoundError
@@ -90,9 +91,16 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
+        # Resolve all input files to local disk
+        input_files_local = []
+        for input_file in o.input_files:
+            input_file_path = download_file(endpoint, input_file, Path(tmp_dir))
+            input_files_local.append(str(input_file_path))
+
+        # Prepare the parameters file
         parms_data = {
             'parms': o.params,
-            'inputs': []
+            'inputs': input_files_local
         }
 
         params_file = os.path.join(tmp_dir, 'params.json')
@@ -101,6 +109,7 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
 
         output_file_name = f"{job_seq_to_id(o.job_seq)}_mesh"
 
+        # Execute the job
         job = {
             'type': "export_mesh",
             'args': {
@@ -118,6 +127,7 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
             log.warning("Failed to generate mesh file")
             return
 
+        # Submit results
         file_id = upload_file(token, endpoint, output_file_path)
         submit_job_result(endpoint, o.job_seq, { 'file_id': file_id })
 
