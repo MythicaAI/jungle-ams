@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.sql.functions import now as sql_now
 from pydantic import BaseModel
-from sqlmodel import Session, insert, select, text
+from sqlmodel import Session, insert, select, text, update
 
 from auth.api_id import event_id_to_seq, event_seq_to_id, file_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
