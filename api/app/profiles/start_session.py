@@ -74,12 +74,21 @@ async def start_session_with_token_validator(token: str, validator: AuthTokenVal
     with the session logic"""
     log.info("starting session with token: %s", token)
     valid_token = await validator.validate(token)
-    user_profile = await validator.query_user_profile(token)
 
     with (get_session() as session):
         #
+        # look for an existing association of the unique sub key
+        #
+        locator_oid = session.exec(select(ProfileLocatorOID)
+                                   .where(col(ProfileLocatorOID.sub) == valid_token.sub)).one_or_none()
+        if locator_oid is not None:
+            return start_session(session, locator_oid.owner_seq, locator_oid.sub)
+
+        #
+        # Resolve the locator to a profile, start by querying the user profile data associated with the sub
         # get all profiles with the email, with the oldest profile as the first result
         #
+        user_profile = await validator.query_user_profile(token)
         profiles = session.exec(select(Profile)
                                 .where(col(Profile.email) == user_profile.email)
                                 .order_by(asc(Profile.created))).all()
@@ -88,18 +97,6 @@ async def start_session_with_token_validator(token: str, validator: AuthTokenVal
             profile_seq = await create_profile_for_oid(session, valid_token, user_profile)
             session_start = await create_profile_locator_oid(session, valid_token, profile_seq)
             return session_start
-
-        #
-        # at least one profile exists, look for an existing association of the unique sub key
-        #
-        locator_oid = session.exec(select(ProfileLocatorOID)
-                                   .where(col(ProfileLocatorOID.sub) == valid_token.sub)).one_or_none()
-        if locator_oid is not None:
-            # found a locator, find an existing profile
-            for profile in profiles:
-                if profile.profile_seq == locator_oid.owner_seq:
-                    session_start = start_session(session, profile.profile_seq, locator_oid.sub)
-                    return session_start
 
         #
         # a locator does not exist for the token subject, in this case we will associate all profiles
@@ -169,6 +166,8 @@ async def create_profile_locator_oid(session: Session, valid_token: ValidTokenPa
     r = session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
     if r is None or r.rowcount == 0:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "OID locator could not be created")
+    session.commit()
+    return start_session(session, owner_seq, valid_token.sub)
 
 
 async def create_profile_for_oid(

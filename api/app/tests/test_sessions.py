@@ -37,6 +37,10 @@ def test_start_session_direct(api_base, client, create_profile):
     r = client.get(f'{api_base}/sessions/direct/')
     assert_status_code(r, HTTPStatus.NOT_FOUND)
 
+    # delete the profile session
+    r = client.delete(f'{api_base}/sessions/', headers=test_profile.authorization_header())
+    assert_status_code(r, HTTPStatus.OK)
+
 
 def test_resume_session_direct(api_base, client, create_profile):
     test_profile: ProfileTestObj = create_profile()

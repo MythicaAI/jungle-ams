@@ -117,7 +117,7 @@ const Assets = () => {
                       md={4}
                       key={av.asset_id + "_" + av.version.join(".")}
                     >
-                      <PackageViewCard {...av} />
+                      <PackageViewCard av={av} />
                     </Grid>
                   ))}
             </Grid>

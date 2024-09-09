@@ -1,15 +1,15 @@
 import React from "react";
-import { useStatusStore } from "../../stores/statusStore";
-import { SessionStartResponse } from "types/apiTypes";
-import { Auth } from "./services";
-import { Snackbar, Alert, Stack } from "@mui/joy";
+import {useStatusStore} from "../../stores/statusStore";
+import {SessionStartResponse} from "types/apiTypes";
+import {Auth} from "./services";
+import {Alert, Snackbar, Stack} from "@mui/joy";
 import {v4} from "uuid";
 
 export const useAuthenticationActions = () => {
   const login = async (username: string) =>
     new Promise<SessionStartResponse>((resolve, reject) => {
       Auth.get({
-        path: `/profiles/start_session/${username}`,
+        path: `/sessions/direct/${username}`,
       })
         .then((res) => {
           resolve(res);
@@ -18,10 +18,10 @@ export const useAuthenticationActions = () => {
           reject(error);
         });
     });
-  const logout = async (username: string) =>
+  const logout = async () =>
     new Promise<SessionStartResponse>((resolve, reject) => {
-      Auth.get({
-        path: `/profiles/stop_session/${username}`,
+      Auth.del({
+        path: `/sessions`,
       })
         .then((res) => {
           resolve(res);
@@ -30,7 +30,7 @@ export const useAuthenticationActions = () => {
           reject(error);
         });
     });
-  return { login, logout };
+  return {login, logout};
 };
 
 export const useNotification = () => {
@@ -81,7 +81,7 @@ export const useNotification = () => {
 
   return (
     <Snackbar
-      sx={{ maxWidth: "550px" }}
+      sx={{maxWidth: "550px"}}
       variant="outlined"
       color="neutral"
       autoHideDuration={duration}

@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { MemoryRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ApiKeys } from "@pages/ApiKeys";
+import {QueryClientProvider} from "@tanstack/react-query";
+import {queryClient} from "../queryClient.ts";
 
 const meta: Meta<typeof ApiKeys> = {
   title: "Components/ApiKeysPage",
@@ -9,9 +11,11 @@ const meta: Meta<typeof ApiKeys> = {
   decorators: [
     (Story) => (
       <MemoryRouter>
-        <HelmetProvider>
-          <Story />
-        </HelmetProvider>
+        <QueryClientProvider client={queryClient}>
+          <HelmetProvider>
+            <Story />
+          </HelmetProvider>
+        </QueryClientProvider>
       </MemoryRouter>
     ),
   ],

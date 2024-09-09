@@ -26,7 +26,7 @@ export const AuthHeader = () => {
     "auth_token",
     "refresh_token",
   ]);
-  const {setAuthToken, setProfile, setOrgRoles} =
+  const {setProfile, setOrgRoles} =
     useGlobalStore();
   const {addError} = useStatusStore();
   const {
@@ -44,57 +44,59 @@ export const AuthHeader = () => {
     if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
     } else {
+      // get the auth0 access token - either cached or queried without a login, in the failure
+      // case to a login redirect
       getAccessTokenSilently({
         authorizationParams: {
           audience: import.meta.env.VITE_AUTH0_AUDIENCE,
           scope: "all",
         },
-      })
-        .then((token) => {
-          console.log("token: ", token);
-          setCookie("auth_token", token, {path: "/"});
-        })
-        .catch((error) => {
-          console.error("getAccessTokenSilently:" + error);
-          doLoginWithRedirect();
-        });
+      }).catch((error) => {
+        console.error("getAccessTokenSilently:" + error);
+        doLoginWithRedirect();
+      });
     }
   }, [cookies]);
 
   useEffect(() => {
-    const getUserMetadata = async (user_id: string) => {
-      try {
-        // get the access token, this uses cached authentication parameters under the hood
-        const accessToken = await getAccessTokenSilently();
-        const sessionStartReq: SessionStartAuth0Request = {
-          access_token: accessToken,
-          user_id: user_id,
-        };
-        api
-          .post<SessionStartResponse>({
-            path: `/sessions/auth0-spa`,
-            body: sessionStartReq,
-          })
-          .then((data) => {
-            setAuthToken(data.token);
-            const input: Partial<ProfileResponse> = data.profile;
-            const merged = mergeWithDefaults(defaultProfileResponse(), input);
-            setProfile(merged as unknown as ProfileResponse);
-          })
-          .catch((err) => {
-            addError(`session start failed ${err}`);
-            setAuthToken("");
-          });
-
-      } catch (e: any) {
-        addError("Token exception: " + e.message);
-        console.error(e.message);
-      }
-    };
     if (isAuthenticated && user && user.sub) {
-      getUserMetadata(user.sub);
+      startAuthenticatedSession(user.sub);
     }
   }, [getAccessTokenSilently, isAuthenticated, user]);
+
+  const startAuthenticatedSession = async (user_id: string) => {
+    try {
+      // get the access token, this uses cached authentication parameters under the hood
+      const accessToken = await getAccessTokenSilently();
+      const sessionStartReq: SessionStartAuth0Request = {
+        access_token: accessToken,
+        user_id: user_id,
+      };
+      api
+        .post<SessionStartResponse>({
+          path: `/sessions/auth0-spa`,
+          body: sessionStartReq,
+        })
+        .then((data) => {
+          const input: Partial<ProfileResponse> = data.profile;
+          const merged = mergeWithDefaults(defaultProfileResponse(), input);
+          setProfile(merged as unknown as ProfileResponse);
+          setCookie("auth_token", data.token, { path: "/" });
+          setCookie("refresh_token", "", { path: "/" });
+          setCookie("profile_id", data.profile.profile_id, { path: "/" });
+        })
+        .catch((err) => {
+          addError(`session start failed ${err}`);
+          setCookie("auth_token", "", { path: "/" });
+          setCookie("refresh_token", "", { path: "/" });
+          setCookie("profile_id", "", { path: "/" });
+        });
+
+    } catch (e: any) {
+      addError("Token exception: " + e.message);
+      console.error(e.message);
+    }
+  };
 
   const doLoginWithRedirect = () => {
     loginWithRedirect()

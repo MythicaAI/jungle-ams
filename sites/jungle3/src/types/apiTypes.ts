@@ -116,23 +116,7 @@ export interface AssetVersionResponse {
   contents: AssetVersionContentListMap
 }
 
-export interface AssetTopResponse {
-  asset_id: API_ID,
-  owner_id: API_ID,
-  owner_name: string,
-  org_id: API_ID,
-  org_name: string
-  package_id: API_ID,
-  author_id: API_ID,
-  author_name: string,
-  name: string,
-  description: string,
-  version: number[],
-  commit_ref: string,
-  published: boolean
-  created: ISOTime,
-  updated: ISOTime,
-  contents: AssetVersionContentListMap
+export interface AssetTopResponse extends AssetVersionResponse {
   downloads: number,
   versions: [number[]],
 }

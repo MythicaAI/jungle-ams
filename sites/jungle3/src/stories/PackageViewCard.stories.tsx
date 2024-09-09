@@ -3,17 +3,21 @@ import { PackageViewCard } from "@components/PackageViewCard";
 import { BrowserRouter } from "react-router-dom";
 import { Box } from "@mui/joy";
 import { AssetTopResponse } from "types/apiTypes";
+import {queryClient} from "../queryClient.ts";
+import {QueryClientProvider} from "@tanstack/react-query";
 
 const meta: Meta<typeof PackageViewCard> = {
   title: "Components/PackageViewCard",
   component: PackageViewCard,
   decorators: [
     (Story) => (
-      <BrowserRouter>
-        <Box sx={{ width: 300 }}>
-          <Story />
-        </Box>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Box sx={{ width: 300 }}>
+            <Story />
+          </Box>
+        </BrowserRouter>
+      </QueryClientProvider>
     ),
   ],
 };

@@ -35,6 +35,17 @@ def get_client_ip(request: Request) -> str:
         return request.client.host
 
 
+@lru_cache()
+def cached_validator():
+    """Provide a cached accessor the validator"""
+    return Auth0Validator()
+
+
+async def get_auth_validator() -> Auth0Validator:
+    """Dependency provider for auth token validation"""
+    return cached_validator()
+
+
 @router.get('/direct/{profile_id}')
 async def start_session_direct(request: Request, profile_id: str) -> SessionStartResponse:
     """Start a session directly for a profile"""
@@ -71,33 +82,25 @@ async def start_session_key(request: Request, api_key: str) -> SessionStartRespo
         return start_session(session, key_result.owner_seq, client_ip)
 
 
-@lru_cache
-async def get_auth_validator():
-    """Dependency provider for auth token validation"""
-    return Auth0Validator()
-
-
 @router.post('/auth0-spa')
 async def start_session_auth0_spa(req: Auth0SpaStartRequest,
-                                  validator=Depends(get_auth_validator)) -> SessionStartResponse:
+                                  validator: Auth0Validator = Depends(get_auth_validator)) -> SessionStartResponse:
     """Post the auth0 user metadata with the access token to begin an API session"""
     session_start = await start_session_with_token_validator(req.access_token, validator)
     return session_start
 
 
-@router.delete
-async def stop_session(profile: Profile = Depends(current_profile)):
+@router.delete('/')
+async def delete_session(profile: Profile = Depends(current_profile)):
     """Stop a session for a profile"""
     with get_session() as session:
-        profile_seq = profile_id_to_seq(profile.profile_id)
-
         session.begin()
         result = session.exec(update(Profile).values(
             {'active': False}).where(
-            col(Profile.profile_seq) == profile_seq))
+            col(Profile.profile_seq) == profile.profile_seq))
 
         session.exec(delete(ProfileSession).where(
-            col(ProfileSession.profile_seq) == profile_seq))
+            col(ProfileSession.profile_seq) == profile.profile_seq))
 
         session.commit()
 

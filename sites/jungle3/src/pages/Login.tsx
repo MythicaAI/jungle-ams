@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useCookies } from "react-cookie";
 import { useGlobalStore } from "@store/globalStore";
 import { translateError } from "@services/backendCommon";
