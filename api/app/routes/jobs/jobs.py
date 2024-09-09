@@ -24,6 +24,7 @@ class JobDefinitionRequest(BaseModel):
     name: str
     description: str
     config: dict[str, Any]
+    input_files: int
     params_schema: dict[str, Any]
 
 
@@ -37,6 +38,7 @@ class JobDefinitionModel(JobDefinitionRequest):
 
 class JobRequest(BaseModel):
     job_def_id: str
+    input_files: list[str]
     params: dict[str, Any]
 
 
@@ -84,13 +86,14 @@ async def get_job_defs() -> list[JobDefinitionModel]:
         return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
                 for job_def in job_defs]
 
-def add_job_requested_event(session: Session, job_seq: int, job_def, params: str, profile_seq: int):
+def add_job_requested_event(session: Session, job_seq: int, job_def, input_files: list[str], params: str, profile_seq: int):
     """Add a new event that triggers job processing"""
     # Create a new pipeline event
     job_data = {
         'job_seq': job_seq,
         'profile_id': profile_seq_to_id(profile_seq),
         'config': job_def.config,
+        'input_files': input_files,
         'params': params
     }
     location = app_config().mythica_location
@@ -118,7 +121,7 @@ async def create_job(
             params=request.params))
         job_seq = job.inserted_primary_key[0]
 
-        add_job_requested_event(session, job_seq, job_def, request.params, profile.profile_seq)
+        add_job_requested_event(session, job_seq, job_def, request.input_files, request.params, profile.profile_seq)
         session.commit()
         return JobResponse(
             job_id=job_seq_to_id(job_seq),

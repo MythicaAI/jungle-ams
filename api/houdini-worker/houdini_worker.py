@@ -174,6 +174,7 @@ def create_job_definition(token, endpoint: str , file_id: str, interface_file_pa
                     'hda_file': file_id,
                     'hda_definition_index': index
                 },
+                'input_files': node_type.inputs,
                 'params_schema': node_type.defaults
             }
             response = requests.post(
