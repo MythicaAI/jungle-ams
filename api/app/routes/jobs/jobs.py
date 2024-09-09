@@ -161,7 +161,7 @@ def job_result_insert(session: Session, job_seq: int, request: JobResultRequest)
 @router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
 async def create_job_result(
         job_id: str,
-        request: JobResultRequest) -> JobResultResponse:
+        request: JobResultRequest) -> JobResultCreateResponse:
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()

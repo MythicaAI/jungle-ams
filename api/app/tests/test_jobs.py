@@ -104,10 +104,10 @@ def test_create_update(client, api_base, create_profile):
     r = client.get(f'{api_base}/jobs/results/{job_id}', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     results = r.json()
+    assert results['completed']
     assert len(results) == 2
-    for result in results:
+    for result in results['results']:
         o = munchify(result)
-        assert o.job_id == job_id
         assert o.created_in == 'houdini-worker'
         assert 'result_data' in o
         if 'file' in o.result_data:
