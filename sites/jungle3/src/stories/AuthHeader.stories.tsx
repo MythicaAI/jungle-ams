@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { AuthHeader } from "../AuthHeader";
+import { AuthHeader } from "@components/AuthHeader";
 import { MemoryRouter } from "react-router-dom";
-import { useGlobalStore } from "../stores/globalStore";
+import { useGlobalStore } from "@store/globalStore";
 
 const useMockStore = (
   stateOverrides: Partial<ReturnType<typeof useGlobalStore>>,

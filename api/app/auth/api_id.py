@@ -39,6 +39,9 @@ class IdType(Enum):
     FILE = "file"
     EVENT = 'evt'
     TOPO = 'topo'
+    JOBDEF = 'jobdef'
+    JOB = 'job'
+    JOBRESULT = 'jobres'
 
 
 class ApiError(Exception):
@@ -200,3 +203,36 @@ def topo_seq_to_id(topo_seq: int) -> str:
 def topo_id_to_seq(topo_id: str) -> int:
     """Convert asset ID to encrypted seq"""
     return id_to_seq(topo_id, IdType.TOPO)
+
+
+def job_def_seq_to_id(job_def_seq: int) -> str:
+    """Convert job def seq to ID"""
+    return seq_to_id(IdType.JOBDEF, job_def_seq)
+
+
+def job_def_id_to_seq(job_def_id: str) -> int:
+    """Convert job def ID to encrypted seq"""
+    seq = id_to_seq(job_def_id)
+    return seq.seq if seq and seq.id_type == IdType.JOBDEF else None
+
+
+def job_seq_to_id(job_seq: int) -> str:
+    """Convert job seq to ID"""
+    return seq_to_id(IdType.JOB, job_seq)
+
+
+def job_id_to_seq(job_id: str) -> int:
+    """Convert job ID to encrypted seq"""
+    seq = id_to_seq(job_id)
+    return seq.seq if seq and seq.id_type == IdType.JOB else None
+
+
+def job_result_seq_to_id(job_result_seq: int) -> str:
+    """Convert job result seq to ID"""
+    return seq_to_id(IdType.JOBRESULT, job_result_seq)
+
+
+def job_result_id_to_seq(job_result_id: str) -> int:
+    """Convert job result ID to encrypted seq"""
+    seq = id_to_seq(job_result_id)
+    return seq.seq if seq and seq.id_type == IdType.JOBRESULT else None

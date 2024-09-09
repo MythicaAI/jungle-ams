@@ -10,6 +10,7 @@ from db.schema.events import *
 from db.schema.media import *
 from db.schema.assets import *
 from db.schema.graph import *
+from db.schema.jobs import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

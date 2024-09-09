@@ -1,8 +1,8 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { PackageViewCard } from "../components/PackageViewCard";
+import { PackageViewCard } from "@components/PackageViewCard";
 import { BrowserRouter } from "react-router-dom";
 import { Box } from "@mui/joy";
-import { AssetTopResponse } from "../types/apiTypes";
+import { AssetTopResponse } from "types/apiTypes";
 
 const meta: Meta<typeof PackageViewCard> = {
   title: "Components/PackageViewCard",

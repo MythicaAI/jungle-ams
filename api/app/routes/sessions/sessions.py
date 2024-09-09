@@ -14,6 +14,7 @@ from db.schema.profiles import Profile, ProfileKey, ProfileSession
 from profiles.auth0_validator import Auth0Validator
 from profiles.responses import SessionStartResponse
 from profiles.start_session import start_session, start_session_with_token_validator
+from routes.authorization import current_profile
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 log = logging.getLogger(__name__)
@@ -84,11 +85,11 @@ async def start_session_auth0_spa(req: Auth0SpaStartRequest,
     return session_start
 
 
-@router.delete('{profile_id}')
-async def stop_session(profile_id: str):
+@router.delete
+async def stop_session(profile: Profile = Depends(current_profile)):
     """Stop a session for a profile"""
     with get_session() as session:
-        profile_seq = profile_id_to_seq(profile_id)
+        profile_seq = profile_id_to_seq(profile.profile_id)
 
         session.begin()
         result = session.exec(update(Profile).values(

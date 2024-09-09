@@ -1,11 +1,11 @@
+import React from "react";
 import {Box, Card, CardContent, CardCover, Chip, IconButton, Stack, Typography
 } from "@mui/joy";
-import { getThumbnailImg } from "../../lib/packagedAssets.tsx";
-import { DownloadButton } from "../DownloadButton";
+import { getThumbnailImg } from "@lib/packagedAssets";
+import { DownloadButton } from "@components/common/DownloadButton";
 import { LucideInfo, LucidePackage } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import React from "react";
-import { AssetVersionResponse} from "../../types/apiTypes.ts";
+import { AssetVersionResponse} from "types/apiTypes";
 
 export const PackageViewCard: React.FC<AssetVersionResponse> = (av: AssetVersionResponse) => {
   const navigate = useNavigate();

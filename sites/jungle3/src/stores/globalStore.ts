@@ -1,26 +1,26 @@
-import {create} from 'zustand';
-import {ResolvedOrgRef, ProfileResponse} from "../types/apiTypes.ts";
+import { create } from "zustand";
+import { ResolvedOrgRef, ProfileResponse } from "types/apiTypes.ts";
 
 const defaultProfile: ProfileResponse = {
-    profile_id: '',
-    name: '',
-    full_name: '',
-    signature: '',
-    created: '',
-    updated: '',
-    active: false,
-    profile_base_href: '',
-    description: '',
-    email:  '',
-    email_verified: false,
-}
+  profile_id: "",
+  name: "",
+  full_name: "",
+  signature: "",
+  created: "",
+  updated: "",
+  active: false,
+  profile_base_href: "",
+  description: "",
+  email: "",
+  email_verified: false,
+};
 
 interface GlobalState {
   authToken: string;
   refreshToken: string;
   isLoggedIn: boolean;
 
-  profile: ProfileResponse,
+  profile: ProfileResponse;
   orgRoles: ResolvedOrgRef[];
 
   setAuthToken: (token: string) => void;
@@ -32,20 +32,22 @@ interface GlobalState {
 
 export const useGlobalStore = create<GlobalState>((set) => ({
   isLoggedIn: false,
-  authToken: '',
-  refreshToken: '',
+  authToken: "",
+  refreshToken: "",
 
   profile: defaultProfile,
   orgRoles: [],
 
-  setAuthToken: (authToken: string) => set( {authToken: authToken, isLoggedIn: authToken !== '' }),
-  setRefreshToken: (refreshToken: string) => set( {refreshToken: refreshToken}),
+  setAuthToken: (authToken: string) =>
+    set({ authToken: authToken, isLoggedIn: authToken !== "" }),
+  setRefreshToken: (refreshToken: string) =>
+    set({ refreshToken: refreshToken }),
   setProfile: (profile: ProfileResponse) => {
-    set({profile: profile})
+    set({ profile: profile });
   },
-  setOrgRoles: (roles) => set({orgRoles: roles}),
+  setOrgRoles: (roles) => set({ orgRoles: roles }),
   updateProfile: (partial: Partial<ProfileResponse>) => {
-    set((state) => ({profile: {...state.profile, ...partial}}))
+    set((state) => ({ profile: { ...state.profile, ...partial } }));
   },
   clearAll: () => set({
     isLoggedIn: false,

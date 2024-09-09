@@ -2,8 +2,12 @@
 #
 #
 # pylint: disable=unused-import
-from sqlalchemy import JSON, TIMESTAMP, Column, func, text
+from sqlalchemy import JSON, TIMESTAMP, Column, func, text, UniqueConstraint
+from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.sql.schema import Sequence, ForeignKey
+from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
@@ -11,6 +15,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+# sequences for table events
 
 class Event(SQLModel, table=True):
     """
@@ -18,12 +23,19 @@ class Event(SQLModel, table=True):
     """
     __tablename__ = "events"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
-    event_seq: int = Field(primary_key=True,nullable=False)
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    event_seq: int = Field(sa_column=Column('event_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     event_type: str = Field(default=None)
     queued: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     acked: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     completed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     job_data: Dict[str, Any] = Field(default_factory=dict,sa_column=Column(JSON))
-    owner_seq: int | None = Field(foreign_key='profiles.profile_seq',default=None)
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     created_in: str | None = Field(default=None)
     affinity: str | None = Field(default=None)

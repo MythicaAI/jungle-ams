@@ -1,7 +1,7 @@
 import { Meta, StoryObj } from "@storybook/react";
-import PackageViewCarousel from "../components/PackageViewCarousel";
+import PackageViewCarousel from "@components/PackageView/PackageViewCarousel";
 import { Box } from "@mui/joy";
-import { AssetVersionResponse } from "../types/apiTypes";
+import { AssetVersionResponse } from "types/apiTypes";
 
 const meta: Meta<typeof PackageViewCarousel> = {
   title: "Components/PackageViewCarousel",

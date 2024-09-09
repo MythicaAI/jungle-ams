@@ -1,0 +1,69 @@
+# $schema: meta-jobs.json
+#
+name: Job Schema
+description: The schema for job and job result tracking
+tables:
+  - name: JobDefinition
+    table_name: job_defs
+    columns:
+      - name: job_def_seq
+        type: BIGINT
+        primary_key: true
+      - name: job_type
+        description: Type used to determine which service should process this job
+        type: TEXT
+      - name: name
+        description: Display name for this job
+        type: TEXT
+      - name: description
+        description: Display description for this job
+        type: TEXT
+      - name: config
+        description: Configuration for what the job does
+        type: JSON
+      - name: params_schema
+        description: Schema used to configure an instance of this job
+        type: JSON
+  - name: Job
+    table_name: jobs
+    columns:
+      - name: job_seq
+        type: BIGINT
+        primary_key: true
+      - name: job_def_seq
+        description: Type of the job
+        type: BIGINT
+        foreign_key: job_defs.job_def_seq
+        nullable: false
+      - name: owner_seq
+        description: Profile that created this job
+        type: BIGINT
+        foreign_key: profiles.profile_seq
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: completed
+        type: TIMESTAMP
+      - name: deleted
+        type: TIMESTAMP
+      - name: params
+        description: Data that matches the params_schema of the job definition
+        type: JSON
+  - name: JobResult
+    table_name: job_results
+    columns:
+      - name: job_seq
+        type: BIGINT
+        foreign_key: jobs.job_seq
+        primary_key: true
+      - name: job_result_seq
+        type: BIGINT
+        primary_key: true
+        auto_update: true   # required when creating composite primary keys
+      - name: created_in
+        description: Location that result originated
+        type: TEXT
+      - name: result_data
+        description: Payload of the result
+        type: JSON
+        nullable: false

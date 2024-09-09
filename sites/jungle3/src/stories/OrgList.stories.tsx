@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { RolesList } from "../OrgsList";
+import { RolesList } from "../pages/OrgsList";
 
 const orgRoles = [
   {

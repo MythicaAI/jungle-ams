@@ -1,6 +1,6 @@
 import React from "react";
 import { useStatusStore } from "../../stores/statusStore";
-import { SessionStartResponse } from "../../types/apiTypes";
+import { SessionStartResponse } from "types/apiTypes";
 import { Auth } from "./services";
 import { Snackbar, Alert, Stack } from "@mui/joy";
 import {v4} from "uuid";
