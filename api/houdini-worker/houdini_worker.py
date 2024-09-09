@@ -90,9 +90,14 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
+        parms_data = {
+            'parms': o.params,
+            'inputs': []
+        }
+
         params_file = os.path.join(tmp_dir, 'params.json')
         with open(params_file, 'w') as f:
-            f.write(json.dumps(o.params))
+            f.write(json.dumps(parms_data))
 
         output_file_name = f"{job_seq_to_id(o.job_seq)}_mesh"
 
