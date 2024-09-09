@@ -148,11 +148,14 @@ def process_hda_uploaded_event(runner, o, endpoint: str):
         }
         runner.execute_job(json.dumps(job))
 
-        create_job_definition(token, endpoint, o.file_id, output_file_name)
-        upload_results(token, endpoint)
+        interface_file_path = os.path.join(OUTPUT_DIR, output_file_name)
+        if os.path.exists(interface_file_path):
+            create_job_definition(token, endpoint, o.file_id, interface_file_path)
+            os.remove(interface_file_path)
+        else:
+            log.warning("Failed to create job definition")
 
-def create_job_definition(token, endpoint: str , file_id: str, output_file_name: str):
-    interface_file_path = os.path.join(OUTPUT_DIR, output_file_name)
+def create_job_definition(token, endpoint: str , file_id: str, interface_file_path: str):
     with open(interface_file_path, 'r') as f:
         interface_json = json.load(f)
         interface = munchify(interface_json)
