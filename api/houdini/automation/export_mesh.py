@@ -52,10 +52,10 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
     hou.hda.installFile(hdapath,force_use_assets=True)
 
     # Load parameters from file
-    parms = {}
+    parms_data = {}
     if parms_file:
         with open(parms_file) as f:
-            parms = json.load(f)
+            parms_data = json.load(f)
 
     # Geometry
     obj = hou.node('obj')
@@ -64,7 +64,9 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
     # TODO: Support specifying which definition inside the hda file to use
     assetdef = hou.hda.definitionsInFile(hdapath)[0]
     asset = geo.createNode(assetdef.nodeTypeName())
-    for k, v in parms.items():
+
+    # Set parms
+    for k, v in parms_data['parms'].items():
         # TODO: Support ramp parameters
         if not isinstance(v, dict):
             val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
@@ -73,6 +75,21 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
                 parm.set(val)
             else:
                 print(f"Parameter {k} not found in {assetdef.nodeTypeName()}")
+
+    # Set inputs
+    for i, input_file in enumerate(parms_data['inputs']):
+        input_node = None
+        if os.path.exists(input_file):
+            input_node = geo.createNode('usdimport')
+            input_node.parm('filepath1').set(input_file)
+
+            # Load as unpacked polygons
+            input_node.parm('input_unpack').set(1)
+            input_node.parm('unpack_geomtype').set(1)
+        else:
+            input_node = geo.createNode('null')
+
+        asset.setInput(i, input_node, 0)
 
     # Export
     out = hou.node('out')
