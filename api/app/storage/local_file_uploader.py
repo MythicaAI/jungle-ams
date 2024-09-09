@@ -3,7 +3,6 @@ import os
 from io import BytesIO
 from pathlib import Path
 import shutil
-from uuid import uuid4
 
 from config import app_config
 from context import RequestContext
@@ -21,8 +20,8 @@ class LocalFileStorageClient(StorageClient):
     def validate(self):
         return self.base_path.exists() and self.base_path.is_dir()
 
-    def upload(self, ctx: RequestContext, bucket_type: BucketType):
-        file_id = str(uuid4())
+    def upload(self, ctx: RequestContext, bucket_type: BucketType) -> str:
+        file_id = ctx.content_hash + '.' + ctx.extension
         file_path = self.base_path / f"{ctx.content_hash}.{ctx.extension}"
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -34,19 +33,19 @@ class LocalFileStorageClient(StorageClient):
 
         try:
             shutil.copy2(ctx.local_filepath, file_path)
-            log.debug("File successfully copied to %s", file_path)
+            log.debug("%s successfully copied to %s", file_id, file_path)
         except Exception as e:
             log.error("Error copying file: %s", str(e))
             raise
 
         ctx.add_object_locator(
             'test',
-            "local",
+            'local',
             file_path)
         return file_id
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
-        file_id = str(uuid4())
+    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType) -> str:
+        file_id = ctx.content_hash + '.' + ctx.extension
         file_path = self.base_path / file_id
         with open(file_path, 'wb') as f:
             f.write(stream.getvalue())

@@ -1,111 +1,66 @@
 import hashlib
 from http import HTTPStatus
 from pathlib import Path
-from uuid import UUID
 
 from fastapi.testclient import TestClient
 
 from config import app_config
-from routes.responses import (
-    ProfileResponse,
-    SessionStartResponse,
-    ValidateEmailResponse,
-)
-from routes.upload.upload import UploadResponse
 from main import app
-from tests.shared_test import assert_status_code
+from tests.shared_test import FileContentTestObj, assert_status_code
+from tests.fixtures.create_profile import create_profile
+from tests.fixtures.app import use_local_storage_fixture
+from tests.fixtures.uploader import request_to_upload_files
 
 
 client = TestClient(app)
-api_base = "/v1"
 test_profile_name = "test-profile"
 test_profile_description = "test-description"
-test_profile_signature = 32 * "X"
+test_profile_signature = 32 * 'X'
 test_profile_tags = {"tag-a": "a", "tag-b": "b", "tag-c": "c"}
 test_profile_href = "https://test.com/"
+test_profile_full_name = "test-profile-full-name"
+test_profile_email = "test@test.com"
 test_file_name = "test-file.hda"
 test_file_contents = b"test contents"
 test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
 test_file_content_type = "application/octet-stream"
-test_asset_name = "test-asset"
-test_asset_collection_name = "test-collection"
+test_asset_name = 'test-asset'
+test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-
-def create_profile() -> dict:
-    response = client.post(
-        f"{api_base}/profiles",
-        json={
-            "name": test_profile_name,
-            "description": test_profile_description,
-            "signature": test_profile_signature,
-            "profile_base_href": test_profile_href,
-        },
+def test_download(
+    use_local_storage_fixture,
+    create_profile,
+    api_base,
+    request_to_upload_files,
+):
+    assert use_local_storage_fixture.use_local_storage is True
+    test_profile = create_profile(
+        name=test_profile_name,
+        email=test_profile_email,
+        full_name=test_profile_full_name,
+        signature=test_profile_signature,
+        description=test_profile_description,
+        profile_href=test_profile_href,
     )
-    assert_status_code(response, HTTPStatus.CREATED)
-
-    profile = ProfileResponse(**response.json())
-    assert profile.name == test_profile_name
-    assert profile.description == test_profile_description
-    assert profile.signature == test_profile_signature
-    assert profile.profile_base_href == test_profile_href
-    profile_id = profile.profile_id
-
-    # validate existence
-    r = client.get(f"{api_base}/profiles/{profile_id}")
-    assert_status_code(r, HTTPStatus.OK)
-    profile = ProfileResponse(**r.json())
-    assert profile.name == test_profile_name
-    assert profile.profile_id == profile_id
-
-    # Start session
-    r = client.get(f"{api_base}/profiles/start_session/{profile_id}")
-    assert_status_code(r, HTTPStatus.OK)
-    session_response = SessionStartResponse(**r.json())
-    assert session_response.profile.profile_id == profile_id
-    assert len(session_response.token) > 0
-    profile_token = session_response.token
-    headers = {
-        "Authorization": f"Bearer {profile_token}",
-    }
-
-    # validate email
-    validate_res = ValidateEmailResponse(
-        **client.get(f"{api_base}/validate-email", headers=headers).json()
-    )
-    assert validate_res.owner_id == profile_id
-    assert validate_res.code is not None
-    validate_res = ValidateEmailResponse(
-        **client.get(
-            f"{api_base}/validate-email/{validate_res.code}", headers=headers
-        ).json()
-    )
-    assert validate_res.owner_id == profile_id
-    assert validate_res.state == "validated"
-
-    return headers
-
-
-def create_files(headers: dict) -> tuple[UUID]:
-    # upload content
+    profile_id = test_profile.profile.profile_id
+    assert profile_id is not None
+    headers: dict = test_profile.authorization_header()
     files = [
-        ("files", (test_file_name, test_file_contents, test_file_content_type)),
-        ("files", (test_file_name, test_file_contents, test_file_content_type)),
+        FileContentTestObj(
+            file_name=test_file_name,
+            file_id=str(file_id),
+            contents=test_file_contents,
+            content_hash=hashlib.sha1(test_file_contents).hexdigest(),
+            content_type=test_file_content_type,
+            size=len(test_file_contents),
+        )
+        for file_id in range(2)
     ]
-    upload_res = UploadResponse(
-        **client.post(f"{api_base}/upload/store", files=files, headers=headers).json()
-    )
-    assert len(upload_res.files) == 2
-    return (i.file_id for i in upload_res.files)
+    files = request_to_upload_files(headers, files)
 
-
-def test_download(patch_settings_local_storage):
-    assert patch_settings_local_storage.use_local_storage is True
-    headers = create_profile()
-    file_ids = create_files(headers)
-
-    for file_id in file_ids:
+    for file_id in files:
         # Get download info
         info_response = client.get(
             f"{api_base}/download/info/{file_id}", headers=headers

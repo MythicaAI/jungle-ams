@@ -6,6 +6,7 @@ import pytest
 from munch import munchify
 
 from routes.responses import FileUploadResponse
+from routes.upload.upload import UploadResponse
 from tests.shared_test import FileContentTestObj, assert_status_code
 
 
@@ -96,3 +97,25 @@ def uploader(client, api_base):
         return response_files_by_id
 
     return _uploader
+
+
+@pytest.fixture()
+def request_to_upload_files(
+    client,
+    api_base,
+) -> tuple[str]:
+
+    def _upload_files(headers: dict, files: list[FileContentTestObj]):
+        files = [
+            ('files', (file.file_name, file.contents, file.content_type))
+            for file in files
+        ]
+        upload_res = UploadResponse(
+            **client.post(
+                f"{api_base}/upload/store", files=files, headers=headers
+            ).json()
+        )
+        assert len(upload_res.files) == len(files)
+
+        return (i.file_id for i in upload_res.files)
+    return _upload_files
