@@ -21,6 +21,9 @@ tables:
       - name: config
         description: Configuration for what the job does
         type: JSON
+      - name: input_files
+        description: Number of input files the job expects
+        type: INTEGER
       - name: params_schema
         description: Schema used to configure an instance of this job
         type: JSON
