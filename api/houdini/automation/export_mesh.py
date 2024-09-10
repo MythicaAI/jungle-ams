@@ -115,6 +115,7 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
         output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
         usd_node = geo.createNode("usdexport","usd_node")
         usd_node.parm("lopoutput").set(output_file_path)
+        usd_node.parm("authortimesamples").set("never")
         usd_node.setInput(0, asset, 0)
         usd_node.parm("execute").pressButton()
 
