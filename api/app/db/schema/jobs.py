@@ -59,6 +59,7 @@ class Job(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     completed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
+    input_files: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     params: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 # sequences for table job_results

@@ -49,6 +49,9 @@ tables:
         type: TIMESTAMP
       - name: deleted
         type: TIMESTAMP
+      - name: input_files
+        description: Array of fileIds that are inputs to the job
+        type: JSON
       - name: params
         description: Data that matches the params_schema of the job definition
         type: JSON

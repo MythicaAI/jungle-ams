@@ -118,6 +118,7 @@ async def create_job(
         job = session.exec(insert(Job).values(
             job_def_seq=job_def_id_to_seq(request.job_def_id),
             owner_seq=profile.profile_seq,
+            input_files=request.input_files,
             params=request.params))
         job_seq = job.inserted_primary_key[0]
 
