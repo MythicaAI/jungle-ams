@@ -35,6 +35,7 @@ class JobDefinition(SQLModel, table=True):
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
     config: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+    input_files: int | None = Field(sa_column=Column('input_files',Integer,default=0))
     params_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 # sequences for table jobs
@@ -58,6 +59,7 @@ class Job(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     completed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
+    input_files: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     params: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 # sequences for table job_results
