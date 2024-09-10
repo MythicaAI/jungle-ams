@@ -94,7 +94,9 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
         # Resolve all input files to local disk
         input_files_local = []
         for input_file in o.input_files:
-            input_file_path = download_file(endpoint, input_file, Path(tmp_dir))
+            input_file_path = Path("")
+            if len(input_file) > 0:
+                input_file_path = download_file(endpoint, input_file, Path(tmp_dir))
             input_files_local.append(str(input_file_path))
 
         # Prepare the parameters file
