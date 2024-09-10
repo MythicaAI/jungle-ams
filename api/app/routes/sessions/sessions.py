@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlmodel import col, delete, select, update
 
 from auth.api_id import profile_id_to_seq
-from db.connection import get_session
+from db.connection import TZ, get_session
 from db.schema.profiles import Profile, ProfileKey, ProfileSession
 from profiles.auth0_validator import Auth0Validator
 from profiles.responses import SessionStartResponse
@@ -73,7 +73,7 @@ async def start_session_key(request: Request, api_key: str) -> SessionStartRespo
             raise HTTPException(HTTPStatus.NOT_FOUND, f"profile key {api_key} not found or invalid")
 
         # test for key expiration and remove expired key
-        if key_result.expires <= datetime.now(timezone.utc):
+        if key_result.expires.replace(tzinfo=TZ).astimezone(timezone.utc) <= datetime.now(timezone.utc):
             session.exec(delete(ProfileKey).where(col(ProfileKey.key) == api_key))
             session.commit()
             raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} expired")
