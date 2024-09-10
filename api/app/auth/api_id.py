@@ -212,8 +212,7 @@ def job_def_seq_to_id(job_def_seq: int) -> str:
 
 def job_def_id_to_seq(job_def_id: str) -> int:
     """Convert job def ID to encrypted seq"""
-    seq = id_to_seq(job_def_id)
-    return seq.seq if seq and seq.id_type == IdType.JOBDEF else None
+    return id_to_seq(job_def_id, IdType.JOBDEF)
 
 
 def job_seq_to_id(job_seq: int) -> str:
@@ -223,8 +222,7 @@ def job_seq_to_id(job_seq: int) -> str:
 
 def job_id_to_seq(job_id: str) -> int:
     """Convert job ID to encrypted seq"""
-    seq = id_to_seq(job_id)
-    return seq.seq if seq and seq.id_type == IdType.JOB else None
+    return id_to_seq(job_id, IdType.JOB)
 
 
 def job_result_seq_to_id(job_result_seq: int) -> str:
@@ -234,5 +232,4 @@ def job_result_seq_to_id(job_result_seq: int) -> str:
 
 def job_result_id_to_seq(job_result_id: str) -> int:
     """Convert job result ID to encrypted seq"""
-    seq = id_to_seq(job_result_id)
-    return seq.seq if seq and seq.id_type == IdType.JOBRESULT else None
+    return id_to_seq(job_result_id, IdType.JOBRESULT)
