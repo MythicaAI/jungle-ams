@@ -13,6 +13,10 @@ defaults:
 jobs:
   api-app-ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
 
     env:
       SQL_URL: "sqlite:///${{ github.workspace }}/mythica.db"
@@ -57,7 +61,27 @@ jobs:
         run: |
           poetry run alembic -n sqlite upgrade head
           echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
-          echo "PULL_NUMBER=$(echo "$GITHUB_REF" | awk -F / '{print $3}')" >> $GITHUB_ENV
+
+      - name: Get Pull Request Number
+        id: pr
+        run: | 
+          echo "::set-output name=pull_request_number::$(gh pr view --json number -q .number || echo "")"
+          echo "::set-output name=pull_request_number_1::$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')"
+  
+      - name: Create git_issue
+        # we can give directory path that contains action.yaml
+        # for now we will give directory path. The directory must contain action.yaml
+        if: ${{ steps.pytester-cov.outputs.cov-threshold-single-fail == 'true' }}
+        uses: ./github_coverage/post_git_issue/
+        # pass user input as arguments
+        with:
+          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
+          token: ${{secrets.GITHUB_TOKEN}}
+          assignees: ${{github.actor}}
+          # labels: workflow-failed
+          body: ""
+          repo: ${{ github.repository }}
+          pull_number: ${{ steps.pr.outputs.pull_request_number }}
 
       - name: Run tests
         id: pytester-cov
@@ -80,6 +104,8 @@ jobs:
           assignees: ${{github.actor}}
           # labels: workflow-failed
           body: ${{ steps.pytester-cov.outputs.output-table }}
+          repo: ${{ github.repository }}
+          pull_number: ${{ steps.pr.outputs.pull_request_number }}
 
       - name: Create git_issue with table total
         uses: ./github_coverage/post_git_issue/
@@ -90,3 +116,5 @@ jobs:
           assignees: ${{github.actor}}
           # labels: workflow-output-table
           body: ${{ steps.pytester-cov.outputs.output-table }}
+          repo: ${{ github.repository }}
+          pull_number: ""

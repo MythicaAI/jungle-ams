@@ -7,6 +7,8 @@ token = os.environ['INPUT_TOKEN']
 # input_labels: str = os.environ['INPUT_LABELS']
 input_assignees: str = os.environ['INPUT_ASSIGNEES']
 body = os.environ['INPUT_BODY']
+# pr_id = int(os.environ['INPUT_PULL_NUMBER'])
+pr_id = 189
 
 labels = ['in progress']  # setting empty list if we get labels as '' or None
 
@@ -15,9 +17,9 @@ if input_assignees and input_assignees != '':
 else:
     assignees = []  # setting empty list if we get labels as '' or None
 
-github = github.Github(token)
-repo = github.get_repo(os.environ['REPOSITORY_NAME'])
-pr = repo.get_pull(os.environ['PULL_NUMBER'])
+github_init = github.Github(token)
+repo = github_init.get_repo(os.environ['INPUT_REPO'])
+pr = repo.get_pull(pr_id)
 
 comment = pr.create_issue_comment("This is a comment")
 

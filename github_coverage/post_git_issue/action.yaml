@@ -26,6 +26,15 @@ inputs:
     required: false
     default: ''
     description: Body of the issue
+  repo: # body as INPUT_REPO
+    required: false
+    default: ''
+    description: Repository
+  pull_number: # body as INPUT_PULL_NUMBER
+    required: false
+    default: ''
+    description: PR
+
 
 # definition how we want our action
 runs:
