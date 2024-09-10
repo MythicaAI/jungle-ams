@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useCookies } from "react-cookie";
 import { useGlobalStore } from "./stores/globalStore.ts";
 import { translateError } from "./services/backendCommon.ts";
-import { Link, useNavigate } from "react-router-dom";
-import { Box, Button, Card, Grid, Input, Stack } from "@mui/joy";
+import { useNavigate } from "react-router-dom";
+import { Box } from "@mui/joy";
 import { useStatusStore } from "./stores/statusStore.ts";
 import { useAuthenticationActions } from "./services/hooks/hooks.tsx";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -32,7 +32,7 @@ const Login: React.FC = () => {
     if (!cookies?.profile_id) {
       return;
     }
-    authenticationLogout(cookies.profile_id)
+    authenticationLogout()
       .then(() => {
         navigate("/");
       })
@@ -41,9 +41,7 @@ const Login: React.FC = () => {
       })
       .finally(() => {
         clearAll();
-        setCookie("profile_id", "", { path: "/" });
-        setCookie("auth_token", "", { path: "/" });
-        setCookie("refresh_token", "", { path: "/" });
+        clearCookies();
       });
   };
 
