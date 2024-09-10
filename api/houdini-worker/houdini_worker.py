@@ -10,7 +10,7 @@ import select
 import subprocess
 import shutil
 
-from auth.api_id import event_seq_to_id
+from auth.api_id import job_seq_to_id
 from http import HTTPStatus
 from pathlib import Path
 from munch import munchify
@@ -79,11 +79,9 @@ def download_file(endpoint: str, file_id: str, local_path: Path) -> Path:
     return Path(local_file_name)
 
 
-def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
-    token = start_session(endpoint, o.profile_id)
+def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, token: str):
     with tempfile.TemporaryDirectory() as tmp_dir:
-
-        file_path = download_file(endpoint, o.file_id, Path(tmp_dir))
+        file_path = download_file(endpoint, o.config.hda_file, Path(tmp_dir))
         if file_path is None:
             raise FileNotFoundError
 
@@ -92,11 +90,16 @@ def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
                 "File %s is not an .hda file. Skipping processing.", str(file_path))
             return
 
+        parms_data = {
+            'parms': o.params,
+            'inputs': []
+        }
+
         params_file = os.path.join(tmp_dir, 'params.json')
         with open(params_file, 'w') as f:
-            f.write(json.dumps(o.params))
+            f.write(json.dumps(parms_data))
 
-        output_file_name = f"{event_seq_to_id(event_seq)}_mesh"
+        output_file_name = f"{job_seq_to_id(o.job_seq)}_mesh"
 
         job = {
             'type': "export_mesh",
@@ -110,7 +113,20 @@ def process_generate_mesh_event(runner, o, endpoint: str, event_seq: int):
         }
         runner.execute_job(json.dumps(job))
 
-        upload_results(token, endpoint)
+        output_file_path = os.path.join(OUTPUT_DIR, f"{output_file_name}.usdz")
+        if not os.path.exists(output_file_path):
+            log.warning("Failed to generate mesh file")
+            return
+
+        file_id = upload_file(token, endpoint, output_file_path)
+        submit_job_result(endpoint, o.job_seq, { 'file_id': file_id })
+
+def process_generate_mesh_job(runner, o, endpoint: str, event_seq: int):
+    token = start_session(endpoint, o.profile_id)
+
+    process_generate_mesh_job_impl(runner, o, endpoint, event_seq, token)
+
+    mark_job_as_completed(endpoint, o.job_seq)
 
 def process_hda_uploaded_event(runner, o, endpoint: str):
     token = start_session(endpoint, o.profile_id)
@@ -137,7 +153,80 @@ def process_hda_uploaded_event(runner, o, endpoint: str):
         }
         runner.execute_job(json.dumps(job))
 
-        upload_results(token, endpoint)
+        interface_file_path = os.path.join(OUTPUT_DIR, output_file_name)
+        if os.path.exists(interface_file_path):
+            create_job_definition(token, endpoint, o.file_id, interface_file_path)
+            os.remove(interface_file_path)
+        else:
+            log.warning("Failed to create job definition")
+
+def create_job_definition(token, endpoint: str , file_id: str, interface_file_path: str):
+    with open(interface_file_path, 'r') as f:
+        interface_json = json.load(f)
+        interface = munchify(interface_json)
+
+        for index, node_type in enumerate(interface):
+            definition = {
+                'job_type': 'houdini_generate_mesh',
+                'name': f"Generate {node_type.name}",
+                'description': node_type.description,
+                'config': {
+                    'hda_file': file_id,
+                    'hda_definition_index': index
+                },
+                'params_schema': node_type.defaults
+            }
+            response = requests.post(
+                f"{endpoint}/jobs/definitions",
+                json=definition, timeout=10)
+            if response.status_code == 201:
+                log.info("Successfully created job definition for %s", node_type.name)
+            else:
+                log.warning("Failed to create job definition for %s. Status code: %s",
+                            node_type.name, response.status_code)
+
+def submit_job_result(endpoint: str, job_seq: str, result_data: str):
+    job_id = job_seq_to_id(job_seq)
+    data = {
+        'created_in': 'houdini-worker',
+        'result_data': result_data
+    }
+    response = requests.post(f'{endpoint}/jobs/results/{job_id}', 
+                             json=data, timeout=10)
+    if response.status_code == 201:
+        log.info("Successfully submitted job result for %s", job_id)
+    else:
+        log.warning("Failed to submit job result for %s. Status code: %s",
+                    job_id, response.status_code)
+
+
+def mark_job_as_completed(endpoint: str, job_seq: str):
+    job_id = job_seq_to_id(job_seq)
+    response = requests.post(f'{endpoint}/jobs/complete/{job_id}', timeout=10)
+    if response.status_code == 200:
+        log.info("Successfully marked job as completed for %s", job_id)
+    else:
+        log.warning("Failed to mark job as completed for %s. Status code: %s",
+                    job_id, response.status_code)
+
+def upload_file(token: str, endpoint: str, file_path: str) -> str:
+    headers = {"Authorization": "Bearer %s" % token}
+
+    file_id = None
+    with open(file_path, 'rb') as file:
+        file_name = os.path.basename(file_path)
+        file_data = [
+            ('files', (file_name, file, 'application/octet-stream'))]
+        response = requests.post(
+            f"{endpoint}/upload/store",
+            headers=headers, files=file_data, timeout=10)
+        if response.status_code == 200:
+            log.info("Successfully uploaded %s", file_name)
+            o = munchify(response.json())
+            file_id = o.files[0].file_id
+
+    os.remove(file_path)
+    return file_id
 
 def upload_results(token, endpoint: str):
     headers = {"Authorization": "Bearer %s" % token}
@@ -256,13 +345,13 @@ async def main():
         'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
     with HoudiniJobRunner() as runner:
-        async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['generate_mesh_requested', 'file_uploaded:hda']) as session:
+        async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['houdini_generate_mesh:requested', 'file_uploaded:hda']) as session:
             async for event_seq, event_type, json_data in session.ack_next():
                 log.info("%s: %s %s", event_seq, event_type, json_data)
                 o = munchify(json_data)
 
-                if event_type == 'generate_mesh_requested':
-                    process_generate_mesh_event(runner, o, args.endpoint, event_seq)
+                if event_type == 'houdini_generate_mesh:requested':
+                    process_generate_mesh_job(runner, o, args.endpoint, event_seq)
                 elif event_type == 'file_uploaded:hda':
                     process_hda_uploaded_event(runner, o, args.endpoint)
 
