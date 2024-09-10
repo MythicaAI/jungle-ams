@@ -156,5 +156,6 @@ output_table_contents="${output_table_contents//$'\r'/'%0D'}"
 
 # set output variables to be used in workflow file
 echo "::set-output name=output-table::$output_table_contents"
+# echo "{output-table}=$output_table_contents" >> "$GITHUB_ENV"
 echo "::set-output name=cov-threshold-single-fail::$cov_threshold_single_fail"
 echo "::set-output name=cov-threshold-total-fail::$cov_threshold_total_fail"
