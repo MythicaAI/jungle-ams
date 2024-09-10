@@ -20,6 +20,8 @@ jobs:
       UPLOAD_FOLDER_AUTO_CLEAN: false
       LOCAL_STORAGE_PATH: /tmp/local_storage
       USE_LOCAL_STORAGE: true
+      COVERAGE_SINGLE: 80
+      COVERAGE_TOTAL: 80
 
     steps:
       - name: Checkout repository
@@ -55,5 +57,33 @@ jobs:
           poetry run alembic -n sqlite upgrade head
 
       - name: Run tests
-        run: |
-          poetry run pytest . --cov
+        id: pytester-cov
+        uses: ./github_coverage/run_coverage/
+        with:
+          pytest-root-dir: '.'
+          cov-omit-list: 'tests/*'
+          cov-threshold-single: ${{ env.COVERAGE_SINGLE }}
+          cov-threshold-total: ${{ env.COVERAGE_TOTAL }}
+    
+      - name: Create issue
+        # we can give directory path that contains action.yaml
+        # for now we will give directory path. The directory must contain action.yaml
+        if: ${{ steps.pytester-cov.outputs.cov-threshold-single-fail == 'true' }}
+        uses: ./github_coverage/post_issue/
+        # pass user input as arguments
+        with:
+          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
+          token: ${{secrets.GITHUB_TOKEN}}
+          assignees: ${{github.actor}}
+          labels: workflow-failed
+          body: ${{ steps.pytester-cov.outputs.output-table }}
+
+      - name: Create issue with table total
+        uses: ./github_coverage/post_issue/
+        # pass user input as arguments
+        with:
+          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
+          token: ${{secrets.GITHUB_TOKEN}}
+          assignees: ${{github.actor}}
+          labels: workflow-output-table
+          body: ${{ steps.pytester-cov.outputs.output-table }}
