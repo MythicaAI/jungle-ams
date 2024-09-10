@@ -97,23 +97,23 @@ def id_type(api_id: str) -> IdType:
 
     parts = api_id.split('_')
     if len(parts) != 2:
-        raise IdError(api_id, f"invalid api id format")
+        raise IdError(api_id, f"invalid api id format {api_id}")
 
     type_str, api_id = parts
     return id_rev_map[type_str]
 
 
-def id_to_seq(api_id: str, id_type: IdType) -> int:
+def id_to_seq(api_id: str, api_id_type: IdType) -> int:
     """Validate and decode an encrypted serial number"""
     if type(api_id) is not str:
         raise IdError(api_id, f"invalid api id type {type(api_id)}")
 
     parts = api_id.split('_')
     if len(parts) != 2:
-        raise IdError(api_id, f"invalid api id format")
+        raise IdError(api_id, f"invalid api id format {api_id}")
 
     type_str, api_id = parts
-    if id_type != id_rev_map.get(type_str):
+    if api_id_type != id_rev_map.get(type_str):
         raise IdError(api_id, f"invalid api id type {type_str}")
 
     # Base58 decode the obfuscated serial number

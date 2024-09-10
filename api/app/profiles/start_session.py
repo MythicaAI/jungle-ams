@@ -126,7 +126,7 @@ async def associate_profile(
     ))
     profile_seq = profile_insert.inserted_primary_key[0]
 
-    locator_insert = session.exec(insert(ProfileLocatorOID).values(
+    session.exec(insert(ProfileLocatorOID).values(
         sub=valid_token.sub,
         owner_seq=profile_seq,
     ))
@@ -142,10 +142,11 @@ async def merge_profile(
         session: Session,
         valid_token: ValidTokenPayload,
         user_profile: UserProfile,
-        locator_oid: ProfileLocatorOID) -> SessionStartResponse:
+        _: ProfileLocatorOID) -> SessionStartResponse:
     results = session.exec(select(Profile).where(col(Profile.email) == user_profile.email)).all()
+    profile = None
     if results is None or len(results) == 0:
-        owner_seq = await create_profile_for_oid(session, valid_token)
+        owner_seq = await create_profile_for_oid(session, valid_token, user_profile)
         await create_profile_locator_oid(session, valid_token, owner_seq)
     else:
         profile = next(sorted(results, key=lambda p: p.profile_seq))
@@ -179,6 +180,7 @@ async def create_profile_for_oid(
         full_name=user_profile.name,
         email=user_profile.email,
         email_validate_state=email_validate_state(user_profile.email_verified),
+        location=valid_token.sub,
     ))
     if r.rowcount == 0:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be created")

@@ -5,7 +5,7 @@ from starlette.status import HTTP_400_BAD_REQUEST
 from auth.api_id import IdError, SequenceError
 
 
-async def api_id_error(request: Request, exc: IdError):
+async def api_id_error(_: Request, exc: IdError):
     """Automatic IdError exception handler"""
     return JSONResponse(
         status_code=HTTP_400_BAD_REQUEST,
@@ -13,7 +13,7 @@ async def api_id_error(request: Request, exc: IdError):
     )
 
 
-async def api_seq_error(request: Request, exc: SequenceError):
+async def api_seq_error(_: Request, exc: SequenceError):
     """Automatic SequenceError exception handler"""
     return JSONResponse(
         status_code=HTTP_400_BAD_REQUEST,

@@ -18,21 +18,21 @@ def test_round_trip():
 
 
 def test_invalid_type():
-    n, api_id = profile_id()
+    _, api_id = profile_id()
     api_id = api_id.replace("prf", "foo")
     with pytest.raises(IdError):
         id_to_seq(api_id, IdType.PROFILE)
 
 
 def test_invalid_format():
-    n, api_id = profile_id()
+    _, api_id = profile_id()
     api_id = api_id.replace("_", ":")
     with pytest.raises(IdError):
         id_to_seq(api_id, IdType.PROFILE)
 
 
 def test_corrupt_id():
-    n, api_id = profile_id()
+    _, api_id = profile_id()
     with pytest.raises(IdError):
         id_to_seq(api_id[0:len(api_id) - 1], IdType.PROFILE)
 

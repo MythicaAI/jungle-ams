@@ -34,12 +34,10 @@ class AuthTokenValidator(ABC):
     @abstractmethod
     async def validate(self, token: str) -> ValidTokenPayload:
         """Validation interface definition"""
-        pass
 
     @abstractmethod
     async def query_user_profile(self, token: str) -> UserProfile:
         """Query the user profile store using the provided token"""
-        pass
 
 
 class Auth0ValidatorFake(AuthTokenValidator):

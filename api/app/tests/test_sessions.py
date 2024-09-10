@@ -50,7 +50,6 @@ def test_resume_session_direct(api_base, client, create_profile):
     assert 'token' in o
     assert 'profile' in o
     assert len(o.token) > 8
-    prev_token = o.token
 
     r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
     assert_status_code(r, HTTPStatus.OK)
@@ -82,7 +81,7 @@ def test_start_session_api_key(api_base, client, create_profile):
     assert o.profile.profile_id == test_profile.profile.profile_id
 
 
-def test_start_session_openid(api_base, client, create_profile):
+def test_start_session_openid(api_base, client):
     async def get_fake_auth_validator() -> Auth0ValidatorFake:
         return Auth0ValidatorFake()
 
@@ -100,10 +99,9 @@ def test_start_session_openid(api_base, client, create_profile):
 
 
 def test_resume_session_openid():
-    pass
+    """Resume the session again using the openID subject"""
 
 
 def test_merged_open_ids():
     """Given two different open IDs they should both locate the same profile if the
     email address in the given open ID is verified and refers to the same profile"""
-    pass
