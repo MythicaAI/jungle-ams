@@ -1,6 +1,7 @@
 name: api/app tests
 
 on:
+  push:
   pull_request:
     paths:
       - 'api/app/**'
