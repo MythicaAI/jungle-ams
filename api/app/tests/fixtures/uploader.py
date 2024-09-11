@@ -6,7 +6,6 @@ import pytest
 from munch import munchify
 
 from routes.responses import FileUploadResponse
-from routes.upload.upload import UploadResponse
 from tests.shared_test import FileContentTestObj, assert_status_code
 
 
@@ -110,7 +109,7 @@ def request_to_upload_files(
             ('files', (file.file_name, file.contents, file.content_type))
             for file in files
         ]
-        upload_res = UploadResponse(
+        upload_res = munchify(
             **client.post(
                 f"{api_base}/upload/store", files=files, headers=headers
             ).json()

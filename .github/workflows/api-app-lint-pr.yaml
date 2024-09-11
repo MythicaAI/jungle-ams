@@ -1,6 +1,7 @@
 name: api/app lint
 
 on:
+  push:
   pull_request:
     paths:
       - 'api/app/**'
