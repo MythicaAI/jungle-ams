@@ -26,6 +26,7 @@ def test_create_update(client, api_base, create_profile):
                             'hda_file': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
                             'hda_definition_index': 0
                         },
+                        'input_files': 2,
                         'params_schema': {
                             'size': {
                                 'type': 'Float',
@@ -50,7 +51,8 @@ def test_create_update(client, api_base, create_profile):
     r = client.post(f'{api_base}/jobs',
                     json={
                         'job_def_id': "INVALID",
-                        'params': {
+                        'input_files': [],
+                    'params': {
                             'size': 5.0
                         }
                     },
@@ -61,6 +63,10 @@ def test_create_update(client, api_base, create_profile):
     r = client.post(f'{api_base}/jobs',
                     json={
                         'job_def_id': job_def_id,
+                        'input_files': [
+                            'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                            'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
+                        ],
                         'params': {
                             'size': 5.0
                         }

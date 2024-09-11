@@ -21,6 +21,9 @@ tables:
       - name: config
         description: Configuration for what the job does
         type: JSON
+      - name: input_files
+        description: Number of input files the job expects
+        type: INTEGER
       - name: params_schema
         description: Schema used to configure an instance of this job
         type: JSON
@@ -46,6 +49,9 @@ tables:
         type: TIMESTAMP
       - name: deleted
         type: TIMESTAMP
+      - name: input_files
+        description: Array of fileIds that are inputs to the job
+        type: JSON
       - name: params
         description: Data that matches the params_schema of the job definition
         type: JSON
