@@ -1,8 +1,8 @@
 name: api/app tests
 
 on:
-  push:
   pull_request:
+    types: [opened, reopened, synchronize]
     paths:
       - 'api/app/**'
 
@@ -81,7 +81,7 @@ jobs:
           # labels: workflow-failed
           body: ""
           repo: ${{ github.repository }}
-          pull_number: ${{ steps.pr.outputs.pull_request_number }}
+          pull_number: ${{ github.event.pull_request.number }}
 
       - name: Run tests
         id: pytester-cov
