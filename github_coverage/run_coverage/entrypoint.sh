@@ -17,6 +17,11 @@ if test -f "$4"; then
     python3 -m pip install -r $4 --no-cache-dir --user;
 fi
 
+cp -a ./api/app/. .
+# cd ./api/app
+python -m pip install --upgrade pip poetry
+poetry install --with=dev --no-root
+
 # write omit str list to coverage file
 cat << EOF > $cov_config_fname
 [run]
@@ -24,7 +29,7 @@ omit = $3
 EOF
 
 # get list recursively of dirs to run pytest-cov on
-find_cmd_str="find $1 -type d"
+find_cmd_str="find . -type d"
 pytest_dirs=$(eval "$find_cmd_str")
 
 # build cov argument for pytest cmd with list of dirs
@@ -33,7 +38,10 @@ for dir in $pytest_dirs; do
   pytest_cov_dirs+="--cov=${dir} "
 done
 
-output=$(python3 -m pytest $pytest_cov_dirs --cov-config=.coveragerc $2)
+output=$(poetry run pytest . --cov --cov-config=.coveragerc)
+
+echo "$output"
+find . -type d | xargs -I % sh -c "echo in file '%' ; ls '%' | nl"
 
 # remove pytest-coverage config file
 if [ -f $cov_config_fname ]; then
