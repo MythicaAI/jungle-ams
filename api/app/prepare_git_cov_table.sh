@@ -131,14 +131,14 @@ elif [ "$total_cov" -gt 90 ]; then
 fi
 
 badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=pytest-coverage🛡️&message=$total_cov%&color=$color)"
-output_table_contents="${badge}${output_table_contents}"
+# output_table_contents="${badge}${output_table_contents}"
 
 # github actions truncates newlines, need to do replace
 # https://github.com/actions/create-release/issues/25
 output_table_contents="${output_table_contents//'%'/'%25'}"
 output_table_contents="${output_table_contents//$'\n'/'%0A'}"
 output_table_contents="${output_table_contents//$'\r'/'%0D'}"
-output_table_contents="<details><summary>Show Table</summary>%0A${output_table_contents}%0A</details>"
+output_table_contents="$badge%0A%0A<details><summary>Show Table</summary>%0A%0A${output_table_contents}%0A%0A</details>"
 
 # set output variables to be used in workflow file
 echo "::set-output name=output-table::$output_table_contents"
