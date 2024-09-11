@@ -8,7 +8,7 @@ from routes.responses import (
 )
 
 from main import app
-from tests.fixtures.create_profile import create_profile
+from tests.fixtures.create_profile import create_profile # pylint: disable=unused-import
 
 
 client = TestClient(app)
@@ -28,7 +28,7 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-def test_email_validation(api_base, client, create_profile):
+def test_email_validation(api_base, client, create_profile): # pylint: disable=redefined-outer-name
 
     test_profile = create_profile(name=test_profile_name,
                                 email=test_profile_email,
