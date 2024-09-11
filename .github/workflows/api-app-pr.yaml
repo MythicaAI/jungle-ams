@@ -79,7 +79,7 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
           assignees: ${{github.actor}}
           # labels: workflow-failed
-          body: ""
+          body: "drt"
           repo: ${{ github.repository }}
           pull_number: ${{ github.event.pull_request.number }}
 
