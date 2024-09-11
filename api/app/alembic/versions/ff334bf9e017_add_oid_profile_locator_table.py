@@ -1,8 +1,8 @@
-"""add OID profile locator table
+"""add_oid_profile_locator_table
 
-Revision ID: 346f0ebeb5ae
-Revises: e09bddf061f9
-Create Date: 2024-09-09 19:47:19.556542+00:00
+Revision ID: ff334bf9e017
+Revises: dad56840116b
+Create Date: 2024-09-11 18:07:43.837658+00:00
 
 """
 from typing import Sequence, Union
@@ -13,8 +13,8 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '346f0ebeb5ae'
-down_revision: Union[str, None] = 'e09bddf061f9'
+revision: str = 'ff334bf9e017'
+down_revision: Union[str, None] = 'dad56840116b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
