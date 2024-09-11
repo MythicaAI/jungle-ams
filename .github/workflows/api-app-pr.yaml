@@ -70,7 +70,7 @@ jobs:
         id: pytester-cov
         uses: ./github_coverage/run_coverage/
         with:
-          pytest-root-dir: '.'
+          pytest-root-dir: 'api/app/'
           cov-omit-list: 'tests/*'
           cov-threshold-single: ${{ env.COVERAGE_SINGLE }}
           cov-threshold-total: ${{ env.COVERAGE_TOTAL }}
@@ -86,3 +86,9 @@ jobs:
           body: ${{ steps.pytester-cov.outputs.output-table }}
           repo: ${{ github.repository }}
           pull_number: ${{ steps.PR.outputs.number }}
+
+      - name: Coverage total fail - exit
+        if: ${{ steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
+        run: |
+          echo "cov single fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
+          exit 1
