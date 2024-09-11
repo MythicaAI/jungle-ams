@@ -66,21 +66,6 @@ jobs:
       - uses: 8BitJonny/gh-get-current-pr@3.0.0
         id: PR
 
-      - name: Create git_issue
-        # we can give directory path that contains action.yaml
-        # for now we will give directory path. The directory must contain action.yaml
-        if: ${{ steps.pytester-cov.outputs.cov-threshold-single-fail == 'true' }}
-        uses: ./github_coverage/post_git_issue/
-        # pass user input as arguments
-        with:
-          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
-          token: ${{secrets.GITHUB_TOKEN}}
-          assignees: ${{github.actor}}
-          # labels: workflow-failed
-          body: "drt"
-          repo: ${{ github.repository }}
-          pull_number: ${{ steps.PR.outputs.number }}
-
       - name: Run tests
         id: pytester-cov
         uses: ./github_coverage/run_coverage/
@@ -89,23 +74,8 @@ jobs:
           cov-omit-list: 'tests/*'
           cov-threshold-single: ${{ env.COVERAGE_SINGLE }}
           cov-threshold-total: ${{ env.COVERAGE_TOTAL }}
-    
-      - name: Create git_issue
-        # we can give directory path that contains action.yaml
-        # for now we will give directory path. The directory must contain action.yaml
-        if: ${{ steps.pytester-cov.outputs.cov-threshold-single-fail == 'true' }}
-        uses: ./github_coverage/post_git_issue/
-        # pass user input as arguments
-        with:
-          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
-          token: ${{secrets.GITHUB_TOKEN}}
-          assignees: ${{github.actor}}
-          # labels: workflow-failed
-          body: ${{ steps.pytester-cov.outputs.output-table }}
-          repo: ${{ github.repository }}
-          pull_number: ${{ steps.pr.outputs.number }}
 
-      - name: Create git_issue with table total
+      - name: Comment table-result inside PR
         uses: ./github_coverage/post_git_issue/
         # pass user input as arguments
         with:
@@ -115,4 +85,4 @@ jobs:
           # labels: workflow-output-table
           body: ${{ steps.pytester-cov.outputs.output-table }}
           repo: ${{ github.repository }}
-          pull_number: ""
+          pull_number: ${{ steps.PR.outputs.number }}
