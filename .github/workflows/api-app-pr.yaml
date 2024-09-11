@@ -1,7 +1,9 @@
 name: api/app tests
 
 on:
+  push:
   pull_request:
+    types: [opened, reopened, synchronize]
     paths:
       - 'api/app/**'
 
@@ -12,6 +14,10 @@ defaults:
 jobs:
   api-app-ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
 
     env:
       SQL_URL: "sqlite:///${{ github.workspace }}/mythica.db"
@@ -55,35 +61,32 @@ jobs:
       - name: Create Schema
         run: |
           poetry run alembic -n sqlite upgrade head
+          echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      - uses: 8BitJonny/gh-get-current-pr@3.0.0
+        id: PR
 
       - name: Run tests
         id: pytester-cov
-        uses: ./github_coverage/run_coverage/
-        with:
-          pytest-root-dir: '.'
-          cov-omit-list: 'tests/*'
-          cov-threshold-single: ${{ env.COVERAGE_SINGLE }}
-          cov-threshold-total: ${{ env.COVERAGE_TOTAL }}
-    
-      - name: Create issue
-        # we can give directory path that contains action.yaml
-        # for now we will give directory path. The directory must contain action.yaml
-        if: ${{ steps.pytester-cov.outputs.cov-threshold-single-fail == 'true' }}
-        uses: ./github_coverage/post_issue/
+        run: |
+          chmod +x ./prepare_git_cov_table.sh
+          ./prepare_git_cov_table.sh
+        shell: bash
+        
+      - name: Comment table-result inside PR
+        uses: ./github_coverage/post_git_issue/
         # pass user input as arguments
         with:
           title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
           token: ${{secrets.GITHUB_TOKEN}}
           assignees: ${{github.actor}}
-          labels: workflow-failed
+          # labels: workflow-output-table
           body: ${{ steps.pytester-cov.outputs.output-table }}
+          repo: ${{ github.repository }}
+          pull_number: ${{ steps.PR.outputs.number }}
 
-      - name: Create issue with table total
-        uses: ./github_coverage/post_issue/
-        # pass user input as arguments
-        with:
-          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
-          token: ${{secrets.GITHUB_TOKEN}}
-          assignees: ${{github.actor}}
-          labels: workflow-output-table
-          body: ${{ steps.pytester-cov.outputs.output-table }}
+      - name: Coverage total fail - exit
+        if: ${{ steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
+        run: |
+          echo "cov single fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
+          exit 1
