@@ -12,6 +12,7 @@ from db.schema.events import *
 from db.schema.media import *
 from db.schema.assets import *
 from db.schema.graph import *
+from db.schema.jobs import *
 
 LOCAL_DB = "postgresql://test:test@localhost:5432/upload_pipeline"
 

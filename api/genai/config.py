@@ -19,17 +19,14 @@ class AppConfig(BaseSettings):
     upload_folder_auto_clean: bool = True
     enable_storage: bool = True
     gcs_service_enable: bool = False
-    use_local_storage: bool = False
-    local_storage_path: str = '/tmp/local_storage'
     minio_tls_enable: bool = False
     minio_access_key: str = 'foo-access'
     minio_secret_key: str = 'bar-secret'
     minio_endpoint: str = 'localhost:9000'
 
     http_listen_addr: str = '0.0.0.0'
-    http_listen_port: int = 5555
+    http_listen_port: int = 5556
     enable_db: bool = True
-    db_timezone: str = 'UTC'
     sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
     secret_key: str = 'test'
     id_enc_key: str = 'X' * 8

@@ -31,9 +31,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 #
 # Houdini variables
 #
-
 SFX_CLIENT_ID = os.environ.get('SFX_CLIENT_ID')
 SFX_CLIENT_SECRET = os.environ.get('SFX_CLIENT_SECRET')
+
+#
+# AUTHKEYS
+#
+HF_AUTHTOKEN = os.environ.get('HF_AUTHTOKEN')
+
 
 #
 # Integration testing directories
@@ -59,6 +64,12 @@ IMAGES = {
     'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': ['api/app', 'api/houdini']},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
+    'api/genai': {
+        'name': 'mythica-genai',
+        'buildargs': {
+            'HF_AUTHTOKEN': HF_AUTHTOKEN,
+        }    
+    }
 }
 
 IMAGE_SETS = {
@@ -76,6 +87,9 @@ IMAGE_SETS = {
         'api/houdini',
         'api/houdini-worker',
         'api/packager'},
+    'genai': {
+        'api/genai',
+    }
 }
 
 

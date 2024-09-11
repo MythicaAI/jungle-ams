@@ -14,6 +14,7 @@ EVENTS = "schema-events.yaml"
 MEDIA = "schema-media.yaml"
 PROFILE = "schema-profiles.yaml"
 GRAPH = "schema-graph.yaml"
+JOBS = "schema-jobs.yaml"
 SCHEMA = "meta-schema.json"
 
 
