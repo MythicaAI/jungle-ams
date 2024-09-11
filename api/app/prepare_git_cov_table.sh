@@ -1,39 +1,14 @@
 #!/bin/bash
 
-# --- Parameters --- #
-# $1: pytest-root-dir
-# $2: tests dir
-# $3: cov-omit-list
-# $4: requirements filepath
-# $5: cov-threshold-single
-# $6: cov-threshold-total
-
 cov_config_fname=.coveragerc
 cov_threshold_single_fail=false
 cov_threshold_total_fail=false
 
-# must reinstall requirements in container to prevent ImportErrors
-if test -f "$4"; then
-    python3 -m pip install -r $4 --no-cache-dir --user;
-fi
 
-# write omit str list to coverage file
-cat << EOF > $cov_config_fname
-[run]
-omit = $3
-EOF
+output=$(poetry run pytest . --cov --cov-config=.coveragerc tests/)
 
-# get list recursively of dirs to run pytest-cov on
-find_cmd_str="find $1 -type d"
-pytest_dirs=$(eval "$find_cmd_str")
+echo "$output"
 
-# build cov argument for pytest cmd with list of dirs
-pytest_cov_dirs=""
-for dir in $pytest_dirs; do
-  pytest_cov_dirs+="--cov=${dir} "
-done
-
-output=$(python3 -m pytest $pytest_cov_dirs --cov-config=.coveragerc $2)
 
 # remove pytest-coverage config file
 if [ -f $cov_config_fname ]; then
@@ -122,13 +97,13 @@ file_covs=("${file_covs[@]:1}") #removed the 1st element
 
 # check if any file_cov exceeds threshold
 for file_cov in "${file_covs[@]}"; do
-  if [ "$file_cov" -lt $5 ]; then
+  if [ "$file_cov" -lt "80" ]; then
     cov_threshold_single_fail=true
   fi
 done
 
 # check if total_cov exceeds threshold
-if [ "$total_cov" -lt $6 ]; then
+if [ "$total_cov" -lt "80" ]; then
   cov_threshold_total_fail=true
 fi
 
@@ -146,15 +121,15 @@ elif [ "$total_cov" -gt 90 ]; then
 fi
 
 badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=pytest-coverage🛡️&message=$total_cov%&color=$color)"
-output_table_contents="${badge}${output_table_contents}"
 
 # github actions truncates newlines, need to do replace
-# https://github.com/actions/create-release/issues/25
 output_table_contents="${output_table_contents//'%'/'%25'}"
 output_table_contents="${output_table_contents//$'\n'/'%0A'}"
 output_table_contents="${output_table_contents//$'\r'/'%0D'}"
+output_table_contents="$badge%0A%0A<details><summary>Show Table</summary>%0A%0A${output_table_contents}%0A%0A</details>"
 
 # set output variables to be used in workflow file
 echo "::set-output name=output-table::$output_table_contents"
+# echo "{output-table}=$output_table_contents" >> "$GITHUB_ENV"
 echo "::set-output name=cov-threshold-single-fail::$cov_threshold_single_fail"
 echo "::set-output name=cov-threshold-total-fail::$cov_threshold_total_fail"
