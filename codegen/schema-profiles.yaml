@@ -131,3 +131,14 @@ tables:
         type: TIMESTAMP
       - name: payload
         type: JSON
+
+  - name: ProfileLocatorOID
+    description: Locator for a profile given a known open ID subject
+    table_name: profile_locators_oid
+    columns:
+      - name: sub
+        type: TEXT
+        primary_key: true
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq

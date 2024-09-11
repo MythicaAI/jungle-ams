@@ -23,6 +23,7 @@ export const generateOptions: GenerateOptions = ({
     path: `${import.meta.env.VITE_API_BASE_URL}${path}${
       query ? `?${qs.stringify(query)}` : ""
     }`,
+
     options: {
       headers: {
         ...(!upload && body && !contentType

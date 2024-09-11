@@ -1,9 +1,10 @@
 import React from "react";
-import { Avatar, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
+import { Avatar, Divider, Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
 import {
   LucideEdit,
   LucideGroup,
   LucideKeyRound,
+  LucideLogOut,
   LucidePackage,
   LucideUpload,
 } from "lucide-react";
@@ -41,31 +42,37 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
         sx={{
           cursor: "pointer",
         }}
-      >
+>
+
         <Avatar variant="outlined" alt={name}></Avatar>
       </MenuButton>
       <Menu placement="bottom-end">
         <LinkMenuItem to={"/profile"}>
-          <LucideEdit />
+          <LucideEdit/>
           Edit Profile
         </LinkMenuItem>
         <LinkMenuItem to={"/packages"}>
-          <LucidePackage />
+          <LucidePackage/>
           My Packages
         </LinkMenuItem>
         <LinkMenuItem to={"/uploads"}>
-          <LucideUpload />
+          <LucideUpload/>
           My Uploads
         </LinkMenuItem>
         <LinkMenuItem to={"/orgs"}>
-          <LucideGroup />
-          Manage Organizations
-        </LinkMenuItem>
+          <LucideGroup/>
+          Manage Organizations</LinkMenuItem>
         <LinkMenuItem to={"/api-keys"}>
           <LucideKeyRound />
           API keys
         </LinkMenuItem>
+        <Divider orientation="horizontal"/>
+        <LinkMenuItem to={"/logout"}>
+          <LucideLogOut/>
+          Logout
+        </LinkMenuItem>
       </Menu>
     </Dropdown>
   );
-};
+}
+;

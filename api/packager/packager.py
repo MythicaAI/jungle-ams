@@ -20,7 +20,7 @@ from pythonjsonlogger import jsonlogger
 from events.events import EventsSession
 from routes.assets.assets import AssetVersionContent, AssetVersionResult
 from routes.download.download import DownloadInfoResponse
-from routes.responses import FileUploadResponse
+from routes.file_uploads import FileUploadResponse
 
 log = logging.getLogger(__name__)
 

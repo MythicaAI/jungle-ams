@@ -8,7 +8,7 @@ from munch import munchify
 
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import get_random_string, assert_status_code
+from tests.shared_test import assert_status_code, get_random_string
 
 json_schema = {
     "type": "object",
@@ -35,7 +35,7 @@ def test_create_update(client, api_base, create_profile, create_org):
     r = client.post(f'{api_base}/topos',
                     json={'name': topo_name, 'org_id': invalid_org},
                     headers=headers)
-    assert_status_code(r, HTTPStatus.FAILED_DEPENDENCY)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
     # validate that names conform to schema
     r = client.post(f'{api_base}/topos',
@@ -63,7 +63,7 @@ def test_create_update(client, api_base, create_profile, create_org):
     r = client.post(f'{api_base}/topos/{topo_id}',
                     json={"name": topo_name_updated, "org_id": invalid_org},
                     headers=headers)
-    assert_status_code(r, HTTPStatus.FAILED_DEPENDENCY)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
     # validate that names conform to schema in update
     r = client.post(f'{api_base}/topos',

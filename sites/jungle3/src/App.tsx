@@ -11,7 +11,8 @@ import { Packages } from "@pages/Packages";
 import Uploads from "@pages/Uploads";
 import { Layout } from "./components/common/Layout";
 import { Notification } from "./components/Notification";
-import { PackageViewWrapper } from "@pages/PackageView";
+import {PackageViewWrapper} from "@pages/PackageView";
+import Logout from "./Logout.tsx";
 import { ApiKeys } from "@pages/ApiKeys";
 import "./styles/App.css";
 
@@ -31,6 +32,7 @@ const App: React.FC = () => {
           />
           <Route path="orgs" element={<OrgsList />} />
           <Route path="login" element={<Login />} />
+          <Route path="logout" element={<Logout/>} />
           <Route path="files/:file_id" element={<FileViewWrapper />} />
           <Route
             path="package-view/:asset_id/versions/:version_id"

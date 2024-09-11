@@ -1,66 +1,112 @@
-import {
-  Avatar,
-  Box,
-  List,
-  ListItemContent,
-  ListItemDecorator,
-  Stack,
-  Typography,
-} from "@mui/joy";
-import { Link, useNavigate } from "react-router-dom";
-import { useCookies } from "react-cookie";
-import { useEffect, useState } from "react";
-import { useGlobalStore } from "@store/globalStore";
+import {Avatar, Box, List, ListItemContent, ListItemDecorator, Stack, styled, Typography,} from "@mui/joy";
+import {Link,} from "react-router-dom";
+import {useCookies} from "react-cookie";
+import {useEffect} from "react";
+import {useGlobalStore} from "@store/globalStore";
 import {
   defaultProfileResponse,
   ProfileResponse,
   ResolvedOrgRef,
+  SessionStartAuth0Request,
   SessionStartResponse,
 } from "types/apiTypes.ts";
-import { ProfileMenu } from "@components/ProfileMenu";
-import { StatusAlarm } from "@components/Status/StatusAlarm";
-import { api } from "@services/api";
+import {ProfileMenu} from "@components/ProfileMenu";
+import {StatusAlarm} from "@components/Status/StatusAlarm";
+import {api} from "@services/api";
+import {useAuth0} from "@auth0/auth0-react";
+import {useStatusStore} from "@store/statusStore";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
 // we need to think about how to do the persistence without exposing the token to XSS
 
 export const AuthHeader = () => {
-  const [needsLogin, setNeedsLogin] = useState(true);
-  const [needsSession, setNeedsSession] = useState(true);
-  const [cookies] = useCookies(["profile_id", "auth_token", "refresh_token"]);
-  const { authToken, profile, setAuthToken, setProfile, setOrgRoles } =
+  const [cookies, setCookie] = useCookies([
+    "profile_id",
+    "auth_token",
+    "refresh_token",
+  ]);
+  const {setProfile, setOrgRoles} =
     useGlobalStore();
-  const navigate = useNavigate();
+  const {addError} = useStatusStore();
+  const {
+    loginWithRedirect,
+    getAccessTokenSilently,
+    user,
+    isAuthenticated,
+  } = useAuth0();
 
-  useEffect(() => {
-    console.log("useEffect - validate login session");
-    if (!cookies.profile_id) {
-      setNeedsLogin(true);
-      setNeedsSession(true);
-      navigate("/login");
-      return; // early return, nothing else we can do without a profile_id
-    } else {
-      setNeedsLogin(false);
-    }
-    if (!authToken) {
-      setNeedsSession(true);
-    } else {
-      setNeedsSession(false);
-    }
-  }, [authToken, cookies]);
+  console.log("user: ", user);
+  console.log("isAuthenticated: ", isAuthenticated);
 
+  // Refresh the backend API session based on the Auth0 state (create a new auth token)
   useEffect(() => {
-    if (cookies.profile_id && needsSession) {
-      updateSession(cookies.profile_id);
-    }
-  }, [cookies, needsSession]);
-
-  useEffect(() => {
-    if (!needsSession && !needsLogin) {
+    if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
+    } else {
+      // get the auth0 access token - either cached or queried without a login, in the failure
+      // case to a login redirect
+      getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "all",
+        },
+      }).catch((error) => {
+        console.error("getAccessTokenSilently:" + error);
+        doLoginWithRedirect();
+      });
     }
-  }, [needsSession, needsLogin, authToken, cookies]);
+  }, [cookies]);
+
+  useEffect(() => {
+    if (isAuthenticated && user && user.sub) {
+      startAuthenticatedSession(user.sub);
+    }
+  }, [getAccessTokenSilently, isAuthenticated, user]);
+
+  const startAuthenticatedSession = async (user_id: string) => {
+    try {
+      // get the access token, this uses cached authentication parameters under the hood
+      const accessToken = await getAccessTokenSilently();
+      const sessionStartReq: SessionStartAuth0Request = {
+        access_token: accessToken,
+        user_id: user_id,
+      };
+      api
+        .post<SessionStartResponse>({
+          path: `/sessions/auth0-spa`,
+          body: sessionStartReq,
+        })
+        .then((data) => {
+          const input: Partial<ProfileResponse> = data.profile;
+          const merged = mergeWithDefaults(defaultProfileResponse(), input);
+          setProfile(merged as unknown as ProfileResponse);
+          setCookie("auth_token", data.token, { path: "/" });
+          setCookie("refresh_token", "", { path: "/" });
+          setCookie("profile_id", data.profile.profile_id, { path: "/" });
+        })
+        .catch((err) => {
+          addError(`session start failed ${err}`);
+          setCookie("auth_token", "", { path: "/" });
+          setCookie("refresh_token", "", { path: "/" });
+          setCookie("profile_id", "", { path: "/" });
+        });
+
+    } catch (e: any) {
+      addError("Token exception: " + e.message);
+      console.error(e.message);
+    }
+  };
+
+  const doLoginWithRedirect = () => {
+    loginWithRedirect()
+      .then((res) => {
+        console.log("LOGIN RES: ", res);
+      })
+      .catch((error) => {
+        addError("Login error: " + error);
+      })
+  }
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
@@ -74,40 +120,26 @@ export const AuthHeader = () => {
     ) as ProfileResponse;
   }
 
-  const updateSession = (profile_id: string) => {
-    console.log("updateSession", profile_id);
-    // Get a new auth_token with the profile_id
-    api
-      .get<SessionStartResponse>({
-        path: `/profiles/start_session/${profile_id}`,
-      })
-      .then((data) => {
-        setAuthToken(data.token);
-        const input: Partial<ProfileResponse> = data.profile;
-        const merged = mergeWithDefaults(defaultProfileResponse(), input);
-        setProfile(merged as unknown as ProfileResponse);
-        setNeedsSession(false);
-      })
-      .catch((err) => {
-        console.log(`start_session failed ${err}`);
-        setAuthToken("");
-        setNeedsSession(true);
-      });
-  };
-
   const updateProfileData = () => {
     api
-      .get<ProfileResponse>({ path: `/profiles/${cookies.profile_id}` })
+      .get<ProfileResponse>({path: `/profiles/${cookies.profile_id}`})
       .then((data) => {
         const input = data as Partial<ProfileResponse>;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
         setProfile(merged as unknown as ProfileResponse);
+        api.get<ResolvedOrgRef[]>({path: "/orgs/"}).then((data) => {
+          setOrgRoles(data);
+        });
       });
-
-    api.get<ResolvedOrgRef[]>({ path: "/orgs/" }).then((data) => {
-      setOrgRoles(data);
-    });
   };
+
+  const LoginAvatarButton = styled("div")({
+    display: "inline-block",
+    cursor: "pointer",
+    "&:focus": {
+      outline: "none",
+    },
+  });
 
   return (
     <List orientation={"horizontal"}>
@@ -127,19 +159,22 @@ export const AuthHeader = () => {
         </Link>
       </ListItemDecorator>
       <ListItemContent>
-        <Typography level="h2" sx={{ flexGrow: 1 }}>
+        <Typography level="h2" sx={{flexGrow: 1}}>
           HDA Package Index
         </Typography>
       </ListItemContent>
       <ListItemDecorator>
         <Stack direction="row" spacing={1}>
-          <StatusAlarm />
-          {authToken ? (
-            <ProfileMenu name={profile.name} />
+          <StatusAlarm/>
+          {isAuthenticated ? (
+            <ProfileMenu name={user && user.name ? user.name : ""}/>
           ) : (
-            <Link to={"/login"}>
-              <Avatar alt="?" variant="soft" />
-            </Link>
+            <LoginAvatarButton
+              role="button"
+              tabIndex={0}
+              onClick={() => doLoginWithRedirect()}>
+              <Avatar alt="?" variant="soft"/>
+            </LoginAvatarButton>
           )}
         </Stack>
       </ListItemDecorator>

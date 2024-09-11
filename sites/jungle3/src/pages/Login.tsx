@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useCookies } from "react-cookie";
 import { useGlobalStore } from "@store/globalStore";
 import { translateError } from "@services/backendCommon";
@@ -20,10 +20,6 @@ const Login: React.FC = () => {
   const { addError } = useStatusStore();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setUsername("32a05c1d-d2c6-47f2-9411-156c3619c71a");
-  }, []);
-
   const clearCookies = () => {
     setCookie("auth_token", "", { path: "/" });
     setCookie("refresh_token", "", { path: "/" });
@@ -31,12 +27,12 @@ const Login: React.FC = () => {
   };
   const handleLogin = (event: React.FormEvent) => {
     event.preventDefault();
-    setCookie("profile_id", username, { path: "/" });
 
     // 32a05c1d-d2c6-47f2-9411-156c3619c71a
 
     login(username)
       .then((r) => {
+        setCookie("profile_id", r.profile.profile_id, { path: "/" });
         setCookie("auth_token", r.token, { path: "/" });
         setCookie("refresh_token", "", { path: "/" });
         setAuthToken(r.token);

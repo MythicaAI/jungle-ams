@@ -22,9 +22,8 @@ from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.assets.assets import convert_version_input, select_asset_version
 from routes.authorization import current_profile
-from routes.file_events import enrich_files
+from routes.file_uploads import FileUploadResponse, enrich_files
 from routes.files.files import delete_file_by_id
-from routes.responses import FileUploadResponse
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient

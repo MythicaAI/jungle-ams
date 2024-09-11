@@ -1,13 +1,13 @@
 """Wrapper script to invoke hautomation from events"""
 import asyncio
-import subprocess
-import os
 import logging
-import requests
-import tempfile
+import os
 import shutil
-
+import subprocess
+import tempfile
 from pathlib import Path
+
+import requests
 from munch import munchify
 
 from events.events import EventsSession
@@ -18,7 +18,6 @@ from api.files import API, api_settings
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ def run_docker(docker_command: list[str]):
 
 def start_session(profile_id):
     """Create a session for the current profile"""
-    url = f"{api_settings().endpoint}/profiles/start_session/{profile_id}"
+    url = f"{api_settings().endpoint}/sessions/direct/{profile_id}"
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         log.warning("Failed to start session: %s", response.status_code)
@@ -95,20 +94,24 @@ def launch_container(o):
                            " --output-path /output"
                            f" --hda-path={downloaded_path}"
                            " && hserver -Q")
-        process_output(*run_docker(["docker", "run",
+        process_output(*run_docker(
+            ["docker", "run",
                                     "--rm",
                                     "-it",
                                     "-v", "/tmp:/tmp",
                                     "-v", f"{OUTPUT_LOCAL}:/output",
                                     IMAGE_NAME,
-                                    '/bin/sh', '-c', gather_deps_cmd]))
-        process_output(*run_docker(["docker", "run",
+                                    '/bin/sh',
+             '-c', gather_deps_cmd]))
+        process_output(*run_docker(
+            ["docker", "run",
                                     "--rm",
                                     "-it",
                                     "-v", "/tmp:/tmp",
                                     "-v", f"{OUTPUT_LOCAL}:/output",
                                     IMAGE_NAME,
-                                    '/bin/sh', '-c', gen_network_cmd]))
+                                    '/bin/sh',
+             '-c', gen_network_cmd]))
 
         upload_results(token)
 
@@ -129,7 +132,8 @@ def upload_results(token):
                         ('files', (file_name, file, 'application/octet-stream'))]
                     response = requests.post(
                         f"{api_settings().endpoint}/upload/store",
-                        headers=headers, files=file_data, timeout=10)
+                        headers=headers, files=file_data,
+                                             timeout=10)
                     if response.status_code == 200:
                         log.info("Successfully uploaded %s", file_name)
                         try:
