@@ -24,8 +24,7 @@ jobs:
       UPLOAD_FOLDER_AUTO_CLEAN: false
       LOCAL_STORAGE_PATH: /tmp/local_storage
       USE_LOCAL_STORAGE: true
-      COVERAGE_SINGLE: 80
-      COVERAGE_TOTAL: 80
+      TEST_FAIL_RATE: 82
 
     steps:
       - name: Checkout repository

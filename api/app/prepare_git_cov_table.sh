@@ -7,9 +7,6 @@ cov_threshold_total_fail=false
 
 output=$(poetry run pytest . --cov --cov-config=.coveragerc tests/)
 
-echo "$output"
-
-
 # remove pytest-coverage config file
 if [ -f $cov_config_fname ]; then
    rm $cov_config_fname
@@ -25,6 +22,7 @@ output_table_title=''
 output_table_contents=''
 file_covs=()
 total_cov=0
+test_fail_rate="${TEST_FAIL_RATE:-80}" 
 
 for x in $output; do
   if [[ $x =~ ^-+$ && $x != '--' ]]; then
@@ -97,13 +95,13 @@ file_covs=("${file_covs[@]:1}") #removed the 1st element
 
 # check if any file_cov exceeds threshold
 for file_cov in "${file_covs[@]}"; do
-  if [ "$file_cov" -lt "80" ]; then
+  if [ "$file_cov" -lt test_fail_rate ]; then
     cov_threshold_single_fail=true
   fi
 done
 
 # check if total_cov exceeds threshold
-if [ "$total_cov" -lt "80" ]; then
+if [ "$total_cov" -lt test_fail_rate ]; then
   cov_threshold_total_fail=true
 fi
 

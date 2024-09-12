@@ -5,7 +5,7 @@ import hashlib
 
 from fastapi.testclient import TestClient
 
-from routes.responses import (
+from validate_email.responses import (
     ValidateEmailResponse,
     ValidateEmailState,
 )
