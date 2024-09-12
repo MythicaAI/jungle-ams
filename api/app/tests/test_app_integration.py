@@ -26,7 +26,7 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-# see localhost/docs for examples
+# see http://localhost:8080/docs for examples
 
 def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     register_adapters()
@@ -91,10 +91,12 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     org_id = o.org_id
 
     # create asset in org
-    o = munchify(client.post(
+    r = client.post(
         f"{api_base}/assets",
         json={'org_id': org_id},
-        headers=headers).json())
+        headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
     asset_id = o.asset_id
 
     # asset object returned, without version information

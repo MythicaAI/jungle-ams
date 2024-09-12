@@ -44,6 +44,21 @@ class IdType(Enum):
     JOBRESULT = 'jobres'
 
 
+class ApiError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class IdError(Exception):
+    def __init__(self, id_str: str, reason: str):
+        super().__init__(f'API ID {id_str} is not valid: {reason}')
+
+
+class SequenceError(ApiError):
+    def __init__(self, seq_num: int, reason: str):
+        super().__init__(f'sequence number {seq_num} is not valid: {reason}')
+
+
 id_rev_map = {i.value: i for i in list(IdType)}
 
 
@@ -53,15 +68,18 @@ class DbSeq(BaseModel):
     seq: int
 
 
-def seq_to_id(api_type: IdType, seq: int | None) -> str | None:
+def seq_to_id(api_type: IdType, seq: int | None) -> str:
     """Given a 64bit integer, return an encrypted version with a fixed HMAC"""
     if seq is None:
-        return None
+        raise SequenceError(0, "sequence is none")
 
-    assert type(seq) is int
+    if type(seq) is not int:
+        raise SequenceError(seq, f"invalid type {type(seq)}")
+
     seq_bytes = seq.to_bytes(8, 'big')
     encrypted = cipher.encrypt(_API_ID_PREFIX + seq_bytes)
-    assert len(encrypted) == _ENCRYPTED_BYTES
+    if len(encrypted) != _ENCRYPTED_BYTES:
+        raise SequenceError(seq, f"invalid encrypted length {len(encrypted)}")
 
     h = hashlib.blake2b(digest_size=DIGEST_SIZE, key=_HMAC_KEY, person=_PERSON)
     h.update(encrypted)
@@ -72,16 +90,31 @@ def seq_to_id(api_type: IdType, seq: int | None) -> str | None:
     return ''.join((api_type.value, '_', encoded.decode('utf-8')))
 
 
-def id_to_seq(api_id: str) -> DbSeq | None:
-    """Validate and decode an encrypted serial number"""
-    assert type(api_id) is str
+def id_type(api_id: str) -> IdType:
+    """Return the ID type from the API ID"""
+    if type(api_id) is not str:
+        raise IdError(api_id, f"invalid api id type {type(api_id)}")
 
     parts = api_id.split('_')
     if len(parts) != 2:
-        return None
+        raise IdError(api_id, f"invalid api id format {api_id}")
 
     type_str, api_id = parts
-    id_type = id_rev_map[type_str]
+    return id_rev_map[type_str]
+
+
+def id_to_seq(api_id: str, api_id_type: IdType) -> int:
+    """Validate and decode an encrypted serial number"""
+    if type(api_id) is not str:
+        raise IdError(api_id, f"invalid api id type {type(api_id)}")
+
+    parts = api_id.split('_')
+    if len(parts) != 2:
+        raise IdError(api_id, f"invalid api id format {api_id}")
+
+    type_str, api_id = parts
+    if api_id_type != id_rev_map.get(type_str):
+        raise IdError(api_id, f"invalid api id type {type_str}")
 
     # Base58 decode the obfuscated serial number
     combined = base58.b58decode(api_id)
@@ -90,24 +123,26 @@ def id_to_seq(api_id: str) -> DbSeq | None:
     encrypted: bytes = combined[0:_ENCRYPTED_BYTES]
     serial_hmac = combined[_ENCRYPTED_BYTES:]
     if len(serial_hmac) != _HMAC_BYTES:
-        raise ValueError("HMAC byte count mismatch")
+        raise IdError(api_id, "HMAC byte count mismatch")
 
     # Verify the HMAC
     h = hashlib.blake2b(digest_size=DIGEST_SIZE, key=_HMAC_KEY, person=_PERSON)
     h.update(encrypted)
     digest = h.digest()
     if not hmac.compare_digest(serial_hmac, digest[0:_HMAC_BYTES]):
-        raise ValueError("Invalid HMAC - data may have been tampered with")
+        raise IdError(api_id, "Invalid HMAC - data may have been tampered with")
 
     # Decrypt the serial number
     decrypted_data = cipher.decrypt(encrypted)
     prefix = decrypted_data[0:_PREFIX_BYTES]
     seq = decrypted_data[_PREFIX_BYTES:]
-    assert len(seq) == _SEQ_BYTES
+    if len(seq) != _SEQ_BYTES:
+        raise IdError(api_id, f"Invalid sequence bytes {len(seq)}")
 
-    return DbSeq(id_type=id_type,
-                 prefix=prefix,
-                 seq=int.from_bytes(seq, 'big'))
+    if prefix != _API_ID_PREFIX:
+        raise IdError(api_id, f"invalid prefix {prefix}")
+
+    return int.from_bytes(seq, 'big')
 
 
 def asset_seq_to_id(asset_seq: int) -> str:
@@ -117,8 +152,7 @@ def asset_seq_to_id(asset_seq: int) -> str:
 
 def asset_id_to_seq(asset_id: str) -> int:
     """Convert asset ID to encrypted seq"""
-    seq = id_to_seq(asset_id)
-    return seq.seq if seq and seq.id_type == IdType.ASSET else None
+    return id_to_seq(asset_id, IdType.ASSET)
 
 
 def profile_seq_to_id(profile_seq: int) -> str:
@@ -128,8 +162,7 @@ def profile_seq_to_id(profile_seq: int) -> str:
 
 def profile_id_to_seq(profile_id: str) -> int:
     """Convert asset ID to encrypted seq"""
-    seq = id_to_seq(profile_id)
-    return seq.seq if seq and seq.id_type == IdType.PROFILE else seq.seq
+    return id_to_seq(profile_id, IdType.PROFILE)
 
 
 def org_seq_to_id(org_seq: int) -> str:
@@ -139,8 +172,7 @@ def org_seq_to_id(org_seq: int) -> str:
 
 def org_id_to_seq(org_id: str) -> int | None:
     """Convert asset ID to encrypted seq"""
-    seq = id_to_seq(org_id)
-    return seq.seq if seq and seq.id_type == IdType.ORG else None
+    return id_to_seq(org_id, IdType.ORG)
 
 
 def file_seq_to_id(file_seq: int) -> str:
@@ -150,8 +182,7 @@ def file_seq_to_id(file_seq: int) -> str:
 
 def file_id_to_seq(file_id: str) -> int:
     """Convert asset ID to encrypted seq"""
-    seq = id_to_seq(file_id)
-    return seq.seq if seq and seq.id_type == IdType.FILE else None
+    return id_to_seq(file_id, IdType.FILE)
 
 
 def event_seq_to_id(file_seq: int) -> str:
@@ -161,8 +192,7 @@ def event_seq_to_id(file_seq: int) -> str:
 
 def event_id_to_seq(file_id: str) -> int:
     """Convert asset ID to encrypted seq"""
-    seq = id_to_seq(file_id)
-    return seq.seq if seq and seq.id_type == IdType.EVENT else None
+    return id_to_seq(file_id, IdType.EVENT)
 
 
 def topo_seq_to_id(topo_seq: int) -> str:
@@ -172,8 +202,7 @@ def topo_seq_to_id(topo_seq: int) -> str:
 
 def topo_id_to_seq(topo_id: str) -> int:
     """Convert asset ID to encrypted seq"""
-    seq = id_to_seq(topo_id)
-    return seq.seq if seq and seq.id_type == IdType.TOPO else None
+    return id_to_seq(topo_id, IdType.TOPO)
 
 
 def job_def_seq_to_id(job_def_seq: int) -> str:
@@ -183,8 +212,7 @@ def job_def_seq_to_id(job_def_seq: int) -> str:
 
 def job_def_id_to_seq(job_def_id: str) -> int:
     """Convert job def ID to encrypted seq"""
-    seq = id_to_seq(job_def_id)
-    return seq.seq if seq and seq.id_type == IdType.JOBDEF else None
+    return id_to_seq(job_def_id, IdType.JOBDEF)
 
 
 def job_seq_to_id(job_seq: int) -> str:
@@ -194,8 +222,7 @@ def job_seq_to_id(job_seq: int) -> str:
 
 def job_id_to_seq(job_id: str) -> int:
     """Convert job ID to encrypted seq"""
-    seq = id_to_seq(job_id)
-    return seq.seq if seq and seq.id_type == IdType.JOB else None
+    return id_to_seq(job_id, IdType.JOB)
 
 
 def job_result_seq_to_id(job_result_seq: int) -> str:
@@ -205,5 +232,4 @@ def job_result_seq_to_id(job_result_seq: int) -> str:
 
 def job_result_id_to_seq(job_result_id: str) -> int:
     """Convert job result ID to encrypted seq"""
-    seq = id_to_seq(job_result_id)
-    return seq.seq if seq and seq.id_type == IdType.JOBRESULT else None
+    return id_to_seq(job_result_id, IdType.JOBRESULT)

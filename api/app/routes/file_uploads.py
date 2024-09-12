@@ -1,10 +1,23 @@
+from datetime import datetime
+
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from auth.api_id import file_seq_to_id, profile_seq_to_id, event_seq_to_id
+from auth.api_id import event_seq_to_id, file_seq_to_id, profile_seq_to_id
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from routes.responses import FileUploadResponse
+
+
+class FileUploadResponse(BaseModel):
+    file_id: str
+    owner_id: str
+    file_name: str
+    event_ids: list[str]
+    size: int
+    content_type: str
+    content_hash: str = ""
+    created: datetime
 
 
 def enrich_file(

@@ -5,7 +5,7 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from routes.responses import FileUploadResponse
+from routes.file_uploads import FileUploadResponse
 from tests.shared_test import FileContentTestObj, assert_status_code
 
 

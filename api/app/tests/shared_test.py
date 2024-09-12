@@ -8,7 +8,7 @@ import string
 
 from pydantic import BaseModel
 
-from routes.responses import ProfileResponse
+from profiles.responses import ProfileResponse
 
 log = logging.getLogger(__name__)
 

@@ -90,7 +90,7 @@ export const getAuthenticationToken = () =>
     let token: string | null = authTokenFromCookies;
     if (!token && profileId) {
       Auth.get({
-        path: `/profiles/start_session/${profileId}`,
+        path: `/sessions/direct/${profileId}`,
       })
         .then((res) => {
           cookies.set("auth_token", res.token, { path: "/" });

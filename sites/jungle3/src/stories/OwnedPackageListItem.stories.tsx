@@ -18,6 +18,8 @@ import { DownloadButton } from "@components/common/DownloadButton";
 import { getThumbnailImg } from "@lib/packagedAssets";
 import { AssetVersionResponse } from "types/apiTypes";
 import { Thumbnail } from "@components/Thumbnail";
+import {queryClient} from "../queryClient.ts";
+import {QueryClientProvider} from "@tanstack/react-query";
 
 const compareVersions = (
   a: AssetVersionResponse,
@@ -184,11 +186,13 @@ const meta: Meta<typeof OwnedPackageListItem> = {
   component: OwnedPackageListItem,
   decorators: [
     (Story) => (
-      <BrowserRouter>
-        <Box sx={{ width: "100%", maxWidth: "1200px", margin: "auto" }}>
-          <Story />
-        </Box>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Box sx={{ width: "100%", maxWidth: "1200px", margin: "auto" }}>
+            <Story />
+          </Box>
+        </BrowserRouter>
+      </QueryClientProvider>
     ),
   ],
 };

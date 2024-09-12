@@ -150,3 +150,21 @@ class ProfileKey(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+
+# sequences for table profile_locators_oid
+
+class ProfileLocatorOID(SQLModel, table=True):
+    """
+    Locator for a profile given a known open ID subject
+    """
+    __tablename__ = "profile_locators_oid"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    sub: str = Field(primary_key=True,nullable=False)
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))

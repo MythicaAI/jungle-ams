@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { DownloadButton } from "../components/common/DownloadButton";
 import { LucideDownload } from "lucide-react";
+import {queryClient} from "../queryClient.ts";
+import {QueryClientProvider} from "@tanstack/react-query";
+import {BrowserRouter} from "react-router-dom";
+import {Box} from "@mui/joy";
 
 const meta: Meta<typeof DownloadButton> = {
   title: "Components/DownloadButton",
@@ -12,6 +16,17 @@ const meta: Meta<typeof DownloadButton> = {
   args: {
     icon: <LucideDownload />,
   },
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Box sx={{ width: "100%", maxWidth: "1200px", margin: "auto" }}>
+            <Story />
+          </Box>
+        </BrowserRouter>
+      </QueryClientProvider>
+    )
+  ]
 } satisfies Meta<typeof DownloadButton>;
 
 export default meta;

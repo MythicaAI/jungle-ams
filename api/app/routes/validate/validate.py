@@ -11,7 +11,7 @@ from auth.api_id import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
 from routes.authorization import current_profile
-from routes.responses import ValidateEmailResponse, ValidateEmailState
+from validate_email.responses import ValidateEmailResponse, ValidateEmailState
 
 router = APIRouter(prefix="/validate-email", tags=["profiles"])
 

@@ -47,17 +47,17 @@ def test_create_update(client, api_base, create_profile):
     definitions = r.json()
     assert any([definition['job_def_id'] == job_def_id for definition in definitions])
 
-    # Create a invalid job
+    # Create an invalid job
     r = client.post(f'{api_base}/jobs',
-                json={
-                    'job_def_id': "INVALID",
-                    'input_files': [],
+                    json={
+                        'job_def_id': "INVALID",
+                        'input_files': [],
                     'params': {
-                        'size': 5.0
-                    }
-                },
-                headers=headers)
-    assert_status_code(r, HTTPStatus.NOT_FOUND)
+                            'size': 5.0
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
     # Create a job
     r = client.post(f'{api_base}/jobs',
