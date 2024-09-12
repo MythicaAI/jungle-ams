@@ -24,7 +24,7 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: sites/jungle3/pnpm-lock.yaml
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --lockfile-only
       - run: pnpm run lint
 
   test:
@@ -41,5 +41,5 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: sites/jungle3/pnpm-lock.yaml
       - name: install dependencies
-        run: pnpm install
+        run: pnpm install --lockfile-only
       - run: pnpm run test
