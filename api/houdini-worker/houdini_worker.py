@@ -43,7 +43,7 @@ def parse_args():
 
 def start_session(endpoint: str, profile_id: str):
     """Create a session for the current profile"""
-    url = f"{endpoint}/profiles/start_session/{profile_id}"
+    url = f"{endpoint}/sessions/direct/{profile_id}"
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         log.warning("Failed to start session: %s", response.status_code)
