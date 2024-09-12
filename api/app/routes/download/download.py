@@ -11,6 +11,7 @@ from db.connection import get_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
+from storage.local_file_uploader import LocalFileStorageClient
 
 log = logging.getLogger(__name__)
 
@@ -40,9 +41,9 @@ def translate_gcs(storage, info) -> str:
     return storage.download_link(bucket_name, object_name)
 
 
-def translate_test(_storage, _info) -> str:
-    """minio download link creator"""
-    return "http://test.notresolved/test.test"
+def translate_test(storage: LocalFileStorageClient, info: str) -> str:
+    """LocalStorage download link creator"""
+    return storage.download_link(*info.split(":"))
 
 
 def increment_download_count(session: Session, file_seq: int):

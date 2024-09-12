@@ -96,3 +96,26 @@ def uploader(client, api_base):
         return response_files_by_id
 
     return _uploader
+
+
+@pytest.fixture()
+def request_to_upload_files(
+    client,
+    api_base,
+) -> tuple[str]:
+
+    def _upload_files(headers: dict, files: list[FileContentTestObj]):
+        files = [
+            ('files', (file.file_name, file.contents, file.content_type))
+            for file in files
+        ]
+        
+        upload_res =  client.post(
+            f"{api_base}/upload/store", files=files, headers=headers
+        )
+        assert_status_code(upload_res, HTTPStatus.OK)
+        upload_res = munchify(upload_res.json())
+        assert len(upload_res.files) == len(files)
+
+        return (i.file_id for i in upload_res.files)
+    return _upload_files

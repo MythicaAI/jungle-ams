@@ -20,12 +20,17 @@ services:
     image: mythica-app:latest
     environment:
       MINIO_ENDPOINT: minio:9000
+      LOCAL_STORAGE_PATH: /tmp/local_storage
     ports:
       - "50555:5555"
     networks:
       - web
       - storage
+    volumes:
+      - local_storage:/app/local_storage
 volumes:
+  local_storage:
+    driver: local
   sites:
     driver: local
     driver_opts:

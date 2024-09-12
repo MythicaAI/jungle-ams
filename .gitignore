@@ -37,6 +37,8 @@ testing/mnt/*/**
 # jetbrains config
 .idea
 
+.vscode/*
+
 # site pointers
 sites/*.txt
 

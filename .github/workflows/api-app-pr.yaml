@@ -1,7 +1,7 @@
 name: api/app tests
 
 on:
-  pull_request:
+  push:
     paths:
       - 'api/app/**'
 
@@ -12,13 +12,19 @@ defaults:
 jobs:
   api-app-ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
 
     env:
       SQL_URL: "sqlite:///${{ github.workspace }}/mythica.db"
       DATABASE_PATH: "${{ github.workspace }}/mythica.db"
       PYTHONPATH: "${{ github.workspace }}/api/app"
-      ENABLE_STORAGE: false
       UPLOAD_FOLDER_AUTO_CLEAN: false
+      LOCAL_STORAGE_PATH: /tmp/local_storage
+      USE_LOCAL_STORAGE: true
+      TEST_FAIL_RATE: 82
 
     steps:
       - name: Checkout repository
@@ -52,7 +58,32 @@ jobs:
       - name: Create Schema
         run: |
           poetry run alembic -n sqlite upgrade head
+          echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      - uses: 8BitJonny/gh-get-current-pr@3.0.0
+        id: PR
 
       - name: Run tests
+        id: pytester-cov
         run: |
-          poetry run pytest .
+          chmod +x ./prepare_git_cov_table.sh
+          ./prepare_git_cov_table.sh
+        shell: bash
+        
+      - name: Comment table-result inside PR
+        uses: ./github_coverage/post_git_issue/
+        # pass user input as arguments
+        with:
+          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
+          token: ${{secrets.GITHUB_TOKEN}}
+          assignees: ${{github.actor}}
+          # labels: workflow-output-table
+          body: ${{ steps.pytester-cov.outputs.output-table }}
+          repo: ${{ github.repository }}
+          pull_number: ${{ steps.PR.outputs.number }}
+
+      - name: Coverage total fail - exit
+        if: ${{ steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
+        run: |
+          echo "cov single fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
+          exit 1

@@ -1,20 +1,27 @@
+# pylint: disable=redefined-outer-name, unused-import
+
 import hashlib
 from http import HTTPStatus
-from uuid import UUID
+from pathlib import Path
 
 from fastapi.testclient import TestClient
-from munch import munchify
 
+from config import app_config
 from main import app
-from tests.shared_test import assert_status_code
+from tests.shared_test import FileContentTestObj, assert_status_code
+from tests.fixtures.create_profile import create_profile
+from tests.fixtures.app import use_local_storage_fixture
+from tests.fixtures.uploader import request_to_upload_files
+
 
 client = TestClient(app)
-api_base = "/v1"
 test_profile_name = "test-profile"
 test_profile_description = "test-description"
 test_profile_signature = 32 * 'X'
 test_profile_tags = {"tag-a": "a", "tag-b": "b", "tag-c": "c"}
 test_profile_href = "https://test.com/"
+test_profile_full_name = "test-profile-full-name"
+test_profile_email = "test@test.com"
 test_file_name = "test-file.hda"
 test_file_contents = b"test contents"
 test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
@@ -24,75 +31,73 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-def create_files() -> list[UUID]:
-    response = client.post(f"{api_base}/profiles",
-                           json={
-                               "name": test_profile_name,
-                               "description": test_profile_description,
-                               "signature": test_profile_signature,
-                               "profile_base_href": test_profile_href, })
-    assert_status_code(response, HTTPStatus.CREATED)
-    o = munchify(response.json())
-    assert o.name == test_profile_name
-    assert o.description == test_profile_description
-    assert o.signature == test_profile_signature
-    assert o.profile_base_href == test_profile_href
-    profile_id = o.id
-
-    # validate existence
-    response = client.get(f"{api_base}/profiles/{profile_id}")
-    o = munchify(response.json())
-    assert o.name == test_profile_name
-    assert o.id == profile_id
-
-    # Start session
-    o = munchify(client.get(f"{api_base}/sessions/direct/{profile_id}").json())
-    assert o.profile.profile_id == profile_id
-    assert len(o.sessions) > 0
-    assert len(o.token) > 0
-    profile_token = o.token
-    headers = {
-        'Authorization': f'Bearer {profile_token}',
-    }
-
-    # validate email
-    o = munchify(client.get(f"{api_base}/validate-email", headers=headers).json())
-    assert o.owner_id == profile_id
-    assert o.code is not None
-    o = munchify(client.get(f"{api_base}/validate-email/{o.code}", headers=headers).json())
-    assert o.owner_id == profile_id
-    assert o.state == 'validated'
-
-    # update the profile data
-    o = munchify(client.post(
-        f"{api_base}/profiles/{profile_id}",
-        json={"name": test_profile_name + "-updated"},
-        headers=headers).json())
-    assert o.id == profile_id
-    assert o.name == test_profile_name + "-updated"
-
-    # validate updated profile existence again
-    o = munchify(client.get(f"{api_base}/profiles/{profile_id}").json())
-    assert o.id == profile_id
-    assert o.name == test_profile_name + "-updated"
-
-    # upload content
+def test_download(
+    use_local_storage_fixture,
+    create_profile,
+    api_base,
+    request_to_upload_files,
+):
+    assert use_local_storage_fixture.use_local_storage is True
+    test_profile = create_profile(
+        name=test_profile_name,
+        email=test_profile_email,
+        full_name=test_profile_full_name,
+        signature=test_profile_signature,
+        description=test_profile_description,
+        profile_href=test_profile_href,
+    )
+    profile_id = test_profile.profile.profile_id
+    assert profile_id is not None
+    headers: dict = test_profile.authorization_header()
     files = [
-        ('files', (test_file_name, test_file_contents, test_file_content_type)),
-        ('files', (test_file_name, test_file_contents, test_file_content_type)),
+        FileContentTestObj(
+            file_name=test_file_name,
+            file_id=str(file_id),
+            contents=test_file_contents,
+            content_hash=hashlib.sha1(test_file_contents).hexdigest(),
+            content_type=test_file_content_type,
+            size=len(test_file_contents),
+        )
+        for file_id in range(2)
     ]
-    o = munchify(client.post(
-        f"{api_base}/upload/store",
-        files=files,
-        headers=headers).json())
-    assert len(o.files) == 2
-    file_ids = list(map(lambda f: f.file_id, o.files))
-    return file_ids
+    files = request_to_upload_files(headers, files)
 
-# TODO: fix download
-# def test_download():
-#     api = API(client)
-#     with tempfile.TemporaryDirectory() as tmp_dir:
-#         for f in create_files():
-#             with pytest.raises(FileNotFoundError, match="TODO: add local file testing"):
-#                 api.download_file(f, Path(tmp_dir))
+    for file_id in files:
+        # Get download info
+        info_response = client.get(
+            f"{api_base}/download/info/{file_id}", headers=headers
+        )
+        assert_status_code(info_response, HTTPStatus.OK)
+        download_info = info_response.json()
+        print(f"{file_id=}")
+        print(f"Download info: {download_info}")
+
+        # Check the download URL
+        assert "content_hash" in download_info
+        assert "url" in download_info
+        assert download_info["content_hash"] in download_info["url"]
+
+        # Try to download the file (this should return a redirect)
+        download_response = client.get(
+            f"{api_base}/download/{file_id}",
+            headers=headers,
+            follow_redirects=False,
+        )
+        assert_status_code(download_response, HTTPStatus.TEMPORARY_REDIRECT)
+
+        assert "Location" in download_response.headers
+        parsed_location = download_response.headers["Location"]
+        print(f"Download parsed_location: {parsed_location}")
+        local_storage_path = app_config().local_storage_path
+        assert parsed_location.startswith(local_storage_path)
+
+        file_path = parsed_location
+        full_file_path = Path(local_storage_path) / file_path
+
+        assert full_file_path.exists(), f"File does not exist at {full_file_path}"
+
+        with open(full_file_path, "rb") as f:
+            file_contents = f.read()
+        assert file_contents == test_file_contents
+
+        assert hashlib.sha1(file_contents).hexdigest() == test_file_content_hash
