@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name, unused-import
+
 import hashlib
 from http import HTTPStatus
 from pathlib import Path
@@ -7,9 +9,9 @@ from fastapi.testclient import TestClient
 from config import app_config
 from main import app
 from tests.shared_test import FileContentTestObj, assert_status_code
-from tests.fixtures.create_profile import create_profile # pylint: disable=unused-import
-from tests.fixtures.app import use_local_storage_fixture # pylint: disable=unused-import
-from tests.fixtures.uploader import request_to_upload_files # pylint: disable=unused-import
+from tests.fixtures.create_profile import create_profile
+from tests.fixtures.app import use_local_storage_fixture
+from tests.fixtures.uploader import request_to_upload_files
 
 
 client = TestClient(app)
@@ -30,10 +32,10 @@ test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
 def test_download(
-    use_local_storage_fixture, # pylint: disable=redefined-outer-name
-    create_profile, # pylint: disable=redefined-outer-name
+    use_local_storage_fixture,
+    create_profile,
     api_base,
-    request_to_upload_files, # pylint: disable=redefined-outer-name
+    request_to_upload_files,
 ):
     assert use_local_storage_fixture.use_local_storage is True
     test_profile = create_profile(
