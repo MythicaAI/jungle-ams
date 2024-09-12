@@ -11,6 +11,7 @@ export const StatusAlarm = () => {
       <Menu placement="bottom-end">
         <StatusStack />
       </Menu>
+      {/* */}
     </Dropdown>
   );
 };
