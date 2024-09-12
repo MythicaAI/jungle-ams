@@ -109,11 +109,12 @@ def request_to_upload_files(
             ('files', (file.file_name, file.contents, file.content_type))
             for file in files
         ]
-        upload_res = munchify(
-            **client.post(
-                f"{api_base}/upload/store", files=files, headers=headers
-            ).json()
-        )
+        
+        upload_res =  client.post(
+            f"{api_base}/upload/store", files=files, headers=headers
+        ).json()
+        assert_status_code(upload_res, HTTPStatus.OK)
+        upload_res = munchify(upload_res)
         assert len(upload_res.files) == len(files)
 
         return (i.file_id for i in upload_res.files)

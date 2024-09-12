@@ -2,7 +2,6 @@ name: sites/jungle3 Code quality
 
 on:
   push:
-  pull_request:
     paths:
       - 'sites/jungle3/**'
 
