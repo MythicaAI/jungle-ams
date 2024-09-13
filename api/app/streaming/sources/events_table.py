@@ -26,7 +26,7 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
         with get_session() as session:
             if not after:
                 r = session.exec(select(DbEvent)
-                                 .where(Event.owner_seq == param_owner_seq)
+                                 .where(DbEvent.owner_seq == param_owner_seq)
                                  .limit(max_page)).all()
             else:
                 r = session.exec(select(DbEvent)
@@ -36,7 +36,7 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
 
         return [Event(
             event_id=event_seq_to_id(i.event_seq),
-            payload=i.payload,
+            payload=i.job_data,
         ) for i in r]
 
     return events_table_source
