@@ -42,10 +42,7 @@ const mockAssets: AssetTopResponse[] = [
     updated: "2023-09-05T12:00:00Z",
     contents: {},
     downloads: 150,
-    versions: [
-      [1, 0, 0],
-      [1, 0, 1],
-    ],
+    versions: [[1, 0, 0]],
   },
   {
     asset_id: "2",
@@ -65,10 +62,7 @@ const mockAssets: AssetTopResponse[] = [
     updated: "2023-09-06T12:00:00Z",
     contents: {},
     downloads: 120,
-    versions: [
-      [1, 0, 0],
-      [1, 0, 1],
-    ],
+    versions: [[1, 0, 1]],
   },
   {
     asset_id: "3",
@@ -88,11 +82,7 @@ const mockAssets: AssetTopResponse[] = [
     updated: "2023-09-07T12:00:00Z",
     contents: {},
     downloads: 180,
-    versions: [
-      [1, 0, 0],
-      [1, 0, 1],
-      [1, 0, 2],
-    ],
+    versions: [[1, 0, 2]],
   },
   {
     asset_id: "3",
@@ -112,11 +102,7 @@ const mockAssets: AssetTopResponse[] = [
     updated: "2023-09-07T12:00:00Z",
     contents: {},
     downloads: 180,
-    versions: [
-      [1, 0, 0],
-      [1, 0, 1],
-      [1, 0, 2],
-    ],
+    versions: [[1, 0, 1]],
   },
   {
     asset_id: "3",
@@ -136,11 +122,7 @@ const mockAssets: AssetTopResponse[] = [
     updated: "2023-09-07T12:00:00Z",
     contents: {},
     downloads: 180,
-    versions: [
-      [1, 0, 0],
-      [1, 0, 1],
-      [1, 0, 2],
-    ],
+    versions: [[1, 0, 0]],
   },
   {
     asset_id: "3",
@@ -160,11 +142,7 @@ const mockAssets: AssetTopResponse[] = [
     updated: "2023-09-07T12:00:00Z",
     contents: {},
     downloads: 180,
-    versions: [
-      [1, 0, 0],
-      [1, 0, 1],
-      [1, 0, 2],
-    ],
+    versions: [[1, 0, 1]],
   },
 ];
 
