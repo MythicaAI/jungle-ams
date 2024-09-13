@@ -1781,6 +1781,9 @@ files = [
     {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
 ]
 
+[package.dependencies]
+cryptography = {version = ">=3.4.0", optional = true, markers = "extra == \"crypto\""}
+
 [package.extras]
 crypto = ["cryptography (>=3.4.0)"]
 dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
@@ -2524,10 +2527,9 @@ files = [
 [extras]
 authlib = []
 pgsql = ["psycopg2-binary"]
-pyjwt = []
 sqlalchemy = ["asyncio"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.10"
-content-hash = "7da67007678d7aa34057024b76314aee60d850af793e5c09c0f95d902132a299"
+content-hash = "32276ea344b00ee8cf0b4242f465f02c9dc3201761c0154a0729d37c7592b232"
