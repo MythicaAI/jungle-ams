@@ -3,6 +3,8 @@ import { Box } from "@mui/joy";
 import { PackageViewInfoPanel } from "@components/PackageView/PackageViewInfoPanel";
 import { AssetVersionResponse } from "types/apiTypes";
 import { BrowserRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "../queryClient";
 
 const meta: Meta<typeof PackageViewInfoPanel> = {
   title: "Components/PackageViewInfoPanel",
@@ -10,9 +12,11 @@ const meta: Meta<typeof PackageViewInfoPanel> = {
   decorators: [
     (Story) => (
       <Box sx={{ width: 600, margin: "auto", textAlign: "center" }}>
-        <BrowserRouter>
-          <Story />
-        </BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <Story />
+          </BrowserRouter>
+        </QueryClientProvider>
       </Box>
     ),
   ],

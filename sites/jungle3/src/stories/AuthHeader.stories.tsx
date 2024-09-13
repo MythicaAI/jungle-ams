@@ -2,6 +2,7 @@ import { Meta, StoryObj } from "@storybook/react";
 import { AuthHeader } from "@components/AuthHeader";
 import { MemoryRouter } from "react-router-dom";
 import { useGlobalStore } from "@store/globalStore";
+import Auth0ProviderWithHistory from "../providers/Auth0ProviderWithHistory";
 
 const useMockStore = (
   stateOverrides: Partial<ReturnType<typeof useGlobalStore>>,
@@ -16,7 +17,9 @@ export default {
   decorators: [
     (Story) => (
       <MemoryRouter>
-        <Story />
+        <Auth0ProviderWithHistory>
+          <Story />
+        </Auth0ProviderWithHistory>
       </MemoryRouter>
     ),
   ],
