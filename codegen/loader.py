@@ -15,6 +15,7 @@ MEDIA = "schema-media.yaml"
 PROFILE = "schema-profiles.yaml"
 GRAPH = "schema-graph.yaml"
 JOBS = "schema-jobs.yaml"
+STREAMING = "schema-streaming.yaml"
 SCHEMA = "meta-schema.json"
 
 

@@ -1,0 +1,28 @@
+# $schema: meta-schema.json
+name: "Streaming data schema types"
+description: "Types to represent persistent stream reader definitions"
+tables:
+  - name: Reader
+    table_name: readers
+    columns:
+      - name: reader_seq
+        type: BIGINT
+        primary_key: true
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
+      - name: source
+        type: TEXT
+        nullable: false
+      - name: params
+        type: JSON
+      - name: name
+        type: TEXT
+      - name: position
+        type: TEXT
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true

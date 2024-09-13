@@ -48,7 +48,8 @@ route_names = [
     'topos',
     'sessions',
     'validate',
-    'keys']
+    'keys',
+    'readers']
 
 for name in route_names:
     module = importlib.import_module(f'routes.{name}.{name}')

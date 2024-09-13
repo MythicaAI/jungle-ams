@@ -42,6 +42,7 @@ class IdType(Enum):
     JOBDEF = 'jobdef'
     JOB = 'job'
     JOBRESULT = 'jobres'
+    READER = 'read'
 
 
 class ApiError(Exception):
@@ -233,3 +234,13 @@ def job_result_seq_to_id(job_result_seq: int) -> str:
 def job_result_id_to_seq(job_result_id: str) -> int:
     """Convert job result ID to encrypted seq"""
     return id_to_seq(job_result_id, IdType.JOBRESULT)
+
+
+def reader_seq_to_id(reader_seq: int) -> str:
+    """Convert reader  seq to encrypted ID"""
+    return seq_to_id(IdType.READER, reader_seq)
+
+
+def reader_id_to_seq(reader_id: str) -> int:
+    """Convert reader ID to database seq"""
+    return id_to_seq(reader_id, IdType.READER)
