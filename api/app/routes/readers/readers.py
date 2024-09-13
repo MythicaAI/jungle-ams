@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import Any, Optional
+from typing import Any, Callable, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import BaseModel
@@ -15,6 +15,9 @@ from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from routes.authorization import current_profile
+from streaming.client_ops import ReadClientOp
+from streaming.funcs import Source
+from streaming.source_types import create_source
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
 log = logging.getLogger(__name__)
@@ -101,28 +104,74 @@ def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
 
 
 @router.websocket("/{reader_id}/connect")
-async def websocket_endpoint(websocket: WebSocket, reader_id: str):
+async def websocket_endpoint(
+        websocket: WebSocket,
+        reader_id: str,
+        profile: Profile = Depends(current_profile)):
     """Create a reader websocket connection"""
     await websocket.accept()
     try:
         log.info(f"websocket connected to reader {reader_id}")
-        await websocket_handler(websocket, reader_id)
+
+        # setup the source
+        reader_seq = reader_id_to_seq(reader_id)
+        with get_session() as session:
+            reader = session.exec(select(Reader)
+                                  .where(Reader.reader_seq == reader_seq)
+                                  .where(Reader.owner_seq == profile.profile_seq)).one_or_none()
+            if reader is None:
+                raise HTTPException(HTTPStatus.NOT_FOUND, f"failed to find reader {reader_id}")
+            params = reader.params
+            params['source'] = reader.source
+            params['name'] = reader.name
+            params['reader_seq'] = reader_seq
+            params['reader_id'] = reader_id
+            params['owner_seq'] = profile.profile_seq
+            params['owner_id'] = profile_seq_to_id(profile.profile_seq)
+            params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
+            params['position'] = reader.position
+            source = create_source(reader.source, params)
+        await websocket_handler(websocket, reader_id, source)
     except WebSocketDisconnect:
         log.info(f"websocket disconnected from reader {reader_id}")
     except WebSocketException as e:
         log.exception(f"websocket exception for reader {reader_id}", exc_info=e)
 
 
-async def websocket_handler(websocket: WebSocket, reader_id: str):
+async def websocket_handler(websocket: WebSocket, reader_id: str, source: Source):
     """Handler loop for web sockets"""
     while True:
-        await process_message(websocket, reader_id)
+        await process_message(websocket, reader_id, source)
 
 
-async def process_message(websocket: WebSocket, reader_id: str):
+def process_read(websocket: WebSocket, op: ReadClientOp, source: Source):
+    """Read data"""
+    items = source(op.after, op.max_page)
+    for item in items:
+        websocket.send_json(item.model_dump())
+
+
+# Define a TypeVar to represent a subtype of BaseType
+T = TypeVar('T', bound='ClientOp')
+
+ops: dict[str, tuple[T, Callable[[WebSocket, T, Source], None]]] = {
+    'read': (ReadClientOp, process_read)
+}
+
+
+async def process_message(websocket: WebSocket, reader_id: str, source):
     """Process and respond to a single message"""
     try:
-        msg = json.loads(websocket.receive_text())
+        text = await websocket.receive_text()
+        msg = json.loads(text)
+        if 'op' not in msg:
+            raise HTTPException(HTTPStatus.BAD_REQUEST, f"no 'op' included in client message")
+        op_name = msg['op']
+        if op_name not in ops:
+            raise HTTPException(HTTPStatus.BAD_REQUEST, f"unknown op {op_name}")
+        model_type, processor = ops[op_name]
+        data = model_type(json=msg)
+        processor(websocket, data, source)
         await websocket.send_text(json.dumps({'request': msg}))
     except JSONDecodeError as e:
         log.exception(f"json decode error for reader {reader_id}", exc_info=e)
