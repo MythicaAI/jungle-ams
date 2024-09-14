@@ -7,8 +7,8 @@ from json import JSONDecodeError
 from typing import Any, Callable, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
-from pydantic import BaseModel
-from sqlmodel import delete, insert, select
+from pydantic import BaseModel, TypeAdapter, ValidationError
+from sqlmodel import Session, delete, insert, select
 
 from auth.api_id import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
@@ -17,6 +17,7 @@ from db.schema.streaming import Reader
 from routes.authorization import current_profile
 from streaming.client_ops import ReadClientOp
 from streaming.funcs import Source
+from streaming.models import StreamItemUnion
 from streaming.source_types import create_source
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
@@ -53,6 +54,32 @@ def resolve_results(results) -> list[ReaderResponse]:
     return resolved
 
 
+def select_reader(session: Session, reader_seq: int, profile_seq: int) -> Reader:
+    """Get a single owned reader"""
+    reader = session.exec(select(Reader)
+                          .where(Reader.reader_seq == reader_seq)
+                          .where(Reader.owner_seq == profile_seq)).one_or_none()
+    if reader is None:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND,
+            f"failed to find reader {reader_seq_to_id(reader_seq)}")
+    return reader
+
+
+def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:
+    """Generate the source params from a reader"""
+    params = reader.params or dict()
+    params['source'] = reader.source
+    params['name'] = reader.name
+    params['reader_seq'] = reader.reader_seq
+    params['reader_id'] = reader_seq_to_id(reader.reader_seq)
+    params['owner_seq'] = profile.profile_seq
+    params['owner_id'] = profile_seq_to_id(profile.profile_seq)
+    params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
+    params['position'] = reader.position
+    return params
+
+
 @router.post("/", status_code=HTTPStatus.CREATED)
 def create_reader(create: CreateReaderRequest, profile: Profile = Depends(current_profile)) -> ReaderResponse:
     """Create a new reader on a source"""
@@ -85,9 +112,8 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
 def get_readers(profile: Profile = Depends(current_profile)) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
     with get_session() as session:
-        return resolve_results(
-            session.exec(select(Reader)
-                         .where(Reader.owner_seq == profile.profile_seq)).all())
+        return resolve_results(session.exec(select(Reader)
+                                            .where(Reader.owner_seq == profile.profile_seq)).all())
 
 
 @router.delete("/{reader_id}")
@@ -103,6 +129,39 @@ def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
         session.commit()
 
 
+@router.get("/{reader_id}/items")
+async def reader_dequeue(
+        reader_id: str,
+        profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
+    """Dequeue items from the reader"""
+    reader_seq = reader_id_to_seq(reader_id)
+    with get_session() as session:
+        reader = select_reader(session, reader_seq, profile.profile_seq)
+        params = reader_to_source_params(profile, reader)
+        source = create_source(reader.source, params)
+        if source is None:
+            raise HTTPException(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                f"failed to create source for reader {reader_id}")
+        default_max_page_size = 10
+        page_size = int(params.get('page_size', default_max_page_size))
+        raw_items = source(reader.position, page_size)
+        adapter = TypeAdapter(list[StreamItemUnion])
+        try:
+            return adapter.validate_python(raw_items)
+        except ValidationError as e:
+            log.exception("failed to validate", exc_info=e)
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
+                                detail=f"validation error for reader {reader_id}")
+
+
+@router.websocket("/connect")
+async def websocket_connect_all(websocket: WebSocket):
+    """Connect a websocket for all profile data"""
+    await websocket.accept()
+    await websocket.send_json(data={'message': 'hello world'}, mode='text')
+
+
 @router.websocket("/{reader_id}/connect")
 async def websocket_endpoint(
         websocket: WebSocket,
@@ -112,24 +171,11 @@ async def websocket_endpoint(
     await websocket.accept()
     try:
         log.info(f"websocket connected to reader {reader_id}")
-
-        # setup the source
+        # set up the source
         reader_seq = reader_id_to_seq(reader_id)
         with get_session() as session:
-            reader = session.exec(select(Reader)
-                                  .where(Reader.reader_seq == reader_seq)
-                                  .where(Reader.owner_seq == profile.profile_seq)).one_or_none()
-            if reader is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND, f"failed to find reader {reader_id}")
-            params = reader.params
-            params['source'] = reader.source
-            params['name'] = reader.name
-            params['reader_seq'] = reader_seq
-            params['reader_id'] = reader_id
-            params['owner_seq'] = profile.profile_seq
-            params['owner_id'] = profile_seq_to_id(profile.profile_seq)
-            params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
-            params['position'] = reader.position
+            reader = select_reader(session, reader_seq, profile.profile_seq)
+            params = reader_to_source_params(profile, reader)
             source = create_source(reader.source, params)
         await websocket_handler(websocket, reader_id, source)
     except WebSocketDisconnect:
