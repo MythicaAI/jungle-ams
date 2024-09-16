@@ -35,7 +35,7 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
                                  .limit(max_page)).all()
 
         return [Event(
-            event_id=event_seq_to_id(i.event_seq),
+            index=event_seq_to_id(i.event_seq),
             payload=i.job_data,
         ) for i in r]
 

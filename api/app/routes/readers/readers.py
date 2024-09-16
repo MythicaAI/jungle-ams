@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import BaseModel, TypeAdapter, ValidationError
-from sqlmodel import Session, delete, insert, select
+from sqlmodel import Session, delete, insert, select, update
 
 from auth.api_id import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
@@ -64,6 +64,18 @@ def select_reader(session: Session, reader_seq: int, profile_seq: int) -> Reader
             HTTPStatus.NOT_FOUND,
             f"failed to find reader {reader_seq_to_id(reader_seq)}")
     return reader
+
+
+def update_reader_index(session: Session, reader_seq: int, index: str):
+    """Update the reader with the last read index for seekable streams"""
+    r = session.exec(update(Reader)
+                     .values(position=index)
+                     .where(Reader.reader_seq == reader_seq))
+    if r.rowcount == 0:
+        log.error("failed to update reader index for reader_seq %s", reader_seq)
+    else:
+        log.debug("reader_seq %s position moved to index %s", reader_seq, index)
+    session.commit()
 
 
 def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:
@@ -132,6 +144,7 @@ def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
 @router.get("/{reader_id}/items")
 async def reader_dequeue(
         reader_id: str,
+        after: Optional[str] = None,
         profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
     reader_seq = reader_id_to_seq(reader_id)
@@ -145,7 +158,11 @@ async def reader_dequeue(
                 f"failed to create source for reader {reader_id}")
         default_max_page_size = 10
         page_size = int(params.get('page_size', default_max_page_size))
-        raw_items = source(reader.position, page_size)
+        after = after or reader.position
+        raw_items = source(after, page_size)
+        if len(raw_items) > 0 and raw_items[-1].index:
+            update_reader_index(session, reader.reader_seq, raw_items[-1].index)
+
         adapter = TypeAdapter(list[StreamItemUnion])
         try:
             return adapter.validate_python(raw_items)

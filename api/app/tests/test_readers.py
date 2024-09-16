@@ -1,3 +1,4 @@
+import itertools
 import random
 from http import HTTPStatus
 from itertools import cycle
@@ -20,6 +21,7 @@ from tests.shared_test import assert_status_code
 
 # length of event data in test events
 test_event_info_len = 10
+next_test_event_id = itertools.count(start=1, step=1)
 
 
 def generate_stream_items(item_list_length: int):
@@ -30,7 +32,7 @@ def generate_stream_items(item_list_length: int):
         lambda: Progress(process_guid=process_guid, job_id=job_id, progress=42),
         lambda: Message(process_guid=process_guid, job_id=job_id, message="foo"),
         lambda: OutputFiles(process_guid=process_guid, job_id=job_id, files={'meshes': [file_seq_to_id(42)]}),
-        lambda: Event(event_id=event_seq_to_id(42), payload={'hello': 'world'})
+        lambda: Event(index=event_seq_to_id(next(next_test_event_id)), payload={'hello': 'world'})
     ]
     gen_cycle = cycle(generators)
     return [next(gen_cycle)() for i in range(item_list_length)]
@@ -148,8 +150,8 @@ def test_events(api_base, client, create_profile, use_test_source_fixture):
     test_profile = create_profile()
     auth_header = test_profile.authorization_header()
     # generate some events for the profile
-    event_count = 10
-    generate_events(test_profile.profile, event_count)
+    generate_event_count = 10
+    generate_events(test_profile.profile, generate_event_count)
 
     # create event reader
     r = client.post(f"{api_base}/readers/",
@@ -163,16 +165,42 @@ def test_events(api_base, client, create_profile, use_test_source_fixture):
 
     reader_id = o.reader_id
 
-    # dequeue events
-    while True:
+    # dequeue events in page_size 1 chunks
+    count_events = 0
+    max_reads = 15
+    reads = 0
+    events = []
+    event_ids = set()
+    while reads < max_reads:
+        reads += 1
         r = client.get(
             f"{api_base}/readers/{reader_id}/items",
             headers=auth_header)
         assert_status_code(r, HTTPStatus.OK)
+        if len(r.json()) == 0:
+            break
         assert len(r.json()) == 1
+        count_events += 1
         e = munchify(r.json()[0])
-        assert 'event_id' in e
+        assert 'index' in e
         assert 'payload' in e
+        assert e.index not in event_ids, "unique read constraint failed"
+        event_ids.add(e.index)
+        events.append(e)
         payload = e.payload
         assert 'info' in payload
         assert len(payload.info) == test_event_info_len
+    assert count_events == generate_event_count
+
+    # test the optional after parameter to see if the read works
+    after = events[3].index
+    r = client.get(
+        f"{api_base}/readers/{reader_id}/items?after={after}",
+        headers=auth_header)
+    assert_status_code(r, HTTPStatus.OK)
+    assert len(r.json()) == 1
+    assert r.json()[0]['index'] == events[4].index, "after constraint failed"
+
+    # remove the reader
+    r = client.delete(f"{api_base}/readers/{reader_id}", headers=auth_header)
+    assert_status_code(r, HTTPStatus.OK)
