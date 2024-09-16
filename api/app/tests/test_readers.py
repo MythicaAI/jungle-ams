@@ -1,16 +1,25 @@
+import random
 from http import HTTPStatus
 from itertools import cycle
+from string import ascii_lowercase
 from uuid import uuid4
 
 from munch import munchify
 from pydantic import TypeAdapter
+from sqlmodel import insert
 
-from auth.api_id import event_seq_to_id, file_seq_to_id, job_seq_to_id
+from auth.api_id import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
+from db.connection import get_session
+from db.schema.events import Event as DbEvent
+from db.schema.profiles import Profile
 from streaming.models import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
 from streaming.source_types import create_source
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code
+
+# length of event data in test events
+test_event_info_len = 10
 
 
 def generate_stream_items(item_list_length: int):
@@ -25,6 +34,24 @@ def generate_stream_items(item_list_length: int):
     ]
     gen_cycle = cycle(generators)
     return [next(gen_cycle)() for i in range(item_list_length)]
+
+
+def generate_events(profile: Profile, event_count: int):
+    """Generate some random event data in the database"""
+
+    def generate_test_job_data():
+        """Build some random event payload"""
+        return {'info': ''.join([random.choice(ascii_lowercase) for _ in range(test_event_info_len)])}
+
+    db_events = [{
+        'event_type': 'test',
+        'job_data': generate_test_job_data(),
+        'owner_seq': profile_id_to_seq(profile.profile_id)}
+        for _ in range(event_count)]
+    with get_session() as session:
+        for e in db_events:
+            session.exec(insert(DbEvent).values(e))
+        session.commit()
 
 
 def test_source_fixture(use_test_source_fixture):
@@ -115,3 +142,37 @@ def test_operations(api_base, client, create_profile, use_test_source_fixture):
     assert len(r.json()) == create_count - 1
     reader_ids = {r['reader_id'] for r in r.json()}
     assert o.reader_id not in reader_ids
+
+
+def test_events(api_base, client, create_profile, use_test_source_fixture):
+    test_profile = create_profile()
+    auth_header = test_profile.authorization_header()
+    # generate some events for the profile
+    event_count = 10
+    generate_events(test_profile.profile, event_count)
+
+    # create event reader
+    r = client.post(f"{api_base}/readers/",
+                    json={'source': 'events',
+                          'params': {'page_size': 1}},
+                    headers=auth_header)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    assert 'reader_id' in o
+    assert 'source' in o and o.source == 'events'
+
+    reader_id = o.reader_id
+
+    # dequeue events
+    while True:
+        r = client.get(
+            f"{api_base}/readers/{reader_id}/items",
+            headers=auth_header)
+        assert_status_code(r, HTTPStatus.OK)
+        assert len(r.json()) == 1
+        e = munchify(r.json()[0])
+        assert 'event_id' in e
+        assert 'payload' in e
+        payload = e.payload
+        assert 'info' in payload
+        assert len(payload.info) == test_event_info_len
