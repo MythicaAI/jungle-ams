@@ -97,7 +97,7 @@ def test_operations(api_base, client, create_profile, use_test_source_fixture):
         data = {
             'source': 'test',
             'name': reader_name,
-            'params': {'max_page_size': 1},
+            'params': {'page_size': 1},
         }
         r = client.post(f"{api_base}/readers/", json=data, headers=auth_header)
         assert_status_code(r, HTTPStatus.CREATED)

@@ -34,12 +34,12 @@ class TestSource:
         name = params.get('name')
         assert name in _test_streams
         self.items: list[StreamItem] = _test_streams.get(name, [])
-        self.max_page_size = params.get("max_page_size", 1)
+        self.page_size = params.get("page_size", 1)
         self.position = 0
 
-    def __call__(self, position: str, max_page: int) -> list[StreamItem]:
+    def __call__(self, position: str, page_size: int) -> list[StreamItem]:
         pos = int(position) if position else 0
-        sub_items = self.items[pos:pos + max(max_page, self.max_page_size)]
+        sub_items = self.items[pos:pos + max(page_size, self.page_size)]
         return sub_items
 
     @staticmethod

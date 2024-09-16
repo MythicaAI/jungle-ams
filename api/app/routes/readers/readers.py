@@ -156,8 +156,8 @@ async def reader_dequeue(
             raise HTTPException(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 f"failed to create source for reader {reader_id}")
-        default_max_page_size = 10
-        page_size = int(params.get('page_size', default_max_page_size))
+        default_page_size = 10
+        page_size = int(params.get('page_size', default_page_size))
         after = after or reader.position
         raw_items = source(after, page_size)
         if len(raw_items) > 0 and raw_items[-1].index:
@@ -209,7 +209,7 @@ async def websocket_handler(websocket: WebSocket, reader_id: str, source: Source
 
 def process_read(websocket: WebSocket, op: ReadClientOp, source: Source):
     """Read data"""
-    items = source(op.after, op.max_page)
+    items = source(op.after, op.page_size)
     for item in items:
         websocket.send_json(item.model_dump())
 

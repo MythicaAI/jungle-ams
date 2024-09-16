@@ -14,25 +14,25 @@ from streaming.models import Event, StreamItem
 
 def create_events_table_source(params: dict[str, Any]) -> Source:
     """Constructor of event table result stream sources"""
-    param_max_page = params.get('max_page', 1)
+    param_page_size = params.get('page_size', 1)
     param_owner_seq = params.get('owner_seq', None)
     if param_owner_seq is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST, 'an owner is required for event table streams')
 
-    def events_table_source(after: str, max_page: int) -> list[StreamItem]:
+    def events_table_source(after: str, page_size: int) -> list[StreamItem]:
         """Function that produces event table result streams"""
-        max_page = min(param_max_page, max_page)
+        page_size = min(param_page_size, page_size)
         after_events_seq = event_id_to_seq(after) if after else 0
         with get_session() as session:
             if not after:
                 r = session.exec(select(DbEvent)
                                  .where(DbEvent.owner_seq == param_owner_seq)
-                                 .limit(max_page)).all()
+                                 .limit(page_size)).all()
             else:
                 r = session.exec(select(DbEvent)
                                  .where(DbEvent.owner_seq == param_owner_seq)
                                  .where(DbEvent.event_seq > after_events_seq)
-                                 .limit(max_page)).all()
+                                 .limit(page_size)).all()
 
         return [Event(
             index=event_seq_to_id(i.event_seq),
