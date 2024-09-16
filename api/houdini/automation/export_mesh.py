@@ -67,7 +67,7 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
     asset = geo.createNode(assetdef.nodeTypeName())
 
     # Set parms
-    for k, v in parms_data['parms'].items():
+    for k, v in parms_data['mesh_parms'].items():
         # TODO: Support ramp parameters
         if not isinstance(v, dict):
             val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
@@ -138,7 +138,6 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
             render_node.setInput(0, attrib_node, 0)
             render_node.parm("execute").pressButton()
 
-            os.remove(output_file_path)
             output_file_path = binded_file
 
         # Convert to USDZ format
