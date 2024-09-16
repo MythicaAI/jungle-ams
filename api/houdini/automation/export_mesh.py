@@ -60,6 +60,7 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
     # Geometry
     obj = hou.node('obj')
     geo = obj.createNode('geo','geometry')
+    stage = hou.node('stage')
 
     # TODO: Support specifying which definition inside the hda file to use
     assetdef = hou.hda.definitionsInFile(hdapath)[0]
@@ -118,6 +119,27 @@ def export_mesh(hdapath, output_path, output_file_name, format, parms_file):
         usd_node.parm("authortimesamples").set("never")
         usd_node.setInput(0, asset, 0)
         usd_node.parm("execute").pressButton()
+
+        # Bind material
+        if parms_data['material_parms']['type'] == "Unreal":
+            sublayer_node = stage.createNode("sublayer")
+            sublayer_node.parm("num_files").set(1)
+            sublayer_node.parm("filepath1").set(output_file_path)
+    
+            sourceAssset = parms_data['material_parms']['sourceAsset']
+            attrib_node = stage.createNode("attribwrangle")
+            attrib_node.parm("primpattern").set("%type:Boundable")
+            attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
+            attrib_node.setInput(0, sublayer_node, 0)
+
+            binded_file = os.path.join(output_path, f"{output_file_name}_with_material.usd")
+            render_node = stage.createNode("usd_rop")
+            render_node.parm("lopoutput").set(binded_file) 
+            render_node.setInput(0, attrib_node, 0)
+            render_node.parm("execute").pressButton()
+
+            os.remove(output_file_path)
+            output_file_path = binded_file
 
         # Convert to USDZ format
         output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
