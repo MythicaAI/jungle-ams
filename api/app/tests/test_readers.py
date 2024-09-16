@@ -149,6 +149,7 @@ def test_operations(api_base, client, create_profile, use_test_source_fixture):
 def test_events(api_base, client, create_profile, use_test_source_fixture):
     test_profile = create_profile()
     auth_header = test_profile.authorization_header()
+
     # generate some events for the profile
     generate_event_count = 10
     generate_events(test_profile.profile, generate_event_count)
