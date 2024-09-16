@@ -101,7 +101,8 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
 
         # Prepare the parameters file
         parms_data = {
-            'parms': o.params,
+            'mesh_parms': o.params.mesh_params,
+            'material_parms': o.params.material_params,
             'inputs': input_files_local
         }
 
