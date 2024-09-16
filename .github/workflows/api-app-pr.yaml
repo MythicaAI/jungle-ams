@@ -62,6 +62,8 @@ jobs:
 
       - uses: 8BitJonny/gh-get-current-pr@3.0.0
         id: PR
+        with:
+          sha: ${{ github.event.pull_request.head.sha }}
 
       - name: Run tests
         id: pytester-cov
