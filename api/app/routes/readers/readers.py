@@ -100,6 +100,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
             source=create.source,
             owner_seq=profile.profile_seq,
             name=create.name,
+            params=create.params,
             position=create.position))
         if r.rowcount == 0:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f"failed to create reader")

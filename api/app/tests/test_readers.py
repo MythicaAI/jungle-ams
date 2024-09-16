@@ -154,9 +154,10 @@ def test_events(api_base, client, create_profile, use_test_source_fixture):
     generate_events(test_profile.profile, generate_event_count)
 
     # create event reader
+    page_size = 3
     r = client.post(f"{api_base}/readers/",
                     json={'source': 'events',
-                          'params': {'page_size': 1}},
+                          'params': {'page_size': page_size}},
                     headers=auth_header)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
@@ -165,10 +166,12 @@ def test_events(api_base, client, create_profile, use_test_source_fixture):
 
     reader_id = o.reader_id
 
-    # dequeue events in page_size 1 chunks
+    # dequeue events in page_size chunks
     count_events = 0
-    max_reads = 15
+    max_reads = (generate_event_count / page_size) + 2
     reads = 0
+    got_zero_read = False
+    page_sized_reads = 0
     events = []
     event_ids = set()
     while reads < max_reads:
@@ -178,28 +181,36 @@ def test_events(api_base, client, create_profile, use_test_source_fixture):
             headers=auth_header)
         assert_status_code(r, HTTPStatus.OK)
         if len(r.json()) == 0:
+            got_zero_read = True
             break
-        assert len(r.json()) == 1
-        count_events += 1
-        e = munchify(r.json()[0])
-        assert 'index' in e
-        assert 'payload' in e
-        assert e.index not in event_ids, "unique read constraint failed"
-        event_ids.add(e.index)
-        events.append(e)
-        payload = e.payload
-        assert 'info' in payload
-        assert len(payload.info) == test_event_info_len
-    assert count_events == generate_event_count
+        if len(r.json()) == page_size:
+            page_sized_reads += 1
+        for i in r.json():
+            count_events += 1
+            e = munchify(i)
+            assert 'index' in e
+            assert 'payload' in e
+            assert e.index not in event_ids, "unique read constraint failed"
+            event_ids.add(e.index)
+            events.append(e)
+            payload = e.payload
+            assert 'info' in payload
+            assert len(payload.info) == test_event_info_len
+
+    assert count_events == generate_event_count, "total events read constraint"
+    assert got_zero_read, "reached end of stream constraint"
+    assert page_sized_reads == int(generate_event_count / page_size), "full pages read constraint"
 
     # test the optional after parameter to see if the read works
-    after = events[3].index
+    selected_event = events[generate_event_count - page_size]
+    expected_next_event = events[generate_event_count - (page_size - 1)]
+    after = selected_event.index
     r = client.get(
         f"{api_base}/readers/{reader_id}/items?after={after}",
         headers=auth_header)
     assert_status_code(r, HTTPStatus.OK)
-    assert len(r.json()) == 1
-    assert r.json()[0]['index'] == events[4].index, "after constraint failed"
+    assert len(r.json()) == page_size - 1, "partial page size constraint"
+    assert r.json()[0]['index'] == expected_next_event.index, "after constraint"
 
     # remove the reader
     r = client.delete(f"{api_base}/readers/{reader_id}", headers=auth_header)

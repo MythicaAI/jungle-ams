@@ -21,7 +21,7 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
 
     def events_table_source(after: str, page_size: int) -> list[StreamItem]:
         """Function that produces event table result streams"""
-        page_size = min(param_page_size, page_size)
+        page_size = max(param_page_size, page_size)
         after_events_seq = event_id_to_seq(after) if after else 0
         with get_session() as session:
             if not after:
