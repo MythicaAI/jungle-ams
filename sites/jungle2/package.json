@@ -1,0 +1,86 @@
+{
+  "name": "jungle2",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@ark-ui/react": "^2.2.3",
+    "@pandacss/dev": "^0.39.1",
+    "@park-ui/panda-preset": "^0.37.1",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "axios": "^1.7.2",
+    "lucide-react": "^0.379.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ts-loader": "^9.5.1",
+    "web-vitals": "^2.1.4",
+    "webpack-cli": "^5.1.4",
+    "zustand": "^4.5.2"
+  },
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test --env=jsdom",
+    "eject": "react-scripts eject",
+    "ts-migrate": "ts-migrate-full .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "prepare": "panda codegen"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "packageManager": "pnpm@9.1.2+sha512.127dc83b9ea10c32be65d22a8efb4a65fb952e8fefbdfded39bdc3c97efc32d31b48b00420df2c1187ace28c921c902f0cb5a134a4d032b8b5295cbfa2c681e2",
+  "devDependencies": {
+    "@chromatic-com/storybook": "^1.4.0",
+    "@craco/craco": "^7.1.0",
+    "@storybook/addon-essentials": "^8.1.3",
+    "@storybook/addon-interactions": "^8.1.3",
+    "@storybook/addon-links": "^8.1.3",
+    "@storybook/addon-onboarding": "^8.1.3",
+    "@storybook/blocks": "^8.1.3",
+    "@storybook/preset-create-react-app": "^8.1.3",
+    "@storybook/react": "^8.1.3",
+    "@storybook/react-webpack5": "^8.1.3",
+    "@storybook/test": "^8.1.3",
+    "@types/node": "^20.12.12",
+    "@types/prop-types": "^15.7.12",
+    "@types/react": "^18.3.2",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.0.1",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-webpack-plugin": "^4.2.0",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.4",
+    "msw-storybook-addon": "^2.0.2",
+    "prettier": "^3.2.5",
+    "prop-types": "^15.8.1",
+    "react-scripts": "^5.0.1",
+    "storybook": "^8.1.3",
+    "ts-migrate": "^0.1.35",
+    "typescript": "^5.4.5",
+    "webpack": "^5.91.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --write"
+    ]
+  }
+}

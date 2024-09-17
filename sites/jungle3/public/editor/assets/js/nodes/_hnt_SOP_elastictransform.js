@@ -1,0 +1,163 @@
+
+export default function (hou) {
+    class _hnt_SOP_elastictransform extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SOP/Deform/elastictransform';
+        static category = '/SOP';
+        static houdiniType = 'elastictransform';
+        static title = 'Elastic Transform';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_elastictransform.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "group", label: "Group", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "opmenu -l -a shotsculpt1 group", item_generator_script_language: hou.scriptLanguage.Hscript, menu_type: hou.menuType.StringToggle});
+			hou_parm_template.setTags({"autoscope": "0000000000000000", "script_action": "import soputils\nkwargs['geometrytype'] = kwargs['node'].parmTuple('grouptype')\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "grouptype", label: "Group Type", menu_items: ["guess", "vertices", "edges", "points", "prims"], menu_labels: ["Guess from Group", "Vertices", "Edges", "Points", "Primitives"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "elasticityparms", label: "Material Parameters", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			let hou_parm_template2 = new hou.FloatParmTemplate({name: "poissonratio", label: "Rigidity", num_components: 1, default_value: [0.1], min: 0, max: 1.5, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "sculptparameters", label: "Transform Parameters", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "stroke_sculptmode", label: "Transform Mode", menu_items: ["grab", "twist", "scale", "pinch"], menu_labels: ["Grab", "Twist", "Scale", "Pinch"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "grab", label: "Grab Transform", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ stroke_sculptmode != grab }");
+			hou_parm_template2.setTags({"group_type": "simple"});
+			let hou_parm_template3 = new hou.FloatParmTemplate({name: "grab_displacement", label: "Direction", num_components: 3, default_value: [0, 1, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template3.setConditional(hou.parmCondType.HideWhen, "{ stroke_sculptmode != grab }");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "grab_strength", label: "Strength", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "twist", label: "Twist Transform", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ stroke_sculptmode != twist }");
+			hou_parm_template2.setTags({"group_type": "simple"});
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "twist_plane", label: "Plane Normal", num_components: 3, default_value: [0, 1, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python", "units": ""});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "twist_angle", label: "Strength", num_components: 1, default_value: [0], min: null, max: 360, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "scale", label: "Scale Transform", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ stroke_sculptmode != scale }");
+			hou_parm_template2.setTags({"group_type": "simple"});
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "scale_amount", label: "Strength", num_components: 1, default_value: [0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "pinch", label: "Pinch Transform", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ stroke_sculptmode != pinch }");
+			hou_parm_template2.setTags({"group_type": "simple"});
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "pinch_plane", label: "Plane Normal", num_components: 3, default_value: [0, 1, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "pinch_direction", label: "Direction", num_components: 3, default_value: [1, 0, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "pinch_strength", label: "Strength", num_components: 1, default_value: [0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "stroke_origin", label: "Origin", num_components: 3, default_value: [0, 0, 0], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "stroke_moving", label: "Divide Transformation", default_value: false, default_expression: "off", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "stroke_movingstep", label: "Division Size", num_components: 1, default_value: [0.01], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ stroke_moving == 0 }");
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "stroke_decay", label: "Natural Decay", menu_items: ["single", "bi-scale", "triscale"], menu_labels: ["Slow Decay", "Normal Decay", "Fast Decay"], default_value: 2, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "stroke_hardradiusdecay", label: "Hard Decay", menu_items: ["off", "instant", "linear", "quadratic", "cubic"], menu_labels: ["Off", "Instant", "Linear", "Quadratic", "Cubic"], default_value: 4, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "stroke_hardradius", label: "Hard Radius", num_components: 1, default_value: [0], default_expression: ["ch(\"stroke_radius\")"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "stroke_radius", label: "Radius", num_components: 1, default_value: [2], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "baseconstrints", label: "Displacement Constraints", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.StringParmTemplate({name: "initialdispconstr", label: "Group", num_components: 1, default_value: ["!*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "opmenu -l -a shotsculpt1 initialdispconstr", item_generator_script_language: hou.scriptLanguage.Hscript, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_action": "import soputils\nkwargs['geometrytype'] = kwargs['node'].parmTuple('initialdispconstrgrouptype')\nkwargs['inputindex'] = 0\nsoputils.selectGroupParm(kwargs)", "script_action_help": "Select geometry from an available viewport.\nShift-click to turn on Select Groups.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "initialdispconstrgrouptype", label: "Group Type", menu_items: ["guess", "vertices", "edges", "points", "prims"], menu_labels: ["Guess from Group", "Vertices", "Edges", "Points", "Primitives"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "initialdispconstrradius", label: "Radius", num_components: 1, default_value: [0.1], min: 0, max: 1, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "maxdispconstr", label: "Points to Constrain", num_components: 1, default_value: [250], min: 0, max: 500, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"autoscope": "0000000000000000", "script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "pointsorigin", label: "Point Origin", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.hide(true);
+			hou_parm_template.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template.setTags({"script_callback_language": "python"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "vis", label: "Visualization", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "visoffactive", label: "Active", default_value: false});
+			hou_parm_template2.hide(true);
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "visualizefalloff", label: "Visualize Falloff", menu_items: ["never", "always", "active"], menu_labels: ["Never", "Always", "When Viewport is Active"], default_value: 2, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Deform/elastictransform',_hnt_SOP_elastictransform)
+    return _hnt_SOP_elastictransform
+}
+        

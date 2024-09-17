@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 6
+  selector:
+    matchLabels:
+      app: "app"
+  template:
+    metadata:
+      labels:
+        app: app
+        tier: web
+        version: "1.0"
+        release: production
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: api
+      containers:
+        - name: app
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+          env:
+            - name: SQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: SQL_URL
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
+            - name: GCS_SERVICE_ENABLE
+              value: "true"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/accounts/service-account.json"
+            - name: WORKER_COUNT
+              value: "3"
+          ports:
+            - containerPort: 5555
+              name: http-api
+          volumeMounts:
+            - name: ephemeral-upload-vol
+              mountPath: /uploads
+              readOnly: false
+            - name: service-account-vol
+              mountPath: /accounts
+              readOnly: true
+      volumes:
+        - name: ephemeral-upload-vol
+          emptyDir: { }
+        - name: service-account-vol
+          secret:
+            secretName: front-end-api-sa
+      restartPolicy: Always

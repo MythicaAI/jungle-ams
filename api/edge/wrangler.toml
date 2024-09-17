@@ -1,0 +1,17 @@
+name = "edge"
+account_id = "13e509b5222b72ad524a2761b46a2040"
+workers_dev = true
+main = "src/main.ts"
+compatibility_date = "2024-05-12"
+
+[site]
+bucket = "./dist"
+
+[build]
+command = "npm run build"
+
+[build.upload]
+format = "service-worker"
+
+[env.production]
+workers_dev = true

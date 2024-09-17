@@ -1,0 +1,45 @@
+name: Graph Schema
+description: Graph and topology representation
+tables:
+  - name: Topology
+    table_name: topologies
+    description: Provides a grouping for asset graphs
+    columns:
+      - name: topology_seq
+        type: BIGINT
+        primary_key: true
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
+      - name: org_seq
+        type: BIGINT
+        foreign_key: orgs.org_seq
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+      - name: name
+        type: TEXT
+      - name: description
+        type: TEXT
+      - name: edge_data_schema
+        type: JSON
+
+  - name: TopologyRef
+    table_name: topology_refs
+    description: Records relationships between assets
+    columns:
+      - name: topology_seq
+        type: BIGINT
+        foreign_key: topologies.topology_seq
+        primary_key: true
+      - name: src_id
+        type: TEXT
+        primary_key: true
+      - name: dst_id
+        type: TEXT
+        primary_key: true
+      - name: edge_data
+        type: JSON

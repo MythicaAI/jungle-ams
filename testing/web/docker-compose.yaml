@@ -5,22 +5,38 @@
 services:
   nginx:
     container_name: nginx
-    image: nginx:latest
+    image: mythica-web-front:latest
+    depends_on:
+      - app
     ports:
       - "8080:80"
     volumes:
-      - static:/usr/share/nginx/html
+      - sites:/sites
     networks:
       - web
       - storage
+  app:
+    container_name: app
+    image: mythica-app:latest
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      LOCAL_STORAGE_PATH: /tmp/local_storage
+    ports:
+      - "50555:5555"
+    networks:
+      - web
+      - storage
+    volumes:
+      - local_storage:/app/local_storage
 volumes:
-  static:
+  local_storage:
+    driver: local
+  sites:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: "../../sites"
-  
+      device: "../../sites/"
 networks:
   storage:
     driver: bridge

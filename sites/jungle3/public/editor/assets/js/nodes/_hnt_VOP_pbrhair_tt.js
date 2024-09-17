@@ -1,0 +1,39 @@
+
+export default function (hou) {
+    class _hnt_VOP_pbrhair_tt extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'VOP/Other/pbrhair_tt';
+        static category = '/VOP';
+        static houdiniType = 'pbrhair_tt';
+        static title = 'PBR Hair Transmission';
+        static icon = '/editor/assets/imgs/nodes/_hnt_VOP_pbrhair_tt.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['VOP', 'VOP', 'VOP', 'VOP', 'VOP', 'VOP'];
+            const outputs = ['VOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.StringParmTemplate({name: "label", label: "Component Label", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: ["diffuse", "specular", "reflect", "refract"], menu_labels: ["Diffuse", "Specular", "Reflect", "Refract"], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "tt_clr", label: "Transmission Color", num_components: 3, default_value: [1, 1, 1], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "tt_size", label: "Transmission Size", num_components: 1, default_value: [0.05], min: 0, max: 1, min_is_strict: true, max_is_strict: true, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "tt_shift", label: "Transmission Shift", num_components: 1, default_value: [0], min: null, max: 1, min_is_strict: true, max_is_strict: true, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('VOP/Other/pbrhair_tt',_hnt_VOP_pbrhair_tt)
+    return _hnt_VOP_pbrhair_tt
+}
+        

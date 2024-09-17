@@ -1,0 +1,160 @@
+
+export default function (hou) {
+    class _hnt_SOP_alembic extends hou._HoudiniBase {
+        static is_root = false;
+        static id = 'SOP/Other/alembic';
+        static category = '/SOP';
+        static houdiniType = 'alembic';
+        static title = 'Alembic';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_alembic.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.FolderParmTemplate({name: "numlayers", label: "Number of Layers", folder_type: hou.folderType.MultiparmBlock, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"multistartoffset": "1"});
+			let hou_parm_template2 = new hou.ToggleParmTemplate({name: "enablelayer#", label: "", default_value: true});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "layer#", label: "Layer #", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.FileReference, file_type: hou.fileType.Any, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template2.setTags({"filechooser_pattern": "*.abc"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.StringParmTemplate({name: "fileName", label: "File Name", num_components: 1, default_value: ["default.abc"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.FileReference, file_type: hou.fileType.Any, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template.setTags({"filechooser_pattern": "*.abc"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.ButtonParmTemplate({name: "reload", label: "Reload Geometry"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "frame", label: "Frame", num_components: 1, default_value: [1], default_expression: ["$FF"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FloatParmTemplate({name: "fps", label: "Frames per Second", num_components: 1, default_value: [24], default_expression: ["$FPS"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.MenuParmTemplate({name: "missingfile", label: "Missing File", menu_items: ["error", "empty"], menu_labels: ["Report Error", "No Geometry"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "stdswitcher", label: "Geometry", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "abcxform", label: "Create Primitives For", menu_items: ["off", "on", "xform"], menu_labels: ["Shape Nodes Only", "Shape and Transform Nodes", "Transform Nodes Only"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "loadmode", label: "Load As", menu_items: ["alembic", "unpack", "houdini", "hpoints", "hboxes"], menu_labels: ["Alembic Delayed Load Primitives", "Unpack Alembic Delayed Load Primitives", "Load Houdini Geometry (deprecated)", "Houdini Point Cloud", "Bounding Boxes"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "viewportlod", label: "Display As", menu_items: ["full", "points", "box", "centroid", "hidden"], menu_labels: ["Full Geometry", "Point Cloud", "Bounding Box", "Centroid", "Hidden"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "pointmode", label: "Point Mode", menu_items: ["shared", "unique", "centroid", "shape"], menu_labels: ["Shared Point", "Unique Points At Origin", "Unique Points At Centroid", "Unique Points At Shape Origin"], default_value: 2, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "polysoup", label: "Poly Soup Primitives", menu_items: ["none", "polymesh", "subd"], menu_labels: ["No Poly Soup Primitives", "Use Poly Soups For Polygon Meshes", "Use Poly Soups Wherever Possible"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "includeXform", label: "Transform Geometry To World Space", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "usevisibility", label: "Use Visibility", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "statictimezero", label: "Set Zero Time for Static Geometry", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "groupnames", label: "Primitive Groups", menu_items: ["none", "shape", "xform", "basename", "xformbase"], menu_labels: ["No Groups", "Name Group Using Shape Node Full Path", "Name Group Using Transform Node Full Path", "Name Group Using Shape Node Name", "Name Group Using Transform Node Name"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "subdgroup", label: "Subdivision Group", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "stdswitcher_1", label: "Selection", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.StringParmTemplate({name: "rootPath", label: "Root Path", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "def getFileName(node):\n    r = []\n    for i in range(node.evalParm('numlayers')):\n        if node.evalParm('enablelayer%d' % (i + 1,)):\n            p = node.evalParm('layer%d' % (i + 1,))\n            if p:\n                r.append(p)\n    p = node.evalParm('fileName')\n    if p:\n        r.append(p)\n    return r\nreturn __import__('_alembic_hom_extensions').alembicGetObjectPathListForMenu(getFileName(hou.pwd()))", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringReplace});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ButtonParmTemplate({name: "pickrootPath", label: "Pick"});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setTags({"button_icon": "BUTTONS_tree"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "objectPath", label: "Object Path", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "def getFileName(node):\n    r = []\n    for i in range(node.evalParm('numlayers')):\n        if node.evalParm('enablelayer%d' % (i + 1,)):\n            p = node.evalParm('layer%d' % (i + 1,))\n            if p:\n                r.append(p)\n    p = node.evalParm('fileName')\n    if p:\n        r.append(p)\n    return r\nreturn __import__('_alembic_hom_extensions').alembicGetObjectPathListForMenu(getFileName(hou.pwd()))", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"script_action": "import soputils\nkwargs['objectPath'] = kwargs['node'].parmTuple('objectPath')\nkwargs['objectExclude'] = kwargs['node'].parmTuple('objectExclude')\nkwargs['clearObjectPath'] = True\nkwargs['clearObjectExclude'] = False\nsoputils.selectAlembicPaths(kwargs)", "script_action_help": "Select Alembic objects from an available viewport.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ButtonParmTemplate({name: "pickobjectPath", label: "Pick"});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setTags({"button_icon": "BUTTONS_tree"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "objectExclude", label: "Object Exclude", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "def getFileName(node):\n    r = []\n    for i in range(node.evalParm('numlayers')):\n        if node.evalParm('enablelayer%d' % (i + 1,)):\n            p = node.evalParm('layer%d' % (i + 1,))\n            if p:\n                r.append(p)\n    p = node.evalParm('fileName')\n    if p:\n        r.append(p)\n    return r\nreturn __import__('_alembic_hom_extensions').alembicGetObjectPathListForMenu(getFileName(hou.pwd()))", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.StringToggle});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template2.setTags({"script_action": "import soputils\nkwargs['objectPath'] = kwargs['node'].parmTuple('objectPath')\nkwargs['objectExclude'] = kwargs['node'].parmTuple('objectExclude')\nkwargs['clearObjectPath'] = False\nkwargs['clearObjectExclude'] = True\nsoputils.selectAlembicPaths(kwargs)", "script_action_help": "Select Alembic objects from an available viewport.", "script_action_icon": "BUTTONS_reselect"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ButtonParmTemplate({name: "pickobjectExclude", label: "Pick"});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setTags({"button_icon": "BUTTONS_tree"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "objectPattern", label: "Object Pattern", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "animationfilter", label: "Animating Objects", menu_items: ["all", "static", "deforming", "transforming", "animating"], menu_labels: ["Include All Primitives", "Only Static Primitives", "Only Deforming Primitives", "Only Transforming Primitives", "Only Deforming or Transforming Primitives"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "polygonFilter", label: "Load Polygons", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "curveFilter", label: "Load Curves", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "NURBSFilter", label: "Load NURBS", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "pointsFilter", label: "Load Points", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "subdFilter", label: "Load Subdivision Surfaces", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "loadLocator", label: "Load Maya Locator", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "boxcull", label: "Box Culling", menu_items: ["none", "inside", "anyinside", "outside", "anyoutside"], menu_labels: ["No Spatial Filtering", "Load Objects Entirely Inside Box", "Load Objects With Any Part In Box", "Load Object Outside Box", "Load Objects With Any Part Outside Box"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "boxsource", label: "Use First Input To Specify Box", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "boxsize", label: "Box Size", num_components: 3, default_value: [1, 1, 1], min: 0, max: 10, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "boxcenter", label: "Box Center", num_components: 3, default_value: [0, 0, 0], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sizecull", label: "Size Culling", menu_items: ["none", "area", "radius", "volume"], menu_labels: ["No Size Filtering", "Filter Objects By Bounding Area", "Filter Objects By Bounding Radius", "Filter Objects By Bounding Volume"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "sizecompare", label: "Size Compare", menu_items: ["lessthan", "greaterthan"], menu_labels: ["Less Than", "Greater Than"], default_value: 1, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "size", label: "Size", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "stdswitcher_2", label: "Attributes", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template2 = new hou.StringParmTemplate({name: "pointAttributes", label: "Point Attributes", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "vertexAttributes", label: "Vertex Attributes", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "primitiveAttributes", label: "Primitive Attributes", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "detailAttributes", label: "Detail Attributes", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "facesetAttributes", label: "Faceset Attributes", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "loadUserProps", label: "User Properties", menu_items: ["none", "data", "both"], menu_labels: ["Do Not Load", "Load Values Only", "Load Values and Metadata"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "addpath", label: "Add Path Attribute", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "pathattrib", label: "Path Attribute", num_components: 1, default_value: ["path"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "addfile", label: "Add Filename Attribute", default_value: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.StringParmTemplate({name: "fileattrib", label: "Filename Attribute", num_components: 1, default_value: ["abcFileName"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "remapAttributes", label: "Remap Attributes", folder_type: hou.folderType.MultiparmBlock, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"multistartoffset": "1"});
+			let hou_parm_template3 = new hou.StringParmTemplate({name: "abcName#", label: "Alembic Name #", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "hName#", label: "Houdini Name #", num_components: 1, default_value: [""], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.MenuParmTemplate({name: "typeInfo#", label: "Type Info", menu_items: ["keep", "clear", "matrix", "normal", "point", "quat", "rgb", "vector"], menu_labels: ["Keep Type Info", "Clear Type Info", "Set To Matrix", "Set To Normal", "Set To Point", "Set To Quaternion", "Set To Color", "Set To Vector"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Other/alembic',_hnt_SOP_alembic)
+    return _hnt_SOP_alembic
+}
+        

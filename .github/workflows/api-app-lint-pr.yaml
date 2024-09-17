@@ -1,0 +1,41 @@
+name: api/app lint
+
+on:
+  push:
+    paths:
+      - 'api/app/**'
+      - 'api/packager/**'
+      - 'api/bulk-import/**'
+      - 'api/publish-init/**'
+
+defaults:
+  run:
+    working-directory: api/app
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: "${{ github.workspace }}/api/app"
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip poetry
+          poetry install --with=dev --no-root
+
+      - name: Run pylint
+        run: |
+          poetry run pylint --disable=R,C,fixme .

@@ -1,0 +1,58 @@
+
+export default function (hou) {
+    class _hnt_SHOP_toonoutlineshader extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SHOP/Material/toonoutlineshader';
+        static category = '/SHOP';
+        static houdiniType = 'toonoutlineshader';
+        static title = 'Toon Outline Shader';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SHOP_toonoutlineshader.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = [];
+            const outputs = ['SHOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.FolderParmTemplate({name: "folder0", label: "Color", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			let hou_parm_template2 = new hou.FloatParmTemplate({name: "outlinecolor", label: "Color", num_components: 3, default_value: [0, 0, 0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.ColorSquare, naming_scheme: hou.parmNamingScheme.RGBA});
+			hou_parm_template2.setTags({"parmvop": "1", "shaderparmcontexts": "surface"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "thickness", label: "Thickness", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "outlinescenethickness", label: "In World Space", num_components: 1, default_value: [0.01], min: 0, max: 0.1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"parmvop": "1", "shaderparmcontexts": "displace"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "outlineimagethickness", label: "As Image Fraction", num_components: 1, default_value: [0.002], min: 0, max: 0.1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"parmvop": "1", "shaderparmcontexts": "displace"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "imagethicknessblend", label: "Blend", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"parmvop": "1", "shaderparmcontexts": "displace"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder1", label: "Spill In", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "spillin", label: "Spill In", num_components: 1, default_value: [0], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"parmvop": "1", "shaderparmcontexts": "surface"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "maxobjdepth", label: "Max Object Depth", num_components: 1, default_value: [0.3], min: 0, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setTags({"parmvop": "1", "shaderparmcontexts": "surface"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SHOP/Material/toonoutlineshader',_hnt_SHOP_toonoutlineshader)
+    return _hnt_SHOP_toonoutlineshader
+}
+        

@@ -1,0 +1,121 @@
+"""Upload pytest fixture"""
+
+from http import HTTPStatus
+
+import pytest
+from munch import munchify
+
+from routes.file_uploads import FileUploadResponse
+from tests.shared_test import FileContentTestObj, assert_status_code
+
+
+@pytest.fixture(scope='module')
+def uploader(client, api_base):
+    """Uploader factory fixture test content to API"""
+
+    def _uploader(
+            profile_id: str,
+            auth_headers,
+            files: list[FileContentTestObj],
+            storage_uri='/upload/store') -> dict[str, FileUploadResponse]:
+
+        file_data = list(map(
+            lambda x: ('files', (x.file_name, x.contents, x.content_type)),
+            files))
+
+        r = client.post(
+            f"{api_base}{storage_uri}",
+            files=file_data,
+            headers=auth_headers)
+        assert_status_code(r, HTTPStatus.OK)
+        o = munchify(r.json())
+        assert len(o.files) == len(files)
+
+        # resolve and update the test files based on the response
+        response_files_by_id: dict[str, FileUploadResponse] = {i.file_id: FileUploadResponse(**i) for i in o.files}
+        request_files_by_hash = {i.content_hash: i for i in files}
+        for f in response_files_by_id.values():
+            test_file = request_files_by_hash[f.content_hash]
+            test_file.file_id = f.file_id
+
+            # validate
+            assert f.event_ids is not None
+            assert len(f.event_ids) > 0
+            assert f.file_name == test_file.file_name
+            assert f.content_type == test_file.content_type
+            assert f.size == test_file.size
+
+            # read back validation
+            r = client.get(
+                f"{api_base}/files/{f.file_id}",
+                headers=auth_headers)
+            assert_status_code(r, HTTPStatus.OK)
+            o = munchify(r.json())
+            assert o.file_id == f.file_id
+            assert o.owner_id == profile_id
+            assert o.content_hash == test_file.content_hash
+            assert o.file_name == test_file.file_name
+            assert o.size == len(test_file.contents)
+
+            # read back by hash validation
+            o = munchify(client.get(
+                f"{api_base}/files/by_content/{test_file.content_hash}",
+                headers=auth_headers).json())
+            assert o.content_hash == test_file.content_hash
+
+        # check the profiles pending uploads
+        results = client.get(
+            f"{api_base}/upload/pending",
+            headers=auth_headers).json()
+        assert len(results) > 0
+        for r in results:
+            o = munchify(r)
+            test_file = request_files_by_hash.get(o.content_hash)
+            if test_file is None:
+                continue
+
+            assert o.file_id == test_file.file_id
+
+            # validate download info API
+            r = client.get(
+                f"{api_base}/download/info/{o.file_id}")
+            assert_status_code(r, HTTPStatus.OK)
+            o = munchify(r.json())
+            assert o.file_id == test_file.file_id
+            assert o.content_hash == test_file.content_hash
+            assert o.size == test_file.size
+            assert o.name == test_file.file_name
+            assert o.url is not None
+
+            # validate download redirect API
+            r = client.get(
+                f"{api_base}/download/{o.file_id}",
+                follow_redirects=False)
+            assert_status_code(r, HTTPStatus.TEMPORARY_REDIRECT)
+            assert (r.headers.get('Location') is not None)
+        return response_files_by_id
+
+    return _uploader
+
+
+@pytest.fixture()
+def request_to_upload_files(
+    client,
+    api_base,
+) -> tuple[str]:
+
+    def _upload_files(headers: dict, files: list[FileContentTestObj]):
+        files = [
+            ('files', (file.file_name, file.contents, file.content_type))
+            for file in files
+        ]
+        
+        upload_res =  client.post(
+            f"{api_base}/upload/store", files=files, headers=headers
+        )
+        assert_status_code(upload_res, HTTPStatus.OK)
+        upload_res = munchify(upload_res.json())
+        assert len(upload_res.files) == len(files)
+
+        return (i.file_id for i in upload_res.files)
+    return _upload_files

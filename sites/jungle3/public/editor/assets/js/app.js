@@ -1,0 +1,126 @@
+var webgl_canvas = null;
+
+LiteGraph.node_images_path = "/editor/assets/imgs";
+LiteGraph.classes_path = "/editor/assets/js/types";
+
+var editor = new LiteGraph.Editor("main", {
+    miniwindow: false,
+    skip_counters: true,
+    skip_livemode: true,
+    skip_playmode: true,
+});
+window.graphcanvas = editor.graphcanvas;
+window.graph = editor.graph;
+
+////////////////////////////////////////////
+// MODIFY THIS TO INTEGRATE.
+// Make it load *.litegraph.json output
+// from houdini-automation/inspect.py
+//
+window.onload = function () {
+    // Get the file URL from the query string
+    const urlParams = new URLSearchParams(window.location.search);
+    //const fileUrl = urlParams.get('file_url');
+	const fileUrl = '/editor/assets/graphs/net_new.json';
+
+    /* 
+    Need to:
+    1) Generate new nodetypes def file with just class stubs 
+    2) Overload Litegraph load method so that classes that are not yet loaded 
+       can be loaded 
+    3) Overload Litegraph addNode method for the same. 
+    */
+    if (fileUrl) {
+		graph.load(fileUrl, ()=>{
+			var loader = document.getElementById('loader');
+			loader.style.opacity = '0'; // Start the fade-out
+	
+			// Wait for the transition to finish before setting display to none
+			setTimeout(function() {
+				loader.style.display = 'none';
+			}, 500);
+		})
+    } else {
+        console.error('No file URL provided');
+    }
+};
+
+// MODIFY THIS TO INTEGRATE
+////////////////////////////////////////////
+
+updateEditorHiPPICanvas();
+window.addEventListener("resize", function () {
+    editor.graphcanvas.resize();
+    updateEditorHiPPICanvas();
+});
+//window.addEventListener("keydown", editor.graphcanvas.processKey.bind(editor.graphcanvas) );
+window.onbeforeunload = function () {
+    var data = JSON.stringify(graph.serialize());
+    localStorage.setItem("litegraph demo backup", data);
+}
+
+function updateEditorHiPPICanvas() {
+    const ratio = window.devicePixelRatio;
+    if (ratio == 1) { return }
+    const rect = editor.canvas.parentNode.getBoundingClientRect();
+    const { width, height } = rect;
+    editor.canvas.width = width * ratio;
+    editor.canvas.height = height * ratio;
+    editor.canvas.style.width = width + "px";
+    editor.canvas.style.height = height + "px";
+    editor.canvas.getContext("2d").scale(ratio, ratio);
+    return editor.canvas;
+}
+
+//enable scripting
+LiteGraph.allow_scripts = true;
+
+//test
+//editor.graphcanvas.viewport = [200,200,400,400];
+
+//create scene selector
+var elem = document.createElement("span");
+elem.id = "LGEditorTopBarSelector";
+elem.className = "selector";
+elem.innerHTML = "";
+elem.innerHTML += "<img style='height:30px' src='assets/imgs/mythica_logo.png'> ";
+elem.innerHTML += "<img style='height:30px' src='assets/imgs/mythica.png'> ";
+
+elem.innerHTML += "<button class='btn' id='save'>Save</button>";
+elem.innerHTML += "<button class='btn' id='load'>Load</button>";
+elem.innerHTML += "<button class='btn' id='download'>Download</button>";
+
+
+editor.tools.appendChild(elem);
+
+elem.querySelector("#save").addEventListener("click", function () {
+    console.log("saved");
+    localStorage.setItem("graphdemo_save", JSON.stringify(graph.serialize()));
+});
+
+elem.querySelector("#load").addEventListener("click", function () {
+    var data = localStorage.getItem("graphdemo_save");
+    if (data)
+        graph.configure(JSON.parse(data));
+    console.log("loaded");
+});
+
+elem.querySelector("#download").addEventListener("click", function () {
+    var data = JSON.stringify(graph.serialize());
+    var file = new Blob([data]);
+    var url = URL.createObjectURL(file);
+    var element = document.createElement("a");
+    element.setAttribute('href', url);
+    element.setAttribute('download', "graph.JSON");
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000 * 60); //wait one minute to revoke url    
+});
+
+/*
+// Tests
+// CopyPasteWithConnectionToUnselectedOutputTest();
+// demo();
+*/

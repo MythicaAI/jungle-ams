@@ -1,0 +1,48 @@
+name: Media Schema
+description: Types for storing and referencing rich media (images, etc)
+tables:
+  # Rich media references, these are identified by their content hash
+  # externally. The cache TTL is to reflect object lifetimes on the CDN
+  - name: FileContent
+    table_name: files
+    columns:
+      - name: file_seq
+        type: BIGINT
+        primary_key: true
+        description: Sequence of this file data
+      - name: name
+        type: TEXT
+        description: Friendly name of this file
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+      - name: deleted
+        type: TIMESTAMP
+        description: set for media that have been marked for deletion
+      - name: size
+        type: INTEGER
+      - name: content_type
+        description: Content metadata type
+        type: TEXT
+      - name: owner_seq
+        description: Profile that created this media
+        type: BIGINT
+        foreign_key: profiles.profile_seq
+      - name: cache_ttl
+        description: Cache TTL in seconds for external CDN
+        type: INTEGER
+      - name: downloads
+        description: Count of downloads
+        type: INTEGER
+      - name: lifetime
+        description: Time in seconds before this media expires
+        type: INTEGER
+      - name: content_hash
+        type: TEXT
+        description: SHA1 of the file contents
+      - name: locators
+        type: JSON
+        description: Array of content locators

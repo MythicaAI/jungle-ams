@@ -1,0 +1,23 @@
+#
+# This docker compose creates a testing environment for automation tier services. 
+#
+services:
+  packager:
+    container_name: packager
+    image: mythica-packager:latest
+    networks:
+      - web
+      - storage
+  houdini-worker:
+    container_name: houdini-worker
+    image: mythica-houdini-worker:latest
+    networks:
+      - web
+      - storage
+networks:
+  storage:
+    driver: bridge
+    name: storage
+  web:
+    driver: bridge
+    name: web

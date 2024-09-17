@@ -1,0 +1,166 @@
+
+export default function (hou) {
+    class _hnt_SOP_retime extends hou.extend(hou._HoudiniBase).with(hou._SubgraphMixin) {
+        static is_root = false;
+        static id = 'SOP/Animation/retime';
+        static category = '/SOP';
+        static houdiniType = 'retime';
+        static title = 'Retime';
+        static icon = '/editor/assets/imgs/nodes/_hnt_SOP_retime.svg';
+        constructor() {
+            super();
+            this.flags['houdini_type'] = this.__proto__.constructor.houdiniType;
+            
+            const inputs = ['SOP'];
+            const outputs = ['SOP'];
+
+            for(var i=0;i<inputs.length;i++) this.addInput(''+i,inputs[i]);        
+            for(var j=0;j<outputs.length;j++) this.addOutput(''+j,outputs[j]);
+        }
+        parmTemplatesInit() {
+            let hou_parm_template_group = new hou.ParmTemplateGroup();
+			this.parmTemplateGroup = hou_parm_template_group;
+			let hou_parm_template = new hou.FolderParmTemplate({name: "folder0", label: "Time", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			let hou_parm_template2 = new hou.MenuParmTemplate({name: "evalmode", label: "Evaluation Mode", menu_items: ["frame", "time", "speed", "shift", "fit"], menu_labels: ["By Frame", "By Time", "By Speed", "Shift Range", "Fit Range"], default_value: 2, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "frame", label: "Frame", num_components: 1, default_value: [0], default_expression: ["$FF"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode != frame }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "time", label: "Time", num_components: 1, default_value: [0], default_expression: ["$T"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode != time }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "startframe", label: "Start Frame", num_components: 1, default_value: [0], default_expression: ["ch(\"inputrangex\")"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode != speed }");
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "speed", label: "Speed", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode != speed }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "shiftframe", label: "Shift to Frame", num_components: 1, default_value: [1], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode != shift }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "outputrange", label: "Output Frame Range", num_components: 2, default_value: [0, 0], default_expression: ["$FSTART", "$FEND"], default_expression_language: [hou.scriptLanguage.Hscript, hou.scriptLanguage.Hscript], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode == time } { evalmode == frame } { evalmode == shift }");
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "opreb", label: "Pre-Behavior", menu_items: ["hold", "extend", "cycle", "zigzag"], menu_labels: ["Pre-Hold", "Pre-Extend", "Pre-Cycle", "Pre-Zigzag"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ evalmode == fit }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode == time } { evalmode == frame } { evalmode == shift }");
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "opostb", label: "Post-Behavior", menu_items: ["hold", "extend", "cycle", "zigzag"], menu_labels: ["Post-Hold", "Post-Extend", "Post-Cycle", "Post-Zigzag"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ evalmode == fit }");
+			hou_parm_template2.setConditional(hou.parmCondType.HideWhen, "{ evalmode == time } { evalmode == frame } { evalmode == shift }");
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "inputrange", label: "Input Frame Range", num_components: 2, default_value: [1, 100], min: null, max: 1, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.XYZW, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "ipreb", label: "Pre-Behavior", menu_items: ["hold", "extend", "cycle", "zigzag"], menu_labels: ["Pre-Hold", "Pre-Extend", "Pre-Cycle", "Pre-Zigzag"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template2.setJoinWithNext(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "ipostb", label: "Post-Behavior", menu_items: ["hold", "extend", "cycle", "zigzag"], menu_labels: ["Post-Hold", "Post-Extend", "Post-Cycle", "Post-Zigzag"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.hideLabel(true);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.IntParmTemplate({name: "substep", label: "Substeps", num_components: 1, default_value: [1], min: 1, max: 10, min_is_strict: true, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false});
+			hou_parm_template2.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template2.setTags({"script_callback_language": "python"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "folder3", label: "Add Frame Attributes", folder_type: hou.folderType.Collapsible, default_value: 0, ends_tab_group: false});
+			hou_parm_template2.setTags({"group_type": "collapsible", "sidefx::header_toggle": "addframeattribs"});
+			let hou_parm_template3 = new hou.ToggleParmTemplate({name: "addframeattribs", label: "Add Frame Attributes", default_value: false});
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "outframeattrib", label: "Output Frame Attribute", num_components: 1, default_value: ["output_frame"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ addframeattribs == 0 }");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "inframeattrib", label: "Input Frame Attribute", num_components: 1, default_value: ["input_frame"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ addframeattribs == 0 }");
+			hou_parm_template3.setScriptCallbackLanguage(hou.scriptLanguage.Python);
+			hou_parm_template3.setTags({"script_callback_language": "python"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.LabelParmTemplate({name: "_", label: "_", column_labels: [""]});
+			hou_parm_template.hide(true);
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.SeparatorParmTemplate({name: "sepparm"});
+			hou_parm_template_group.append(hou_parm_template);
+			hou_parm_template = new hou.FolderParmTemplate({name: "folder2", label: "Interpolation", folder_type: hou.folderType.Simple, default_value: 0, ends_tab_group: false});
+			hou_parm_template.setTags({"group_type": "simple"});
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "interpolate", label: "Interpolate Between Input Frames", default_value: true});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "doslerp", label: "Interpolate Rotation of Normals, Quaternions, and Transforms", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.MenuParmTemplate({name: "interp", label: "Interpolation", menu_items: ["linear", "cubic", "subd"], menu_labels: ["Linear", "Cubic", "Subdivision"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FloatParmTemplate({name: "timestep", label: "Input Timestep", num_components: 1, default_value: [0], default_expression: ["1 / $FPS"], default_expression_language: [hou.scriptLanguage.Hscript], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 } { scalevel == 0 voxelblend != advected interp != linear } { scalevel == 0 voxelblend != advected usevforpinterp == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "usevforpinterp", label: "Use Velocity When Interpolating Position", default_value: true, default_expression: "on", default_expression_language: hou.scriptLanguage.Hscript});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ interp != linear } { interpolate == 0 }");
+			hou_parm_template2.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.ToggleParmTemplate({name: "scalevel", label: "Scale Velocities", default_value: false});
+			hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "folder1", label: "Attributes", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template3 = new hou.StringParmTemplate({name: "attribs", label: "Attributes", num_components: 1, default_value: ["*"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "opmenu -l -a point_blend attribs", item_generator_script_language: hou.scriptLanguage.Hscript, menu_type: hou.menuType.StringToggle});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "ptidattr", label: "Point ID Attribute", num_components: 1, default_value: ["id"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "opmenu -l -a point_blend ptidattr", item_generator_script_language: hou.scriptLanguage.Hscript, menu_type: hou.menuType.StringToggle});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.MenuParmTemplate({name: "unmatchedpts", label: "Unmatched Points", menu_items: ["freeze", "delete", "group"], menu_labels: ["Freeze", "Delete", "Group"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template3.setJoinWithNext(true);
+			hou_parm_template3.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "unmatchedgroup", label: "Unmatched Point Group", num_components: 1, default_value: ["unmatched"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template3.setConditional(hou.parmCondType.HideWhen, "{ unmatchedpts != group }");
+			hou_parm_template3.hideLabel(true);
+			hou_parm_template3.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "primidattr", label: "Primitive ID Attribute", num_components: 1, default_value: ["name"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "opmenu -l -a point_blend primidattr", item_generator_script_language: hou.scriptLanguage.Hscript, menu_type: hou.menuType.StringToggle});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template2 = new hou.FolderParmTemplate({name: "folder1_1", label: "Volumes", folder_type: hou.folderType.Tabs, default_value: 0, ends_tab_group: false});
+			hou_parm_template3 = new hou.MenuParmTemplate({name: "voxelblend", label: "Blend Mode", menu_items: ["none", "bygridindex", "byvoxelpos", "advected"], menu_labels: ["Transform Only", "By Grid Index", "By Voxel Position", "Advected"], default_value: 0, icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal, menu_use_token: false, is_button_strip: false, strip_uses_icons: false});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 }");
+			hou_parm_template3.setTags({"autoscope": "0000000000000000"});
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.StringParmTemplate({name: "vel", label: "Velocity Field", num_components: 1, default_value: ["vel"], naming_scheme: hou.parmNamingScheme.Base1, string_type: hou.stringParmType.Regular, menu_items: [], menu_labels: [], icon_names: [], item_generator_script: "", item_generator_script_language: hou.scriptLanguage.Python, menu_type: hou.menuType.Normal});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ interpolate == 0 } { scalevel == 0 voxelblend != advected }");
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.FloatParmTemplate({name: "advdt", label: "Advection Stepsize", num_components: 1, default_value: [0.02], min: 0, max: 10, min_is_strict: false, max_is_strict: false, look: hou.parmLook.Regular, naming_scheme: hou.parmNamingScheme.Base1});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ voxelblend != advected } { interpolate == 0 }");
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template3 = new hou.ToggleParmTemplate({name: "interpvel", label: "Interpolate Velocity Field", default_value: false});
+			hou_parm_template3.setConditional(hou.parmCondType.DisableWhen, "{ voxelblend != advected } { interpolate == 0 }");
+			hou_parm_template2.addParmTemplate(hou_parm_template3);
+			hou_parm_template.addParmTemplate(hou_parm_template2);
+			hou_parm_template_group.append(hou_parm_template);
+			
+            this.parmTemplateGroup = hou_parm_template_group;
+            this.parmTemplateGroup.linkNode(this);
+        }
+    }
+    hou.registerType('SOP/Animation/retime',_hnt_SOP_retime)
+    return _hnt_SOP_retime
+}
+        

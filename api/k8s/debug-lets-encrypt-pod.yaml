@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-pod
+spec:
+  serviceAccountName: lets-encrypt
+  containers:
+    - name: debug-container
+      image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-lets-encrypt:latest
+      command: [ "/bin/sh" ]
+      args: [ "-c", "sleep 3600" ]
+      volumeMounts:
+        - mountPath: /etc/letsencrypt
+          name: lets-encrypt-storage
+          #readOnly: true
+  volumes:
+    - name: lets-encrypt-storage
+      persistentVolumeClaim:
+        claimName: lets-encrypt

@@ -25,7 +25,7 @@ crash.*.log
 *.p12
 
 # virtual environments
-venv/
+\.?venv/
 .infra/
 
 # any mount data
@@ -37,5 +37,22 @@ testing/mnt/*/**
 # jetbrains config
 .idea
 
+.vscode/*
+
 # site pointers
 sites/*.txt
+
+__pycache__
+
+# p/npm artifacts
+**/node_modules
+**/build/
+**/build-*
+
+#VStudio Code
+.vscode
+
+#App specific
+**/output
+
+*.local
