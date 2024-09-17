@@ -2565,4 +2565,4 @@ sqlalchemy = ["asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.10"
-content-hash = "e9a1193fc1cb5f77411ad29627cb70469f915dfb04e98cbfca5d7c944188d2f3"
+content-hash = "3fbdf807dd7d2ab263938dac375347145bbb22d2f62c7496bae23bf098fa92f6"
