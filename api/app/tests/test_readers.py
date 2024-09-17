@@ -1,6 +1,7 @@
+# pylint: disable=redefined-outer-name, unused-import
+
 import itertools
 import random
-# pylint: disable=redefined-outer-name, unused-import
 
 from http import HTTPStatus
 from itertools import cycle
@@ -16,7 +17,6 @@ from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
 from streaming.models import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
-from auth.api_id import event_seq_to_id, file_seq_to_id
 from routes.readers.manager import redis_client
 from routes.readers.schemas import ReaderResponse
 from streaming.client_ops import ReadClientOp
@@ -151,7 +151,7 @@ def test_operations(api_base, client, create_profile, use_test_source_fixture):
     assert o.reader_id not in reader_ids
 
 
-def test_events(api_base, client, create_profile, use_test_source_fixture):
+def test_events(api_base, client, create_profile):
     test_profile = create_profile()
     auth_header = test_profile.authorization_header()
 

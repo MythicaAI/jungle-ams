@@ -5,17 +5,14 @@ from http import HTTPStatus
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import TypeAdapter, ValidationError
 from sqlmodel import Session, delete, insert, select, update
-from sqlmodel import delete, insert, select
 
 from auth.api_id import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from routes.authorization import current_profile
-from streaming.client_ops import ReadClientOp
-from streaming.funcs import Source
 from streaming.models import StreamItemUnion
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, ReaderResponse
@@ -92,7 +89,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
             )
         )
         if r.rowcount == 0:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f"failed to create reader")
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
         session.commit()
         reader_seq = r.inserted_primary_key[0]
         r = session.exec(select(Reader)
@@ -100,7 +97,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
                          .where(Reader.owner_seq == profile.profile_seq))
         reader = r.one_or_none()
         if reader is None:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f"failed to get created reader")
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to get created reader")
         return ReaderResponse(
             source=reader.source,
             name=reader.name,
@@ -177,7 +174,7 @@ async def websocket_endpoint(
     """Create a reader websocket connection"""
     await reader_connection_manager.connect(websocket)
     try:
-        log.info(f"websocket connected to reader {reader_id}")
+        log.info("websocket connected to reader %s", reader_id)
         # set up the source
         reader_seq = reader_id_to_seq(reader_id)
         with get_session() as session:
@@ -197,8 +194,8 @@ async def websocket_endpoint(
             source,
         )
     except WebSocketDisconnect:
-        log.info(f"websocket disconnected from reader {reader_id}")
+        log.info("websocket disconnected from reader %s", reader_id)
         await reader_connection_manager.disconnect(websocket)
     except WebSocketException as e:
-        log.exception(f"websocket exception for reader {reader_id}", exc_info=e)
+        log.exception("websocket exception for reader %s", reader_id, exc_info=e)
         await reader_connection_manager.disconnect(websocket)

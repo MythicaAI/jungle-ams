@@ -2,11 +2,10 @@
 
 import json
 import logging
-from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Callable, Optional, TypeVar
 
-from fastapi import HTTPException, WebSocket
+from fastapi import WebSocket
 import redis
 
 from config import app_config
