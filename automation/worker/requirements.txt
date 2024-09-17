@@ -1,0 +1,3 @@
+nats-py
+aiohttp
+munch
