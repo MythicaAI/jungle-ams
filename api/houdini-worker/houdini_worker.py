@@ -323,7 +323,11 @@ class HoudiniJobRunner:
             self.process = None
 
     def _execute_job_impl(self, job) -> bool:
-        os.write(self.parent_to_child_write, job.encode() + b'\n')
+        try:
+            os.write(self.parent_to_child_write, job.encode() + b'\n')
+        except Exception as e:
+            log.error("Failed to send job data to child process")
+            return False
 
         ready, _, _ = select.select([self.child_to_parent_read], [], [], self.job_timeout)
         if not ready:
