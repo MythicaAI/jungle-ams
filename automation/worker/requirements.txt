@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+prometheus_fastapi_instrumentator
+nats-py
+aiohttp
+munch
