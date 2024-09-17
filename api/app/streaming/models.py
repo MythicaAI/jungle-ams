@@ -20,4 +20,4 @@ class File(StreamItem):
 
 class Event(StreamItem):
     event_id: str
-    payload: str
+    payload: dict

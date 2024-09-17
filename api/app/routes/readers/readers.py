@@ -1,13 +1,9 @@
 """Readers API"""
-import json
 import logging
-from datetime import datetime, timezone
+from datetime import timezone
 from http import HTTPStatus
-from json import JSONDecodeError
-from typing import Any, Callable, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
-from pydantic import BaseModel
 from sqlmodel import delete, insert, select
 
 from auth.api_id import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
@@ -15,29 +11,15 @@ from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from routes.authorization import current_profile
-from streaming.client_ops import ReadClientOp
-from streaming.funcs import Source
+from routes.readers.manager import ReaderConnectionManager
+from routes.readers.schemas import CreateReaderRequest, ReaderResponse
 from streaming.source_types import create_source
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
 log = logging.getLogger(__name__)
 
 
-class ReaderResponse(BaseModel):
-    reader_id: str
-    owner_id: str
-    created: datetime
-    source: str
-    params: Optional[dict[str, Any]] = None
-    name: Optional[str] = None
-    position: Optional[str] = None
-
-
-class CreateReaderRequest(BaseModel):
-    source: str
-    params: Optional[dict[str, Any]] = None
-    name: Optional[str] = None
-    position: Optional[str] = None
+reader_connection_manager = ReaderConnectionManager()
 
 
 def resolve_results(results) -> list[ReaderResponse]:
@@ -61,7 +43,10 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
             source=create.source,
             owner_seq=profile.profile_seq,
             name=create.name,
-            position=create.position))
+            position=create.position,
+            params=create.params,
+            )
+        )
         if r.rowcount == 0:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f"failed to create reader")
         session.commit()
@@ -109,7 +94,7 @@ async def websocket_endpoint(
         reader_id: str,
         profile: Profile = Depends(current_profile)):
     """Create a reader websocket connection"""
-    await websocket.accept()
+    await reader_connection_manager.connect(websocket)
     try:
         log.info(f"websocket connected to reader {reader_id}")
 
@@ -121,7 +106,7 @@ async def websocket_endpoint(
                                   .where(Reader.owner_seq == profile.profile_seq)).one_or_none()
             if reader is None:
                 raise HTTPException(HTTPStatus.NOT_FOUND, f"failed to find reader {reader_id}")
-            params = reader.params
+            params = reader.params or {}
             params['source'] = reader.source
             params['name'] = reader.name
             params['reader_seq'] = reader_seq
@@ -131,47 +116,21 @@ async def websocket_endpoint(
             params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
             params['position'] = reader.position
             source = create_source(reader.source, params)
-        await websocket_handler(websocket, reader_id, source)
+        await reader_connection_manager.websocket_handler(
+            websocket, 
+            ReaderResponse(
+                source=reader.source,
+                name=reader.name,
+                position=reader.position,
+                reader_id=reader_seq_to_id(reader_seq),
+                owner_id=profile_seq_to_id(profile.profile_seq),
+                created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
+            ),
+            source,
+        )
     except WebSocketDisconnect:
         log.info(f"websocket disconnected from reader {reader_id}")
+        await reader_connection_manager.disconnect(websocket)
     except WebSocketException as e:
         log.exception(f"websocket exception for reader {reader_id}", exc_info=e)
-
-
-async def websocket_handler(websocket: WebSocket, reader_id: str, source: Source):
-    """Handler loop for web sockets"""
-    while True:
-        await process_message(websocket, reader_id, source)
-
-
-def process_read(websocket: WebSocket, op: ReadClientOp, source: Source):
-    """Read data"""
-    items = source(op.after, op.max_page)
-    for item in items:
-        websocket.send_json(item.model_dump())
-
-
-# Define a TypeVar to represent a subtype of BaseType
-T = TypeVar('T', bound='ClientOp')
-
-ops: dict[str, tuple[T, Callable[[WebSocket, T, Source], None]]] = {
-    'read': (ReadClientOp, process_read)
-}
-
-
-async def process_message(websocket: WebSocket, reader_id: str, source):
-    """Process and respond to a single message"""
-    try:
-        text = await websocket.receive_text()
-        msg = json.loads(text)
-        if 'op' not in msg:
-            raise HTTPException(HTTPStatus.BAD_REQUEST, f"no 'op' included in client message")
-        op_name = msg['op']
-        if op_name not in ops:
-            raise HTTPException(HTTPStatus.BAD_REQUEST, f"unknown op {op_name}")
-        model_type, processor = ops[op_name]
-        data = model_type(json=msg)
-        processor(websocket, data, source)
-        await websocket.send_text(json.dumps({'request': msg}))
-    except JSONDecodeError as e:
-        log.exception(f"json decode error for reader {reader_id}", exc_info=e)
+        await reader_connection_manager.disconnect(websocket)
