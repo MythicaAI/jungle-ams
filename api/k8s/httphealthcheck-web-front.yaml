@@ -14,8 +14,7 @@ spec:
     config:
       type: HTTP
       httpHealthCheck:
-        portSpecification: USE_NAMED_PORT
-        portName: http
+        port: 80
         host: api.mythica.ai
         requestPath: /healthz
   targetRef:

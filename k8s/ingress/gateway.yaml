@@ -4,7 +4,7 @@ metadata:
   name: external-gateway
   namespace: ingress
 spec:
-  gatewayClassName: gke-l7-global-external-managed
+  gatewayClassName: gke-l7-gxlb
   addresses:
     - type: NamedAddress
       value: mythica-gke-global-gateway-address
@@ -12,14 +12,14 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
-      allowedRoutes:
+      allowedRoutes: &allowedRoutes
         kinds:
           - group: gateway.networking.k8s.io
             kind: HTTPRoute
         namespaces:
           from: Selector
           selector:
-            matchLabels:
+           matchLabels:
               exposed: "true"
     - name: https
       protocol: HTTPS
@@ -27,13 +27,5 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: letsencrypt-tls
-      allowedRoutes:
-        kinds:
-          - group: gateway.networking.k8s.io
-            kind: HTTPRoute
-        namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              exposed: "true"
+         - name: mythica-ai-cert
+      allowedRoutes: *allowedRoutes
