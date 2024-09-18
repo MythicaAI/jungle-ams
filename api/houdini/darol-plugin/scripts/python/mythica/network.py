@@ -909,12 +909,13 @@ def _get_litegraph_tab_menu(nt):
 
     return f"{nt.category().name().upper()}/{ret}"
         
-
+def sanitize_utf8(s):
+    return s.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
 
 def _get_parm_defaults(parmtemp):
     _parm = {
         "type":parmtemp.type().name(),
-        "label":parmtemp.label(),
+        "label":sanitize_utf8(parmtemp.label()),
     }
     if hasattr(parmtemp, "minValue"):
         _parm["min"] = parmtemp.minValue()
