@@ -188,7 +188,10 @@ def create_job_definition(token, endpoint: str , file_id: str, interface_file_pa
                     'hda_definition_index': index
                 },
                 'input_files': node_type.inputs,
-                'params_schema': node_type.defaults
+                'params_schema': {
+                    'inputs': node_type.inputLabels,
+                    'params': node_type.defaults
+                }
             }
             response = requests.post(
                 f"{endpoint}/jobs/definitions",
