@@ -155,7 +155,7 @@ async def reader_dequeue(
             return adapter.validate_python(raw_items)
         except ValidationError as e:
             log.exception("failed to validate", exc_info=e)
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, # pylint: disable=W0707:raise-missing-from
                                 detail=f"validation error for reader {reader_id}")
 
 

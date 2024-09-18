@@ -1,3 +1,5 @@
+# pylint: disable=W0105:pointless-string-statement
+
 from typing import Any, Callable
 
 from streaming.models import StreamItem
