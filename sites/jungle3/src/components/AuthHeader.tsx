@@ -1,8 +1,17 @@
-import {Avatar, Box, List, ListItemContent, ListItemDecorator, Stack, styled, Typography,} from "@mui/joy";
-import {Link,} from "react-router-dom";
-import {useCookies} from "react-cookie";
-import {useEffect} from "react";
-import {useGlobalStore} from "@store/globalStore";
+import {
+  Avatar,
+  Box,
+  List,
+  ListItemContent,
+  ListItemDecorator,
+  Stack,
+  styled,
+  Typography,
+} from "@mui/joy";
+import { Link } from "react-router-dom";
+import { useCookies } from "react-cookie";
+import { useEffect } from "react";
+import { useGlobalStore } from "@store/globalStore";
 import {
   defaultProfileResponse,
   ProfileResponse,
@@ -10,11 +19,11 @@ import {
   SessionStartAuth0Request,
   SessionStartResponse,
 } from "types/apiTypes.ts";
-import {ProfileMenu} from "@components/ProfileMenu";
-import {StatusAlarm} from "@components/Status/StatusAlarm";
-import {api} from "@services/api";
-import {useAuth0} from "@auth0/auth0-react";
-import {useStatusStore} from "@store/statusStore";
+import { ProfileMenu } from "@components/ProfileMenu";
+import { StatusAlarm } from "@components/Status/StatusAlarm";
+import { api } from "@services/api";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useStatusStore } from "@store/statusStore";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -26,35 +35,15 @@ export const AuthHeader = () => {
     "auth_token",
     "refresh_token",
   ]);
-  const {setProfile, setOrgRoles} =
-    useGlobalStore();
-  const {addError} = useStatusStore();
-  const {
-    loginWithRedirect,
-    getAccessTokenSilently,
-    user,
-    isAuthenticated,
-  } = useAuth0();
-
-  console.log("user: ", user);
-  console.log("isAuthenticated: ", isAuthenticated);
+  const { setProfile, setOrgRoles } = useGlobalStore();
+  const { addError } = useStatusStore();
+  const { loginWithRedirect, getAccessTokenSilently, user, isAuthenticated } =
+    useAuth0();
 
   // Refresh the backend API session based on the Auth0 state (create a new auth token)
   useEffect(() => {
     if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
-    } else {
-      // get the auth0 access token - either cached or queried without a login, in the failure
-      // case to a login redirect
-      getAccessTokenSilently({
-        authorizationParams: {
-          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-          scope: "all",
-        },
-      }).catch((error) => {
-        console.error("getAccessTokenSilently:" + error);
-        doLoginWithRedirect();
-      });
     }
   }, [cookies]);
 
@@ -91,7 +80,6 @@ export const AuthHeader = () => {
           setCookie("refresh_token", "", { path: "/" });
           setCookie("profile_id", "", { path: "/" });
         });
-
     } catch (e: any) {
       addError("Token exception: " + e.message);
       console.error(e.message);
@@ -105,8 +93,8 @@ export const AuthHeader = () => {
       })
       .catch((error) => {
         addError("Login error: " + error);
-      })
-  }
+      });
+  };
 
   function mergeWithDefaults<T extends Partial<ProfileResponse>>(
     defaultObj: ProfileResponse,
@@ -122,12 +110,12 @@ export const AuthHeader = () => {
 
   const updateProfileData = () => {
     api
-      .get<ProfileResponse>({path: `/profiles/${cookies.profile_id}`})
+      .get<ProfileResponse>({ path: `/profiles/${cookies.profile_id}` })
       .then((data) => {
         const input = data as Partial<ProfileResponse>;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
         setProfile(merged as unknown as ProfileResponse);
-        api.get<ResolvedOrgRef[]>({path: "/orgs/"}).then((data) => {
+        api.get<ResolvedOrgRef[]>({ path: "/orgs/" }).then((data) => {
           setOrgRoles(data);
         });
       });
@@ -159,21 +147,22 @@ export const AuthHeader = () => {
         </Link>
       </ListItemDecorator>
       <ListItemContent>
-        <Typography level="h2" sx={{flexGrow: 1}}>
+        <Typography level="h2" sx={{ flexGrow: 1 }}>
           HDA Package Index
         </Typography>
       </ListItemContent>
       <ListItemDecorator>
         <Stack direction="row" spacing={1}>
-          <StatusAlarm/>
+          <StatusAlarm />
           {isAuthenticated ? (
-            <ProfileMenu name={user && user.name ? user.name : ""}/>
+            <ProfileMenu name={user && user.name ? user.name : ""} />
           ) : (
             <LoginAvatarButton
               role="button"
               tabIndex={0}
-              onClick={() => doLoginWithRedirect()}>
-              <Avatar alt="?" variant="soft"/>
+              onClick={() => doLoginWithRedirect()}
+            >
+              <Avatar alt="?" variant="soft" />
             </LoginAvatarButton>
           )}
         </Stack>

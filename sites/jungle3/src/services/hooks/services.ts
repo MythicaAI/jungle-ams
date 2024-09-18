@@ -20,6 +20,7 @@ const formatAuthApiOptions = (
   const { path, query, body, withFormData = false, contentType } = options;
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const formattedBody = !withFormData && body ? JSON.stringify(body) : body;
+  const authTokenFromCookies = cookies.get("auth_token");
 
   return {
     path: `${apiBaseUrl}${path}${
@@ -33,6 +34,9 @@ const formatAuthApiOptions = (
           : !withFormData && body
             ? { "Content-Type": "application/json" }
             : {}),
+        ...(authTokenFromCookies && {
+          Authorization: `Bearer ${authTokenFromCookies}`,
+        }),
       },
       ...(body && {
         body: formattedBody,
