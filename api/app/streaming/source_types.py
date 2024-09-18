@@ -1,3 +1,5 @@
+# pylint: disable=W0105:pointless-string-statement
+
 from typing import Any
 
 from streaming.funcs import Source, SourceFactory

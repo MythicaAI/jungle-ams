@@ -5,7 +5,8 @@ cov_threshold_single_fail=false
 cov_threshold_total_fail=false
 
 
-output=$(poetry run pytest . --cov --cov-config=.coveragerc tests/)
+output=$(poetry run pytest . --cov --show-capture=no --cov-config=.coveragerc tests/)
+echo $output
 
 # remove pytest-coverage config file
 if [ -f $cov_config_fname ]; then

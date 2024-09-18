@@ -23,7 +23,7 @@ def use_local_storage_fixture():
     settings.__dict__.update(original_settings.__dict__)
 
 
-"""A list of named streams that are populated for the fixture"""
+"""A list of named streams that are populated for the fixture"""  # pylint: disable=W0105:pointless-string-statement
 _test_streams: dict[str, list[StreamItem]] = {}
 
 
