@@ -108,13 +108,13 @@ def get_node_type(node_type, include_code = True):
     # Get standard names for category, namespace, name, version, type, classes
     node_type_strs = _get_node_type_strings(node_type)
 
-    numInputs = node_type.maxNumInputs()
+    num_inputs = node_type.maxNumInputs()
     nt = {
         "root": node_type.isManager(),
         "subnet": node_type.childTypeCategory().name() or '',
         "help": node_type.embeddedHelp(),
         "icon": node_type.icon(),
-        "inputs": numInputs,  # Gather inputs
+        "inputs": num_inputs,  # Gather inputs
         "outputs": node_type.maxNumOutputs(),  # Gather outputs
         "defaults": {},  # parameters
     }
@@ -123,19 +123,19 @@ def get_node_type(node_type, include_code = True):
     nt.update(node_type_strs)
 
     # Get input labels
-    if numInputs <= MULTI_INPUT_MIN:
-        inputLabels = [''] * numInputs
+    if num_inputs <= MULTI_INPUT_MIN:
+        input_labels = [''] * num_inputs
 
         sections = node_type.definition().sections()
         if "DialogScript" in sections:
-            dialogScript = sections["DialogScript"].contents()
-            matches = re.findall(r'inputlabel\s+(\d+)\s+"([^"]+)"', dialogScript)
+            dialog_script = sections["DialogScript"].contents()
+            matches = re.findall(r'inputlabel\s+(\d+)\s+"([^"]+)"', dialog_script)
             for match in matches:
                 index = int(match[0]) - 1
-                if index < numInputs:
-                    inputLabels[index] = match[1]
+                if index < num_inputs:
+                    input_labels[index] = match[1]
 
-        nt["inputLabels"] = inputLabels
+        nt["inputLabels"] = input_labels
 
     # Loop through all the parameters of the node for defaults and to
     # sort out ramp parms. 
