@@ -46,7 +46,7 @@ spec:
             - name: API_ENDPOINT
               value: api.app:5555
             - name: DEX_ENDPOINT
-              value: dex:5556
+              value: dex.dex:5556
             - name: EXTERNAL_IP
               value: 35.190.85.177
           resources:
