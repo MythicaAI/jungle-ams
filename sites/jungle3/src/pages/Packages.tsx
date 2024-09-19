@@ -37,7 +37,7 @@ import {
 
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
-export const Packages = () => {
+const Packages = () => {
   const { data: versions, isLoading, error } = useGetOwnedPackages();
   const { mutate: togglePublish } = usePublishToggle();
   const { mutate: createAssetMutation } = useCreateAsset();
@@ -292,3 +292,5 @@ export const Packages = () => {
     </Box>
   );
 };
+
+export default Packages;

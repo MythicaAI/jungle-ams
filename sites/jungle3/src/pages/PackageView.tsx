@@ -67,3 +67,5 @@ export const PackageViewWrapper: React.FC = () => {
   const { asset_id, version_id } = useParams();
   return <PackageView asset_id={asset_id} version_id={version_id} />;
 };
+
+export default PackageViewWrapper;

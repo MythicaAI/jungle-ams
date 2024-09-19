@@ -41,7 +41,7 @@ import {
 } from "@queries/apiKeys";
 import { DeleteModal } from "@components/common/DeleteModal";
 
-export const ApiKeys = () => {
+const ApiKeys = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deleteModal, setDeleteModal] = useState({
     open: false,
@@ -197,3 +197,5 @@ export const ApiKeys = () => {
     </>
   );
 };
+
+export default ApiKeys;
