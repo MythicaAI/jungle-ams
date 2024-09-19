@@ -1,0 +1,33 @@
+controller:
+  configMap:
+    # -- Create a ConfigMap for the controller
+    create: true
+    # -- ConfigMap name
+    name: "config-map.yaml"
+
+server:
+  authModes: [ 'sso' ]
+
+  sso:
+    # -- Create SSO configuration. If you set `true` , please also set `.Values.server.authMode` as `sso`.
+    enabled: true
+    # -- The root URL of the OIDC identity provider
+    issuer: https://dex.mythica.ai/
+    clientId:
+      # -- Name of secret to retrieve the app OIDC client ID
+      name: argo-workflows-sso
+      # -- Key of secret to retrieve the app OIDC client ID
+      key: client-id
+    clientSecret:
+      # -- Name of a secret to retrieve the app OIDC client secret
+      name: argo-workflows-sso
+      # -- Key of a secret to retrieve the app OIDC client secret
+      key: client-secret
+    # -- The OIDC redirect URL. Should be in the form <argo-root-url>/oauth2/callback.
+    redirectUrl: http://localhost:2746/oauth2/callback
+
+    # -- Scopes requested from the SSO ID provider
+    ## The 'groups' scope requests group membership information, which is usually used for authorization decisions.
+    scopes: [ 'profile', 'email', 'groups' ]
+    rbac:
+      enabled: false
