@@ -8,6 +8,12 @@ export DATABASE_PATH="${SCRIPT_DIR}/mythica.db"
 export PYTHONPATH="${SCRIPT_DIR}/api/app"
 export ENABLE_STORAGE=false
 export UPLOAD_FOLDER_AUTO_CLEAN=false
+export LOCAL_STORAGE_PATH=${SCRIPT_DIR}/tmp_local_storage
+export USE_LOCAL_STORAGE=true
+export TEST_FAIL_RATE=82
+
+rm -f ${LOCAL_STORAGE_PATH}
+mkdir -p ${LOCAL_STORAGE_PATH}
 
 rm -f ${DATABASE_PATH}
 touch ${DATABASE_PATH}

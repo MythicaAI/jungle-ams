@@ -47,6 +47,8 @@ spec:
               value: "/accounts/service-account.json"
             - name: WORKER_COUNT
               value: "3"
+            - name: API_BASE_URI
+              value: "https://api.mythica.ai/v1"
           ports:
             - containerPort: 5555
               name: http-api

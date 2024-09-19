@@ -41,12 +41,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Env config and defaults
-ENV HTTP_LISTEN_ADDR 0.0.0.0
-ENV HTTP_LISTEN_PORT 5555
-ENV WORKER_COUNT 3
-ENV AUTH0_AUDIENCE http://localhost:50555/v1
+ENV HTTP_LISTEN_ADDR=0.0.0.0
+ENV HTTP_LISTEN_PORT=5555
+ENV WORKER_COUNT=3
+ENV API_BASE_URI=http://localhost:50555/v1
 
 # Expose SQL connection using the environment variable
-ENV SQL_URL postgresql://test:test@postgres:5432/upload_pipeline
+ENV SQL_URL=postgresql://test:test@postgres:5432/upload_pipeline
 
 CMD ["sh", "./docker-entrypoint.sh"]
