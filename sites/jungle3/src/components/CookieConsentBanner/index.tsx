@@ -1,4 +1,4 @@
-import { Stack, Typography } from "@mui/joy";
+import { Box, Stack, Typography } from "@mui/joy";
 import { LucideCookie } from "lucide-react";
 import CookieConsent from "react-cookie-consent";
 
@@ -21,7 +21,9 @@ export const CookieConsentBanner = () => {
         justifyContent="center"
         gap="10px"
       >
-        <LucideCookie />
+        <Box minWidth="20px">
+          <LucideCookie />
+        </Box>
         <Typography sx={{ color: "#fff" }}>
           This website uses cookies to enhance the user experience. By
           continuing to browse the site you're agreeing to our use of cookies.
