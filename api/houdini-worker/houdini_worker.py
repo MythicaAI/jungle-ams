@@ -101,7 +101,8 @@ def process_generate_mesh_job_impl(runner, o, endpoint: str, event_seq: int, tok
 
         # Prepare the parameters file
         parms_data = {
-            'parms': o.params,
+            'mesh_parms': o.params.mesh_params,
+            'material_parms': o.params.material_params,
             'inputs': input_files_local
         }
 
@@ -187,7 +188,10 @@ def create_job_definition(token, endpoint: str , file_id: str, interface_file_pa
                     'hda_definition_index': index
                 },
                 'input_files': node_type.inputs,
-                'params_schema': node_type.defaults
+                'params_schema': {
+                    'inputs': node_type.inputLabels,
+                    'params': node_type.defaults
+                }
             }
             response = requests.post(
                 f"{endpoint}/jobs/definitions",
@@ -322,7 +326,11 @@ class HoudiniJobRunner:
             self.process = None
 
     def _execute_job_impl(self, job) -> bool:
-        os.write(self.parent_to_child_write, job.encode() + b'\n')
+        try:
+            os.write(self.parent_to_child_write, job.encode() + b'\n')
+        except Exception as e:
+            log.error("Failed to send job data to child process")
+            return False
 
         ready, _, _ = select.select([self.child_to_parent_read], [], [], self.job_timeout)
         if not ready:

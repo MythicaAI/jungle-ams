@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dex
+  name: dex
+  namespace: dex
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: dex
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dex
+    spec:
+      containers:
+        - command:
+            - /usr/local/bin/dex
+            - serve
+            - /etc/dex/cfg/config.yaml
+          image: ghcr.io/dexidp/dex:v2.32.0
+          imagePullPolicy: IfNotPresent
+          name: dex
+          ports:
+            - containerPort: 5556
+              name: http
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 5556
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          env:
+            - name: POSTGRES_PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: postgres-passwd
+            - name: GOOGLE_SSO_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: google-sso
+                  key: client-id
+            - name: GOOGLE_SSO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: google-sso
+                  key: secret-key
+            - name: ARGO_WORKFLOWS_SSO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: argo-workflows-sso
+                  key: secret-key
+          resources:
+            limits:
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 2Gi
+          securityContext:
+            capabilities:
+              drop:
+                - NET_RAW
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dex/cfg
+              readOnly: true
+            - name: tls
+              mountPath: /etc/dex/tls
+              readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccount: dex
+      serviceAccountName: dex
+      terminationGracePeriodSeconds: 30
+      tolerations:
+        - effect: NoSchedule
+          key: kubernetes.io/arch
+          operator: Equal
+          value: amd64
+      volumes:
+        - name: config
+          secret:
+            secretName: config
+        - name: tls
+          secret:
+            secretName: tls

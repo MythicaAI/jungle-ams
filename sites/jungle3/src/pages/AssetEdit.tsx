@@ -37,7 +37,7 @@ interface AssetEditProps {
   version?: string;
 }
 
-export const AssetEdit: React.FC<AssetEditProps> = ({
+const AssetEdit: React.FC<AssetEditProps> = ({
   assetId: propAssetId = undefined,
   version: propVersion = "0.0.0",
 }) => {
@@ -249,7 +249,9 @@ export const AssetEdit: React.FC<AssetEditProps> = ({
   );
 };
 
-export const AssetEditWrapper: React.FC = () => {
+const AssetEditWrapper: React.FC = () => {
   const { asset_id, version } = useParams();
   return <AssetEdit assetId={asset_id} version={version} />;
 };
+
+export default AssetEditWrapper;

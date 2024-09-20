@@ -7,14 +7,28 @@ LABEL tier="web"
 LABEL maintainer="jacob@mythica.ai"
 
 # Install certbot
-RUN apk add certbot kubectl
+RUN apk add --no-cache certbot kubectl nginx openssl supervisor
 
 # Register the account in the image
 RUN certbot register --email jacob@mythica.ai --agree-tos
 
+ENV CHALLENGE_ROOT="/var/www/certbot"
 WORKDIR /app
+
+RUN mkdir -p ${CHALLENGE_ROOT}
+RUN mkdir -p /var/www/html
+
+
+RUN chown -R nginx:nginx /var/www/html /var/www/certbot
+
 COPY certbot-certonly.sh .
+COPY certbot-renew.sh .
 COPY update-secrets.sh .
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Listen on port 80 for challenges
+EXPOSE 80
 
 #
 # for testing purposes, enable --testcert otherwise rate limiting
@@ -22,8 +36,9 @@ COPY update-secrets.sh .
 #
 # ENV EXTRA_ARGS="--testcert"
 
-ENV DOMAINS="images.mythica.ai,api.mythica.ai"
+ENV DOMAINS="api.mythica.ai,images.mythica.ai,dex.mythica.ai,cache.mythica.ai"
 ENV PATH="/app:${PATH}"
 
-# Default command generates or renews a cert
-CMD ["./certbot-certonly.sh"]
+
+# Use supervisord to manage container process orchestration
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

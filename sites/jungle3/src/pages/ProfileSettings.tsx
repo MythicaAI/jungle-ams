@@ -26,10 +26,6 @@ import { Helmet } from "react-helmet-async";
 import { useStatusStore } from "@store/statusStore";
 import { api } from "@services/api";
 
-interface ProfileSettingsProps {
-  create: boolean;
-}
-
 interface ValidateEmailResponse {
   profile_id: string;
   code: string;
@@ -37,11 +33,11 @@ interface ValidateEmailResponse {
   state: string;
 }
 
-const ProfileSettings = (props: ProfileSettingsProps) => {
+const ProfileSettings = () => {
   const [cookies] = useCookies(["profile_id"]);
   const { profile, setProfile, updateProfile, orgRoles } = useGlobalStore();
   const [searchParams] = useSearchParams();
-  const isCreate = searchParams.has("create") || props.create;
+  const isCreate = searchParams.has("create");
   const { setSuccess, addError, addWarning } = useStatusStore();
 
   const handleError = (err: AxiosError) => {

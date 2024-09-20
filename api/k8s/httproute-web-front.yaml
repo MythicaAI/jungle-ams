@@ -7,19 +7,20 @@ metadata:
     exposed: "true"
 spec:
   parentRefs:
-  - kind: Gateway
-    namespace: ingress
-    name: external-gateway
+    - kind: Gateway
+      namespace: ingress
+      name: external-gateway
   hostnames:
-  - "api.mythica.ai"
-  - "images.mythica.ai"
-  - "cache.mythica.ai"
-  - "pcgindex.mythica.ai"
-  - "files.mythica.ai"
+    - "api.mythica.ai"
+    - "images.mythica.ai"
+    - "cache.mythica.ai"
+    - "pcgindex.mythica.ai"
+    - "files.mythica.ai"
+    - "dex.mythica.ai"
   rules:
-  - matches:
-    - path:
-        value: /
-    backendRefs:
-    - name: web-front
-      port: 80
+    - matches:
+        - path:
+            value: /
+      backendRefs:
+        - name: web-front
+          port: 80

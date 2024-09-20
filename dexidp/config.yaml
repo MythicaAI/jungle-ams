@@ -1,0 +1,43 @@
+issuer: https://dex.mythica.ai/
+storage:
+  type: postgres
+  config:
+    host: 10.115.112.3
+    port: 5432
+    database: dex
+    user: dex
+    password: $POSTGRES_PASSWD
+    ssl:
+      mode: disable
+web:
+  http: 0.0.0.0:5556
+connectors:
+  - type: google
+    id: google
+    name: Google
+    config:
+      # Connector config values starting with a "$" will read from the environment.
+      clientID: $GOOGLE_SSO_CLIENT_ID
+      clientSecret: $GOOGLE_SSO_SECRET_KEY
+
+      # Dex's issuer URL + "/callback"
+      redirectURI: https://dex.mythica.ai/callback
+
+oauth2:
+  skipApprovalScreen: true
+
+staticClients:
+  - id: example-app
+    secret: example-app-secret
+    name: 'Example App'
+    # Where the app will be running.
+    redirectURIs:
+      - http://127.0.0.1:5555/callback
+  - id: argo-workflows-sso
+    redirectURIs:
+      - http://localhost:2746/oauth2/callback
+    name: 'Argo Workflows'
+    secret: 374e5376-28f7-4c47-8bfe-c9013d2dc2ff
+
+enablePasswordDB: false
+

@@ -56,3 +56,5 @@ export const FileViewWrapper: React.FC = () => {
   const { file_id } = useParams();
   return <FileView file_id={file_id} />;
 };
+
+export default FileViewWrapper;
