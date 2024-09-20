@@ -1,28 +1,43 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import ErrorPage from "@pages/ErrorPage";
-import ProfileSettings from "@pages/ProfileSettings";
-import Assets from "@pages/Assets";
-import { AssetEditWrapper } from "@pages/AssetEdit";
-import Login from "@pages/Login";
-import OrgsList from "@pages/OrgsList";
-import { FileViewWrapper } from "@pages/FileView";
-import { Packages } from "@pages/Packages";
-import Uploads from "@pages/Uploads";
 import { Layout } from "./components/common/Layout";
 import { Notification } from "./components/Notification";
-import {PackageViewWrapper} from "@pages/PackageView";
-import Logout from "./Logout.tsx";
-import { ApiKeys } from "@pages/ApiKeys";
+import { CircularProgress, Stack } from "@mui/joy";
+import { lazyRetry } from "@services/lazyImport.ts";
 import "./styles/App.css";
+
+const Assets = lazy(() => lazyRetry(() => import("@pages/Assets")));
+const ProfileSettings = lazy(() =>
+  lazyRetry(() => import("@pages/ProfileSettings")),
+);
+const Packages = lazy(() => lazyRetry(() => import("@pages/Packages")));
+const Uploads = lazy(() => lazyRetry(() => import("@pages/Uploads")));
+const ApiKeys = lazy(() => lazyRetry(() => import("@pages/ApiKeys")));
+const AssetEditWrapper = lazy(() =>
+  lazyRetry(() => import("@pages/AssetEdit")),
+);
+const OrgsList = lazy(() => lazyRetry(() => import("@pages/OrgsList")));
+const Login = lazy(() => lazyRetry(() => import("@pages/Login")));
+const Logout = lazy(() => lazyRetry(() => import("@pages/Logout")));
+const FileViewWrapper = lazy(() => lazyRetry(() => import("@pages/FileView")));
+const PackageViewWrapper = lazy(() =>
+  lazyRetry(() => import("@pages/PackageView")),
+);
+const ErrorPage = lazy(() => lazyRetry(() => import("@pages/ErrorPage")));
 
 const App: React.FC = () => {
   return (
-    <>
+    <Suspense
+      fallback={
+        <Stack direction="row" width="100%" justifyContent="center">
+          <CircularProgress />
+        </Stack>
+      }
+    >
       <Routes>
         <Route path="*" element={<Layout />} errorElement={<ErrorPage />}>
           <Route index element={<Assets />} />
-          <Route path="profile" element={<ProfileSettings create={false} />} />
+          <Route path="profile" element={<ProfileSettings />} />
           <Route path="packages" element={<Packages />} />
           <Route path="uploads" element={<Uploads />} />
           <Route path="api-keys" element={<ApiKeys />} />
@@ -32,7 +47,7 @@ const App: React.FC = () => {
           />
           <Route path="orgs" element={<OrgsList />} />
           <Route path="login" element={<Login />} />
-          <Route path="logout" element={<Logout/>} />
+          <Route path="logout" element={<Logout />} />
           <Route path="files/:file_id" element={<FileViewWrapper />} />
           <Route
             path="package-view/:asset_id/versions/:version_id"
@@ -41,7 +56,7 @@ const App: React.FC = () => {
         </Route>
       </Routes>
       <Notification />
-    </>
+    </Suspense>
   );
 };
 
