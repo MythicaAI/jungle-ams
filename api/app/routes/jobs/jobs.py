@@ -3,11 +3,11 @@ from http import HTTPStatus
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.sql.functions import now as sql_now
 from pydantic import BaseModel
+from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
 
-from auth.api_id import job_def_id_to_seq, job_def_seq_to_id, \
+from auth.api_id import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
 from config import app_config
 from db.connection import get_session
@@ -44,6 +44,7 @@ class JobRequest(BaseModel):
 
 class JobResponse(BaseModel):
     job_id: str
+    event_id: str
     job_def_id: str
 
 
@@ -86,15 +87,20 @@ async def get_job_defs() -> list[JobDefinitionModel]:
         return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
                 for job_def in job_defs]
 
-def add_job_requested_event(session: Session, job_seq: int, job_def, input_files: list[str], params: str, profile_seq: int):
+
+def add_job_requested_event(session: Session, job_seq: int, job_def, input_files: list[str], params: str,
+                            profile_seq: int):
     """Add a new event that triggers job processing"""
     # Create a new pipeline event
+    job_id = job_seq_to_id(job_seq)
     job_data = {
-        'job_seq': job_seq,
+        'job_def_id': job_def_seq_to_id(job_def.job_def_seq),
+        'job_id': job_id,
         'profile_id': profile_seq_to_id(profile_seq),
         'config': job_def.config,
         'input_files': input_files,
-        'params': params
+        'params': params,
+        'job_results_endpoint': f'{app_config().api_base_uri}/jobs/{job_id}/results'
     }
     location = app_config().mythica_location
     stmt = insert(Event).values(
@@ -107,12 +113,14 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, input_files
     log.info("job requested for %s by %s -> %s", job_def.job_type, profile_seq, event_result)
     return event_result
 
+
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_job(
-    request: JobRequest,
-    profile: Profile = Depends(current_profile)) -> JobResponse:
+        request: JobRequest,
+        profile: Profile = Depends(current_profile)) -> JobResponse:
     with get_session() as session:
-        job_def = session.exec(select(JobDefinition).where(JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
+        job_def = session.exec(select(JobDefinition).where(
+            JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
         if job_def is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
         job = session.exec(insert(Job).values(
@@ -122,10 +130,13 @@ async def create_job(
             params=request.params))
         job_seq = job.inserted_primary_key[0]
 
-        add_job_requested_event(session, job_seq, job_def, request.input_files, request.params, profile.profile_seq)
+        event_result = add_job_requested_event(session, job_seq, job_def, request.input_files, request.params,
+                                               profile.profile_seq)
+        event_id = event_seq_to_id(event_result.inserted_primary_key[0])
         session.commit()
         return JobResponse(
             job_id=job_seq_to_id(job_seq),
+            event_id=event_id,
             job_def_id=request.job_def_id)
 
 
@@ -178,8 +189,8 @@ async def create_job_result(
 
 @router.get('/results/{job_id}')
 async def get_job_results(
-    job_id: str,
-    profile: Profile = Depends(current_profile)) -> JobResultResponse:
+        job_id: str,
+        profile: Profile = Depends(current_profile)) -> JobResultResponse:
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
@@ -189,15 +200,16 @@ async def get_job_results(
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="job_id not owned by profile")
 
         job_results = session.exec(select(JobResult)
-                .where(JobResult.job_seq == job_seq)).all()
+                                   .where(JobResult.job_seq == job_seq)).all()
         results = [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_result_seq),
-                                **job_result.model_dump()) 
-                    for job_result in job_results]
+                                  **job_result.model_dump())
+                   for job_result in job_results]
         return JobResultResponse(completed=(job.completed is not None), results=results)
+
 
 @router.post('/complete/{job_id}')
 async def set_job_completed(
-    job_id: str):
+        job_id: str):
     with get_session() as session:
         job_result = session.exec(update(Job)
                                   .where(Job.job_seq == job_id_to_seq(job_id))
