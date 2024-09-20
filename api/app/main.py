@@ -13,6 +13,7 @@ import log_config
 from config import app_config
 from exceptions import register_exceptions
 from routes.type_adapters import register_adapters
+from streaming.sources.register import register_streaming_sources
 
 # This must run before the app is created to override the default
 #  logging configuration
@@ -48,7 +49,8 @@ route_names = [
     'topos',
     'sessions',
     'validate',
-    'keys']
+    'keys',
+    'readers']
 
 for name in route_names:
     module = importlib.import_module(f'routes.{name}.{name}')
@@ -58,6 +60,7 @@ for name in route_names:
 
 register_adapters()
 register_exceptions(app)
+register_streaming_sources()
 
 
 @app.get("/")
