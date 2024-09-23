@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import event
@@ -25,7 +26,8 @@ TZ = ZoneInfo(app_config().db_timezone)
 #
 if engine.dialect.name == "sqlite":
     @event.listens_for(engine, "connect")
-    def enable_sqlite_foreign_keys(dbapi_connection, _):
+    def setup_sqlite_fallbacks(dbapi_connection, _):
+        """Setup fallbacks for features that exist in postgres but not sqlite"""
         cursor = dbapi_connection.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
         cursor.close()
@@ -33,11 +35,17 @@ if engine.dialect.name == "sqlite":
         log.info("sqlite fallbacks installed")
 
 
-def validate():
-    engine.connect()
+@asynccontextmanager
+async def db_connection_lifespan():
+    """Lifecycle management of the database connection"""
+    conn = engine.connect()
     log.info("database engine connected %s, %s", engine.name, engine.dialect.name)
+    yield engine
+    conn.close()
+    log.info("database engine disconnected %s", engine.name)
 
 
 def get_session(echo=False):
+    """Get a database session using the main database connection"""
     engine.echo = echo
     return Session(engine)

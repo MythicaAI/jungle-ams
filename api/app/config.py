@@ -45,6 +45,7 @@ class AppConfig(BaseSettings):
     mythica_location: str = 'localhost'
     redis_host: str = 'localhost'
     redis_port: int = 6379
+    redis_db: int = 0
 
 
 @functools.lru_cache
