@@ -19,9 +19,7 @@ class Listener:
         await conn.add_listener('table_change', self._listener)
         try:
             while True:
-                # log.info("psql_add_listener")
                 await asyncio.sleep(0.1)  # Keeps the connection alive
-                # log.info("psql_add_listener")
         finally:
             await conn.close()
 
