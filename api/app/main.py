@@ -1,5 +1,6 @@
 """Main entrypoint for FastAPI app creation"""
 
+import asyncio
 import importlib
 import logging
 
@@ -12,6 +13,7 @@ import db.connection as db_connection
 import log_config
 from config import app_config
 from exceptions import register_exceptions
+from routes.readers.listener import Listener
 from routes.type_adapters import register_adapters
 from streaming.sources.register import register_streaming_sources
 
@@ -61,6 +63,11 @@ for name in route_names:
 register_adapters()
 register_exceptions(app)
 register_streaming_sources()
+
+@app.on_event("startup")
+async def startup_event():
+    # Run the psql listener on startup
+    asyncio.create_task(Listener().listen_for_changes())
 
 
 @app.get("/")

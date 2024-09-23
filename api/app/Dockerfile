@@ -25,7 +25,7 @@ USER appuser
 # Put all application data into the container /app directory, do this as late
 # as possible to aid in the docker layer cache coherency
 COPY . /app
-
+VOLUME /app
 # Run poetry as the app user to activate the virtual environment
 RUN poetry check && \
     poetry env use python3 && \

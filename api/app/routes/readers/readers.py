@@ -13,6 +13,7 @@ from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from routes.authorization import current_profile
+from routes.readers.utils import reader_to_source_params, resolve_results, select_reader, update_reader_index
 from streaming.models import StreamItemUnion
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, ReaderResponse
@@ -24,56 +25,6 @@ log = logging.getLogger(__name__)
 
 reader_connection_manager = ReaderConnectionManager()
 
-
-def resolve_results(results) -> list[ReaderResponse]:
-    """Convert database results to API results"""
-    resolved = [ReaderResponse(
-        reader_id=reader_seq_to_id(r.reader_seq),
-        owner_id=profile_seq_to_id(r.owner_seq),
-        source=r.source,
-        name=r.name,
-        position=r.position,
-        created=r.created.replace(tzinfo=TZ).astimezone(timezone.utc))
-        for r in results]
-    return resolved
-
-
-def select_reader(session: Session, reader_seq: int, profile_seq: int) -> Reader:
-    """Get a single owned reader"""
-    reader = session.exec(select(Reader)
-                          .where(Reader.reader_seq == reader_seq)
-                          .where(Reader.owner_seq == profile_seq)).one_or_none()
-    if reader is None:
-        raise HTTPException(
-            HTTPStatus.NOT_FOUND,
-            f"failed to find reader {reader_seq_to_id(reader_seq)}")
-    return reader
-
-
-def update_reader_index(session: Session, reader_seq: int, index: str):
-    """Update the reader with the last read index for seekable streams"""
-    r = session.exec(update(Reader)
-                     .values(position=index)
-                     .where(Reader.reader_seq == reader_seq))
-    if r.rowcount == 0:
-        log.error("failed to update reader index for reader_seq %s", reader_seq)
-    else:
-        log.debug("reader_seq %s position moved to index %s", reader_seq, index)
-    session.commit()
-
-
-def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:
-    """Generate the source params from a reader"""
-    params = reader.params or dict()
-    params['source'] = reader.source
-    params['name'] = reader.name
-    params['reader_seq'] = reader.reader_seq
-    params['reader_id'] = reader_seq_to_id(reader.reader_seq)
-    params['owner_seq'] = profile.profile_seq
-    params['owner_id'] = profile_seq_to_id(profile.profile_seq)
-    params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
-    params['position'] = reader.position
-    return params
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
@@ -160,42 +111,17 @@ async def reader_dequeue(
 
 
 @router.websocket("/connect")
-async def websocket_connect_all(websocket: WebSocket):
-    """Connect a websocket for all profile data"""
-    await websocket.accept()
-    await websocket.send_json(data={'message': 'hello world'}, mode='text')
-
-
-@router.websocket("/{reader_id}/connect")
-async def websocket_endpoint(
+async def websocket_connect_all(
         websocket: WebSocket,
-        reader_id: str,
-        profile: Profile = Depends(current_profile)):
-    """Create a reader websocket connection"""
-    await reader_connection_manager.connect(websocket)
+        profile: Profile = Depends(current_profile)
+        ):
+    """Create a profile websocket connection"""
     try:
-        log.info("websocket connected to reader %s", reader_id)
-        # set up the source
-        reader_seq = reader_id_to_seq(reader_id)
-        with get_session() as session:
-            reader = select_reader(session, reader_seq, profile.profile_seq)
-            params = reader_to_source_params(profile, reader)
-            source = create_source(reader.source, params)
-        await reader_connection_manager.websocket_handler(
-            websocket, 
-            ReaderResponse(
-                source=reader.source,
-                name=reader.name,
-                position=reader.position,
-                reader_id=reader_seq_to_id(reader_seq),
-                owner_id=profile_seq_to_id(profile.profile_seq),
-                created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
-            ),
-            source,
-        )
+        log.info("websocket connected to profile %s", profile)
+        await reader_connection_manager.connect(websocket, profile)
     except WebSocketDisconnect:
-        log.info("websocket disconnected from reader %s", reader_id)
-        await reader_connection_manager.disconnect(websocket)
+        log.info("websocket disconnected from profile %s", profile)
+        await reader_connection_manager.disconnect(websocket, profile)
     except WebSocketException as e:
-        log.exception("websocket exception for reader %s", reader_id, exc_info=e)
-        await reader_connection_manager.disconnect(websocket)
+        log.exception("websocket exception for profile %s", profile, exc_info=e)
+        await reader_connection_manager.disconnect(websocket, profile)
