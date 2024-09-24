@@ -2,7 +2,7 @@
 #
 set -x
 
-SITE_NAME=${1:-jungle}
+SITE_NAME=${1:-jungle3}
 COMMIT_HASH=$(git rev-parse --short=8 HEAD)
 
 # Get the directory where the script is located
