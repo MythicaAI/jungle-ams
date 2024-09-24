@@ -1,4 +1,4 @@
-name: sites/jungle3 Code quality
+name: sites/jungle3 Publish QA
 
 on:
   push:
@@ -12,6 +12,10 @@ defaults:
 jobs:
   build-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
 
     env:
       NODE_ENV: "production"
