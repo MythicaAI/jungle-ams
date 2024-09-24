@@ -36,5 +36,6 @@ class Reader(SQLModel, table=True):
     params: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     name: str | None = Field(default=None)
     position: str | None = Field(default=None)
+    direction: int | None = Field(sa_column=Column('direction',Integer,default=0))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
