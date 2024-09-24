@@ -160,7 +160,6 @@ async def test_websocket(
             profile_readers_name = f"reader_job_{reader_id_to_seq(reader_id)}_status"
             assert not redis_client.get(profile_readers_name)
 
-        # Upload files to trigger the Listener on an event
         files = [
             FileContentTestObj(
                 file_name=test_file_name,
