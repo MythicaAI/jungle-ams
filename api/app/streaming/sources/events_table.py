@@ -3,6 +3,7 @@ from http import HTTPStatus
 from typing import Any
 
 from fastapi import HTTPException
+from sqlalchemy import asc
 from sqlmodel import select
 
 from auth.api_id import event_id_to_seq, event_seq_to_id
@@ -27,16 +28,17 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
             if not after:
                 r = session.exec(select(DbEvent)
                                  .where(DbEvent.owner_seq == param_owner_seq)
-                                 .limit(page_size)).all()
+                                 .order_by(asc(DbEvent.event_seq)).limit(page_size)).all()
             else:
                 r = session.exec(select(DbEvent)
                                  .where(DbEvent.owner_seq == param_owner_seq)
                                  .where(DbEvent.event_seq > after_events_seq)
-                                 .limit(page_size)).all()
+                                 .order_by(asc(DbEvent.event_seq)).limit(page_size)).all()
 
         return [Event(
             index=event_seq_to_id(i.event_seq),
             payload=i.job_data,
+            index=i.event_seq,
         ) for i in r]
 
     return events_table_source

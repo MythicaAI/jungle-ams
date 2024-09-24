@@ -17,6 +17,7 @@ from routes.readers.utils import reader_to_source_params, resolve_results, selec
 from streaming.models import StreamItemUnion
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, ReaderResponse
+from streaming.client_ops import ClientOp
 from streaming.source_types import create_source
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
@@ -25,6 +26,10 @@ log = logging.getLogger(__name__)
 
 reader_connection_manager = ReaderConnectionManager()
 
+
+class WebsocketClientOp(ClientOp):
+    source: str
+    reader_id: Optional[str] = None
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
@@ -112,13 +117,14 @@ async def reader_dequeue(
 
 @router.websocket("/connect")
 async def websocket_connect_all(
+        op_data: Optional[WebsocketClientOp],
         websocket: WebSocket,
-        profile: Profile = Depends(current_profile)
-        ):
+        profile: Profile = Depends(current_profile),
+    ):
     """Create a profile websocket connection"""
     try:
         log.info("websocket connected to profile %s", profile)
-        await reader_connection_manager.connect(websocket, profile)
+        await reader_connection_manager.connect(websocket, profile, op_data)
     except WebSocketDisconnect:
         log.info("websocket disconnected from profile %s", profile)
         await reader_connection_manager.disconnect(websocket, profile)
