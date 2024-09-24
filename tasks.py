@@ -39,6 +39,10 @@ SFX_CLIENT_SECRET = os.environ.get('SFX_CLIENT_SECRET')
 #
 HF_AUTHTOKEN = os.environ.get('HF_AUTHTOKEN')
 
+#
+# ENV for node builds
+#
+NODE_ENV = os.environ.get('NODE_ENV', 'dev')
 
 #
 # Integration testing directories
@@ -52,7 +56,7 @@ IMAGES = {
     'api/app': {'name': 'mythica-app'},
     'api/houdini': {
         'name': 'hautomation',
-        'buildargs': { 
+        'buildargs': {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET
         },
@@ -62,25 +66,33 @@ IMAGES = {
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
     'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
     'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': ['api/app', 'api/houdini']},
-    'sites/jungle3': {'name': 'mythica-jungle3-build'},
+    'sites/jungle3': {
+        'name': 'mythica-jungle3-build',
+        'buildargs': {
+            'NODE_ENV': NODE_ENV,
+        }
+    },
     'testing/storage/minio-config': {'name': 'minio-config'},
     'api/genai': {
         'name': 'mythica-genai',
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
-        }    
+        }
     }
 }
 
 IMAGE_SETS = {
     'all': set(IMAGES.keys()),
+    'sites': {
+        'sites/jungle3'
+    },
     'web': {
         'api/nginx',
         'api/app',
         'api/publish-init',
         'api/lets-encrypt',
-        'api/gcs-proxy',
-        'sites/jungle3'},
+        'api/gcs-proxy'
+    },
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
@@ -189,6 +201,30 @@ def run_image(c, image_path, background=False):
           pty=PTY_SUPPORTED)
 
 
+def copy_dist_files(c, image_path):
+    """Given a dist files image (image that built some distribution into /dist)
+    copy the files to a local directory from the container to make them available
+    for serving or moving to the next distribution point"""
+    image_name = IMAGES[image_path]['name']
+    commit_hash = get_commit_hash()
+    source_path = '/dist'
+
+    # Create the container from the build image
+    result = c.run(f"docker create {image_name}:{commit_hash}", hide=True)
+    container_id = result.stdout.strip()
+    destination_path = os.path.join(BASE_DIR, image_path, 'dist-build')
+    try:
+        # Step 2: Copy files from the temporary container to the local filesystem
+        print(f"Copying '{source_path}' from container to '{destination_path}'...")
+        c.run(f"docker cp {container_id}:{source_path} {destination_path}")
+        print("Files copied successfully.")
+    finally:
+        # Step 3: Remove the temporary container
+        print(f"Removing temporary container '{container_id}'...")
+        c.run(f"docker rm {container_id}", hide=True)
+        print("Temporary container removed.")
+
+
 @task
 def docker_cleanup(c):
     c.run('docker container prune -f')
@@ -268,3 +304,11 @@ def docker_deploy(c, image='all', target='gcs'):
     'background': 'Run the image in the background'})
 def docker_run(c, image='api/app', background=False):
     image_path_action(c, image, run_image, background=background)
+
+
+@task(help={
+    'image': f'Image path to run: {IMAGES.keys()}',
+})
+def site_build(c, image='sites/jungle3'):
+    image_path_action(c, image, build_image)
+    image_path_action(c, image, copy_dist_files)

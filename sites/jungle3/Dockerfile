@@ -1,5 +1,11 @@
 # Use the latest stable Node.js image
-FROM node:lts-alpine
+FROM node:lts-alpine AS build
+
+LABEL name="mythica-sites-jungle3-build"
+LABEL maintainer="jacobrepp@gmail.com"
+LABEL verison="1.0.0"
+LABEL tier="web"
+LABEL description="Build container for jungle3"
 
 # Set the working directory
 WORKDIR /app
@@ -13,16 +19,16 @@ COPY package.json pnpm-lock.yaml* ./
 # Install dependencies
 RUN pnpm install
 
-# Copy the rest of your application's code
+# Copy code
 COPY . .
 
 # Build the application
-RUN pnpm run build
+ARG NODE_ENV=production
+RUN pnpm run build -m ${NODE_ENV}
 
-# Expose the port your app runs on (adjust if necessary)
-EXPOSE 5555
+# Copy build artifacts from the builder stage
+FROM alpine:latest
+WORKDIR /dist
+COPY --from=build /app/dist .
 
-ENTRYPOINT ["pnpm", "run"]
 
-# Command to run the application
-CMD ["build-dev"]
