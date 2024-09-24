@@ -13,14 +13,14 @@ from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from routes.authorization import current_profile
-from streaming.models import StreamItemUnion
 from routes.readers.manager import ReaderConnectionManager
-from routes.readers.schemas import CreateReaderRequest, ReaderResponse
+from routes.readers.schemas import CreateReaderRequest, Direction, ReaderResponse
+from streaming.funcs import Boundary
+from streaming.models import StreamItemUnion
 from streaming.source_types import create_source
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
 log = logging.getLogger(__name__)
-
 
 reader_connection_manager = ReaderConnectionManager()
 
@@ -33,6 +33,7 @@ def resolve_results(results) -> list[ReaderResponse]:
         source=r.source,
         name=r.name,
         position=r.position,
+        direction=direction_db_to_literal(r.direction),
         created=r.created.replace(tzinfo=TZ).astimezone(timezone.utc))
         for r in results]
     return resolved
@@ -73,7 +74,18 @@ def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:
     params['owner_id'] = profile_seq_to_id(profile.profile_seq)
     params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
     params['position'] = reader.position
+    params['direction'] = direction_db_to_literal(reader.direction)
     return params
+
+
+def direction_literal_to_db(direction: Direction) -> int:
+    """Convert the direction string literal to a database int"""
+    return 1 if direction == 'after' else -1
+
+
+def direction_db_to_literal(db_direction: int) -> Direction:
+    """Convert the database direction int to string"""
+    return 'after' if db_direction == 1 else 'before'
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
@@ -86,8 +98,8 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
             name=create.name,
             position=create.position,
             params=create.params,
-            )
-        )
+            direction=direction_literal_to_db(create.direction),
+        ))
         if r.rowcount == 0:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
         session.commit()
@@ -102,6 +114,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
             source=reader.source,
             name=reader.name,
             position=reader.position,
+            direction=direction_db_to_literal(reader.direction),
             reader_id=reader_seq_to_id(reader_seq),
             owner_id=profile_seq_to_id(profile.profile_seq),
             created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc))
@@ -131,6 +144,7 @@ def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
 @router.get("/{reader_id}/items")
 async def reader_dequeue(
         reader_id: str,
+        before: Optional[str] = None,
         after: Optional[str] = None,
         profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
@@ -139,14 +153,18 @@ async def reader_dequeue(
         reader = select_reader(session, reader_seq, profile.profile_seq)
         params = reader_to_source_params(profile, reader)
         source = create_source(reader.source, params)
+        if before is not None:
+            boundary = Boundary(position=before, direction='before')
+        elif after is not None:
+            boundary = Boundary(position=after, direction='after')
+        else:
+            boundary = Boundary(position=reader.position, direction=direction_db_to_literal(reader.direction))
         if source is None:
             raise HTTPException(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 f"failed to create source for reader {reader_id}")
-        default_page_size = 10
-        page_size = int(params.get('page_size', default_page_size))
-        after = after or reader.position
-        raw_items = source(after, page_size)
+
+        raw_items = source(boundary)
         if len(raw_items) > 0 and raw_items[-1].index:
             update_reader_index(session, reader.reader_seq, raw_items[-1].index)
 
@@ -155,7 +173,7 @@ async def reader_dequeue(
             return adapter.validate_python(raw_items)
         except ValidationError as e:
             log.exception("failed to validate", exc_info=e)
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, # pylint: disable=W0707:raise-missing-from
+            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,  # pylint: disable=W0707:raise-missing-from
                                 detail=f"validation error for reader {reader_id}")
 
 
@@ -182,11 +200,12 @@ async def websocket_endpoint(
             params = reader_to_source_params(profile, reader)
             source = create_source(reader.source, params)
         await reader_connection_manager.websocket_handler(
-            websocket, 
+            websocket,
             ReaderResponse(
                 source=reader.source,
                 name=reader.name,
                 position=reader.position,
+                direction=direction_db_to_literal(reader.direction),
                 reader_id=reader_seq_to_id(reader_seq),
                 owner_id=profile_seq_to_id(profile.profile_seq),
                 created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)

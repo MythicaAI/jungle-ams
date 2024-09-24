@@ -5,18 +5,16 @@ import logging
 from json import JSONDecodeError
 from typing import Callable, Optional, TypeVar
 
-from fastapi import WebSocket
 import redis
+from fastapi import WebSocket
 
 from config import app_config
-from streaming.client_ops import ClientOp, ReadClientOp
-from streaming.funcs import Source
-from streaming.models import StreamItem
 from routes.readers.schemas import ReaderResponse
+from streaming.client_ops import ClientOp, ReadClientOp
+from streaming.funcs import Boundary, Source
+from streaming.models import StreamItem
 
 log = logging.getLogger(__name__)
-
-
 
 configs = app_config()
 
@@ -55,7 +53,7 @@ class ReaderConnectionManager:
         return True
 
     async def websocket_handler(
-        self, websocket: WebSocket, reader: ReaderResponse, source: Source
+            self, websocket: WebSocket, reader: ReaderResponse, source: Source
     ):
         """
         Handler loop for web sockets
@@ -66,7 +64,7 @@ class ReaderConnectionManager:
             await self.process_message(websocket, reader, source)
 
     async def process_message(
-        self, websocket: WebSocket, reader: ReaderResponse, source
+            self, websocket: WebSocket, reader: ReaderResponse, source
     ):
         """Process and respond to a single message"""
         try:
@@ -92,11 +90,11 @@ class ReaderConnectionManager:
             await websocket.send_json({'error': error_message})
 
     async def process_read(
-        self,
-        websocket: WebSocket,
-        op: ReadClientOp,
-        source: Source,
-        reader: ReaderResponse,
+            self,
+            websocket: WebSocket,
+            op: ReadClientOp,
+            source: Source,
+            reader: ReaderResponse,
     ):
         """
         Gets a cached reader result or runs the query to obtain the newest result,
@@ -110,14 +108,15 @@ class ReaderConnectionManager:
             # The first time it may return an empty list,
             # and the second when it's completed sends the real data,
             # other times it uses cached source data
-            stream_items: list[StreamItem] = source(op.after, op.page_size)
+            boundary = Boundary(position=op.position, direction=op.direction)
+            stream_items: list[StreamItem] = source(boundary)
             cached_reader = self.set_redis_reader(reader, stream_items, completed)
         items: list[dict] = cached_reader["result"]
 
         await websocket.send_json(items)
 
     def set_redis_reader(
-        self, reader: ReaderResponse, items: list[StreamItem], completed=False
+            self, reader: ReaderResponse, items: list[StreamItem], completed=False
     ):
         profile_readers_name = f"readers_{reader.owner_id}"
         data = {
