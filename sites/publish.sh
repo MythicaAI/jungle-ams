@@ -2,7 +2,7 @@
 #
 set -eof pipefail
 
-SITE_NAME=${1:-jungle}
+SITE_NAME=${1:-jungle3}
 
 COMMIT_HASH=$(git rev-parse --short=8 HEAD)
 GCS_BUCKET=mythica-public-web-content
