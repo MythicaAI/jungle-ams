@@ -26,6 +26,6 @@ jobs:
           python-version: '3.12'
 
       - run: |
-          ./env.sh
+          . ./env.sh
           invoke docker-deploy --image sites/jungle3
         
