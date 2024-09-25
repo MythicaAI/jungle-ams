@@ -14,9 +14,10 @@ jobs:
   build-publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      repository-projects: read
       pull-requests: write
-      repository-projects: write
+      id-token: write
 
     env:
       NODE_ENV: "production"
