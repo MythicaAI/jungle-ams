@@ -1,0 +1,86 @@
+"""Readers API"""
+import logging
+from datetime import timezone
+from http import HTTPStatus
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, WebSocket
+from sqlmodel import Session, select, update
+
+from auth.api_id import profile_seq_to_id, reader_seq_to_id
+from db.connection import TZ
+from db.schema.profiles import Profile
+from db.schema.streaming import Reader
+from routes.readers.schemas import Direction, ReaderResponse
+
+router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
+log = logging.getLogger(__name__)
+
+
+def direction_literal_to_db(direction: Direction) -> int:
+    """Convert the direction string literal to a database int"""
+    return 1 if direction == 'after' else -1
+
+
+def direction_db_to_literal(db_direction: int) -> Direction:
+    """Convert the database direction int to string"""
+    return 'after' if db_direction == 1 else 'before'
+
+
+def resolve_results(results) -> list[ReaderResponse]:
+    """Convert database results to API results"""
+    resolved = [ReaderResponse(
+        reader_id=reader_seq_to_id(r.reader_seq),
+        owner_id=profile_seq_to_id(r.owner_seq),
+        source=r.source,
+        name=r.name,
+        position=r.position,
+        direction=direction_db_to_literal(r.direction),
+        created=r.created.replace(tzinfo=TZ).astimezone(timezone.utc))
+        for r in results]
+    return resolved
+
+
+def select_reader(session: Session, reader_seq: int, profile_seq: int) -> Reader:
+    """Get a single owned reader"""
+    reader = session.exec(select(Reader)
+                          .where(Reader.reader_seq == reader_seq)
+                          .where(Reader.owner_seq == profile_seq)).one_or_none()
+    if reader is None:
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND,
+            f"failed to find reader {reader_seq_to_id(reader_seq)}")
+    return reader
+
+def select_profile_readers(session: Session, profile_seq: int) -> list[Reader]:
+    """Get a single owned reader"""
+    readers = session.exec(select(Reader)
+                          .where(Reader.owner_seq == profile_seq).order_by("reader_seq")).all()
+    return readers
+
+
+def update_reader_index(session: Session, reader_seq: int, index: str):
+    """Update the reader with the last read index for seekable streams"""
+    r = session.exec(update(Reader)
+                     .values(position=index)
+                     .where(Reader.reader_seq == reader_seq))
+    if r.rowcount == 0:
+        log.error("failed to update reader index for reader_seq %s", reader_seq)
+    else:
+        log.debug("reader_seq %s position moved to index %s", reader_seq, index)
+    session.commit()
+
+
+def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:
+    """Generate the source params from a reader"""
+    params = reader.params or dict()
+    params['source'] = reader.source
+    params['name'] = reader.name
+    params['reader_seq'] = reader.reader_seq
+    params['reader_id'] = reader_seq_to_id(reader.reader_seq)
+    params['owner_seq'] = profile.profile_seq
+    params['owner_id'] = profile_seq_to_id(profile.profile_seq)
+    params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
+    params['position'] = reader.position
+    params['direction'] = direction_db_to_literal(reader.direction)
+    return params
