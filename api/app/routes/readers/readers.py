@@ -2,7 +2,7 @@
 import logging
 from datetime import timezone
 from http import HTTPStatus
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
@@ -24,7 +24,7 @@ from routes.readers.utils import (
 from routes.readers.utils import direction_literal_to_db, direction_db_to_literal, reader_to_source_params, resolve_results, select_reader, update_reader_index
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, Direction, ReaderResponse
-from streaming.client_ops import ClientOp
+from streaming.client_ops import ReadClientOp
 from streaming.funcs import Boundary
 from streaming.models import StreamItemUnion
 from streaming.source_types import create_source
@@ -35,8 +35,7 @@ log = logging.getLogger(__name__)
 reader_connection_manager = ReaderConnectionManager()
 
 
-class WebsocketClientOp(ClientOp):
-    source: str
+class WebsocketClientOp(ReadClientOp):
     reader_id: Optional[str] = None
 
 
@@ -129,8 +128,8 @@ async def reader_dequeue(
                                 detail=f"validation error for reader {reader_id}")
 
 
-@router.websocket("/connect")
-async def websocket_connect_all(websocket: WebSocket):
+@router.websocket("/test/connect")
+async def websocket_test_connect(websocket: WebSocket):
     """Connect a websocket for all profile data"""
     await websocket.accept()
     await websocket.send_json(data={'message': 'hello world'}, mode='text')
@@ -139,14 +138,13 @@ async def websocket_connect_all(websocket: WebSocket):
 
 @router.websocket("/connect")
 async def websocket_connect_all(
-        op_data: Optional[WebsocketClientOp],
         websocket: WebSocket,
         profile: Profile = Depends(current_profile),
     ):
     """Create a profile websocket connection"""
     try:
         log.info("websocket connected to profile %s", profile)
-        await reader_connection_manager.connect(websocket, profile, op_data)
+        await reader_connection_manager.connect(websocket, profile)
     except WebSocketDisconnect:
         log.info("websocket disconnected from profile %s", profile)
         await reader_connection_manager.disconnect(websocket, profile)

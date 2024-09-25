@@ -20,6 +20,7 @@ from routes.readers.utils import (
     reader_to_source_params,
     select_profile_readers,
     select_reader,
+    update_reader_index,
 )
 from streaming.source_types import create_source
 
@@ -37,24 +38,32 @@ class ReaderConnectionManager:
             str,
             tuple[
                 self.T,
-                Callable[[WebSocket, self.T, Source, Reader, bool], None],
+                Callable[[self.T, Source], None],
             ],
         ] = {'READ': (ReadClientOp, self.process_read)}
         self.default_reader_max_page = 1
         self.default_operation: str = "READ"
-        self.default_op: ClientOp = self.ops.get(self.default_operation)
+        self.default_op: tuple[self.T, Source] = self.ops.get(self.default_operation)
 
-    async def connect(self, websocket: WebSocket, profile: Profile, op_data: dict):
+    async def connect(
+        self, websocket: WebSocket,
+        profile: Profile,
+        # op_data: dict, TODO: add op_data
+    ):
         await websocket.accept()
-        if not self.active_connections.get(profile.profile_seq):
-            self.active_connections[profile.profile_seq] = dict()
-        self.active_connections[profile.profile_seq]["websockets"].append(websocket)
+
+        op_data: ReadClientOp = self.default_op[0]()
+        op_data: dict = op_data.model_dump()
+        log.debug("websocket connected with op_data %s", op_data)
 
         # TODO: Manage multi-connection (if the new op has been received for the reader
         # and the reader is already processed for other Websocket connections
         # the task for each connection should be recreated.)
         if op_data.get("op") and op_data["op"] in self.ops:
             if not self.active_connections.get(profile.profile_seq):
+                self.active_connections[profile.profile_seq] = dict()
+                self.active_connections[profile.profile_seq]["websockets"] = list()
+                log.info("New profile connected to websocket %s", websocket)
                 with get_session() as session:
                     if not op_data.get("reader_id"):
                         readers = select_profile_readers(session, profile.profile_seq)
@@ -62,7 +71,9 @@ class ReaderConnectionManager:
                         reader_seq = reader_id_to_seq(op_data['reader_id'])
                         reader = await self.get_reader_model(session, reader_seq, profile.profile_seq)
                         readers = [reader]
-                        del op_data['reader_id']
+
+                if op_data.get("reader_id"):
+                    del op_data['reader_id']
 
                 log.info("websocket connected to readers %s", readers)
                 if readers is None:
@@ -70,42 +81,49 @@ class ReaderConnectionManager:
                 for reader in readers:
                     await self.add_reader_to_profile(reader, profile, op_data)
 
-            if not self.active_connections.get(profile.profile_seq, {}).get("websockets"):
-                self.active_connections[profile.profile_seq]["websockets"] = list()
+            self.active_connections[profile.profile_seq]["websockets"].append(websocket)
 
             await self.add_all_tasks_for_new_websocket(
                 profile_seq=profile.profile_seq, websocket=websocket
             )
         else:
             if not op_data.get("op"):
-                await websocket.send_json({'error': "No 'op' included in client message"})
+                error_message = "No 'op' included in client message"
+                log.exception(error_message)
+                await websocket.send_json({'error': error_message})
             else:
-                await websocket.send_json({'error': "Invalid 'op' included in client message"})
+                error_message = "Invalid 'op' included in client message"
+                log.exception(error_message)
+                await websocket.send_json({'error': error_message})
         await self.websocket_handler(websocket, profile)
 
     async def add_all_tasks_for_new_websocket(self, profile_seq: str, websocket: WebSocket):
 
-        if (
-            not self.active_connections.get(profile_seq)
-            or not self.active_connections[profile_seq].get("websockets")
-            or not len(self.active_connections[profile_seq]) > 1
-        ):
-            return
+        try:
+            if (
+                not self.active_connections.get(profile_seq)
+                or not self.active_connections[profile_seq].get("websockets")
+                or not len(self.active_connections[profile_seq]) > 1
+            ):
+                return
 
-        for reader_id in self.active_connections[profile_seq].keys():
-            if not reader_id == "websockets":
-                connection_reader = self.active_connections[profile_seq][reader_id]
-                reader: Reader = connection_reader["reader"]
-                source = connection_reader["source"]
-                data = connection_reader["source_data"]
-                processor = connection_reader["processor"]
+            for reader_id in self.active_connections[profile_seq].keys():
+                if not reader_id == "websockets":
+                    connection_reader = self.active_connections[profile_seq][reader_id]
+                    reader: Reader = connection_reader["reader"]
+                    source = connection_reader["source"]
+                    data = connection_reader["source_data"]
+                    processor = connection_reader["processor"]
 
-                send_task = asyncio.create_task(
-                    self.send_updates_periodically(
-                        processor, websocket, data, reader, source
+                    send_task = asyncio.create_task(
+                        self.send_updates_periodically(
+                            processor, websocket, data, reader, source, profile_seq
+                        )
                     )
-                )
-                connection_reader["reader_task_names"].append(send_task.get_name())
+                    log.debug("periodically task created for reader %s", reader_id)
+                    connection_reader["reader_task_names"].append(send_task.get_name())
+        except Exception as ex:
+            log.exception("add_all_tasks_for_new_websocket error", exc_info=ex)
 
     async def get_reader_model(self, session, reader_seq, profile_seq):
         reader = select_reader(session, reader_seq, profile_seq)
@@ -134,6 +152,8 @@ class ReaderConnectionManager:
         connection_reader["source_data"] = data
         connection_reader["processor"] = processor
         connection_reader["reader_task_names"] = list()
+        log.debug("Added reader %s to profile %s", reader.reader_seq, profile.profile_seq)
+        
 
     async def disconnect(self, websocket: WebSocket, profile):
         await websocket.close()
@@ -156,22 +176,25 @@ class ReaderConnectionManager:
         source_data: ReadClientOp,
         reader: Reader,
         source: Source,
+        profile_seq: str,
         interval: float = None,
     ):
         """
         Continuously sends updates to the client at regular intervals.
         This task runs concurrently with the message receiving loop.
         """
+        log.debug("send_updates_periodically started for reader %s", reader.reader_seq)
+        interval = .5
         if not interval and not isinstance(interval, float):
             interval = None
         try:
             while True:
-                await processor(websocket, source_data, source, reader)
+                await processor(websocket, source_data, source, reader, profile_seq)
 
                 if interval:
                     await asyncio.sleep(interval)
-        except asyncio.CancelledError:
-            pass
+        except Exception as ex:
+            log.exception("send_updates_periodically error", exc_info=ex)
 
     async def process_message(self, websocket: WebSocket, profile: Profile):
         """
@@ -239,7 +262,7 @@ class ReaderConnectionManager:
         for websocket in self.active_connections[profile_seq]["websockets"]:
             send_task = asyncio.create_task(
                 self.send_updates_periodically(
-                    processor, websocket, data, reader, source
+                    processor, websocket, data, reader, source, profile_seq
                 )
             )
             new_tasks.append(send_task.get_name())
@@ -251,13 +274,25 @@ class ReaderConnectionManager:
         op: ReadClientOp,
         source: Source,
         reader: Reader,
+        profile_seq: str,
     ):
         """
-        Gets a cached reader result or runs the query to obtain the newest result,
-        responds with the received data
+        Responds with the received data.
         """
         # TODO: add last index to a reader dictionary, to prevent sending already sent data.
         boundary = Boundary(position=op.position, direction=op.direction)
         stream_items: list[StreamItem] = source(boundary)
+        log.debug("Source output stream_items %s", stream_items)
+        
+        try:
+            if len(stream_items) > 0 and stream_items[-1].index:
+                with get_session() as session:
+                    update_reader_index(session, reader.reader_seq, stream_items[-1].index)
 
-        await websocket.send_json(stream_items)
+                await websocket.send_json(
+                    [item.model_dump_json() for item in stream_items]
+                )
+                log.debug("Source output stream_items %s", [item.model_dump_json() for item in stream_items])
+
+        except Exception as ex:
+            log.exception("process_read error", exc_info=ex)
