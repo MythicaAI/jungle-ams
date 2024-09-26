@@ -8,7 +8,7 @@ import {
   styled,
   Typography,
 } from "@mui/joy";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { useEffect } from "react";
 import { useGlobalStore } from "@store/globalStore";
@@ -39,6 +39,8 @@ export const AuthHeader = () => {
   const { addError } = useStatusStore();
   const { loginWithRedirect, getAccessTokenSilently, user, isAuthenticated } =
     useAuth0();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Refresh the backend API session based on the Auth0 state (create a new auth token)
   useEffect(() => {
@@ -52,6 +54,16 @@ export const AuthHeader = () => {
       startAuthenticatedSession(user.sub);
     }
   }, [getAccessTokenSilently, isAuthenticated, user]);
+
+  useEffect(() => {
+    if (
+      user &&
+      localStorage.getItem("shouldStartOnboarding") === "true" &&
+      location.pathname !== "/quick-setup"
+    ) {
+      navigate("/quick-setup");
+    }
+  }, [user, location]);
 
   const startAuthenticatedSession = async (user_id: string) => {
     try {
