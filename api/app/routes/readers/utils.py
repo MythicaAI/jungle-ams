@@ -4,7 +4,7 @@ from datetime import timezone
 from http import HTTPStatus
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, WebSocket
+from fastapi import APIRouter, HTTPException
 from sqlmodel import Session, select, update
 
 from auth.api_id import profile_seq_to_id, reader_seq_to_id
