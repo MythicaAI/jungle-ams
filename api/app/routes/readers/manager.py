@@ -20,7 +20,6 @@ from routes.readers.utils import (
     reader_to_source_params,
     select_profile_readers,
     select_reader,
-    update_reader_index,
 )
 from streaming.source_types import create_source
 

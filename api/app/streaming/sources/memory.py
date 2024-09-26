@@ -23,13 +23,6 @@ def create_memory_source(source: List[Any], params: Dict[str, Any]) -> Source:
         nonlocal source
         if not source:
             return []
-        indexed_source = []
-        for index in range(len(source)):
-            item: StreamItem = source[index]
-            item.index = index
-            indexed_source.append(item)
-        source = indexed_source
-        del indexed_source
 
         if boundary.position is None:
             if boundary.direction == 'after':
