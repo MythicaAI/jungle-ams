@@ -1,6 +1,9 @@
 name: api/app tests
 
 on:
+  pull_request:
+    paths:
+      - 'api/app/**'
   push:
     paths:
       - 'api/app/**'
@@ -30,16 +33,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - uses: 8BitJonny/gh-get-current-pr@3.0.0
+        id: PR
+        with:
+          sha: ${{ github.event.pull_request.head.sha }}
+
       - name: Set up Python
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'  # Specify your Python version
 
       - name: Install dependencies
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         run: |
           python -m pip install --upgrade pip poetry
           poetry install --with=dev --no-root
       - name: Static Code Linting with flake8
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         run: |
           # stop the build if there are Python syntax errors or undefined names
           poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -47,25 +58,24 @@ jobs:
           poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Create SQLite database
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         run: |
           touch $DATABASE_PATH
 
       - name: Initialize Database
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         run: |
           mkdir alembic_sqlite/versions
           poetry run alembic -n sqlite revision --autogenerate -m "initial"
 
       - name: Create Schema
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         run: |
           poetry run alembic -n sqlite upgrade head
           echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
 
-      - uses: 8BitJonny/gh-get-current-pr@3.0.0
-        id: PR
-        with:
-          sha: ${{ github.event.pull_request.head.sha }}
-
       - name: Run tests
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         id: pytester-cov
         run: |
           chmod +x ./prepare_git_cov_table.sh
@@ -73,6 +83,7 @@ jobs:
         shell: bash
         
       - name: Comment table-result inside PR
+        if: ${{ steps.PR.outputs.number }} != ${{ null }}
         uses: ./github_coverage/post_git_issue/
         # pass user input as arguments
         with:
@@ -85,7 +96,7 @@ jobs:
           pull_number: ${{ steps.PR.outputs.number }}
 
       - name: Coverage total fail - exit
-        if: ${{ steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
+        if: ${{ steps.PR.outputs.number }} != ${{ null }} && ${{ steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
         run: |
           echo "cov single fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
           exit 1
