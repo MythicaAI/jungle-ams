@@ -18,7 +18,7 @@ import {
   translateError,
 } from "@services/backendCommon";
 import { FormEvent } from "react";
-import { Form, Link } from "react-router-dom";
+import { Form, Link, useLocation, useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { AxiosError } from "axios";
 import { MailCheckIcon, Tag } from "lucide-react";
@@ -39,6 +39,9 @@ const ProfileSettings = () => {
   const [searchParams] = useSearchParams();
   const isCreate = searchParams.has("create");
   const { setSuccess, addError, addWarning } = useStatusStore();
+  const location = useLocation();
+  const isQuickSetup = location.pathname.includes("quick-setup");
+  const navigate = useNavigate();
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
@@ -47,10 +50,11 @@ const ProfileSettings = () => {
 
   const onUpdateProfile = (event: FormEvent) => {
     event.preventDefault();
-    if (event.currentTarget) {
+
+    if (!event.currentTarget) {
       return;
     }
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(event.currentTarget as HTMLFormElement);
     const formJson = Object.fromEntries(formData.entries());
     api
       .post<ProfileResponse>({
@@ -160,6 +164,7 @@ const ProfileSettings = () => {
         name="description"
         value={profile.description}
         onChange={(e) => updateProfile({ description: e.target.value })}
+        placeholder={isQuickSetup ? "Short description of your profile" : ""}
       />
     </FormControl>
   );
@@ -191,10 +196,26 @@ const ProfileSettings = () => {
   const profileEdit = profile && (
     <Form onSubmit={onUpdateProfile}>
       {profileName}
-      {profileFullName}
       {profileDescription}
-      {profileEmailValidate}
-      {profileOrgs}
+      {!isQuickSetup && profileEmailValidate}
+      {!isQuickSetup && profileOrgs}
+      {!isQuickSetup && (
+        <Button type="submit" sx={{ marginTop: "10px" }}>
+          Edit
+        </Button>
+      )}
+      {isQuickSetup && (
+        <Button
+          sx={{ marginTop: "10px" }}
+          onClick={() => {
+            localStorage.setItem("shouldStartOnboarding", "false");
+            sessionStorage.setItem("showOnboardingSuccess", "true");
+            navigate("/welcome");
+          }}
+        >
+          Confirm and proceed
+        </Button>
+      )}
     </Form>
   );
 

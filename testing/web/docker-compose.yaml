@@ -27,9 +27,9 @@ services:
       - web
       - storage
     volumes:
-      - local_storage:/app/local_storage
+      - app:/app
 volumes:
-  local_storage:
+  app:
     driver: local
   sites:
     driver: local
