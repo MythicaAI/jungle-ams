@@ -40,6 +40,7 @@ const Login: React.FC = () => {
       .finally(() => {
         clearAll();
         clearCookies();
+        localStorage.removeItem("shouldStartOnboarding");
       });
   };
 
