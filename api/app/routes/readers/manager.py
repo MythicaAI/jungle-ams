@@ -28,6 +28,10 @@ log = logging.getLogger(__name__)
 configs = app_config()
 
 
+class ApiWebsocketError(Exception):
+    pass
+
+
 class ReaderConnectionManager:
     T = TypeVar('T', bound=ClientOp)
 
@@ -44,6 +48,7 @@ class ReaderConnectionManager:
         self.default_reader_max_page = 1
         self.default_operation: str = "READ"
         self.default_op: tuple[self.T, Source] = self.ops.get(self.default_operation)
+        self.manager_active_tasks: dict[str, asyncio.Task] = dict()
 
     async def connect(
         self, websocket: WebSocket,
@@ -117,13 +122,17 @@ class ReaderConnectionManager:
 
                     send_task = asyncio.create_task(
                         self.send_updates_periodically(
-                            processor, websocket, data, reader, source, profile_seq
+                            processor, websocket, data, reader, source
                         )
                     )
+                    task_name = f"TASK-{websocket}-{reader}-{processor}"
+                    send_task.set_name(task_name)
+                    connection_reader["reader_task_names"].append(task_name)
+                    self.manager_active_tasks[task_name] = send_task
+
                     log.debug("periodically task created for reader %s", reader_id)
-                    connection_reader["reader_task_names"].append(send_task.get_name())
-        except Exception as ex:
-            log.exception("add_all_tasks_for_new_websocket error", exc_info=ex)
+        except ApiWebsocketError as ex:
+            log.exception("Error while the creating the task for new websocket", exc_info=ex)
 
     async def get_reader_model(self, session, reader_seq, profile_seq):
         reader = select_reader(session, reader_seq, profile_seq)
@@ -176,25 +185,35 @@ class ReaderConnectionManager:
         source_data: ReadClientOp,
         reader: Reader,
         source: Source,
-        profile_seq: str,
-        interval: float = None,
+        interval: float = .5,
     ):
         """
         Continuously sends updates to the client at regular intervals.
         This task runs concurrently with the message receiving loop.
         """
-        log.debug("send_updates_periodically started for reader %s", reader.reader_seq)
-        interval = .5
+        log.debug("Initiated send_updates_periodically() for reader with sequence: %s", reader.reader_seq)
         if not interval and not isinstance(interval, float):
             interval = None
         try:
             while True:
-                await processor(websocket, source_data, source, reader, profile_seq)
+                source_data: ReadClientOp = await processor(websocket, source_data, source)
 
                 if interval:
                     await asyncio.sleep(interval)
-        except Exception as ex:
-            log.exception("send_updates_periodically error", exc_info=ex)
+        except ApiWebsocketError as ex:
+            log.exception("The sending the updates periodically catch unrecognized error", exc_info=ex)
+            await websocket.send_json({'error': "Periodic update transmission unexpectedly terminated."})
+        finally:
+            task_name = f"TASK-{websocket}-{reader}-{processor}"
+            self.cancel_and_delete_manager_task(task_name)
+
+
+    def cancel_and_delete_manager_task(self, task_name: str):
+        task = self.manager_active_tasks.get(task_name)
+        if task:
+            task.cancel()
+            del self.manager_active_tasks[task_name]
+
 
     async def process_message(self, websocket: WebSocket, profile: Profile):
         """
@@ -245,8 +264,6 @@ class ReaderConnectionManager:
         Deletes previous periodic tasks and creates new ones with a new processor.
         """
 
-        all_active_tasks = {task.get_name(): task for task in asyncio.all_tasks()}
-
         connection_reader = self.active_connections[profile_seq][reader.reader_seq]
         reader: Reader = connection_reader["reader"]
         source = connection_reader["source"]
@@ -254,18 +271,19 @@ class ReaderConnectionManager:
         processor = connection_reader["processor"]
         reader_task_names = connection_reader["reader_task_names"]
         for task_name in reader_task_names:
-            task = all_active_tasks.get(task_name)
-            if task:
-                task.cancel()
+            self.cancel_and_delete_manager_task(task_name)
 
         new_tasks = []
         for websocket in self.active_connections[profile_seq]["websockets"]:
             send_task = asyncio.create_task(
                 self.send_updates_periodically(
-                    processor, websocket, data, reader, source, profile_seq
+                    processor, websocket, data, reader, source
                 )
             )
-            new_tasks.append(send_task.get_name())
+            task_name = f"TASK-{websocket}-{reader}-{processor}"
+            send_task.set_name(task_name)
+            new_tasks.append(task_name)
+            self.manager_active_tasks[task_name] = send_task
         connection_reader["reader_task_names"] = new_tasks
 
     async def process_read(
@@ -273,26 +291,18 @@ class ReaderConnectionManager:
         websocket: WebSocket,
         op: ReadClientOp,
         source: Source,
-        reader: Reader,
-        profile_seq: str,
     ):
         """
         Responds with the received data.
         """
-        # TODO: add last index to a reader dictionary, to prevent sending already sent data.
         boundary = Boundary(position=op.position, direction=op.direction)
         stream_items: list[StreamItem] = source(boundary)
-        log.debug("Source output stream_items %s", stream_items)
         
-        try:
-            if len(stream_items) > 0 and stream_items[-1].index:
-                with get_session() as session:
-                    update_reader_index(session, reader.reader_seq, stream_items[-1].index)
+        if len(stream_items) > 0 and stream_items[-1].index:
 
-                await websocket.send_json(
-                    [item.model_dump_json() for item in stream_items]
-                )
-                log.debug("Source output stream_items %s", [item.model_dump_json() for item in stream_items])
-
-        except Exception as ex:
-            log.exception("process_read error", exc_info=ex)
+            await websocket.send_json(
+                [item.model_dump_json() for item in stream_items]
+            )
+            log.debug("Source output stream_items %s", [item.model_dump_json() for item in stream_items])
+            op.position = stream_items[-1].index
+        return op

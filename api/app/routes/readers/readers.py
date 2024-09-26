@@ -2,7 +2,7 @@
 import logging
 from datetime import timezone
 from http import HTTPStatus
-from typing import Literal, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
@@ -21,9 +21,8 @@ from routes.readers.utils import (
     select_reader,
     update_reader_index,
 )
-from routes.readers.utils import direction_literal_to_db, direction_db_to_literal, reader_to_source_params, resolve_results, select_reader, update_reader_index
 from routes.readers.manager import ReaderConnectionManager
-from routes.readers.schemas import CreateReaderRequest, Direction, ReaderResponse
+from routes.readers.schemas import CreateReaderRequest, ReaderResponse
 from streaming.client_ops import ReadClientOp
 from streaming.funcs import Boundary
 from streaming.models import StreamItemUnion
