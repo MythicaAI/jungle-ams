@@ -23,6 +23,7 @@ from routes.readers.utils import (
 )
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, ReaderResponse
+from streaming.client_ops import ReadClientOp
 from streaming.funcs import Boundary
 from streaming.models import StreamItemUnion
 from streaming.source_types import create_source
@@ -32,6 +33,10 @@ log = logging.getLogger(__name__)
 
 reader_connection_manager = ReaderConnectionManager()
 
+
+
+class WebsocketClientOp(ReadClientOp):
+    reader_id: Optional[str] = None
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
@@ -123,44 +128,26 @@ async def reader_dequeue(
                                 detail=f"validation error for reader {reader_id}")
 
 
-@router.websocket("/connect")
-async def websocket_connect_all(websocket: WebSocket):
+@router.websocket("/test/connect")
+async def websocket_test_connect(websocket: WebSocket):
     """Connect a websocket for all profile data"""
     await websocket.accept()
     await websocket.send_json(data={'message': 'hello world'}, mode='text')
 
 
-@router.websocket("/{reader_id}/connect")
-async def websocket_endpoint(
+
+@router.websocket("/connect")
+async def websocket_connect_all(
         websocket: WebSocket,
-        reader_id: str,
-        profile: Profile = Depends(current_profile)):
-    """Create a reader websocket connection"""
-    await reader_connection_manager.connect(websocket)
+        profile: Profile = Depends(current_profile),
+    ):
+    """Create a profile websocket connection"""
     try:
-        log.info("websocket connected to reader %s", reader_id)
-        # set up the source
-        reader_seq = reader_id_to_seq(reader_id)
-        with get_session() as session:
-            reader = select_reader(session, reader_seq, profile.profile_seq)
-            params = reader_to_source_params(profile, reader)
-            source = create_source(reader.source, params)
-        await reader_connection_manager.websocket_handler(
-            websocket,
-            ReaderResponse(
-                source=reader.source,
-                name=reader.name,
-                position=reader.position,
-                direction=direction_db_to_literal(reader.direction),
-                reader_id=reader_seq_to_id(reader_seq),
-                owner_id=profile_seq_to_id(profile.profile_seq),
-                created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
-            ),
-            source,
-        )
+        log.info("websocket connected to profile %s", profile)
+        await reader_connection_manager.connect(websocket, profile)
     except WebSocketDisconnect:
-        log.info("websocket disconnected from reader %s", reader_id)
-        await reader_connection_manager.disconnect(websocket)
+        log.info("websocket disconnected from profile %s", profile)
+        await reader_connection_manager.disconnect(websocket, profile)
     except WebSocketException as e:
-        log.exception("websocket exception for reader %s", reader_id, exc_info=e)
-        await reader_connection_manager.disconnect(websocket)
+        log.exception("websocket exception for profile %s", profile, exc_info=e)
+        await reader_connection_manager.disconnect(websocket, profile)
