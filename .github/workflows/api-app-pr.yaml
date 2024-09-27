@@ -73,7 +73,7 @@ jobs:
         shell: bash
         
       - name: Comment table-result inside PR
-        uses: ./github_coverage/post_git_issue/
+        uses: ./github/post_git_issue/
         # pass user input as arguments
         with:
           title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
