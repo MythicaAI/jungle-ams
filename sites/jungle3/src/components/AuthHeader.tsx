@@ -155,6 +155,7 @@ export const AuthHeader = () => {
               objectPosition: "center",
               mb: 2, // Adds some margin below the image
             }}
+            id="appLogo"
           />
         </Link>
       </ListItemDecorator>
