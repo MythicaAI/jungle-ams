@@ -25,7 +25,8 @@ crash.*.log
 *.p12
 
 # virtual environments
-\.?venv/
+venv/
+.venv/
 .infra/
 
 # any mount data

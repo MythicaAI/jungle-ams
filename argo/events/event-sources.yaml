@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: nats-event-source
+  namespace: argo
+spec:
+  nats:
+    test:
+      url: nats://nats.nats.svc.cluster.local:4222
+      subject: "test"
+      jsonBody: true
+    houdini:
+      url: nats://nats.nats.svc.cluster.local:4222
+      subject: "houdini"
+      jsonBody: true
+    genai:
+      url: nats://nats.nats.svc.cluster.local:4222
+      subject: "genai"
+      jsonBody: true
+
+#apiVersion: argoproj.io/v1alpha1
+#kind: EventSource
+#metadata:
+#  name: event-webhook
+#  namespace: argo-events  
+#spec:
+#  webhook:
+#    genai:
+#      port: "5556"
+#      endpoint: /v1/genai
+#      method: "GET"
+#    houdini:
+#      port: "5556"
+#      endpoint: /v1/houdini
+
+  
