@@ -4,21 +4,18 @@ FROM mythica-auto-worker:latest AS worker
 FROM python:3.11-slim AS poetry-base
 
 # Install Poetry
-RUN apt-get update && apt-get install -y curl pipx && \ 
-    pipx ensurepath
-ENV PATH="/root/.local/bin:$PATH"
+RUN apt-get update && apt-get install -y curl
 
 # Copy files
 COPY . /app
 
 # Set working directory
 WORKDIR /app
-
-# Install dependencies using Poetry (for both worker and project)
-RUN pipx install poetry && poetry install --no-root
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Overlay worker
 COPY --from=worker /app/requirements_worker.txt /app/requirements_worker.txt
 RUN pip install --no-cache-dir -r /app/requirements_worker.txt
 
 COPY --from=worker /app/worker.py /app/worker.py
+
