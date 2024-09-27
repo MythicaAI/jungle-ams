@@ -1,11 +1,12 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import { Layout } from "./components/common/Layout";
-import { Notification } from "./components/Notification";
+import { Layout } from "@components/common/Layout";
+import { Notification } from "@components/Notification";
 import { CircularProgress, Stack } from "@mui/joy";
 import { lazyRetry } from "@services/lazyImport.ts";
 import { CookieConsentBanner } from "@components/CookieConsentBanner";
 import { useOnboarding } from "@hooks/useOnboarding";
+import { ProductTour } from "@components/ProductTour";
 import "./styles/App.css";
 
 const Assets = lazy(() => lazyRetry(() => import("@pages/Assets")));
@@ -65,6 +66,7 @@ const App: React.FC = () => {
       </Routes>
       <Notification />
       <CookieConsentBanner />
+      <ProductTour />
     </Suspense>
   );
 };
