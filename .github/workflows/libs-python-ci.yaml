@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Determine changed libraries
         id: changes
@@ -42,7 +42,7 @@ jobs:
         library: ${{ needs.detect-changes.changes.output }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set working directory
         id: set_working_dir
