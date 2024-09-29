@@ -25,11 +25,12 @@ def setup_database():
     with (tempfile.TemporaryDirectory() as tmp_dir):
         db_path = os.path.join(tmp_dir, 'mythica.db')
         local_storage_path = os.path.join(tmp_dir, 'local_storage')
+        sql_url = f"sqlite:///{db_path}"
+        os.environ["SQL_URL"] = sql_url
 
         cfg = app_config()
 
-        cfg.sql_url = f"sqlite:///{db_path}"
-
+        cfg.sql_url = sql_url
         cfg.local_storage_path = local_storage_path
         cfg.use_local_storage = True
         cfg.upload_folder_auto_clean = False
