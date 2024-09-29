@@ -24,7 +24,7 @@ jobs:
 
       - name: Determine changed libraries
         id: changes
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         with:
           filters: |
             cryptid:
@@ -33,14 +33,6 @@ jobs:
               - 'libs/python/ripple/**'
             api_app:
               - 'api/app/**'
-
-      - name: Get list of changed libraries
-        id: get_changed_libraries
-        run: |
-          libraries=()
-          if [ "${{ steps.changes.outputs.library1_changed }}" == "true" ]; then libraries+=("cryptid"); fi
-          if [ "${{ steps.changes.outputs.library2_changed }}" == "true" ]; then libraries+=("ripple"); fi
-          echo "changed_libraries=$(printf '%s\n' "${libraries[@]}" | jq -R . | jq -s .)" >> $GITHUB_OUTPUT
 
   build-and-test:
     needs: detect-changes
