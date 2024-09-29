@@ -1,4 +1,4 @@
-name: infra-python-ci
+name: libs-python-ci
 
 on:
   push:
