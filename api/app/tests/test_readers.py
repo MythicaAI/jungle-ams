@@ -2,7 +2,6 @@
 
 import itertools
 import random
-
 from http import HTTPStatus
 from itertools import cycle
 from string import ascii_lowercase
@@ -16,10 +15,11 @@ from auth.api_id import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
-from streaming.models import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
 from routes.readers.manager import redis_client
 from routes.readers.schemas import ReaderResponse
 from streaming.client_ops import ReadClientOp
+from streaming.funcs import Boundary
+from streaming.models import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
 from streaming.source_types import create_source
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
@@ -71,12 +71,13 @@ def test_source_fixture(use_test_source_fixture):
         progress=42)
     use_test_source_fixture['foo'] = [progress]
     source = create_source('test', {'name': 'foo', 'max_items': 1})
-    items = source('0', 1)
+    items = source(Boundary())
     assert len(items) == 1
     assert type(items[0]) == Progress
     assert items[0].progress == 42
-    items = source('1', 1)
+    items = source(Boundary(position="1"))
     assert len(items) == 0
+
 
 def test_operations(api_base, client, create_profile, use_test_source_fixture):
     test_profile = create_profile()
@@ -218,11 +219,20 @@ def test_events(api_base, client, create_profile):
     assert len(r.json()) == page_size - 1, "partial page size constraint"
     assert r.json()[0]['index'] == expected_next_event.index, "after constraint"
 
+    # test the optional before parameter
+    selected_event = events[2]  # select items 0 and 1
+    expected_next_event = events[0]
+    before = selected_event.index
+    r = client.get(
+        f"{api_base}/readers/{reader_id}/items?before={before}",
+        headers=auth_header)
+    assert_status_code(r, HTTPStatus.OK)
+    assert len(r.json()) == page_size - 1, "partial page size constraint"
+    assert r.json()[0]['index'] == expected_next_event.index, "after constraint"
+
     # remove the reader
     r = client.delete(f"{api_base}/readers/{reader_id}", headers=auth_header)
     assert_status_code(r, HTTPStatus.OK)
-
-
 
 
 def test_websocket(api_base, client, create_profile, use_test_source_fixture):

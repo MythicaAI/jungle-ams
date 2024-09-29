@@ -4,6 +4,7 @@ import { Layout } from "./components/common/Layout";
 import { Notification } from "./components/Notification";
 import { CircularProgress, Stack } from "@mui/joy";
 import { lazyRetry } from "@services/lazyImport.ts";
+import { CookieConsentBanner } from "@components/CookieConsentBanner";
 import "./styles/App.css";
 
 const Assets = lazy(() => lazyRetry(() => import("@pages/Assets")));
@@ -56,6 +57,7 @@ const App: React.FC = () => {
         </Route>
       </Routes>
       <Notification />
+      <CookieConsentBanner />
     </Suspense>
   );
 };

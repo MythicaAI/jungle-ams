@@ -20,6 +20,8 @@ tables:
         type: TEXT
       - name: position
         type: TEXT
+      - name: direction
+        type: INTEGER
       - name: created
         type: TIMESTAMP
         auto_create: true
