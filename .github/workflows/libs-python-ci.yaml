@@ -6,7 +6,7 @@ on:
       - '**'
     paths:
       - 'libs/python/**'
-      - '.github/workflows/infra-python-ci.yaml'
+      - '.github/workflows/libs-python-ci.yaml'
       - '.github/workflows/_base-python-ci.yaml'
   pull_request:
     branches:
