@@ -17,6 +17,8 @@ on:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    outputs:
+      libraries: ${{ steps.changes.outputs }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        library: ${{ fromJson(needs.changes.outputs) }}
+        library: ${{ fromJson(needs.changes.outputs.libraries) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
