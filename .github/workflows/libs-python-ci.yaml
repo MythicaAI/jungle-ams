@@ -15,7 +15,7 @@ on:
       - 'libs/**'
 
 jobs:
-  detect-changes:
+  changes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -34,12 +34,12 @@ jobs:
               - 'api/app/**'
 
   build-and-test:
-    needs: detect-changes
+    needs: changes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        library: ${{ needs.detect-changes.changes.output }}
+        library: ${{ fromJson(needs.changes.outputs) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
