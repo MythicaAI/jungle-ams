@@ -46,19 +46,19 @@ jobs:
         with:
           python-version: '3.12'
       - name: install-poetry-deps
-        working-directory: ${{ library }}
+        working-directory: ${{ matrix.library }}
         run: |
           python -m pip install --upgrade pip poetry
           poetry install --with=dev --no-root
 
       - id: lint-flake8
-        working-directory: ${{ library }}
+        working-directory: ${{ matrix.library }}
         run: |
           poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - id: pytester-cov
-        working-directory: ${{ library }}
+        working-directory: ${{ matrix.library }}
         run: |
           poetry run pytest
         shell: bash
