@@ -1,0 +1,4 @@
+nats-py
+aiohttp
+munch
+pydantic

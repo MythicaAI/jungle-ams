@@ -20,6 +20,7 @@ def create_memory_source(source: List[Any], params: Dict[str, Any]) -> Source:
         Returns:
         - List[Any]: A list containing up to 'page_size' elements.
         """
+        nonlocal source
         if not source:
             return []
 

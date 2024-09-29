@@ -50,26 +50,29 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app'},
-    'api/houdini': {
-        'name': 'hautomation',
-        'buildargs': { 
-            'SFX_CLIENT_ID': SFX_CLIENT_ID,
-            'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET
-        },
-    },
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
     'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
-    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': ['api/app', 'api/houdini']},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
-    'api/genai': {
-        'name': 'mythica-genai',
+    'automation/worker': {'name': 'mythica-auto-worker'},
+    'automation/test': {'name': 'mythica-auto-test', 'requires': ['automation/worker']},
+    'automation/genai': {
+        'name': 'mythica-auto-genai',
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
-        }    
-    }
+        },
+        'requires': ['automation/worker'],
+    },
+    'automation/houdini': {
+        'name': 'mythica-auto-houdini',
+        'buildargs': { 
+            'SFX_CLIENT_ID': SFX_CLIENT_ID,
+            'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
+        },
+        'requires': ['automation/worker'],
+    },
 }
 
 IMAGE_SETS = {
@@ -84,12 +87,12 @@ IMAGE_SETS = {
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
-        'api/houdini',
-        'api/houdini-worker',
-        'api/packager'},
-    'genai': {
-        'api/genai',
-    }
+        'automation/houdini',
+        'automation/genai',
+        'automation/test',
+        'automation/worker',
+        'api/packager'
+    },
 }
 
 
