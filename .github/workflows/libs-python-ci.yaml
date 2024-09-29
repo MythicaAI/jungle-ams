@@ -17,8 +17,6 @@ on:
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
-    outputs:
-      changed_libraries: ${{ steps.get_changed_libraries.outputs.changed_libraries }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -28,11 +26,11 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            cryptid:
+            libs/python/cryptid:
               - 'libs/python/cryptid/**'
-            ripple:
+            libs/python/ripple:
               - 'libs/python/ripple/**'
-            api_app:
+            api/app:
               - 'api/app/**'
 
   build-and-test:
@@ -41,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        library: ${{ fromJson(needs.detect-changes.outputs.changed_libraries) }}
+        library: ${{ needs.detect-changes.changes.output }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
