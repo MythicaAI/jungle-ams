@@ -1,10 +1,13 @@
-name: api/app tests
+name: api-app-ci
 
 on:
-  push:
+  push, pull_request:
+    branches:
+      - '**'
     paths:
       - 'api/app/**'
-
+      - 'libs/python/**'
+      - '.github/workflows/api-app-ci.yaml'
 defaults:
   run:
     working-directory: api/app

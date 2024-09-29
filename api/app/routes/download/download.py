@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, Response, APIRouter
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
-from auth.api_id import file_id_to_seq, file_seq_to_id, profile_seq_to_id
+from cryptid.cryptid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.connection import get_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client

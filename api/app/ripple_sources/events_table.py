@@ -5,11 +5,11 @@ from typing import Any
 from fastapi import HTTPException
 from sqlmodel import select
 
-from auth.api_id import event_id_to_seq, event_seq_to_id
+from cryptid.cryptid import event_id_to_seq, event_seq_to_id
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
-from streaming.funcs import Boundary, Source
-from streaming.models import Event, StreamItem
+from ripple.funcs import Boundary, Source
+from ripple.models.streaming import Event, StreamItem
 
 
 def create_events_table_source(params: dict[str, Any]) -> Source:

@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import and_, select, update
 
-from auth.api_id import file_id_to_seq, profile_id_to_seq
+from cryptid.cryptid import file_id_to_seq, profile_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile

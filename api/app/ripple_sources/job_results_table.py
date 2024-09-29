@@ -6,11 +6,11 @@ from uuid import uuid4
 from fastapi import HTTPException
 from sqlmodel import select
 
-from auth.api_id import job_result_id_to_seq
+from cryptid.cryptid import job_result_id_to_seq
 from db.connection import get_session
 from db.schema.jobs import JobResult
-from streaming.funcs import Source
-from streaming.models import Message, StreamItem
+from ripple.funcs import Source
+from ripple.models.streaming import Message, StreamItem
 
 
 def transform_job_results(_):

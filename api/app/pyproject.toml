@@ -35,6 +35,8 @@ starlette = "0.37.2"
 tzdata = "2024.1"
 websockets = "13.0.1"
 redis = "^5.0.8"
+ripple = { path="../../libs/python/ripple", develop=true }
+cryptid = { path="../../libs/python/cryptid", develop=true }
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]

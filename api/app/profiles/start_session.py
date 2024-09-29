@@ -9,9 +9,8 @@ from fastapi import HTTPException
 from sqlalchemy.sql.functions import func, now as sql_now
 from sqlmodel import Session, asc, col, delete, insert, select, update
 
-from auth.api_id import profile_seq_to_id
+from cryptid.cryptid import profile_seq_to_id
 from auth.generate_token import generate_token
-from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
@@ -52,7 +51,6 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     profile_response = profile_to_profile_response(profile, ProfileResponse)
 
     # Add a new session
-    location = app_config().mythica_location
     profile_session = ProfileSession(profile_seq=profile_seq,
                                      refreshed=sql_now(),
                                      location=location,

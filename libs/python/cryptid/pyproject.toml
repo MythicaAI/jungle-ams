@@ -1,0 +1,43 @@
+[tool.poetry]
+name = "cryptid"
+version = "0.1.0"
+description = "Cryptographic, location aware ID conversions"
+authors = ["Jacob Repp <jacob@mythica.ai>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/MythicaAI/infra/libs/python/cryptid"
+repository = "https://github.com/MythicaAI/infra"
+keywords = ["database", "crypto", "identifiers"]
+
+
+[tool.poetry.dependencies]
+python = "<4.0,>=3.10"
+typing-extensions = "^4.12.2"
+pydantic = "2.9.2"
+base58 = "2.1.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.2"
+flake8 = "7.1.0"
+munch = "4.0.0"
+pylint = "3.2.3"
+pytest-cov = "^5.0.0"
+pytest-timeout = "2.3.1"
+cryptography = "43.0.1"
+pydantic_settings = "2.5.2"
+
+# Add development dependencies here
+[tool.poetry.scripts]
+start = "main:start"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.report]
+omit = [
+    "tests/*",
+]
+
+[tool.pytest.ini_options]
+addopts = "-p no:logging"

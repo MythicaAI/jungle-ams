@@ -10,7 +10,7 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, select, update, delete, insert, col
 
 import auth.roles as roles
-from auth.api_id import org_id_to_seq, profile_id_to_seq, org_seq_to_id, profile_seq_to_id
+from cryptid.cryptid import org_id_to_seq, profile_id_to_seq, org_seq_to_id, profile_seq_to_id
 from auth.authorization import validate_roles
 from auth.data import resolve_profile, resolve_roles
 from db.connection import get_session

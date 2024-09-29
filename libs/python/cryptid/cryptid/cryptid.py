@@ -1,13 +1,20 @@
+"""Cryptographic, location aware ID conversions"""
+
 import hashlib
 import hmac
 import logging
 from enum import Enum
 
 import base58
-from Crypto.Cipher import Blowfish  # Used for 8byte block size
 from pydantic import BaseModel
 
-from config import app_config
+from cryptid.config import Config
+
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+import os
+
+_config = Config()
 
 DIGEST_SIZE = 16
 
@@ -17,16 +24,21 @@ _SEQ_BYTES = 8
 _PREFIX_BYTES = 8
 _ENCRYPTED_BYTES = _PREFIX_BYTES + _SEQ_BYTES
 
-_ENC_KEY: bytes = app_config().id_enc_key.encode('utf-8')
-_HMAC_KEY: bytes = app_config().id_hmac_key.encode('utf-8')
+_ENC_KEY: bytes = _config.cryptid_enc_key.encode('utf-8')
+_HMAC_KEY: bytes = _config.cryptid_hmac_key.encode('utf-8')
 _PERSON: bytes = 'id'.encode('utf-8')
+
+# Generate a random 16-byte Initialization Vector (IV)
+_IV = os.urandom(16)
 
 # ID metadata
 _VERSION = b'\01'
 _LOCATION_PARTITION = b'\00\00\00\00\00\00\00'
 _API_ID_PREFIX = _VERSION + _LOCATION_PARTITION
 
-cipher = Blowfish.new(_ENC_KEY, Blowfish.MODE_ECB)
+# Create a Cipher object using AES algorithm in CBC mode
+cipher = Cipher(algorithms.AES(_ENC_KEY), modes.CBC(_IV), backend=default_backend())
+
 
 log = logging.getLogger(__name__)
 
@@ -77,8 +89,10 @@ def seq_to_id(api_type: IdType, seq: int | None) -> str:
     if type(seq) is not int:
         raise SequenceError(seq, f"invalid type {type(seq)}")
 
+    # encrypt first 16 bytes (note this must be done in 128bit blocks or else padded)
     seq_bytes = seq.to_bytes(8, 'big')
-    encrypted = cipher.encrypt(_API_ID_PREFIX + seq_bytes)
+    e = cipher.encryptor()
+    encrypted = e.update(_API_ID_PREFIX + seq_bytes)
     if len(encrypted) != _ENCRYPTED_BYTES:
         raise SequenceError(seq, f"invalid encrypted length {len(encrypted)}")
 
@@ -134,7 +148,8 @@ def id_to_seq(api_id: str, api_id_type: IdType) -> int:
         raise IdError(api_id, "Invalid HMAC - data may have been tampered with")
 
     # Decrypt the serial number
-    decrypted_data = cipher.decrypt(encrypted)
+    d = cipher.decryptor()
+    decrypted_data = d.update(encrypted)
     prefix = decrypted_data[0:_PREFIX_BYTES]
     seq = decrypted_data[_PREFIX_BYTES:]
     if len(seq) != _SEQ_BYTES:

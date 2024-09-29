@@ -10,9 +10,9 @@ from fastapi import WebSocket
 
 from config import app_config
 from routes.readers.schemas import ReaderResponse
-from streaming.client_ops import ClientOp, ReadClientOp
-from streaming.funcs import Boundary, Source
-from streaming.models import StreamItem
+from ripple.client_ops import ClientOp, ReadClientOp
+from ripple.funcs import Boundary, Source
+from ripple.models.streaming import StreamItem
 
 log = logging.getLogger(__name__)
 

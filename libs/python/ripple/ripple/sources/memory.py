@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
-from streaming.funcs import Boundary, Source
-from streaming.models import StreamItem
+from ripple.funcs import Boundary, Source
+from ripple.models.streaming import StreamItem
 
 
 def create_memory_source(source: List[Any], params: Dict[str, Any]) -> Source:

@@ -8,16 +8,16 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from pydantic import TypeAdapter, ValidationError
 from sqlmodel import Session, delete, insert, select, update
 
-from auth.api_id import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
+from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from routes.authorization import current_profile
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, Direction, ReaderResponse
-from streaming.funcs import Boundary
-from streaming.models import StreamItemUnion
-from streaming.source_types import create_source
+from ripple.funcs import Boundary
+from ripple.models.streaming import StreamItemUnion
+from ripple.source_types import create_source
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
 log = logging.getLogger(__name__)
