@@ -1,7 +1,14 @@
 name: api-app-ci
 
 on:
-  push, pull_request:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'api/app/**'
+      - 'libs/python/**'
+      - '.github/workflows/api-app-ci.yaml'
+  pull_request:
     branches:
       - '**'
     paths:
