@@ -18,14 +18,12 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      libraries: ${{ steps.changes.outputs }}
+      libraries: ${{ steps.changes.outputs.filters }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Determine changed libraries
+      - uses: dorny/paths-filter@v3
         id: changes
-        uses: dorny/paths-filter@v3
         with:
           filters: |
             libs/python/cryptid:
