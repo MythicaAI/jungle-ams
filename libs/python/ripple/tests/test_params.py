@@ -143,14 +143,14 @@ def test_param_validate():
     set = ParameterSet(inputs=[], params={})
     assert validate_params(spec, set)
 
-    # Input test
+    # Input count test
     spec = ParameterSpec(inputs=["Test Input 0"], params={})
     set_good = ParameterSet(inputs=["file_qfJSVuWRJvq5PmueFPxSjXsEcST"], params={})
     set_bad = ParameterSet(inputs=[], params={})
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
-    # Good input test
+    # Input type test
     spec = ParameterSpec(inputs=[], params={'test_int': {'label': 'test', 'default': 0}})
     set_good = ParameterSet(inputs=[], params={'test_int': 5})
     set_bad = ParameterSet(inputs=[], params={'test_int': 'bad'})
