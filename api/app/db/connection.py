@@ -39,7 +39,7 @@ def run_sqlite_migrations():
 
         log.info("alembic head migration finished")
     except Exception as e:
-        logging.error(f"migration failed: %s", e)
+        logging.error("migration failed: %s", e)
         raise e
 
 
