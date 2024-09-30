@@ -1,6 +1,8 @@
 # pylint: disable=redefined-outer-name, unused-import
 import json
 
+from ripple.compile.rpsc import compile_interface
+
 test_data_file = './tests/test_data/test_interface.json'
 
 def test_param_compile():
@@ -8,5 +10,8 @@ def test_param_compile():
     test_data = None
     with open(test_data_file, 'r') as f:
         test_data = json.load(f)
+
+    # Convert test data to a string
+    compiled = compile_interface(test_data)
 
     assert True
