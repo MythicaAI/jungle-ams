@@ -42,6 +42,7 @@ class AppConfig(BaseSettings):
     token_secret_key: str = 'X' * 32
     redis_host: str = 'localhost'
     redis_port: int = 6379
+    redis_db: int = 0
 
 
 

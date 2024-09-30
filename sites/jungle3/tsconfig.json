@@ -10,6 +10,7 @@
       "@components/*": ["./src/components/*"],
       "@lib/*": ["./src/lib/*"],
       "@pages/*": ["./src/pages/*"],
+      "@hooks/*": ["./src/hooks/*"],
       "@queries/*": ["./src/queries/*"],
       "@services/*": ["./src/services/*"],
       "@store/*": ["./src/stores/*"],

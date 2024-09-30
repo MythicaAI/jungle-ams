@@ -34,7 +34,7 @@ fastapi-auth0 = "0.5.0"
 starlette = "0.37.2"
 tzdata = "2024.1"
 websockets = "13.0.1"
-redis = "^5.0.8"
+redis = "5.1.0b7"
 ripple = { path="../../libs/python/ripple", develop=true }
 cryptid = { path="../../libs/python/cryptid", develop=true }
 
@@ -52,6 +52,7 @@ munch = "4.0.0"
 pylint = "3.2.3"
 pytest-cov = "^5.0.0"
 pytest-timeout = "2.3.1"
+pytest-asyncio = "^0.24.0"
 
 # Add development dependencies here
 [tool.poetry.scripts]

@@ -1,10 +1,12 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import { Layout } from "./components/common/Layout";
-import { Notification } from "./components/Notification";
+import { Layout } from "@components/common/Layout";
+import { Notification } from "@components/Notification";
 import { CircularProgress, Stack } from "@mui/joy";
 import { lazyRetry } from "@services/lazyImport.ts";
 import { CookieConsentBanner } from "@components/CookieConsentBanner";
+import { useOnboarding } from "@hooks/useOnboarding";
+import { ProductTour } from "@components/ProductTour";
 import "./styles/App.css";
 
 const Assets = lazy(() => lazyRetry(() => import("@pages/Assets")));
@@ -24,9 +26,13 @@ const FileViewWrapper = lazy(() => lazyRetry(() => import("@pages/FileView")));
 const PackageViewWrapper = lazy(() =>
   lazyRetry(() => import("@pages/PackageView")),
 );
+const QuickSetup = lazy(() => lazyRetry(() => import("@pages/QuickSetup")));
+const Welcome = lazy(() => lazyRetry(() => import("@pages/Welcome")));
 const ErrorPage = lazy(() => lazyRetry(() => import("@pages/ErrorPage")));
 
 const App: React.FC = () => {
+  useOnboarding();
+
   return (
     <Suspense
       fallback={
@@ -54,10 +60,13 @@ const App: React.FC = () => {
             path="package-view/:asset_id/versions/:version_id"
             element={<PackageViewWrapper />}
           />
+          <Route path="quick-setup" element={<QuickSetup />} />
+          <Route path="welcome" element={<Welcome />} />
         </Route>
       </Routes>
       <Notification />
       <CookieConsentBanner />
+      <ProductTour />
     </Suspense>
   );
 };

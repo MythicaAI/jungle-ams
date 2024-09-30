@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: genai-webhook-sensor
+  namespace: argo
+spec:
+  dependencies:
+    - name: genai-webhook
+      eventSourceName: event-webhook
+      eventName: genai
+  triggers:
+    - template:
+        name: genai-workflow-trigger
+        conditions: "genai-webhook"
+        argoWorkflow:
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: genai-webhook
+                dataKey: body
+              dest: spec.templates.0.container.args.0
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: genai-workflow-
+                namespace: argo
+              spec:
+                entrypoint: run-genai
+                templates:
+                  - name: run-genai
+                    container:
+                    - image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-genai:latest
+                      command: [python daemon/daemon]
+                      args: ["#REPLACED#"]
+                    resources:
+                      limits:
+                        ephemeral-storage: 100Gi
+                        nvidia.com/gpu: "2"
+                      requests:
+                        ephemeral-storage: 100Gi
+                        nvidia.com/gpu: "2"
+                    nodeSelector:
+                      cloud.google.com/gke-accelerator: nvidia-l4
+                      cloud.google.com/gke-accelerator-count: "2"
+                volumes:
+                  - name: ephemeral-genai-vol
+                    emptyDir: { }
+                  - name: service-account-vol
+                    secret:
+                      secretName: front-end-api-sa
+                ttlStrategy:
+                  secondsAfterCompletion: 300 
+                      
