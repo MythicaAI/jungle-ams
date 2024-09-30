@@ -1,5 +1,7 @@
 # pylint: disable=redefined-outer-name, unused-import
 
+import os
+
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved
 from ripple.runtime.params import validate_params, resolve_params
@@ -163,6 +165,9 @@ def test_param_validate():
 
 
 def test_param_resolve():
-    # Minimal test
-    set = ParameterSet(inputs=[], params={})
-    assert resolve_params(set) is not None
+    # File test
+    set = ParameterSet(inputs=['file_qfJSVuWRJvq5PmueFPxSjXsEcST'], params={})
+    result = resolve_params(set)
+    assert result is not None
+    assert len(result.inputs) == 1
+    #assert os.path.exists(result.inputs[0])

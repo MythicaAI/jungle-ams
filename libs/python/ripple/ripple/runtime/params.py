@@ -12,7 +12,7 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
         
         if isinstance(value, IntParameterSpec):
             if not isinstance(paramSet.params[name], int):
-                return False        
+                return False
         elif isinstance(value, FloatParameterSpec):
             if not isinstance(paramSet.params[name], float):
                 return False
@@ -29,4 +29,9 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
 
 
 def resolve_params(paramSet: ParameterSet) -> Optional[ParameterSetResolved]:
-    return ParameterSetResolved(inputs=paramSet.inputs, params=paramSet.params)
+    inputs_resolved = []
+    for input in paramSet.inputs:
+        # TODO: Download file_id from API
+        inputs_resolved.append(f'/path/to/downloaded/{input}')
+
+    return ParameterSetResolved(inputs=inputs_resolved, params=paramSet.params)
