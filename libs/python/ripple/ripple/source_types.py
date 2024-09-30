@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from streaming.funcs import Source, SourceFactory
+from ripple.funcs import Source, SourceFactory
 
 """
 Map source types by name to the source type callables

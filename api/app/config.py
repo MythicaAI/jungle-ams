@@ -39,13 +39,11 @@ class AppConfig(BaseSettings):
     enable_db: bool = True
     db_timezone: str = 'UTC'
     sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
-    secret_key: str = 'test'
-    id_enc_key: str = 'X' * 8
-    id_hmac_key: str = 'test'
-    mythica_location: str = 'localhost'
+    token_secret_key: str = 'X' * 32
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_db: int = 0
+
 
 
 @functools.lru_cache

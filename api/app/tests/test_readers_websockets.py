@@ -15,7 +15,7 @@ import pytest
 from sqlmodel import insert, select
 from starlette.testclient import WebSocketTestSession
 
-from auth.api_id import (
+from cryptid.cryptid import (
     event_seq_to_id,
     file_seq_to_id,
     job_seq_to_id,
@@ -24,7 +24,7 @@ from auth.api_id import (
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
-from streaming.models import (
+from ripple.models.streaming import (
     Event,
     Message,
     OutputFiles,
@@ -35,7 +35,7 @@ from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
 from tests.shared_test import FileContentTestObj, assert_status_code
-from auth.api_id import reader_id_to_seq
+from cryptid.cryptid import reader_id_to_seq
 
 # length of event data in test events
 test_event_info_len = 10

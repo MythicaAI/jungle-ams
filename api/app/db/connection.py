@@ -11,6 +11,8 @@ from sqlmodel import Session, create_engine
 
 from config import app_config
 
+from alembic.config import Config, command
+
 engine = None
 
 log = logging.getLogger(__name__)
@@ -25,6 +27,22 @@ log = logging.getLogger(__name__)
 TZ = ZoneInfo(app_config().db_timezone)
 
 
+def run_sqlite_migrations():
+    """Run the alembic migration"""
+    try:
+        # Configure Alembic to use the 'alembic_sqlite' section
+        alembic_cfg = Config("alembic.ini", ini_section='sqlite')
+        alembic_cfg.set_main_option('sqlalchemy.url', app_config().sql_url)
+
+        # Run migrations
+        command.upgrade(alembic_cfg, "head")
+
+        log.info("alembic head migration finished")
+    except Exception as e:
+        logging.error(f"migration failed: %s", e)
+        raise e
+
+
 @asynccontextmanager
 async def db_connection_lifespan():
     """Lifecycle management of the database connection"""
@@ -36,10 +54,11 @@ async def db_connection_lifespan():
 
     # Setup fallbacks for features that exist in postgres but not sqlite
     if engine.dialect.name == "sqlite":
-        cursor = conn.cursor()
+        cursor = engine.raw_connection().cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
         cursor.close()
         log.info("sqlite fallbacks installed")
+        run_sqlite_migrations()
 
 
     log.info("database engine connected %s, %s", engine.name, engine.dialect.name)

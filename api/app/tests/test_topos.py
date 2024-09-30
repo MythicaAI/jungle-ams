@@ -19,7 +19,7 @@ json_schema = {
 }
 
 
-def test_create_update(client, api_base, create_profile, create_org):
+def test_create_update(api_base, client, create_profile, create_org):
     topo_name = "test-topo-" + get_random_string(10)
     topo_name_updated = topo_name + "-updated"
     invalid_org = 'foobar'

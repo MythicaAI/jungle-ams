@@ -7,7 +7,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import delete, insert, select, update
 
-from auth.api_id import profile_seq_to_id
+from cryptid.cryptid import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
 from routes.authorization import current_profile

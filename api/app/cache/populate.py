@@ -1,5 +1,5 @@
 from cache.connection import get_redis
-from streaming.funcs import Source
+from ripple.funcs import Source
 
 
 def populate_list(key: str, source: Source):

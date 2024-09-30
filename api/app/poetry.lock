@@ -545,6 +545,24 @@ tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.1
 toml = ["tomli"]
 
 [[package]]
+name = "cryptid"
+version = "0.1.0"
+description = "Cryptographic, location aware ID conversions"
+optional = false
+python-versions = "<4.0,>=3.10"
+files = []
+develop = true
+
+[package.dependencies]
+base58 = "2.1.1"
+pydantic = "2.9.2"
+typing-extensions = "^4.12.2"
+
+[package.source]
+type = "directory"
+url = "../../libs/python/cryptid"
+
+[[package]]
 name = "cryptography"
 version = "43.0.1"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -2081,6 +2099,30 @@ pygments = ">=2.13.0,<3.0.0"
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
+name = "ripple"
+version = "0.1.0"
+description = "Library for the popogation of distributed parameterized jobs and their streams"
+optional = false
+python-versions = "<4.0,>=3.10"
+files = []
+develop = true
+
+[package.dependencies]
+asyncio = "3.4.3"
+base58 = "2.1.1"
+cryptid = {path = "../cryptid", develop = true}
+cryptography = "43.0.1"
+pydantic = "2.9.2"
+pydantic-settings = "^2.3.0"
+python-json-logger = "2.0.7"
+typing-extensions = "^4.12.2"
+tzdata = "2024.1"
+
+[package.source]
+type = "directory"
+url = "../../libs/python/ripple"
+
+[[package]]
 name = "rsa"
 version = "4.9"
 description = "Pure-Python RSA implementation"
@@ -2592,4 +2634,4 @@ sqlalchemy = ["asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.10"
-content-hash = "e90a180ed9f83f487fbdd463b4a026b071a9423ac29a40ff1b44ae636fdc1c07"
+content-hash = "ae5f963e11c51055bc6e590f9b5760394c4dc6cf9ec2a41558814748f84bdbfc"

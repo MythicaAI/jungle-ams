@@ -2,7 +2,7 @@
 
 from typing import Any, Callable, Literal, NamedTuple, Optional
 
-from streaming.models import StreamItem
+from ripple.models.streaming import StreamItem
 
 
 class Boundary(NamedTuple):

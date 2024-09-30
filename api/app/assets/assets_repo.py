@@ -7,13 +7,13 @@ from typing import Dict, Optional
 from urllib.parse import urlparse
 
 import sqlalchemy
+from cryptid.location import location
 from fastapi import HTTPException
 from pydantic import BaseModel, StrictInt
 from sqlmodel import Session, col, delete, desc, insert, or_, select, update
 
-from auth.api_id import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, org_seq_to_id, \
+from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
-from config import app_config
 from content.locate_content import locate_content_by_seq
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
@@ -206,13 +206,13 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
         'version': avr.version,
         'published': avr.published,
     }
-    location = app_config().mythica_location
+    loc = location()
     stmt = insert(Event).values(
         event_type="asset_version_updated",
         job_data=job_data,
         owner_seq=profile_id_to_seq(avr.owner_id),
-        created_in=location,
-        affinity=location)
+        created_in=loc,
+        affinity=loc)
     event_result = session.exec(stmt)
     log.info("packaging event for %s by %s -> %s",
              avr.asset_id, avr.owner_id, event_result)

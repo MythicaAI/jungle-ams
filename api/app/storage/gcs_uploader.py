@@ -1,9 +1,9 @@
 from datetime import timedelta
 from io import BytesIO
 
+from cryptid.location import location
 from google.cloud import storage
 
-from config import app_config
 from context import RequestContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
@@ -46,7 +46,7 @@ class Client(StorageClient):
         blob.upload_from_filename(ctx.local_filepath)
         ctx.add_object_locator(
             'gcs',
-            app_config().mythica_location + '.' + ctx.bucket_name,
+            location() + '.' + ctx.bucket_name,
             object_name)
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):

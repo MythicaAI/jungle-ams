@@ -8,20 +8,20 @@ from typing import Callable, TypeVar
 
 from fastapi import WebSocket
 
-from auth.api_id import reader_id_to_seq
+from cryptid.cryptid import reader_id_to_seq
 from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Profile
-from streaming.client_ops import ClientOp, ReadClientOp
-from streaming.funcs import Boundary, Source
-from streaming.models import StreamItem
+from ripple.client_ops import ClientOp, ReadClientOp
+from ripple.funcs import Boundary, Source
+from ripple.models.streaming import StreamItem
 from db.schema.streaming import Reader
 from routes.readers.utils import (
     reader_to_source_params,
     select_profile_readers,
     select_reader,
 )
-from streaming.source_types import create_source
+from ripple.source_types import create_source
 
 log = logging.getLogger(__name__)
 configs = app_config()
@@ -161,7 +161,7 @@ class ReaderConnectionManager:
         connection_reader["processor"] = processor
         connection_reader["reader_task_names"] = list()
         log.debug("Added reader %s to profile %s", reader.reader_seq, profile.profile_seq)
-        
+
 
     async def disconnect(self, websocket: WebSocket, profile):
         await websocket.close()
@@ -229,7 +229,7 @@ class ReaderConnectionManager:
                         {'error': f"No '{param}' included in client message"}
                     )
                     return
-            
+
             if msg['op'] not in self.ops:
                 await websocket.send_json({'error': "Invalid 'op' included in client message"})
                 return
@@ -296,7 +296,7 @@ class ReaderConnectionManager:
         """
         boundary = Boundary(position=op.position, direction=op.direction)
         stream_items: list[StreamItem] = source(boundary)
-        
+
         if len(stream_items) > 0 and stream_items[-1].index:
 
             await websocket.send_json(

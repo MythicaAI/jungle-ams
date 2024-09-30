@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlmodel import col, select, update
 
-from auth.api_id import profile_id_to_seq, profile_seq_to_id
+from cryptid.cryptid import profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile
 from profiles.responses import ProfileResponse, PublicProfileResponse, profile_to_profile_response

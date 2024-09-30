@@ -3,10 +3,12 @@
 # Get the directory of the currently executing script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# NOTE: :memory: databases don't work with multithreaded tests
 export SQL_URL="sqlite:///${SCRIPT_DIR}/mythica.db"
 export DATABASE_PATH="${SCRIPT_DIR}/mythica.db"
+
+
 export PYTHONPATH="${SCRIPT_DIR}/api/app"
-export ENABLE_STORAGE=false
 export UPLOAD_FOLDER_AUTO_CLEAN=false
 export LOCAL_STORAGE_PATH=${SCRIPT_DIR}/tmp_local_storage
 export USE_LOCAL_STORAGE=true

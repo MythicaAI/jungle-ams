@@ -7,7 +7,7 @@ from http import HTTPStatus
 from munch import munchify
 from sqlmodel import select
 
-from auth.api_id import event_id_to_seq
+from cryptid.cryptid import event_id_to_seq
 from db.connection import get_session
 from db.schema.events import Event
 from tests.fixtures.create_profile import create_profile

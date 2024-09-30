@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from auth.api_id import event_seq_to_id, file_seq_to_id, profile_seq_to_id
+from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_seq_to_id
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import col, delete, select, update
 
-from auth.api_id import profile_id_to_seq
+from cryptid.cryptid import profile_id_to_seq
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile, ProfileKey, ProfileSession
 from profiles.auth0_validator import Auth0Validator

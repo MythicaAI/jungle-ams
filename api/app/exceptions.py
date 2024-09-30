@@ -2,7 +2,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_400_BAD_REQUEST
 
-from auth.api_id import IdError, SequenceError
+from cryptid.cryptid import IdError, SequenceError
 
 
 async def api_id_error(_: Request, exc: IdError):

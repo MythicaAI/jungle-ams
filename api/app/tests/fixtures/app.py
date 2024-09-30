@@ -4,10 +4,10 @@ from typing import Any
 import pytest
 
 from config import app_config
-from streaming.funcs import Source
-from streaming.models import StreamItem
-from streaming.source_types import add_source_type, remove_source_type
-from streaming.sources.memory import create_memory_source
+from ripple.funcs import Source
+from ripple.models.streaming import StreamItem
+from ripple.source_types import add_source_type, remove_source_type
+from ripple.sources.memory import create_memory_source
 
 
 @pytest.fixture

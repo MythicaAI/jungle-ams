@@ -1,12 +1,20 @@
-name: api/app tests
+name: api-app-ci
 
 on:
   pull_request:
+    branches:
+      - '**'
     paths:
       - 'api/app/**'
+      - 'libs/python/**'
+      - '.github/workflows/api-app-ci.yaml'
   push:
+    branches:
+      - '**'
     paths:
       - 'api/app/**'
+      - 'libs/python/**'
+      - '.github/workflows/api-app-ci.yaml'
 
 defaults:
   run:
@@ -30,17 +38,15 @@ jobs:
       TEST_FAIL_RATE: 82
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: 8BitJonny/gh-get-current-pr@3.0.0
         id: PR
         with:
           sha: ${{ github.event.pull_request.head.sha }}
 
-      - name: Set up Python
+      - uses: actions/setup-python@v5
         if: ${{ steps.PR.outputs.number != null }}
-        uses: actions/setup-python@v4
         with:
           python-version: '3.12'  # Specify your Python version
 

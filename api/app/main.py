@@ -15,7 +15,7 @@ from config import app_config
 from db.connection import db_connection_lifespan
 from exceptions import register_exceptions
 from routes.type_adapters import register_adapters
-from streaming.sources.register import register_streaming_sources
+from ripple_sources.register import register_streaming_sources
 
 # This must run before the app is created to override the default
 #  logging configuration

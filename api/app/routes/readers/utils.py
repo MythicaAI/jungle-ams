@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Session, select, update
 
-from auth.api_id import profile_seq_to_id, reader_seq_to_id
+from cryptid.cryptid import profile_seq_to_id, reader_seq_to_id
 from db.connection import TZ
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
