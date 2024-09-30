@@ -4,12 +4,11 @@ import logging
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import event
 from sqlmodel import Session, create_engine
 
 from config import app_config
 
-global engine
+engine = None
 
 log = logging.getLogger(__name__)
 
@@ -41,9 +40,15 @@ async def db_connection_lifespan():
 
 
     log.info("database engine connected %s, %s", engine.name, engine.dialect.name)
-    yield engine
-    conn.close()
-    log.info("database engine disconnected %s", engine.name)
+    try:
+        yield engine
+    except GeneratorExit:
+        pass
+    finally:
+        conn.close()
+        log.info("database engine disconnected %s", engine.name)
+        engine.dispose()
+        engine = None
 
 
 def get_session(echo=False):

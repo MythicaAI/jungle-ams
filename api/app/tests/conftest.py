@@ -15,5 +15,5 @@ def api_base() -> str:
 @pytest.fixture(scope='module')
 def client() -> TestClient:
     """Return a test client for the test module scope"""
-    with TestClient(app) as client:
-        yield client
+    with TestClient(app) as c:
+        yield c

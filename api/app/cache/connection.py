@@ -23,11 +23,15 @@ async def cache_connection_lifespan():
     str_desc = f"host: {app_config().redis_host}:{app_config().redis_port}, db: {app_config().redis_db}"
     log.info("redis client initialized %s", str_desc)
     connection_pool = pool
-    yield pool
-
-    log.info("redis connection pool closing %s", str_desc)
-    await pool.disconnect(False)
-    log.info("redis connection pool closed %s", str_desc)
+    try:
+        yield pool
+    except GeneratorExit:
+        pass
+    finally:
+        connection_pool = None
+        log.info("redis connection pool closing %s", str_desc)
+        await pool.disconnect(False)
+        log.info("redis connection pool closed %s", str_desc)
 
 
 @contextmanager
