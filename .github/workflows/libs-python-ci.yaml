@@ -19,6 +19,11 @@ on:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+
     outputs:
       libraries: ${{ steps.filter.outputs.changes }}
     steps:
