@@ -1,8 +1,5 @@
 from http import HTTPStatus
 
-from fastapi.testclient import TestClient
-
-from main import app
 from .shared_test import assert_status_code
 
 

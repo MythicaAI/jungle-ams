@@ -26,16 +26,10 @@ log = logging.getLogger(__name__)
 #
 TZ = ZoneInfo(app_config().db_timezone)
 
-import logging
-from alembic import command
-from alembic.config import Config
 
 def run_sqlite_migrations():
     """Run the alembic migration"""
     try:
-        # Set up logging if desired
-        logging.basicConfig(level=logging.INFO)
-
         # Configure Alembic to use the 'alembic_sqlite' section
         alembic_cfg = Config("alembic.ini", ini_section='sqlite')
         alembic_cfg.set_main_option('sqlalchemy.url', app_config().sql_url)
@@ -45,7 +39,7 @@ def run_sqlite_migrations():
 
         log.info("alembic head migration finished")
     except Exception as e:
-        logging.error(f"migration failed: {e}")
+        logging.error(f"migration failed: %s", e)
         raise e
 
 

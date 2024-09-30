@@ -1,7 +1,6 @@
 import logging
 from http import HTTPStatus
 
-from cryptid.location import location
 from fastapi import APIRouter, Depends, HTTPException, Response
 
 from assets.assets_repo import AssetCreateRequest, AssetCreateResult, AssetCreateVersionRequest, AssetTopResult, \

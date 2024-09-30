@@ -1,3 +1,6 @@
+# use of defined fixture function names
+# pylint: disable=redefined-outer-name,unused-argument
+
 from contextlib import contextmanager
 
 import os
@@ -38,7 +41,7 @@ def setup_database():
             cfg.use_local_storage = True
             cfg.upload_folder_auto_clean = False
 
-            log.info(f"setup_database fixture configured {db_path}")
+            log.info(f"setup_database fixture configured %s", db_path)
 
             yield True
 

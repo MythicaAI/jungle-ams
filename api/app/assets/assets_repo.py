@@ -14,7 +14,6 @@ from sqlmodel import Session, col, delete, desc, insert, or_, select, update
 
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
-from config import app_config
 from content.locate_content import locate_content_by_seq
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event

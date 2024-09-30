@@ -4,7 +4,6 @@ from io import BytesIO
 from cryptid.location import location
 from google.cloud import storage
 
-from config import app_config
 from context import RequestContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
