@@ -113,7 +113,7 @@ class Auth0Validator(AuthTokenValidator):
                 audience=aud,
                 issuer=f"https://{app_config().auth0_domain}/")
         except jwt.InvalidAudienceError as e:
-            raise HTTPException(HTTPStatus.UNAUTHORIZED, f"invalid audience: {aud}") from e
+            raise HTTPException(HTTPStatus.BAD_REQUEST, f"invalid audience: {aud}") from e
 
         return ValidTokenPayload(
             sub=payload['sub'],
