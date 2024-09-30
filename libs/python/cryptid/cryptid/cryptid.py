@@ -28,8 +28,8 @@ _ENC_KEY: bytes = _config.cryptid_enc_key.encode('utf-8')
 _HMAC_KEY: bytes = _config.cryptid_hmac_key.encode('utf-8')
 _PERSON: bytes = 'id'.encode('utf-8')
 
-# Generate a random 16-byte Initialization Vector (IV)
-_IV = os.urandom(16)
+# Generate a 16-byte Initialization Vector (IV)
+_IV = b'\00' * 16
 
 # ID metadata
 _VERSION = b'\01'
