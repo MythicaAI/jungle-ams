@@ -73,7 +73,6 @@ for name in route_names:
     module = importlib.import_module(f'routes.{name}.{name}')
     router = getattr(module, 'router')
     app.include_router(router)
-    log.debug(f'registered router {name} from path: {module.__file__}')
 
 register_adapters()
 register_exceptions(app)

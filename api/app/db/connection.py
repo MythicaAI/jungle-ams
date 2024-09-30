@@ -1,3 +1,5 @@
+# pylint: disable=global-statement
+
 import logging
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
@@ -7,8 +9,7 @@ from sqlmodel import Session, create_engine
 
 from config import app_config
 
-engine_url = app_config().sql_url.strip()
-engine = create_engine(engine_url)
+global engine
 
 log = logging.getLogger(__name__)
 
@@ -21,24 +22,24 @@ log = logging.getLogger(__name__)
 #
 TZ = ZoneInfo(app_config().db_timezone)
 
-#
-# Fallbacks for SQLite databases
-#
-if engine.dialect.name == "sqlite":
-    @event.listens_for(engine, "connect")
-    def setup_sqlite_fallbacks(dbapi_connection, _):
-        """Setup fallbacks for features that exist in postgres but not sqlite"""
-        cursor = dbapi_connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
-        cursor.close()
-
-        log.info("sqlite fallbacks installed")
-
 
 @asynccontextmanager
 async def db_connection_lifespan():
     """Lifecycle management of the database connection"""
+    global engine
+
+    engine_url = app_config().sql_url.strip()
+    engine = create_engine(engine_url)
     conn = engine.connect()
+
+    # Setup fallbacks for features that exist in postgres but not sqlite
+    if engine.dialect.name == "sqlite":
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
+        cursor.close()
+        log.info("sqlite fallbacks installed")
+
+
     log.info("database engine connected %s, %s", engine.name, engine.dialect.name)
     yield engine
     conn.close()
@@ -47,5 +48,7 @@ async def db_connection_lifespan():
 
 def get_session(echo=False):
     """Get a database session using the main database connection"""
+    global engine
+
     engine.echo = echo
     return Session(engine)

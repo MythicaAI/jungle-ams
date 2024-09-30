@@ -1,3 +1,5 @@
+# pylint: disable=global-statement
+
 import logging
 from contextlib import asynccontextmanager, contextmanager
 
