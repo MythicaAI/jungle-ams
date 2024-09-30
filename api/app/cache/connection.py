@@ -1,4 +1,5 @@
-# pylint: disable=global-statement
+# global usage is not understood by pylint
+# pylint: disable=global-statement,global-variable-not-assigned
 
 import logging
 from contextlib import asynccontextmanager, contextmanager

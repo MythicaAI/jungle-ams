@@ -1,4 +1,7 @@
-# pylint: disable=global-statement
+# global usage is not understood by pylint
+# pylint: disable=global-statement,global-variable-not-assigned
+# cursor() method is dynamic
+# pylint: disable=no-member
 
 import logging
 from contextlib import asynccontextmanager
