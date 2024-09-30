@@ -13,6 +13,8 @@ on:
       - '**'
     paths:
       - 'libs/**'
+      - '.github/workflows/libs-python-ci.yaml'
+      - '.github/workflows/_base-python-ci.yaml'
 
 jobs:
   changes:
@@ -30,8 +32,6 @@ jobs:
               - 'libs/python/cryptid/**'
             libs/python/ripple:
               - 'libs/python/ripple/**'
-            api/app:
-              - 'api/app/**'
 
   build-and-test:
     needs: changes
