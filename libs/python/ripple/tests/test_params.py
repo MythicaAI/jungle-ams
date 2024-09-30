@@ -142,15 +142,28 @@ def test_param_compile():
 
 
 def test_param_validate():
+    # Minimal test
     spec = ParameterSpec(inputs=[], params={})
     set = ParameterSet(inputs=[], params={})
+    assert validate_params(spec, set)
 
-    result = validate_params(spec, set)
-    assert result
+    # Input test
+    spec = ParameterSpec(inputs=["Test Input 0"], params={})
+    set_good = ParameterSet(inputs=["file_qfJSVuWRJvq5PmueFPxSjXsEcST"], params={})
+    set_bad = ParameterSet(inputs=[], params={})
+    assert validate_params(spec, set_good)
+    assert validate_params(spec, set_bad) == False
+
+    # Good input test
+    spec = ParameterSpec(inputs=[], params={'test_int': {'label': 'test', 'default': 0}})
+    set_good = ParameterSet(inputs=[], params={'test_int': 5})
+    set_bad = ParameterSet(inputs=[], params={'test_int': 'bad'})
+    assert validate_params(spec, set_good)
+    assert validate_params(spec, set_bad) == False
 
 
 def test_param_resolve():
+    # Minimal test
     set = ParameterSet(inputs=[], params={})
-
     result = resolve_params(set)
     assert result
