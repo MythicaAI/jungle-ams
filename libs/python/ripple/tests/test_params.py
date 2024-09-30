@@ -1,6 +1,8 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 from ripple.compile.rpsc import compile_interface
+from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved
+from ripple.runtime.params import validate_params, resolve_params
 
 def test_param_compile():
     # Minimal test
@@ -137,3 +139,18 @@ def test_param_compile():
     """
     compiled = compile_interface(data)
     assert len(compiled.params) == 0
+
+
+def test_param_validate():
+    spec = ParameterSpec(inputs=[], params={})
+    set = ParameterSet(inputs=[], params={})
+
+    result = validate_params(spec, set)
+    assert result
+
+
+def test_param_resolve():
+    set = ParameterSet(inputs=[], params={})
+
+    result = resolve_params(set)
+    assert result

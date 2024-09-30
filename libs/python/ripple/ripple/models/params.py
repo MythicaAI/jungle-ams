@@ -35,3 +35,13 @@ class BooleanParameterSpec(BaseModel):
 class ParameterSpec(BaseModel):
     inputs: list[str]
     params: dict[str, IntParameterSpec | FloatParameterSpec | StringParameterSpec | BooleanParameterSpec]
+
+
+class ParameterSet(BaseModel):
+    inputs: list[str]   # List of file_ids
+    params: dict[str, int | float | str | bool]
+
+
+class ParameterSetResolved(BaseModel):
+    inputs: list[str]   # List of local file paths
+    params: dict[str, int | float | str | bool]
