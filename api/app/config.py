@@ -43,6 +43,9 @@ class AppConfig(BaseSettings):
     id_enc_key: str = 'X' * 8
     id_hmac_key: str = 'test'
     mythica_location: str = 'localhost'
+    redis_host: str = 'localhost'
+    redis_port: int = 6379
+    redis_db: int = 0
 
 
 @functools.lru_cache
