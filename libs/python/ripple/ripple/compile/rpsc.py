@@ -5,11 +5,13 @@ Converts interface files or other inputs into param specs
 that can be executed by a runtime.
 """
 import json
+
 from ripple.models.params import ParameterSpec, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BooleanParameterSpec
+
 
 def compile_interface(interface_data: str) -> ParameterSpec:
     """
-    Compile an interface file into a parameter spec.
+    Compiles a Houdini interface file into a parameter spec.
     """
     data = json.loads(interface_data)
 

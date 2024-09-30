@@ -6,11 +6,11 @@ from ripple.compile.rpsc import compile_interface
 from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved
 from ripple.runtime.params import validate_params, resolve_params
 
+
 def test_param_compile():
     # Minimal test
     data = """
     {
-        "inputs": 0,
         "defaults": {},
         "inputLabels": []
     }
@@ -22,7 +22,6 @@ def test_param_compile():
     # Inputs test
     data = """
     {
-        "inputs": 2,
         "defaults": {},
         "inputLabels": [
             "Test Input 0",
@@ -38,7 +37,6 @@ def test_param_compile():
     # Int test
     data = """
     {
-        "inputs": 0,
         "defaults": {
             "test_int": {
                 "type": "Int",
@@ -64,7 +62,6 @@ def test_param_compile():
     # Float test
     data = """
     {
-        "inputs": 0,
         "defaults": {
             "test_float": {
                 "type": "Float",
@@ -90,7 +87,6 @@ def test_param_compile():
     # String test
     data = """
     {
-        "inputs": 0,
         "defaults": {
             "test_string": {
                 "type": "String",
@@ -109,7 +105,6 @@ def test_param_compile():
     # Boolean test
     data = """
     {
-        "inputs": 0,
         "defaults": {
             "test_toggle_true": {
                 "type": "Toggle",
@@ -128,7 +123,6 @@ def test_param_compile():
     # Invalid type test
     data = """
     {
-        "inputs": 0,
         "defaults": {
             "test_invalid": {
                 "type": "InvalidType",
