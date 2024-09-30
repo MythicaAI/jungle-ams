@@ -2,7 +2,8 @@
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta, timezone
-
+from fastapi import HTTPException
+from http import HTTPStatus
 import httpx
 import jwt
 from pydantic import BaseModel
@@ -103,12 +104,17 @@ class Auth0Validator(AuthTokenValidator):
         """Validate the auth0 application using it's provided token against the token
         issuer. There is a API that will provide the user metadata to get the profile"""
         # decode the payload with the signing key to verify
-        payload = jwt.decode(
-            token,
-            (await self.get_signing_key(token)).key,
-            algorithms=self.alg,
-            audience=app_config().auth0_audience,
-            issuer=f"https://{app_config().auth0_domain}/")
+        aud = app_config().auth0_audience
+        try:
+            payload = jwt.decode(
+                token,
+                (await self.get_signing_key(token)).key,
+                algorithms=self.alg,
+                audience=aud,
+                issuer=f"https://{app_config().auth0_domain}/")
+        except jwt.InvalidAudienceError:
+            raise HTTPException(HTTPStatus.UNAUTHORIZED, f"invalid audience: {aud}")
+
         return ValidTokenPayload(
             sub=payload['sub'],
             scope=payload['scope'],
