@@ -1,3 +1,4 @@
+from typing import Optional
 from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BooleanParameterSpec
 
 
@@ -27,5 +28,5 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
     return True
 
 
-def resolve_params(paramSet: ParameterSet) -> ParameterSetResolved:
-    return True
+def resolve_params(paramSet: ParameterSet) -> Optional[ParameterSetResolved]:
+    return ParameterSetResolved(inputs=paramSet.inputs, params=paramSet.params)

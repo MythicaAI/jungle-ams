@@ -165,5 +165,4 @@ def test_param_validate():
 def test_param_resolve():
     # Minimal test
     set = ParameterSet(inputs=[], params={})
-    result = resolve_params(set)
-    assert result
+    assert resolve_params(set) is not None
