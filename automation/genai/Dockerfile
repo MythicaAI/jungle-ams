@@ -4,8 +4,8 @@ FROM mythica-auto-worker:latest as worker
 # Use the specified CUDA base image
 FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-genai-app"
-LABEL description="API service for mythica gen ai rest services"
+LABEL name="mythica-auto-genai"
+LABEL description="Automation for mythica gen aiservices"
 LABEL version="1.0.0"
 LABEL tier="auto"
 
@@ -21,8 +21,7 @@ ARG HF_AUTHTOKEN
 # Install Python 3.11 and dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    software-properties-common pipx && \
-    pipx ensurepath && \ 
+    software-properties-common && \ 
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -30,58 +29,41 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/root/.local/bin:$PATH"
-
-RUN pipx install poetry
-
 # Ensure pip is up-to-date
 RUN python3.11 -m pip install --upgrade pip
 
 # Set Python 3.11 as the default python version
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
-
-# Create the uploads folder
-USER 0
-RUN mkdir -p /uploads
-
-WORKDIR /app
-
-
-#########################
-# GenAI
-
+RUN mkdir /app
 
 # Creates a non-root user and adds permission to access the /app folder
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && \
-    chown -R appuser /app && \
-    chown -R appuser /uploads
+    chown -R appuser /app 
 
 USER appuser
 ENV PATH="/home/appuser/.local/bin:$PATH"
 
 
-# Put all application data into the container /app directory, do this as late
-# as possible to aid in the docker layer cache coherency
 
-COPY ./pyproject.toml ./poetry.lock README.md /app/
+COPY ./requirements.txt /app/requirements.txt
 
-# Run poetry as the app user to activate the virtual environment
-RUN poetry check 
-RUN poetry env use python3 
-RUN poetry install
-
-COPY . /app
+# Set working directory
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 #Set HuggingFace token before initialize and model download
 ENV HF_TOKEN=${HF_AUTHTOKEN}
 
+# Overlay worker
+COPY --from=worker /app/requirements_worker.txt /app/requirements_worker.txt
+RUN pip install --no-cache-dir -r /app/requirements_worker.txt
+
+COPY --from=worker /app/worker.py /app/worker.py
+
+COPY . /app
+WORKDIR /app
+
 #This is an expensive project to test, unless you comment this out. 
 #But leave it in for prod builds as it makes the container faster to load
-RUN python3.11 ./worker.py initialize
+RUN python3.11 worker.py initialize
 
-
-
-# Overlay worker
-COPY --from=worker /app/. /app
-RUN pip install --no-cache-dir -r /app/requirements_worker.txt
