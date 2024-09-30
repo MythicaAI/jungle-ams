@@ -4,7 +4,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 
-class IntParameter(BaseModel):
+class IntParameterSpec(BaseModel):
     type: Literal["Int"] = "Int"
     label: str
     min: Optional[int] = None
@@ -12,7 +12,7 @@ class IntParameter(BaseModel):
     default: int | list[int]
 
 
-class FloatParameter(BaseModel):
+class FloatParameterSpec(BaseModel):
     type: Literal["Float"] = "Float"
     label: str
     min: Optional[float] = None
@@ -20,13 +20,13 @@ class FloatParameter(BaseModel):
     default: float | list[float]
 
 
-class StringParameter(BaseModel):
+class StringParameterSpec(BaseModel):
     type: Literal["String"] = "String"
     label: str
     default: str
 
 
-class BooleanParameter(BaseModel):
+class BooleanParameterSpec(BaseModel):
     type: Literal["Toggle"] = "Toggle"
     label: str
     default: bool
@@ -34,4 +34,4 @@ class BooleanParameter(BaseModel):
 
 class ParameterSpec(BaseModel):
     inputs: list[str]
-    params: dict[str, IntParameter | FloatParameter | StringParameter | BooleanParameter]
+    params: dict[str, IntParameterSpec | FloatParameterSpec | StringParameterSpec | BooleanParameterSpec]

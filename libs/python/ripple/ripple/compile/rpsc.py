@@ -5,7 +5,7 @@ Converts interface files or other inputs into param specs
 that can be executed by a runtime.
 """
 import json
-from ripple.models.params import ParameterSpec, IntParameter, FloatParameter, StringParameter, BooleanParameter
+from ripple.models.params import ParameterSpec, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BooleanParameterSpec
 
 def compile_interface(interface_data: str) -> ParameterSpec:
     """
@@ -18,13 +18,13 @@ def compile_interface(interface_data: str) -> ParameterSpec:
     
     for name,value in data['defaults'].items():
         if value['type'] == 'Int':
-            param = IntParameter(**value)
+            param = IntParameterSpec(**value)
         elif value['type'] == 'Float':
-            param = FloatParameter(**value)
+            param = FloatParameterSpec(**value)
         elif value['type'] == 'String':
-            param = StringParameter(**value)
+            param = StringParameterSpec(**value)
         elif value['type'] == 'Toggle':
-            param = BooleanParameter(**value)
+            param = BooleanParameterSpec(**value)
         else:
             continue
 
