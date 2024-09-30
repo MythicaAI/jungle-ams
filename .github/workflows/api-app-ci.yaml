@@ -90,7 +90,7 @@ jobs:
         
       - name: Comment table-result inside PR
         if: ${{ steps.PR.outputs.number != null }}
-        uses: ./github_converage/post_git_issue/
+        uses: ./github_coverage/post_git_issue/
         # pass user input as arguments
         with:
           title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
