@@ -11,6 +11,9 @@ spec:
     - name: houdini-event
       eventSourceName: nats-event-source
       eventName: houdini
+    - name: genai-event
+      eventSourceName: nats-event-source
+      eventName: genai
   triggers:
     - template:
         conditions: test-event
@@ -73,5 +76,41 @@ spec:
 #                    nodeSelector:
 #                      cloud.google.com/gke-accelerator: nvidia-tesla-t4
 #                      cloud.google.com/gke-accelerator-count: "1"
+                ttlStrategy:
+                  secondsAfterCompletion: 600 
+    - template:
+        conditions: genai-event
+        name: genai-trigger
+        argoWorkflow:
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: genai-event
+                dataKey: body
+              dest: spec.templates.0.container.args.0
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: auto-genai-
+              spec:
+                entrypoint: main
+                templates:
+                  - name: main
+                    container:
+                      image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-genai:latest
+                      command: [/usr/bin/python3.11, worker.py]
+                      args: ["#REPLACED#"]#
+                      resources:
+                        limits:
+                          ephemeral-storage: 100Gi
+                          nvidia.com/gpu: "2"
+                        requests:
+                          ephemeral-storage: 100Gi
+                          nvidia.com/gpu: "2"
+                    nodeSelector:
+                      cloud.google.com/gke-accelerator: nvidia-l4
+                      cloud.google.com/gke-accelerator-count: "2"
                 ttlStrategy:
                   secondsAfterCompletion: 600 
