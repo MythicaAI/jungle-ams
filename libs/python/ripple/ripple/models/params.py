@@ -7,16 +7,16 @@ from pydantic import BaseModel
 class IntParameter(BaseModel):
     type: Literal["Int"] = "Int"
     label: str
-    min: Optional[int]
-    max: Optional[int]
+    min: Optional[int] = None
+    max: Optional[int] = None
     default: int | list[int]
 
 
 class FloatParameter(BaseModel):
     type: Literal["Float"] = "Float"
     label: str
-    min: Optional[float]
-    max: Optional[float]
+    min: Optional[float] = None
+    max: Optional[float] = None
     default: float | list[float]
 
 
