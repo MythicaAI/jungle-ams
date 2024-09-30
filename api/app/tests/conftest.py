@@ -41,7 +41,7 @@ def setup_database():
             cfg.use_local_storage = True
             cfg.upload_folder_auto_clean = False
 
-            log.info(f"setup_database fixture configured %s", db_path)
+            log.info("setup_database fixture configured %s", db_path)
 
             yield True
 

@@ -49,7 +49,7 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
-    'api/app': {'name': 'mythica-app'},
+    'api/app': {'name': 'mythica-app', 'working_directory': BASE_DIR},
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
@@ -67,7 +67,7 @@ IMAGES = {
     },
     'automation/houdini': {
         'name': 'mythica-auto-houdini',
-        'buildargs': { 
+        'buildargs': {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
@@ -135,6 +135,16 @@ def stop_docker_compose(c, docker_compose_path):
 
 def build_image(c, image_path):
     """Build a docker image"""
+
+    # Set the working directory higher in the tree when more context is needed from
+    # the monorepo
+    if IMAGES[image_path].get('working_directory') is not None:
+        dockerfile_path = os.path.join(os.path.join(image_path, 'Dockerfile'))
+        working_directory = IMAGES[image_path].get('working_directory')
+    else:
+        dockerfile_path = 'Dockerfile'
+        working_directory = os.path.join(BASE_DIR, image_path)
+
     image_name = IMAGES[image_path]['name']
     requires = IMAGES[image_path].get('requires')
     if requires is not None:
@@ -144,12 +154,14 @@ def build_image(c, image_path):
     buildarg_str = ''
     buildargs = IMAGES[image_path].get('buildargs')
     if buildargs is not None:
-        buildarg_str = ' '.join([f'--build-arg {key}={value}' for key, value in buildargs.items()])
+        buildarg_str = ' '.join(
+            [f'--build-arg {key}={value}' for key, value in buildargs.items()])
 
     commit_hash = get_commit_hash()
-    with c.cd(os.path.join(BASE_DIR, image_path)):
+    with c.cd(working_directory):
         c.run(
-            f'docker build --platform={IMAGE_PLATFORM} {buildarg_str} -t {image_name}:latest .',
+            (f'docker buildx build --platform={IMAGE_PLATFORM} {buildarg_str} '
+             f'-f {dockerfile_path} -t {image_name}:latest .'),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
