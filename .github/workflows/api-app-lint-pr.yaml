@@ -1,4 +1,4 @@
-name: api/app lint
+name: api-app-lint
 
 on:
   push:
