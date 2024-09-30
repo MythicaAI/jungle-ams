@@ -42,11 +42,8 @@ class InpaintRequest(BaseModel):
     image: str #Base64 encoded byte string
     map: str #Base64 encoded byte string
     
-async def inpaint_api(request: InpaintRequest):
-    return img2img_inpaint(request=request)
 
-
-def img2img_inpaint(request: InpaintRequest):
+def img2img_inpaint(request: InpaintRequest, progress: callable):
     try:
 
         # Decode image from base64
@@ -68,6 +65,9 @@ def img2img_inpaint(request: InpaintRequest):
         num_inference_steps = request.num_inference_steps
         num_images_per_prompt = request.num_images_per_prompt
         
+
+        progress({'status' :f"Starting Txt 2 Image Inpaint using SD2: {request}"})
+
         # Run the pipeline
         edited_image = sd2_pipe(
             prompt=prompt,
@@ -79,12 +79,14 @@ def img2img_inpaint(request: InpaintRequest):
             num_inference_steps=num_inference_steps
         ).images[0]
 
+        progress({'status' :f"Txt 2 Image Inpaint completed: {request}"})
+
         # Convert the edited image to base64
         buffered = BytesIO()
         edited_image.save(buffered, format="PNG")
         edited_image_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        return {"image": edited_image_str}
+        progress({"image": edited_image_str})
     
     except Exception as e:
         raise e

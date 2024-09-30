@@ -31,11 +31,9 @@ class ImageRequest(BaseModel):
 
 
 
-async def generate_image_api(request: ImageRequest):
-    return txt2img(request=request)
 
 
-def txt2img(request: ImageRequest):
+def txt2img(request: ImageRequest, progress: callable):
     try:
         prompt = request.prompt
         negative_prompt = request.negative_prompt
@@ -43,6 +41,8 @@ def txt2img(request: ImageRequest):
         guidance_scale = request.cfg_scale
         aspect_ratio = request.aspect_ratio
         seed = request.seed
+
+        progress({'status' :f"Starting Txt 2 Image Generation using SD3 Medium: {request}"})
 
         # Get width and height from aspect_ratio
         if aspect_ratio in aspect_ratio_mapping:
@@ -59,13 +59,17 @@ def txt2img(request: ImageRequest):
             width=width,
             height=height
         ).images[0]
+        
+        progress({'status' :f"Txt 2 Image Generation Completed: {request}"})
+
 
         # Convert image to base64
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        return {"image": img_str}
+        progress({'image' :img_str})
+
 
     except Exception as e:
         raise e

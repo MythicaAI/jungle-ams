@@ -1,15 +1,15 @@
-from  automation.sd2 import inpaint_api, InpaintRequest
-from  automation.sd3 import generate_image_api, ImageRequest
+from  automation.sd2 import img2img_inpaint, InpaintRequest
+from  automation.sd3 import txt2img, ImageRequest
 
 workers = [
     {
         "path": '/mythica/inpaint',
-        "provider": inpaint_api,
+        "provider": img2img_inpaint,
         "inputModel": InpaintRequest
     },
     {
         "path": '/stabilityai/stable-diffusion-3-medium',
-        "provider": generate_image_api,
+        "provider": txt2img,
         "inputModel": ImageRequest
     },
 ]
