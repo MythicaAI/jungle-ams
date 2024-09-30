@@ -3,7 +3,7 @@ Application configuration definitions
 """
 import functools
 import tempfile
-
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 # See https://docs.pydantic.dev/latest/concepts/pydantic_settings/#installation
@@ -29,7 +29,7 @@ class AppConfig(BaseSettings):
 
     # default debug API
     auth0_algorithm: str = 'RS256'
-    auth0_audience: str = api_base_uri
+    auth0_audience: str = Field('http://localhost:5555/v1', alias='api_base_uri')
     auth0_domain: str = 'dev-dtvqj0iuc5rnb6x2.us.auth0.com'
     auth0_client_id: str = '4CZhQWoNm1WH8l8042LeF38qHrUTR2ax'
     auth0_client_secret: str = '-vxSQgFB0y82_LGpO8FB-A59HTbiElKSgOleFu_Mt1qO7NXjWf67NDYIqLAHyGuO'
