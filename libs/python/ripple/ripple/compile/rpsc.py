@@ -6,7 +6,7 @@ that can be executed by a runtime.
 """
 import json
 
-from ripple.models.params import ParameterSpec, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BooleanParameterSpec
+from ripple.models.params import ParameterSpec, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec
 
 
 def compile_interface(interface_data: str) -> ParameterSpec:
@@ -26,7 +26,7 @@ def compile_interface(interface_data: str) -> ParameterSpec:
         elif value['type'] == 'String':
             param = StringParameterSpec(**value)
         elif value['type'] == 'Toggle':
-            param = BooleanParameterSpec(**value)
+            param = BoolParameterSpec(**value)
         else:
             continue
 

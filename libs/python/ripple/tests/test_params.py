@@ -3,7 +3,7 @@
 import os
 
 from ripple.compile.rpsc import compile_interface
-from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved
+from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec
 from ripple.runtime.params import validate_params, resolve_params
 
 
@@ -54,9 +54,9 @@ def test_param_compile():
     """
     compiled = compile_interface(data)
     assert len(compiled.params) == 2
-    assert compiled.params['test_int'].type == "Int"
+    assert isinstance(compiled.params['test_int'], IntParameterSpec)
     assert compiled.params['test_int'].default == 5
-    assert compiled.params['test_int_array'].type == "Int"
+    assert isinstance(compiled.params['test_int_array'], IntParameterSpec)
     assert compiled.params['test_int_array'].default == [1, 2, 3]
 
     # Float test
@@ -79,9 +79,9 @@ def test_param_compile():
     """
     compiled = compile_interface(data)
     assert len(compiled.params) == 2
-    assert compiled.params['test_float'].type == "Float"
+    assert isinstance(compiled.params['test_float'], FloatParameterSpec)
     assert compiled.params['test_float'].default == 3.14
-    assert compiled.params['test_float_array'].type == "Float"
+    assert isinstance(compiled.params['test_float_array'], FloatParameterSpec)
     assert compiled.params['test_float_array'].default == [1.1, 2.2, 3.3]
 
     # String test
@@ -99,16 +99,16 @@ def test_param_compile():
     """
     compiled = compile_interface(data)
     assert len(compiled.params) == 1
-    assert compiled.params['test_string'].type == "String"
+    assert isinstance(compiled.params['test_string'], StringParameterSpec)
     assert compiled.params['test_string'].default == "Hello World"
 
     # Boolean test
     data = """
     {
         "defaults": {
-            "test_toggle_true": {
+            "test_toggle": {
                 "type": "Toggle",
-                "label": "Test Toggle True",
+                "label": "Test Toggle",
                 "default": true
             }
         },
@@ -117,8 +117,8 @@ def test_param_compile():
     """
     compiled = compile_interface(data)
     assert len(compiled.params) == 1
-    assert compiled.params['test_toggle_true'].type == "Toggle"
-    assert compiled.params['test_toggle_true'].default is True
+    assert isinstance(compiled.params['test_toggle'], BoolParameterSpec)
+    assert compiled.params['test_toggle'].default is True
 
     # Invalid type test
     data = """

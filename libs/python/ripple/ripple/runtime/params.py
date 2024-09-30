@@ -1,5 +1,5 @@
 from typing import Optional
-from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BooleanParameterSpec
+from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec
 
 
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
@@ -19,7 +19,7 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
         elif isinstance(value, StringParameterSpec):
             if not isinstance(paramSet.params[name], str):
                 return False
-        elif isinstance(value, BooleanParameterSpec):
+        elif isinstance(value, BoolParameterSpec):
             if not isinstance(paramSet.params[name], bool):
                 return False
         else:

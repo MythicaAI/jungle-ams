@@ -1,11 +1,10 @@
-from typing import Optional, Literal
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
 
 
 class IntParameterSpec(BaseModel):
-    type: Literal["Int"] = "Int"
     label: str
     min: Optional[int] = None
     max: Optional[int] = None
@@ -13,7 +12,6 @@ class IntParameterSpec(BaseModel):
 
 
 class FloatParameterSpec(BaseModel):
-    type: Literal["Float"] = "Float"
     label: str
     min: Optional[float] = None
     max: Optional[float] = None
@@ -21,13 +19,11 @@ class FloatParameterSpec(BaseModel):
 
 
 class StringParameterSpec(BaseModel):
-    type: Literal["String"] = "String"
     label: str
     default: str
 
 
-class BooleanParameterSpec(BaseModel):
-    type: Literal["Toggle"] = "Toggle"
+class BoolParameterSpec(BaseModel):
     label: str
     default: bool
 
@@ -37,7 +33,7 @@ class ParameterSpec(BaseModel):
     Specification of parameters a job expects as input
     """
     inputs: list[str]
-    params: dict[str, IntParameterSpec | FloatParameterSpec | StringParameterSpec | BooleanParameterSpec]
+    params: dict[str, IntParameterSpec | FloatParameterSpec | StringParameterSpec | BoolParameterSpec]
 
 
 class ParameterSet(BaseModel):
