@@ -4,49 +4,59 @@ from uuid import uuid4
 from pydantic import BaseModel
 
 
-class IntParameterSpec(BaseModel):
+class ParameterSpecModel(BaseModel):
     label: str
+    constant: bool = False
+
+
+class IntParameterSpec(ParameterSpecModel):
     min: Optional[int] = None
     max: Optional[int] = None
     default: int | list[int]
 
 
-class FloatParameterSpec(BaseModel):
-    label: str
+class FloatParameterSpec(ParameterSpecModel):
+    default: float | list[float]
     min: Optional[float] = None
     max: Optional[float] = None
-    default: float | list[float]
 
 
-class StringParameterSpec(BaseModel):
-    label: str
+class StringParameterSpec(ParameterSpecModel):
     default: str
 
 
-class BoolParameterSpec(BaseModel):
-    label: str
+class BoolParameterSpec(ParameterSpecModel):
     default: bool
+
+
+class FileParameterSpec(ParameterSpecModel):
+    default: str
 
 
 class ParameterSpec(BaseModel):
     """ 
     Specification of parameters a job expects as input
     """
-    inputs: list[str]
-    params: dict[str, IntParameterSpec | FloatParameterSpec | StringParameterSpec | BoolParameterSpec]
+    params: dict[str, IntParameterSpec | FloatParameterSpec | StringParameterSpec | BoolParameterSpec | FileParameterSpec]
+
+
+class FileParameter(BaseModel):
+    file_id: str
 
 
 class ParameterSet(BaseModel):
     """
     Set of parameter values provided by a client for a job
     """
-    inputs: list[str]   # List of file_ids
-    params: dict[str, int | float | str | bool]
+    params: dict[str, int | float | str | bool | FileParameter]
+
+
+class FileParameterResolved(BaseModel):
+    file_path: str
 
 
 class ParameterSetResolved(BaseModel):
     """
     Set of parameter values resolved to local files are ready to be used by a job
     """
-    inputs: list[str]   # List of local file paths
-    params: dict[str, int | float | str | bool]
+    params: dict[str, int | float | str | bool | FileParameterResolved]
