@@ -20,7 +20,6 @@ router = APIRouter(prefix="/assets", tags=["assets"])
 @router.get('/log')
 async def log_request(r: Request):
     header_str = str(r.headers)
-    error_log = logging.getLogger("gunicorn.error")
     print(f"{header_str}")
     return "LOGGED"
 
