@@ -15,15 +15,17 @@ RUN apt-get update && apt-get install -y python3-poetry python3-trove-classifier
     && rm -rf /var/lib/apt/lists/*
 
 # Copy API from the mythica app image for the packager to interface
-COPY --from=api /app /app/api
-ENV PYTHONPATH=/app/api
+COPY --from=api /api/app /api/app
+COPY --from=api /libs/python/cryptid /libs/python/cryptid
+COPY --from=api /libs/python/ripple /libs/python/ripple
+ENV PYTHONPATH=/api/app
 
-WORKDIR /app/api
+WORKDIR /api/app
 RUN poetry check && \
     poetry env use python3 && \
     poetry install --all-extras --no-root
 
-WORKDIR /app
+WORKDIR /api/houdini-worker
 
 # Copy local files
 COPY . .

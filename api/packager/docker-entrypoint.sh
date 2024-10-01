@@ -3,10 +3,10 @@
 set -eof pipefail
 
 # shellcheck disable=SC2046
-cd /app/api
+cd /api/app
 . $(poetry env info --path)/bin/activate
-cd /app
+cd /api/packager
 
-./api/print_ip_address.py
+/api/app/print_ip_address.py
 
 python3 packager.py --endpoint=${PACKAGER_ENDPOINT} $*
