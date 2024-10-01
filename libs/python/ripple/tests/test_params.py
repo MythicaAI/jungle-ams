@@ -3,7 +3,7 @@
 import os
 
 from ripple.compile.rpsc import compile_interface
-from ripple.models.params import ParameterSpec, ParameterSet, ParameterSetResolved, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec
+from ripple.models.params import ParameterSpec, ParameterSet, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec, FileParameterSpec, FileParameter, FileParameterResolved
 from ripple.runtime.params import validate_params, resolve_params
 
 
@@ -16,7 +16,6 @@ def test_param_compile():
     }
     """
     compiled = compile_interface(data)
-    assert compiled.inputs == []
     assert compiled.params == {}
 
     # Inputs test
@@ -30,9 +29,11 @@ def test_param_compile():
     }
     """
     compiled = compile_interface(data)
-    assert len(compiled.inputs) == 2
-    assert compiled.inputs[0] == "Test Input 0"
-    assert compiled.inputs[1] == "Test Input 1"
+    assert len(compiled.params) == 2
+    assert isinstance(compiled.params['input0'], FileParameterSpec)
+    assert compiled.params['input0'].label == "Test Input 0"
+    assert isinstance(compiled.params['input1'], FileParameterSpec)
+    assert compiled.params['input1'].label == "Test Input 1"
 
     # Int test
     data = """
@@ -139,29 +140,31 @@ def test_param_compile():
 
 def test_param_validate():
     # Minimal test
-    spec = ParameterSpec(inputs=[], params={})
-    set = ParameterSet(inputs=[], params={})
+    spec = ParameterSpec(params={})
+    set = ParameterSet(params={})
     assert validate_params(spec, set)
 
     # Input count test
-    spec = ParameterSpec(inputs=["Test Input 0"], params={})
-    set_good = ParameterSet(inputs=["file_qfJSVuWRJvq5PmueFPxSjXsEcST"], params={})
-    set_bad = ParameterSet(inputs=[], params={})
+    spec = ParameterSpec(params={"input0": FileParameterSpec(label="Test Input 0", default='')})
+    set_good = ParameterSet(params={"input0": FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")})
+    set_bad = ParameterSet(params={})
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
     # Input type test
-    spec = ParameterSpec(inputs=[], params={'test_int': {'label': 'test', 'default': 0}})
-    set_good = ParameterSet(inputs=[], params={'test_int': 5})
-    set_bad = ParameterSet(inputs=[], params={'test_int': 'bad'})
+    spec = ParameterSpec(params={'test_int': {'label': 'test', 'default': 0}})
+    set_good = ParameterSet(params={'test_int': 5})
+    set_bad = ParameterSet(params={'test_int': 'bad'})
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
 
 def test_param_resolve():
     # File test
-    set = ParameterSet(inputs=['file_qfJSVuWRJvq5PmueFPxSjXsEcST'], params={})
+    set = ParameterSet(params={"input0": FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")})
     result = resolve_params(set)
     assert result is not None
-    assert len(result.inputs) == 1
+    assert len(result.params) == 1
+    assert isinstance(result.params['input0'], FileParameterResolved)
+    assert result.params['input0'].file_path.startswith('file_') == False
     #assert os.path.exists(result.inputs[0])
