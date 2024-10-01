@@ -245,7 +245,8 @@ class PackageUploader(object):
             if os.path.isabs(package.repo):
                 package.root_disk_path = package.repo
             else:
-                package.root_disk_path = os.path.abspath(os.path.join(os.path.dirname(self.package_list_file), package.repo))
+                package.root_disk_path = os.path.abspath(
+                    os.path.join(os.path.dirname(self.package_list_file), package.repo))
 
             # TODO: Read Perforce revision number
             package.commit_ref = "unknown"
@@ -264,9 +265,6 @@ class PackageUploader(object):
         package.profile_id = profile.profile_id
 
         self.token = self.start_session(profile.profile_id)
-
-        org = self.find_or_create_org(user)
-        package.org_id = org.org_id
 
         # First try to resolve the version from the repo link
         package.asset_id, package.latest_version = self.find_versions_for_repo(package)
@@ -351,10 +349,7 @@ class PackageUploader(object):
 
     def create_asset(self, package: PackageModel):
         """Create the asset root object"""
-        asset_json = {
-            "org_id": package.org_id
-        }
-
+        asset_json = {}
         response = requests.post(f"{self.endpoint}/v1/assets", headers=self.auth_header(), json=asset_json)
         if response.status_code != 201:
             print(f"Failed to create asset for {package.name}")
@@ -480,8 +475,6 @@ class PackageUploader(object):
             'author': package.profile_id,
             'published': True
         }
-        # if package.org_id is not None:
-        #   asset_ver_json['org_id'] = package.org_id
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = requests.post(assets_url, headers=self.auth_header(), json=asset_ver_json)
