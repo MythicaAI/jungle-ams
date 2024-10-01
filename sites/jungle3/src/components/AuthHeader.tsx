@@ -1,13 +1,4 @@
-import {
-  Avatar,
-  Box,
-  List,
-  ListItemContent,
-  ListItemDecorator,
-  Stack,
-  styled,
-  Typography,
-} from "@mui/joy";
+import { Avatar, Box, Button, Stack, styled } from "@mui/joy";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { useEffect } from "react";
@@ -134,17 +125,19 @@ export const AuthHeader = () => {
   };
 
   const LoginAvatarButton = styled("div")({
-    display: "inline-block",
+    display: "flex",
     cursor: "pointer",
     "&:focus": {
       outline: "none",
     },
+    justifyContent: "center",
+    alignItems: "center",
   });
 
   return (
-    <List orientation={"horizontal"}>
-      <ListItemDecorator>
-        <Link to={"/"}>
+    <Stack direction="row" width="100%" justifyContent="space-between">
+      <Link to={"/"}>
+        <Stack direction="row" gap="10px">
           <Box
             component="img"
             src="/mythica-logo.png"
@@ -157,29 +150,38 @@ export const AuthHeader = () => {
             }}
             id="appLogo"
           />
-        </Link>
-      </ListItemDecorator>
-      <ListItemContent>
-        <Typography level="h2" sx={{ flexGrow: 1 }}>
-          HDA Package Index
-        </Typography>
-      </ListItemContent>
-      <ListItemDecorator>
-        <Stack direction="row" spacing={1}>
-          <StatusAlarm />
-          {isAuthenticated ? (
-            <ProfileMenu name={user && user.name ? user.name : ""} />
-          ) : (
-            <LoginAvatarButton
-              role="button"
-              tabIndex={0}
-              onClick={() => doLoginWithRedirect()}
-            >
+          <Box
+            component="img"
+            src="/mythica-text-logo.png"
+            alt="Mythica Logo"
+            sx={{
+              width: "100%",
+              height: 48,
+              objectPosition: "center",
+              mb: 2,
+            }}
+            id="appLogo"
+          />
+        </Stack>
+      </Link>
+
+      <Stack direction="row" spacing={1}>
+        <StatusAlarm />
+        {isAuthenticated ? (
+          <ProfileMenu name={user && user.name ? user.name : ""} />
+        ) : (
+          <Button
+            variant="outlined"
+            color="neutral"
+            onClick={() => doLoginWithRedirect()}
+            sx={{ height: "54px" }}
+          >
+            <LoginAvatarButton role="button" tabIndex={0}>
               <Avatar alt="?" variant="soft" />
             </LoginAvatarButton>
-          )}
-        </Stack>
-      </ListItemDecorator>
-    </List>
+          </Button>
+        )}
+      </Stack>
+    </Stack>
   );
 };
