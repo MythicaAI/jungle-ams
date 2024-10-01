@@ -36,7 +36,7 @@ export const ProductTour = () => {
       callback={handleJoyrideCallback}
       styles={{
         options: {
-          primaryColor: "#000",
+          primaryColor: "#007e62",
           textColor: "#004a14",
         },
       }}

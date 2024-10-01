@@ -48,6 +48,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
       <MenuButton
         sx={{
           cursor: "pointer",
+          height: "54px",
         }}
         id="profileMenuButton"
       >

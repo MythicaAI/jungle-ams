@@ -7,7 +7,11 @@ export const StatusAlarm = () => {
     <Dropdown>
       <MenuButton
         id="notifications"
-        sx={{ display: { xs: "none", sm: "block" } }}
+        sx={{
+          display: { xs: "none", sm: "block" },
+
+          height: "54px",
+        }}
       >
         <LucideBell />
       </MenuButton>
