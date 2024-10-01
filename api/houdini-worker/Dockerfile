@@ -15,9 +15,8 @@ RUN apt-get update && apt-get install -y python3-poetry python3-trove-classifier
     && rm -rf /var/lib/apt/lists/*
 
 # Copy API from the mythica app image for the packager to interface
-COPY --from=api /api/app /api/app
-COPY --from=api /libs/python/cryptid /libs/python/cryptid
-COPY --from=api /libs/python/ripple /libs/python/ripple
+COPY --from=api /api /api
+COPY --from=api /libs /libs
 ENV PYTHONPATH=/api/app
 
 WORKDIR /api/app
