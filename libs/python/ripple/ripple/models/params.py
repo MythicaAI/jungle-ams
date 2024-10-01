@@ -10,9 +10,9 @@ class ParameterSpecModel(BaseModel):
 
 
 class IntParameterSpec(ParameterSpecModel):
+    default: int | list[int]
     min: Optional[int] = None
     max: Optional[int] = None
-    default: int | list[int]
 
 
 class FloatParameterSpec(ParameterSpecModel):
