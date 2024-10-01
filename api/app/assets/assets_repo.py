@@ -7,14 +7,15 @@ from typing import Dict, Optional
 from urllib.parse import urlparse
 
 import sqlalchemy
-from cryptid.location import location
 from fastapi import HTTPException
 from pydantic import BaseModel, StrictInt
 from sqlmodel import Session, col, delete, desc, insert, or_, select, update
 
-from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, org_seq_to_id, \
-    profile_id_to_seq, profile_seq_to_id
 from content.locate_content import locate_content_by_seq
+from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
+    org_seq_to_id, \
+    profile_id_to_seq, profile_seq_to_id
+from cryptid.location import location
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
 from db.schema.media import FileContent
@@ -118,9 +119,10 @@ def resolve_profile_name(session: Session, profile_seq: int) -> str:
 
 def resolve_org_name(session: Session, org_seq: int) -> str:
     """Convert org_id to org name"""
-    org = session.exec(select(Org).where(Org.org_seq == org_seq)).one_or_none()
-    if org:
-        return org.name
+    if org_seq:
+        org = session.exec(select(Org).where(Org.org_seq == org_seq)).one_or_none()
+        if org:
+            return org.name
     return ""
 
 
@@ -135,7 +137,7 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
         asset_id = asset_seq_to_id(asset.asset_seq)
         avr = AssetVersionResult(
             asset_id=asset_id,
-            org_id=org_seq_to_id(asset.org_seq),
+            org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
             org_name=resolve_org_name(session, asset.org_seq),
             owner_id=profile_seq_to_id(asset.owner_seq),
             owner_name=resolve_profile_name(session, asset.owner_seq),
@@ -331,8 +333,8 @@ def create_version(session: Session,
         values['contents'] = resolve_contents_as_json(session, r.contents)
 
     # if the org_id is specified issue an update against the root asset
-    org_id = values.get('org_id')
-    if org_id is not None:
+    org_id = values.pop('org_id', None)
+    if org_id:
         org_seq = org_id_to_seq(org_id)
         asset_seq = asset_id_to_seq(asset_id)
         update_result = session.exec(update(Asset).values(
@@ -341,7 +343,6 @@ def create_version(session: Session,
             Asset.owner_seq == profile_seq))
         if update_result.rowcount != 1:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
-        values.pop('org_id')
 
     # Use provided author or default to calling profile on creation
     if r.author_id:
@@ -477,7 +478,8 @@ def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResul
         select(Asset, AssetVersion)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .where(Asset.owner_seq == profile_seq)
-        .where(Asset.deleted == None)).all()
+        .where(Asset.deleted == None)
+        .order_by(Asset.asset_seq)).all()
     return process_join_results(session, results)
 
 
