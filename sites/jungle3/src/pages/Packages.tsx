@@ -187,7 +187,7 @@ const Packages = () => {
                 level="body-md"
                 fontWeight="bold"
               >
-                {latestVersion.org_name}::{latestVersion.name}
+                {latestVersion.name}
               </Typography>
               {sortedVersions.map((av, index) => (
                 <Chip
@@ -203,7 +203,7 @@ const Packages = () => {
                 </Chip>
               ))}
               <Typography level="body-sm" color="neutral">
-                by {latestVersion.author_name}
+                by {latestVersion.author_name} {latestVersion.org_name ? "[" + latestVersion.org_name + "]" : "" }
               </Typography>
             </ListItemContent>
           </Stack>
