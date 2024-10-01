@@ -6,13 +6,11 @@ import logging
 from enum import Enum
 
 import base58
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from pydantic import BaseModel
 
 from cryptid.config import Config
-
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-import os
 
 _config = Config()
 
@@ -38,7 +36,6 @@ _API_ID_PREFIX = _VERSION + _LOCATION_PARTITION
 
 # Create a Cipher object using AES algorithm in CBC mode
 cipher = Cipher(algorithms.AES(_ENC_KEY), modes.CBC(_IV), backend=default_backend())
-
 
 log = logging.getLogger(__name__)
 
@@ -121,15 +118,15 @@ def id_type(api_id: str) -> IdType:
 def id_to_seq(api_id: str, api_id_type: IdType) -> int:
     """Validate and decode an encrypted serial number"""
     if type(api_id) is not str:
-        raise IdError(api_id, f"invalid api id type {type(api_id)}")
+        raise IdError(api_id, f"IDs must be of string type: {type(api_id)}")
 
     parts = api_id.split('_')
     if len(parts) != 2:
-        raise IdError(api_id, f"invalid api id format {api_id}")
+        raise IdError(api_id, f"ID has invalid format: {api_id}")
 
     type_str, api_id = parts
     if api_id_type != id_rev_map.get(type_str):
-        raise IdError(api_id, f"invalid api id type {type_str}")
+        raise IdError(api_id, f"ID has invalid type: {type_str}")
 
     # Base58 decode the obfuscated serial number
     combined = base58.b58decode(api_id)
@@ -156,7 +153,7 @@ def id_to_seq(api_id: str, api_id_type: IdType) -> int:
         raise IdError(api_id, f"Invalid sequence bytes {len(seq)}")
 
     if prefix != _API_ID_PREFIX:
-        raise IdError(api_id, f"invalid prefix {prefix}")
+        raise IdError(api_id, f"ID has invalid prefix: {prefix}")
 
     return int.from_bytes(seq, 'big')
 
