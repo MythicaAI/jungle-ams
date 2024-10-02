@@ -18,23 +18,6 @@ def test_param_compile():
     compiled = compile_interface(data)
     assert compiled.params == {}
 
-    # Inputs test
-    data = """
-    {
-        "defaults": {},
-        "inputLabels": [
-            "Test Input 0",
-            "Test Input 1"
-        ]
-    }
-    """
-    compiled = compile_interface(data)
-    assert len(compiled.params) == 2
-    assert isinstance(compiled.params['input0'], FileParameterSpec)
-    assert compiled.params['input0'].label == "Test Input 0"
-    assert isinstance(compiled.params['input1'], FileParameterSpec)
-    assert compiled.params['input1'].label == "Test Input 1"
-
     # Int test
     data = """
     {
@@ -121,6 +104,24 @@ def test_param_compile():
     assert isinstance(compiled.params['test_toggle'], BoolParameterSpec)
     assert compiled.params['test_toggle'].default is True
 
+    # File test
+    data = """
+    {
+        "defaults": {},
+        "inputLabels": [
+            "Test Input 0",
+            "Test Input 1"
+        ]
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 2
+    assert isinstance(compiled.params['input0'], FileParameterSpec)
+    assert compiled.params['input0'].label == "Test Input 0"
+    assert isinstance(compiled.params['input1'], FileParameterSpec)
+    assert compiled.params['input1'].label == "Test Input 1"
+
+
     # Invalid type test
     data = """
     {
@@ -144,15 +145,15 @@ def test_param_validate():
     set = ParameterSet(params={})
     assert validate_params(spec, set)
 
-    # Input count test
+    # Parameter count test
     spec = ParameterSpec(params={"input0": FileParameterSpec(label="Test Input 0", default='')})
     set_good = ParameterSet(params={"input0": FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")})
     set_bad = ParameterSet(params={})
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
-    # Input type test
-    spec = ParameterSpec(params={'test_int': {'label': 'test', 'default': 0}})
+    # Parameter type test
+    spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0)})
     set_good = ParameterSet(params={'test_int': 5})
     set_bad = ParameterSet(params={'test_int': 'bad'})
     assert validate_params(spec, set_good)
