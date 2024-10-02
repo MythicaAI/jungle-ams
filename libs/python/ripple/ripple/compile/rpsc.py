@@ -6,7 +6,14 @@ that can be executed by a runtime.
 """
 import json
 
-from ripple.models.params import ParameterSpec, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec, FileParameterSpec
+from ripple.models.params import (
+    ParameterSpec, 
+    IntParameterSpec, 
+    FloatParameterSpec, 
+    StringParameterSpec, 
+    BoolParameterSpec, 
+    FileParameterSpec
+)
 
 
 def compile_interface(interface_data: str) -> ParameterSpec:
