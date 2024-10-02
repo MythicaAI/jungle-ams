@@ -15,6 +15,7 @@ ENV EXTERNAL_IP=127.0.0.1
 COPY conf/variables.template /etc/nginx/templates/10-variables.conf.template
 COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template
 COPY conf/*.conf /etc/nginx/
+COPY conf/*.js /etc/nginx/
 COPY ./docker-entrypoint.sh /
 
 # override the base image, provide a different config for deployment environments
