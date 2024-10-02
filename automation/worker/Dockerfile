@@ -10,6 +10,10 @@ LABEL tier="auto"
 # Set working directory
 WORKDIR /app
 
+# Copy monorepo dependencies
+COPY /libs/python/cryptid /libs/python/cryptid
+COPY /libs/python/ripple /libs/python/ripple
+
 # Copy worker.py and requirements.txt into the volume container
-COPY worker.py /app/worker.py
-COPY requirements.txt /app/requirements_worker.txt
+COPY /automation/worker/worker.py /app/worker.py
+COPY /automation/worker/requirements.txt /app/requirements_worker.txt
