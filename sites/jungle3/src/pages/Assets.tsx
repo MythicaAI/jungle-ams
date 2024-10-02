@@ -1,5 +1,5 @@
 import { Box, CircularProgress, Grid, Stack } from "@mui/joy";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
   translateError,
@@ -8,13 +8,12 @@ import { useStatusStore } from "@store/statusStore";
 import { PackageViewCard } from "@components/PackageViewCard";
 import { Helmet } from "react-helmet-async";
 import { useGetAllAssets } from "@queries/assets";
-
-// type SortType = "latest" | "oldest";
+import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
   // const [search, setSearch] = useState<string>("");
-  // const [sorting, setSorting] = useState<SortType>("latest");
+  const [sorting, setSorting] = useState<SortType>("latest");
 
   const {
     data: allAssets,
@@ -51,7 +50,7 @@ const Assets = () => {
       {isAllAssetsLoading ? (
         <CircularProgress />
       ) : (
-        <Box sx={{ flexGrow: 1, padding: 2 }}>
+        <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
           {/* <Stack direction="row" gap="10px" mb="15px">
             <Input
               startDecorator={<LucideSearch width="16px" />}
@@ -86,12 +85,12 @@ const Assets = () => {
                   // .filter((version) =>
                   //   version.name.toLowerCase().includes(search.toLowerCase()),
                   // )
-                  // .sort((a, b) => {
-                  //   const aDate = new Date(a.created).getTime();
-                  //   const bDate = new Date(b.created).getTime();
+                  .sort((a, b) => {
+                    const aDate = new Date(a.created).getTime();
+                    const bDate = new Date(b.created).getTime();
 
-                  //   return sorting === "oldest" ? aDate - bDate : bDate - aDate;
-                  // })
+                    return sorting === "oldest" ? aDate - bDate : bDate - aDate;
+                  })
                   .map((av) => (
                     <Grid
                       xs={12}
@@ -104,6 +103,7 @@ const Assets = () => {
                   ))}
             </Grid>
           </Stack>
+          <BottomSortingPanel sorting={sorting} setSorting={setSorting} />
         </Box>
       )}
     </>
