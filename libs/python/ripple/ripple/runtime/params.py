@@ -66,17 +66,21 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     return file_path
 
 
+def resolve_file_param(endpoint: str, directory: str, param: FileParameter) -> FileParameterResolved:
+    file_path = download_file(endpoint, directory, param.file_id)
+    return FileParameterResolved(file_id=param.file_id, file_path=file_path)
+
+
 def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> Optional[ParameterSetResolved]:
     params_resolved = {}
 
-    for param in paramSet.params:
-        if isinstance(paramSet.params[param], FileParameter):
-            file_path = download_file(endpoint, directory, paramSet.params[param].file_id)
-            params_resolved[param] = FileParameterResolved(file_path=file_path)
-        elif isinstance(paramSet.params[param], list[FileParameter]):
-            file_paths = [download_file(endpoint, directory, file_id) for file_id in paramSet.params[param]]
-            params_resolved[param] = [FileParameterResolved(file_path=file_path) for file_path in file_paths]
+    for name, param in paramSet.params.items():
+        if isinstance(param, FileParameter):
+            params_resolved[name] = resolve_file_param(endpoint, directory, param)
+        elif isinstance(param, list) and all(isinstance(file_param, FileParameter) for file_param in param):
+            params_resolved[name] = [resolve_file_param(endpoint, directory, file_param) 
+                                      for file_param in param]
         else:
-            params_resolved[param] = paramSet.params[param]
+            params_resolved[name] = paramSet.params[param]
 
     return ParameterSetResolved(params=params_resolved)

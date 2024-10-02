@@ -192,6 +192,24 @@ def test_param_resolve():
         assert result is not None
         assert len(result.params) == 1
         assert isinstance(result.params['input0'], FileParameterResolved)
+        assert result.params['input0'].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
         assert result.params['input0'].file_path.startswith('file_') == False
         assert os.path.exists(result.params['input0'].file_path)
+
+    # File list test
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set = ParameterSet(params={"files": [
+            FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"),
+            FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")
+        ]})
+        result = resolve_params(endpoint, tmp_dir, set)
+        assert result is not None
+        assert len(result.params) == 1
+        assert isinstance(result.params['files'], list)
+        assert result.params['files'][0].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
+        assert result.params['files'][1].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
+        assert result.params['files'][0].file_path.startswith('file_') == False
+        assert result.params['files'][1].file_path.startswith('file_') == False
+        assert os.path.exists(result.params['files'][0].file_path)
+        assert os.path.exists(result.params['files'][1].file_path)
     """
