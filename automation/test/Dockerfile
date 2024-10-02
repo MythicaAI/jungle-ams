@@ -14,6 +14,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Overlay worker
+COPY --from=worker /libs /libs
 COPY --from=worker /app/requirements_worker.txt /app/requirements_worker.txt
 RUN pip install --no-cache-dir -r /app/requirements_worker.txt
 

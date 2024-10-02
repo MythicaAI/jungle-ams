@@ -55,6 +55,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 ENV HF_TOKEN=${HF_AUTHTOKEN}
 
 # Overlay worker
+COPY --from=worker /libs /libs
 COPY --from=worker /app/requirements_worker.txt /app/requirements_worker.txt
 RUN pip install --no-cache-dir -r /app/requirements_worker.txt
 
