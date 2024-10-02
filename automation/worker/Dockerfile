@@ -11,5 +11,5 @@ LABEL tier="auto"
 WORKDIR /app
 
 # Copy worker.py and requirements.txt into the volume container
-COPY worker.py /app/worker.py
-COPY requirements.txt /app/requirements_worker.txt
+COPY /automation/worker/worker.py /app/worker.py
+COPY /automation/worker/requirements.txt /app/requirements_worker.txt
