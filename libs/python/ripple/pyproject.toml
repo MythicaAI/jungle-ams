@@ -24,6 +24,7 @@ base58 = "2.1.1"
 tzdata = "2024.1"
 cryptography = "43.0.1"
 cryptid = { path = "../cryptid", develop = true }
+requests = ">=2.14.0"
 
 
 [tool.poetry.group.dev.dependencies]
