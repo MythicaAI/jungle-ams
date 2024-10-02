@@ -3,7 +3,17 @@
 import os
 
 from ripple.compile.rpsc import compile_interface
-from ripple.models.params import ParameterSpec, ParameterSet, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec, FileParameterSpec, FileParameter, FileParameterResolved
+from ripple.models.params import (
+    ParameterSpec, 
+    ParameterSet, 
+    IntParameterSpec, 
+    FloatParameterSpec, 
+    StringParameterSpec, 
+    BoolParameterSpec, 
+    FileParameterSpec, 
+    FileParameter, 
+    FileParameterResolved
+)
 from ripple.runtime.params import validate_params, resolve_params
 
 
