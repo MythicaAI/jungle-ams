@@ -14,8 +14,9 @@ from cache.connection import cache_connection_lifespan
 from config import app_config
 from db.connection import db_connection_lifespan
 from exceptions import register_exceptions
-from routes.type_adapters import register_adapters
+from proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources
+from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
 #  logging configuration
@@ -53,6 +54,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+app.add_middleware(
+    ProxiedHeadersMiddleware
 )
 
 route_names = [

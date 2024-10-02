@@ -1,7 +1,7 @@
 import logging
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from assets.assets_repo import AssetCreateRequest, AssetCreateResult, AssetCreateVersionRequest, AssetTopResult, \
     AssetVersionResult, CreateOrUpdate, asset_join_select, convert_version_input, create, create_version, \
@@ -15,6 +15,13 @@ from routes.authorization import current_profile
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/assets", tags=["assets"])
+
+
+@router.get('/log')
+async def log_request(r: Request):
+    header_str = str(r.headers)
+    print(f"{header_str}")
+    return "LOGGED"
 
 
 @router.get('/all')
