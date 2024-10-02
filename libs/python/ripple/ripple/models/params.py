@@ -60,19 +60,45 @@ class FileParameter(BaseModel):
     file_id: str
 
 
+ParameterType = Union[
+    StrictInt,
+    list[StrictInt],
+    StrictFloat,
+    list[StrictFloat],
+    str,
+    list[str],
+    bool,
+    FileParameter,
+    list[FileParameter]
+]
+
+
 class ParameterSet(BaseModel):
     """
     Set of parameter values provided by a client for a job
     """
-    params: dict[str, StrictInt | list[StrictInt] | StrictFloat | list[StrictFloat] | str | list[str] | bool | FileParameter | list[FileParameter]]
+    params: dict[str, ParameterType]
 
 
 class FileParameterResolved(BaseModel):
     file_path: str
 
 
+ParameterTypeResolved = Union[
+    StrictInt,
+    list[StrictInt],
+    StrictFloat,
+    list[StrictFloat],
+    str,
+    list[str],
+    bool,
+    FileParameterResolved,
+    list[FileParameterResolved]
+]
+
+
 class ParameterSetResolved(BaseModel):
     """
     Set of parameter values resolved to local files are ready to be used by a job
     """
-    params: dict[str, StrictInt | list[StrictInt] | StrictFloat | list[StrictFloat] | str | list[str] | bool |  FileParameterResolved | list[FileParameterResolved]]
+    params: dict[str, ParameterTypeResolved]
