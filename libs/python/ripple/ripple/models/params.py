@@ -81,6 +81,7 @@ class ParameterSet(BaseModel):
 
 
 class FileParameterResolved(BaseModel):
+    file_id: str
     file_path: str
 
 
