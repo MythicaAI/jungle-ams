@@ -46,10 +46,6 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
 
 
 def download_file(endpoint: str, directory: str, file_id: str) -> str:
-    # Create a file path to save the file to
-    file_path = os.path.join(directory, file_id)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
     # Get the URL to downlaod the file
     url = f"{endpoint}/download/info/{file_id}"
     r = requests.get(url)
@@ -57,6 +53,8 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     doc = r.json()
 
     # Download the file
+    file_path = os.path.join(directory, file_id)
+    
     downloaded_bytes = 0
     with open(file_path, "w+b") as f:
         download_req = requests.get(doc['url'], stream=True)
