@@ -5,6 +5,8 @@ FROM mythica-auto-worker:latest AS worker
 # Gather python dependencies - do the worker deps here too.
 FROM python:3.11-slim AS python-dependency-downloader
 
+COPY --from=worker /libs /libs
+
 COPY --from=worker /app/requirements_worker.txt /app/requirements_worker.txt
 RUN pip install --no-cache-dir -r /app/requirements_worker.txt
 

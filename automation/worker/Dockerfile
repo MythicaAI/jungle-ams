@@ -11,6 +11,7 @@ LABEL tier="auto"
 WORKDIR /app
 
 # Copy monorepo dependencies
+COPY /libs/python/cryptid /libs/python/cryptid
 COPY /libs/python/ripple /libs/python/ripple
 
 # Copy worker.py and requirements.txt into the volume container
