@@ -169,6 +169,15 @@ def test_param_validate():
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
+    # Parameter array test
+    spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=[1, 2, 3])})
+    set_good = ParameterSet(params={'test_int': [4, 5, 6]})
+    set_bad = ParameterSet(params={'test_int': [1]})
+    set_bad2 = ParameterSet(params={'test_int': ['a', 'b', 'c']})
+    assert validate_params(spec, set_good)
+    assert validate_params(spec, set_bad) == False
+    assert validate_params(spec, set_bad2) == False
+
 
 def test_param_resolve():
     # File test

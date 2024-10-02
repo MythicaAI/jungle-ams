@@ -64,7 +64,7 @@ class ParameterSet(BaseModel):
     """
     Set of parameter values provided by a client for a job
     """
-    params: dict[str, StrictInt | list[StrictInt] | StrictFloat | list[StrictFloat] | str | bool | FileParameter | list[FileParameter]]
+    params: dict[str, StrictInt | list[StrictInt] | StrictFloat | list[StrictFloat] | str | list[str] | bool | FileParameter | list[FileParameter]]
 
 
 class FileParameterResolved(BaseModel):
@@ -75,4 +75,4 @@ class ParameterSetResolved(BaseModel):
     """
     Set of parameter values resolved to local files are ready to be used by a job
     """
-    params: dict[str, StrictInt | list[StrictInt] | StrictFloat | list[StrictFloat] | str | bool |  FileParameterResolved | list[FileParameterResolved]]
+    params: dict[str, StrictInt | list[StrictInt] | StrictFloat | list[StrictFloat] | str | list[str] | bool |  FileParameterResolved | list[FileParameterResolved]]
