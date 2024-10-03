@@ -6,7 +6,14 @@ that can be executed by a runtime.
 """
 import json
 
-from ripple.models.params import ParameterSpec, IntParameterSpec, FloatParameterSpec, StringParameterSpec, BoolParameterSpec
+from ripple.models.params import (
+    ParameterSpec, 
+    IntParameterSpec, 
+    FloatParameterSpec, 
+    StringParameterSpec, 
+    BoolParameterSpec, 
+    FileParameterSpec
+)
 
 
 def compile_interface(interface_data: str) -> ParameterSpec:
@@ -15,10 +22,12 @@ def compile_interface(interface_data: str) -> ParameterSpec:
     """
     data = json.loads(interface_data)
 
-    inputs = data['inputLabels']
     params = {}
+
+    for index, name in enumerate(data['inputLabels']):
+        params[f'input{index}'] = FileParameterSpec(label=name, default='')
     
-    for name,value in data['defaults'].items():
+    for name, value in data['defaults'].items():
         if value['type'] == 'Int':
             param = IntParameterSpec(**value)
         elif value['type'] == 'Float':
@@ -32,4 +41,4 @@ def compile_interface(interface_data: str) -> ParameterSpec:
 
         params[name] = param
 
-    return ParameterSpec(inputs=inputs, params=params)
+    return ParameterSpec(params=params)
