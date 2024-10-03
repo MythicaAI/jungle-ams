@@ -158,10 +158,15 @@ export const AuthHeader = () => {
               src="/mythica-text-logo.png"
               alt="Mythica Logo"
               sx={{
-                width: "100%",
+                minWidth: 230,
+                maxWidth: 230,
                 height: 48,
                 objectPosition: "center",
                 mb: 2,
+                display: {
+                  xs: "none",
+                  sm: "block",
+                },
               }}
               id="appLogo"
             />
