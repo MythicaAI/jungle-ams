@@ -1,0 +1,44 @@
+# Default values for api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 3
+namespace: "api"
+tier: "web"
+release: "production"
+hostnameDecorator: ""
+domains:
+  - oss.mythica.ai
+  - oss.mythica.gg
+  - api.mythica.ai
+  - api.mythica.gg
+  - images.mythica.ai
+  - images.mythica.gg
+  - dex.mythica.ai
+  - dex.mythica.gg
+
+api:
+  app:
+    name: "app"
+    replicas: 3
+    maxUnavailable: 1
+    maxSurge: 6
+  gcsProxy:
+    name: "gcs-proxy"
+    replicas: 3
+    maxUnavailable: 2
+    maxSurge: 5
+  letsEncrypt:
+    name: "lets-encrypt"
+  packager:
+    name: "packager"
+    replicas: 2
+    maxUnavailable: 1
+    maxSurge: 4
+  webFront:
+    name: "web-front"
+    replicas: 5
+    maxUnavailable: 2
+    maxSurge: 10
+    nginxConfig: "/etc/nginx/nginx-gke.conf"

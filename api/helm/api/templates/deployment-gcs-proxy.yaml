@@ -1,0 +1,35 @@
+{{- $componentContext := .Values.api.gcsProxy -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $componentContext.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ $componentContext.replicas | default 1 }}
+  strategy:
+    {{- include "api.rolloutStrategy" $componentContext | nindent 4 }}
+  selector:
+    matchLabels:
+      app: {{ $componentContext.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "api.commonLabels" . | nindent 8 }}
+        {{- include "api.componentLabels" $componentContext | nindent 8 }}
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: api
+      containers:
+        - name: gcs-proxy
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-gcs-proxy:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+              name: http-proxy
+      restartPolicy: Always

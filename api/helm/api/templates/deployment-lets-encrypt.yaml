@@ -1,0 +1,44 @@
+{{- $componentContext := .Values.api.letsEncrypt -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $componentContext.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  strategy:
+    {{- include "api.rolloutStrategy" $componentContext | nindent 4 }}
+  selector:
+    matchLabels:
+      app: {{ $componentContext.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "api.commonLabels" . | nindent 8 }}
+        {{- include "api.componentLabels" $componentContext | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: lets-encrypt
+      containers:
+        - name: letsencrypt
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-lets-encrypt:latest
+          imagePullPolicy: Always
+          env:
+            - name: DOMAINS
+              value: "{{ join "," .Values.domains }}"
+          volumeMounts:
+            - name: lets-encrypt-storage
+              mountPath: /etc/letsencrypt
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        # Nodal ephemeral volume used by the CSI driver
+        - name: lets-encrypt-storage
+          persistentVolumeClaim:
+            claimName: lets-encrypt
+      restartPolicy: Always
