@@ -72,6 +72,14 @@ const ApiKeys = () => {
       <Helmet>
         <title>Mythica • API keys</title>
       </Helmet>
+      <Card sx={{ mb: "16px", mx: "16px" }}>
+        <Stack>
+          <Typography textAlign="start" level="h4">
+            Your API keys
+          </Typography>
+          <Typography textAlign="start">Manage your access keys</Typography>
+        </Stack>
+      </Card>
       <List>
         <Button
           variant="plain"

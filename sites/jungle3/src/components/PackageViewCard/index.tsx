@@ -13,6 +13,7 @@ import { LucidePackage } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AssetTopResponse } from "types/apiTypes";
 import { SxProps } from "@mui/joy/styles/types/theme";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Props = {
   av: AssetTopResponse;
@@ -25,7 +26,12 @@ export const PackageViewCard: React.FC<Props> = ({ av, sxStyles }) => {
   const [showVersion, setShowVersion] = React.useState(false);
   return av ? (
     <Card
-      sx={{ padding: 0, height: "210px", cursor: "pointer" }}
+      sx={{
+        padding: 0,
+        height: "210px",
+        cursor: "pointer",
+        overflow: "hidden",
+      }}
       onMouseEnter={() => setShowVersion(true)}
       onMouseLeave={() => setShowVersion(false)}
       onClick={() => {
@@ -42,58 +48,83 @@ export const PackageViewCard: React.FC<Props> = ({ av, sxStyles }) => {
           alt={av.name}
         />
       </CardCover>
-      <CardContent sx={{ ...(sxStyles ?? { justifyContent: "flex-end" }) }}>
-        <Typography
-          component="span"
-          level="body-lg"
-          fontWeight="lg"
-          textAlign="start"
-          sx={{
+      <CardContent
+        sx={{
+          ...(sxStyles ?? { justifyContent: "flex-end" }),
+        }}
+      >
+        <motion.div
+          initial={{ height: "61px" }}
+          animate={{ height: showVersion ? "78px" : "61px" }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          style={{
             backgroundColor: "rgba(0, 0, 0, 0.6)",
-            color: "white", // white text color for better contrast
-            padding: "8px", // some padding to make it look nicer
-            width: "100%",
-            height: showVersion ? "78px" : "61px",
-            ...(!av.org_name &&
-              !showVersion && { display: "flex", alignItems: "center" }),
+            overflow: "hidden",
           }}
         >
-          {av.name}
+          <Typography
+            component="span"
+            level="body-lg"
+            fontWeight="lg"
+            textAlign="start"
+            sx={{
+              color: "white", // white text color for better contrast
+              padding: "8px", // some padding to make it look nicer
+              width: "100%",
 
-          {(av.org_name || showVersion) && (
-            <Stack direction="row" justifyContent="space-between">
-              <Typography
-                fontSize={12}
-                sx={{ display: "block", color: "#b1b1b1" }}
-              >
-                {av.org_name}
-              </Typography>
-              {showVersion && (
-                <Stack
-                  direction="row"
-                  gap="4px"
-                  onClick={(e) => e.stopPropagation()}
+              height: showVersion ? "78px" : "61px",
+              transition: "max-height 0.3 ease",
+              ...(!av.org_name &&
+                !showVersion && { display: "flex", alignItems: "center" }),
+            }}
+          >
+            {av.name}
+
+            {(av.org_name || showVersion) && (
+              <Stack direction="row" justifyContent="space-between">
+                <Typography
+                  fontSize={12}
+                  sx={{ display: "block", color: "#b1b1b1" }}
                 >
-                  <DownloadButton
-                    file_id={av.package_id}
-                    icon={<LucidePackage />}
-                  />
-                  <Chip
-                    key={av.version.join(".")}
-                    variant="soft"
-                    color={"neutral"}
-                    size="lg"
-                    component={Link}
-                    to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-                    sx={{ borderRadius: "xl" }}
-                  >
-                    {av.version.join(".")}
-                  </Chip>
-                </Stack>
-              )}
-            </Stack>
-          )}
-        </Typography>
+                  {av.org_name}
+                </Typography>
+
+                <AnimatePresence>
+                  {showVersion && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <Stack
+                        direction="row"
+                        gap="4px"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DownloadButton
+                          file_id={av.package_id}
+                          icon={<LucidePackage />}
+                        />
+                        <Chip
+                          key={av.version.join(".")}
+                          variant="soft"
+                          color={"neutral"}
+                          size="lg"
+                          component={Link}
+                          to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+                          sx={{ borderRadius: "xl" }}
+                        >
+                          {av.version.join(".")}
+                        </Chip>
+                      </Stack>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Stack>
+            )}
+          </Typography>
+        </motion.div>
       </CardContent>
     </Card>
   ) : (

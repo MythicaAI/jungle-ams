@@ -7,7 +7,7 @@ import {
 import { useStatusStore } from "@store/statusStore";
 import { PackageViewCard } from "@components/PackageViewCard";
 import { Helmet } from "react-helmet-async";
-import { useGetAllAssets } from "@queries/assets";
+import { useGetTopAssets } from "@queries/assets";
 import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 
 const Assets = () => {
@@ -16,15 +16,10 @@ const Assets = () => {
   const [sorting, setSorting] = useState<SortType>("latest");
 
   const {
-    data: allAssets,
-    isLoading: isAllAssetsLoading,
-    error: allAssetsError,
-  } = useGetAllAssets();
-  // const {
-  //   data: topAssets,
-  //   isLoading: isTopAssetsLoading,
-  //   error: topAssetsError,
-  // } = useGetAllAssets();
+    data: topAssets,
+    isLoading: isTopAssetsLoading,
+    error: topAssetsError,
+  } = useGetTopAssets();
 
   const handleError = (err: any) => {
     console.log("ERROR: ", err);
@@ -33,13 +28,10 @@ const Assets = () => {
   };
 
   useEffect(() => {
-    // if (topAssetsError) {
-    //   handleError(topAssetsError);
-    // }
-    if (allAssetsError) {
-      handleError(allAssetsError);
+    if (topAssetsError) {
+      handleError(topAssetsError);
     }
-  }, [allAssetsError]);
+  }, [topAssetsError]);
 
   return (
     <>
@@ -47,7 +39,7 @@ const Assets = () => {
         <title>Mythica • All packages</title>
       </Helmet>
 
-      {isAllAssetsLoading ? (
+      {isTopAssetsLoading ? (
         <CircularProgress />
       ) : (
         <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
@@ -80,8 +72,8 @@ const Assets = () => {
 
           <Stack>
             <Grid container spacing={2}>
-              {allAssets &&
-                allAssets
+              {topAssets &&
+                topAssets
                   // .filter((version) =>
                   //   version.name.toLowerCase().includes(search.toLowerCase()),
                   // )
