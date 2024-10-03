@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Stack, styled } from "@mui/joy";
+import { Avatar, Box, Button, Divider, Stack, styled } from "@mui/joy";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { useEffect } from "react";
@@ -135,53 +135,63 @@ export const AuthHeader = () => {
   });
 
   return (
-    <Stack direction="row" width="100%" justifyContent="space-between">
-      <Link to={"/"}>
-        <Stack direction="row" gap="10px">
-          <Box
-            component="img"
-            src="/mythica-logo.png"
-            alt="Mythica Logo"
-            sx={{
-              width: "100%",
-              height: 48, // Adjust this value to set the desired height
-              objectPosition: "center",
-              mb: 2, // Adds some margin below the image
-            }}
-            id="appLogo"
-          />
-          <Box
-            component="img"
-            src="/mythica-text-logo.png"
-            alt="Mythica Logo"
-            sx={{
-              width: "100%",
-              height: 48,
-              objectPosition: "center",
-              mb: 2,
-            }}
-            id="appLogo"
-          />
-        </Stack>
-      </Link>
+    <Stack>
+      <Stack direction="row" width="100%" justifyContent="space-between">
+        <Link to={"/"}>
+          <Stack direction="row" gap="10px">
+            <Box
+              component="img"
+              src="/mythica-logo.png"
+              alt="Mythica Logo"
+              sx={{
+                width: 44,
+                minWidth: 44,
+                maxWidth: 44,
+                height: 48,
+                objectPosition: "center",
+                mb: 2,
+              }}
+              id="appLogo"
+            />
+            <Box
+              component="img"
+              src="/mythica-text-logo.png"
+              alt="Mythica Logo"
+              sx={{
+                minWidth: 230,
+                maxWidth: 230,
+                height: 48,
+                objectPosition: "center",
+                mb: 2,
+                display: {
+                  xs: "none",
+                  sm: "block",
+                },
+              }}
+              id="appLogo"
+            />
+          </Stack>
+        </Link>
 
-      <Stack direction="row" spacing={1}>
-        <StatusAlarm />
-        {isAuthenticated ? (
-          <ProfileMenu name={user && user.name ? user.name : ""} />
-        ) : (
-          <Button
-            variant="outlined"
-            color="neutral"
-            onClick={() => doLoginWithRedirect()}
-            sx={{ height: "54px" }}
-          >
-            <LoginAvatarButton role="button" tabIndex={0}>
-              <Avatar alt="?" variant="soft" />
-            </LoginAvatarButton>
-          </Button>
-        )}
+        <Stack direction="row" spacing={1}>
+          <StatusAlarm />
+          {isAuthenticated ? (
+            <ProfileMenu name={user && user.name ? user.name : ""} />
+          ) : (
+            <Button
+              variant="outlined"
+              color="neutral"
+              onClick={() => doLoginWithRedirect()}
+              sx={{ height: "54px" }}
+            >
+              <LoginAvatarButton role="button" tabIndex={0}>
+                <Avatar alt="?" variant="soft" />
+              </LoginAvatarButton>
+            </Button>
+          )}
+        </Stack>
       </Stack>
+      <Divider orientation="horizontal" sx={{ mb: "10px" }} />
     </Stack>
   );
 };

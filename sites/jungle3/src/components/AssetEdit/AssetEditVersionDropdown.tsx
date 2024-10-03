@@ -44,6 +44,7 @@ export const AssetEditVersionDropdown = () => {
   const [availableVersions, setAvailableVersions] = useState<
     AssetVersionResponse[]
   >([]);
+  // const { mutate: deleteAssetVersion } = useDeleteAsset();
 
   // version sanitizing state, should only be populated by the sanitizeVersion() function
   const [sanitizedVersion, setSanitizedVersion] = useState<number[]>([0, 0, 0]);
@@ -185,29 +186,44 @@ export const AssetEditVersionDropdown = () => {
           ""
         )}
       </FormControl>
-      <FormControl orientation={"horizontal"}>
-        <Typography
-          component="span"
-          level="body-md"
-          sx={{
-            textAlign: "right",
-            alignItems: "center",
-            pr: "5px",
-            width: "auto",
-          }}
-        >
-          {published ? "Published" : "Draft"}
-        </Typography>
-        <Switch
-          checked={published}
-          onChange={(event) =>
-            updateVersion({ published: event.target.checked })
+      <Stack gap="2px">
+        <FormControl orientation={"horizontal"}>
+          <Typography
+            component="span"
+            level="body-md"
+            sx={{
+              textAlign: "right",
+              alignItems: "center",
+              pr: "5px",
+              width: "auto",
+            }}
+          >
+            {published ? "Published" : "Draft"}
+          </Typography>
+          <Switch
+            checked={published}
+            onChange={(event) =>
+              updateVersion({ published: event.target.checked })
+            }
+            color={published ? "success" : "neutral"}
+            sx={{ flex: 1 }}
+          />
+          <input type="hidden" name="published" value={published.toString()} />
+        </FormControl>
+        {/* <Button
+          variant="outlined"
+          color="neutral"
+          sx={{ width: "fit-content" }}
+          onClick={() =>
+            deleteAssetVersion({
+              assetId: asset_id,
+              assetVersion: paramVersion as string,
+            })
           }
-          color={published ? "success" : "neutral"}
-          sx={{ flex: 1 }}
-        />
-        <input type="hidden" name="published" value={published.toString()} />
-      </FormControl>
+        >
+          <Trash />
+        </Button> */}
+      </Stack>
     </Stack>
   );
 };

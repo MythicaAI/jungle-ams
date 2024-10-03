@@ -86,8 +86,10 @@ const Packages = () => {
         updateVersion({
           asset_id: res.asset_id,
           org_id: res.org_id,
+          version: [1, 0, 0],
         });
-        navigate(`/assets/${res.asset_id}/versions/0.0.0`);
+
+        navigate(`/assets/${res.asset_id}/versions/1.0.0`);
       },
       onError: (err) => handleError(err as any),
     });
@@ -203,7 +205,10 @@ const Packages = () => {
                 </Chip>
               ))}
               <Typography level="body-sm" color="neutral">
-                by {latestVersion.author_name} {latestVersion.org_name ? "[" + latestVersion.org_name + "]" : "" }
+                by {latestVersion.author_name}{" "}
+                {latestVersion.org_name
+                  ? "[" + latestVersion.org_name + "]"
+                  : ""}
               </Typography>
             </ListItemContent>
           </Stack>
@@ -260,10 +265,20 @@ const Packages = () => {
   };
 
   return (
-    <Box>
+    <Box height="100%">
       <Helmet>
         <title>Mythica • My Packages</title>
       </Helmet>
+      <Card sx={{ margin: "0 16px" }}>
+        <Stack>
+          <Typography textAlign="start" level="h4">
+            Your packages
+          </Typography>
+          <Typography textAlign="start">
+            View your own packages and create new ones
+          </Typography>
+        </Stack>
+      </Card>
       <List size={"lg"}>
         <ListItem key={"create-header"}>
           <ListItemDecorator>
@@ -273,6 +288,7 @@ const Packages = () => {
               color={"neutral"}
               onClick={createAsset}
               startDecorator={<LucidePlusCircle />}
+              sx={{ padding: "6px 8px" }}
             >
               Create New Package
             </Button>
@@ -287,6 +303,13 @@ const Packages = () => {
           Object.entries(versionCache).map(([assetId, versionList]) =>
             renderLatestVersion(assetId, versionList),
           )
+        )}
+        {Object.entries(versionCache).length === 0 && (
+          <Card sx={{ margin: "0 16px" }}>
+            <Typography textAlign="left">
+              You don't have any packages yet.
+            </Typography>
+          </Card>
         )}
       </List>
     </Box>

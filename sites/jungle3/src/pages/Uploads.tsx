@@ -1,4 +1,6 @@
 import {
+  Box,
+  Card,
   Divider,
   IconButton,
   List,
@@ -124,56 +126,70 @@ const Uploads = () => {
       <Helmet>
         <title>Mythica • My Uploads</title>
       </Helmet>
-      <UploadsSubmitList />
-      <List>
-        <ListItem sx={{ flexGrow: 1 }}>
-          <List orientation="horizontal" sx={{ flexGrow: 1 }}>
-            {Object.entries(allSorts).map(([name, value]) => (
-              <ListItemButton key={name} onClick={() => setSort(name)}>
-                <ListItemDecorator>{value.icon}</ListItemDecorator>
-                <ListItemContent>{value.name}</ListItemContent>
-              </ListItemButton>
+      <Card sx={{ mb: "16px", mx: "16px" }}>
+        <Stack>
+          <Typography textAlign="start" level="h4">
+            Your uploads
+          </Typography>
+          <Typography textAlign="start">Manage your uploaded files</Typography>
+        </Stack>
+      </Card>
+      <Box mx="16px">
+        <UploadsSubmitList />
+        <List>
+          <ListItem sx={{ flexGrow: 1 }}>
+            <List orientation="horizontal" sx={{ flexGrow: 1 }}>
+              {Object.entries(allSorts).map(([name, value]) => (
+                <ListItemButton key={name} onClick={() => setSort(name)}>
+                  <ListItemDecorator>{value.icon}</ListItemDecorator>
+                  <ListItemContent>{value.name}</ListItemContent>
+                </ListItemButton>
+              ))}
+            </List>
+          </ListItem>
+          <ListDivider />
+          {Array.from(Object.entries(uploads))
+            .filter(fileTypeFilter)
+            .map(([key, value]) => (
+              <ListItem sx={{ flexGrow: 1 }} key={key}>
+                <ListItemDecorator
+                  sx={{ display: "flex", alignItems: "center" }}
+                >
+                  <Stack direction={"row"} minWidth="72px">
+                    <IconButton
+                      onClick={() =>
+                        setDeleteModal({
+                          isOpen: true,
+                          selectedFile: value.file_id,
+                        })
+                      }
+                    >
+                      <LucideTrash />
+                    </IconButton>
+                    <DownloadButton
+                      icon={<LucideCloudDownload />}
+                      file_id={value.file_id}
+                    />
+                  </Stack>
+                </ListItemDecorator>
+                <Divider orientation="vertical" sx={{ margin: "0 10px" }} />
+                <ListItemContent
+                  sx={{
+                    width: "calc(100% - 82px)",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography sx={{ textAlign: "left" }} noWrap>
+                    <Link to={`/files/${value.file_id}`}>
+                      {value.file_name}
+                    </Link>
+                  </Typography>
+                </ListItemContent>
+              </ListItem>
             ))}
-          </List>
-        </ListItem>
-        <ListDivider />
-        {Array.from(Object.entries(uploads))
-          .filter(fileTypeFilter)
-          .map(([key, value]) => (
-            <ListItem sx={{ flexGrow: 1 }} key={key}>
-              <ListItemDecorator sx={{ display: "flex", alignItems: "center" }}>
-                <Stack direction={"row"} minWidth="72px">
-                  <IconButton
-                    onClick={() =>
-                      setDeleteModal({
-                        isOpen: true,
-                        selectedFile: value.file_id,
-                      })
-                    }
-                  >
-                    <LucideTrash />
-                  </IconButton>
-                  <DownloadButton
-                    icon={<LucideCloudDownload />}
-                    file_id={value.file_id}
-                  />
-                </Stack>
-              </ListItemDecorator>
-              <Divider orientation="vertical" sx={{ margin: "0 10px" }} />
-              <ListItemContent
-                sx={{
-                  width: "calc(100% - 82px)",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Typography sx={{ textAlign: "left" }} noWrap>
-                  <Link to={`/files/${value.file_id}`}>{value.file_name}</Link>
-                </Typography>
-              </ListItemContent>
-            </ListItem>
-          ))}
-      </List>
+        </List>
+      </Box>
       <DeleteModal
         open={deleteModal.isOpen}
         handleClose={handleDeleteCleaup}
