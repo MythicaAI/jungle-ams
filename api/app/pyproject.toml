@@ -70,3 +70,4 @@ omit = [
 
 [tool.pytest.ini_options]
 addopts = "-p no:logging"
+asyncio_mode = "auto"

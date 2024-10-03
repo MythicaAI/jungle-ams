@@ -29,13 +29,11 @@ from ripple.models.streaming import (
     Message,
     OutputFiles,
     Progress,
-    StreamItemUnion,
 )
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
-from tests.fixtures.uploader import request_to_upload_files
-from tests.shared_test import FileContentTestObj, assert_status_code
-from cryptid.cryptid import reader_id_to_seq
+from ripple.client_ops import ReadClientOp
+
 
 # length of event data in test events
 test_event_info_len = 10
@@ -98,7 +96,7 @@ def get_event_dumped_models(events_ids):
     with get_session() as session:
         statement = (
             select(DbEvent)
-            .where(DbEvent.event_seq.in_(events_ids)) # pylint: disable=no-member
+            .where(DbEvent.event_seq.in_(events_ids))  # pylint: disable=no-member
             .order_by(DbEvent.event_seq)
         )
         events = session.exec(statement).all()
@@ -121,31 +119,34 @@ async def test_websocket(
     test_profile = create_profile()
     auth_header = test_profile.authorization_header()
 
-    # create 3 readers, start one from an advanced position
     item_list_length = 10
 
     generate_event_count = 10
     events_ids = generate_events(test_profile.profile, generate_event_count)
     stream_items = get_event_dumped_models(events_ids)
 
-    # create event reader
     page_size = 3
-    client.post(
+    r = client.post(
         f"{api_base}/readers/",
         json={'source': 'events', 'params': {'page_size': page_size}},
         headers=auth_header,
     )
+    reader = r.json()
+    assert "reader_id" in reader
+    reader_id = reader["reader_id"]
 
     with client.websocket_connect(
         f"{api_base}/readers/connect", headers=auth_header, data={"body": {}}
     ) as websocket:
         websocket: WebSocketTestSession
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
 
         max_reads = item_list_length / page_size
-        
-        def check_new_items_in_connection():
+
+        def check_new_items_in_connection(
+            page_size, generate_event_count, stream_items
+        ):
             reads = 0
             page_sized_reads = 0
             count_events = 0
@@ -157,6 +158,7 @@ async def test_websocket(
                 if len(output_data) == page_size:
                     page_sized_reads += 1
                 for output_raw in output_data:
+                    log.info("expected output_data %s", stream_items[count_events])
                     raw: dict = json.loads(output_raw)
                     assert 'index' in raw
                     assert 'payload' in raw
@@ -167,11 +169,61 @@ async def test_websocket(
                 generate_event_count / page_size
             ), "full pages read constraint"
             assert count_events == generate_event_count, "total events read constraint"
-        
-        check_new_items_in_connection()
-        
-        # Maintain WebSocket connection and trigger new events to fetch the latest data
+
+        check_new_items_in_connection(page_size, generate_event_count, stream_items)
+        old_stream_items = stream_items
+        # Trigger new events to fetch the latest data
         events_ids = generate_events(test_profile.profile, generate_event_count)
         stream_items = get_event_dumped_models(events_ids)
 
-        check_new_items_in_connection()
+        check_new_items_in_connection(page_size, generate_event_count, stream_items)
+
+        data_without_op = ReadClientOp().model_dump()
+        data_without_op["reader_id"] = reader_id
+        del data_without_op["op"]
+        websocket.send_json(data_without_op)
+        output_data = websocket.receive_json()
+        assert output_data is not None
+        log.info("Received output_data %s", output_data)
+        assert {'error': "No 'op' included in client message"} == output_data
+
+        data_invalid_op = ReadClientOp().model_dump()
+        data_invalid_op["reader_id"] = reader_id
+        data_invalid_op["op"] = "1916846835184884"
+        websocket.send_json(data_invalid_op)
+        output_data = websocket.receive_json()
+        assert output_data is not None
+        log.info("Received output_data %s", output_data)
+        assert {'error': "Invalid 'op' included in client message"} == output_data
+
+        new_old_stream_items = old_stream_items + stream_items
+
+        first_item_position = len(new_old_stream_items) // 4
+        stream_items = new_old_stream_items[
+            first_item_position:
+        ]  # Start stream_items from the third quarter of all items
+        item_list_length = len(stream_items)
+
+        max_reads = item_list_length / page_size
+
+        send_data = ReadClientOp(
+            position=new_old_stream_items[(first_item_position - 1)][
+                "index"
+            ]  # Adjusted to "first_item_position - 1" since the reader reads after its current position
+        ).model_dump()
+
+        websocket.send_json(send_data)
+        output_data = websocket.receive_json()
+        assert output_data is not None
+        log.info("Received output_data %s", output_data)
+        assert {'error': "No 'reader_id' included in client message"} == output_data
+
+        # Test with a new position
+        send_data["reader_id"] = reader_id
+        websocket.send_json(send_data)
+        output_data = websocket.receive_json()
+        assert output_data is not None
+        log.info("Received output_data %s", output_data)
+        assert {"success": "The processor is being updated"} == output_data
+
+        check_new_items_in_connection(page_size, item_list_length, stream_items)
