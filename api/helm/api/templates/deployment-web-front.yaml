@@ -1,0 +1,80 @@
+{{- $componentContext := .Values.api.webFront -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $componentContext.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ $componentContext.replicas | default 1 }}
+  strategy:
+    {{- include "api.rolloutStrategy" $componentContext | nindent 4 }}
+  selector:
+    matchLabels:
+      app: {{ $componentContext.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "api.labels" . | nindent 8 }}
+        {{- include "api.componentLabels" $componentContext | nindent 8 }}
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      securityContext:
+        fsGroup: 101 # use the nginx group for file-system security privileges
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: api
+      initContainers:
+        - name: publish-init
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: ephemeral-sites-volume
+              mountPath: /sites
+          env:
+            - name: PUBLISH_PATH
+              value: "/sites"
+      containers:
+        - name: nginx
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
+          args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }} " ]
+          imagePullPolicy: Always
+          env:
+            - name: API_ENDPOINT
+              value: api.app:5555
+            - name: DEX_ENDPOINT
+              value: dex.dex:5556
+            - name: EXTERNAL_IP
+              value: 35.190.85.177
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          volumeMounts:
+            - name: ephemeral-sites-volume
+              mountPath: /sites
+            - name: letsencrypt-tls
+              mountPath: "/etc/nginx/tls"
+              readOnly: true
+      volumes:
+        - name: ephemeral-sites-volume
+          emptyDir: { }
+        - name: letsencrypt-tls
+          secret:
+            secretName: letsencrypt-tls
+            defaultMode: 0640
+      restartPolicy: Always

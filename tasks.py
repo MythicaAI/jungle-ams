@@ -160,7 +160,8 @@ def build_image(c, image_path):
     commit_hash = get_commit_hash()
     with c.cd(working_directory):
         c.run(
-            (f'docker buildx build --platform={IMAGE_PLATFORM} {buildarg_str} '
+            (f'docker buildx build --platform={IMAGE_PLATFORM} {
+                buildarg_str} '
              f'-f {dockerfile_path} -t {image_name}:latest .'),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
@@ -283,3 +284,10 @@ def docker_deploy(c, image='all', target='gcs'):
     'background': 'Run the image in the background'})
 def docker_run(c, image='api/app', background=False):
     image_path_action(c, image, run_image, background=background)
+
+
+@task(help={'path': 'Base path that contains the helm/ chart'})
+def helm_template(c, path='api/app'):
+    c.run(("helm template my-release ./mychart "
+           "--show-only templates/deployment.yaml "
+           "--dry-run --debug"))

@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: api
+  namespace: api
+  labels:
+    exposed: "true"
+spec:
+  parentRefs:
+    - kind: Gateway
+      namespace: ingress
+      name: external-gateway
+  hostnames:
+    - "api.mythica.ai"
+    - "oss.mythica.ai"
+    - "api.mythica.gg"
+    - "oss.mythica.gg"
+  rules:
+    - matches:
+        - path:
+            value: /
+      backendRefs:
+        - name: web-front
+          port: 80
