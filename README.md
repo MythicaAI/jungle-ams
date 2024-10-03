@@ -142,3 +142,19 @@ Schema types can be generated with the `codegen` project
 python -m codegen.codegen
 ```
 
+
+## CI Tests
+
+The Git workflow file `.github/workflows/api-app-ci.yaml` is set up to run tests on every push event within a PR.
+
+Once changes are pushed, the job will execute pytest tests, and the coverage results will be published as a comment in the PR. This comment will include a table for every `.py` file located in the `api/app` directory.
+
+The table is generated from the pytest step in subsequent steps using a shell script that formats the results for display in the PR. Based on the environment variable defined in the workflow file (`jobs: > api-app-ci: > env: > TEST_FAIL_RATE: `), the workflow will determine if the test results have decreased beyond the specified rate. If the threshold is exceeded, the subsequent step, `Coverage total fail - exit`, will cause the tests to fail.
+
+Additionally, there is an option to see the code coverage for each file individually.
+
+To create a `.coverage` file and generate an HTML report for viewing in a browser, run the following commands inside the `api/app` folder:
+
+```bash
+pytest --cov --cov-report=html:coverage
+coverage html
