@@ -50,7 +50,7 @@ class ReaderConnectionManager:
         self.default_operation: str = "READ"
         self.default_op: tuple[self.T, Source] = self.ops.get(self.default_operation)
         self.manager_active_tasks: dict[str, asyncio.Task] = dict()
-        self.loop = asyncio.get_event_loop()
+        self.loop = None
 
     async def connect(
         self,
@@ -58,6 +58,9 @@ class ReaderConnectionManager:
         profile: Profile,
         op_data: Optional[dict] = None,
     ):
+        # there is no loop while async testing (Python 3.10), it should be set up on connect 
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
         await websocket.accept()
 
         if not op_data:

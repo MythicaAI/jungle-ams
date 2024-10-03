@@ -1,25 +1,21 @@
+{{- $componentContext := .Values.api.gcsProxy -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gcs-proxy
-  namespace: api
+  name: {{ $componentContext.name }}
+  namespace: {{ .Values.namespace }}
 spec:
-  replicas: 3
+  replicas: {{ $componentContext.replicas | default 1 }}
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 2
-      maxSurge: 5
+    {{- include "api.rolloutStrategy" $componentContext | nindent 4 }}
   selector:
     matchLabels:
-      app: gcs-proxy
+      app: {{ $componentContext.name }}
   template:
     metadata:
       labels:
-        app: gcs-proxy
-        tier: web
-        version: "1.0"
-        release: production
+        {{- include "api.commonLabels" . | nindent 8 }}
+        {{- include "api.componentLabels" $componentContext | nindent 8 }}
     spec:
       nodeSelector:
         cloud.google.com/compute-class: "Scale-Out"
@@ -35,5 +31,5 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 80
-              name: http
+              name: http-proxy
       restartPolicy: Always

@@ -11,12 +11,10 @@ spec:
       namespace: ingress
       name: external-gateway
   hostnames:
-    - "oss.mythica.ai"
     - "api.mythica.ai"
-    - "dex.mythica.ai"
-    - "oss.mythica.gg"
+    - "oss.mythica.ai"
     - "api.mythica.gg"
-    - "dex.mythica.gg"
+    - "oss.mythica.gg"
   rules:
     - matches:
         - path:

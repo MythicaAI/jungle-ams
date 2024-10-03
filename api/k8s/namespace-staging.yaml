@@ -5,4 +5,4 @@ metadata:
     exposed: "true"
     exposed_http: "true"
     exposed_https: "true"
-  name: api
+  name: api-staging

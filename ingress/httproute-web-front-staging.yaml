@@ -1,8 +1,8 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: api
-  namespace: api
+  name: api-staging
+  namespace: api-staging
   labels:
     exposed: "true"
 spec:
@@ -11,12 +11,10 @@ spec:
       namespace: ingress
       name: external-gateway
   hostnames:
-    - "oss.mythica.ai"
-    - "api.mythica.ai"
-    - "dex.mythica.ai"
-    - "oss.mythica.gg"
-    - "api.mythica.gg"
-    - "dex.mythica.gg"
+    - "api-staging.mythica.ai"
+    - "oss-staging.mythica.ai"
+    - "api-staging.mythica.gg"
+    - "oss-staging.mythica.gg"
   rules:
     - matches:
         - path:

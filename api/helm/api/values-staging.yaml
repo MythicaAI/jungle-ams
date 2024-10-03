@@ -1,0 +1,34 @@
+# Default values for api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+namespace: "api-staging"
+tier: "web"
+release: "staging"
+hostnameDecorator: "-staging"
+domains:
+  - oss-staging.mythica.ai
+  - api-staging.mythica.ai
+  - images-staging.mythica.ai
+  - dex-staging.mythica.ai
+api:
+  app:
+    replicas: 2
+    maxUnavailable: 1
+    maxSurge: 4
+  gcsProxy:
+    replicas: 2
+    maxUnavailable: 1
+    maxSurge: 4
+  packager:
+    replicas: 1
+    maxUnavailable: 1
+    maxSurge: 2
+  webFront:
+    replicas: 2
+    maxUnavailable: 1
+    maxSurge: 5
+    nginxConfig: "/etc/nginx/nginx-gke-staging.conf"
+
