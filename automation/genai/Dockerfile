@@ -54,17 +54,11 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 #Set HuggingFace token before initialize and model download
 ENV HF_TOKEN=${HF_AUTHTOKEN}
 
-# Overlay worker
-COPY --from=worker /libs /libs
-COPY --from=worker /app/requirements_worker.txt /app/requirements_worker.txt
-RUN pip install --no-cache-dir -r /app/requirements_worker.txt
-
-COPY --from=worker /app/worker.py /app/worker.py
-
 COPY . /app
 WORKDIR /app
 
 #This is an expensive project to test, unless you comment this out. 
 #But leave it in for prod builds as it makes the container faster to load
-RUN python3.11 worker.py initialize
+RUN python3.11 workers.py initialize
 
+ENTRYPOINT ["python3.11", "workers.py"]

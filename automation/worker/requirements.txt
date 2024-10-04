@@ -1,5 +1,0 @@
-nats-py
-aiohttp
-munch
-pydantic
-../libs/python/ripple
