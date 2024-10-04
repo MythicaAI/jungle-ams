@@ -12,8 +12,7 @@ from ripple.models.params import (
     StringParameterSpec, 
     BoolParameterSpec, 
     FileParameterSpec, 
-    FileParameter, 
-    FileParameterResolved
+    FileParameter
 )
 from ripple.runtime.params import validate_params, resolve_params
 
@@ -182,19 +181,19 @@ def test_param_validate():
 
 def test_param_resolve():
     #TODO: Setup endpoint that works in test environment
-    """
+    #"""
     endpoint = "http://localhost:8080/v1"
 
     # File test
     with tempfile.TemporaryDirectory() as tmp_dir:
         set = ParameterSet(params={"input0": FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")})
-        result = resolve_params(endpoint, tmp_dir, set)
-        assert result is not None
-        assert len(result.params) == 1
-        assert isinstance(result.params['input0'], FileParameterResolved)
-        assert result.params['input0'].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert result.params['input0'].file_path.startswith('file_') == False
-        assert os.path.exists(result.params['input0'].file_path)
+        success = resolve_params(endpoint, tmp_dir, set)
+        assert success
+        assert len(set.params) == 1
+        assert isinstance(set.params['input0'], FileParameter)
+        assert set.params['input0'].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
+        assert set.params['input0'].file_path.startswith('file_') == False
+        assert os.path.exists(set.params['input0'].file_path)
 
     # File list test
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -202,14 +201,17 @@ def test_param_resolve():
             FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"),
             FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")
         ]})
-        result = resolve_params(endpoint, tmp_dir, set)
-        assert result is not None
-        assert len(result.params) == 1
-        assert isinstance(result.params['files'], list)
-        assert result.params['files'][0].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert result.params['files'][1].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert result.params['files'][0].file_path.startswith('file_') == False
-        assert result.params['files'][1].file_path.startswith('file_') == False
-        assert os.path.exists(result.params['files'][0].file_path)
-        assert os.path.exists(result.params['files'][1].file_path)
-    """
+        success = resolve_params(endpoint, tmp_dir, set)
+        assert success
+        assert len(set.params) == 1
+        assert isinstance(set.params['files'], list)
+        assert len(set.params['files']) == 2
+        assert isinstance(set.params['files'][0], FileParameter)
+        assert isinstance(set.params['files'][1], FileParameter)
+        assert set.params['files'][0].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
+        assert set.params['files'][1].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
+        assert set.params['files'][0].file_path.startswith('file_') == False
+        assert set.params['files'][1].file_path.startswith('file_') == False
+        assert os.path.exists(set.params['files'][0].file_path)
+        assert os.path.exists(set.params['files'][1].file_path)
+    #"""
