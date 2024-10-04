@@ -6,14 +6,12 @@ from typing import Optional
 from ripple.models.params import (
     ParameterSpec, 
     ParameterSet, 
-    ParameterSetResolved, 
     IntParameterSpec, 
     FloatParameterSpec, 
     StringParameterSpec, 
     BoolParameterSpec,
     FileParameterSpec, 
-    FileParameter, 
-    FileParameterResolved
+    FileParameter
 )
 
 
@@ -66,21 +64,12 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     return file_path
 
 
-def resolve_file_param(endpoint: str, directory: str, param: FileParameter) -> FileParameterResolved:
-    file_path = download_file(endpoint, directory, param.file_id)
-    return FileParameterResolved(file_id=param.file_id, file_path=file_path)
-
-
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> Optional[ParameterSetResolved]:
-    params_resolved = {}
-
+def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> bool:
     for name, param in paramSet.params.items():
         if isinstance(param, FileParameter):
-            params_resolved[name] = resolve_file_param(endpoint, directory, param)
+            param.file_path = download_file(endpoint, directory, param.file_id)
         elif isinstance(param, list) and all(isinstance(file_param, FileParameter) for file_param in param):
-            params_resolved[name] = [resolve_file_param(endpoint, directory, file_param) 
-                                      for file_param in param]
-        else:
-            params_resolved[name] = paramSet.params[param]
+            for file_param in param:
+                file_param.file_path = download_file(endpoint, directory, file_param.file_id)
 
-    return ParameterSetResolved(params=params_resolved)
+    return True

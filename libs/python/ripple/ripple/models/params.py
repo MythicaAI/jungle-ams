@@ -58,6 +58,7 @@ class ParameterSpec(BaseModel):
 
 class FileParameter(BaseModel):
     file_id: str
+    file_path: Optional[str] = None
 
 
 ParameterType = Union[
@@ -80,26 +81,5 @@ class ParameterSet(BaseModel):
     params: dict[str, ParameterType]
 
 
-class FileParameterResolved(BaseModel):
-    file_id: str
-    file_path: str
 
 
-ParameterTypeResolved = Union[
-    StrictInt,
-    list[StrictInt],
-    StrictFloat,
-    list[StrictFloat],
-    str,
-    list[str],
-    bool,
-    FileParameterResolved,
-    list[FileParameterResolved]
-]
-
-
-class ParameterSetResolved(BaseModel):
-    """
-    Set of parameter values resolved to local files are ready to be used by a job
-    """
-    params: dict[str, ParameterTypeResolved]
