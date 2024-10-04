@@ -1,0 +1,11 @@
+gcloud functions deploy genai-sd3-txt2img \
+ --region=us-central1 \
+ --gen2 \
+ --runtime=python312 \
+ --source=. \
+ --entry-point=automation_request \
+ --trigger-http \
+ --egress-settings=private-ranges-only \
+ --timeout=600 \
+ --vpc-connector=cloudrun \
+ --allow-unauthenticated
