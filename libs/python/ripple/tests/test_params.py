@@ -181,7 +181,7 @@ def test_param_validate():
 
 def test_param_resolve():
     #TODO: Setup endpoint that works in test environment
-    #"""
+    """
     endpoint = "http://localhost:8080/v1"
 
     # File test
@@ -214,4 +214,4 @@ def test_param_resolve():
         assert set.params['files'][1].file_path.startswith('file_') == False
         assert os.path.exists(set.params['files'][0].file_path)
         assert os.path.exists(set.params['files'][1].file_path)
-    #"""
+    """
