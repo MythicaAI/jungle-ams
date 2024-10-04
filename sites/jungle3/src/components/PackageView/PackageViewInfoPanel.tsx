@@ -1,6 +1,6 @@
 import React from "react";
 import { AssetVersionResponse } from "types/apiTypes";
-import { Card, Box, Stack, Typography, Divider, Chip } from "@mui/joy";
+import { Card, Stack, Typography, Chip } from "@mui/joy";
 import { LucideGitCommitVertical, LucidePackage } from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link } from "react-router-dom";
@@ -49,44 +49,57 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   return (
     <Stack gap="10px">
       <Card>
-        <Box>
-          <Stack>
-            <Typography level={"h4"}>
-              {av.org_name}::{av.name}
-            </Typography>
-            <Typography>by {av.author_name}</Typography>
-            <Typography
-              sx={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {convertCommitRefToLink(av.commit_ref)}
-            </Typography>
-            {av.description && (
-              <>
-                <Divider orientation={"horizontal"} sx={{ my: "10px" }} />
-                <Typography textAlign="left">{av.description}</Typography>
-              </>
-            )}
-          </Stack>
-        </Box>
+        <Stack>
+          <Typography level={"h4"}>{av.name}</Typography>
+          <Typography
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {convertCommitRefToLink(av.commit_ref)}
+          </Typography>
+        </Stack>
       </Card>
-      <Stack direction="row" justifyContent="space-between">
-        <DownloadButton file_id={av.package_id} icon={<LucidePackage />} />
-        <Chip
-          key={av.version?.join(".")}
-          variant="soft"
-          color={"neutral"}
-          size="lg"
-          component={Link}
-          to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-          sx={{ borderRadius: "xl" }}
+      <Card>
+        <Stack
+          direction="row"
+          justifyContent="center"
+          alignItems="center"
+          gap="8px"
         >
-          {av.version.join(".")}
-        </Chip>
-      </Stack>
+          <Typography fontSize={12} color="neutral">
+            created by
+          </Typography>
+          <Typography level={"h4"}>{av.author_name}</Typography>
+        </Stack>
+      </Card>
+
+      <Card>
+        <Typography fontSize={18} textAlign="left">
+          {av.description}
+        </Typography>
+        <Stack direction="row" justifyContent="space-between">
+          <DownloadButton
+            file_id={av.package_id}
+            icon={<LucidePackage />}
+            text="Download"
+          />
+
+          <Chip
+            key={av.version?.join(".")}
+            variant="soft"
+            color={"neutral"}
+            size="lg"
+            component={Link}
+            to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+            sx={{ borderRadius: "xl" }}
+          >
+            {av.version.join(".")}
+          </Chip>
+        </Stack>
+      </Card>
     </Stack>
   );
 };

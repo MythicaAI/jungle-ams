@@ -55,7 +55,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
   };
 
   return (
-    <IconButton onClick={handleDownload}>
+    <IconButton onClick={handleDownload} sx={{ display: "flex", gap: "6px" }}>
       {icon} {text ? text : ""}
     </IconButton>
   );

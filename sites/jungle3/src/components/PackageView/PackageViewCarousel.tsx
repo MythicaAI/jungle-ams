@@ -74,7 +74,7 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
       >
         <img
           src={thumbnailRefs[currentIndex].url}
-          alt={`Slide ${currentIndex + 1}`}
+          alt={`${thumbnailRefs[currentIndex].file_name}`}
           style={{
             width: "100%",
             height: "100%",
