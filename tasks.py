@@ -39,6 +39,10 @@ SFX_CLIENT_SECRET = os.environ.get('SFX_CLIENT_SECRET')
 #
 HF_AUTHTOKEN = os.environ.get('HF_AUTHTOKEN')
 
+#
+# ENV for node builds
+#
+NODE_ENV = os.environ.get('NODE_ENV', 'dev')
 
 #
 # Integration testing directories
@@ -53,8 +57,16 @@ IMAGES = {
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
-    'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
-    'sites/jungle3': {'name': 'mythica-jungle3-build'},
+    'api/packager': {
+        'name': 'mythica-packager',
+        'requires': ['api/app']
+    },
+    'sites/jungle3': {
+        'name': 'mythica-jungle3-build',
+        'buildargs': {
+            'NODE_ENV': NODE_ENV,
+        }
+    },
     'testing/storage/minio-config': {'name': 'minio-config'},
     'automation/test': {'name': 'mythica-auto-test', 'working_directory': BASE_DIR},
     'automation/genai': {
@@ -76,13 +88,16 @@ IMAGES = {
 
 IMAGE_SETS = {
     'all': set(IMAGES.keys()),
+    'sites': {
+        'sites/jungle3'
+    },
     'web': {
         'api/nginx',
         'api/app',
         'api/publish-init',
         'api/lets-encrypt',
-        'api/gcs-proxy',
-        'sites/jungle3'},
+        'api/gcs-proxy'
+    },
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
@@ -178,11 +193,14 @@ def deploy_image(c, image_path, target):
         raise ValueError(f"unknown deployment target {target}")
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:{commit_hash}",
+        c.run((f"docker tag {image_name}:{commit_hash}"
+               f" {repo}/{image_name}:{commit_hash}"),
               pty=PTY_SUPPORTED)
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:latest",
+        c.run((f"docker tag {image_name}:{commit_hash}"
+               f" {repo}/{image_name}:latest"),
               pty=PTY_SUPPORTED)
-        c.run(f"docker push {repo}/{image_name} --all-tags", pty=PTY_SUPPORTED)
+        c.run((f"docker push {repo}/{image_name}"
+               " --all-tags"), pty=PTY_SUPPORTED)
 
 
 def run_image(c, image_path, background=False):
@@ -201,6 +219,34 @@ def run_image(c, image_path, background=False):
         args.append('--interactive --tty')
     c.run(f"docker run {'  '.join(args)} {image_name}:{commit_hash}",
           pty=PTY_SUPPORTED)
+
+
+def copy_dist_files(c, image_path):
+    """
+    Given a dist files image (image that built some distribution into /dist)
+    copy the files to a local directory from the container to make
+    them available for serving or moving to the next distribution point
+    """
+    image_name = IMAGES[image_path]['name']
+    commit_hash = get_commit_hash()
+    source_path = '/dist'
+
+    # Create the container from the build image
+    result = c.run(f"docker create {image_name}:{commit_hash}", hide=True)
+    container_id = result.stdout.strip()
+    destination_path = os.path.join(BASE_DIR, image_path, 'dist-build')
+    try:
+        # Step 2: Copy files from the temporary
+        # container to the local filesystem
+        print((f"Copying '{source_path}' from container"
+               f" to '{destination_path}'..."))
+        c.run(f"docker cp {container_id}:{source_path} {destination_path}")
+        print("Files copied successfully.")
+    finally:
+        # Step 3: Remove the temporary container
+        print(f"Removing temporary container '{container_id}'...")
+        c.run(f"docker rm {container_id}", hide=True)
+        print("Temporary container removed.")
 
 
 @task
@@ -255,7 +301,10 @@ def auto_stop(c):
 
 
 def image_path_action(c, image, action, **kwargs):
-    """Execute some docker image action against an image path or set of image paths"""
+    """
+    Execute some docker image action against an image path
+    or set of image paths
+    """
     if image in IMAGE_SETS:
         for image_path in IMAGE_SETS[image]:
             action(c, image_path, **kwargs)
@@ -282,10 +331,3 @@ def docker_deploy(c, image='all', target='gcs'):
     'background': 'Run the image in the background'})
 def docker_run(c, image='api/app', background=False):
     image_path_action(c, image, run_image, background=background)
-
-
-@task(help={'path': 'Base path that contains the helm/ chart'})
-def helm_template(c, path='api/app'):
-    c.run(("helm template my-release ./mychart "
-           "--show-only templates/deployment.yaml "
-           "--dry-run --debug"))

@@ -20,18 +20,16 @@ API_URL= 'https://api.mythica.ai/v1'
 class AsyncAdapter():
     def schedule_task(self, task_def):
         """Houdini has an event loop already running so we need to work around it"""
+        loop = None
         try:
-            loop =asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(task_def())
-            else:
-                loop.run_until_complete(task_def())
+            loop = asyncio.get_running_loop()
+            log.info("Take existing event loop: %s", loop)
         except RuntimeError:
-            asyncio.run(task_def())
-    
-    def post(self, subject: str, data: dict) -> None:
-        pass
+            loop = asyncio.new_event_loop()
+            log.info("Created new event loop: %s", loop)
 
+        asyncio.run_coroutine_threadsafe(task_def(),loop)
+    
 class NatsAdapter(AsyncAdapter):
     def __init__(self, nats_url=NATS_URL) -> None:
         self.nats_url = nats_url
@@ -93,7 +91,7 @@ class NatsAdapter(AsyncAdapter):
             
                 # Wait for the response with a timeout (customize as necessary)
                 log.info("Setting up NATS response listener")
-                listener = await self.nc.subscribe(subject, message_handler)
+                listener = await self.nc.subscribe(subject, cb=message_handler)
                 self.listeners[subject] = listener
                 log.info("NATS response listener set up")
 
@@ -112,7 +110,7 @@ class NatsAdapter(AsyncAdapter):
                 await subscription.unsubscribe()
                 log.info(f"Listener for subject {subject} shut down")
                 if not self.listeners:
-                    await self._disconnect
+                    await self._disconnect()
                     log.info(f"Last Listener was shut down. Closing Connection")
             else:
                 log.warning(f"No active listener found for subject {subject}")
@@ -124,7 +122,7 @@ class RestAdapter(AsyncAdapter):
         self.api_url = api_url
 
     
-    def post(self, endpoint: str, data: dict=None) -> None:
+    def post(self, endpoint: str, data: dict={}) -> None:
         """Post data to an endpoint. """
         endpoint = os.path.join(API_URL,endpoint)
         async def _post_async() -> None:
@@ -167,7 +165,19 @@ class Worker:
 
     def start(self,subject: str, workers:list[dict]) -> None:
         self._load_workers(workers)
-        self.nats.listen(subject, self._do_work)
+        self.nats.listen(subject, self._execute())
+        def _wait():
+            """Keep the event loop running forever to wait for messages."""
+            log.info("Waiting for messages...")
+            loop = asyncio.get_event_loop()
+            try:
+                # Ensure the event loop keeps running
+                loop.run_forever()
+            except KeyboardInterrupt:
+                log.info("Received exit signal. Shutting down...")
+                loop.stop()
+
+        _wait()
 
     def _load_workers(self,workers):
         """Function to dynamically discover and register workers in a container"""
@@ -185,68 +195,66 @@ class Worker:
 
 
     #Callback for reporting back. 
-    def _result(self,rdata: dict, complete=False):
+    def _result(self,rdata: dict={}, complete=False):
         JOB_RESULT_ENDPOINT="/jobs/results/"
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {rdata}")
 
         #TODO: We need to unresolve file params in the result_data field and externalize the "result" channel
-        self.nats.post("result", rdata) 
-        
-        if rdata.job_id:
+        self.nats.post("result", json.dumps(rdata)) 
+        if 'job_id' in rdata:
+            job_id = rdata['job_id']
             if complete:
-                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{rdata.job_id}")
+                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{job_id}")
             else:
-                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{rdata.job_id}", rdata)
+                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{job_id}", rdata)
             
 
 
-    def _do_work(self, json_payload: str):
+    def _execute(self):
         """
         Execute a work unit by trying to find a route that maps
         to the path defined in the payload. If a route is defined,
         data is sent to the route provider, along with a callback for 
         reporting status
         """
+        doer=self
+        async def implementation(json_payload: str):
+            try:
+                #parsed_payload = json.loads(json_payload)
 
-        #Parse the json_payload
-        try:
-            parsed_payload = json.loads(json_payload)
+                #TODO: We need to resolve file params in the payload.data field
+                payload = WorkerRequest(**json_payload)
 
-            #TODO: We need to resolve file params in the payload.data field
-            payload = WorkerRequest(**parsed_payload)
+                log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
 
-            log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
+                #TODO: These should be defined elsewhere.
 
-            #TODO: These should be defined elsewhere.
+            except Exception as e:
+                msg=f'Error parsing payload - {json_payload} - {str(e)}'
+                doer.nats.post("result", {'status': msg })
+                #Cannot report to endpoint as message could not be parsed
+                log.error(f"Validation error: {msg}")
+                return 
 
-        except Exception as e:
-            msg=f'Error parsing payload - {json_payload} - {str(e)}'
-            self.nats.post("result", {'status': msg })
-            #Cannot report to endpoint as message could not be parsed
-            log.error(f"Validation error: {msg}")
-            return 
-            
+            #Run the worker
+            try:
+                doer._result({'status': 'started'})
 
+                worker = doer.workers[payload.path] 
+                inputs = worker.inputModel(**payload.data)
+                worker.provider(inputs, doer._result)
 
-        #Run the worker
-        try:
-            self._result({'status': 'started'})
+                doer._result({'status': 'complete'}, complete=True)
 
-            worker = self.workers[payload.path] 
-            inputs = worker.inputModel(**payload.data)
-            worker.provider(inputs, self._result)
+            except Exception as e:
+                log.error(f"Executor error - {log_str} - {e}")
+                doer._result({
+                    'status': 'error',
+                    'message': str(e)
+                })
+                
 
-            self._result({'status': 'complete'}, complete=True)
-
-        except Exception as e:
-            log.error(f"Executor error - {log_str} - {e}")
-            self._result({
-                'status': 'error',
-                'message': str(e)
-            })
-            
-
-
+        return implementation
 
