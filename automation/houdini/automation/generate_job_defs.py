@@ -3,9 +3,12 @@ import logging
 import mythica.network as mnet
 import requests
 
-from ripple.model import ParameterSetResolved, ParameterSpecModel, FileParameterSpec
+from ripple.model import ParameterSet, ParameterSpec, FileParameterSpec
 from ripple.runtime import compile_interface
 from typing import Optional
+
+#TODO: Configure elsewhere
+ENDPOINT = "https://api.mythica.ai/v1"
 
 
 logging.basicConfig(
@@ -28,7 +31,7 @@ def extract_node_type_info(hda_path: str) -> list[dict]:
     return result
 
 
-def set_config_params(param_spec: ParameterSpecModel, hda_file_id: str, index: int):
+def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
     param_spec.params['hda_file'] = FileParameterSpec(
         label='HDA File', 
         constant=True, 
@@ -41,10 +44,7 @@ def set_config_params(param_spec: ParameterSpecModel, hda_file_id: str, index: i
     )
 
 
-def publish_job_def(name: str, description: str, param_spec: ParameterSpecModel) -> Optional[str]:
-    #TODO: Configure elsewhere
-    endpoint = "https://api.mythica.ai/v1"
-
+def publish_job_def(name: str, description: str, param_spec: ParameterSpec) -> Optional[str]:
     definition = {
         'job_type': 'houdini_generate_mesh',
         'name': f"Generate {name}",
@@ -54,7 +54,7 @@ def publish_job_def(name: str, description: str, param_spec: ParameterSpecModel)
         'input_files': 0  #TODO: Remove from request/db schema
     }
     response = requests.post(
-        f"{endpoint}/jobs/definitions",
+        f"{ENDPOINT}/jobs/definitions",
         json=definition, timeout=10)
 
     if response.status_code != 201:
@@ -68,7 +68,7 @@ def publish_job_def(name: str, description: str, param_spec: ParameterSpecModel)
     return job_def_id
 
 
-def generate_job_defs(request: ParameterSetResolved, result_callback):
+def generate_job_defs(request: ParameterSet, result_callback):
     hda_file_id = request.params['hda_file'].file_id
     hda_path = request.params['hda_file'].file_path
 
