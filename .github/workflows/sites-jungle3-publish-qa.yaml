@@ -46,9 +46,17 @@ jobs:
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v1
+        with:
+          registry: us-central1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          push: true
           context: sites/jungle3
           tags: '${{ env.AR_URL }}/mythica-sites-jungle3-dist:latest'
         
