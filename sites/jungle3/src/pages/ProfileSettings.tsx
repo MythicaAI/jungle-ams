@@ -238,7 +238,9 @@ const ProfileSettings = () => {
       <Helmet>
         <title>Mythica • My Profile</title>
       </Helmet>
-      {isCreate ? profileCreate : profile ? profileEdit : profileLoading}
+      <Box p="4px 16px">
+        {isCreate ? profileCreate : profile ? profileEdit : profileLoading}
+      </Box>
     </div>
   );
 };

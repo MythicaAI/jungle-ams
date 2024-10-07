@@ -132,7 +132,7 @@ const OrgsList: React.FC = () => {
           <Input name="description" onChange={handleInputChange}></Input>
         </FormControl>
 
-        <Button onClick={createOrg} disabled={creating}>
+        <Button onClick={createOrg} disabled={creating} sx={{ mt: "20px" }}>
           {creating ? "Creating..." : "Create"}
         </Button>
       </Form>

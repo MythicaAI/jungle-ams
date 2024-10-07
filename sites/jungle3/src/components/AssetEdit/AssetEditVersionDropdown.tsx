@@ -109,6 +109,21 @@ export const AssetEditVersionDropdown = () => {
   const open = Boolean(anchorEl);
   const id = open ? "simple-popper" : undefined;
 
+  React.useEffect(() => {
+    if (isVersionZero(sanitizedVersion)) {
+      const defaultVersion = "1.0.0";
+      const newSanitizedVersion = sanitizeVersion(
+        convertUserVersion(defaultVersion),
+      );
+
+      setUserVersion(defaultVersion);
+      setSanitizedVersion(newSanitizedVersion);
+      updateVersion({
+        version: newSanitizedVersion,
+      });
+    }
+  }, [sanitizedVersion]);
+
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
