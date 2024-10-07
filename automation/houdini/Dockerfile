@@ -48,7 +48,7 @@ COPY /automation/houdini /app
 # Install darol plugin 
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages
 RUN cp /app/darol-plugin/darol.json /root/houdini20.5/packages/darol.json
-RUN sed -i 's|"/path/to/darol/repoclone/houdini-package"|"/darol-plugin"|g' /root/houdini20.5/packages/darol.json
+RUN sed -i 's|"/path/to/darol/repoclone/houdini-package"|"/app/darol-plugin"|g' /root/houdini20.5/packages/darol.json
 RUN sed -i 's|"/path/to/python/Lib/site-packages"|"/darol/site-packages"|g' /root/houdini20.5/packages/darol.json
 
 
