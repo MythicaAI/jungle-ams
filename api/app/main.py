@@ -55,7 +55,10 @@ app = FastAPI(
     root_path='/v1',
     lifespan=server_lifespan)
 
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(
+    app,
+    include_in_schema=False,
+    tags=["internal", "metrics"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -92,8 +95,8 @@ register_exceptions(app)
 register_streaming_sources()
 
 
-@app.get("/")
-def root():
+@app.get("/", include_in_schema=False, tags=["internal", "health"])
+def health():
     """Health check"""
     return "Alive and well"
 

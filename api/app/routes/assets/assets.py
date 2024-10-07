@@ -17,8 +17,8 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/assets", tags=["assets"])
 
 
-@router.get('/log')
-async def log_request(r: Request):
+@router.get('/log', include_in_schema=False)
+async def log_request_headers(r: Request):
     header_str = str(r.headers)
     print(f"{header_str}")
     return "LOGGED"
