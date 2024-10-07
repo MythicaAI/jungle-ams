@@ -21,6 +21,7 @@ jobs:
 
     env:
       NODE_ENV: "production"
+      PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
       AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
