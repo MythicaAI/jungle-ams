@@ -1,4 +1,4 @@
-ARG HOUDINI_VERSION=20.5.332
+ARG HOUDINI_VERSION=20.5.370
 
 # Gather python dependencies - do the worker deps here too.
 FROM python:3.11-slim AS python-dependency-downloader
@@ -32,7 +32,7 @@ RUN mkdir -p /root/houdini20.5/packages/
 
 RUN mkdir /app
 # Install Labs Plugins
-ARG SIDE_FX_LABS_VERSION=20.5.332
+ARG SIDE_FX_LABS_VERSION=20.5.370
 
 RUN mkdir /app/sideFXLabs/
 RUN wget https://github.com/sideeffects/SideFXLabs/archive/refs/tags/${SIDE_FX_LABS_VERSION}.tar.gz -O /tmp/sideFXLabs.tar.gz

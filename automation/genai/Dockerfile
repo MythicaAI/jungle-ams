@@ -1,6 +1,3 @@
-# Stage 1: worker file container
-FROM mythica-auto-worker:latest as worker
-
 # Use the specified CUDA base image
 FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
 LABEL maintainer="pedro@mythica.ai"

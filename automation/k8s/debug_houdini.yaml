@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: houdini
+  namespace: automation
+spec:
+    serviceAccountName: automation
+    containers:
+      - name: houdini
+        image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-houdini:latest
+        imagePullPolicy: Always
+        command: ["sleep","infinity"]
+        stdin: true
+        tty: true
+    restartPolicy: Always
