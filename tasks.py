@@ -39,7 +39,6 @@ SFX_CLIENT_SECRET = os.environ.get('SFX_CLIENT_SECRET')
 #
 HF_AUTHTOKEN = os.environ.get('HF_AUTHTOKEN')
 
-
 #
 # Integration testing directories
 #
@@ -50,6 +49,7 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
     'api/app': {'name': 'mythica-app', 'working_directory': BASE_DIR},
+    'api/test-client': {'name': 'mythica-test-client', 'working_directory': BASE_DIR},
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
@@ -159,7 +159,7 @@ def build_image(c, image_path):
     with c.cd(working_directory):
         c.run(
             (f'docker buildx build --platform={IMAGE_PLATFORM} {
-                buildarg_str} '
+            buildarg_str} '
              f'-f {dockerfile_path} -t {image_name}:latest .'),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',

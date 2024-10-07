@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "mythica-api-client"
+name = "mythica-api"
 version = "0.1.0"
-description = "A client library for accessing FastAPI"
-authors = []
+description = "A client library for accessing the Mythica API"
+authors = ["Jacob Repp <jacobrepp@gmail.com>"]
 readme = "README.md"
 packages = [
-    {include = "mythica_api_client"},
+    {include = "mythica_api"},
 ]
-include = ["CHANGELOG.md", "mythica_api_client/py.typed"]
+include = ["README.md", "CHANGELOG.md", "mythica_api/py.typed"]
 
 
 [tool.poetry.dependencies]
