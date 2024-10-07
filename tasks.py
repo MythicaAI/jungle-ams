@@ -56,12 +56,13 @@ IMAGES = {
     'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
-    'automation/test': {'name': 'mythica-auto-test'},
+    'automation/test': {'name': 'mythica-auto-test', 'working_directory': BASE_DIR},
     'automation/genai': {
         'name': 'mythica-auto-genai',
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
         },
+        'working_directory': BASE_DIR
     },
     'automation/houdini': {
         'name': 'mythica-auto-houdini',
@@ -69,6 +70,7 @@ IMAGES = {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
+        'working_directory': BASE_DIR
     },
 }
 

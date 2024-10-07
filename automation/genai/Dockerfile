@@ -45,8 +45,11 @@ USER appuser
 ENV PATH="/home/appuser/.local/bin:$PATH"
 
 
+# Copy monorepo dependencies
+COPY /libs/python/cryptid /libs/python/cryptid
+COPY /libs/python/ripple /libs/python/ripple
 
-COPY ./requirements.txt /app/requirements.txt
+COPY /automation/genai/requirements.txt /app/requirements.txt
 
 # Set working directory
 RUN pip install --no-cache-dir -r /app/requirements.txt
@@ -54,7 +57,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 #Set HuggingFace token before initialize and model download
 ENV HF_TOKEN=${HF_AUTHTOKEN}
 
-COPY . /app
+COPY /automation/genai /app
 WORKDIR /app
 
 #This is an expensive project to test, unless you comment this out. 

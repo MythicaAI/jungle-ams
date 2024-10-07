@@ -3,7 +3,11 @@ ARG HOUDINI_VERSION=20.5.332
 # Gather python dependencies - do the worker deps here too.
 FROM python:3.11-slim AS python-dependency-downloader
 
-COPY ./requirements.txt /tmp/requirements.txt
+# Copy monorepo dependencies
+COPY /libs/python/cryptid /libs/python/cryptid
+COPY /libs/python/ripple /libs/python/ripple
+
+COPY /automation/houdini/requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
 
 # Build the primary image
@@ -39,7 +43,7 @@ RUN cp /app/sideFXLabs/SideFXLabs.json /root/houdini20.5/packages/SideFXLabs.jso
 RUN sed -i 's|"$HOUDINI_PACKAGE_PATH/SideFXLabs20.5"|"/app/sideFXLabs"|g' /root/houdini20.5/packages/SideFXLabs.json
 
 # Copy our code over
-COPY . /app
+COPY /automation/houdini /app
 
 # Install darol plugin 
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages

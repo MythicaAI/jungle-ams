@@ -4,8 +4,12 @@ FROM python:3.11-slim AS base
 # Install Poetry
 RUN apt-get update && apt-get install -y curl
 
+# Copy monorepo dependencies
+COPY /libs/python/cryptid /libs/python/cryptid
+COPY /libs/python/ripple /libs/python/ripple
+
 # Copy files
-COPY . /app
+COPY /automation/test /app
 
 # Set working directory
 WORKDIR /app
