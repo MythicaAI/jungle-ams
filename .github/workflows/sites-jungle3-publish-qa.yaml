@@ -50,5 +50,5 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: sites/jungle3
-          tags: mythica-sites-jungle3-dist:latest
+          tags: '${{ env.AR_URL }}/mythica-sites-jungle3-dist:latest'
         
