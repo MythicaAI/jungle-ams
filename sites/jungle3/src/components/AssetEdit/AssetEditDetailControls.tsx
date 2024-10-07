@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, FormControl, FormLabel, Input, Option, Select } from "@mui/joy";
+import { Box, FormControl, FormLabel, Option, Select } from "@mui/joy";
 import { Link } from "react-router-dom";
 import Textarea from "@mui/joy/Textarea";
 import { useGlobalStore } from "@store/globalStore";
@@ -8,7 +8,7 @@ import { AssetEditVersionDropdown } from "./AssetEditVersionDropdown.tsx";
 
 export const AssetEditDetailControls = () => {
   const { orgRoles } = useGlobalStore();
-  const { org_id, name, description, updateVersion } = useAssetVersionStore();
+  const { org_id, description, updateVersion } = useAssetVersionStore();
 
   const onUpdateOrg = (
     _event: React.SyntheticEvent | null,
@@ -24,23 +24,15 @@ export const AssetEditDetailControls = () => {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <FormControl>
-        <FormLabel>Name</FormLabel>
-        <Input
-          name="name"
-          variant="outlined"
-          placeholder="Name..."
-          value={name}
-          onChange={(e) => updateVersion({ name: e.target.value })}
-        />
-      </FormControl>
+        <FormLabel>
+          Org / Namespace
+          {!org_id && orgRoles.length == 0 && (
+            <Box ml="10px">
+              <Link to={"/orgs"}>Create New Organization</Link>
+            </Box>
+          )}
+        </FormLabel>
 
-      <FormControl>
-        <FormLabel>Org / Namespace</FormLabel>
-        {!org_id && orgRoles.length == 0 ? (
-          <Link to={"/orgs"}>Create New Organization</Link>
-        ) : (
-          ""
-        )}
         {orgRoles.length > 0 ? (
           <Select
             variant="soft"
