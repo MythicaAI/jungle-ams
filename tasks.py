@@ -56,7 +56,6 @@ IMAGES = {
     'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
     'sites/jungle3': {'name': 'mythica-jungle3-build'},
     'testing/storage/minio-config': {'name': 'minio-config'},
-    'automation/worker': {'name': 'mythica-auto-worker', 'working_directory': BASE_DIR},
     'automation/test': {'name': 'mythica-auto-test', 'requires': ['automation/worker']},
     'automation/genai': {
         'name': 'mythica-auto-genai',
@@ -90,7 +89,6 @@ IMAGE_SETS = {
         'automation/houdini',
         'automation/genai',
         'automation/test',
-        'automation/worker',
         'api/packager'
     },
 }
