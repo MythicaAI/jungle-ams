@@ -35,7 +35,7 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
     param_spec.params['hda_file'] = FileParameterSpec(
         label='HDA File', 
         constant=True, 
-        file_id=hda_file_id
+        default=hda_file_id
     )
     param_spec.params['hda_definition_index'] = FileParameterSpec(
         label='HDA Definition Index', 
@@ -69,17 +69,16 @@ def publish_job_def(name: str, description: str, param_spec: ParameterSpec) -> O
 
 
 def generate_job_defs(request: ParameterSet, result_callback):
-    hda_file_id = request.params['hda_file'].file_id
-    hda_path = request.params['hda_file'].file_path
+    hda_file = request.params['hda_file']
 
-    type_infos = extract_node_type_info(hda_path)
+    type_infos = extract_node_type_info(hda_file.file_path)
 
     for index, type_info in enumerate(type_infos):
         name = type_info['name']
         description = type_info['description']
         param_spec = compile_interface(type_info)
 
-        set_config_params(param_spec, hda_file_id, index)
+        set_config_params(param_spec, hda_file.file_id, index)
         job_def_id = publish_job_def(name, description, param_spec)
 
         if job_def_id is not None:
