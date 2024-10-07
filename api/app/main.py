@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 from prometheus_fastapi_instrumentator import Instrumentator
 
 import log_config
@@ -38,15 +39,26 @@ async def server_lifespan(_: FastAPI):
         }
 
 
+def custom_generate_unique_id(route: APIRoute):
+    """Generate a simplified operation ID for client generation"""
+    return f"{route.tags[0]}-{route.name}"
+
+
+app = FastAPI()
+
 app = FastAPI(
     openapi_version='3.1.0',
+    generate_unique_id_function=custom_generate_unique_id,
     servers=[
         {'url': 'https://api.mythica.ai/', 'description': 'Production environment'},
         {'url': 'http://localhost:8080', 'description': 'Local environment'}],
     root_path='/v1',
     lifespan=server_lifespan)
 
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(
+    app,
+    include_in_schema=False,
+    tags=["internal", "metrics"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -83,8 +95,8 @@ register_exceptions(app)
 register_streaming_sources()
 
 
-@app.get("/")
-def root():
+@app.get("/", include_in_schema=False, tags=["internal", "health"])
+def health():
     """Health check"""
     return "Alive and well"
 
