@@ -1,4 +1,7 @@
-from  automation.helloworld import hello_world_api, HelloWorldRequest
+from automation.helloworld import hello_world_api, HelloWorldRequest
+from ripple.automation import Worker
+
+worker = Worker()
 
 workers = [
     {
@@ -7,3 +10,11 @@ workers = [
         "inputModel": HelloWorldRequest
     },
 ]
+
+
+
+def main():
+    worker.start('houdini',workers)        
+
+if __name__ == "__main__":
+    main()
