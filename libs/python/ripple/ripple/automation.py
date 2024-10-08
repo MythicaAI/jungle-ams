@@ -227,7 +227,6 @@ class Worker:
             try:
                 #parsed_payload = json.loads(json_payload)
 
-                #TODO: We need to resolve file params in the payload.data field
                 payload = WorkerRequest(**json_payload)
 
                 log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
