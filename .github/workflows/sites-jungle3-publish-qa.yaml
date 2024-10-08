@@ -21,6 +21,7 @@ jobs:
 
     env:
       NODE_ENV: "production"
+      PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
       AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
@@ -41,17 +42,18 @@ jobs:
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
-      - name: Docker Login
-        uses: docker/login-action@v3
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v1
         with:
-          username: 'oauth2accesstoken'
-          password: '${{ steps.auth.outputs.access_token }}'
-          registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+          registry: us-central1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          push: true
           context: sites/jungle3
-          tags: mythica-sites-jungle3-dist:latest
-
+          tags: '${{ env.AR_URL }}/mythica-sites-jungle3-dist:latest
+'
         

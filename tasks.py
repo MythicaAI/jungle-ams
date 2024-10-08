@@ -175,7 +175,7 @@ def build_image(c, image_path):
         c.run(
             (f"docker buildx build --platform={IMAGE_PLATFORM}"
              f" {buildarg_str} -f {dockerfile_path}"
-             "  -t {image_name}:latest ."),
+             f"  -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
@@ -238,8 +238,8 @@ def copy_dist_files(c, image_path):
     try:
         # Step 2: Copy files from the temporary
         # container to the local filesystem
-        print(f"Copying '{source_path}' from container to '{
-              destination_path}'...")
+        print((f"Copying '{source_path}' from container"
+               f" to '{destination_path}'..."))
         c.run(f"docker cp {container_id}:{source_path} {destination_path}")
         print("Files copied successfully.")
     finally:
