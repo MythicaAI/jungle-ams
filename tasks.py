@@ -64,8 +64,14 @@ IMAGES = {
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
-    'api/packager': {'name': 'mythica-packager', 'requires': ['api/app']},
-    'api/houdini-worker': {'name': 'mythica-houdini-worker', 'requires': ['api/app', 'api/houdini']},
+    'api/packager': {
+        'name': 'mythica-packager',
+        'requires': ['api/app']
+    },
+    'api/houdini-worker': {
+        'name': 'mythica-houdini-worker',
+        'requires': ['api/app', 'api/houdini']
+    },
     'sites/jungle3': {
         'name': 'mythica-jungle3-build',
         'buildargs': {
@@ -153,12 +159,14 @@ def build_image(c, image_path):
     buildarg_str = ''
     buildargs = IMAGES[image_path].get('buildargs')
     if buildargs is not None:
-        buildarg_str = ' '.join([f'--build-arg {key}={value}' for key, value in buildargs.items()])
+        buildarg_str = ' '.join(
+            [f'--build-arg {key}={value}' for key, value in buildargs.items()])
 
     commit_hash = get_commit_hash()
     with c.cd(os.path.join(BASE_DIR, image_path)):
         c.run(
-            f'docker build --platform={IMAGE_PLATFORM} {buildarg_str} -t {image_name}:latest .',
+            (f"docker buildx build --platform={IMAGE_PLATFORM}"
+             f" {buildarg_str} -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
@@ -176,11 +184,14 @@ def deploy_image(c, image_path, target):
         raise ValueError(f"unknown deployment target {target}")
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:{commit_hash}",
+        c.run((f"docker tag {image_name}:{commit_hash}"
+               f" {repo}/{image_name}:{commit_hash}"),
               pty=PTY_SUPPORTED)
-        c.run(f"docker tag {image_name}:{commit_hash} {repo}/{image_name}:latest",
+        c.run((f"docker tag {image_name}:{commit_hash}"
+               f" {repo}/{image_name}:latest"),
               pty=PTY_SUPPORTED)
-        c.run(f"docker push {repo}/{image_name} --all-tags", pty=PTY_SUPPORTED)
+        c.run((f"docker push {repo}/{image_name}"
+               " --all-tags"), pty=PTY_SUPPORTED)
 
 
 def run_image(c, image_path, background=False):
@@ -202,9 +213,11 @@ def run_image(c, image_path, background=False):
 
 
 def copy_dist_files(c, image_path):
-    """Given a dist files image (image that built some distribution into /dist)
-    copy the files to a local directory from the container to make them available
-    for serving or moving to the next distribution point"""
+    """
+    Given a dist files image (image that built some distribution into /dist)
+    copy the files to a local directory from the container to make
+    them available for serving or moving to the next distribution point
+    """
     image_name = IMAGES[image_path]['name']
     commit_hash = get_commit_hash()
     source_path = '/dist'
@@ -214,8 +227,10 @@ def copy_dist_files(c, image_path):
     container_id = result.stdout.strip()
     destination_path = os.path.join(BASE_DIR, image_path, 'dist-build')
     try:
-        # Step 2: Copy files from the temporary container to the local filesystem
-        print(f"Copying '{source_path}' from container to '{destination_path}'...")
+        # Step 2: Copy files from the temporary
+        # container to the local filesystem
+        print(f"Copying '{source_path}' from container to '{
+              destination_path}'...")
         c.run(f"docker cp {container_id}:{source_path} {destination_path}")
         print("Files copied successfully.")
     finally:
@@ -277,7 +292,10 @@ def auto_stop(c):
 
 
 def image_path_action(c, image, action, **kwargs):
-    """Execute some docker image action against an image path or set of image paths"""
+    """
+    Execute some docker image action against an image path
+    or set of image paths
+    """
     if image in IMAGE_SETS:
         for image_path in IMAGE_SETS[image]:
             action(c, image_path, **kwargs)
