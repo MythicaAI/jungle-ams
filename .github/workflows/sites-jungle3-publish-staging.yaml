@@ -20,6 +20,7 @@ jobs:
       id-token: write
 
     env:
+      IMAGE_NAME: "mythica-sites-jungle3-build"
       NODE_ENV: "production"
       PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
@@ -54,6 +55,6 @@ jobs:
         with:
           push: true
           context: sites/jungle3
-          tags: '${{ env.AR_URL }}/mythica-sites-jungle3-dist:latest
+          tags: '${{ env.AR_URL }}/${{IMAGE_NAME}}:latest
 '
         

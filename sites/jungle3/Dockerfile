@@ -30,5 +30,3 @@ RUN pnpm run build -m "${NODE_ENV}"
 FROM alpine:latest
 WORKDIR /dist
 COPY --from=build /app/dist .
-
-
