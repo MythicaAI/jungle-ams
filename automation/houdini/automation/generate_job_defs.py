@@ -1,10 +1,11 @@
 import hou
+import json
 import logging
 import mythica.network as mnet
 import requests
 
-from ripple.model import ParameterSet, ParameterSpec, FileParameterSpec
-from ripple.runtime import compile_interface
+from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec
+from ripple.compile.rpsc import compile_interface
 from typing import Optional
 
 #TODO: Configure elsewhere
@@ -37,7 +38,7 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
         constant=True, 
         default=hda_file_id
     )
-    param_spec.params['hda_definition_index'] = FileParameterSpec(
+    param_spec.params['hda_definition_index'] = IntParameterSpec(
         label='HDA Definition Index', 
         constant=True, 
         default=index
@@ -49,17 +50,17 @@ def publish_job_def(name: str, description: str, param_spec: ParameterSpec) -> O
         'job_type': 'houdini_generate_mesh',
         'name': f"Generate {name}",
         'description': description,
-        'params_schema': param_spec.json(),
         'config': {},     #TODO: Remove from request/db schema
-        'input_files': 0  #TODO: Remove from request/db schema
+        'input_files': 0, #TODO: Remove from request/db schema
+        'params_schema': param_spec.dict()
     }
     response = requests.post(
         f"{ENDPOINT}/jobs/definitions",
         json=definition, timeout=10)
 
     if response.status_code != 201:
-        log.warning("Failed to create job definition for %s. Status code: %s",
-                    name, response.status_code)
+        log.warning("Failed to create job definition for %s. Status code: %s Error: %s",
+                    name, response.status_code, response.text)
         return False
     
     result = response.json()
@@ -76,7 +77,7 @@ def generate_job_defs(request: ParameterSet, result_callback):
     for index, type_info in enumerate(type_infos):
         name = type_info['name']
         description = type_info['description']
-        param_spec = compile_interface(type_info)
+        param_spec = compile_interface(json.dumps(type_info, indent=2))
 
         set_config_params(param_spec, hda_file.file_id, index)
         job_def_id = publish_job_def(name, description, param_spec)
