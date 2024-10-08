@@ -1,10 +1,10 @@
-name: sites/jungle3 Publish QA
+name: sites-jungle3-publish-staging
 
 on:
   push:
     paths:
       - 'sites/jungle3/**'
-      - '.github/workflows/sites-jungle3-publish-qa.yaml'
+      - '.github/workflows/sites-jungle3-publish-staging.yaml'
 
 defaults:
   run:
