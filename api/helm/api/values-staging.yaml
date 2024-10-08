@@ -13,11 +13,14 @@ domains:
   - api-staging.mythica.ai
   - images-staging.mythica.ai
   - dex-staging.mythica.ai
+serviceAccount:
+  secretName: front-end-api-staging-sa
 api:
   app:
     replicas: 2
     maxUnavailable: 1
     maxSurge: 4
+    base_url: "https://api-staging.mythica.ai/v1"
   gcsProxy:
     replicas: 2
     maxUnavailable: 1
