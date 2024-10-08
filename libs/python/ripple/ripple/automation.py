@@ -4,8 +4,11 @@ import aiohttp
 import logging
 import asyncio
 import nats
+import tempfile
 from pydantic import BaseModel
 from typing import Callable, Type, Optional, Dict
+from ripple.models.params import ParameterSet
+from ripple.runtime.params import resolve_params
 
 # Set up logging
 logging.basicConfig(
@@ -222,10 +225,9 @@ class Worker:
         doer=self
         async def implementation(json_payload: str):
             try:
-                #parsed_payload = json.loads(json_payload)
+                parsed_payload = json.loads(json_payload)
 
-                #TODO: We need to resolve file params in the payload.data field
-                payload = WorkerRequest(**json_payload)
+                payload = WorkerRequest(**parsed_payload)
 
                 log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
 
@@ -242,9 +244,12 @@ class Worker:
             try:
                 doer._result({'status': 'started'})
 
-                worker = doer.workers[payload.path] 
-                inputs = worker.inputModel(**payload.data)
-                worker.provider(inputs, doer._result)
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    worker = doer.workers[payload.path] 
+                    inputs = worker.inputModel(**payload.data)
+                    if isinstance(inputs, ParameterSet):
+                        resolve_params(API_URL, tmpdir, inputs)
+                    worker.provider(inputs, doer._result)
 
                 doer._result({'status': 'complete'}, complete=True)
 
