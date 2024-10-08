@@ -2,8 +2,13 @@
 
 VERSION=v3.5.10
 PROJECT_ID=controlnet-407314
-SERVER_SERVICE_ACCOUNT=argo-server-sa@controlnet-407314.iam.gserviceaccount.com
-SERVICE_ACCOUNT=argo-sa@controlnet-407314.iam.gserviceaccount.com
+SERVER_SERVICE_ACCOUNT=argo-server
+SERVICE_ACCOUNT=argo
+IAM_SUFFIX=sa
+SERVICE_AT=controlnet-407314.iam.gserviceaccount.com
+SERVER_SERVICE_ACCOUNT_FQ=${SERVER_SERVICE_ACCOUNT}-${IAM_SUFFIX}@${SERVICE_AT}
+SERVICE_ACCOUNT_FQ=${SERVICE_ACCOUNT}-${IAM_SUFFIX}@${SERVICE_AT}
+NAMESPACE=argo
 
 set -x
 set -eof pipefail
@@ -25,49 +30,23 @@ create_namespace() {
   fi
 }
 
-# installed on mac with brew install argo
-#curl -sLO https://github.com/argoproj/argo-workflows/releases/download/$VERSION/argo-darwin-amd64.gz
-#gunzip argo-darwin-amd64.gz
-#chmod +x argo-darwin-amd64
-#mv argo-darwin-amd64
-#
-# from https://github.com/DevSecOpsSamples/gke-workload-identity?tab=readme-ov-file#step3-iam-service-account-for-bucket-api
-#
-# https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity
-# https://cloud.google.com/sdk/gcloud/reference/iam/service-accounts/add-iam-policy-binding
+create_namespace ${NAMESPACE}
 
-# kubectl create namespace argo
-create_namespace argo
+gcloud iam service-accounts create ${SERVER_SERVICE_ACCOUNT}-${IAM_SUFFIX}
+gcloud iam service-accounts create ${SERVICE_ACCOUNT}-${IAM_SUFFIX}
 
-# install the argo resources
-read -p "Install argo resources [y/N]? " choice
-case "$choice" in
-  y|Y)
-    git clone git@github.com:argoproj/argo-workflows.git
-    cd argo-workflows
-    kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/$VERSION/install.yaml
-    ;;
-  n|N)
-    ;;
-  *)
-    ;;
-esac
-
-# argo has a default service account of argo-server
-# setup the IAM service account resource on the GCP side
-
-#gcloud iam service-accounts create ${SERVICE_ACCOUNT} --display-name="bucket-api-ns service account"
-#gcloud iam service-accounts list | grep bucket-api-sa
+kubectl -n ${NAMESPACE} create serviceaccount ${SERVER_SERVICE_ACCOUNT}
+kubectl -n ${NAMESPACE} create serviceaccount ${SERVICE_ACCOUNT}
 
 # allow workload impersonation
 gcloud iam service-accounts add-iam-policy-binding \
        --role roles/iam.workloadIdentityUser \
        --member "serviceAccount:${PROJECT_ID}.svc.id.goog[argo/argo-server]" \
-       ${SERVER_SERVICE_ACCOUNT}
+       ${SERVER_SERVICE_ACCOUNT}-${IAM_SUFFIX}@${SERVICE_AT}
 gcloud iam service-accounts add-iam-policy-binding \
        --role roles/iam.workloadIdentityUser \
        --member "serviceAccount:${PROJECT_ID}.svc.id.goog[argo/argo]" \
-       ${SERVICE_ACCOUNT}
+       ${SERVICE_ACCOUNT}-${IAM_SUFFIX}@${SERVICE_AT}
 
 # Add the workload annotations
 kubectl annotate serviceaccount --namespace argo argo-server \
@@ -75,11 +54,3 @@ kubectl annotate serviceaccount --namespace argo argo-server \
 kubectl annotate serviceaccount --namespace argo argo \
         iam.gke.io/gcp-service-account=${SERVICE_ACCOUNT}
 
-
-#
-# Add role bindings to other cloud resources
-#
-#gcloud storage buckets create gs://${GCS_BUCKET_NAME}
-
-#gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com:objectAdmin \
-       #gs://${GCS_BUCKET_NAME}/

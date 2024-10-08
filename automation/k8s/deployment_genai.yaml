@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: genai
+  namespace: automation
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: "genai"
+  template:
+    metadata:
+      labels:
+        app: genai
+        tier: automation
+        version: "1.0"
+        release: production
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-l4
+        cloud.google.com/gke-accelerator-count: "1"
+      serviceAccountName: automation
+      containers:
+        - name: genai
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-genai:latest
+          imagePullPolicy: Always
+          command: [/usr/bin/python3.11, worker.py]
+          stdin: true
+          tty: true
+          resources:
+            limits:
+              ephemeral-storage: 10Gi
+              nvidia.com/gpu: "1"
+            requests:
+              ephemeral-storage: 10Gi
+              nvidia.com/gpu: "1"
+      restartPolicy: Always
