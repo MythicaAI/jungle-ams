@@ -13,8 +13,11 @@ device = "cuda"
 
 #This is the default model, you can use other fine tuned models as well
 sd2_pipe = StableDiffusionDiffImg2ImgPipeline.from_pretrained("stabilityai/stable-diffusion-2-1-base",
-                                                          torch_dtype=torch.float16).to(device)
+                                                          torch_dtype=torch.float16)
+sd2_pipe.enable_model_cpu_offload()
 
+#if torch.cuda.is_available():
+#    sd2_pipe = sd2_pipe.to(device)
 
 def preprocess_image(image):
     image = image.convert("RGB")
