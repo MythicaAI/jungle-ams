@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  Box,
   Button,
   Card,
   Divider,
@@ -12,6 +11,7 @@ import {
   ListItem,
   ListItemDecorator,
   Sheet,
+  Stack,
   Typography,
 } from "@mui/joy";
 import { Form } from "react-router-dom";
@@ -59,6 +59,21 @@ export const RolesList = ({ orgRoles }: { orgRoles: ResolvedOrgRef[] }) => {
   );
 };
 
+const Title = () => {
+  return (
+    <Card sx={{ margin: "0 16px" }}>
+      <Stack>
+        <Typography textAlign="start" level="h4">
+          Manage organizations
+        </Typography>
+        <Typography textAlign="left">
+          Access your memberships and create new organizations
+        </Typography>
+      </Stack>
+    </Card>
+  );
+};
+
 const OrgsList: React.FC = () => {
   const [org, setOrg] = useState<OrgResponse>(defaultOrg());
   const [creating, setCreating] = useState<boolean>(false);
@@ -90,11 +105,9 @@ const OrgsList: React.FC = () => {
     <Sheet
       variant="outlined"
       sx={{
-        maxWidth: 1000,
-        mx: "auto", // margin left & right
-        my: 4, // margin top & bottom
-        py: 3, // padding top & bottom
-        px: 2, // padding left & right
+        mx: "auto",
+        py: 3,
+        px: 2,
         display: "flex",
         flexDirection: "column",
         gap: 2,
@@ -104,6 +117,10 @@ const OrgsList: React.FC = () => {
     >
       <Typography level="h4" component="h1">
         <b>Create Organization</b>
+      </Typography>
+      <Typography>
+        You are currently not part of any organizations. Would you like to
+        create a new organization?
       </Typography>
       <Form>
         <FormControl>
@@ -115,51 +132,47 @@ const OrgsList: React.FC = () => {
           <Input name="description" onChange={handleInputChange}></Input>
         </FormControl>
 
-        <Button onClick={createOrg} disabled={creating}>
+        <Button onClick={createOrg} disabled={creating} sx={{ mt: "20px" }}>
           {creating ? "Creating..." : "Create"}
         </Button>
       </Form>
     </Sheet>
   );
 
-  if (!orgRoles) {
-    return <Box className="full-size-box">loading...</Box>;
-  } else if (orgRoles.length === 0) {
-    return (
-      <Box className="full-size-box" id="create-form">
-        You are currently not part of any organizations. Would you like to
-        create a new organization? {createForm}
-      </Box>
-    );
-  }
   return (
-    <Sheet
-      variant="outlined"
-      sx={{
-        maxWidth: 1000,
-        mx: "auto", // margin left & right
-        my: 4, // margin top & bottom
-        py: 3, // padding top & bottom
-        px: 2, // padding left & right
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        borderRadius: "sm",
-        boxShadow: "md",
-      }}
-    >
-      <Helmet>
-        <title>Mythica • Organizations</title>
-      </Helmet>
-      <Typography level="h4" component="h1">
-        <b>Memberships</b>
-      </Typography>
-      <Card>
-        <RolesList orgRoles={orgRoles} />
-      </Card>
-      <Divider />
-      {createForm}
-    </Sheet>
+    <>
+      <Title />
+      <Sheet
+        variant="outlined"
+        sx={{
+          mx: "16px",
+          my: 2,
+          py: 3,
+          px: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          borderRadius: "sm",
+          boxShadow: "md",
+        }}
+      >
+        <Helmet>
+          <title>Mythica • Organizations</title>
+        </Helmet>
+        {orgRoles && orgRoles.length > 0 && (
+          <>
+            <Typography level="h4" component="h1">
+              <b>Memberships</b>
+            </Typography>
+            <Card>
+              <RolesList orgRoles={orgRoles} />
+            </Card>
+            <Divider />
+          </>
+        )}
+        {createForm}
+      </Sheet>
+    </>
   );
 };
 

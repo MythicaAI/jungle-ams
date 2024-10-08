@@ -1,19 +1,19 @@
 import React from "react";
 import {
-  Box,
   Card,
   CardContent,
   CardCover,
   Chip,
-  IconButton,
+  Stack,
   Typography,
 } from "@mui/joy";
 import { getThumbnailImg } from "@lib/packagedAssets";
 import { DownloadButton } from "@components/common/DownloadButton";
-import { LucideInfo, LucidePackage } from "lucide-react";
+import { LucidePackage } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AssetTopResponse } from "types/apiTypes";
 import { SxProps } from "@mui/joy/styles/types/theme";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Props = {
   av: AssetTopResponse;
@@ -21,14 +21,25 @@ type Props = {
   isTopAsset?: boolean;
 };
 
-export const PackageViewCard: React.FC<Props> = ({
-  av,
-  isTopAsset,
-  sxStyles,
-}) => {
+export const PackageViewCard: React.FC<Props> = ({ av, sxStyles }) => {
   const navigate = useNavigate();
+  const [showVersion, setShowVersion] = React.useState(false);
   return av ? (
-    <Card sx={{ height: "100%" }}>
+    <Card
+      sx={{
+        padding: 0,
+        height: "210px",
+        cursor: "pointer",
+        overflow: "hidden",
+      }}
+      onMouseEnter={() => setShowVersion(true)}
+      onMouseLeave={() => setShowVersion(false)}
+      onClick={() => {
+        navigate(
+          `/package-view/${av.asset_id}/versions/${av.version.join(".")}`,
+        );
+      }}
+    >
       <CardCover>
         <img
           height="200"
@@ -37,53 +48,83 @@ export const PackageViewCard: React.FC<Props> = ({
           alt={av.name}
         />
       </CardCover>
-      <CardContent sx={sxStyles ?? { justifyContent: "flex-end" }}>
-        <Typography
-          component="span"
-          level="body-lg"
-          fontWeight="lg"
-          mt={isTopAsset ? 0 : { xs: 12, sm: 18 }}
-          sx={{
-            backgroundColor: "rgba(0, 0, 0, 0.6)", // semi-translucent dark background
-            color: "white", // white text color for better contrast
-            padding: "8px", // some padding to make it look nicer
-            borderRadius: "4px", // optional: rounded corners
-            width: "100%",
+      <CardContent
+        sx={{
+          ...(sxStyles ?? { justifyContent: "flex-end" }),
+        }}
+      >
+        <motion.div
+          initial={{ height: "61px" }}
+          animate={{ height: showVersion ? "78px" : "61px" }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            overflow: "hidden",
           }}
         >
-          {av.org_name}::{av.name}
-          <Box
+          <Typography
+            component="span"
+            level="body-lg"
+            fontWeight="lg"
+            textAlign="start"
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginTop: "8px",
+              color: "white", // white text color for better contrast
+              padding: "8px", // some padding to make it look nicer
+              width: "100%",
+
+              height: showVersion ? "78px" : "61px",
+              transition: "max-height 0.3 ease",
+              ...(!av.org_name &&
+                !showVersion && { display: "flex", alignItems: "center" }),
             }}
           >
-            <DownloadButton file_id={av.package_id} icon={<LucidePackage />} />
-            <IconButton
-              sx={{ color: "white" }}
-              onClick={() => {
-                navigate(
-                  `/package-view/${av.asset_id}/versions/${av.version.join(".")}`,
-                );
-              }}
-            >
-              <LucideInfo />
-            </IconButton>
-            <Chip
-              key={av.version.join(".")}
-              variant="soft"
-              color={"neutral"}
-              size="lg"
-              component={Link}
-              to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-              sx={{ borderRadius: "xl" }}
-            >
-              {av.version.join(".")}
-            </Chip>
-          </Box>
-        </Typography>
+            {av.name}
+
+            {(av.org_name || showVersion) && (
+              <Stack direction="row" justifyContent="space-between">
+                <Typography
+                  fontSize={12}
+                  sx={{ display: "block", color: "#b1b1b1" }}
+                >
+                  {av.org_name}
+                </Typography>
+
+                <AnimatePresence>
+                  {showVersion && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <Stack
+                        direction="row"
+                        gap="4px"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DownloadButton
+                          file_id={av.package_id}
+                          icon={<LucidePackage />}
+                        />
+                        <Chip
+                          key={av.version.join(".")}
+                          variant="soft"
+                          color={"neutral"}
+                          size="lg"
+                          component={Link}
+                          to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+                          sx={{ borderRadius: "xl" }}
+                        >
+                          {av.version.join(".")}
+                        </Chip>
+                      </Stack>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Stack>
+            )}
+          </Typography>
+        </motion.div>
       </CardContent>
     </Card>
   ) : (

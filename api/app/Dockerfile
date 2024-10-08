@@ -1,5 +1,5 @@
 # Basic python runtime. Worth updating at some point
-FROM python:3.12-alpine
+FROM python:3.12-alpine AS poetry-base
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL name="mythica-app"
 LABEL description="API service for mythica asset version managment"
@@ -9,22 +9,31 @@ LABEL tier="web"
 # Create the uploads folder
 USER 0
 RUN mkdir -p /uploads
+RUN mkdir -p /api/app
 
-WORKDIR /app
-
-# Run all dependent installs before application code layer
-RUN pip install --upgrade pip poetry
+WORKDIR /api/app
 
 # Creates a non-root user and adds permission to access the /app folder
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && \
-    chown -R appuser /app && \
+    chown -R appuser /api/app && \
     chown -R appuser /uploads
+
+
+# Run all dependent installs as root before application 
+# code layer, if not done as root the poetry scripts are not 
+# installed into /usr/local/bin
+RUN pip install --upgrade pip
+RUN pip install poetry
 
 USER appuser
 
+FROM poetry-base
+
 # Put all application data into the container /app directory, do this as late
 # as possible to aid in the docker layer cache coherency
-COPY . /app
+COPY /api/app /api/app
+COPY /libs/python/cryptid /libs/python/cryptid
+COPY /libs/python/ripple /libs/python/ripple
 
 # Run poetry as the app user to activate the virtual environment
 RUN poetry check && \

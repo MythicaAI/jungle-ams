@@ -1,13 +1,4 @@
-import {
-  Box,
-  CircularProgress,
-  Grid,
-  Input,
-  Option,
-  Select,
-  Stack,
-  Typography,
-} from "@mui/joy";
+import { Box, CircularProgress, Grid, Stack } from "@mui/joy";
 import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
@@ -15,29 +6,20 @@ import {
 } from "@services/backendCommon";
 import { useStatusStore } from "@store/statusStore";
 import { PackageViewCard } from "@components/PackageViewCard";
-import { LucideSearch } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-import { TopAssetsSlider } from "@components/TopAssetsCarousel/TopAssetsSlider";
-import { useGetAllAssets } from "@queries/assets";
-import { AssetTopResponse } from "types/apiTypes";
-
-type SortType = "latest" | "oldest";
+import { useGetTopAssets } from "@queries/assets";
+import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
-  const [search, setSearch] = useState<string>("");
+  // const [search, setSearch] = useState<string>("");
   const [sorting, setSorting] = useState<SortType>("latest");
 
-  const {
-    data: allAssets,
-    isLoading: isAllAssetsLoading,
-    error: allAssetsError,
-  } = useGetAllAssets();
   const {
     data: topAssets,
     isLoading: isTopAssetsLoading,
     error: topAssetsError,
-  } = useGetAllAssets();
+  } = useGetTopAssets();
 
   const handleError = (err: any) => {
     console.log("ERROR: ", err);
@@ -49,10 +31,7 @@ const Assets = () => {
     if (topAssetsError) {
       handleError(topAssetsError);
     }
-    if (allAssetsError) {
-      handleError(allAssetsError);
-    }
-  }, [topAssetsError, allAssetsError]);
+  }, [topAssetsError]);
 
   return (
     <>
@@ -60,11 +39,11 @@ const Assets = () => {
         <title>Mythica • All packages</title>
       </Helmet>
 
-      {isAllAssetsLoading || isTopAssetsLoading ? (
+      {isTopAssetsLoading ? (
         <CircularProgress />
       ) : (
-        <Box sx={{ flexGrow: 1, padding: 2 }}>
-          <Stack direction="row" gap="10px" mb="15px">
+        <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
+          {/* <Stack direction="row" gap="10px" mb="15px">
             <Input
               startDecorator={<LucideSearch width="16px" />}
               placeholder="Package name filter..."
@@ -85,25 +64,19 @@ const Assets = () => {
               <Option value="latest">Latest</Option>
               <Option value="oldest">Oldest</Option>
             </Select>
-          </Stack>
+          </Stack> */}
 
-          <Stack mb="15px">
-            <Typography level="h4" textAlign="start">
-              Top Packages
-            </Typography>
+          {/* <Stack mb="25px">
             <TopAssetsSlider assets={topAssets as AssetTopResponse[]} />
-          </Stack>
+          </Stack> */}
 
           <Stack>
-            <Typography level="h4" textAlign="start">
-              All Packages
-            </Typography>
             <Grid container spacing={2}>
-              {allAssets &&
-                allAssets
-                  .filter((version) =>
-                    version.name.toLowerCase().includes(search.toLowerCase()),
-                  )
+              {topAssets &&
+                topAssets
+                  // .filter((version) =>
+                  //   version.name.toLowerCase().includes(search.toLowerCase()),
+                  // )
                   .sort((a, b) => {
                     const aDate = new Date(a.created).getTime();
                     const bDate = new Date(b.created).getTime();
@@ -122,6 +95,7 @@ const Assets = () => {
                   ))}
             </Grid>
           </Stack>
+          <BottomSortingPanel sorting={sorting} setSorting={setSorting} />
         </Box>
       )}
     </>

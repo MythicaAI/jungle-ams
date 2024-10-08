@@ -11,16 +11,13 @@ from munch import munchify
 from pydantic import TypeAdapter
 from sqlmodel import insert
 
-from auth.api_id import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
+from cryptid.cryptid import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
-from routes.readers.manager import redis_client
-from routes.readers.schemas import ReaderResponse
-from streaming.client_ops import ReadClientOp
-from streaming.funcs import Boundary
-from streaming.models import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
-from streaming.source_types import create_source
+from ripple.funcs import Boundary
+from ripple.models.streaming import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
+from ripple.source_types import create_source
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code
@@ -233,58 +230,3 @@ def test_events(api_base, client, create_profile):
     # remove the reader
     r = client.delete(f"{api_base}/readers/{reader_id}", headers=auth_header)
     assert_status_code(r, HTTPStatus.OK)
-
-
-def test_websocket(api_base, client, create_profile, use_test_source_fixture):
-    test_profile = create_profile()
-    auth_header = test_profile.authorization_header()
-    max_page = 2
-    stream_items = dict()
-
-    # create 3 readers, start one from an advanced position
-    create_count = 3
-    item_list_length = 10
-    reader_names = set()
-    for i in range(create_count):
-        # populate the test readers item directly
-        items = generate_stream_items(item_list_length)
-        reader_name = f'test-reader-{i}'
-        use_test_source_fixture[reader_name] = items
-        reader_names.add(reader_name)
-
-        # create the backing reader
-        data = {
-            'source': 'test',
-            'name': reader_name,
-            'params': {'page_size': max_page},
-        }
-        r = client.post(f"{api_base}/readers/", json=data, headers=auth_header)
-        assert_status_code(r, HTTPStatus.CREATED)
-        last_reader: ReaderResponse = munchify(r.json())
-        stream_items[last_reader['reader_id']] = items
-
-    socket_data = ReadClientOp(op='READ', page_size=max_page).model_dump()
-
-    # enumerate readers
-    readers = client.get(f"{api_base}/readers/", headers=auth_header)
-    assert_status_code(readers, HTTPStatus.OK)
-    assert len(readers.json()) == create_count
-    for reader in readers.json():
-        o = munchify(reader)
-
-        with client.websocket_connect(
-                f"{api_base}/readers/{o.reader_id}/connect",
-                headers=auth_header
-        ) as websocket:
-            websocket.send_json(socket_data)
-            header = websocket.receive_json()
-            assert header is not None
-
-            # Set the redis job is completed
-            reader_job_name = f"reader_job_{o.owner_id}_completed"
-            redis_client.set(reader_job_name, "1")
-
-            items: list[StreamItemUnion] = stream_items[o.reader_id][:max_page]
-            websocket.send_json(socket_data)
-            header = websocket.receive_json()
-            assert header == [i.model_dump() for i in items]

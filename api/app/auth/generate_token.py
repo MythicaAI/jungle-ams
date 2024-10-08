@@ -5,7 +5,7 @@ from config import app_config
 from db.schema.profiles import Profile
 
 DIGEST_SIZE: int = 32
-_SECRET: bytes = app_config().secret_key.encode('utf-8')
+_SECRET: bytes = app_config().token_secret_key.encode('utf-8')
 _PERSON: bytes = "auth_token".encode('utf-8')
 
 

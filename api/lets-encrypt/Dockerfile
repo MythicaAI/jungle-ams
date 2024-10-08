@@ -36,7 +36,7 @@ EXPOSE 80
 #
 # ENV EXTRA_ARGS="--testcert"
 
-ENV DOMAINS="api.mythica.ai,images.mythica.ai,dex.mythica.ai,cache.mythica.ai"
+ENV DOMAINS="oss.mythica.ai,api.mythica.ai,images.mythica.ai,dex.mythica.ai"
 ENV PATH="/app:${PATH}"
 
 

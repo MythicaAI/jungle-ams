@@ -3,7 +3,7 @@ Application configuration definitions
 """
 import functools
 import tempfile
-
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 # See https://docs.pydantic.dev/latest/concepts/pydantic_settings/#installation
@@ -29,7 +29,7 @@ class AppConfig(BaseSettings):
 
     # default debug API
     auth0_algorithm: str = 'RS256'
-    auth0_audience: str = api_base_uri
+    auth0_audience: str = Field('http://localhost:5555/v1', alias='api_base_uri')
     auth0_domain: str = 'dev-dtvqj0iuc5rnb6x2.us.auth0.com'
     auth0_client_id: str = '4CZhQWoNm1WH8l8042LeF38qHrUTR2ax'
     auth0_client_secret: str = '-vxSQgFB0y82_LGpO8FB-A59HTbiElKSgOleFu_Mt1qO7NXjWf67NDYIqLAHyGuO'
@@ -39,12 +39,11 @@ class AppConfig(BaseSettings):
     enable_db: bool = True
     db_timezone: str = 'UTC'
     sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
-    secret_key: str = 'test'
-    id_enc_key: str = 'X' * 8
-    id_hmac_key: str = 'test'
-    mythica_location: str = 'localhost'
+    token_secret_key: str = 'X' * 32
     redis_host: str = 'localhost'
     redis_port: int = 6379
+    redis_db: int = 0
+
 
 
 @functools.lru_cache

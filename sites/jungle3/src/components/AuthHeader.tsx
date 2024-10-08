@@ -1,14 +1,5 @@
-import {
-  Avatar,
-  Box,
-  List,
-  ListItemContent,
-  ListItemDecorator,
-  Stack,
-  styled,
-  Typography,
-} from "@mui/joy";
-import { Link } from "react-router-dom";
+import { Avatar, Box, Button, Divider, Stack, styled } from "@mui/joy";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { useEffect } from "react";
 import { useGlobalStore } from "@store/globalStore";
@@ -39,6 +30,8 @@ export const AuthHeader = () => {
   const { addError } = useStatusStore();
   const { loginWithRedirect, getAccessTokenSilently, user, isAuthenticated } =
     useAuth0();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Refresh the backend API session based on the Auth0 state (create a new auth token)
   useEffect(() => {
@@ -52,6 +45,16 @@ export const AuthHeader = () => {
       startAuthenticatedSession(user.sub);
     }
   }, [getAccessTokenSilently, isAuthenticated, user]);
+
+  useEffect(() => {
+    if (
+      user &&
+      localStorage.getItem("shouldStartOnboarding") === "true" &&
+      location.pathname !== "/quick-setup"
+    ) {
+      navigate("/quick-setup");
+    }
+  }, [user, location]);
 
   const startAuthenticatedSession = async (user_id: string) => {
     try {
@@ -122,51 +125,73 @@ export const AuthHeader = () => {
   };
 
   const LoginAvatarButton = styled("div")({
-    display: "inline-block",
+    display: "flex",
     cursor: "pointer",
     "&:focus": {
       outline: "none",
     },
+    justifyContent: "center",
+    alignItems: "center",
   });
 
   return (
-    <List orientation={"horizontal"}>
-      <ListItemDecorator>
+    <Stack>
+      <Stack direction="row" width="100%" justifyContent="space-between">
         <Link to={"/"}>
-          <Box
-            component="img"
-            src="/mythica-logo.png"
-            alt="Mythica Logo"
-            sx={{
-              width: "100%",
-              height: 48, // Adjust this value to set the desired height
-              objectPosition: "center",
-              mb: 2, // Adds some margin below the image
-            }}
-          />
+          <Stack direction="row" gap="10px">
+            <Box
+              component="img"
+              src="/mythica-logo.png"
+              alt="Mythica Logo"
+              sx={{
+                width: 44,
+                minWidth: 44,
+                maxWidth: 44,
+                height: 48,
+                objectPosition: "center",
+                mb: 2,
+              }}
+              id="appLogo"
+            />
+            <Box
+              component="img"
+              src="/mythica-text-logo.png"
+              alt="Mythica Logo"
+              sx={{
+                minWidth: 230,
+                maxWidth: 230,
+                height: 48,
+                objectPosition: "center",
+                mb: 2,
+                display: {
+                  xs: "none",
+                  sm: "block",
+                },
+              }}
+              id="appLogo"
+            />
+          </Stack>
         </Link>
-      </ListItemDecorator>
-      <ListItemContent>
-        <Typography level="h2" sx={{ flexGrow: 1 }}>
-          HDA Package Index
-        </Typography>
-      </ListItemContent>
-      <ListItemDecorator>
+
         <Stack direction="row" spacing={1}>
           <StatusAlarm />
           {isAuthenticated ? (
             <ProfileMenu name={user && user.name ? user.name : ""} />
           ) : (
-            <LoginAvatarButton
-              role="button"
-              tabIndex={0}
+            <Button
+              variant="outlined"
+              color="neutral"
               onClick={() => doLoginWithRedirect()}
+              sx={{ height: "54px" }}
             >
-              <Avatar alt="?" variant="soft" />
-            </LoginAvatarButton>
+              <LoginAvatarButton role="button" tabIndex={0}>
+                <Avatar alt="?" variant="soft" />
+              </LoginAvatarButton>
+            </Button>
           )}
         </Stack>
-      </ListItemDecorator>
-    </List>
+      </Stack>
+      <Divider orientation="horizontal" sx={{ mb: "10px" }} />
+    </Stack>
   );
 };

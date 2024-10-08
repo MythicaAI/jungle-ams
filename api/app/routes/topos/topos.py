@@ -8,7 +8,7 @@ from fastapi import HTTPException, Body, Response
 from pydantic import BaseModel
 from sqlmodel import select, update
 
-from auth.api_id import org_id_to_seq, topo_seq_to_id, profile_seq_to_id, org_seq_to_id, topo_id_to_seq
+from cryptid.cryptid import org_id_to_seq, topo_seq_to_id, profile_seq_to_id, org_seq_to_id, topo_id_to_seq
 from db.connection import get_session
 from db.schema.graph import Topology, TopologyRef
 from db.schema.profiles import Profile, Org

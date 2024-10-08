@@ -35,5 +35,5 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 80
-              name: http-proxy
+              name: http
       restartPolicy: Always

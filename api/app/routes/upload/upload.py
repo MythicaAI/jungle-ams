@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from sqlmodel import and_, select, update
 
 import db.index as db_index
-from auth.api_id import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
 from config import app_config
 from context import RequestContext
 from db.connection import get_session

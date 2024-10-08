@@ -89,3 +89,26 @@ export const useUpdateAsset = () => {
     },
   });
 };
+
+export const useDeleteAsset = () => {
+  const queryClient = useQueryClient();
+  let assetId = "";
+
+  return useMutation({
+    mutationFn: async (deleteRequest: {
+      assetId: string;
+      assetVersion: string;
+    }) => {
+      assetId = deleteRequest.assetId;
+      return await api.del({
+        path: `${PackagesApiPath.ASSETS}/${deleteRequest.assetId}${PackagesApiPath.VERSIONS}/${deleteRequest.assetVersion}`,
+      });
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({
+        queryKey: [PackagesQuery.ASSETS, assetId],
+      });
+      queryClient.invalidateQueries({ queryKey: [PackagesQuery.OWNED] });
+    },
+  });
+};

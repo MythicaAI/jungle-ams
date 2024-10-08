@@ -53,24 +53,13 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 
 IMAGES = {
     'api/nginx': {'name': 'mythica-web-front'},
-    'api/app': {'name': 'mythica-app'},
-    'api/houdini': {
-        'name': 'hautomation',
-        'buildargs': {
-            'SFX_CLIENT_ID': SFX_CLIENT_ID,
-            'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET
-        },
-    },
+    'api/app': {'name': 'mythica-app', 'working_directory': BASE_DIR},
     'api/publish-init': {'name': 'mythica-publish-init'},
     'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
     'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
     'api/packager': {
         'name': 'mythica-packager',
         'requires': ['api/app']
-    },
-    'api/houdini-worker': {
-        'name': 'mythica-houdini-worker',
-        'requires': ['api/app', 'api/houdini']
     },
     'sites/jungle3': {
         'name': 'mythica-jungle3-build',
@@ -79,12 +68,22 @@ IMAGES = {
         }
     },
     'testing/storage/minio-config': {'name': 'minio-config'},
-    'api/genai': {
-        'name': 'mythica-genai',
+    'automation/test': {'name': 'mythica-auto-test', 'working_directory': BASE_DIR},
+    'automation/genai': {
+        'name': 'mythica-auto-genai',
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
-        }
-    }
+        },
+        'working_directory': BASE_DIR
+    },
+    'automation/houdini': {
+        'name': 'mythica-auto-houdini',
+        'buildargs': {
+            'SFX_CLIENT_ID': SFX_CLIENT_ID,
+            'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
+        },
+        'working_directory': BASE_DIR
+    },
 }
 
 IMAGE_SETS = {
@@ -102,12 +101,11 @@ IMAGE_SETS = {
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
-        'api/houdini',
-        'api/houdini-worker',
-        'api/packager'},
-    'genai': {
-        'api/genai',
-    }
+        'automation/houdini',
+        'automation/genai',
+        'automation/test',
+        'api/packager'
+    },
 }
 
 
@@ -150,6 +148,16 @@ def stop_docker_compose(c, docker_compose_path):
 
 def build_image(c, image_path):
     """Build a docker image"""
+
+    # Set the working directory higher in the tree when more context is needed from
+    # the monorepo
+    if IMAGES[image_path].get('working_directory') is not None:
+        dockerfile_path = os.path.join(os.path.join(image_path, 'Dockerfile'))
+        working_directory = IMAGES[image_path].get('working_directory')
+    else:
+        dockerfile_path = 'Dockerfile'
+        working_directory = os.path.join(BASE_DIR, image_path)
+
     image_name = IMAGES[image_path]['name']
     requires = IMAGES[image_path].get('requires')
     if requires is not None:
@@ -163,10 +171,11 @@ def build_image(c, image_path):
             [f'--build-arg {key}={value}' for key, value in buildargs.items()])
 
     commit_hash = get_commit_hash()
-    with c.cd(os.path.join(BASE_DIR, image_path)):
+    with c.cd(working_directory):
         c.run(
             (f"docker buildx build --platform={IMAGE_PLATFORM}"
-             f" {buildarg_str} -t {image_name}:latest ."),
+             f" {buildarg_str} -f {dockerfile_path}"
+             "  -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
@@ -322,11 +331,3 @@ def docker_deploy(c, image='all', target='gcs'):
     'background': 'Run the image in the background'})
 def docker_run(c, image='api/app', background=False):
     image_path_action(c, image, run_image, background=background)
-
-
-@task(help={
-    'image': f'Image path to run: {IMAGES.keys()}',
-})
-def site_build(c, image='sites/jungle3'):
-    image_path_action(c, image, build_image)
-    image_path_action(c, image, copy_dist_files)

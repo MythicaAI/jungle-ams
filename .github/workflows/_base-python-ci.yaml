@@ -1,0 +1,27 @@
+name: _base-python-ci
+on:
+  workflow_call:
+      inputs:
+        working-directory:
+          required: true
+          type: string
+        library-name:
+          required: true
+          type: string
+        is-api-app:
+          required: false
+          type: boolean
+          default: false
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: hello
+        if: ${{ inputs.is-api-app }}
+        run: |
+          echo "hello"
+
+      - name: world
+        run: |
+          echo "world"

@@ -14,16 +14,17 @@ LABEL tier="automation"
 
 
 # Copy API from the mythica app image for the packager to interface
-COPY --from=api /app /app/api
-ENV PYTHONPATH=/app/api
+COPY --from=api /api /api
+COPY --from=api /libs /libs
+ENV PYTHONPATH=/api/app
 
-WORKDIR /app/api
+WORKDIR /api/app
 RUN pip install --upgrade pip poetry
 RUN poetry check && \
     poetry env use python3 && \
     poetry install --compile --all-extras --without=dev --no-root
 
-WORKDIR /app
+WORKDIR /api/packager
 
 # Copy local files
 COPY . .

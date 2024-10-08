@@ -1,6 +1,6 @@
 import base64
 
-from auth.api_id import profile_id_to_seq, profile_seq_to_id
+from cryptid.cryptid import profile_id_to_seq, profile_seq_to_id
 from db.schema.profiles import Profile
 
 _VERSION: int = 1

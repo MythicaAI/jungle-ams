@@ -11,7 +11,7 @@ import { AxiosError, AxiosProgressEvent, AxiosRequestConfig } from "axios";
 import { FileUploadStatus, useUploadStore } from "@store/uploadStore";
 import { UploadButton } from "@components/common/UploadButton";
 import { LucideUploadCloud } from "lucide-react";
-import { useGlobalStore } from "@store/globalStore";
+import Cookies from "universal-cookie";
 
 const VisuallyHiddenInput = styled("input")`
   clip: rect(0 0 0 0);
@@ -29,7 +29,7 @@ export const UploadsSubmitList = function () {
   const { trackUploads, pendingUploads, setUploadProgress, setPendingUploads } =
     useUploadStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
-  const { authToken } = useGlobalStore();
+  const cookies = new Cookies();
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
@@ -58,10 +58,12 @@ export const UploadsSubmitList = function () {
       formData.append("files", item, item.name);
     });
 
+    const authTokenFromCookies = cookies.get("auth_token");
+
     // configure axios for uploading
     const config: AxiosRequestConfig = {
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Authorization: `Bearer ${authTokenFromCookies}`,
         "Content-Type": "multipart/form-data",
       },
       onUploadProgress: onUploadProgress,

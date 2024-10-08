@@ -26,11 +26,7 @@ services:
     networks:
       - web
       - storage
-    volumes:
-      - local_storage:/app/local_storage
 volumes:
-  local_storage:
-    driver: local
   sites:
     driver: local
     driver_opts:

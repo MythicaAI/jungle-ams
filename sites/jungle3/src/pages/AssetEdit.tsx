@@ -22,7 +22,6 @@ import {
   AssetVersionResponse,
 } from "types/apiTypes";
 import { useParams, useNavigate } from "react-router-dom";
-import { AssetIdentityHeader } from "@components/AssetIdentityHeader";
 import { isVersionZero, sanitizeVersion } from "types/assetEditTypes";
 import {
   AssetEditPageHeader,
@@ -206,9 +205,6 @@ const AssetEdit: React.FC<AssetEditProps> = ({
         <Grid container spacing={2} sx={{ flexGrow: 1 }}>
           <Grid xs={12}>
             <AssetEditPageHeader />
-          </Grid>
-          <Grid xs={12}>
-            <AssetIdentityHeader />
           </Grid>
 
           <Tabs aria-label="Basic tabs" defaultValue={0} sx={{ width: "100%" }}>

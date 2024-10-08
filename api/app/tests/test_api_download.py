@@ -14,7 +14,6 @@ from tests.fixtures.app import use_local_storage_fixture
 from tests.fixtures.uploader import request_to_upload_files
 
 
-client = TestClient(app)
 test_profile_name = "test-profile"
 test_profile_description = "test-description"
 test_profile_signature = 32 * 'X'
@@ -32,9 +31,10 @@ test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
 def test_download(
+    api_base,
+    client,
     use_local_storage_fixture,
     create_profile,
-    api_base,
     request_to_upload_files,
 ):
     assert use_local_storage_fixture.use_local_storage is True

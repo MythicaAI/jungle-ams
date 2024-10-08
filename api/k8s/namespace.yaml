@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
+    exposed: "true"
     exposed_http: "true"
     exposed_https: "true"
   name: api

@@ -1,0 +1,2 @@
+pydantic
+/libs/python/ripple

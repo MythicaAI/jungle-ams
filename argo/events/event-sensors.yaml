@@ -1,0 +1,116 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: nats-sensor
+  namespace: argo
+spec:
+  dependencies:
+    - name: test-event
+      eventSourceName: nats-event-source
+      eventName: test
+    - name: houdini-event
+      eventSourceName: nats-event-source
+      eventName: houdini
+    - name: genai-event
+      eventSourceName: nats-event-source
+      eventName: genai
+  triggers:
+    - template:
+        conditions: test-event
+        name: test-trigger
+        argoWorkflow:
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: test-event
+                dataKey: body
+              dest: spec.templates.0.container.args.0
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: auto-test-
+              spec:
+                entrypoint: main
+                templates:
+                  - name: main
+                    container:
+                      image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-test:latest
+                      command: [/usr/local/bin/python, worker.py]
+                      args: ["#REPLACED#"]
+                ttlStrategy:
+                  secondsAfterCompletion: 600 
+    - template:
+        conditions: houdini-event
+        name: houdini-trigger
+        argoWorkflow:
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: houdini-event
+                dataKey: body
+              dest: spec.templates.0.container.args.0
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: auto-houdini-
+              spec:
+                entrypoint: main
+                templates:
+                  - name: main
+                    container:
+                      image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-houdini:latest
+                      command: ["/bin/bash", "houdini.sh"]
+                      args: ["#REPLACED#"]#
+#                      command: ["/opt/houdini/build/bin/hython", "houdini.py"]
+#                      resources:
+#                        limits:
+#                          ephemeral-storage: 10Gi
+#                          nvidia.com/gpu: "1"
+#                        requests:
+#                          ephemeral-storage: 10Gi
+#                          nvidia.com/gpu: "1"
+#                    nodeSelector:
+#                      cloud.google.com/gke-accelerator: nvidia-tesla-t4
+#                      cloud.google.com/gke-accelerator-count: "1"
+                ttlStrategy:
+                  secondsAfterCompletion: 600 
+    - template:
+        conditions: genai-event
+        name: genai-trigger
+        argoWorkflow:
+          operation: submit
+          parameters:
+            - src:
+                dependencyName: genai-event
+                dataKey: body
+              dest: spec.templates.0.container.args.0
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: auto-genai-
+              spec:
+                entrypoint: main
+                templates:
+                  - name: main
+                    container:
+                      image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-genai:latest
+                      command: [/usr/bin/python3.11, worker.py]
+                      args: ["#REPLACED#"]#
+                      resources:
+                        limits:
+                          ephemeral-storage: 100Gi
+                          nvidia.com/gpu: "2"
+                        requests:
+                          ephemeral-storage: 100Gi
+                          nvidia.com/gpu: "2"
+                    nodeSelector:
+                      cloud.google.com/gke-accelerator: nvidia-l4
+                      cloud.google.com/gke-accelerator-count: "2"
+                ttlStrategy:
+                  secondsAfterCompletion: 600 

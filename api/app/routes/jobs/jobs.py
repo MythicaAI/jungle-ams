@@ -2,12 +2,13 @@ import logging
 from http import HTTPStatus
 from typing import Any
 
+from cryptid.location import location
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
 
-from auth.api_id import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
+from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
 from config import app_config
 from db.connection import get_session
@@ -102,13 +103,13 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, input_files
         'params': params,
         'job_results_endpoint': f'{app_config().api_base_uri}/jobs/{job_id}/results'
     }
-    location = app_config().mythica_location
+    loc = location()
     stmt = insert(Event).values(
         event_type=f"{job_def.job_type}:requested",
         job_data=job_data,
         owner_seq=profile_seq,
-        created_in=location,
-        affinity=location)
+        created_in=loc,
+        affinity=loc)
     event_result = session.exec(stmt)
     log.info("job requested for %s by %s -> %s", job_def.job_type, profile_seq, event_result)
     return event_result

@@ -38,7 +38,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
   }, [error]);
 
   useEffect(() => {
-    if (downloadedFile) {
+    if (downloadedFile && shouldDownload) {
       const link = document.createElement("a");
       link.href = downloadedFile.url;
       link.setAttribute("download", downloadedFile.name); // Specify the filename for download
@@ -55,7 +55,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({
   };
 
   return (
-    <IconButton onClick={handleDownload}>
+    <IconButton onClick={handleDownload} sx={{ display: "flex", gap: "6px" }}>
       {icon} {text ? text : ""}
     </IconButton>
   );

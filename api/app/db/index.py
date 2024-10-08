@@ -3,8 +3,8 @@ from typing import Tuple
 
 from sqlmodel import insert
 
-from auth.api_id import event_seq_to_id, file_seq_to_id, profile_id_to_seq
-from config import app_config
+from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
+from cryptid.location import location
 from context import RequestContext
 from db.connection import get_session
 from db.schema.events import Event
@@ -42,13 +42,13 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
             'file_size': ctx.file_size,
             'file_type': ctx.extension
         }
-        location = app_config().mythica_location
+        loc = location()
         event_result = session.exec(insert(Event).values(
             event_type=f"file_uploaded:{ctx.extension}",
             job_data=job_data,
             owner_seq=profile_id_to_seq(ctx.profile_id),
-            created_in=location,
-            affinity=location))
+            created_in=loc,
+            affinity=loc))
         session.commit()
         event_seq = event_result.inserted_primary_key[0]
         event_id = event_seq_to_id(event_seq)
