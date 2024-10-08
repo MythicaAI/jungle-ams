@@ -1,7 +1,7 @@
 from automation.generate_job_defs import generate_job_defs
 from automation.helloworld import hello_world_api, HelloWorldRequest
 from ripple.automation import Worker
-from ripple.models.params import ParameterSpec
+from ripple.models.params import ParameterSet
 
 worker = Worker()
 
@@ -14,7 +14,7 @@ workers = [
     {
         "path": '/mythica/generate_job_defs',
         "provider": generate_job_defs,
-        "inputModel": ParameterSpec
+        "inputModel": ParameterSet
     },
 ]
 

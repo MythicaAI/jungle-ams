@@ -4,8 +4,11 @@ import aiohttp
 import logging
 import asyncio
 import nats
+import tempfile
 from pydantic import BaseModel
 from typing import Callable, Type, Optional, Dict
+from ripple.models.params import ParameterSet
+from ripple.runtime.params import resolve_params
 
 # Set up logging
 logging.basicConfig(
@@ -242,9 +245,12 @@ class Worker:
             try:
                 doer._result({'status': 'started'})
 
-                worker = doer.workers[payload.path] 
-                inputs = worker.inputModel(**payload.data)
-                worker.provider(inputs, doer._result)
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    worker = doer.workers[payload.path] 
+                    inputs = worker.inputModel(**payload.data)
+                    if isinstance(inputs, ParameterSet):
+                        resolve_params(API_URL, tmpdir, inputs)
+                    worker.provider(inputs, doer._result)
 
                 doer._result({'status': 'complete'}, complete=True)
 
