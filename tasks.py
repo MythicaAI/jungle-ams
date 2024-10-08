@@ -173,9 +173,9 @@ def build_image(c, image_path):
     commit_hash = get_commit_hash()
     with c.cd(working_directory):
         c.run(
-            (f'docker buildx build --platform={IMAGE_PLATFORM} {
-                buildarg_str} '
-             f'-f {dockerfile_path} -t {image_name}:latest .'),
+            (f"docker buildx build --platform={IMAGE_PLATFORM}"
+             f" {buildarg_str} -f {dockerfile_path}"
+             f"  -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
               pty=PTY_SUPPORTED)
