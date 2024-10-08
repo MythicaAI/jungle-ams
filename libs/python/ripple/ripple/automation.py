@@ -225,9 +225,9 @@ class Worker:
         doer=self
         async def implementation(json_payload: str):
             try:
-                #parsed_payload = json.loads(json_payload)
+                parsed_payload = json.loads(json_payload)
 
-                payload = WorkerRequest(**json_payload)
+                payload = WorkerRequest(**parsed_payload)
 
                 log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
 
