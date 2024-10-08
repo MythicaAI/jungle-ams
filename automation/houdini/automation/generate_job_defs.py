@@ -4,8 +4,8 @@ import logging
 import mythica.network as mnet
 import requests
 
-from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec
 from ripple.compile.rpsc import compile_interface
+from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec
 from typing import Optional
 
 #TODO: Configure elsewhere
@@ -61,7 +61,7 @@ def publish_job_def(name: str, description: str, param_spec: ParameterSpec) -> O
     if response.status_code != 201:
         log.warning("Failed to create job definition for %s. Status code: %s Error: %s",
                     name, response.status_code, response.text)
-        return False
+        return None
     
     result = response.json()
     job_def_id = result['job_def_id']
