@@ -63,7 +63,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
                 'path': '/mythica/generate_job_defs',
                 'data': {
                     'hda_file': FileParameter(
-                        file_id='file_MKsUpYGFaanAzaZYvfLUXCxnPTJ'
+                        file_id=file_id
                     ) 
                 }
             }
