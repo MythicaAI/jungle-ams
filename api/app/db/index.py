@@ -9,6 +9,9 @@ from context import RequestContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
+from ripple.automation import NatsAdapter
+from ripple.models.params import FileParameter
+
 
 log = logging.getLogger(__name__)
 
@@ -52,5 +55,20 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         session.commit()
         event_seq = event_result.inserted_primary_key[0]
         event_id = event_seq_to_id(event_seq)
+
+        # Create a new NATS event
+        if ctx.extension == 'hda':
+            nats_event = {
+                'work_id': 'xxxxxxxx',
+                'path': '/mythica/generate_job_defs',
+                'data': {
+                    'hda_file': FileParameter(
+                        file_id='file_MKsUpYGFaanAzaZYvfLUXCxnPTJ'
+                    ) 
+                }
+            }
+
+            nats = NatsAdapter()
+            nats.post("houdini", nats_event)
 
     return file_id, event_id
