@@ -22,7 +22,8 @@ jobs:
   
     env:
       NODE_ENV: "production"
-      PROJECT_ID: "296075347103"
+      PROJECT_NUMBER: "296075347103"
+      PROJECT_ID: "controlnet-407314"
       AR_REPO_LOCATION: 'us-central1'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       GKE_CLUSTER_NAME: 'gke-main-us-central1'
@@ -37,7 +38,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           token_format: 'access_token'
-          project_id: ${{ env.PROJECT_ID }}
+          project_id: ${{ env.PROJECT_NUMBER }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
