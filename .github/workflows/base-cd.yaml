@@ -21,21 +21,30 @@ jobs:
       AR_REPO_LOCATION: 'us-central1'
       SERVICE_ACCOUNT: 'front-end-api-staging-sa@controlnet-407314.iam.gserviceaccount.com'
       GKE_CLUSTER_NAME: 'gke-main-us-central1'
+      WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-          service_account_email: ${{ env.SERVICE_ACCOUNT }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
 
       - name: Configure Docker
         run: |
           gcloud auth configure-docker '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+
+      - name: 'Use gcloud CLI'
+        run: 'gcloud info'
 
       - name: Set up Kubernetes credentials
         run: |
