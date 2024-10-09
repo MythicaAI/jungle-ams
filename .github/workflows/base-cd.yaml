@@ -24,7 +24,7 @@ jobs:
       NODE_ENV: "production"
       PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
-      SERVICE_ACCOUNT: 'front-end-api-staging-sa@controlnet-407314.iam.gserviceaccount.com'
+      SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       GKE_CLUSTER_NAME: 'gke-main-us-central1'
       WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
 
