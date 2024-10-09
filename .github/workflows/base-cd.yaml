@@ -2,14 +2,19 @@ name: Deploy Helm Chart
 
 on:
   pull_request:
-    types: [merged]
+    types:
+      - closed
   push:
     branches:
       - '**'
 
 defaults:
   run:
-    working-directory: api/helm  # Set the working directory for all steps
+    working-directory: api/helm
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   deploy:

@@ -50,6 +50,14 @@ gcloud iam service-accounts add-iam-policy-binding \
        ${SERVICE_ACCOUNT}
 
 
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/container.admin"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/storage.objectAdmin"
+
 # Annotate the Kubernetes service account with the GCP service account for workload identity
 kubectl annotate serviceaccount --namespace $NAMESPACE $KSA_NAME \
         iam.gke.io/gcp-service-account=${SERVICE_ACCOUNT}
@@ -57,6 +65,6 @@ kubectl annotate serviceaccount --namespace $NAMESPACE $KSA_NAME \
 
 # Uncomment the following line if you want to add object admin permissions to the service account for the bucket
 gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${BUCKET_NAME}/
-gsutil iam ch serviceAccount:front-end-api-staging-sa@controlnet-407314.iam.gserviceaccount.com:roles/storage.objectAdmin gs://mythica-staging-web-content
+gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:roles/storage.objectAdmin gs://${BUCKET_NAME}
 
 # gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:roles/storage.objectViewer gs://${BUCKET_NAME}/
