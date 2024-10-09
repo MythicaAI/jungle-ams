@@ -1,5 +1,4 @@
 import hou
-import json
 import logging
 import mythica.darol as mdarol
 import os
@@ -7,10 +6,8 @@ import re
 import requests
 import tempfile
 
-from pydantic import BaseModel, Field
-from pathlib import Path
+from pydantic import BaseModel
 from ripple.models.params import ParameterSet, FileParameter
-from typing import Literal
 
 #TODO: Configure elsewhere
 ENDPOINT = "https://api.mythica.ai/v1"
@@ -110,24 +107,25 @@ def generate_mesh(
         usd_node.parm("execute").pressButton()
 
         # Bind material
-        if params['material/type'] == "Unreal":
-            sublayer_node = stage.createNode("sublayer")
-            sublayer_node.parm("num_files").set(1)
-            sublayer_node.parm("filepath1").set(output_file_path)
-    
-            sourceAssset = params['material/source_asset']
-            attrib_node = stage.createNode("attribwrangle")
-            attrib_node.parm("primpattern").set("%type:Boundable")
-            attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
-            attrib_node.setInput(0, sublayer_node, 0)
+        if 'material/type' in params and 'material/source_asset' in params:
+            if params['material/type'] == "Unreal":
+                sublayer_node = stage.createNode("sublayer")
+                sublayer_node.parm("num_files").set(1)
+                sublayer_node.parm("filepath1").set(output_file_path)
+        
+                sourceAssset = params['material/source_asset']
+                attrib_node = stage.createNode("attribwrangle")
+                attrib_node.parm("primpattern").set("%type:Boundable")
+                attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
+                attrib_node.setInput(0, sublayer_node, 0)
 
-            binded_file = os.path.join(working_dir, f"{output_file_name}_with_material.usd")
-            render_node = stage.createNode("usd_rop")
-            render_node.parm("lopoutput").set(binded_file) 
-            render_node.setInput(0, attrib_node, 0)
-            render_node.parm("execute").pressButton()
+                binded_file = os.path.join(working_dir, f"{output_file_name}_with_material.usd")
+                render_node = stage.createNode("usd_rop")
+                render_node.parm("lopoutput").set(binded_file) 
+                render_node.setInput(0, attrib_node, 0)
+                render_node.parm("execute").pressButton()
 
-            output_file_path = binded_file
+                output_file_path = binded_file
 
         # Convert to USDZ format
         output_zip_file_path = os.path.join(working_dir, f"{output_file_name}.usdz")
