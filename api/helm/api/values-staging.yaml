@@ -34,4 +34,6 @@ api:
     maxUnavailable: 1
     maxSurge: 5
     nginxConfig: "/etc/nginx/nginx-gke-staging.conf"
+  publishInit:
+    bucketName: "mythica-staging-web-content"
 

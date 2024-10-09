@@ -2,8 +2,8 @@
 
 # Variables for the staging environment
 BUCKET_NAME=mythica-staging-web-content
-KSA_NAME=staging-api
-NAMESPACE=staging-api
+KSA_NAME=api
+NAMESPACE=api-staging
 ROLE_NAME=roles/storage.objectUser  # read/write
 PROJECT_NUMBER=296075347103
 PROJECT_ID=controlnet-407314
@@ -12,24 +12,26 @@ SERVICE_ACCOUNT=$SERVICE_ACCOUNT_NAME@controlnet-407314.iam.gserviceaccount.com
 
 # Uncomment the following line if you want to add service-accounts
 # Create a separate service account for staging
-# gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \
-#     --display-name "Front End API Staging Service Account" \
-#     --project $PROJECT_ID
+gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \
+    --display-name "Front End API Staging Service Account" \
+    --project $PROJECT_ID
 
+cloud iam service-accounts create front-end-api-staging-sa \
+    --display-name "Front End API Staging Service Account" \
+    --project=controlnet-407314
 
 # 
 # Create the K8s service account for staging
 #
-kubectl create namespace $KSA_NAME
-kubectl -n $NAMESPACE create serviceaccount $KSA_NAME
+kubectl create namespace $NAMESPACE
 
 # Create the api Service Account
-kubectl create serviceaccount api --namespace=api-staging
+kubectl create serviceaccount $KSA_NAME --namespace=$NAMESPACE
 
 
 # kubectl create secret generic secrets \
 #     --from-literal=SQL_URL='postgresql://<user>:<pass>@<host>:5432/upload_pipeline_staging' \
-#     --namespace=api-staging --dry-run=client -o yaml | kubectl apply -f -
+#     --namespace=$NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
 
 #
@@ -44,12 +46,17 @@ gcloud storage buckets add-iam-policy-binding gs://$BUCKET_NAME \
 #
 gcloud iam service-accounts add-iam-policy-binding \
        --role roles/iam.workloadIdentityUser \
-       --member "serviceAccount:${PROJECT_ID}.svc.id.goog[staging-api/staging-api]" \
+       --member "serviceAccount:${PROJECT_ID}.svc.id.goog[$NAMESPACE/$KSA_NAME]" \
        ${SERVICE_ACCOUNT}
+
 
 # Annotate the Kubernetes service account with the GCP service account for workload identity
 kubectl annotate serviceaccount --namespace $NAMESPACE $KSA_NAME \
         iam.gke.io/gcp-service-account=${SERVICE_ACCOUNT}
 
+
 # Uncomment the following line if you want to add object admin permissions to the service account for the bucket
-# gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${BUCKET_NAME}/
+gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${BUCKET_NAME}/
+gsutil iam ch serviceAccount:front-end-api-staging-sa@controlnet-407314.iam.gserviceaccount.com:roles/storage.objectAdmin gs://mythica-staging-web-content
+
+# gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:roles/storage.objectViewer gs://${BUCKET_NAME}/

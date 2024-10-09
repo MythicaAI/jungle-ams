@@ -1,0 +1,53 @@
+name: Deploy Helm Chart
+
+on:
+  pull_request:
+    types:
+      - closed
+  push:
+    # branches:
+    #   - main
+    branches:
+      - '**'
+
+defaults:
+  run:
+    working-directory: api/helm
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+  
+    env:
+      NODE_ENV: "production"
+      PROJECT_ID: "296075347103"
+      AR_REPO_LOCATION: 'us-central1'
+      SERVICE_ACCOUNT: 'front-end-api-staging-sa@controlnet-407314.iam.gserviceaccount.com'
+      GKE_CLUSTER_NAME: 'gke-main-us-central1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_email: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+
+      - name: Set up Kubernetes credentials
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER_NAME }} \
+            --project ${{ env.PROJECT_ID }}
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Deploy Helm Chart
+        run: |
+          helm upgrade --install --namespace api-staging -f api/values-staging.yaml api-staging ./api

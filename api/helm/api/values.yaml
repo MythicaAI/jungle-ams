@@ -45,3 +45,5 @@ api:
     maxUnavailable: 2
     maxSurge: 10
     nginxConfig: "/etc/nginx/nginx-gke.conf"
+  publishInit:
+    bucketName: "mythica-public-web-content"
