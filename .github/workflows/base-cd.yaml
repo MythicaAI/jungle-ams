@@ -2,17 +2,14 @@ name: Deploy Helm Chart
 
 on:
   pull_request:
-    types:
-      - closed
+    types: [merged]
   push:
-    # branches:
-    #   - main
     branches:
       - '**'
 
 defaults:
   run:
-    working-directory: api/helm
+    working-directory: api/helm  # Set the working directory for all steps
 
 jobs:
   deploy:
@@ -34,6 +31,7 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
           service_account_email: ${{ env.SERVICE_ACCOUNT }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
 
       - name: Configure Docker
         run: |
