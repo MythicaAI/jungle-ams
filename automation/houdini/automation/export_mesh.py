@@ -138,7 +138,18 @@ def generate_mesh(
 
     mdarol.end_houdini(hip)
 
-    return output_file_path
+    return output_zip_file_path
+
+
+def start_session(endpoint: str, profile_id: str) -> str:
+    url = f"{endpoint}/sessions/direct/{profile_id}"
+    response = requests.get(url, timeout=10)
+    if response.status_code != 200:
+        log.warning("Failed to start session: %s", response.status_code)
+        return ""
+
+    result = response.json()
+    return result['token']
 
 
 def upload_mesh(token: str, file_path: str) -> str:
@@ -154,7 +165,7 @@ def upload_mesh(token: str, file_path: str) -> str:
             headers=headers, files=file_data, timeout=10)
         if response.status_code == 200:
             result = response.json()
-            file_id = result['files'][0].file_id
+            file_id = result['files'][0]['file_id']
 
     return file_id
 
@@ -168,6 +179,9 @@ class ExportMeshRequest(BaseModel):
 def export_mesh(request: ParameterSet, result_callback):
     model = ExportMeshRequest(**request.params)
 
+    # TODO: Pipe through profile_id to create session token
+    profile_id = 'prf_xxxxxxxxxx'
+
     result_file_id = None
 
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -179,8 +193,7 @@ def export_mesh(request: ParameterSet, result_callback):
             tmp_dir
         )
 
-        # TODO: Pipe through profile_id to create session token
-        token = "xxxxxxxxx"
+        token = start_session(ENDPOINT, profile_id)
 
         result_file_id = upload_mesh(token, result_file_path)
 
