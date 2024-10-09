@@ -8,6 +8,7 @@ import {
   MenuItem,
 } from "@mui/joy";
 import {
+  LayoutDashboard,
   LucideEdit,
   LucideGroup,
   LucideKeyRound,
@@ -55,28 +56,32 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
         <Avatar variant="outlined" alt={name}></Avatar>
       </MenuButton>
       <Menu placement="bottom-end">
-        <LinkMenuItem to={"/profile"}>
+        <LinkMenuItem to="/dashboard">
+          <LayoutDashboard />
+          Dashboard
+        </LinkMenuItem>
+        <LinkMenuItem to="/profile">
           <LucideEdit />
           Edit Profile
         </LinkMenuItem>
-        <LinkMenuItem to={"/packages"}>
+        <LinkMenuItem to="/packages">
           <LucidePackage />
           My Packages
         </LinkMenuItem>
-        <LinkMenuItem to={"/uploads"}>
+        <LinkMenuItem to="/uploads">
           <LucideUpload />
           My Uploads
         </LinkMenuItem>
-        <LinkMenuItem to={"/orgs"}>
+        <LinkMenuItem to="/orgs">
           <LucideGroup />
           Manage Organizations
         </LinkMenuItem>
-        <LinkMenuItem to={"/api-keys"}>
+        <LinkMenuItem to="/api-keys">
           <LucideKeyRound />
           API keys
         </LinkMenuItem>
         <Divider orientation="horizontal" />
-        <LinkMenuItem to={"/logout"}>
+        <LinkMenuItem to="/logout">
           <LucideLogOut />
           Logout
         </LinkMenuItem>
