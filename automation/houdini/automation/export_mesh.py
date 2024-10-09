@@ -1,74 +1,42 @@
-import os
 import hou
-import json
-from pydantic import BaseModel, Field
-from typing import Literal
-from pathlib import Path
+import logging
 import mythica.darol as mdarol
+import os
+import re
+import requests
+import tempfile
+
+from pydantic import BaseModel
+from ripple.models.params import ParameterSet, FileParameter
+
+#TODO: Configure elsewhere
+ENDPOINT = "https://api.mythica.ai/v1"
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
 
-class ExportMeshRequest(BaseModel):
-    hdapath: Path = Field(..., description="The path to the HDA (Houdini Digital Asset).")
-    output_path: Path = Field(..., description="The path where the exported mesh will be saved.")
-    output_file_name: str = Field(..., description="The name of the output file.")
-    format: Literal['fbx', 'glb', 'usdz'] = Field(..., description="The export format (fbx, glb, usdz).")
-    parms_file: Path = Field(..., description="The path to the parameters file.")
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "hdapath": "/path/to/hda/file.hda",
-                "output_path": "/path/to/output/",
-                "output_file_name": "exported_mesh",
-                "format": "fbx",
-                "parms_file": "/path/to/parms/file.json"
-            }
-        }
-    
-def export_mesh(request: ExportMeshRequest, result_callback):
-    hdapath = request.hdapath
-    output_path = request.output_path
-    output_file_name= request.output_file_name 
-    format = request.format, 
-    parms_file = request.parms_file
-
-    os.makedirs(output_path, exist_ok=True)
-
-    hip = os.path.join(output_path,f'export_mesh_{os.path.basename(hdapath)}.hip')
-
-    mdarol.start_houdini(hip)
-
-    hou.hda.installFile(hdapath,force_use_assets=True)
-
-    # Load parameters from file
-    parms_data = {}
-    if parms_file:
-        with open(parms_file) as f:
-            parms_data = json.load(f)
-
-    # Geometry
-    obj = hou.node('obj')
-    geo = obj.createNode('geo','geometry')
-    stage = hou.node('stage')
-
-    # TODO: Support specifying which definition inside the hda file to use
-    assetdef = hou.hda.definitionsInFile(hdapath)[0]
-    asset = geo.createNode(assetdef.nodeTypeName())
-
-    # Set parms
-    for k, v in parms_data['mesh_parms'].items():
-        # TODO: Support ramp parameters
-        if not isinstance(v, dict):
+def apply_params(asset, params: dict):
+    # TODO: Disambiguate between request and HDA parameters
+    for k, v in params.items():
+        parm = asset.parmTuple(k)
+        if parm:
             val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
-            parm = asset.parmTuple(k)
-            if parm:
-                parm.set(val)
-            else:
-                print(f"Parameter {k} not found in {assetdef.nodeTypeName()}")
+            parm.set(val)
 
-    # Set inputs
-    for i, input_file in enumerate(parms_data['inputs']):
+
+def create_inputs(asset, geo, params: dict):
+    for k, v in params.items():
+        match = re.search(r'^input(\d+)$', k)
+        if not match:
+            continue
+
+        input_index = int(match.group(1))
+        input_file = v.file_path
+
         input_node = None
         if os.path.exists(input_file):
             input_node = geo.createNode('usdimport')
@@ -80,13 +48,41 @@ def export_mesh(request: ExportMeshRequest, result_callback):
         else:
             input_node = geo.createNode('null')
 
-        asset.setInput(i, input_node, 0)
+        asset.setInput(input_index, input_node, 0)
+
+
+def generate_mesh(
+    hda_path: str,
+    hda_definition_index: int,
+    format: str,
+    params: dict,
+    working_dir: str
+) -> str:
+    output_file_name = os.path.basename(hda_path)
+    hip = os.path.join(working_dir, f'export_mesh_{output_file_name}.hip')
+
+    mdarol.start_houdini(hip)
+
+    hou.hda.installFile(hda_path, force_use_assets=True)
+
+    # Geometry
+    obj = hou.node('obj')
+    geo = obj.createNode('geo','geometry')
+    stage = hou.node('stage')
+
+    assetdef = hou.hda.definitionsInFile(hda_path)[hda_definition_index]
+    asset = geo.createNode(assetdef.nodeTypeName())
+
+    # Set parms
+    apply_params(asset, params)
+    create_inputs(asset, geo, params)
 
     # Export
     out = hou.node('out')
 
+    output_file_path = ""
     if format == 'fbx':
-        output_file_path = os.path.join(output_path, f"{output_file_name}.fbx")
+        output_file_path = os.path.join(working_dir, f"{output_file_name}.fbx")
 
         fbx_node = out.createNode("filmboxfbx","fbx_node")
         fbx_node.parm("sopoutput").set(output_file_path)
@@ -95,7 +91,7 @@ def export_mesh(request: ExportMeshRequest, result_callback):
         fbx_node.parm("execute").pressButton()
     elif format == 'glb':
         # gltf vs glb export is inferred from the output extension
-        output_file_path = os.path.join(output_path, f"{output_file_name}.glb")
+        output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
 
         gltf_node = out.createNode("gltf","gltf_node")
         gltf_node.parm("file").set(output_file_path)
@@ -103,7 +99,7 @@ def export_mesh(request: ExportMeshRequest, result_callback):
         gltf_node.parm("execute").pressButton()
     elif format == 'usdz':
         # Export to USD
-        output_file_path = os.path.join(output_path, f"{output_file_name}.usd")
+        output_file_path = os.path.join(working_dir, f"{output_file_name}.usd")
         usd_node = geo.createNode("usdexport","usd_node")
         usd_node.parm("lopoutput").set(output_file_path)
         usd_node.parm("authortimesamples").set("never")
@@ -111,40 +107,97 @@ def export_mesh(request: ExportMeshRequest, result_callback):
         usd_node.parm("execute").pressButton()
 
         # Bind material
-        if parms_data['material_parms']['type'] == "Unreal":
-            sublayer_node = stage.createNode("sublayer")
-            sublayer_node.parm("num_files").set(1)
-            sublayer_node.parm("filepath1").set(output_file_path)
-    
-            sourceAssset = parms_data['material_parms']['sourceAsset']
-            attrib_node = stage.createNode("attribwrangle")
-            attrib_node.parm("primpattern").set("%type:Boundable")
-            attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
-            attrib_node.setInput(0, sublayer_node, 0)
+        if 'material/type' in params and 'material/source_asset' in params:
+            if params['material/type'] == "Unreal":
+                sublayer_node = stage.createNode("sublayer")
+                sublayer_node.parm("num_files").set(1)
+                sublayer_node.parm("filepath1").set(output_file_path)
+        
+                sourceAssset = params['material/source_asset']
+                attrib_node = stage.createNode("attribwrangle")
+                attrib_node.parm("primpattern").set("%type:Boundable")
+                attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
+                attrib_node.setInput(0, sublayer_node, 0)
 
-            binded_file = os.path.join(output_path, f"{output_file_name}_with_material.usd")
-            render_node = stage.createNode("usd_rop")
-            render_node.parm("lopoutput").set(binded_file) 
-            render_node.setInput(0, attrib_node, 0)
-            render_node.parm("execute").pressButton()
+                binded_file = os.path.join(working_dir, f"{output_file_name}_with_material.usd")
+                render_node = stage.createNode("usd_rop")
+                render_node.parm("lopoutput").set(binded_file) 
+                render_node.setInput(0, attrib_node, 0)
+                render_node.parm("execute").pressButton()
 
-            output_file_path = binded_file
+                output_file_path = binded_file
 
         # Convert to USDZ format
-        output_zip_file_path = os.path.join(output_path, f"{output_file_name}.usdz")
+        output_zip_file_path = os.path.join(working_dir, f"{output_file_name}.usdz")
         usdz_node = out.createNode("usdzip","usdz_node")
         usdz_node.parm("infile1").set(output_file_path)
         usdz_node.parm("outfile1").set(output_zip_file_path)
         usdz_node.parm("execute").pressButton()
-        os.remove(output_file_path)
 
-    hou.hda.uninstallFile(hdapath)
+    hou.hda.uninstallFile(hda_path)
 
     mdarol.end_houdini(hip)
-    mdarol.remove_file(hip)
+
+    return output_zip_file_path
+
+
+def start_session(endpoint: str, profile_id: str) -> str:
+    url = f"{endpoint}/sessions/direct/{profile_id}"
+    response = requests.get(url, timeout=10)
+    if response.status_code != 200:
+        log.warning("Failed to start session: %s", response.status_code)
+        return ""
+
+    result = response.json()
+    return result['token']
+
+
+def upload_mesh(token: str, file_path: str) -> str:
+    headers = {"Authorization": "Bearer %s" % token}
+
+    file_id = None
+    with open(file_path, 'rb') as file:
+        file_name = os.path.basename(file_path)
+        file_data = [
+            ('files', (file_name, file, 'application/octet-stream'))]
+        response = requests.post(
+            f"{ENDPOINT}/upload/store",
+            headers=headers, files=file_data, timeout=10)
+        if response.status_code == 200:
+            result = response.json()
+            file_id = result['files'][0]['file_id']
+
+    return file_id
+
+
+class ExportMeshRequest(BaseModel):
+    hda_file: FileParameter
+    hda_definition_index: int
+    format: str
+
+
+def export_mesh(request: ParameterSet, result_callback):
+    model = ExportMeshRequest(**request.params)
+
+    # TODO: Pipe through profile_id to create session token
+    profile_id = 'prf_xxxxxxxxxx'
+
+    result_file_id = None
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        result_file_path = generate_mesh(
+            model.hda_file.file_path,
+            model.hda_definition_index,
+            model.format,
+            request.params,
+            tmp_dir
+        )
+
+        token = start_session(ENDPOINT, profile_id)
+
+        result_file_id = upload_mesh(token, result_file_path)
 
     result_callback({
-        'message': f"Mesh generation completed. Output -> {os.path.join(request.output_path,request.output_file_name)}",
-        'debug': f"Consider changing the way files are specified in an out given the new interface",
+        'message': f"Mesh generation completed. Uploaded {result_file_id}.",
         'houdini_version': f"{hou.applicationName()} - {hou.applicationVersionString()}"
     })

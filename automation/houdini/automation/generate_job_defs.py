@@ -5,7 +5,7 @@ import mythica.network as mnet
 import requests
 
 from ripple.compile.rpsc import compile_interface
-from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec
+from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from typing import Optional
 
 #TODO: Configure elsewhere
@@ -42,6 +42,11 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
         label='HDA Definition Index', 
         constant=True, 
         default=index
+    ),
+    param_spec.params['format'] = StringParameterSpec(
+        label='Format', 
+        constant=True, 
+        default='usdz'
     )
 
 
