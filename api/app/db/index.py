@@ -2,6 +2,7 @@ import logging
 from typing import Tuple
 
 from sqlmodel import insert
+from uuid import uuid4
 
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from cryptid.location import location
@@ -59,7 +60,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         # Create a new NATS event
         if ctx.extension == 'hda':
             nats_event = {
-                'work_id': 'xxxxxxxx',
+                'work_id': str(uuid4()),
                 'path': '/mythica/generate_job_defs',
                 'data': {
                     'hda_file': FileParameter(
