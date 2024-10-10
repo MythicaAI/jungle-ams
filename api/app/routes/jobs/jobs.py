@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from http import HTTPStatus
 from typing import Any
@@ -7,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
+from uuid import uuid4
 
 from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
@@ -16,6 +18,7 @@ from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
+from ripple.automation import NatsAdapter, WorkerRequest
 from ripple.models.params import ParameterSpec, ParameterSet
 from ripple.runtime.params import validate_params
 
@@ -112,6 +115,22 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, params: str
     return event_result
 
 
+def add_job_nats_event(job_seq: int, job_type: str, params: ParameterSet):
+    job_id = job_seq_to_id(job_seq)
+
+    [subject, path] = job_type.split("::")
+
+    event = WorkerRequest(
+        work_id=str(uuid4()),
+        job_id=job_id,
+        path=path,
+        data=params.model_dump()
+    )
+
+    nats = NatsAdapter()
+    asyncio.create_task(nats.post(subject, event.model_dump()))
+
+
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_job(
         request: JobRequest,
@@ -137,6 +156,9 @@ async def create_job(
                                                profile.profile_seq)
         event_id = event_seq_to_id(event_result.inserted_primary_key[0])
         session.commit()
+
+        add_job_nats_event(job_seq, job_def.job_type, request.params)
+
         return JobResponse(
             job_id=job_seq_to_id(job_seq),
             event_id=event_id,
