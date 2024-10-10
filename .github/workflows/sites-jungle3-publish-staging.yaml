@@ -55,6 +55,4 @@ jobs:
         with:
           push: true
           context: sites/jungle3
-          tags: '${{ env.AR_URL }}/${{IMAGE_NAME}}:latest
-'
-        
+          tags: '${{ env.AR_URL }}/${{env.IMAGE_NAME}}:latest'
