@@ -28,7 +28,6 @@ kubectl create namespace $NAMESPACE
 # Create the api Service Account
 kubectl create serviceaccount $KSA_NAME --namespace=$NAMESPACE
 
-
 # kubectl create secret generic secrets \
 #     --from-literal=SQL_URL='postgresql://<user>:<pass>@<host>:5432/upload_pipeline_staging' \
 #     --namespace=$NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
@@ -62,9 +61,19 @@ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 kubectl annotate serviceaccount --namespace $NAMESPACE $KSA_NAME \
         iam.gke.io/gcp-service-account=${SERVICE_ACCOUNT}
 
+NAMESPACE=api-staging
+for sa in $(kubectl get serviceaccounts -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}'); do
+    if kubectl auth can-i list secrets --as=system:serviceaccount:$NAMESPACE:$sa; then
+        echo "$sa has permission"
+    else
+        echo "$sa does NOT have permission"
+    fi
+done
+
+
 
 # Uncomment the following line if you want to add object admin permissions to the service account for the bucket
-gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${BUCKET_NAME}/
-gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:roles/storage.objectAdmin gs://${BUCKET_NAME}
+# gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${BUCKET_NAME}/
+# gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:roles/storage.objectAdmin gs://${BUCKET_NAME}
 
 # gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:roles/storage.objectViewer gs://${BUCKET_NAME}/
