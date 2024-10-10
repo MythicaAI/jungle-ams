@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Tuple
 
@@ -70,6 +71,6 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
             }
 
             nats = NatsAdapter()
-            nats.post("houdini", nats_event)
+            asyncio.create_task(nats.post("houdini", nats_event))
 
     return file_id, event_id
