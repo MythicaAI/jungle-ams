@@ -22,21 +22,21 @@ spec:
         release: production
     spec:
       nodeSelector:
-        cloud.google.com/gke-accelerator: nvidia-tesla-l4
-        cloud.google.com/gke-accelerator-count: "1"
+        cloud.google.com/gke-accelerator: nvidia-l4
+        cloud.google.com/gke-accelerator-count: "2"
       serviceAccountName: automation
       containers:
         - name: genai
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-genai:latest
           imagePullPolicy: Always
-          command: [/usr/bin/python3.11, worker.py]
+          command: [/usr/bin/python3.11, workers.py]
           stdin: true
           tty: true
           resources:
             limits:
               ephemeral-storage: 10Gi
-              nvidia.com/gpu: "1"
+              nvidia.com/gpu: "2"
             requests:
               ephemeral-storage: 10Gi
-              nvidia.com/gpu: "1"
+              nvidia.com/gpu: "2"
       restartPolicy: Always
