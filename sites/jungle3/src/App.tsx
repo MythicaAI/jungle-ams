@@ -7,6 +7,7 @@ import { lazyRetry } from "@services/lazyImport.ts";
 import { CookieConsentBanner } from "@components/CookieConsentBanner";
 import { useOnboarding } from "@hooks/useOnboarding";
 import { ProductTour } from "@components/ProductTour";
+import { PrivateRoute } from "@components/PrivateRoute";
 import "./styles/App.css";
 
 const Dashboard = lazy(() => lazyRetry(() => import("@pages/Dashboard")));
@@ -21,7 +22,6 @@ const AssetEditWrapper = lazy(() =>
   lazyRetry(() => import("@pages/AssetEdit")),
 );
 const OrgsList = lazy(() => lazyRetry(() => import("@pages/OrgsList")));
-const Login = lazy(() => lazyRetry(() => import("@pages/Login")));
 const Logout = lazy(() => lazyRetry(() => import("@pages/Logout")));
 const FileViewWrapper = lazy(() => lazyRetry(() => import("@pages/FileView")));
 const PackageViewWrapper = lazy(() =>
@@ -45,17 +45,31 @@ const App: React.FC = () => {
       <Routes>
         <Route path="*" element={<Layout />} errorElement={<ErrorPage />}>
           <Route index element={<Assets />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="profile" element={<ProfileSettings />} />
-          <Route path="packages" element={<Packages />} />
-          <Route path="uploads" element={<Uploads />} />
-          <Route path="api-keys" element={<ApiKeys />} />
+          <Route
+            path="dashboard"
+            element={<PrivateRoute component={Dashboard} />}
+          />
+          <Route
+            path="profile"
+            element={<PrivateRoute component={ProfileSettings} />}
+          />
+          <Route
+            path="packages"
+            element={<PrivateRoute component={Packages} />}
+          />
+          <Route
+            path="uploads"
+            element={<PrivateRoute component={Uploads} />}
+          />
+          <Route
+            path="api-keys"
+            element={<PrivateRoute component={ApiKeys} />}
+          />
           <Route
             path="assets/:asset_id/versions/:version"
             element={<AssetEditWrapper />}
           />
-          <Route path="orgs" element={<OrgsList />} />
-          <Route path="login" element={<Login />} />
+          <Route path="orgs" element={<PrivateRoute component={OrgsList} />} />
           <Route path="logout" element={<Logout />} />
           <Route path="files/:file_id" element={<FileViewWrapper />} />
           <Route

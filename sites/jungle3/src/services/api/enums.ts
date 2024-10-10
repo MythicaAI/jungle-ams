@@ -15,4 +15,5 @@ export enum ErrorMessage {
 export enum ApiUrl {
   LOGIN = "/login",
   DEFAULT = "default",
+  BASE = "/",
 }
