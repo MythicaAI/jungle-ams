@@ -24,10 +24,16 @@ gcloud iam service-accounts add-iam-policy-binding ${SA_ACCOUNT} \
  --role=roles/iam.serviceAccountTokenCreator \
  --member=user:jacob@mythica.ai
 
-# Grant workload identity user to SA
+# Grant workload identity user to SA for federated principal
 gcloud iam service-accounts add-iam-policy-binding ${SA_ACCOUNT} \
  --role=roles/iam.workloadIdentityUser  \
  --member=principalSet://iam.googleapis.com/${WIP_POOL}/attribute.repository/MythicaAI/infra
+
+# Grant workload identity user to SA for K8S service account principal
+gcloud iam service-accounts add-iam-policy-binding \                              1 ↵
+  github-actions-service-account@controlnet-407314.iam.gserviceaccount.com \
+  --role roles/iam.workloadIdentityUser \
+  --member "serviceAccount:controlnet-407314.svc.id.goog[api-staging/github-actions-service-account]"
 
 #
 # Create the workload identity pool
