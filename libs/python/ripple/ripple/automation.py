@@ -46,7 +46,7 @@ class NatsAdapter():
         await self._connect()                
         try:
             log.debug(f"Sending to NATS: {subject} - {data}" )
-            asyncio.create_task(self.nc.publish(subject, json.dumps(data).encode()))
+            await(self.nc.publish(subject, json.dumps(data).encode()))
             log.debug(f"Sent to NATS")
         except Exception as e:
             log.error(f"Sending to NATS failed: {subject} - {data} - {e}")
@@ -67,7 +67,7 @@ class NatsAdapter():
             try:
                 payload = json.loads(msg.data.decode('utf-8'))
                 log.info(f"Received message on {subject}: {payload}")
-                asyncio.create_task(callback(payload))
+                await callback(payload)
             except Exception as e:
                 log.error(f"Error processing message on {subject}: {e}")
 
@@ -145,8 +145,11 @@ class Worker:
         
     def start(self,subject: str, workers:list[dict]) -> None:
         self._load_workers(workers)
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.nats.listen(subject, self._get_executor()))
+
+        loop = asyncio.get_event_loop()        
+        task = loop.create_task(self.nats.listen(subject, self._get_executor()))
+        task.add_done_callback(self._get_error_handler())
+
         try:
             loop.run_forever()
         except KeyboardInterrupt:
@@ -174,16 +177,27 @@ class Worker:
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {rdata}")
 
         #TODO: We need to unresolve file params in the result_data field and externalize the "result" channel
-        asyncio.create_task(self.nats.post("result", json.dumps(rdata))) 
+        task = asyncio.create_task(self.nats.post("result", json.dumps(rdata))) 
+        task.add_done_callback(self._get_error_handler())
         if 'job_id' in rdata:
             job_id = rdata['job_id']
             if complete:
-                asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{job_id}"))
+                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{job_id}"))
             else:
-                asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{job_id}", rdata))
+                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{job_id}", rdata))
+            task.add_done_callback(self._get_error_handler())
             
-
-
+    def _get_error_handler(self):
+        def handler(task):
+            e = task.exception()
+            if e:
+                log.error(str(e))
+                self._result({
+                    'status': 'error',
+                    'message': str(e)
+                })
+        return handler
+    
     def _get_executor(self):
         """
         Execute a work unit by trying to find a route that maps
