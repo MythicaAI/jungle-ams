@@ -16,6 +16,8 @@ from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
+from ripple.models.params import ParameterSpec, ParameterSet
+from ripple.runtime.params import validate_params
 
 log = logging.getLogger(__name__)
 
@@ -24,9 +26,7 @@ class JobDefinitionRequest(BaseModel):
     job_type: str
     name: str
     description: str
-    config: dict[str, Any]
-    input_files: int
-    params_schema: dict[str, Any]
+    params_schema: ParameterSpec
 
 
 class JobDefinitionResponse(BaseModel):
@@ -39,8 +39,7 @@ class JobDefinitionModel(JobDefinitionRequest):
 
 class JobRequest(BaseModel):
     job_def_id: str
-    input_files: list[str]
-    params: dict[str, Any]
+    params: ParameterSet
 
 
 class JobResponse(BaseModel):
@@ -89,7 +88,7 @@ async def get_job_defs() -> list[JobDefinitionModel]:
                 for job_def in job_defs]
 
 
-def add_job_requested_event(session: Session, job_seq: int, job_def, input_files: list[str], params: str,
+def add_job_requested_event(session: Session, job_seq: int, job_def, params: str,
                             profile_seq: int):
     """Add a new event that triggers job processing"""
     # Create a new pipeline event
@@ -98,8 +97,6 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, input_files
         'job_def_id': job_def_seq_to_id(job_def.job_def_seq),
         'job_id': job_id,
         'profile_id': profile_seq_to_id(profile_seq),
-        'config': job_def.config,
-        'input_files': input_files,
         'params': params,
         'job_results_endpoint': f'{app_config().api_base_uri}/jobs/{job_id}/results'
     }
@@ -124,14 +121,19 @@ async def create_job(
             JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
         if job_def is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+
+        parameter_spec = ParameterSpec(**job_def.params_schema)
+        valid = validate_params(parameter_spec, request.params)
+        if not valid:
+            raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Invalid params")
+
         job = session.exec(insert(Job).values(
             job_def_seq=job_def_id_to_seq(request.job_def_id),
             owner_seq=profile.profile_seq,
-            input_files=request.input_files,
-            params=request.params))
+            params=request.params.model_dump()))
         job_seq = job.inserted_primary_key[0]
 
-        event_result = add_job_requested_event(session, job_seq, job_def, request.input_files, request.params,
+        event_result = add_job_requested_event(session, job_seq, job_def, request.params.model_dump(),
                                                profile.profile_seq)
         event_id = event_seq_to_id(event_result.inserted_primary_key[0])
         session.commit()

@@ -19,8 +19,9 @@ def start_session(endpoint: str, profile_id: str) -> str:
 def request_job(endpoint: str, headers: str) -> str:
     body = {
         "job_def_id": JOB_DEF_ID,
-        "input_files": [],
-        "params": {}
+        "params": {
+            "params": {}
+        }
     }
 
     url = f"{endpoint}/jobs/"

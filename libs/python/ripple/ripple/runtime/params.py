@@ -43,8 +43,13 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
 
         # Validate constant
         if paramSpec.constant:
-            if param != paramSpec.default:
-                return False
+            if isinstance(paramSpec, FileParameterSpec):
+                file_ids = [file_param.file_id for file_param in param] if isinstance(param, list) else param.file_id
+                if file_ids != paramSpec.default:
+                    return False
+            else:
+                if param != paramSpec.default:
+                    return False
 
     return True
 
