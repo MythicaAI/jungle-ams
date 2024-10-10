@@ -11,8 +11,8 @@ from context import RequestContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
-from ripple.automation import NatsAdapter
-from ripple.models.params import FileParameter
+from ripple.automation import NatsAdapter, WorkerRequest
+from ripple.models.params import FileParameter, ParameterSet
 
 
 log = logging.getLogger(__name__)
@@ -60,17 +60,21 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
 
         # Create a new NATS event
         if ctx.extension == 'hda':
-            nats_event = {
-                'work_id': str(uuid4()),
-                'path': '/mythica/generate_job_defs',
-                'data': {
+            parameter_set = ParameterSet(
+                params={
                     'hda_file': FileParameter(
                         file_id=file_id
-                    ) 
+                    )
                 }
-            }
+            )
+
+            event = WorkerRequest(
+                work_id=str(uuid4()),
+                path='/mythica/generate_job_defs',
+                data=parameter_set.model_dump()
+            )
 
             nats = NatsAdapter()
-            asyncio.create_task(nats.post("houdini", nats_event))
+            asyncio.create_task(nats.post("houdini", event))
 
     return file_id, event_id
