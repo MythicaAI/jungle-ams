@@ -6,7 +6,7 @@ on:
       - closed
   push:
     branches:
-      - '**'
+      - "**"
 
 defaults:
   run:
@@ -19,16 +19,16 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-  
+
     env:
       NODE_ENV: "production"
       PROJECT_NUMBER: "296075347103"
       PROJECT_ID: "controlnet-407314"
-      AR_REPO_LOCATION: 'us-central1'
-      SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
-      GKE_CLUSTER_NAME: 'gke-main-us-central1'
-      GKE_CLUSTER_LOCATION: 'us-central1' 
-      WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
+      AR_REPO_LOCATION: "us-central1"
+      SERVICE_ACCOUNT: "github-actions-service-account@controlnet-407314.iam.gserviceaccount.com"
+      GKE_CLUSTER_NAME: "gke-main-us-central1"
+      GKE_CLUSTER_LOCATION: "us-central1"
+      WORKLOAD_IDENTITY_PROVIDER: "projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra"
 
     steps:
       - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          token_format: 'access_token'
+          token_format: "access_token"
           project_id: ${{ env.PROJECT_NUMBER }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
@@ -54,14 +54,19 @@ jobs:
         run: |
           gcloud auth configure-docker '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
 
-      - name: 'Use gcloud CLI'
-        run: 'gcloud info'
-
       - name: Set up Kubernetes credentials
         run: |
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER_NAME }} \
             --region ${{ env.GKE_CLUSTER_LOCATION }} \
             --project ${{ env.PROJECT_ID }}
+
+      - name: Verify Access to Secrets
+        run: |
+          kubectl get secrets -n api-staging
+
+      - name: Check RoleBindings for Service Account
+        run: |
+          kubectl get rolebinding -n api-staging -o yaml | grep 'github-actions-service-account'
 
       - name: Install Helm
         run: |
@@ -69,4 +74,4 @@ jobs:
 
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --install --namespace api-staging -f api/values-staging.yaml api-staging ./api
+          helm upgrade --namespace api-staging -f api/values-staging.yaml api-staging ./api
