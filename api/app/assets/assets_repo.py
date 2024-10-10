@@ -433,7 +433,7 @@ def top(session: Session):
         asset_id = asset_seq_to_id(asset.asset_seq)
         return AssetTopResult(
             asset_id=asset_id,
-            org_id=org_seq_to_id(asset.org_seq),
+            org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
             org_name=resolve_org_name(session, asset.org_seq),
             owner_id=profile_seq_to_id(asset.owner_seq),
             owner_name=resolve_profile_name(session, asset.owner_seq),
