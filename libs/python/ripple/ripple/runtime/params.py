@@ -22,6 +22,7 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
         
         param = paramSet.params[name]
 
+        # Validate type
         if isinstance(paramSpec, IntParameterSpec):
             if not isinstance(param, int) and not (isinstance(param, list) and all(isinstance(p, int) for p in param) and len(param) == len(paramSpec.default)):
                 return False
@@ -39,6 +40,11 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
                 return False
         else:
             return False
+
+        # Validate constant
+        if paramSpec.constant:
+            if param != paramSpec.default:
+                return False
 
     return True
 

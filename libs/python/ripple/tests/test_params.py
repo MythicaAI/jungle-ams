@@ -178,6 +178,13 @@ def test_param_validate():
     assert validate_params(spec, set_bad) == False
     assert validate_params(spec, set_bad2) == False
 
+    # Constant test
+    spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})
+    set_good = ParameterSet(params={'test_int': 0})
+    set_bad = ParameterSet(params={'test_int': 1})
+    assert validate_params(spec, set_good)
+    assert validate_params(spec, set_bad) == False
+
 
 def test_param_resolve():
     #TODO: Setup endpoint that works in test environment
