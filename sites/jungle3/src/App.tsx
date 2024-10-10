@@ -9,6 +9,7 @@ import { useOnboarding } from "@hooks/useOnboarding";
 import { ProductTour } from "@components/ProductTour";
 import "./styles/App.css";
 
+const Dashboard = lazy(() => lazyRetry(() => import("@pages/Dashboard")));
 const Assets = lazy(() => lazyRetry(() => import("@pages/Assets")));
 const ProfileSettings = lazy(() =>
   lazyRetry(() => import("@pages/ProfileSettings")),
@@ -44,6 +45,7 @@ const App: React.FC = () => {
       <Routes>
         <Route path="*" element={<Layout />} errorElement={<ErrorPage />}>
           <Route index element={<Assets />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="profile" element={<ProfileSettings />} />
           <Route path="packages" element={<Packages />} />
           <Route path="uploads" element={<Uploads />} />
