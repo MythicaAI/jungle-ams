@@ -75,6 +75,6 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
             )
 
             nats = NatsAdapter()
-            asyncio.create_task(nats.post("houdini", event))
+            asyncio.create_task(nats.post("houdini", event.model_dump()))
 
     return file_id, event_id
