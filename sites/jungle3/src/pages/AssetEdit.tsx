@@ -104,6 +104,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       commit_ref: r.commit_ref || "",
       created: r.created || "",
       updated: r.updated,
+      published: r.published,
       files: {},
       thumbnails: {},
       links: [],
