@@ -10,8 +10,8 @@ gcloud artifacts repositories describe ${AR_NAME} \
 # Create service account to impersonate
 #
 gcloud iam service-accounts create github-actions-service-account  \
---description="A service account for use in a GitHub Actions workflow"  \
---display-name="GitHub Actions service account."
+  --description="A service account for use in a GitHub Actions workflow"  \
+  --display-name="GitHub Actions service account."
 
 # Allow images to be created the first time they are pushed by SA
 gcloud artifacts repositories add-iam-policy-binding ${AR_NAME} \
@@ -24,10 +24,16 @@ gcloud iam service-accounts add-iam-policy-binding ${SA_ACCOUNT} \
  --role=roles/iam.serviceAccountTokenCreator \
  --member=user:jacob@mythica.ai
 
-# Grant workload identity user to SA
+# Grant workload identity user to SA for federated principal
 gcloud iam service-accounts add-iam-policy-binding ${SA_ACCOUNT} \
  --role=roles/iam.workloadIdentityUser  \
  --member=principalSet://iam.googleapis.com/${WIP_POOL}/attribute.repository/MythicaAI/infra
+
+# Grant workload identity user to SA for K8S service account principal
+gcloud iam service-accounts add-iam-policy-binding \
+  github-actions-service-account@controlnet-407314.iam.gserviceaccount.com \
+  --role roles/iam.workloadIdentityUser \
+  --member "serviceAccount:controlnet-407314.svc.id.goog[api-staging/github-actions-service-account]"
 
 #
 # Create the workload identity pool
