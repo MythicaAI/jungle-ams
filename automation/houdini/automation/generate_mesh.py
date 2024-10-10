@@ -51,7 +51,7 @@ def create_inputs(asset, geo, params: dict):
         asset.setInput(input_index, input_node, 0)
 
 
-def generate_mesh(
+def generate_mesh_impl(
     hda_path: str,
     hda_definition_index: int,
     format: str,
@@ -176,7 +176,7 @@ class ExportMeshRequest(BaseModel):
     format: str
 
 
-def export_mesh(request: ParameterSet, result_callback):
+def generate_mesh(request: ParameterSet, result_callback):
     model = ExportMeshRequest(**request.params)
 
     # TODO: Pipe through profile_id to create session token
@@ -185,7 +185,7 @@ def export_mesh(request: ParameterSet, result_callback):
     result_file_id = None
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        result_file_path = generate_mesh(
+        result_file_path = generate_mesh_impl(
             model.hda_file.file_path,
             model.hda_definition_index,
             model.format,
