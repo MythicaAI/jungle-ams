@@ -52,7 +52,7 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
 
 def publish_job_def(name: str, description: str, param_spec: ParameterSpec) -> Optional[str]:
     definition = {
-        'job_type': 'houdini_generate_mesh',
+        'job_type': 'houdini::/mythica/generate_mesh',
         'name': f"Generate {name}",
         'description': description,
         'config': {},     #TODO: Remove from request/db schema
