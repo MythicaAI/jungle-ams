@@ -23,20 +23,30 @@ def test_create_update(client, api_base, create_profile):
     # Create a job definition
     r = client.post(f'{api_base}/jobs/definitions',
                     json={
-                        'job_type': 'houdini_generate_mesh',
+                        'job_type': 'houdini::/mythica/generate_mesh',
                         'name': 'Generate Cactus',
                         'description': 'Generates a cactus mesh',
-                        'config': {
-                            'hda_file': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
-                            'hda_definition_index': 0
-                        },
-                        'input_files': 2,
                         'params_schema': {
-                            'size': {
-                                'type': 'Float',
-                                'label': 'Segment Size',
-                                'min': 0.0,
-                                'max': 10.0
+                            'params': {
+                                'hda_file': {
+                                    'param_type': 'file',
+                                    'label': 'HDA File',
+                                    'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                                    'constant': True
+                                },
+                                'hda_definition_index': {
+                                    'param_type': 'int',
+                                    'label': 'HDA Definition Index',
+                                    'default': 0,
+                                    'constant': True
+                                },
+                                'size': {
+                                    'param_type': 'float',
+                                    'label': 'Segment Size',
+                                    'default': 0.0,
+                                    'min': 0.0,
+                                    'max': 10.0
+                                }
                             }
                         }
                     },
@@ -55,9 +65,25 @@ def test_create_update(client, api_base, create_profile):
     r = client.post(f'{api_base}/jobs',
                     json={
                         'job_def_id': "INVALID",
-                        'input_files': [],
                         'params': {
-                            'size': 5.0
+                            'params': {
+                                'hda_file': {
+                                    'file_id': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
+                                },
+                                'hda_definition_index': 0,
+                                'size': 5.0
+                            }
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # Create a bad parameter job
+    r = client.post(f'{api_base}/jobs',
+                    json={
+                        'job_def_id': job_def_id,
+                        'params': {
+                            'params': {}
                         }
                     },
                     headers=headers)
@@ -67,12 +93,14 @@ def test_create_update(client, api_base, create_profile):
     r = client.post(f'{api_base}/jobs',
                     json={
                         'job_def_id': job_def_id,
-                        'input_files': [
-                            'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
-                            'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
-                        ],
                         'params': {
-                            'size': 5.0
+                            'params': {
+                                'hda_file': {
+                                    'file_id': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
+                                },
+                                'hda_definition_index': 0,
+                                'size': 5.0
+                            }
                         }
                     },
                     headers=headers)
