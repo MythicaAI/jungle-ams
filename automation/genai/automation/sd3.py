@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from diffusers import StableDiffusion3Pipeline
+from ripple.models.streaming import Message
+
 import torch
 import io
 import base64
@@ -42,7 +44,7 @@ def txt2img(request: ImageRequest, progress: callable):
         aspect_ratio = request.aspect_ratio
         seed = request.seed
 
-        progress({'status' :f"Starting Txt 2 Image Generation using SD3 Medium: {request}"})
+        progress(Message(message=f"Starting Txt 2 Image Generation using SD3 Medium: {request}"))
 
         # Get width and height from aspect_ratio
         if aspect_ratio in aspect_ratio_mapping:
@@ -60,7 +62,7 @@ def txt2img(request: ImageRequest, progress: callable):
             height=height
         ).images[0]
         
-        progress({'status' :f"Txt 2 Image Generation Completed: {request}"})
+        progress(Message(message=f"Txt 2 Image Generation Completed: {request}"))
 
 
         # Convert image to base64
@@ -68,7 +70,7 @@ def txt2img(request: ImageRequest, progress: callable):
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        progress({'image' :img_str})
+        progress(Message(message=f"image: {img_str}"))
 
 
     except Exception as e:
