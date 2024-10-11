@@ -1,24 +1,30 @@
 name: sites-jungle3-publish-staging
 
 on:
+  # push: # TODO: Uncomment it after the developing
+  #   paths:
+  #     - 'sites/jungle3/**'
+  #     - '.github/workflows/sites-jungle3-publish-staging.yaml'
+  #     - 'api/nginx/**'
   push:
-    paths:
-      - 'sites/jungle3/**'
-      - '.github/workflows/sites-jungle3-publish-staging.yaml'
-      - 'api/nginx/**'
+    branches:
+      - "**"
+      # - main # TODO: Uncomment it after the developing to run job only after push on main branch 
 
 defaults:
   run:
     working-directory: .
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       repository-projects: read
       pull-requests: write
-      id-token: write
 
     env:
       IMAGE_NAME: "mythica-sites-jungle3-build"
@@ -68,4 +74,64 @@ jobs:
           context: api/nginx
           tags: ${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
           build-args: |
-            IS_PROD=${{ env.IS_PROD }}
+            TAG=${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
+
+  helm-deploy:
+    runs-on: ubuntu-latest
+    needs: build-publish
+
+    env:
+      NODE_ENV: "production"
+      PROJECT_NUMBER: "296075347103"
+      PROJECT_ID: "controlnet-407314"
+      AR_REPO_LOCATION: "us-central1"
+      SERVICE_ACCOUNT: "github-actions-service-account@controlnet-407314.iam.gserviceaccount.com"
+      GKE_CLUSTER_NAME: "gke-main-us-central1"
+      GKE_CLUSTER_LOCATION: "us-central1"
+      WORKLOAD_IDENTITY_PROVIDER: "projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: "access_token"
+          project_id: ${{ env.PROJECT_NUMBER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+
+      - name: Set up Kubernetes credentials
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER_NAME }} \
+            --region ${{ env.GKE_CLUSTER_LOCATION }} \
+            --project ${{ env.PROJECT_ID }}
+
+      - name: Verify Access to Secrets
+        run: |
+          kubectl get secrets -n api-staging
+
+      - name: Check RoleBindings for Service Account
+        run: |
+          kubectl get rolebinding -n api-staging -o yaml | grep 'github-actions-service-account'
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Deploy Helm Chart
+        run: |
+          helm upgrade --namespace api-staging -f api/values-staging.yaml api-staging ./api
