@@ -127,7 +127,8 @@ class WorkerModel(BaseModel):
 class WorkerRequest(BaseModel):
     """Contract for requests for work"""
     work_id: str
-    job_id: Optional[str] = None  # job_id is optional
+    job_id: Optional[str] = None
+    profile_id: Optional[str] = None
     path: str
     data: Dict
 
@@ -210,7 +211,7 @@ class Worker:
             try:
                 payload = WorkerRequest(**json_payload)
 
-                log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
+                log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, profile_id: {payload.profile_id}, data: {payload.data}"
 
                 #TODO: These should be defined elsewhere.
 

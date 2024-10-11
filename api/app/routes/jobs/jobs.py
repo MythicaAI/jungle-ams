@@ -115,14 +115,13 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, params: str
     return event_result
 
 
-def add_job_nats_event(job_seq: int, job_type: str, params: ParameterSet):
-    job_id = job_seq_to_id(job_seq)
-
+def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: ParameterSet):
     [subject, path] = job_type.split("::")
 
     event = WorkerRequest(
         work_id=str(uuid4()),
-        job_id=job_id,
+        job_id=job_seq_to_id(job_seq),
+        profile_id=profile_seq_to_id(profile_seq),
         path=path,
         data=params.model_dump()
     )
@@ -157,7 +156,7 @@ async def create_job(
         event_id = event_seq_to_id(event_result.inserted_primary_key[0])
         session.commit()
 
-        add_job_nats_event(job_seq, job_def.job_type, request.params)
+        add_job_nats_event(job_seq, profile.profile_seq, job_def.job_type, request.params)
 
         return JobResponse(
             job_id=job_seq_to_id(job_seq),
