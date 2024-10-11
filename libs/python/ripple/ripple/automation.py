@@ -293,7 +293,7 @@ class Worker:
                 doer._result(Progress(progress=100), complete=True)
 
             except Exception as e:
-                log.error(f"Executor error - {log_str} - {e} - {traceback.format_exc()}")
+                log.error(f"Executor error - {log_str} - {e}")
                 doer._result(Message(message=str(e)))
                 
 
