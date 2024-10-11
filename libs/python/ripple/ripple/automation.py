@@ -239,7 +239,7 @@ class Worker:
 
         task = asyncio.create_task(self.nats.post("result", item.json())) 
         task.add_done_callback(self._get_error_handler())
-        if item.job_id is not "":
+        if item.job_id != "":
             if complete:
                 task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}"))
             else:
