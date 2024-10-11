@@ -5,6 +5,7 @@ on:
     paths:
       - 'sites/jungle3/**'
       - '.github/workflows/sites-jungle3-publish-staging.yaml'
+      - 'api/nginx/**'
 
 defaults:
   run:
