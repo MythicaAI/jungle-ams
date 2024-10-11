@@ -21,12 +21,15 @@ jobs:
 
     env:
       IMAGE_NAME: "mythica-sites-jungle3-build"
+      IMAGE_NAME_NGINX: "mythica-web-front"
       NODE_ENV: "production"
       PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
       AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
+      IS_PROD: 'false'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -55,4 +58,13 @@ jobs:
         with:
           push: true
           context: sites/jungle3
-          tags: '${{ env.AR_URL }}/${{env.IMAGE_NAME}}:latest'
+          tags: '${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}'
+
+      - name: Build and push mythica-web-front
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: api/nginx  # Adjust this path to where your nginx Dockerfile is located
+          tags: '${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}'
+          build-args: |
+            IS_PROD=${{ env.IS_PROD }}

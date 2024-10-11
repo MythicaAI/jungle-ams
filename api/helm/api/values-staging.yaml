@@ -32,8 +32,6 @@ api:
   webFront:
     replicas: 2
     maxUnavailable: 1
+    tag: "staging-latest"
     maxSurge: 5
     nginxConfig: "/etc/nginx/nginx-gke-staging.conf"
-  publishInit:
-    bucketName: "mythica-staging-web-content"
-

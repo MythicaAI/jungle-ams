@@ -11,6 +11,17 @@ WORKDIR /sites
 ENV API_ENDPOINT=app:5555
 ENV DEX_ENDPOINT=dex:5556
 ENV EXTERNAL_IP=127.0.0.1
+ENV IS_PROD="true"
+
+ARG TAG
+RUN if [ "$IS_PROD" = "true" ]; then \
+        TAG="latest"; \
+    else \
+        TAG="staging-latest"; \
+    fi
+
+# Copy the frontend build files from the frontend image
+COPY --from=us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-sites-jungle3-build:"${TAG}" /app/dist /sites/jungle3
 
 COPY conf/variables.template /etc/nginx/templates/10-variables.conf.template
 COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template

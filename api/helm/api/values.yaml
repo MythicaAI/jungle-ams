@@ -41,9 +41,8 @@ api:
     maxSurge: 4
   webFront:
     name: "web-front"
+    tag: "latest"
     replicas: 5
     maxUnavailable: 2
     maxSurge: 10
     nginxConfig: "/etc/nginx/nginx-gke.conf"
-  publishInit:
-    bucketName: "mythica-public-web-content"

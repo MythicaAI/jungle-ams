@@ -23,21 +23,9 @@ spec:
         fsGroup: 101 # use the nginx group for file-system security privileges
       terminationGracePeriodSeconds: 60
       serviceAccountName: api
-      initContainers:
-        - name: publish-init
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:latest
-          imagePullPolicy: Always
-          volumeMounts:
-            - name: ephemeral-sites-volume
-              mountPath: /sites
-          env:
-            - name: PUBLISH_PATH
-              value: "/sites"
-            - name: BUCKET_NAME
-              value: {{ .Values.api.publishInit.bucketName }}
       containers:
         - name: nginx
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:{{ $componentContext.tag }}
           args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }}" ]
           imagePullPolicy: Always
           env:

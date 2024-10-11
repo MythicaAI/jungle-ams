@@ -24,9 +24,5 @@ COPY . .
 
 # Build the application
 ARG NODE_ENV=production
+# Specify the output directory is /app/dist
 RUN pnpm run build -m "${NODE_ENV}"
-
-# Copy build artifacts from the builder stage
-FROM alpine:latest
-WORKDIR /dist
-COPY --from=build /app/dist .
