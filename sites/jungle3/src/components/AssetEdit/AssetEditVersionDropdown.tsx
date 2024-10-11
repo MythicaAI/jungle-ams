@@ -110,7 +110,7 @@ export const AssetEditVersionDropdown = () => {
   const id = open ? "simple-popper" : undefined;
 
   React.useEffect(() => {
-    if (isVersionZero(sanitizedVersion)) {
+    if (isVersionZero(sanitizedVersion) || isVersionZero(version)) {
       const defaultVersion = "1.0.0";
       const newSanitizedVersion = sanitizeVersion(
         convertUserVersion(defaultVersion),

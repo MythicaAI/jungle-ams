@@ -18,12 +18,15 @@ domains:
   - dex.mythica.ai
   - dex.mythica.gg
 
+serviceAccount:
+  secretName: front-end-api-sa
 api:
   app:
     name: "app"
     replicas: 3
     maxUnavailable: 1
     maxSurge: 6
+    base_url: "https://api.mythica.ai/v1"
   gcsProxy:
     name: "gcs-proxy"
     replicas: 3
@@ -42,3 +45,5 @@ api:
     maxUnavailable: 2
     maxSurge: 10
     nginxConfig: "/etc/nginx/nginx-gke.conf"
+  publishInit:
+    bucketName: "mythica-public-web-content"

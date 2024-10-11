@@ -33,10 +33,12 @@ spec:
           env:
             - name: PUBLISH_PATH
               value: "/sites"
+            - name: BUCKET_NAME
+              value: {{ .Values.api.publishInit.bucketName }}
       containers:
         - name: nginx
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
-          args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }} " ]
+          args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }}" ]
           imagePullPolicy: Always
           env:
             - name: API_ENDPOINT

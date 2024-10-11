@@ -14,7 +14,7 @@ const apiConfig: ApiConfigType = {
    * Used to redirect for unauthorized calls
    * @see redirectToPage.js
    */
-  loginPath: ApiUrl.LOGIN,
+  loginPath: ApiUrl.BASE,
 
   /**
    * Default API to choose if no option is given

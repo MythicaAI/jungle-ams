@@ -38,7 +38,7 @@ def main():
     if len(sys.argv) >= 2 and sys.argv[1] == "initialize":
         initialize()
     else:
-        worker.start('test',workers)        
+        worker.start('genai',workers)        
 
 if __name__ == "__main__":
     main()

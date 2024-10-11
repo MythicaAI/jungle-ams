@@ -26,7 +26,8 @@ spec:
       serviceAccountName: api
       containers:
         - name: app
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:latest
+          # TODO: Change the version of mythica-app image for latest
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:c38e97d2
           imagePullPolicy: Always
           resources:
             requests:
@@ -47,7 +48,7 @@ spec:
             - name: WORKER_COUNT
               value: "3"
             - name: API_BASE_URI
-              value: "https://api.mythica.ai/v1"
+              value: {{ .Values.api.app.base_url }}
           ports:
             - containerPort: 5555
               name: http-api
@@ -60,8 +61,8 @@ spec:
               readOnly: true
       volumes:
         - name: ephemeral-upload-vol
-          emptyDir: { }
+          emptyDir: {}
         - name: service-account-vol
           secret:
-            secretName: front-end-api-sa
+            secretName: {{ .Values.serviceAccount.secretName }}
       restartPolicy: Always
