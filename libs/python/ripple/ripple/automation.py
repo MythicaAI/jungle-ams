@@ -214,6 +214,7 @@ class Worker:
             log.error(f'Failed to register workers: {e}')
 
     def _publish_local_data(self, item: ProcessStreamItem):
+        #TODO: Report errors
         if isinstance(item, OutputFiles):
             token = start_session(self.rest, self.current_request.profile_id)
 
@@ -228,6 +229,7 @@ class Worker:
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
         # Poplulate context
+        #TODO: Generate process guid
         item.process_guid = 'xxxxxxxxxxx'
         item.job_id = self.current_request.job_id if self.current_request.job_id is not None else ""
 
@@ -239,7 +241,7 @@ class Worker:
 
         task = asyncio.create_task(self.nats.post("result", item.json())) 
         task.add_done_callback(self._get_error_handler())
-        if item.job_id != "":
+        if self.current_request.job_id:
             if complete:
                 task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}"))
             else:
