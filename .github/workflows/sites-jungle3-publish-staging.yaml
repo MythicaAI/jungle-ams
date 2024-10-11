@@ -58,13 +58,13 @@ jobs:
         with:
           push: true
           context: sites/jungle3
-          tags: '${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}'
+          tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
 
       - name: Build and push mythica-web-front
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: api/nginx  # Adjust this path to where your nginx Dockerfile is located
-          tags: '${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}'
+          context: api/nginx
+          tags: ${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
           build-args: |
             IS_PROD=${{ env.IS_PROD }}
