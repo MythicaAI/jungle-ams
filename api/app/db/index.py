@@ -1,7 +1,9 @@
+import asyncio
 import logging
 from typing import Tuple
 
 from sqlmodel import insert
+from uuid import uuid4
 
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from cryptid.location import location
@@ -9,6 +11,9 @@ from context import RequestContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
+from ripple.automation import NatsAdapter, WorkerRequest
+from ripple.models.params import FileParameter, ParameterSet
+
 
 log = logging.getLogger(__name__)
 
@@ -52,5 +57,24 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         session.commit()
         event_seq = event_result.inserted_primary_key[0]
         event_id = event_seq_to_id(event_seq)
+
+        # Create a new NATS event
+        if ctx.extension == 'hda':
+            parameter_set = ParameterSet(
+                params={
+                    'hda_file': FileParameter(
+                        file_id=file_id
+                    )
+                }
+            )
+
+            event = WorkerRequest(
+                work_id=str(uuid4()),
+                path='/mythica/generate_job_defs',
+                data=parameter_set.model_dump()
+            )
+
+            nats = NatsAdapter()
+            asyncio.create_task(nats.post("houdini", event.model_dump()))
 
     return file_id, event_id
