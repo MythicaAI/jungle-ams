@@ -89,9 +89,10 @@ IMAGES = {
 IMAGE_SETS = {
     'all': set(IMAGES.keys()),
     'sites': {
-        'sites/jungle3'
+        'sites/jungle3',
     },
     'web': {
+        'sites/jungle3',
         'api/nginx',
         'api/app',
         'api/publish-init',
