@@ -64,6 +64,8 @@ jobs:
           push: true
           context: sites/jungle3
           tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
+          build-args: |
+            NODE_ENV=${{ env.IS_PROD == 'true' && 'production' || 'staging' }}
 
       - name: Build and push mythica-web-front
         uses: docker/build-push-action@v6
