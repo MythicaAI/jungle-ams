@@ -17,21 +17,24 @@ serviceAccount:
   secretName: front-end-api-staging-sa
 api:
   app:
+    tag: "latest"
     replicas: 2
     maxUnavailable: 1
     maxSurge: 4
     base_url: "https://api-staging.mythica.ai/v1"
   gcsProxy:
+    tag: "latest"
     replicas: 2
     maxUnavailable: 1
     maxSurge: 4
   packager:
+    tag: "latest"
     replicas: 1
     maxUnavailable: 1
     maxSurge: 2
   webFront:
+    tag: "latest"
     replicas: 2
     maxUnavailable: 1
-    tag: "staging-latest"
     maxSurge: 5
     nginxConfig: "/etc/nginx/nginx-gke-staging.conf"

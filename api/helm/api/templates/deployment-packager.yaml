@@ -23,7 +23,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: packager
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-packager:latest
+          image: "{{ .Values.imageRepository }}/mythica-packager:{{ $componentContext.tag }}"
           imagePullPolicy: Always
           resources:
             requests:

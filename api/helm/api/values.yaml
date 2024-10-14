@@ -7,6 +7,7 @@ replicaCount: 3
 namespace: "api"
 tier: "web"
 release: "production"
+imageRepository: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images
 hostnameDecorator: ""
 domains:
   - oss.mythica.ai
@@ -22,26 +23,33 @@ serviceAccount:
   secretName: front-end-api-sa
 api:
   app:
+    tag: "latest"
     name: "app"
     replicas: 3
     maxUnavailable: 1
     maxSurge: 6
     base_url: "https://api.mythica.ai/v1"
   gcsProxy:
+    tag: "latest"
     name: "gcs-proxy"
     replicas: 3
     maxUnavailable: 2
     maxSurge: 5
   letsEncrypt:
+    tag: "latest"
     name: "lets-encrypt"
+    replicas: 1
+    maxUnavailable: 1
+    maxSurge: 2
   packager:
+    tag: "latest"
     name: "packager"
     replicas: 2
     maxUnavailable: 1
     maxSurge: 4
   webFront:
-    name: "web-front"
     tag: "latest"
+    name: "web-front"
     replicas: 5
     maxUnavailable: 2
     maxSurge: 10
