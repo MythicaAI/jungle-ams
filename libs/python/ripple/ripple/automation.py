@@ -4,10 +4,12 @@ import aiohttp
 import logging
 import asyncio
 import nats
+import requests
 import tempfile
 from pydantic import BaseModel
 from typing import Callable, Type, Optional, Dict
 from ripple.models.params import ParameterSet
+from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message
 from ripple.runtime.params import resolve_params
 
 # Set up logging
@@ -102,21 +104,63 @@ class RestAdapter():
     def __init__(self, api_url=API_URL) -> None:
         self.api_url = api_url
 
-    
-    async def post(self, endpoint: str, data: dict={}) -> None:
+    def get(self, endpoint: str, data: dict={}) -> Optional[str]:
+        """Get data from an endpoint."""
+        url = API_URL + endpoint
+        log.debug(f"Getting from Endpoint: {url} - {data}" )
+        response = requests.get(url)
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
+            return None
+
+    async def post(self, endpoint: str, data: str) -> None:
         """Post data to an endpoint. """
         endpoint = os.path.join(API_URL,endpoint)
         async with aiohttp.ClientSession() as session:
             log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
             async with session.post(
                         endpoint, 
-                        json=json.dumps(data), 
+                        json=data, 
                         headers={"Content-Type": "application/json"}) as post_result:
                 if post_result.status in [200,201]:
                     log.debug(f"Endpoint Response: {post_result.status}")
                 else:
                     log.error(f"Failed to call job API: {endpoint} - {data} - {post_result.status}")
 
+    def post_file(self, endpoint: str, token: str, file_data: list) -> Optional[str]:
+        """Post file to an endpoint."""
+        url = API_URL + endpoint
+        log.debug(f"Sending file to Endpoint: {url} - {file_data}" )
+        response = requests.post(
+            url, 
+            files=file_data, 
+            headers={"Authorization": "Bearer %s" % token}
+        )
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {url} - {file_data} - {response.status_code}")
+            return None
+
+
+def start_session(rest: RestAdapter, profile_id: str) -> Optional[str]:
+    url = f"/sessions/direct/{profile_id}"
+    response = rest.get(url)
+    return response['token'] if response else None
+
+
+def upload_file(rest: RestAdapter, token: str, file_path: str) -> Optional[str]:
+    file_id = None
+    with open(file_path, 'rb') as file:
+        file_name = os.path.basename(file_path)
+        file_data = [('files', (file_name, file, 'application/octet-stream'))]
+        response = rest.post_file("/upload/store", token, file_data)
+        file_id = response['files'][0]['file_id'] if response else None
+    return file_id
 
 
 class WorkerModel(BaseModel):
@@ -168,24 +212,40 @@ class Worker:
             log.debug(f'End Registering workers')
         except Exception as e:
             log.error(f'Failed to register workers: {e}')
- 
+
+    def _publish_local_data(self, item: ProcessStreamItem):
+        #TODO: Report errors
+        if isinstance(item, OutputFiles):
+            token = start_session(self.rest, self.current_request.profile_id)
+
+            for key, files in item.files.items():
+                for index, file in enumerate(files):
+                    file_id = upload_file(self.rest, token, file)
+                    files[index] = file_id
 
     #Callback for reporting back. 
-    def _result(self,rdata: dict={}, complete=False):
+    def _result(self, item: ProcessStreamItem, complete=False):
         JOB_RESULT_ENDPOINT="/jobs/results/"
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
-        log.info(f"Job {'Result' if not complete else 'Complete'} -> {rdata}")
+        # Poplulate context
+        #TODO: Generate process guid
+        item.process_guid = 'xxxxxxxxxxx'
+        item.job_id = self.current_request.job_id if self.current_request.job_id is not None else ""
 
-        #TODO: We need to unresolve file params in the result_data field and externalize the "result" channel
-        task = asyncio.create_task(self.nats.post("result", json.dumps(rdata))) 
+        # Upload any references to local data
+        self._publish_local_data(item)
+
+        # Publish results
+        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+
+        task = asyncio.create_task(self.nats.post("result", item.json())) 
         task.add_done_callback(self._get_error_handler())
-        if 'job_id' in rdata:
-            job_id = rdata['job_id']
+        if self.current_request.job_id:
             if complete:
-                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{job_id}"))
+                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}"))
             else:
-                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{job_id}", rdata))
+                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", item.json()))
             task.add_done_callback(self._get_error_handler())
             
     def _get_error_handler(self):
@@ -193,10 +253,7 @@ class Worker:
             e = task.exception()
             if e:
                 log.error(str(e))
-                self._result({
-                    'status': 'error',
-                    'message': str(e)
-                })
+                self._result(Message(message=str(e)))
         return handler
     
     def _get_executor(self):
@@ -224,7 +281,9 @@ class Worker:
 
             #Run the worker
             try:
-                doer._result({'status': 'started'})
+                doer.current_request = payload
+
+                doer._result(Progress(progress=0))
 
                 with tempfile.TemporaryDirectory() as tmpdir:
                     worker = doer.workers[payload.path] 
@@ -233,14 +292,11 @@ class Worker:
                         resolve_params(API_URL, tmpdir, inputs)
                     worker.provider(inputs, doer._result)
 
-                doer._result({'status': 'complete'}, complete=True)
+                doer._result(Progress(progress=100), complete=True)
 
             except Exception as e:
                 log.error(f"Executor error - {log_str} - {e}")
-                doer._result({
-                    'status': 'error',
-                    'message': str(e)
-                })
+                doer._result(Message(message=str(e)))
                 
 
         return implementation

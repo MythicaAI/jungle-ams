@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from ripple.models.streaming import Message
 
 from typing import List
 import torch
@@ -69,7 +70,7 @@ def img2img_inpaint(request: InpaintRequest, progress: callable):
         num_images_per_prompt = request.num_images_per_prompt
         
 
-        progress({'status' :f"Starting Txt 2 Image Inpaint using SD2: {request}"})
+        progress(Message(message=f"Starting Txt 2 Image Inpaint using SD2: {request}"))
 
         # Run the pipeline
         edited_image = sd2_pipe(
@@ -82,14 +83,14 @@ def img2img_inpaint(request: InpaintRequest, progress: callable):
             num_inference_steps=num_inference_steps
         ).images[0]
 
-        progress({'status' :f"Txt 2 Image Inpaint completed: {request}"})
+        progress(Message(message=f"Txt 2 Image Inpaint completed: {request}"))
 
         # Convert the edited image to base64
         buffered = BytesIO()
         edited_image.save(buffered, format="PNG")
         edited_image_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        progress({"image": edited_image_str})
+        progress(Message(message=f"image: {edited_image_str}"))
     
     except Exception as e:
         raise e

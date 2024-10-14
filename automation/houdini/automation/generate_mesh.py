@@ -3,14 +3,11 @@ import logging
 import mythica.darol as mdarol
 import os
 import re
-import requests
 import tempfile
 
 from pydantic import BaseModel
 from ripple.models.params import ParameterSet, FileParameter
-
-#TODO: Configure elsewhere
-ENDPOINT = "https://api.mythica.ai/v1"
+from ripple.models.streaming import OutputFiles
 
 
 logging.basicConfig(
@@ -141,35 +138,6 @@ def generate_mesh_impl(
     return output_zip_file_path
 
 
-def start_session(endpoint: str, profile_id: str) -> str:
-    url = f"{endpoint}/sessions/direct/{profile_id}"
-    response = requests.get(url, timeout=10)
-    if response.status_code != 200:
-        log.warning("Failed to start session: %s", response.status_code)
-        return ""
-
-    result = response.json()
-    return result['token']
-
-
-def upload_mesh(token: str, file_path: str) -> str:
-    headers = {"Authorization": "Bearer %s" % token}
-
-    file_id = None
-    with open(file_path, 'rb') as file:
-        file_name = os.path.basename(file_path)
-        file_data = [
-            ('files', (file_name, file, 'application/octet-stream'))]
-        response = requests.post(
-            f"{ENDPOINT}/upload/store",
-            headers=headers, files=file_data, timeout=10)
-        if response.status_code == 200:
-            result = response.json()
-            file_id = result['files'][0]['file_id']
-
-    return file_id
-
-
 class ExportMeshRequest(BaseModel):
     hda_file: FileParameter
     hda_definition_index: int
@@ -178,11 +146,6 @@ class ExportMeshRequest(BaseModel):
 
 def generate_mesh(request: ParameterSet, result_callback):
     model = ExportMeshRequest(**request.params)
-
-    # TODO: Pipe through profile_id to create session token
-    profile_id = 'prf_xxxxxxxxxx'
-
-    result_file_id = None
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         result_file_path = generate_mesh_impl(
@@ -193,11 +156,6 @@ def generate_mesh(request: ParameterSet, result_callback):
             tmp_dir
         )
 
-        token = start_session(ENDPOINT, profile_id)
-
-        result_file_id = upload_mesh(token, result_file_path)
-
-    result_callback({
-        'message': f"Mesh generation completed. Uploaded {result_file_id}.",
-        'houdini_version': f"{hou.applicationName()} - {hou.applicationVersionString()}"
-    })
+        result_callback(OutputFiles(
+            files = {'mesh': [result_file_path]}
+        ))

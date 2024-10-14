@@ -22,8 +22,8 @@ class ProcessStreamItem(StreamItem):
     MUST have a process GUID for debugging purposes and MUST have
     a job_id to identify their job context bound
     """
-    process_guid: str
-    job_id: str
+    process_guid: str = ""
+    job_id: str = ""
 
 
 class Progress(ProcessStreamItem):

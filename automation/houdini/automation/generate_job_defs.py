@@ -6,6 +6,7 @@ import requests
 
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
+from ripple.models.streaming import Message
 from typing import Optional
 
 #TODO: Configure elsewhere
@@ -88,6 +89,4 @@ def generate_job_defs(request: ParameterSet, result_callback):
         job_def_id = publish_job_def(name, description, param_spec)
 
         if job_def_id is not None:
-            result_callback({
-                'message': f"Created job definition {job_def_id}"
-            })
+            result_callback(Message(message=f"Created job definition {job_def_id}"))

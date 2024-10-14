@@ -24,7 +24,9 @@ COPY . .
 
 # Build the application
 ARG NODE_ENV=production
+# Specify the output directory is /app/dist
 RUN pnpm run build -m "${NODE_ENV}"
+
 
 # Copy build artifacts from the builder stage to a dist folder
 # structure, to support mounting multiple site builds give each dist
