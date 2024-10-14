@@ -15,16 +15,14 @@ defaults:
   run:
     working-directory: .
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build-publish:
     runs-on: ubuntu-latest
     permissions:
       repository-projects: read
       pull-requests: write
+      id-token: write
+      contents: read
 
     env:
       IMAGE_NAME: "mythica-sites-jungle3-build"
@@ -79,6 +77,9 @@ jobs:
   helm-deploy:
     runs-on: ubuntu-latest
     needs: build-publish
+    permissions:
+      id-token: write
+      contents: read
 
     env:
       NODE_ENV: "production"
@@ -134,4 +135,4 @@ jobs:
 
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --namespace api-staging -f api/values-staging.yaml api-staging ./api
+          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-staging api/helm/api
