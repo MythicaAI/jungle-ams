@@ -6,7 +6,7 @@ LABEL verison="1.0.0"
 LABEL tier="web"
 LABEL description="NGINX front end configured for mythica services"
 
-WORKDIR /sites
+WORKDIR /
 
 ENV API_ENDPOINT=app:5555
 ENV DEX_ENDPOINT=dex:5556

@@ -3,16 +3,22 @@
 # storage tier services. You can run this compose set with -d (--detach)
 #
 services:
-  dist:
-    container_name: jungle3-build
+  jungle3:
+    container_name: jungle3
     image: mythica-jungle3-build:latest
+    volumes:
+      - dist:/dist
+  editor:
+    container_name: editor
+    image: mythica-editor-build:latest
     volumes:
       - dist:/dist
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
     depends_on:
-      - dist
+      - jungle3
+      - editor
       - app
     ports:
       - "8080:80"
@@ -38,6 +44,7 @@ networks:
   storage:
     driver: bridge
     name: storage
+    external: true
   web:
     driver: bridge
     name: web

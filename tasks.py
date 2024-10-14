@@ -67,6 +67,9 @@ IMAGES = {
             'NODE_ENV': NODE_ENV,
         }
     },
+    'sites/editor': {
+        'name': 'mythica-editor-build',
+    },
     'testing/storage/minio-config': {'name': 'minio-config'},
     'automation/test': {'name': 'mythica-auto-test', 'working_directory': BASE_DIR},
     'automation/genai': {
@@ -86,19 +89,23 @@ IMAGES = {
     },
 }
 
+SITE_DATA = {
+    'sites/jungle3',
+    'sites/editor',
+}
+
+WEB_SERVING = {
+    'api/nginx',
+    'api/app',
+    'api/publish-init',
+    'api/lets-encrypt',
+    'api/gcs-proxy'
+}
+
 IMAGE_SETS = {
     'all': set(IMAGES.keys()),
-    'sites': {
-        'sites/jungle3',
-    },
-    'web': {
-        'sites/jungle3',
-        'api/nginx',
-        'api/app',
-        'api/publish-init',
-        'api/lets-encrypt',
-        'api/gcs-proxy'
-    },
+    'sites': SITE_DATA,
+    'web': SITE_DATA | WEB_SERVING,
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
@@ -133,10 +140,11 @@ def parse_expose_to_ports(image_path):
     return ports
 
 
-def start_docker_compose(c, docker_compose_path):
+def start_docker_compose(c, docker_compose_path, cleanup_fn=None):
     """Cleanly start a docker compose instance"""
     with c.cd(docker_compose_path):
         c.run('docker compose down --timeout 1')
+        # cleanup_fn(c) if cleanup_fn is not None else None
         c.run('docker compose -f ./docker-compose.yaml up -d',
               pty=PTY_SUPPORTED)
 
@@ -205,6 +213,7 @@ def deploy_image(c, image_path, target):
 
 
 def run_image(c, image_path, background=False):
+    """Run a docker image by path"""
     ports = parse_expose_to_ports(image_path)
     port_args = ' '.join([f'-p {port}:{port}' for port in ports])
     image_name = IMAGES[image_path]['name']
@@ -252,6 +261,7 @@ def copy_dist_files(c, image_path):
 
 @task
 def docker_cleanup(c):
+    """Cleanup docker artifacts"""
     c.run('docker container prune -f')
     c.run('docker image prune -f')
     c.run('docker builder prune')
@@ -260,44 +270,58 @@ def docker_cleanup(c):
 
 @task
 def storage_start(c):
+    """Start storage tier components"""
     start_docker_compose(c, TESTING_STORAGE_DIR)
 
 
 @task
 def storage_stop(c):
+    """Stop storage tier components"""
     stop_docker_compose(c, TESTING_STORAGE_DIR)
 
 
 @task(help={'container': "Container to tail, defaults to all"})
 def storage_tail(c, container=''):
+    """Tail logs of storage components"""
     with c.cd(TESTING_STORAGE_DIR):
         c.run(f'docker compose logs -f {container}', pty=PTY_SUPPORTED)
 
 
 @task(pre=[storage_stop])
 def storage_nuke(c):
+    """Nuke docker storage for a clean start"""
     answer = input("Continue? Type 'nuke' to confirm: ")
     if answer.upper() in ["NUKE"]:
         os.rmdir(os.path.join(BASE_DIR, 'testing/mnt/pgdata/data'))
 
 
 @task
-def web_start(c):
-    start_docker_compose(c, TESTING_WEB_DIR)
+def cleanup_web_dist(c):
+    """Remove the dist volume used by the docker compose web service"""
+    c.run('docker volume rm web_dist', pty=PTY_SUPPORTED)
 
 
 @task
+def web_start(c):
+    """Start web tier components"""
+    start_docker_compose(c, TESTING_WEB_DIR, cleanup_web_dist)
+
+
+@task(post=[cleanup_web_dist])
 def web_stop(c):
+    """Stop web tier components"""
     stop_docker_compose(c, TESTING_WEB_DIR)
 
 
 @task
 def auto_start(c):
+    """Start automation tier components"""
     start_docker_compose(c, TESTING_AUTO_DIR)
 
 
 @task
 def auto_stop(c):
+    """Stop automation tier components"""
     stop_docker_compose(c, TESTING_AUTO_DIR)
 
 
@@ -318,11 +342,13 @@ def image_path_action(c, image, action, **kwargs):
 
 @task(help={'image': f'Image path to build: {IMAGES.keys()}'})
 def docker_build(c, image='all'):
+    """Build a docker image by sub path or set name"""
     image_path_action(c, image, build_image)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})
 def docker_deploy(c, image='all', target='gcs'):
+    """Deploy a docker image by sub path set name"""
     image_path_action(c, image, build_image)
     image_path_action(c, image, deploy_image, target=target)
 
@@ -331,4 +357,5 @@ def docker_deploy(c, image='all', target='gcs'):
     'image': f'Image path to run: {IMAGES.keys()}',
     'background': 'Run the image in the background'})
 def docker_run(c, image='api/app', background=False):
+    """Run a docker image by path"""
     image_path_action(c, image, run_image, background=background)

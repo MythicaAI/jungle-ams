@@ -8,7 +8,7 @@ LABEL tier="web"
 LABEL description="Build container for jungle3"
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /build
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -26,7 +26,9 @@ COPY . .
 ARG NODE_ENV=production
 RUN pnpm run build -m "${NODE_ENV}"
 
-# Copy build artifacts from the builder stage
+# Copy build artifacts from the builder stage to a dist folder
+# structure, to support mounting multiple site builds give each dist
+# folder the name of the mounted site
 FROM alpine:latest
-WORKDIR /dist
-COPY --from=build /app/dist .
+WORKDIR /dist/jungle3
+COPY --from=build /build/dist .
