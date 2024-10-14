@@ -23,9 +23,28 @@ spec:
         fsGroup: 101 # use the nginx group for file-system security privileges
       terminationGracePeriodSeconds: 60
       serviceAccountName: api
+      initContainers:
+        - name: jungle3-build
+          image: "{{ .Values.imageRepository }}/mythica-jungle3-build:{{ $componentContext.tag }}"
+          imagePullPolicy: Always
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - cp -R /dist/jungle3 /dist-publish/jungle3
+          volumeMounts:
+            - name: dist-publish
+              mountPath: "/dist-publish"
+        - name: editor-build
+          image: "{{ .Values.imageRepository }}/mythica-editor-build:{{ $componentContext.tag }}"
+          imagePullPolicy: Always
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - cp -R /dist/editor /dist-publish/editor
+          volumeMounts:
+            - name: dist-publish
+              mountPath: "/dist-publish"
       containers:
         - name: nginx
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:{{ $componentContext.tag }}
+          image: "{{ .Values.imageRepository }}/mythica-web-front:{{ $componentContext.tag }}"
           args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }}" ]
           imagePullPolicy: Always
           env:
@@ -55,10 +74,15 @@ spec:
             initialDelaySeconds: 1
             periodSeconds: 5
           volumeMounts:
+            - name: dist-publish
+              mountPath: /publish
+              readOnly: true
             - name: letsencrypt-tls
               mountPath: "/etc/nginx/tls"
               readOnly: true
       volumes:
+        - name: dist-publish  # ephemeral volume, hosting the dist content
+          emptyDir: { }
         - name: letsencrypt-tls
           secret:
             secretName: letsencrypt-tls

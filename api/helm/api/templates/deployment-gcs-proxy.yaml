@@ -23,7 +23,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: gcs-proxy
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-gcs-proxy:latest
+          image: "{{ .Values.imageRepository }}/mythica-gcs-proxy:{{ $componentContext.tag }}"
           imagePullPolicy: Always
           resources:
             requests:

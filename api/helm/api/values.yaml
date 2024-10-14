@@ -7,6 +7,7 @@ replicaCount: 3
 namespace: "api"
 tier: "web"
 release: "production"
+imageRepository: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images
 hostnameDecorator: ""
 domains:
   - oss.mythica.ai

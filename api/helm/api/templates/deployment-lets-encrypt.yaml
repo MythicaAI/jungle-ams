@@ -21,7 +21,7 @@ spec:
       serviceAccountName: lets-encrypt
       containers:
         - name: letsencrypt
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-lets-encrypt:latest
+          image: "{{ .Values.imageRepository }}/mythica-lets-encrypt:{{ $componentContext.tag }}"
           imagePullPolicy: Always
           env:
             - name: DOMAINS
