@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from ripple.models.streaming import Message
+from ripple.automation import ResultPublisher
+from ripple.models.params import ParameterSet
 
 from typing import List
 import torch
@@ -37,7 +39,7 @@ def preprocess_map(map):
     map = map.to(device)
     return map
 
-class InpaintRequest(BaseModel):
+class InpaintRequest(ParameterSet):
     prompt: List[str] = []
     negative_prompt: List[str] = []
     guidance_scale: float = 7.0
@@ -47,7 +49,7 @@ class InpaintRequest(BaseModel):
     map: str #Base64 encoded byte string
     
 
-def img2img_inpaint(request: InpaintRequest, progress: callable):
+def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
     try:
 
         # Decode image from base64
@@ -70,7 +72,7 @@ def img2img_inpaint(request: InpaintRequest, progress: callable):
         num_images_per_prompt = request.num_images_per_prompt
         
 
-        progress(Message(message=f"Starting Txt 2 Image Inpaint using SD2: {request}"))
+        responder.result(Message(message=f"Starting Txt 2 Image Inpaint using SD2: {request}"))
 
         # Run the pipeline
         edited_image = sd2_pipe(
@@ -83,14 +85,14 @@ def img2img_inpaint(request: InpaintRequest, progress: callable):
             num_inference_steps=num_inference_steps
         ).images[0]
 
-        progress(Message(message=f"Txt 2 Image Inpaint completed: {request}"))
+        responder.result(Message(message=f"Txt 2 Image Inpaint completed: {request}"))
 
         # Convert the edited image to base64
         buffered = BytesIO()
         edited_image.save(buffered, format="PNG")
         edited_image_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        progress(Message(message=f"image: {edited_image_str}"))
+        responder.result(Message(message=f"image: {edited_image_str}"))
     
     except Exception as e:
         raise e

@@ -152,36 +152,36 @@ def test_param_compile():
 def test_param_validate():
     # Minimal test
     spec = ParameterSpec(params={})
-    set = ParameterSet(params={})
+    set = ParameterSet()
     assert validate_params(spec, set)
 
     # Parameter count test
     spec = ParameterSpec(params={"input0": FileParameterSpec(label="Test Input 0", default='')})
-    set_good = ParameterSet(params={"input0": FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")})
-    set_bad = ParameterSet(params={})
+    set_good = ParameterSet(input0= FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"))
+    set_bad = ParameterSet()
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
     # Parameter type test
     spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0)})
-    set_good = ParameterSet(params={'test_int': 5})
-    set_bad = ParameterSet(params={'test_int': 'bad'})
+    set_good = ParameterSet(test_int= 5)
+    set_bad = ParameterSet(test_int ='bad')
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
     # Parameter array test
     spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=[1, 2, 3])})
-    set_good = ParameterSet(params={'test_int': [4, 5, 6]})
-    set_bad = ParameterSet(params={'test_int': [1]})
-    set_bad2 = ParameterSet(params={'test_int': ['a', 'b', 'c']})
+    set_good = ParameterSet(test_int= [4, 5, 6])
+    set_bad = ParameterSet(test_int= [1])
+    set_bad2 = ParameterSet(test_int= ['a', 'b', 'c'])
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
     assert validate_params(spec, set_bad2) == False
 
     # Constant test
     spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})
-    set_good = ParameterSet(params={'test_int': 0})
-    set_bad = ParameterSet(params={'test_int': 1})
+    set_good = ParameterSet(test_int= 0)
+    set_bad = ParameterSet(test_int= 1)
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
@@ -201,7 +201,7 @@ def test_param_resolve():
 
     # File test
     with tempfile.TemporaryDirectory() as tmp_dir:
-        set = ParameterSet(params={"input0": FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")})
+        set = ParameterSet(input0= FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"))
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
         assert len(set.params) == 1
@@ -212,10 +212,10 @@ def test_param_resolve():
 
     # File list test
     with tempfile.TemporaryDirectory() as tmp_dir:
-        set = ParameterSet(params={"files": [
+        set = ParameterSet(files= [
             FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"),
             FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")
-        ]})
+        ])
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
         assert len(set.params) == 1

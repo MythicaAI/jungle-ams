@@ -1,8 +1,7 @@
-from automation.generate_job_defs import generate_job_defs
-from automation.generate_mesh import generate_mesh
+from automation.generate_job_defs import generate_job_defs, GenerateJobDefRequest
+from automation.generate_mesh import generate_mesh, ExportMeshRequest
 from automation.helloworld import hello_world_api, HelloWorldRequest
 from ripple.automation import Worker
-from ripple.models.params import ParameterSet
 
 worker = Worker()
 
@@ -15,12 +14,12 @@ workers = [
     {
         "path": '/mythica/generate_job_defs',
         "provider": generate_job_defs,
-        "inputModel": ParameterSet
+        "inputModel": GenerateJobDefRequest
     },
     {
         "path": '/mythica/generate_mesh',
         "provider": generate_mesh,
-        "inputModel": ParameterSet
+        "inputModel": ExportMeshRequest
     }
 ]
 
