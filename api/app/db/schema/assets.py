@@ -64,3 +64,21 @@ class AssetVersion(SQLModel, table=True):
     author_seq: int = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+
+# sequences for table asset_tag
+
+class AssetTag(SQLModel, table=True):
+    """
+    Metadata to store relationships and descriptions of assets
+    """
+    __tablename__ = "asset_tag"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))

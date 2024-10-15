@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from loader import ASSETS, EVENTS, GRAPH, JOBS, MEDIA, PROFILE, STREAMING, load_name
+from loader import ASSETS, EVENTS, GRAPH, JOBS, MEDIA, PROFILE, STREAMING, TAGS, load_name
 from to_python import schema_to_sqlmodel
 from to_typescript import schema_to_typescript
 
@@ -30,7 +30,7 @@ def main():
         fp = fp.replace('.yaml', ext)
         return fp
 
-    for n in ASSETS, EVENTS, MEDIA, PROFILE, GRAPH, JOBS, STREAMING:
+    for n in ASSETS, EVENTS, MEDIA, PROFILE, GRAPH, JOBS, STREAMING, TAGS:
         log.info(f"load schema {n}")
         schema = load_name(n)
         file_path = fixup(os.path.join(py_output, n), '.py')

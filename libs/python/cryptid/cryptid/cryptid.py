@@ -52,6 +52,7 @@ class IdType(Enum):
     JOB = 'job'
     JOBRESULT = 'jobres'
     READER = 'read'
+    TAG = 'tag'
 
 
 class ApiError(Exception):
@@ -256,3 +257,13 @@ def reader_seq_to_id(reader_seq: int) -> str:
 def reader_id_to_seq(reader_id: str) -> int:
     """Convert reader ID to database seq"""
     return id_to_seq(reader_id, IdType.READER)
+
+
+def tag_seq_to_id(tag_seq: int) -> str:
+    """Convert tag seq to encrypted ID"""
+    return seq_to_id(IdType.TAG, tag_seq)
+
+
+def tag_id_to_seq(tag_id: str) -> int:
+    """Convert tag ID to database seq"""
+    return id_to_seq(tag_id, IdType.TAG)

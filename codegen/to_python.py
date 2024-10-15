@@ -181,6 +181,7 @@ def enrich_data(table, column):
     is_auto_create = column.get('auto_create', False)
     is_auto_update = column.get('auto_update', False)
     sql_type = column['type']
+    is_unique_string = bool(sql_type=='TEXT' and column.get('unique', False))
     py_type, py_value = get_py_type(column)
 
     # primary keys are default not nullable
@@ -230,11 +231,17 @@ def enrich_data(table, column):
     # special handling for integers including composite key specification and integer
     # sizing requires dropping down to the SQLAlchemy base types, use existing field
     # props and replace with sa_column property
+    
+    if is_unique_string:
+        table.setdefault("table_args", []).append(
+            f"UniqueConstraint('{column['name']}', name='uq_{table['table_name']}_{column['name']}')"
+        )
+
     if sql_type == 'BIGINT' or sql_type == 'INTEGER':
         sa_sequence_def(table, column, is_auto_update)
         sa_int_type = get_sa_int_type(sql_type)
         field_props = \
-            [f"sa_column=Column({','.join(
-                sa_column_props(table, column, sa_int_type, is_auto_update, field_props))})"]
+            [f"""sa_column=Column({','.join(
+                sa_column_props(table, column, sa_int_type, is_auto_update, field_props))})"""]
 
     column['sqlmodel'] = 'Field(' + ','.join(field_props) + ')'
