@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blender
+  namespace: automation
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: "blender"
+  template:
+    metadata:
+      labels:
+        app: blender
+        tier: automation
+        version: "1.0"
+        release: production
+    spec:
+      serviceAccountName: automation
+      containers:
+        - name: blender
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-blender:latest
+          imagePullPolicy: Always
+          command: [python3.11, workers.py]
+          stdin: true
+          tty: true
+      restartPolicy: Always
