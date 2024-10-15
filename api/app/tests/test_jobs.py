@@ -67,10 +67,6 @@ def test_create_update(client, api_base, create_profile):
                         'job_def_id': "INVALID",
                         'params': {
                             'params': {
-                                'hda_file': {
-                                    'file_id': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
-                                },
-                                'hda_definition_index': 0,
                                 'size': 5.0
                             }
                         }
@@ -95,10 +91,6 @@ def test_create_update(client, api_base, create_profile):
                         'job_def_id': job_def_id,
                         'params': {
                             'params': {
-                                'hda_file': {
-                                    'file_id': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D'
-                                },
-                                'hda_definition_index': 0,
                                 'size': 5.0
                             }
                         }

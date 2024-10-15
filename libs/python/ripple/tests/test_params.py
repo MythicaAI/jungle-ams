@@ -14,7 +14,7 @@ from ripple.models.params import (
     FileParameterSpec, 
     FileParameter
 )
-from ripple.runtime.params import validate_params, resolve_params
+from ripple.runtime.params import validate_params, resolve_params, populate_constants
 
 
 def test_param_compile():
@@ -184,6 +184,14 @@ def test_param_validate():
     set_bad = ParameterSet(params={'test_int': 1})
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
+
+    # Populate constants test
+    spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})
+    set = ParameterSet(params={})
+    assert validate_params(spec, set) == False
+
+    populate_constants(spec, set)
+    assert validate_params(spec, set)
 
 
 def test_param_resolve():
