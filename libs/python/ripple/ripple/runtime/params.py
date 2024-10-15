@@ -31,7 +31,6 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
             paramSet.params[name] = default
 
 
-
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
     for name, paramSpec in paramSpec.params.items():
         if name not in paramSet.params:

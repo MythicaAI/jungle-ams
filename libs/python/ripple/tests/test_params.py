@@ -185,7 +185,7 @@ def test_param_validate():
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
 
-    # Populate constant test
+    # Populate constants test
     spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})
     set = ParameterSet(params={})
     assert validate_params(spec, set) == False
