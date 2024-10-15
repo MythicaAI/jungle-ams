@@ -34,8 +34,6 @@ class JobDefinition(SQLModel, table=True):
     job_type: str | None = Field(default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
-    config: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
-    input_files: int | None = Field(sa_column=Column('input_files',Integer,default=0))
     params_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
 # sequences for table jobs
