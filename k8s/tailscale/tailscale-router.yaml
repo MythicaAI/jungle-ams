@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-router
+  namespace: tailscale
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: "router"
+  template:      
+    metadata:
+      labels:
+        app: router
+        tier: tailscape
+        version: "1.0"
+        release: production
+    spec:
+      serviceAccountName: "tailscale"
+      restartPolicy: Always
+      containers:
+      - name: tailscale
+        imagePullPolicy: Always
+        image: "ghcr.io/tailscale/tailscale:latest"
+        env:
+        # Store the state in a k8s secret
+        - name: TS_KUBE_SECRET
+          value: "tailscale-auth"
+        - name: TS_USERSPACE
+          value: "false"
+        - name: TS_DEBUG_FIREWALL_MODE
+          value: auto
+        - name: TS_AUTHKEY
+          valueFrom:
+            secretKeyRef:
+              name: tailscale-auth
+              key: TS_AUTHKEY
+              optional: true
+        - name: TS_ROUTES
+          value: "34.118.224.0/20,10.0.0.0/8"
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
