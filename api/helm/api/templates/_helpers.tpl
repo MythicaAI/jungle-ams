@@ -44,6 +44,19 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
+Node selector
+*/}}
+{{- define "api.nodeSelector" -}}
+nodeSelector:
+  {{- if .nodeSelector }}
+  {{ .nodeSelector }}
+  {{- else }}
+  cloud.google.com/gke-spot: "true"
+terminationGracePeriodSeconds: 15
+  {{- end }}
+{{- end }}
+
+{{/*
 Selector labels
 */}}
 {{- define "api.selectorLabels" -}}
