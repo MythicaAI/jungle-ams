@@ -9,6 +9,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: tailscale-auth
+  namespace: tailscale
 stringData:
   TS_AUTHKEY: ${AUTH_KEY}
 EOF

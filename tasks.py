@@ -72,6 +72,7 @@ IMAGES = {
     },
     'testing/storage/minio-config': {'name': 'minio-config'},
     'automation/test': {'name': 'mythica-auto-test', 'working_directory': BASE_DIR},
+    'automation/blender': {'name': 'mythica-auto-blender', 'working_directory': BASE_DIR},
     'automation/genai': {
         'name': 'mythica-auto-genai',
         'buildargs': {
@@ -112,6 +113,7 @@ IMAGE_SETS = {
         'automation/houdini',
         'automation/genai',
         'automation/test',
+        'automation/blender',
         'api/packager'
     },
 }
