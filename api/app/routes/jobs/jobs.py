@@ -20,7 +20,7 @@ from db.schema.profiles import Profile
 from routes.authorization import current_profile
 from ripple.automation import NatsAdapter, WorkerRequest
 from ripple.models.params import ParameterSpec, ParameterSet
-from ripple.runtime.params import validate_params
+from ripple.runtime.params import populate_constants, validate_params
 
 log = logging.getLogger(__name__)
 
@@ -141,6 +141,7 @@ async def create_job(
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
         parameter_spec = ParameterSpec(**job_def.params_schema)
+        populate_constants(parameter_spec, request.params)
         valid = validate_params(parameter_spec, request.params)
         if not valid:
             raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Invalid params")

@@ -18,7 +18,18 @@ from ripple.models.params import (
 def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
     for name, paramSpec in paramSpec.params.items():
         if paramSpec.constant and name not in paramSet.params:
-            paramSet.params[name] = paramSpec.default
+            default = None
+
+            if isinstance(paramSpec, FileParameterSpec):
+                if isinstance(paramSpec.default, list):
+                    default = [FileParameter(file_id=file_id) for file_id in paramSpec.default]
+                else:
+                    default = FileParameter(file_id=paramSpec.default)
+            else:
+                default = paramSpec.default
+
+            paramSet.params[name] = default
+
 
 
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
