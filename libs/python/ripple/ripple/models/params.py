@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, StrictInt, StrictFloat
-from typing import Annotated, Literal, Optional, Union
+from pydantic import BaseModel, Field, model_validator
+from typing import Annotated, Literal, Optional, Union, Any
+
 from uuid import uuid4
 
 
@@ -61,22 +62,40 @@ class FileParameter(BaseModel):
     file_path: Optional[str] = None
 
 
-ParameterType = Union[
-    StrictInt,
-    list[StrictInt],
-    StrictFloat,
-    list[StrictFloat],
+ParameterType = (
+    int,
+    float,
     str,
-    list[str],
     bool,
     FileParameter,
-    list[FileParameter]
-]
+)
 
+def _validate_parameter_types(values:dict, match_type) -> Any:
+    def check(field,value):
+        # For list-like, check each value
+        if isinstance(value, (list, tuple, set, frozenset)):
+            for item in value:
+                check(field, item)
+        # For Dicts, check if they are FileParams. Otherwise check each item        
+        elif isinstance(value, dict):
+            try:
+                FileParameter(**value)
+            except Exception:
+                for key, item in value.items():
+                    check(f"{field}:{key}", item)
+        # If its not a "collection" value it must be of match_type            
+        elif not isinstance(value, match_type):
+            raise TypeError(f"Field '{field}' contains invalid type: {type(value)}. Must match {match_type}.")
+        
+    for field, value in values.items():
+        check(field,value)
+    return values
 
 class ParameterSet(BaseModel):
-    """
-    Set of parameter values provided by a client for a job
-    """
-    params: dict[str, ParameterType]
 
+    # This root validator checks all fields' values
+    @model_validator(mode='before')
+    @classmethod
+    def check_parameter_types(cls, values:dict) -> Any:
+        return _validate_parameter_types(values, ParameterType)
+    

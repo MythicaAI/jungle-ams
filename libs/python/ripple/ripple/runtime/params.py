@@ -33,10 +33,11 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
     for name, paramSpec in paramSpec.params.items():
-        if name not in paramSet.params:
+        params = paramSet.model_dump() 
+        if name not in params:
             return False
         
-        param = paramSet.params[name]
+        param = params[name]
 
         # Validate type
         if isinstance(paramSpec, IntParameterSpec):
@@ -92,7 +93,7 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
 
 
 def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> bool:
-    for name, param in paramSet.params.items():
+    for name, param in paramSet.model_dump().items():
         if isinstance(param, FileParameter):
             param.file_path = download_file(endpoint, directory, param.file_id)
         elif isinstance(param, list) and all(isinstance(file_param, FileParameter) for file_param in param):

@@ -163,31 +163,6 @@ class RestAdapter():
             return None
 
 
-def start_session(rest: RestAdapter, profile_id: str) -> Optional[str]:
-    url = f"/sessions/direct/{profile_id}"
-    response = rest.get(url)
-    return response['token'] if response else None
-
-
-def upload_file(rest: RestAdapter, token: str, file_path: str) -> Optional[str]:
-    file_id = None
-    with open(file_path, 'rb') as file:
-        file_name = os.path.basename(file_path)
-        file_data = [('files', (file_name, file, 'application/octet-stream'))]
-        response = rest.post_file("/upload/store", token, file_data)
-        file_id = response['files'][0]['file_id'] if response else None
-    return file_id
-
-
-def upload_job_def(rest: RestAdapter, job_def: JobDefinition) -> Optional[str]:
-    definition = {
-        'job_type': job_def.job_type,
-        'name': job_def.name,
-        'description': job_def.description,
-        'params_schema': job_def.parameter_spec.dict()
-    }
-    response = rest.post_sync("/jobs/definitions", definition)
-    return response['job_def_id'] if response else None
 
 
 class WorkerModel(BaseModel):
@@ -207,6 +182,91 @@ class WorkerResponse(WorkerRequest):
     """Contract for responses to work requess"""
     result_data: Dict   
 
+class ResultPublisher:
+    request: WorkerRequest
+    nats: NatsAdapter
+    rest: RestAdapter
+    
+    def __init__(self, request: WorkerRequest, nats: NatsAdapter, rest: RestAdapter) -> None:
+        self.request = request
+        self.nats = nats
+        self.rest = rest
+
+    #Callback for reporting back. 
+    def result(self, item: ProcessStreamItem, complete=False):
+        JOB_RESULT_ENDPOINT="/jobs/results/"
+        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
+
+        # Poplulate context
+        #TODO: Generate process guid
+        item.process_guid = 'xxxxxxxxxxx'
+        item.job_id = self.request.job_id if self.request.job_id is not None else ""
+
+        # Upload any references to local data
+        self._publish_local_data(item)
+
+        # Publish results
+        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+
+        task = asyncio.create_task(self.nats.post("result", item.json())) 
+        task.add_done_callback(self._get_error_handler())
+        if self.request.job_id:
+            if complete:
+                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", "")
+            else:
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item.dict()
+                }
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", data)
+            
+    def _publish_local_data(self, item: ProcessStreamItem):
+
+
+        def upload_file(token: str, file_path: str) -> Optional[str]:
+            file_id = None
+            with open(file_path, 'rb') as file:
+                file_name = os.path.basename(file_path)
+                file_data = [('files', (file_name, file, 'application/octet-stream'))]
+                response = self.rest.post_file("/upload/store", token, file_data)
+                file_id = response['files'][0]['file_id'] if response else None
+            return file_id
+
+
+        def upload_job_def(job_def: JobDefinition) -> Optional[str]:
+            definition = {
+                'job_type': job_def.job_type,
+                'name': job_def.name,
+                'description': job_def.description,
+                'params_schema': job_def.parameter_spec.dict()
+            }
+            response = self.rest.post_sync("/jobs/definitions", definition)
+            return response['job_def_id'] if response else None
+
+        #TODO: Report errors
+        if isinstance(item, OutputFiles):
+            url = f"/sessions/direct/{self.request.profile_id}"
+            response = self.rest.get(url)
+            token = response['token'] if response else None
+
+            for key, files in item.files.items():
+                for index, file in enumerate(files):
+                    file_id = upload_file(token, file)
+                    files[index] = file_id
+
+        elif isinstance(item, JobDefinition):
+            job_def_id = upload_job_def(item)
+            if job_def_id != None:
+                item.job_def_id = job_def_id
+
+
+
+def _get_error_handler():
+    def handler(task):
+        e = task.exception()
+        if e:
+            log.error(f"Error publishing result: {e}")
+    return handler
 
 class Worker:
     def __init__(self) -> None:
@@ -220,7 +280,7 @@ class Worker:
 
         loop = asyncio.get_event_loop()        
         task = loop.create_task(self.nats.listen(subject, self._get_executor()))
-        task.add_done_callback(self._get_error_handler())
+        task.add_done_callback(_get_error_handler())
 
         try:
             loop.run_forever()
@@ -240,56 +300,6 @@ class Worker:
         except Exception as e:
             log.error(f'Failed to register workers: {e}')
 
-    def _publish_local_data(self, item: ProcessStreamItem):
-        #TODO: Report errors
-        if isinstance(item, OutputFiles):
-            token = start_session(self.rest, self.current_request.profile_id)
-
-            for key, files in item.files.items():
-                for index, file in enumerate(files):
-                    file_id = upload_file(self.rest, token, file)
-                    files[index] = file_id
-        elif isinstance(item, JobDefinition):
-            job_def_id = upload_job_def(self.rest, item)
-            if job_def_id != None:
-                item.job_def_id = job_def_id
-
-
-    #Callback for reporting back. 
-    def _result(self, item: ProcessStreamItem, complete=False):
-        JOB_RESULT_ENDPOINT="/jobs/results"
-        JOB_COMPLETE_ENDPOINT="/jobs/complete"
-
-        # Poplulate context
-        #TODO: Generate process guid
-        item.process_guid = 'xxxxxxxxxxx'
-        item.job_id = self.current_request.job_id if self.current_request.job_id is not None else ""
-
-        # Upload any references to local data
-        self._publish_local_data(item)
-
-        # Publish results
-        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
-
-        task = asyncio.create_task(self.nats.post("result", item.json())) 
-        task.add_done_callback(self._get_error_handler())
-        if self.current_request.job_id:
-            if complete:
-                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", "")
-            else:
-                data = {
-                    "created_in": "automation-worker",
-                    "result_data": item.dict()
-                }
-                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", data)
-            
-    def _get_error_handler(self):
-        def handler(task):
-            e = task.exception()
-            if e:
-                log.error(f"Error publishing result: {e}")
-        return handler
-    
     def _get_executor(self):
         """
         Execute a work unit by trying to find a route that maps
@@ -315,7 +325,6 @@ class Worker:
 
             #Run the worker
             try:
-                doer.current_request = payload
 
                 doer._result(Progress(progress=0))
 
@@ -324,7 +333,7 @@ class Worker:
                     inputs = worker.inputModel(**payload.data)
                     if isinstance(inputs, ParameterSet):
                         resolve_params(API_URL, tmpdir, inputs)
-                    worker.provider(inputs, doer._result)
+                    worker.provider(inputs, ResultPublisher(payload, self.nats, self.rest))
 
                 doer._result(Progress(progress=100), complete=True)
 
