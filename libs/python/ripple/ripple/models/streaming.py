@@ -2,6 +2,7 @@ from typing import Annotated, Any, Literal, Optional, Union
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+from ripple.models.params import ParameterSpec
 
 
 class StreamItem(BaseModel):
@@ -51,6 +52,18 @@ class OutputFiles(ProcessStreamItem):
     """
     item_type: Literal["file"] = "file"
     files: dict[str, list[str]]  # "inputs": ["file_id", "file_id"]
+
+
+class JobDefinition(ProcessStreamItem):
+    """
+    A job definition to be registered into the job definitions table.
+    """
+    item_type: Literal["job_def"] = "job_def"
+    job_def_id: str = ""
+    job_type: str
+    name: str
+    description: str
+    parameter_spec: ParameterSpec
 
 
 class Event(StreamItem):

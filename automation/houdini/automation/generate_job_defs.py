@@ -6,11 +6,8 @@ import requests
 
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
-from ripple.models.streaming import Message
+from ripple.models.streaming import JobDefinition
 from typing import Optional
-
-#TODO: Configure elsewhere
-ENDPOINT = "https://api.mythica.ai/v1"
 
 
 logging.basicConfig(
@@ -51,42 +48,18 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
     )
 
 
-def publish_job_def(name: str, description: str, param_spec: ParameterSpec) -> Optional[str]:
-    definition = {
-        'job_type': 'houdini::/mythica/generate_mesh',
-        'name': f"Generate {name}",
-        'description': description,
-        'config': {},     #TODO: Remove from request/db schema
-        'input_files': 0, #TODO: Remove from request/db schema
-        'params_schema': param_spec.dict()
-    }
-    response = requests.post(
-        f"{ENDPOINT}/jobs/definitions",
-        json=definition, timeout=10)
-
-    if response.status_code != 201:
-        log.warning("Failed to create job definition for %s. Status code: %s Error: %s",
-                    name, response.status_code, response.text)
-        return None
-    
-    result = response.json()
-    job_def_id = result['job_def_id']
-
-    return job_def_id
-
-
 def generate_job_defs(request: ParameterSet, result_callback):
     hda_file = request.params['hda_file']
 
     type_infos = extract_node_type_info(hda_file.file_path)
 
     for index, type_info in enumerate(type_infos):
-        name = type_info['name']
-        description = type_info['description']
         param_spec = compile_interface(json.dumps(type_info, indent=2))
-
         set_config_params(param_spec, hda_file.file_id, index)
-        job_def_id = publish_job_def(name, description, param_spec)
 
-        if job_def_id is not None:
-            result_callback(Message(message=f"Created job definition {job_def_id}"))
+        result_callback(JobDefinition(
+            job_type='houdini::/mythica/generate_mesh',
+            name=f"Generate {type_info['name']}",
+            description=type_info['description'],
+            parameter_spec=param_spec
+        ))

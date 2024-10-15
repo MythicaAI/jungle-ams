@@ -9,7 +9,7 @@ import tempfile
 from pydantic import BaseModel
 from typing import Callable, Type, Optional, Dict
 from ripple.models.params import ParameterSet
-from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message
+from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
 
 # Set up logging
@@ -130,6 +130,22 @@ class RestAdapter():
                 else:
                     log.error(f"Failed to call job API: {endpoint} - {data} - {post_result.status}")
 
+    def post_sync(self, endpoint: str, data: str) -> Optional[str]:
+        """Post data to an endpoint synchronously. """
+        url = API_URL + endpoint
+        log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
+        response = requests.post(
+            url, 
+            json=data, 
+            headers={"Content-Type": "application/json"}
+        )
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
+            return None
+
     def post_file(self, endpoint: str, token: str, file_data: list) -> Optional[str]:
         """Post file to an endpoint."""
         url = API_URL + endpoint
@@ -161,6 +177,19 @@ def upload_file(rest: RestAdapter, token: str, file_path: str) -> Optional[str]:
         response = rest.post_file("/upload/store", token, file_data)
         file_id = response['files'][0]['file_id'] if response else None
     return file_id
+
+
+def upload_job_def(rest: RestAdapter, job_def: JobDefinition) -> Optional[str]:
+    definition = {
+        'job_type': job_def.job_type,
+        'name': job_def.name,
+        'description': job_def.description,
+        'config': {},     #TODO: Remove from request/db schema
+        'input_files': 0, #TODO: Remove from request/db schema
+        'params_schema': job_def.parameter_spec.dict()
+    }
+    response = rest.post_sync("/jobs/definitions", definition)
+    return response['job_def_id'] if response else None
 
 
 class WorkerModel(BaseModel):
@@ -222,6 +251,11 @@ class Worker:
                 for index, file in enumerate(files):
                     file_id = upload_file(self.rest, token, file)
                     files[index] = file_id
+        elif isinstance(item, JobDefinition):
+            job_def_id = upload_job_def(self.rest, item)
+            if job_def_id != None:
+                item.job_def_id = job_def_id
+
 
     #Callback for reporting back. 
     def _result(self, item: ProcessStreamItem, complete=False):
