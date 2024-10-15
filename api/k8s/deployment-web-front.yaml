@@ -29,7 +29,7 @@ spec:
       serviceAccountName: api
       initContainers:
         - name: publish-init
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:latest
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-publish-init:74f6da56
           imagePullPolicy: Always
           volumeMounts:
             - name: ephemeral-sites-volume
@@ -39,7 +39,7 @@ spec:
               value: "/sites"
       containers:
         - name: nginx
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:latest
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:74f6da56
           args: [ "nginx", "-c", "/etc/nginx/nginx-gke.conf" ]
           imagePullPolicy: Always
           env:
