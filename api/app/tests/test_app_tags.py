@@ -138,7 +138,7 @@ def test_operations(api_base, client, create_profile):
             
         # last model_type_tag has exclude_tags
         if i == top_limit - 1:
-            for filter_tag_id, filter_tag_name in exclude_tags_id_names:
+            for filter_tag_id, _ in exclude_tags_id_names:
                 create_type_tag("asset", filter_asset_id, filter_tag_id)
 
 

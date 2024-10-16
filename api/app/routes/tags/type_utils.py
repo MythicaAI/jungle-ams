@@ -1,27 +1,15 @@
 """API routing layer and logic for key management"""
 
-from enum import Enum
-from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Callable
 
-from better_profanity import profanity
 from cryptid.cryptid import (
     asset_id_to_seq,
-    profile_seq_to_id,
-    tag_id_to_seq,
-    tag_seq_to_id,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, field_validator
-from sqlalchemy import func
-from sqlmodel import col, delete, insert, select, Field
+from fastapi import HTTPException
+from sqlmodel import Field
 
-from db.connection import TZ, get_session
 from db.schema.assets import AssetTag, Asset
-from db.schema.profiles import Profile
-from db.schema.tags import Tag
-from routes.authorization import current_profile
 from routes.tags.tag_models import TagType
 
 
