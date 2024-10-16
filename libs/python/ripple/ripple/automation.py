@@ -284,8 +284,7 @@ class Worker:
         def handler(task):
             e = task.exception()
             if e:
-                log.error(str(e))
-                self._result(Message(message=str(e)))
+                log.error(f"Error publishing result: {e}")
         return handler
     
     def _get_executor(self):
