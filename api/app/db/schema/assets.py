@@ -65,13 +65,13 @@ class AssetVersion(SQLModel, table=True):
     package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
-# sequences for table asset_tag
+# sequences for table asset_tags
 
 class AssetTag(SQLModel, table=True):
     """
     Metadata to store relationships and descriptions of assets
     """
-    __tablename__ = "asset_tag"
+    __tablename__ = "asset_tags"
     model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
 
     # pylint: disable=no-self-argument
@@ -80,5 +80,5 @@ class AssetTag(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    type_seq: int = Field(sa_column=Column('type_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))

@@ -72,9 +72,9 @@ tables:
 
   # Cross table relation between asset and tags
   - name: AssetTag
-    table_name: asset_tag
+    table_name: asset_tags
     columns:
-      - name: asset_seq
+      - name: type_seq
         type: BIGINT
         primary_key: true
         foreign_key: assets.asset_seq
