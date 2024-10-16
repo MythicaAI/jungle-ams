@@ -118,17 +118,17 @@ class RestAdapter():
 
     async def post(self, endpoint: str, data: str) -> None:
         """Post data to an endpoint. """
-        endpoint = os.path.join(API_URL,endpoint)
+        url = API_URL + endpoint
         async with aiohttp.ClientSession() as session:
-            log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
+            log.debug(f"Sending to Endpoint: {url} - {data}" )
             async with session.post(
-                        endpoint, 
+                        url, 
                         json=data, 
                         headers={"Content-Type": "application/json"}) as post_result:
                 if post_result.status in [200,201]:
                     log.debug(f"Endpoint Response: {post_result.status}")
                 else:
-                    log.error(f"Failed to call job API: {endpoint} - {data} - {post_result.status}")
+                    log.error(f"Failed to call job API: {url} - {data} - {post_result.status}")
 
     def post_sync(self, endpoint: str, data: str) -> Optional[str]:
         """Post data to an endpoint synchronously. """
@@ -257,8 +257,8 @@ class Worker:
 
     #Callback for reporting back. 
     def _result(self, item: ProcessStreamItem, complete=False):
-        JOB_RESULT_ENDPOINT="/jobs/results/"
-        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
+        JOB_RESULT_ENDPOINT="/jobs/results"
+        JOB_COMPLETE_ENDPOINT="/jobs/complete"
 
         # Poplulate context
         #TODO: Generate process guid
@@ -275,17 +275,19 @@ class Worker:
         task.add_done_callback(self._get_error_handler())
         if self.current_request.job_id:
             if complete:
-                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}"))
+                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", "")
             else:
-                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", item.json()))
-            task.add_done_callback(self._get_error_handler())
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item.dict()
+                }
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", data)
             
     def _get_error_handler(self):
         def handler(task):
             e = task.exception()
             if e:
-                log.error(str(e))
-                self._result(Message(message=str(e)))
+                log.error(f"Error publishing result: {e}")
         return handler
     
     def _get_executor(self):
