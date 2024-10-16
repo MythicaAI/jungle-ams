@@ -282,7 +282,6 @@ class Worker:
                     "result_data": item.dict()
                 }
                 self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", data)
-            task.add_done_callback(self._get_error_handler())
             
     def _get_error_handler(self):
         def handler(task):
