@@ -17,7 +17,8 @@ spec:
         {{- include "api.commonLabels" . | nindent 8 }}
         {{- include "api.componentLabels" $componentContext | nindent 8 }}
     spec:
-      terminationGracePeriodSeconds: 60
+      {{- include "api.nodeSelector" $componentContext | nindent 6 }}
+      terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}
       serviceAccountName: lets-encrypt
       containers:
         - name: letsencrypt
@@ -26,6 +27,8 @@ spec:
           env:
             - name: DOMAINS
               value: "{{ join "," .Values.domains }}"
+            - name: SECRET_NAME
+              value: {{ $componentContext.secretName }}
           volumeMounts:
             - name: lets-encrypt-storage
               mountPath: /etc/letsencrypt
@@ -34,8 +37,8 @@ spec:
               name: http
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "64Mi"
+              cpu: "250m"
       volumes:
         # Nodal ephemeral volume used by the CSI driver
         - name: lets-encrypt-storage

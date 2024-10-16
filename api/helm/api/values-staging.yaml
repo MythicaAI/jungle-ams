@@ -9,9 +9,11 @@ tier: "web"
 release: "staging"
 hostnameDecorator: "-staging"
 domains:
+  - oss-staging.mythica.gg
+  - api-staging.mythica.gg
+  - dex-staging.mythica.gg
   - oss-staging.mythica.ai
   - api-staging.mythica.ai
-  - images-staging.mythica.ai
   - dex-staging.mythica.ai
 serviceAccount:
   secretName: front-end-api-staging-sa
@@ -20,21 +22,38 @@ api:
     tag: "latest"
     replicas: 2
     maxUnavailable: 1
-    maxSurge: 4
+    maxSurge: 2
     base_url: "https://api-staging.mythica.ai/v1"
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
   gcsProxy:
     tag: "latest"
     replicas: 2
     maxUnavailable: 1
     maxSurge: 4
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
+  letsEncrypt:
+    tag: "latest"
+    name: "lets-encrypt"
+    secretName: mythica-lets-encrypt-staging-tls
+    replicas: 1
+    maxUnavailable: 1
+    maxSurge: 2
+    nodeSelector: scale-out
+    terminationGracePeriodSeconds: 60
   packager:
     tag: "latest"
     replicas: 1
     maxUnavailable: 1
     maxSurge: 2
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
   webFront:
     tag: "latest"
     replicas: 2
     maxUnavailable: 1
     maxSurge: 5
     nginxConfig: "/etc/nginx/nginx-gke-staging.conf"
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
