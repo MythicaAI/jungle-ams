@@ -48,11 +48,10 @@ Node selector
 */}}
 {{- define "api.nodeSelector" -}}
 nodeSelector:
-  {{- if .nodeSelector }}
-  {{ .nodeSelector }}
-  {{- else }}
+  {{- if eq .nodeSelector "spot" }}
   cloud.google.com/gke-spot: "true"
-terminationGracePeriodSeconds: 15
+  {{- else if eq .nodeSelector "scale-out" }}
+  cloud.google.com/compute-class: "Scale-Out"
   {{- end }}
 {{- end }}
 

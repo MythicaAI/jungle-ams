@@ -11,5 +11,5 @@ while true; do
     --email jacob@mythica.ai \
     --agree-tos \
     --deploy-hook "update-secrets.sh";
-  sleep 12h;
+  sleep 43200; # 12 hours
 done
