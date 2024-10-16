@@ -118,17 +118,17 @@ class RestAdapter():
 
     async def post(self, endpoint: str, data: str) -> None:
         """Post data to an endpoint. """
-        endpoint = os.path.join(API_URL,endpoint)
+        url = API_URL + endpoint
         async with aiohttp.ClientSession() as session:
-            log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
+            log.debug(f"Sending to Endpoint: {url} - {data}" )
             async with session.post(
-                        endpoint, 
+                        url, 
                         json=data, 
                         headers={"Content-Type": "application/json"}) as post_result:
                 if post_result.status in [200,201]:
                     log.debug(f"Endpoint Response: {post_result.status}")
                 else:
-                    log.error(f"Failed to call job API: {endpoint} - {data} - {post_result.status}")
+                    log.error(f"Failed to call job API: {url} - {data} - {post_result.status}")
 
     def post_sync(self, endpoint: str, data: str) -> Optional[str]:
         """Post data to an endpoint synchronously. """
