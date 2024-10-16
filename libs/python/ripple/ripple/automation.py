@@ -184,8 +184,6 @@ def upload_job_def(rest: RestAdapter, job_def: JobDefinition) -> Optional[str]:
         'job_type': job_def.job_type,
         'name': job_def.name,
         'description': job_def.description,
-        'config': {},     #TODO: Remove from request/db schema
-        'input_files': 0, #TODO: Remove from request/db schema
         'params_schema': job_def.parameter_spec.dict()
     }
     response = rest.post_sync("/jobs/definitions", definition)
