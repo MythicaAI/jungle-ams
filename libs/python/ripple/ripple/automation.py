@@ -275,9 +275,15 @@ class Worker:
         task.add_done_callback(self._get_error_handler())
         if self.current_request.job_id:
             if complete:
-                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", ""))
+#                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", ""))
+                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", "")
             else:
-                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", item.json()))
+#                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", item.json()))
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item.dict()
+                }
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", data)
             task.add_done_callback(self._get_error_handler())
             
     def _get_error_handler(self):
