@@ -257,8 +257,8 @@ class Worker:
 
     #Callback for reporting back. 
     def _result(self, item: ProcessStreamItem, complete=False):
-        JOB_RESULT_ENDPOINT="/jobs/results/"
-        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
+        JOB_RESULT_ENDPOINT="/jobs/results"
+        JOB_COMPLETE_ENDPOINT="/jobs/complete"
 
         # Poplulate context
         #TODO: Generate process guid
