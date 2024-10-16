@@ -275,7 +275,7 @@ class Worker:
         task.add_done_callback(self._get_error_handler())
         if self.current_request.job_id:
             if complete:
-                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}"))
+                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", ""))
             else:
                 task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", item.json()))
             task.add_done_callback(self._get_error_handler())
