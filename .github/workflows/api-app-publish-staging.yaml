@@ -1,4 +1,4 @@
-name: sites-jungle3-publish-staging
+name: api-app-publish-staging
 
 on:
   push:
@@ -58,7 +58,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: api/app
+          context: .
+          file: api/app/Dockerfile  
           tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
