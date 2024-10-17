@@ -3,6 +3,7 @@ import logging
 import os
 import requests
 import time
+from typing import Optional
 
 
 logging.basicConfig(
@@ -14,8 +15,6 @@ log = logging.getLogger(__name__)
 
 PROFILE_NAME = "Mythica_Canary"
 HDA_FILE = "test_cube.hda"
-
-JOB_DEF_ID = "jobdef_r1NnWBt5TtwxL5B8DLTMFYR6py"
 
 
 def parse_args():
@@ -68,9 +67,25 @@ def upload_file(endpoint: str, headers: str, file_path: str) -> str:
     return file_id
 
 
-def request_job(endpoint: str, headers: str) -> str:
+def find_job_def(endpoint: str, file_id: str) -> Optional[str]:
+    url = f"{endpoint}/jobs/definitions"
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+
+    job_defs = response.json()
+    for job_def in job_defs:
+        if job_def['job_type'] != 'houdini::/mythica/generate_mesh':
+            continue
+        
+        if job_def['params_schema']['params']['hda_file']['default'] == file_id:
+            return job_def['job_def_id']
+
+    return None
+
+
+def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
     body = {
-        "job_def_id": JOB_DEF_ID,
+        "job_def_id": job_def_id,
         "params": {
             "params": {
                 "randseed": 0,
@@ -110,7 +125,15 @@ def run_test(endpoint: str):
     file_id = upload_file(endpoint, headers, HDA_FILE)
     log.info(f"Uploaded file: {file_id}")
 
-    job_id = request_job(endpoint, headers)
+    job_def_id = None
+    while True:
+        job_def_id = find_job_def(endpoint, file_id)
+        if job_def_id:
+            break
+        time.sleep(1)
+    log.info(f"Found created job def: {job_def_id}")
+
+    job_id = request_job(endpoint, headers, job_def_id)
     log.info(f"Started job: {job_id}")
  
     while True:
