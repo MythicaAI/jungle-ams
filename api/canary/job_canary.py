@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import requests
 import time
 
@@ -12,6 +13,8 @@ log = logging.getLogger(__name__)
 
 
 PROFILE_NAME = "Mythica_Canary"
+HDA_FILE = "test_cube.hda"
+
 JOB_DEF_ID = "jobdef_r1NnWBt5TtwxL5B8DLTMFYR6py"
 
 
@@ -53,6 +56,18 @@ def start_session(endpoint: str, profile_id: str) -> str:
     return result['token']
 
 
+def upload_file(endpoint: str, headers: str, file_path: str) -> str:
+    file_id = None
+    with open(file_path, 'rb') as file:
+        file_name = os.path.basename(file_path)
+        file_data = [('files', (file_name, file, 'application/octet-stream'))]
+        response = requests.post(f"{endpoint}/upload/store", headers=headers, files=file_data)
+        response.raise_for_status()
+        result = response.json()
+        file_id = result['files'][0]['file_id']
+    return file_id
+
+
 def request_job(endpoint: str, headers: str) -> str:
     body = {
         "job_def_id": JOB_DEF_ID,
@@ -91,6 +106,9 @@ def run_test(endpoint: str):
     token = start_session(endpoint, profile_id)
     headers = {"Authorization": f"Bearer {token}"}
     log.info(f"Got token: {token}")
+
+    file_id = upload_file(endpoint, headers, HDA_FILE)
+    log.info(f"Uploaded file: {file_id}")
 
     job_id = request_job(endpoint, headers)
     log.info(f"Started job: {job_id}")
