@@ -4,12 +4,11 @@ on:
   push:
     branches:
       - "**"
-      # - main # TODO: Uncomment it after the developing to run job only after push on main branch 
+      # - main # TODO: Uncomment it after the developing to run job only after push on main branch
     paths:
-      - 'sites/jungle3/**'
-      - '.github/workflows/sites-jungle3-publish-staging.yaml'
-      - 'api/nginx/**'
-
+      - 'api/app/**'
+      - 'libs/python/**'
+      - '.github/workflows/api-app-publish-staging.yaml'
 defaults:
   run:
     working-directory: .
@@ -24,8 +23,7 @@ jobs:
       contents: read
 
     env:
-      IMAGE_NAME: "mythica-sites-jungle3-build"
-      IMAGE_NAME_NGINX: "mythica-web-front"
+      IMAGE_NAME: "mythica-app"
       NODE_ENV: "staging"
       PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
@@ -56,23 +54,14 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
-      - name: Build and push
+      - name: Build and push api/app
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: sites/jungle3
+          context: api/app
           tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
-
-      - name: Build and push mythica-web-front
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          context: api/nginx
-          tags: ${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:latest
-          build-args: |
-            TAG='latest'
 
   helm-deploy:
     runs-on: ubuntu-latest
@@ -136,5 +125,4 @@ jobs:
       - name: Deploy Helm Chart
         run: |
           helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-staging api/helm/api
-          kubectl rollout restart deployment/web-front -n api-staging
-          kubectl rollout restart deployment/packager -n api-staging
+          kubectl rollout restart deployment/app -n api-staging
