@@ -7,7 +7,7 @@ from typing import Optional
 
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 log = logging.getLogger(__name__)
@@ -111,6 +111,8 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
 
 
 def run_test(endpoint: str):
+    log.info("Starting test")
+
     profile_id = find_or_create_profile(endpoint)
     log.info(f"Using profile: {profile_id}")
 
