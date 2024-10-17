@@ -62,7 +62,7 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
     response.raise_for_status()
 
     result = response.json()
-    print(f"Received result: {result}")
+    log.info(f"Received result: {result}")
 
     return result['completed']
 
@@ -70,10 +70,10 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
 def run_test(endpoint: str):
     token = start_session(endpoint, PROFILE_ID)
     headers = {"Authorization": f"Bearer {token}"}
-    print(f"Got token: {token}")
+    log.info(f"Got token: {token}")
 
     job_id = request_job(endpoint, headers)
-    print(f"Started job: {job_id}")
+    log.info(f"Started job: {job_id}")
  
     while True:
         completed = check_job_status(endpoint, headers, job_id)
@@ -81,7 +81,7 @@ def run_test(endpoint: str):
             break
         time.sleep(1)
 
-    print("Job completed")
+    log.info("Job completed")
 
 
 def main():
