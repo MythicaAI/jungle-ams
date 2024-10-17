@@ -34,6 +34,7 @@ import {
   useGetOwnedPackages,
   usePublishToggle,
 } from "@queries/packages";
+import { useTranslation } from "react-i18next";
 
 type VersionCache = { [key: string]: [AssetVersionResponse] };
 
@@ -42,6 +43,7 @@ const Packages = () => {
   const { mutate: togglePublish } = usePublishToggle();
   const { mutate: createAssetMutation } = useCreateAsset();
   const [versionCache, setVersionCache] = useState<VersionCache>({});
+  const { t } = useTranslation();
 
   const { addError, addWarning } = useStatusStore();
   const { updateVersion, clearVersion } = useAssetVersionStore();
@@ -243,7 +245,9 @@ const Packages = () => {
                   mr: "5px",
                 }}
               >
-                {latestVersion.published ? "Published" : "Draft"}
+                {latestVersion.published
+                  ? t("common.published")
+                  : t("common.draft")}
               </Typography>
               <Switch
                 checked={latestVersion.published}
@@ -267,15 +271,15 @@ const Packages = () => {
   return (
     <Box height="100%">
       <Helmet>
-        <title>Mythica • My Packages</title>
+        <title>Mythica • {t("common.profileMenu.myPackages")}</title>
       </Helmet>
       <Card sx={{ margin: "0 16px" }}>
         <Stack>
           <Typography textAlign="start" level="h4">
-            Your packages
+            {t("myPackages.title")}
           </Typography>
           <Typography textAlign="start">
-            View your own packages and create new ones
+            {t("myPackages.description")}
           </Typography>
         </Stack>
       </Card>
@@ -290,7 +294,7 @@ const Packages = () => {
               startDecorator={<LucidePlusCircle />}
               sx={{ padding: "6px 8px" }}
             >
-              Create New Package
+              {t("myPackages.createNew")}
             </Button>
           </ListItemDecorator>
         </ListItem>

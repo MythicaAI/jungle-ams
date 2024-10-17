@@ -21,6 +21,7 @@ import { LucideShield, LucideUser } from "lucide-react";
 import React from "react";
 import { Helmet } from "react-helmet-async";
 import { api } from "@services/api";
+import { useTranslation } from "react-i18next";
 
 const defaultOrg = (): OrgResponse => {
   return {
@@ -59,25 +60,11 @@ export const RolesList = ({ orgRoles }: { orgRoles: ResolvedOrgRef[] }) => {
   );
 };
 
-const Title = () => {
-  return (
-    <Card sx={{ margin: "0 16px" }}>
-      <Stack>
-        <Typography textAlign="start" level="h4">
-          Manage organizations
-        </Typography>
-        <Typography textAlign="left">
-          Access your memberships and create new organizations
-        </Typography>
-      </Stack>
-    </Card>
-  );
-};
-
 const OrgsList: React.FC = () => {
   const [org, setOrg] = useState<OrgResponse>(defaultOrg());
   const [creating, setCreating] = useState<boolean>(false);
   const { orgRoles, setOrgRoles } = useGlobalStore();
+  const { t } = useTranslation();
 
   const createOrg = () => {
     setCreating(true);
@@ -101,6 +88,21 @@ const OrgsList: React.FC = () => {
     }));
   };
 
+  const Title = () => {
+    return (
+      <Card sx={{ margin: "0 16px" }}>
+        <Stack>
+          <Typography textAlign="start" level="h4">
+            {t("manageOrgs.title")}
+          </Typography>
+          <Typography textAlign="left">
+            {t("manageOrgs.description")}
+          </Typography>
+        </Stack>
+      </Card>
+    );
+  };
+
   const createForm = (
     <Sheet
       variant="outlined"
@@ -116,24 +118,21 @@ const OrgsList: React.FC = () => {
       }}
     >
       <Typography level="h4" component="h1">
-        <b>Create Organization</b>
+        <b>{t("manageOrgs.create")}</b>
       </Typography>
-      <Typography>
-        You are currently not part of any organizations. Would you like to
-        create a new organization?
-      </Typography>
+      <Typography>{t("manageOrgs.notMember")}</Typography>
       <Form>
         <FormControl>
-          <FormLabel>Name</FormLabel>
+          <FormLabel>{t("manageOrgs.name")}</FormLabel>
           <Input name="name" onChange={handleInputChange}></Input>
         </FormControl>
         <FormControl>
-          <FormLabel>Description</FormLabel>
+          <FormLabel>{t("manageOrgs.desc")}</FormLabel>
           <Input name="description" onChange={handleInputChange}></Input>
         </FormControl>
 
         <Button onClick={createOrg} disabled={creating} sx={{ mt: "20px" }}>
-          {creating ? "Creating..." : "Create"}
+          {creating ? t("manageOrgs.creating") : t("manageOrgs.createBtn")}
         </Button>
       </Form>
     </Sheet>
@@ -157,12 +156,12 @@ const OrgsList: React.FC = () => {
         }}
       >
         <Helmet>
-          <title>Mythica • Organizations</title>
+          <title>Mythica • {t("manageOrgs.organizations")}</title>
         </Helmet>
         {orgRoles && orgRoles.length > 0 && (
           <>
             <Typography level="h4" component="h1">
-              <b>Memberships</b>
+              <b>{t("manageOrgs.memberships")}</b>
             </Typography>
             <Card>
               <RolesList orgRoles={orgRoles} />

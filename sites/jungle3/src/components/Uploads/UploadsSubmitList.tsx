@@ -12,6 +12,7 @@ import { FileUploadStatus, useUploadStore } from "@store/uploadStore";
 import { UploadButton } from "@components/common/UploadButton";
 import { LucideUploadCloud } from "lucide-react";
 import Cookies from "universal-cookie";
+import { useTranslation } from "react-i18next";
 
 const VisuallyHiddenInput = styled("input")`
   clip: rect(0 0 0 0);
@@ -30,6 +31,7 @@ export const UploadsSubmitList = function () {
     useUploadStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
   const cookies = new Cookies();
+  const { t } = useTranslation();
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
@@ -114,7 +116,7 @@ export const UploadsSubmitList = function () {
         color="neutral"
         startDecorator={<LucideUploadCloud />}
       >
-        Upload Files
+        {t("myUploads.uploadFiles")}
         <VisuallyHiddenInput
           type="file"
           id="file-input"
@@ -128,8 +130,10 @@ export const UploadsSubmitList = function () {
           <Table aria-label="basic table">
             <thead>
               <tr>
-                <th align="left">Pending upload</th>
-                <th align="right">Size</th>
+                <th align="left">{t("myUploads.pendingUpload")}</th>
+                <th align="right" style={{ textAlign: "right" }}>
+                  {t("myUploads.size")}
+                </th>
               </tr>
             </thead>
             <tbody>

@@ -1,0 +1,91 @@
+{
+  "common": {
+    "logout": "Logout",
+    "welcome": "Welcome",
+    "published": "Published",
+    "draft": "Draft",
+    "name": "Name",
+    "desc": "Description",
+    "sortingPanel": {
+      "options": [
+        {
+          "value": "latest",
+          "label": "Latest"
+        },
+        {
+          "value": "oldest",
+          "label": "Oldest"
+        }
+      ]
+    },
+    "profileMenu": {
+      "dashboard": "Dashboard",
+      "editProfile": "Edit Profile",
+      "myPackages": "My Packages",
+      "myUploads": "My Uploads",
+      "manageOrgs": "Manage Organizations",
+      "myOrgs": "My Organizations",
+      "apiKeys": "API Keys"
+    }
+  },
+  "myPackages": {
+    "title": "Your packages",
+    "description": "View your own packages and create new ones",
+    "createNew": "Create New Package"
+  },
+  "packageEdit": {
+    "title": "Package Editor",
+    "details": "Details",
+    "files": "Files",
+    "thumbnails": "Thumbnails",
+    "links": "Links",
+    "editPackage": "Edit package",
+    "update": "Update",
+    "org/namespace": "Org / Namespace",
+    "createNewOrg": "Create New Organization",
+    "chooseExistingOrg": "Choose an existing org...",
+    "filloutDesc": "Fill out a description",
+    "version": "Version"
+  },
+  "myUploads": {
+    "title": "Your uploads",
+    "description": "Manage your uploaded files",
+    "allFiles": "All Files",
+    "hdas": "HDAs",
+    "thumbnails": "Thumbnails",
+    "uploadFiles": "Upload Files",
+    "pendingUpload": "Pending upload",
+    "size": "Size"
+  },
+  "profileSettings": {
+    "title": "My Profile",
+    "name": "Name",
+    "description": "Description",
+    "shortDescriptionPlaceholder": "Short description of your profile",
+    "email": "Email",
+    "orgs": "Organizations",
+    "edit": "Edit"
+  },
+  "manageOrgs": {
+    "title": "Manage organizations",
+    "description": "Access your memberships and create new organizations",
+    "memberships": "Memberships",
+    "organizations": "Organizations",
+    "create": "Create Organization",
+    "notMember": "  You are currently not part of any organizations. Would you like to create a new organization?",
+    "name": "Name",
+    "desc": "Description",
+    "createBtn": "Create",
+    "creating": "Creating..."
+  },
+  "apiKeys": {
+    "title": "API keys",
+    "yourTitle": "Your API keys",
+    "desc": "Manage your access keys",
+    "generate": "Generate new key",
+    "name": "Name",
+    "description": "Description",
+    "expires": "Expires in, days",
+    "submit": "Submit"
+  }
+}
