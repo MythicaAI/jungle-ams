@@ -338,3 +338,10 @@ def test_blank_profile_url(client, api_base):
                                'signature': test_profile_signature,
                                'description': test_profile_description})
     assert_status_code(response, HTTPStatus.CREATED)
+
+def test_invalid_profile_id(client, api_base):
+    
+    r = client.delete(
+        f"{api_base}/files",
+        headers={"Authorization": "Bearer token"})
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
