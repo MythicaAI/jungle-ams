@@ -320,21 +320,23 @@ class Worker:
                 return 
 
             #Run the worker
+            publisher = None
             try:
-
-                doer._result(Progress(progress=0))
+                publisher = ResultPublisher(payload, self.nats, self.rest)
+                publisher.result(Progress(progress=0))
 
                 with tempfile.TemporaryDirectory() as tmpdir:
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
                     resolve_params(API_URL, tmpdir, inputs)
-                    worker.provider(inputs, ResultPublisher(payload, self.nats, self.rest))
+                    worker.provider(inputs, publisher)
 
-                doer._result(Progress(progress=100), complete=True)
+                publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:
                 log.error(f"Executor error - {log_str} - {e}")
-                doer._result(Message(message=str(e)))
+                if publisher:
+                    publisher.result(Message(message=str(e)))
                 
 
         return implementation
