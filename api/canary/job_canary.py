@@ -16,6 +16,9 @@ log = logging.getLogger(__name__)
 PROFILE_NAME = "Mythica_Canary"
 HDA_FILE = "test_cube.hda"
 
+TEST_FREQUENCY_SEC = 600
+JOB_TIMEOUT_SEC = 30
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Canary test for jobs")
@@ -83,6 +86,17 @@ def find_job_def(endpoint: str, file_id: str) -> Optional[str]:
     return None
 
 
+def get_job_def(endpoint: str, file_id: str) -> str:
+    start_time = time.time()
+    while True:
+        job_def_id = find_job_def(endpoint, file_id)
+        if job_def_id:
+            return job_def_id
+        if time.time() - start_time > JOB_TIMEOUT_SEC:
+            raise Exception("Timeout exceeded: Job definition not found.")
+        time.sleep(1)
+
+
 def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
     body = {
         "job_def_id": job_def_id,
@@ -123,12 +137,7 @@ def run_test(endpoint: str):
     file_id = upload_file(endpoint, headers, HDA_FILE)
     log.info(f"Uploaded file: {file_id}")
 
-    job_def_id = None
-    while True:
-        job_def_id = find_job_def(endpoint, file_id)
-        if job_def_id:
-            break
-        time.sleep(1)
+    job_def_id = get_job_def(endpoint, file_id)
     log.info(f"Found created job def: {job_def_id}")
 
     job_id = request_job(endpoint, headers, job_def_id)
@@ -147,8 +156,11 @@ def main():
     args = parse_args()
 
     while True:
-        run_test(args.endpoint)
-        time.sleep(30)
+        try:
+            run_test(args.endpoint)
+        except Exception as e:
+            log.error(f"Test failed: {e}")
+        time.sleep(TEST_FREQUENCY_SEC)
 
 
 if __name__ == '__main__':
