@@ -11,7 +11,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-PROFILE_ID = "prf_2fXUBxeTyD7TXBjTHHz41MitSpG"
+PROFILE_NAME = "Mythica_Canary"
 JOB_DEF_ID = "jobdef_r1NnWBt5TtwxL5B8DLTMFYR6py"
 
 
@@ -25,6 +25,23 @@ def parse_args():
     )
 
     return parser.parse_args()
+
+
+def find_or_create_profile(endpoint: str) -> str:
+    response = requests.get(f"{endpoint}/profiles/named/{PROFILE_NAME}?exact=true")
+    response.raise_for_status()
+    profiles = response.json()
+    if len(profiles) == 1:
+        return profiles[0]['profile_id']
+
+    profile_json = {
+        "name": PROFILE_NAME,
+        "email": "donotreply+canary@mythica.ai",
+        "description": "Mythica canary test profile",
+    }
+    response = requests.post(f"{endpoint}/profiles/", json=profile_json)
+    response.raise_for_status()
+    return response.json()['profile_id']
 
 
 def start_session(endpoint: str, profile_id: str) -> str:
@@ -68,7 +85,10 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
 
 
 def run_test(endpoint: str):
-    token = start_session(endpoint, PROFILE_ID)
+    profile_id = find_or_create_profile(endpoint)
+    log.info(f"Using profile: {profile_id}")
+
+    token = start_session(endpoint, profile_id)
     headers = {"Authorization": f"Bearer {token}"}
     log.info(f"Got token: {token}")
 
