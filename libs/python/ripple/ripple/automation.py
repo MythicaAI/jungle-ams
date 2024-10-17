@@ -205,7 +205,7 @@ class ResultPublisher:
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
         task = asyncio.create_task(self.nats.post("result", item.json())) 
-        task.add_done_callback(self._get_error_handler())
+        task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
                 self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", "")
