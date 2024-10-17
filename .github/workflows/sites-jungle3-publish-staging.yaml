@@ -3,8 +3,7 @@ name: sites-jungle3-publish-staging
 on:
   push:
     branches:
-      - "**"
-      # - main # TODO: Uncomment it after the developing to run job only after push on main branch 
+      - main
     paths:
       - 'sites/jungle3/**'
       - '.github/workflows/sites-jungle3-publish-staging.yaml'

@@ -3,8 +3,7 @@ name: api-app-publish-staging
 on:
   push:
     branches:
-      - "**"
-      # - main # TODO: Uncomment it after the developing to run job only after push on main branch
+      - main
     paths:
       - 'api/app/**'
       - 'libs/python/**'
