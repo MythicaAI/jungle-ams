@@ -117,11 +117,6 @@ for file_cov in "${file_covs[@]}"; do
   fi
 done
 
-# check if total_cov exceeds threshold
-if [ "$total_cov" -lt "$test_fail_rate" ]; then
-  cov_threshold_total_fail=true
-fi
-
 # set badge color
 if [ "$total_cov" -le 20 ]; then
   color="red"
@@ -135,13 +130,23 @@ elif [ "$total_cov" -gt 90 ]; then
   color="brightgreen"
 fi
 
-badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=pytest-coverage🛡️&message=$total_cov%&color=$color)"
+# check if total_cov exceeds threshold
+if [ "$total_cov" -lt "$test_fail_rate" ]; then
+  cov_threshold_total_fail=true
+  expected_badge_color="red"
+else
+  expected_badge_color=$color
+fi
+
+badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=pytest-coverage🛡️&message=$total_cov%&color=$expected_badge_color)"
+expected_badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=expected-coverage🛡️&message=$total_cov%&color=$expected_badge_color)"
+
 
 # github actions truncates newlines, need to do replace
 output_table_contents="${output_table_contents//'%'/'%25'}"
 output_table_contents="${output_table_contents//$'\n'/'%0A'}"
 output_table_contents="${output_table_contents//$'\r'/'%0D'}"
-output_table_contents="$badge%0A%0A<details><summary>Show Table</summary>%0A%0A${output_table_contents}%0A%0A</details>"
+output_table_contents="$badge%0A%0A$expected_badge%0A%0A<details><summary>Show Table</summary>%0A%0A${output_table_contents}%0A%0A</details>"
 
 # set output variables to be used in workflow file
 echo "::set-output name=output-table::$output_table_contents"
