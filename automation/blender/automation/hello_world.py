@@ -1,8 +1,8 @@
 import bpy
-from pydantic import BaseModel
+from ripple.models.params import ParameterSet
 from ripple.automation import ResultPublisher
 
-class HelloWorldRequest(BaseModel):
+class HelloWorldRequest(ParameterSet):
     message: str #Base64 encoded byte string
     
 

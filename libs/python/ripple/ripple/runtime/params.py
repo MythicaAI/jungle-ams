@@ -113,12 +113,25 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     return file_path
 
 
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> bool:
-    for name, param in paramSet.model_dump().items():
-        if isinstance(param, FileParameter):
-            param.file_path = download_file(endpoint, directory, param.file_id)
-        elif isinstance(param, list) and all(isinstance(file_param, FileParameter) for file_param in param):
-            for file_param in param:
-                file_param.file_path = download_file(endpoint, directory, file_param.file_id)
+def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> ParameterSet:
+    def resolve(field,value):
+        # For list-like, check each value
+        if isinstance(value, (list, tuple, set, frozenset)):
+            for item in value:
+                resolve(field, item)
+        # For Dicts, check if they are FileParams. Otherwise check each item        
+        elif isinstance(value, FileParameter):
+            value.file_path = download_file(endpoint, directory, value.file_id)
+        elif isinstance(value, dict):
+            try:
+                FileParameter(**value)
+                value['file_path'] = download_file(endpoint, directory, value['file_id'])
+            except Exception:
+                for key, item in value.items():
+                    resolve(f"{field}:{key}", item)
+        
+    for name in paramSet.model_fields.keys():
+        resolve(name,getattr(paramSet,name))
 
     return True
+

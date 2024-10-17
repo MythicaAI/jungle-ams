@@ -189,32 +189,35 @@ class ResultPublisher:
         self.rest = rest
 
     #Callback for reporting back. 
-    def result(self, item: ProcessStreamItem, complete=False):
+    def result(self, item, complete=False):
         JOB_RESULT_ENDPOINT="/jobs/results/"
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
         # Poplulate context
         #TODO: Generate process guid
-        item.process_guid = 'xxxxxxxxxxx'
-        item.job_id = self.request.job_id if self.request.job_id is not None else ""
+        if isinstance(item,ProcessStreamItem):
+            item.process_guid = 'xxxxxxxxxxx'
+            item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
-        # Upload any references to local data
-        self._publish_local_data(item)
-
+            # Upload any references to local data
+            self._publish_local_data(item)
+            # we need the JSON from here on down
+            item = item.model_dump()
+        
         # Publish results
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(self.nats.post("result", item.json())) 
+        task = asyncio.create_task(self.nats.post("result", item)) 
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
-                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}", "")
+                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
             else:
                 data = {
                     "created_in": "automation-worker",
-                    "result_data": item.dict()
+                    "result_data": item
                 }
-                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", data)
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.self.request.job_id}", data)
             
     def _publish_local_data(self, item: ProcessStreamItem):
 
@@ -304,9 +307,13 @@ class Worker:
         reporting status
         """
         doer=self
-        async def implementation(json_payload: str):
+        async def implementation(json_payload):
             try:
                 payload = WorkerRequest(**json_payload)
+                if len(payload.data) == 1 and 'params' in payload.data:
+                    # If it only contains "params", replace payload.data with its content
+                    payload.data = payload.data['params']
+
 
                 log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, profile_id: {payload.profile_id}, data: {payload.data}"
 
