@@ -4,9 +4,7 @@ cov_config_fname=.coveragerc
 cov_threshold_single_fail=false
 cov_threshold_total_fail=false
 
-
 output=$(poetry run pytest . --cov --show-capture=no --cov-config=.coveragerc tests/)
-echo $output
 
 # remove pytest-coverage config file
 if [ -f $cov_config_fname ]; then
@@ -23,7 +21,7 @@ output_table_title=''
 output_table_contents=''
 file_covs=()
 total_cov=0
-test_fail_rate="${TEST_FAIL_RATE:-80}" 
+test_fail_rate="${TEST_FAIL_RATE:-80}"
 
 for x in $output; do
   if [[ $x =~ ^-+$ && $x != '--' ]]; then
@@ -38,12 +36,31 @@ for x in $output; do
     fi
   fi
 
-  if [ "$parse_contents" = true ]; then
+  if [[ "$parse_contents" = true ]]; then
     # reached end of coverage table contents
     if [[ "$x" =~ ^={5,}$ ]]; then
-      break
+        break
+    fi
+
+    # Check if current line contains coverage information
+    if [[ "$x" =~ [0-9]+% ]]; then
+        coverage_value=$(echo "$x" | grep -oP '[0-9]+(?=%)')  # extract only the number before %
+        file_covs+=("$coverage_value")  # store individual file coverage
+    fi
+
+    # Capture total coverage percentage
+    if [[ "$x" == "TOTAL" ]]; then
+        parse_total=true
+        continue  # skip to the next line to capture the percentage
+    fi
+
+    # Capture total coverage percentage when 'TOTAL' was found in the previous line
+    if [ "$parse_total" = true ] && [[ "$x" =~ [0-9]+% ]]; then
+        total_cov=$(echo "$x" | grep -oP '[0-9]+(?=%)')  # extract only the number
+        parse_total=false
     fi
   fi
+
 
   if [ "$parse_title" = false ]; then
     if [ "$parse_contents" = false ]; then
@@ -58,7 +75,6 @@ for x in $output; do
       if [[ $item_cnt == 3 ]]; then
         # store individual file coverage
         file_covs+=( ${x::-1} )  # remove percentage at end
-        total_cov=${x::-1}  # will store last one
       fi
 
       if [[ $item_cnt == 4 ]]; then
@@ -96,13 +112,13 @@ file_covs=("${file_covs[@]:1}") #removed the 1st element
 
 # check if any file_cov exceeds threshold
 for file_cov in "${file_covs[@]}"; do
-  if [ "$file_cov" -lt test_fail_rate ]; then
+  if [ "$file_cov" -lt "$test_fail_rate" ]; then
     cov_threshold_single_fail=true
   fi
 done
 
 # check if total_cov exceeds threshold
-if [ "$total_cov" -lt test_fail_rate ]; then
+if [ "$total_cov" -lt "$test_fail_rate" ]; then
   cov_threshold_total_fail=true
 fi
 
