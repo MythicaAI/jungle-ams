@@ -61,11 +61,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         # Create a new NATS event
         if ctx.extension == 'hda':
             parameter_set = ParameterSet(
-                params={
-                    'hda_file': FileParameter(
-                        file_id=file_id
-                    )
-                }
+                hda_file = FileParameter(file_id=file_id)
             )
 
             event = WorkerRequest(

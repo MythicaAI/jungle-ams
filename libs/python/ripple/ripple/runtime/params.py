@@ -5,6 +5,7 @@ from http import HTTPStatus
 from typing import Optional
 from ripple.models.params import (
     ParameterSpec, 
+    ParameterSpecModel, 
     ParameterSet, 
     IntParameterSpec, 
     FloatParameterSpec, 
@@ -17,7 +18,7 @@ from ripple.models.params import (
 
 def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
     for name, paramSpec in paramSpec.params.items():
-        if paramSpec.constant and name not in paramSet.params:
+        if paramSpec.constant and name not in paramSet.model_fields.keys():
             default = None
 
             if isinstance(paramSpec, FileParameterSpec):
@@ -28,34 +29,55 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
             else:
                 default = paramSpec.default
 
-            paramSet.params[name] = default
+            setattr(paramSet, name, default)
 
+def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:
+           
+    if isinstance(param, (list, tuple, set, frozenset)):
+        for item in param:
+            if not validate_param(paramSpec, item, expectedType):
+                return False
+        if len(param) != len(paramSpec.default):
+            return False
+    else:
+        try:
+            if expectedType in (bool,str,float,int):
+                if not isinstance(param,expectedType):
+                    return False
+            else:
+                expectedType(**param)
+        except:
+            print(f"Failed cast")
+            return False
+    return True
 
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
+    params = paramSet.model_dump() 
+
     for name, paramSpec in paramSpec.params.items():
-        if name not in paramSet.params:
+        if name not in params:
             return False
         
-        param = paramSet.params[name]
+        param = params[name]
 
         # Validate type
+        typematch = None
         if isinstance(paramSpec, IntParameterSpec):
-            if not isinstance(param, int) and not (isinstance(param, list) and all(isinstance(p, int) for p in param) and len(param) == len(paramSpec.default)):
-                return False
+            typematch=int
         elif isinstance(paramSpec, FloatParameterSpec):
-            if not isinstance(param, float) and not (isinstance(param, list) and all(isinstance(p, float) for p in param) and len(param) == len(paramSpec.default)):
-                return False
+            typematch=float
         elif isinstance(paramSpec, StringParameterSpec):
-            if not isinstance(param, str) and not (isinstance(param, list) and all(isinstance(p, str) for p in param) and len(param) == len(paramSpec.default)):
-                return False
+            typematch=str
         elif isinstance(paramSpec, BoolParameterSpec):
-            if not isinstance(param, bool):
-                return False
+            typematch=bool
         elif isinstance(paramSpec, FileParameterSpec):
-            if not isinstance(param, FileParameter) and not (isinstance(param, list) and all(isinstance(p, FileParameter) for p in param) and len(param) == len(paramSpec.default)):
-                return False
+            typematch=FileParameter
         else:
             return False
+
+        if typematch:
+            if not validate_param(paramSpec,param,typematch):
+                return False
 
         # Validate constant
         if paramSpec.constant:
@@ -91,12 +113,25 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     return file_path
 
 
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> bool:
-    for name, param in paramSet.params.items():
-        if isinstance(param, FileParameter):
-            param.file_path = download_file(endpoint, directory, param.file_id)
-        elif isinstance(param, list) and all(isinstance(file_param, FileParameter) for file_param in param):
-            for file_param in param:
-                file_param.file_path = download_file(endpoint, directory, file_param.file_id)
+def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> ParameterSet:
+    def resolve(field,value):
+        # For list-like, check each value
+        if isinstance(value, (list, tuple, set, frozenset)):
+            for item in value:
+                resolve(field, item)
+        # For Dicts, check if they are FileParams. Otherwise check each item        
+        elif isinstance(value, FileParameter):
+            value.file_path = download_file(endpoint, directory, value.file_id)
+        elif isinstance(value, dict):
+            try:
+                FileParameter(**value)
+                value['file_path'] = download_file(endpoint, directory, value['file_id'])
+            except Exception:
+                for key, item in value.items():
+                    resolve(f"{field}:{key}", item)
+        
+    for name in paramSet.model_fields.keys():
+        resolve(name,getattr(paramSet,name))
 
     return True
+
