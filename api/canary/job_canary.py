@@ -87,11 +87,7 @@ def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
     body = {
         "job_def_id": job_def_id,
         "params": {
-            "params": {
-                "randseed": 0,
-                "color": [0.5, 0.5, 0.5],
-                "color2": [0.5, 0.5, 0.5]
-            }
+            "params": {}
         }
     }
 
