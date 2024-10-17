@@ -146,7 +146,7 @@ expected_badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=
 output_table_contents="${output_table_contents//'%'/'%25'}"
 output_table_contents="${output_table_contents//$'\n'/'%0A'}"
 output_table_contents="${output_table_contents//$'\r'/'%0D'}"
-output_table_contents="$badge%0A%0A$expected_badge%0A%0A<details><summary>Show Table</summary>%0A%0A${output_table_contents}%0A%0A</details>"
+output_table_contents="$badge%0A$expected_badge%0A%0A<details><summary>Show Table</summary>%0A%0A${output_table_contents}%0A%0A</details>"
 
 # set output variables to be used in workflow file
 echo "::set-output name=output-table::$output_table_contents"
