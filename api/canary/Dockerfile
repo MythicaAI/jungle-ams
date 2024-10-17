@@ -4,6 +4,8 @@ LABEL name="mythica-canary"
 LABEL description="Automated canary test for the job pipeline"
 LABEL tier="automation"
 
+RUN pip install --upgrade pip requests
+
 WORKDIR /api/canary
 
 # Copy local files
