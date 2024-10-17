@@ -1,3 +1,4 @@
+import argparse
 import logging
 import requests
 import time
@@ -10,9 +11,20 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-ENDPOINT = "https://api.mythica.ai/v1"
 PROFILE_ID = "prf_2fXUBxeTyD7TXBjTHHz41MitSpG"
 JOB_DEF_ID = "jobdef_r1NnWBt5TtwxL5B8DLTMFYR6py"
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Canary test for jobs")
+
+    parser.add_argument(
+        "-e", "--endpoint",
+        help="API endpoint",
+        required=False
+    )
+
+    return parser.parse_args()
 
 
 def start_session(endpoint: str, profile_id: str) -> str:
@@ -55,16 +67,16 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
     return result['completed']
 
 
-def run_test():
-    token = start_session(ENDPOINT, PROFILE_ID)
+def run_test(endpoint: str):
+    token = start_session(endpoint, PROFILE_ID)
     headers = {"Authorization": f"Bearer {token}"}
     print(f"Got token: {token}")
 
-    job_id = request_job(ENDPOINT, headers)
+    job_id = request_job(endpoint, headers)
     print(f"Started job: {job_id}")
  
     while True:
-        completed = check_job_status(ENDPOINT, headers, job_id)
+        completed = check_job_status(endpoint, headers, job_id)
         if completed:
             break
         time.sleep(1)
@@ -73,8 +85,10 @@ def run_test():
 
 
 def main():
+    args = parse_args()
+
     while True:
-        run_test()
+        run_test(args.endpoint)
         time.sleep(30)
 
 
