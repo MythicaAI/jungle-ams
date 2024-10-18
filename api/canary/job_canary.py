@@ -129,7 +129,7 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> Optional[str]:
             if len(files) > 0:
                 return files[0]['file_id']
 
-    return None
+    raise Exception("Job failed to generate mesh.")
 
 
 def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
