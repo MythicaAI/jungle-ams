@@ -113,15 +113,34 @@ def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
     return result['job_id']
 
 
-def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
+def check_job_status(endpoint: str, headers: str, job_id: str) -> Optional[str]:
     url = f"{endpoint}/jobs/results/{job_id}"
     response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
 
     result = response.json()
-    log.info(f"Received result: {result}")
+    completed = result['completed']
+    if not completed:
+        return None
 
-    return result['completed']
+    for result in result['results']:
+        if result['result_data']['item_type'] == 'file':
+            files = result['result_data']['files']['mesh']
+            if len(files) > 0:
+                return files[0]['file_id']
+
+    return None
+
+
+def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
+    start_time = time.time()
+    while True:
+        result_file_id = check_job_status(endpoint, headers, job_id)
+        if result_file_id:
+            break
+        if time.time() - start_time > JOB_TIMEOUT_SEC:
+            raise Exception("Timeout exceeded: Job never completed.")
+        time.sleep(1)
 
 
 def run_test(endpoint: str):
@@ -138,17 +157,14 @@ def run_test(endpoint: str):
     log.info(f"Uploaded file: {file_id}")
 
     job_def_id = get_job_def(endpoint, file_id)
-    log.info(f"Found created job def: {job_def_id}")
+    log.info(f"Created job def: {job_def_id}")
 
     job_id = request_job(endpoint, headers, job_def_id)
     log.info(f"Started job: {job_id}")
  
-    while True:
-        completed = check_job_status(endpoint, headers, job_id)
-        if completed:
-            break
-        time.sleep(1)
-
+    result_file_id = get_job_result(endpoint, headers, job_id)
+    log.info(f"Received job result file: {result_file_id}")
+    
     log.info("Job completed")
 
 
