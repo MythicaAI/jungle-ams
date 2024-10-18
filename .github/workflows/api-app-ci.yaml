@@ -35,7 +35,7 @@ jobs:
       UPLOAD_FOLDER_AUTO_CLEAN: false
       LOCAL_STORAGE_PATH: /tmp/local_storage
       USE_LOCAL_STORAGE: true
-      TEST_FAIL_RATE: 81  # TODO: increase test coverage
+      TEST_FAIL_RATE: 81
 
     steps:
       - uses: actions/checkout@v4

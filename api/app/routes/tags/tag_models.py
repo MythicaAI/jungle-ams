@@ -10,7 +10,7 @@ from pydantic import BaseModel, field_validator
 
 class TagType(str, Enum):
     asset = "asset"
-    files = "files"
+    file = "file"
 
 
 class TagRequest(BaseModel):
