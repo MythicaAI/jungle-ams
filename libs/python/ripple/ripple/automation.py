@@ -81,7 +81,7 @@ class NatsAdapter():
         
             # Wait for the response with a timeout (customize as necessary)
             log.debug("Setting up NATS response listener")
-            listener = await self.nc.subscribe(subject, cb=message_handler)
+            listener = await self.nc.subscribe(subject,queue="worker", cb=message_handler)
             self.listeners[subject] = listener
             log.info("NATS response listener set up")
 
@@ -221,7 +221,7 @@ class ResultPublisher:
                     "created_in": "automation-worker",
                     "result_data": item
                 }
-                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.self.request.job_id}", data)
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
             
     def _publish_local_data(self, item: ProcessStreamItem):
 
