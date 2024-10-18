@@ -12,6 +12,7 @@ from typing import Callable, Type, Optional, Dict
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
+from uuid import uuid4
 
 # Set up logging
 logging.basicConfig(
@@ -182,6 +183,10 @@ class WorkerRequest(BaseModel):
     path: str
     data: Dict
 
+class WorkerResponse(BaseModel):
+    work_id: str
+    payload: Dict
+
 class ResultPublisher:
     request: WorkerRequest
     nats: NatsAdapter
@@ -198,20 +203,28 @@ class ResultPublisher:
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
         # Poplulate context
-        #TODO: Generate process guid
         if isinstance(item,ProcessStreamItem):
-            item.process_guid = self.request.work_id
+            item.process_guid = str(uuid4())
             item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
             # Upload any references to local data
             self._publish_local_data(item)
-            # we need the JSON from here on down
+
+        if isinstance(item,BaseModel):
+            # we need the dict from here on down
             item = item.model_dump()
+        
         
         # Publish results
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(self.nats.post("result", item)) 
+        task = asyncio.create_task(
+            self.nats.post(
+                "result", 
+                WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
+            )
+        )
+
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
