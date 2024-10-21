@@ -39,7 +39,7 @@ def is_naive(dt):
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def generate_key(
+async def generate(
         create: KeyGenerateRequest,
         profile: Profile = Depends(current_profile)
 ) -> KeyGenerateResponse:
@@ -85,7 +85,7 @@ async def generate_key(
 
 
 @router.delete('/{key}')
-async def delete_key(key: str, profile: Profile = Depends(current_profile)):
+async def delete(key: str, profile: Profile = Depends(current_profile)):
     """Delete an existing API key"""
     with get_session() as session:
         stmt = delete(ProfileKey).where(ProfileKey.key == key).where(ProfileKey.owner_seq == profile.profile_seq)
@@ -94,7 +94,7 @@ async def delete_key(key: str, profile: Profile = Depends(current_profile)):
 
 
 @router.get('/')
-async def get_keys(profile: Profile = Depends(current_profile)) -> list[KeyGenerateResponse]:
+async def current(profile: Profile = Depends(current_profile)) -> list[KeyGenerateResponse]:
     """Get all API keys for this profile"""
     with get_session() as session:
         # pylint: disable=no-member

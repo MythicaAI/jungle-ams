@@ -7,14 +7,14 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, constr
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, select, update, delete, insert, col
+from sqlmodel import Session, col, delete, insert, select, update
 
 import auth.roles as roles
-from cryptid.cryptid import org_id_to_seq, profile_id_to_seq, org_seq_to_id, profile_seq_to_id
 from auth.authorization import validate_roles
 from auth.data import resolve_profile, resolve_roles
+from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
-from db.schema.profiles import Profile, Org, OrgRef
+from db.schema.profiles import Org, OrgRef, Profile
 from routes.authorization import current_profile
 
 MIN_ORG_NAME = 3
@@ -113,7 +113,7 @@ def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[OrgRefRespons
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def create_org(
+async def create(
         create: OrgCreateRequest,
         profile: Profile = Depends(current_profile)
 ) -> OrgRefResponse:
@@ -138,7 +138,7 @@ async def create_org(
 
 
 @router.get('/named/{org_name}')
-async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[OrgResponse]:
+async def by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[OrgResponse]:
     """Get organization by name"""
     with get_session() as session:
         if exact_match:
@@ -153,7 +153,7 @@ async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = 
 
 
 @router.post('/{org_id}')
-async def update_org(
+async def update(
         org_id: str,
         req: OrgUpdateRequest,
         profile: Profile = Depends(current_profile)
@@ -182,7 +182,7 @@ async def update_org(
 
 
 @router.delete('/{org_id}')
-async def delete_org(org_id: str, profile: Profile = Depends(current_profile)):
+async def delete(org_id: str, profile: Profile = Depends(current_profile)):
     """Removes an existing organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -193,7 +193,7 @@ async def delete_org(org_id: str, profile: Profile = Depends(current_profile)):
 
 
 @router.get('/')
-async def get_org(profile: Profile = Depends(current_profile)) -> list[OrgRefResponse]:
+async def member_of(profile: Profile = Depends(current_profile)) -> list[OrgRefResponse]:
     """Default get returns roles for the requesting profile"""
     with get_session() as session:
         return resolve_org_refs(session,
@@ -203,7 +203,7 @@ async def get_org(profile: Profile = Depends(current_profile)) -> list[OrgRefRes
 
 
 @router.get('/{org_id}')
-async def get_org_by_id(org_id: str = None, profile: Profile = Depends(current_profile)) -> OrgResponse:
+async def by_id(org_id: str = None, profile: Profile = Depends(current_profile)) -> OrgResponse:
     """Get organization by ID"""
     with (get_session() as session):
         org_seq = org_id_to_seq(org_id)
@@ -219,7 +219,7 @@ async def get_org_by_id(org_id: str = None, profile: Profile = Depends(current_p
 
 
 @router.get('/{org_id}/roles')
-async def get_org_roles(org_id: str) -> list[OrgRefResponse]:
+async def roles(org_id: str) -> list[OrgRefResponse]:
     """Get all the roles in the organization """
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -229,7 +229,7 @@ async def get_org_roles(org_id: str) -> list[OrgRefResponse]:
 
 
 @router.post('/{org_id}/roles/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
-async def add_role_to_org(
+async def add_role(
         org_id: str,
         profile_id: str,
         role: str,
@@ -254,7 +254,7 @@ async def add_role_to_org(
 
 
 @router.delete('/{org_id}/roles/{profile_id}/{role}')
-async def remove_role_from_org(
+async def remove_role(
         org_id: str,
         profile_id: str,
         role: str,

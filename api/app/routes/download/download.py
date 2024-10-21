@@ -2,7 +2,7 @@
 import logging
 from http import HTTPStatus
 
-from fastapi import Depends, HTTPException, Response, APIRouter
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
@@ -10,8 +10,8 @@ from cryptid.cryptid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.connection import get_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client
-from storage.storage_client import StorageClient
 from storage.local_file_uploader import LocalFileStorageClient
+from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def translate_download_url(storage, locators: list[str]) -> str:
 
 
 @router.get('/info/{file_id}')
-async def download_info(
+async def info(
         file_id: str,
         storage: StorageClient = Depends(storage_client)) -> DownloadInfoResponse:
     """Return information needed to download the file including the temporary URL"""
@@ -96,7 +96,7 @@ async def download_info(
 
 
 @router.get('/{file_id}')
-async def download_redirect(
+async def redirect(
         file_id: str,
         response: Response,
         storage: StorageClient = Depends(storage_client)):

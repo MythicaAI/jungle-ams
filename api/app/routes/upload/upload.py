@@ -13,9 +13,9 @@ from pydantic import BaseModel
 from sqlmodel import and_, select, update
 
 import db.index as db_index
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
 from config import app_config
 from context import RequestContext
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
@@ -23,7 +23,7 @@ from db.schema.profiles import Profile
 from routes.assets.assets import convert_version_input, select_asset_version
 from routes.authorization import current_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
-from routes.files.files import delete_file_by_id
+from routes.files.files import delete_by_id
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
@@ -195,7 +195,7 @@ async def store_and_attach_package(
 
         # if a package existed, mark it as deleted
         if avr.package_id:
-            await delete_file_by_id(avr.package_id, ctx.profile_id)
+            await delete_by_id(avr.package_id, ctx.profile_id)
 
         # attach the response to the asset version
         asset_seq = asset_id_to_seq(asset_id)
@@ -214,7 +214,7 @@ async def store_and_attach_package(
 
 
 @router.get('/pending')
-async def pending_uploads(
+async def pending(
         profile: Annotated[Profile, Depends(current_profile)]
 ) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for

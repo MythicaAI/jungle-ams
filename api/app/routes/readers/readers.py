@@ -12,21 +12,15 @@ from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_i
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
-from routes.authorization import current_profile
-from routes.readers.utils import (
-    direction_literal_to_db,
-    direction_db_to_literal,
-    reader_to_source_params,
-    resolve_results,
-    select_reader,
-    update_reader_index,
-)
-from routes.readers.manager import ReaderConnectionManager
-from routes.readers.schemas import CreateReaderRequest, ReaderResponse
 from ripple.client_ops import ReadClientOp
 from ripple.funcs import Boundary
 from ripple.models.streaming import StreamItemUnion
 from ripple.source_types import create_source
+from routes.authorization import current_profile
+from routes.readers.manager import ReaderConnectionManager
+from routes.readers.schemas import CreateReaderRequest, ReaderResponse
+from routes.readers.utils import (direction_db_to_literal, direction_literal_to_db, reader_to_source_params,
+                                  resolve_results, select_reader, update_reader_index)
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
 log = logging.getLogger(__name__)
@@ -34,13 +28,12 @@ log = logging.getLogger(__name__)
 reader_connection_manager = ReaderConnectionManager()
 
 
-
 class WebsocketClientOp(ReadClientOp):
     reader_id: Optional[str] = None
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-def create_reader(create: CreateReaderRequest, profile: Profile = Depends(current_profile)) -> ReaderResponse:
+def create(create: CreateReaderRequest, profile: Profile = Depends(current_profile)) -> ReaderResponse:
     """Create a new reader on a source"""
     with get_session() as session:
         r = session.exec(insert(Reader).values(
@@ -72,7 +65,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
 
 
 @router.get("/")
-def get_readers(profile: Profile = Depends(current_profile)) -> list[ReaderResponse]:
+def current(profile: Profile = Depends(current_profile)) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
     with get_session() as session:
         return resolve_results(session.exec(select(Reader)
@@ -80,7 +73,7 @@ def get_readers(profile: Profile = Depends(current_profile)) -> list[ReaderRespo
 
 
 @router.delete("/{reader_id}")
-def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
+def delete(reader_id: str, profile: Profile = Depends(current_profile)):
     """Delete a reader by ID"""
     with get_session() as session:
         reader_seq = reader_id_to_seq(reader_id)
@@ -93,11 +86,10 @@ def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
 
 
 @router.get("/{reader_id}/items")
-async def reader_dequeue(
-        reader_id: str,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
+async def items(reader_id: str,
+                before: Optional[str] = None,
+                after: Optional[str] = None,
+                profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
     reader_seq = reader_id_to_seq(reader_id)
     with get_session() as session:
@@ -129,18 +121,17 @@ async def reader_dequeue(
 
 
 @router.websocket("/test/connect")
-async def websocket_test_connect(websocket: WebSocket):
+async def test_connect(websocket: WebSocket):
     """Connect a websocket for all profile data"""
     await websocket.accept()
     await websocket.send_json(data={'message': 'hello world'}, mode='text')
 
 
-
 @router.websocket("/connect")
-async def websocket_connect_all(
+async def connect_all(
         websocket: WebSocket,
         profile: Profile = Depends(current_profile),
-    ):
+):
     """Create a profile websocket connection"""
     try:
         log.info("websocket connected to profile %s", profile)

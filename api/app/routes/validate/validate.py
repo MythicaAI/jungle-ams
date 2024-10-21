@@ -21,7 +21,7 @@ KEY_PREFIX = 'v_'
 
 
 @router.get('/')
-async def validate_email_begin(
+async def begin_email(
         profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
     """Start validating an email address stored on the current profile"""
     with get_session() as session:
@@ -44,7 +44,7 @@ async def validate_email_begin(
 
 
 @router.get('/{verification_code}')
-async def validate_email_complete(
+async def complete_email(
         verification_code: str,
         profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
     """Provide a valid verification code to validate email"""

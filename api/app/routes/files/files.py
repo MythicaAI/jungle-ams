@@ -16,7 +16,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 
 @router.get("/{file_id}")
-async def get_file_by_id(
+async def by_id(
         file_id: str,
         profile: Profile = Depends(current_profile)) -> FileUploadResponse:
     """Query a file by ID, returns owner event data"""
@@ -31,7 +31,7 @@ async def get_file_by_id(
 
 
 @router.get("/by_content/{content_hash}")
-async def get_file_by_content(
+async def by_content(
         content_hash: str,
         profile: Profile = Depends(current_profile)) -> FileUploadResponse:
     """Query a file by its content hash"""
@@ -44,7 +44,7 @@ async def get_file_by_content(
 
 
 @router.delete('/{file_id}')
-async def delete_file_by_id(file_id, profile_id: str = Depends(current_profile_id)):
+async def delete_by_id(file_id, profile_id: str = Depends(current_profile_id)):
     """Delete a file by its ID"""
     profile_seq = profile_id_to_seq(profile_id)
     with get_session(echo=True) as session:

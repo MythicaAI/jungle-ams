@@ -3,15 +3,14 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends
-from fastapi import HTTPException, Body, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlmodel import select, update
 
-from cryptid.cryptid import org_id_to_seq, topo_seq_to_id, profile_seq_to_id, org_seq_to_id, topo_id_to_seq
+from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_seq_to_id, topo_id_to_seq, topo_seq_to_id
 from db.connection import get_session
 from db.schema.graph import Topology, TopologyRef
-from db.schema.profiles import Profile, Org
+from db.schema.profiles import Org, Profile
 from routes.authorization import current_profile
 
 
@@ -73,14 +72,14 @@ def topology_refs_to_response(
 
 
 @router.get("/")
-async def get_topologies() -> list[Topology]:
+async def list_all() -> list[Topology]:
     """Get all valid topologies"""
     with get_session() as session:
         return session.exec(select(Topology)).all()
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-async def create_topology(
+async def create(
         create: TopologyCreateUpdateRequest,
         profile: Profile = Depends(current_profile)) -> TopologyResponse:
     """Create a new topology"""
@@ -107,7 +106,7 @@ async def create_topology(
 
 
 @router.post("/{topo_id}")
-async def update_topology(
+async def update(
         topo_id: str,
         req: TopologyCreateUpdateRequest,
         profile: Profile = Depends(current_profile)) -> TopologyResponse:
@@ -154,7 +153,7 @@ async def update_topology(
 
 
 @router.get("/{topo_id}")
-async def get_topology(topo_id: str) -> TopologyResponse:
+async def by_id(topo_id: str) -> TopologyResponse:
     """Get topology by ID"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)
@@ -164,7 +163,7 @@ async def get_topology(topo_id: str) -> TopologyResponse:
 
 
 @router.get("/{topo_id}/refs")
-async def get_topology_refs(topo_id: str) -> list[TopologyRefResponse]:
+async def refs(topo_id: str) -> list[TopologyRefResponse]:
     """Get all topology refs"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)
@@ -178,7 +177,7 @@ async def get_topology_refs(topo_id: str) -> list[TopologyRefResponse]:
 
 
 @router.post("/{topo_id}/refs/{src_id}/{dst_id}", status_code=HTTPStatus.CREATED)
-async def create_topo_refs(
+async def create_ref(
         topo_id: str,
         src_id: str,
         dst_id: str,

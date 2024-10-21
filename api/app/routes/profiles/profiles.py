@@ -33,7 +33,7 @@ class CreateUpdateProfileModel(BaseModel):
 
 
 @router.get('/named/{profile_name}')
-async def get_profile_by_name(profile_name: profile_name_str, exact_match: Optional[bool] = False) \
+async def by_name(profile_name: profile_name_str, exact_match: Optional[bool] = False) \
         -> list[PublicProfileResponse]:
     """Get asset by name"""
     with get_session() as session:
@@ -48,7 +48,7 @@ async def get_profile_by_name(profile_name: profile_name_str, exact_match: Optio
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def create_profile(
+async def create(
         req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     """Create a new profile"""
     session = get_session()
@@ -71,7 +71,7 @@ async def create_profile(
 
 
 @router.get('/{profile_id}')
-async def get_profile(profile_id: str) -> PublicProfileResponse:
+async def by_id(profile_id: str) -> PublicProfileResponse:
     """Get a profile by ID"""
     with get_session() as session:
         profile_seq = profile_id_to_seq(profile_id)
@@ -83,7 +83,7 @@ async def get_profile(profile_id: str) -> PublicProfileResponse:
 
 
 @router.post('/{profile_id}')
-async def update_profile(
+async def update(
         profile_id: str,
         req_profile: CreateUpdateProfileModel,
         profile: Profile = Depends(current_profile)) -> ProfileResponse:
