@@ -195,38 +195,35 @@ def test_param_validate():
 
 
 def test_param_resolve():
-    #TODO: Setup endpoint that works in test environment
     """
-    endpoint = "http://localhost:8080/v1"
+    #TODO: Setup endpoint that works in test environment
+    endpoint = "https://api.mythica.ai/v1"
 
     # File test
     with tempfile.TemporaryDirectory() as tmp_dir:
-        set = ParameterSet(input0= FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"))
+        set = ParameterSet(input0=FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"))
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
-        assert len(set.params) == 1
-        assert isinstance(set.params['input0'], FileParameter)
-        assert set.params['input0'].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert set.params['input0'].file_path.startswith('file_') == False
-        assert os.path.exists(set.params['input0'].file_path)
+        assert isinstance(set.input0, FileParameter)
+        assert set.input0.file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.input0.file_path.startswith('file_') == False
+        assert os.path.exists(set.input0.file_path)
 
     # File list test
     with tempfile.TemporaryDirectory() as tmp_dir:
-        set = ParameterSet(files= [
-            FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"),
-            FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")
+        set = ParameterSet(files=[
+            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"),
+            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB")
         ])
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
-        assert len(set.params) == 1
-        assert isinstance(set.params['files'], list)
-        assert len(set.params['files']) == 2
-        assert isinstance(set.params['files'][0], FileParameter)
-        assert isinstance(set.params['files'][1], FileParameter)
-        assert set.params['files'][0].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert set.params['files'][1].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert set.params['files'][0].file_path.startswith('file_') == False
-        assert set.params['files'][1].file_path.startswith('file_') == False
-        assert os.path.exists(set.params['files'][0].file_path)
-        assert os.path.exists(set.params['files'][1].file_path)
+        assert isinstance(set.files, list)
+        assert isinstance(set.files[0], FileParameter)
+        assert isinstance(set.files[1], FileParameter)
+        assert set.files[0].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.files[1].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.files[0].file_path.startswith('file_') == False
+        assert set.files[1].file_path.startswith('file_') == False
+        assert os.path.exists(set.files[0].file_path)
+        assert os.path.exists(set.files[1].file_path)
     """

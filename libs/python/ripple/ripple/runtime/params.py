@@ -129,8 +129,10 @@ def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> Par
             except Exception:
                 for key, item in value.items():
                     resolve(f"{field}:{key}", item)
-        
+    
     for name in paramSet.model_fields.keys():
+        resolve(name,getattr(paramSet,name))
+    for name in paramSet.model_extra.keys():
         resolve(name,getattr(paramSet,name))
 
     return True
