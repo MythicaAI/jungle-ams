@@ -32,7 +32,7 @@ def create_inputs(asset, geo, params: dict):
             continue
 
         input_index = int(match.group(1))
-        input_file = v['file_path']
+        input_file = v.get('file_path', '')
 
         input_node = None
         if os.path.exists(input_file):
