@@ -155,6 +155,23 @@ def test_param_validate():
     set = ParameterSet()
     assert validate_params(spec, set)
 
+    # All types test
+    spec = ParameterSpec(params={
+        'test_int': IntParameterSpec(label='test_int', default=0),
+        'test_float': FloatParameterSpec(label='test_float', default=0.5),
+        'test_str': StringParameterSpec(label='test_str', default=''),
+        'test_bool': BoolParameterSpec(label='test_bool', default=True),
+        'test_file': FileParameterSpec(label='test_file', default='')
+    })
+    set = ParameterSet(
+        test_int=5,
+        test_float=1.5,
+        test_str='test',
+        test_bool=False,
+        test_file=FileParameter(file_id='file_qfJSVuWRJvq5PmueFPxSjXsEcST')
+    )
+    assert validate_params(spec, set)
+
     # Parameter count test
     spec = ParameterSpec(params={"input0": FileParameterSpec(label="Test Input 0", default='')})
     set_good = ParameterSet(input0= FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"))
@@ -186,7 +203,10 @@ def test_param_validate():
     assert validate_params(spec, set_bad) == False
 
     # Populate constants test
-    spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})
+    spec = ParameterSpec(params={
+        'test_int': IntParameterSpec(label='test_int', default=0, constant=True),
+        'test_file': FileParameterSpec(label='test_file', default='file_qfJSVuWRJvq5PmueFPxSjXsEcST', constant=True),
+    })
     set = ParameterSet(params={})
     assert validate_params(spec, set) == False
 
@@ -195,6 +215,14 @@ def test_param_validate():
 
 
 def test_param_resolve():
+    # Identity test
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set = ParameterSet(test_int=5)
+        success = resolve_params("", tmp_dir, set)
+        assert success
+        assert isinstance(set.test_int, int)
+        assert set.test_int == 5
+
     """
     #TODO: Setup endpoint that works in test environment
     endpoint = "https://api.mythica.ai/v1"
