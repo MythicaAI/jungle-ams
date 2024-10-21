@@ -127,7 +127,7 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> Optional[str]:
         if result['result_data']['item_type'] == 'file':
             files = result['result_data']['files']['mesh']
             if len(files) > 0:
-                return files[0]['file_id']
+                return files[0]
 
     raise Exception("Job failed to generate mesh.")
 
@@ -137,7 +137,7 @@ def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
     while True:
         result_file_id = check_job_status(endpoint, headers, job_id)
         if result_file_id:
-            break
+            return result_file_id
         if time.time() - start_time > JOB_TIMEOUT_SEC:
             raise Exception("Timeout exceeded: Job never completed.")
         time.sleep(1)
@@ -165,7 +165,7 @@ def run_test(endpoint: str):
     result_file_id = get_job_result(endpoint, headers, job_id)
     log.info(f"Received job result file: {result_file_id}")
     
-    log.info("Job completed")
+    log.info("Job completed successfully")
 
 
 def main():
