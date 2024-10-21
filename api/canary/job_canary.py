@@ -14,7 +14,8 @@ log = logging.getLogger(__name__)
 
 
 PROFILE_NAME = "Mythica_Canary"
-HDA_FILE = "test_cube.hda"
+HDA_FILE = "test_scale_input.hda"
+MESH_FILE = "cube.usdz"
 
 TEST_FREQUENCY_SEC = 600
 JOB_TIMEOUT_SEC = 30
@@ -97,11 +98,11 @@ def get_job_def(endpoint: str, file_id: str) -> str:
         time.sleep(1)
 
 
-def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
+def request_job(endpoint: str, headers: str, job_def_id: str, mesh_file_id: str) -> str:
     body = {
         "job_def_id": job_def_id,
         "params": {
-            "params": {}
+            "input0": { "file_id": mesh_file_id }
         }
     }
 
@@ -153,13 +154,16 @@ def run_test(endpoint: str):
     headers = {"Authorization": f"Bearer {token}"}
     log.info(f"Got token: {token}")
 
-    file_id = upload_file(endpoint, headers, HDA_FILE)
-    log.info(f"Uploaded file: {file_id}")
+    hda_file_id = upload_file(endpoint, headers, HDA_FILE)
+    log.info(f"Uploaded hda file: {hda_file_id}")
 
-    job_def_id = get_job_def(endpoint, file_id)
+    job_def_id = get_job_def(endpoint, hda_file_id)
     log.info(f"Created job def: {job_def_id}")
 
-    job_id = request_job(endpoint, headers, job_def_id)
+    mesh_file_id = upload_file(endpoint, headers, MESH_FILE)
+    log.info(f"Uploaded mesh file: {mesh_file_id}")
+
+    job_id = request_job(endpoint, headers, job_def_id, mesh_file_id)
     log.info(f"Started job: {job_id}")
  
     result_file_id = get_job_result(endpoint, headers, job_id)

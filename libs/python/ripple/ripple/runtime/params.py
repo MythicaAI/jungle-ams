@@ -100,7 +100,8 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     doc = r.json()
 
     # Download the file
-    file_path = os.path.join(directory, file_id)
+    file_name = doc['name'].replace('\\', '_').replace('/', '_')
+    file_path = os.path.join(directory, file_name)
 
     downloaded_bytes = 0
     with open(file_path, "w+b") as f:
@@ -129,8 +130,10 @@ def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> Par
             except Exception:
                 for key, item in value.items():
                     resolve(f"{field}:{key}", item)
-        
+    
     for name in paramSet.model_fields.keys():
+        resolve(name,getattr(paramSet,name))
+    for name in paramSet.model_extra.keys():
         resolve(name,getattr(paramSet,name))
 
     return True
