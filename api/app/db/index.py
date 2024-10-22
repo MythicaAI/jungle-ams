@@ -31,6 +31,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
             {'name': ctx.filename,
              'owner_seq': profile_id_to_seq(ctx.profile_id),
              'locators': locators,
+             'purpose': ctx.purpose,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
              'content_type': content_type}))

@@ -24,6 +24,9 @@ tables:
         description: set for media that have been marked for deletion
       - name: size
         type: INTEGER
+      - name: purpose
+        type: TEXT
+        description: Purpose of this file
       - name: content_type
         description: Content metadata type
         type: TEXT
