@@ -27,7 +27,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: app
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:7ca8e19c
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:9b483758
           imagePullPolicy: Always
           resources:
             requests:
