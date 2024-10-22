@@ -7,12 +7,12 @@ from tests.shared_test import ProfileTestObj, assert_status_code
 
 
 @pytest.fixture
-def create_profile(client, api_base: str):
+def create_profile(client, api_base: str, email="test@test.com"):
     """factory fixture, returns profile creation function"""
 
     def _create_profile(
             name: str = "test-profile",
-            email: str = "test@test.com",
+            email: str = email,
             full_name: str = "Test Profile",
             signature: str = 32 * 'X',
             description: str = "Test description",

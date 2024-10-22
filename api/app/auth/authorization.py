@@ -6,6 +6,7 @@ import auth.roles as roles
 
 role_aliases: dict = {
     'admin': '*',
+    'mythica-tags': {roles.tag_create, roles.tag_delete},
     'mod': { roles.org_update, roles.org_add_role, roles.org_remove_role, roles.asset_create, roles.asset_update },
     'user': { roles.asset_create, roles.asset_update }
 }

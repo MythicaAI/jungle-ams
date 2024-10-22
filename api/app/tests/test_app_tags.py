@@ -21,7 +21,11 @@ test_file_content_type = "application/octet-stream"
 
 
 def test_tags_operations(api_base, client, create_profile):
-    test_profile = create_profile()
+    simple_profile = create_profile(email="test@test.ai")
+    simple_headers = simple_profile.authorization_header()
+    simple_profile = simple_profile.profile
+
+    test_profile = create_profile(email="test@mythica.ai")
     profile = test_profile.profile
     headers = test_profile.authorization_header()
 
@@ -31,15 +35,16 @@ def test_tags_operations(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     org_id = o.org_id
+    
 
-    def create_asset():
+    def create_asset(headers):
         # create asset in org
         r = client.post(f"{api_base}/assets", json={'org_id': org_id}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         return o.asset_id
 
-    asset_id = create_asset()
+    asset_id = create_asset(headers)
 
     top_limit = 5
     top_tag_name = None
@@ -81,8 +86,13 @@ def test_tags_operations(api_base, client, create_profile):
         for asset_id in created_asset_ids:
             delete_type_tag("asset", asset_id, tag_id)
 
+    # Test profile does not have required_role to create tag
+    unrequired_role_tag_name = "tag_" + get_random_string(10, digits=False)
+    r = client.post(f"{api_base}/tags", json={'name': unrequired_role_tag_name}, headers=simple_headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
     created_tag_ids = []
-    top_asset_ids = [create_asset() for _ in range(10)]
+    top_asset_ids = [create_asset(headers) for _ in range(10)]
     for i in range(top_limit):
         tag_id, tag_name = create_tag()
         created_tag_ids.append(tag_id)
@@ -127,10 +137,10 @@ def test_tags_operations(api_base, client, create_profile):
 
 
 def test_tag_asset_operations(api_base, client, create_profile):
-    test_profile = create_profile()
+    test_profile = create_profile(email="test@mythica.ai")
     profile = test_profile.profile
     headers = test_profile.authorization_header()
-    new_test_profile = create_profile()
+    new_test_profile = create_profile(email="test@mythica.ai")
     new_headers = new_test_profile.authorization_header()
 
     # create org to contain assets
@@ -140,14 +150,14 @@ def test_tag_asset_operations(api_base, client, create_profile):
     o = munchify(r.json())
     org_id = o.org_id
 
-    def create_asset():
+    def create_asset(headers):
         # create asset in org
         r = client.post(f"{api_base}/assets", json={'org_id': org_id}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         return o.asset_id
 
-    asset_id = create_asset()
+    asset_id = create_asset(headers)
 
     top_limit = 5
 
@@ -216,7 +226,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
     model_type_count_to_filter = 5
     include_tags_count_to_filter = 3
     exclude_tags_count_to_filter = 3
-    filter_assets_ids = [create_asset() for _ in range(model_type_count_to_filter)]
+    filter_assets_ids = [create_asset(headers) for _ in range(model_type_count_to_filter)]
     include_tags_id_names = [create_tag() for _ in range(include_tags_count_to_filter)]
     exclude_tags_id_names = [create_tag() for _ in range(exclude_tags_count_to_filter)]
     created_tag__type_ids = []
@@ -279,7 +289,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
 
 
 def test_wrong_type_model(api_base, client, create_profile):
-    test_profile = create_profile()
+    test_profile = create_profile(email="test@mythica.ai")
     headers = test_profile.authorization_header()
     r = client.get(
         f"{api_base}/tags/types/{get_random_string(23)}",
@@ -295,10 +305,10 @@ def test_wrong_type_model(api_base, client, create_profile):
 def test_tag_files_operations(
     api_base, client, create_profile, request_to_upload_files
 ):
-    test_profile = create_profile()
+    test_profile = create_profile(email="test@mythica.ai")
     profile = test_profile.profile
     headers = test_profile.authorization_header()
-    new_test_profile = create_profile()
+    new_test_profile = create_profile(email="test@mythica.ai")
     new_headers = new_test_profile.authorization_header()
 
     top_limit = 5

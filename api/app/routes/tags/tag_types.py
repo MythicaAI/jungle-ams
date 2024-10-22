@@ -209,7 +209,7 @@ async def get_top_tags_for_type(
 
 
 @router.get('/{tag_type}/filter')
-async def get_filtered_tags_for_type(
+async def get_filtered_model_types_by_tags(
     tag_type: TagType,   # pylint: disable=unused-argument
     profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
     limit: int = Query(1, le=100),

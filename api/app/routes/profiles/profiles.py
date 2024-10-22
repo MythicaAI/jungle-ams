@@ -8,8 +8,9 @@ from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlmodel import col, select, update
 
 from cryptid.cryptid import profile_id_to_seq, profile_seq_to_id
+from auth.data import create_new_org_ref_to_profile_roles
 from db.connection import get_session
-from db.schema.profiles import Profile
+from db.schema.profiles import OrgRef, Profile
 from profiles.responses import ProfileResponse, PublicProfileResponse, profile_to_profile_response
 from routes.authorization import current_profile
 
@@ -58,13 +59,14 @@ async def create_profile(
         profile = Profile(**req_profile.model_dump())
         profile.profile_base_href = str(req_profile.profile_base_href)
 
-    except TypeError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
-    except ValidationError as e:
+    except (TypeError, ValidationError) as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
 
     session.add(profile)
     session.commit()
+
+    if str(profile.email).endswith("@mythica.ai"):
+        create_new_org_ref_to_profile_roles(session, "mythica", [profile], "mythica-tags")
     session.refresh(profile)
 
     return profile_to_profile_response(profile, ProfileResponse)
@@ -100,6 +102,8 @@ async def update_profile(
     rows_affected = result.rowcount
     if rows_affected == 0:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
+    if req_profile.email and str(req_profile.email).endswith("@mythica.ai"):
+        create_new_org_ref_to_profile_roles(session, "mythica", [profile], "mythica-tags")
     session.commit()
 
     updated = session.exec(select(Profile).where(
