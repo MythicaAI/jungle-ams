@@ -10,7 +10,7 @@ from sqlmodel import col, select, update
 from cryptid.cryptid import profile_id_to_seq, profile_seq_to_id
 from auth.data import create_new_org_ref_to_profile_roles
 from db.connection import get_session
-from db.schema.profiles import OrgRef, Profile
+from db.schema.profiles import Profile
 from profiles.responses import ProfileResponse, PublicProfileResponse, profile_to_profile_response
 from routes.authorization import current_profile
 
