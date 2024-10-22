@@ -32,6 +32,7 @@ import { ClickAwayListener } from "@mui/base/ClickAwayListener";
 import { AxiosError } from "axios";
 import { useStatusStore } from "@store/statusStore";
 import { api } from "@services/api";
+import { useTranslation } from "react-i18next";
 
 export type VersionTuple = [number, number, number];
 
@@ -44,6 +45,7 @@ export const AssetEditVersionDropdown = () => {
   const [availableVersions, setAvailableVersions] = useState<
     AssetVersionResponse[]
   >([]);
+  const { t } = useTranslation();
   // const { mutate: deleteAssetVersion } = useDeleteAsset();
 
   // version sanitizing state, should only be populated by the sanitizeVersion() function
@@ -131,7 +133,7 @@ export const AssetEditVersionDropdown = () => {
       gap="15px"
     >
       <FormControl error={isVersionZero(sanitizedVersion)}>
-        <FormLabel>Version</FormLabel>
+        <FormLabel>{t("packageEdit.version")}</FormLabel>
         <Input
           name="version"
           variant="outlined"
@@ -213,7 +215,7 @@ export const AssetEditVersionDropdown = () => {
               width: "auto",
             }}
           >
-            {published ? "Published" : "Draft"}
+            {published ? t("common.published") : t("common.draft")}
           </Typography>
           <Switch
             checked={published}

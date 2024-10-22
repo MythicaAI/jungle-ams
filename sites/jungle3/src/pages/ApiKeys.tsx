@@ -40,6 +40,7 @@ import {
   useGetApiKeys,
 } from "@queries/apiKeys";
 import { DeleteModal } from "@components/common/DeleteModal";
+import { useTranslation } from "react-i18next";
 
 const ApiKeys = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -51,6 +52,7 @@ const ApiKeys = () => {
   const { data: keys, isLoading, error } = useGetApiKeys();
   const { mutate: addKey } = useAddApiKey();
   const { mutate: deleteKey } = useDeleteApiKey();
+  const { t } = useTranslation();
 
   const handleError = (err: any) => {
     addError(translateError(err));
@@ -70,14 +72,14 @@ const ApiKeys = () => {
   return (
     <>
       <Helmet>
-        <title>Mythica • API keys</title>
+        <title>Mythica • {t("apiKeys.title")}</title>
       </Helmet>
       <Card sx={{ mb: "16px", mx: "16px" }}>
         <Stack>
           <Typography textAlign="start" level="h4">
-            Your API keys
+            {t("apiKeys.yourTitle")}
           </Typography>
-          <Typography textAlign="start">Manage your access keys</Typography>
+          <Typography textAlign="start">{t("apiKeys.desc")}</Typography>
         </Stack>
       </Card>
       <List>
@@ -88,7 +90,7 @@ const ApiKeys = () => {
           onClick={() => setCreateModalOpen(true)}
           sx={{ width: "fit-content" }}
         >
-          Generate new key
+          {t("apiKeys.generate")}
         </Button>
 
         <ListDivider />
@@ -145,7 +147,7 @@ const ApiKeys = () => {
       </List>
       <Modal open={createModalOpen} onClose={() => setCreateModalOpen(false)}>
         <ModalDialog sx={{ width: "100%", maxWidth: "500px" }}>
-          <DialogTitle>Generate new key</DialogTitle>
+          <DialogTitle>{t("apiKeys.generate")}</DialogTitle>
 
           <form
             onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
@@ -171,15 +173,15 @@ const ApiKeys = () => {
           >
             <Stack spacing={2}>
               <FormControl>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>{t("apiKeys.name")}</FormLabel>
                 <Input name="name" autoFocus required />
               </FormControl>
               <FormControl>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{t("apiKeys.description")}</FormLabel>
                 <Input name="description" required />
               </FormControl>
               <FormControl>
-                <FormLabel>Expires in, days</FormLabel>
+                <FormLabel>{t("apiKeys.expires")}</FormLabel>
                 <Input
                   type="number"
                   defaultValue={30}
@@ -187,7 +189,7 @@ const ApiKeys = () => {
                   required
                 />
               </FormControl>
-              <Button type="submit">Submit</Button>
+              <Button type="submit">{t("apiKeys.submit")}</Button>
             </Stack>
           </form>
         </ModalDialog>

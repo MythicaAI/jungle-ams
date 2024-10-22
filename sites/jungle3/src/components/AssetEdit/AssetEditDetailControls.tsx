@@ -5,10 +5,12 @@ import Textarea from "@mui/joy/Textarea";
 import { useGlobalStore } from "@store/globalStore";
 import { useAssetVersionStore } from "@store/assetVersionStore";
 import { AssetEditVersionDropdown } from "./AssetEditVersionDropdown.tsx";
+import { useTranslation } from "react-i18next";
 
 export const AssetEditDetailControls = () => {
   const { orgRoles } = useGlobalStore();
   const { org_id, description, updateVersion } = useAssetVersionStore();
+  const { t } = useTranslation();
 
   const onUpdateOrg = (
     _event: React.SyntheticEvent | null,
@@ -25,10 +27,10 @@ export const AssetEditDetailControls = () => {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <FormControl>
         <FormLabel>
-          Org / Namespace
+          {t("packageEdit.org/namespace")}
           {!org_id && orgRoles.length == 0 && (
             <Box ml="10px">
-              <Link to={"/orgs"}>Create New Organization</Link>
+              <Link to={"/orgs"}>{t("packageEdit.createNewOrg")}</Link>
             </Box>
           )}
         </FormLabel>
@@ -37,7 +39,7 @@ export const AssetEditDetailControls = () => {
           <Select
             variant="soft"
             name="org_id"
-            placeholder={"Choose an existing org..."}
+            placeholder={t("packageEdit.chooseExistingOrg")}
             value={org_id}
             multiple={false}
             onChange={onUpdateOrg}
@@ -63,10 +65,10 @@ export const AssetEditDetailControls = () => {
       <AssetEditVersionDropdown />
 
       <FormControl>
-        <FormLabel>Description</FormLabel>
+        <FormLabel>{t("common.description")}</FormLabel>
         <Textarea
           name="description"
-          placeholder="Fill out a description..."
+          placeholder={t("packageEdit.filloutDesc")}
           variant="outlined"
           size="md"
           minRows={4}
