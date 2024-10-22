@@ -49,3 +49,15 @@ tables:
       - name: locators
         type: JSON
         description: Array of content locators
+  # Cross table relation between file and tags
+  - name: FileTag
+    table_name: file_tags
+    columns:
+      - name: type_seq
+        type: BIGINT
+        primary_key: true
+        foreign_key: files.file_seq
+      - name: tag_seq
+        type: BIGINT
+        primary_key: true
+        foreign_key: tags.tag_seq

@@ -8,3 +8,6 @@ org_remove_role = 'org/remove_role'
 
 asset_create = 'asset/create'
 asset_update = 'asset/update'
+
+tag_create = 'tag/create'
+tag_delete = 'tag/delete'
