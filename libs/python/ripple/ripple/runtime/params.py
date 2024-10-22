@@ -31,8 +31,20 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 
             setattr(paramSet, name, default)
 
-def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:
-           
+
+def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    for name, paramSpec in paramSpec.params.items():
+        if isinstance(paramSpec, FloatParameterSpec):
+            if hasattr(paramSet, name) and isinstance(getattr(paramSet, name), int):
+                setattr(paramSet, name, float(getattr(paramSet, name)))
+
+
+def repair_parameters(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    populate_constants(paramSpec, paramSet)
+    cast_numeric_types(paramSpec, paramSet)
+
+
+def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:           
     if isinstance(param, (list, tuple, set, frozenset)):
         for item in param:
             if not validate_param(paramSpec, item, expectedType):
@@ -50,6 +62,7 @@ def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:
             print(f"Failed cast")
             return False
     return True
+
 
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
     params = paramSet.model_dump() 
