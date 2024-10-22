@@ -4,7 +4,7 @@ from fastapi import Header
 
 from auth.data import get_profile
 from db.schema.profiles import Profile
-
+from cryptid.cryptid import profile_seq_to_id
 
 async def current_profile(authorization: Annotated[str | None, Header()]) -> Profile:
     """Dependency that provides the profile record for the current authorization header"""
@@ -16,4 +16,4 @@ async def current_profile_id(authorization: Annotated[str | None, Header()]) -> 
     profile = get_profile(authorization)
     if profile is None:
         return ''
-    return profile.profile_id
+    return profile_seq_to_id(profile.profile_seq)

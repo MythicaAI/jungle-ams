@@ -10,7 +10,9 @@ from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.authorization import current_profile, current_profile_id
-from routes.file_uploads import FileUploadResponse, enrich_file
+from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
+
+from ripple.models.contexts import FilePurpose
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -27,7 +29,10 @@ async def get_file_by_id(
                 and_(
                     FileContent.file_seq == file_seq,
                     FileContent.deleted == None))).first()
-        return enrich_file(session, file, profile)
+        if file:
+            return enrich_file(session, file, profile)
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
 
 
 @router.get("/by_content/{content_hash}")
@@ -42,6 +47,17 @@ async def get_file_by_content(
             .where(FileContent.deleted == None))).first()
         return enrich_file(session, file, profile)
 
+@router.get("/by_purpose/{file_purpose}")
+async def get_file_by_purpose(
+        file_purpose: FilePurpose,
+        profile: Profile = Depends(current_profile)) -> list[FileUploadResponse]:
+    """Query a file by its content hash"""
+    with get_session() as session:
+        files = session.exec((
+            select(FileContent)
+            .where(FileContent.purpose == file_purpose)
+            .where(FileContent.deleted == None))).all()
+        return enrich_files(session, files, profile)
 
 @router.delete('/{file_id}')
 async def delete_file_by_id(file_id, profile_id: str = Depends(current_profile_id)):
