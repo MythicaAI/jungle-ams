@@ -33,10 +33,20 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 
 
 def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
-    for name, paramSpec in paramSpec.params.items():
-        if isinstance(paramSpec, FloatParameterSpec):
-            if hasattr(paramSet, name) and isinstance(getattr(paramSet, name), int):
-                setattr(paramSet, name, float(getattr(paramSet, name)))
+    # Implicitly cast int values to float
+    for name, spec in paramSpec.params.items():
+        if not hasattr(paramSet, name) or not isinstance(spec, FloatParameterSpec):
+            continue
+
+        value = getattr(paramSet, name)
+        if isinstance(spec.default, float):
+            if isinstance(value, int):
+                setattr(paramSet, name, float(value))
+        elif isinstance(spec.default, list):
+            if isinstance(value, list) and len(spec.default) == len(value):
+                for i in range(len(spec.default)):
+                    if isinstance(spec.default[i], float) and isinstance(value[i], int):
+                        value[i] = float(value[i])
 
 
 def repair_parameters(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:

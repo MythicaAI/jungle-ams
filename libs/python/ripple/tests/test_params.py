@@ -207,14 +207,17 @@ def test_param_validate():
         'test_int': IntParameterSpec(label='test_int', default=0, constant=True),
         'test_file': FileParameterSpec(label='test_file', default='file_qfJSVuWRJvq5PmueFPxSjXsEcST', constant=True),
     })
-    set = ParameterSet(params={})
+    set = ParameterSet()
     assert validate_params(spec, set) == False
     repair_parameters(spec, set)
     assert validate_params(spec, set)
 
     # Implicit int to float cast test
-    spec = ParameterSpec(params={'test_float': FloatParameterSpec(label='test', default=0.0)})
-    set = ParameterSet(test_float=5)
+    spec = ParameterSpec(params={
+        'test_float': FloatParameterSpec(label='test', default=0.0),
+        'test_float_array': FloatParameterSpec(label='test', default=[0.0, 0.0, 0.0])
+    })
+    set = ParameterSet(test_float=5, test_float_array=[1, 2, 3])
     assert validate_params(spec, set) == False
     repair_parameters(spec, set)
     assert validate_params(spec, set)
