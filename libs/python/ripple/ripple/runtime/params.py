@@ -31,8 +31,30 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 
             setattr(paramSet, name, default)
 
-def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:
-           
+
+def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    # Implicitly cast int values to float
+    for name, spec in paramSpec.params.items():
+        if not hasattr(paramSet, name) or not isinstance(spec, FloatParameterSpec):
+            continue
+
+        value = getattr(paramSet, name)
+        if isinstance(spec.default, float):
+            if isinstance(value, int):
+                setattr(paramSet, name, float(value))
+        elif isinstance(spec.default, list):
+            if isinstance(value, list) and len(spec.default) == len(value):
+                for i in range(len(spec.default)):
+                    if isinstance(spec.default[i], float) and isinstance(value[i], int):
+                        value[i] = float(value[i])
+
+
+def repair_parameters(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    populate_constants(paramSpec, paramSet)
+    cast_numeric_types(paramSpec, paramSet)
+
+
+def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:           
     if isinstance(param, (list, tuple, set, frozenset)):
         for item in param:
             if not validate_param(paramSpec, item, expectedType):
@@ -50,6 +72,7 @@ def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:
             print(f"Failed cast")
             return False
     return True
+
 
 def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
     params = paramSet.model_dump() 
@@ -82,7 +105,7 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
         # Validate constant
         if paramSpec.constant:
             if isinstance(paramSpec, FileParameterSpec):
-                file_ids = [file_param.file_id for file_param in param] if isinstance(param, list) else param.file_id
+                file_ids = [file_param['file_id'] for file_param in param] if isinstance(param, list) else param['file_id']
                 if file_ids != paramSpec.default:
                     return False
             else:
@@ -100,7 +123,8 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     doc = r.json()
 
     # Download the file
-    file_path = os.path.join(directory, file_id)
+    file_name = doc['name'].replace('\\', '_').replace('/', '_')
+    file_path = os.path.join(directory, file_name)
 
     downloaded_bytes = 0
     with open(file_path, "w+b") as f:
@@ -129,8 +153,10 @@ def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> Par
             except Exception:
                 for key, item in value.items():
                     resolve(f"{field}:{key}", item)
-        
+    
     for name in paramSet.model_fields.keys():
+        resolve(name,getattr(paramSet,name))
+    for name in paramSet.model_extra.keys():
         resolve(name,getattr(paramSet,name))
 
     return True

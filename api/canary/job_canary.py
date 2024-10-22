@@ -14,7 +14,11 @@ log = logging.getLogger(__name__)
 
 
 PROFILE_NAME = "Mythica_Canary"
-HDA_FILE = "test_cube.hda"
+HDA_FILE = "test_scale_input.hda"
+MESH_FILE = "cube.usdz"
+
+TEST_FREQUENCY_SEC = 600
+JOB_TIMEOUT_SEC = 30
 
 
 def parse_args():
@@ -83,11 +87,22 @@ def find_job_def(endpoint: str, file_id: str) -> Optional[str]:
     return None
 
 
-def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
+def get_job_def(endpoint: str, file_id: str) -> str:
+    start_time = time.time()
+    while True:
+        job_def_id = find_job_def(endpoint, file_id)
+        if job_def_id:
+            return job_def_id
+        if time.time() - start_time > JOB_TIMEOUT_SEC:
+            raise Exception("Timeout exceeded: Job definition not found.")
+        time.sleep(1)
+
+
+def request_job(endpoint: str, headers: str, job_def_id: str, mesh_file_id: str) -> str:
     body = {
         "job_def_id": job_def_id,
         "params": {
-            "params": {}
+            "input0": { "file_id": mesh_file_id }
         }
     }
 
@@ -99,15 +114,34 @@ def request_job(endpoint: str, headers: str, job_def_id: str) -> str:
     return result['job_id']
 
 
-def check_job_status(endpoint: str, headers: str, job_id: str) -> bool:
+def check_job_status(endpoint: str, headers: str, job_id: str) -> Optional[str]:
     url = f"{endpoint}/jobs/results/{job_id}"
     response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
 
     result = response.json()
-    log.info(f"Received result: {result}")
+    completed = result['completed']
+    if not completed:
+        return None
 
-    return result['completed']
+    for result in result['results']:
+        if result['result_data']['item_type'] == 'file':
+            files = result['result_data']['files']['mesh']
+            if len(files) > 0:
+                return files[0]
+
+    raise Exception("Job failed to generate mesh.")
+
+
+def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
+    start_time = time.time()
+    while True:
+        result_file_id = check_job_status(endpoint, headers, job_id)
+        if result_file_id:
+            return result_file_id
+        if time.time() - start_time > JOB_TIMEOUT_SEC:
+            raise Exception("Timeout exceeded: Job never completed.")
+        time.sleep(1)
 
 
 def run_test(endpoint: str):
@@ -120,35 +154,33 @@ def run_test(endpoint: str):
     headers = {"Authorization": f"Bearer {token}"}
     log.info(f"Got token: {token}")
 
-    file_id = upload_file(endpoint, headers, HDA_FILE)
-    log.info(f"Uploaded file: {file_id}")
+    hda_file_id = upload_file(endpoint, headers, HDA_FILE)
+    log.info(f"Uploaded hda file: {hda_file_id}")
 
-    job_def_id = None
-    while True:
-        job_def_id = find_job_def(endpoint, file_id)
-        if job_def_id:
-            break
-        time.sleep(1)
-    log.info(f"Found created job def: {job_def_id}")
+    job_def_id = get_job_def(endpoint, hda_file_id)
+    log.info(f"Created job def: {job_def_id}")
 
-    job_id = request_job(endpoint, headers, job_def_id)
+    mesh_file_id = upload_file(endpoint, headers, MESH_FILE)
+    log.info(f"Uploaded mesh file: {mesh_file_id}")
+
+    job_id = request_job(endpoint, headers, job_def_id, mesh_file_id)
     log.info(f"Started job: {job_id}")
  
-    while True:
-        completed = check_job_status(endpoint, headers, job_id)
-        if completed:
-            break
-        time.sleep(1)
-
-    log.info("Job completed")
+    result_file_id = get_job_result(endpoint, headers, job_id)
+    log.info(f"Received job result file: {result_file_id}")
+    
+    log.info("Job completed successfully")
 
 
 def main():
     args = parse_args()
 
     while True:
-        run_test(args.endpoint)
-        time.sleep(30)
+        try:
+            run_test(args.endpoint)
+        except Exception as e:
+            log.error(f"Test failed: {e}")
+        time.sleep(TEST_FREQUENCY_SEC)
 
 
 if __name__ == '__main__':

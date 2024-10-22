@@ -14,7 +14,7 @@ from ripple.models.params import (
     FileParameterSpec, 
     FileParameter
 )
-from ripple.runtime.params import validate_params, resolve_params, populate_constants
+from ripple.runtime.params import validate_params, resolve_params, repair_parameters
 
 
 def test_param_compile():
@@ -155,6 +155,23 @@ def test_param_validate():
     set = ParameterSet()
     assert validate_params(spec, set)
 
+    # All types test
+    spec = ParameterSpec(params={
+        'test_int': IntParameterSpec(label='test_int', default=0),
+        'test_float': FloatParameterSpec(label='test_float', default=0.5),
+        'test_str': StringParameterSpec(label='test_str', default=''),
+        'test_bool': BoolParameterSpec(label='test_bool', default=True),
+        'test_file': FileParameterSpec(label='test_file', default='')
+    })
+    set = ParameterSet(
+        test_int=5,
+        test_float=1.5,
+        test_str='test',
+        test_bool=False,
+        test_file=FileParameter(file_id='file_qfJSVuWRJvq5PmueFPxSjXsEcST')
+    )
+    assert validate_params(spec, set)
+
     # Parameter count test
     spec = ParameterSpec(params={"input0": FileParameterSpec(label="Test Input 0", default='')})
     set_good = ParameterSet(input0= FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"))
@@ -186,47 +203,64 @@ def test_param_validate():
     assert validate_params(spec, set_bad) == False
 
     # Populate constants test
-    spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})
-    set = ParameterSet(params={})
+    spec = ParameterSpec(params={
+        'test_int': IntParameterSpec(label='test_int', default=0, constant=True),
+        'test_file': FileParameterSpec(label='test_file', default='file_qfJSVuWRJvq5PmueFPxSjXsEcST', constant=True),
+    })
+    set = ParameterSet()
     assert validate_params(spec, set) == False
+    repair_parameters(spec, set)
+    assert validate_params(spec, set)
 
-    populate_constants(spec, set)
+    # Implicit int to float cast test
+    spec = ParameterSpec(params={
+        'test_float': FloatParameterSpec(label='test', default=0.0),
+        'test_float_array': FloatParameterSpec(label='test', default=[0.0, 0.0, 0.0])
+    })
+    set = ParameterSet(test_float=5, test_float_array=[1, 2, 3])
+    assert validate_params(spec, set) == False
+    repair_parameters(spec, set)
     assert validate_params(spec, set)
 
 
 def test_param_resolve():
-    #TODO: Setup endpoint that works in test environment
+    # Identity test
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        set = ParameterSet(test_int=5)
+        success = resolve_params("", tmp_dir, set)
+        assert success
+        assert isinstance(set.test_int, int)
+        assert set.test_int == 5
+
     """
-    endpoint = "http://localhost:8080/v1"
+    #TODO: Setup endpoint that works in test environment
+    endpoint = "https://api.mythica.ai/v1"
 
     # File test
     with tempfile.TemporaryDirectory() as tmp_dir:
-        set = ParameterSet(input0= FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"))
+        set = ParameterSet(input0=FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"))
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
-        assert len(set.params) == 1
-        assert isinstance(set.params['input0'], FileParameter)
-        assert set.params['input0'].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert set.params['input0'].file_path.startswith('file_') == False
-        assert os.path.exists(set.params['input0'].file_path)
+        assert isinstance(set.input0, FileParameter)
+        assert set.input0.file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.input0.file_path.startswith('file_') == False
+        assert os.path.exists(set.input0.file_path)
 
     # File list test
     with tempfile.TemporaryDirectory() as tmp_dir:
-        set = ParameterSet(files= [
-            FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST"),
-            FileParameter(file_id="file_qfJSVuWRJvq5PmueFPxSjXsEcST")
+        set = ParameterSet(files=[
+            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"),
+            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB")
         ])
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
-        assert len(set.params) == 1
-        assert isinstance(set.params['files'], list)
-        assert len(set.params['files']) == 2
-        assert isinstance(set.params['files'][0], FileParameter)
-        assert isinstance(set.params['files'][1], FileParameter)
-        assert set.params['files'][0].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert set.params['files'][1].file_id == "file_qfJSVuWRJvq5PmueFPxSjXsEcST"
-        assert set.params['files'][0].file_path.startswith('file_') == False
-        assert set.params['files'][1].file_path.startswith('file_') == False
-        assert os.path.exists(set.params['files'][0].file_path)
-        assert os.path.exists(set.params['files'][1].file_path)
+        assert isinstance(set.files, list)
+        assert isinstance(set.files[0], FileParameter)
+        assert isinstance(set.files[1], FileParameter)
+        assert set.files[0].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.files[1].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.files[0].file_path.startswith('file_') == False
+        assert set.files[1].file_path.startswith('file_') == False
+        assert os.path.exists(set.files[0].file_path)
+        assert os.path.exists(set.files[1].file_path)
     """

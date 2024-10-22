@@ -2,6 +2,7 @@ import json
 import os
 import aiohttp
 import logging
+import traceback
 import asyncio
 import nats
 import requests
@@ -11,12 +12,16 @@ from typing import Callable, Type, Optional, Dict
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
+from uuid import uuid4
 
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
+
+def formatException(e):
+    return f" {str(e)}\n{traceback.format_exc()}"
 
 NATS_URL= 'nats://nats.nats:4222'
 API_URL= 'https://api.mythica.ai/v1'
@@ -32,7 +37,7 @@ class NatsAdapter():
         if not self.nc:
             log.debug("Connecting to NATS")
             self.nc = await nats.connect(servers=[self.nats_url])
-            log.debug("Connected to NATS")
+            log.info("Connected to NATS")
 
 
     async def _disconnect(self):
@@ -41,7 +46,7 @@ class NatsAdapter():
             log.debug("Disconnecting from NATS")
             await self.nc.drain()  # Gracefully stop receiving messages
             self.nc = None
-            log.debug("Disconnected from NATS")
+            log.info("Disconnected from NATS")
 
     async def post(self, subject: str, data: dict) -> None:
         """Post data to NATS on subject. """
@@ -51,19 +56,19 @@ class NatsAdapter():
             await(self.nc.publish(subject, json.dumps(data).encode()))
             log.debug(f"Sent to NATS")
         except Exception as e:
-            log.error(f"Sending to NATS failed: {subject} - {data} - {e}")
+            log.error(f"Sending to NATS failed: {subject} - {data} - {formatException(e)}")
         finally:
             if not self.listeners:
                 await self._disconnect()
 
 
     async def listen(self, subject: str, callback: callable):
-        """ Listen to NATS """
-        await self._connect()
-
         if subject in self.listeners:
             log.warning(f"NATS listener already active for subject {subject}")
             return
+
+        """ Listen to NATS """
+        await self._connect()
 
         async def message_handler(msg):
             try:
@@ -71,25 +76,25 @@ class NatsAdapter():
                 log.info(f"Received message on {subject}: {payload}")
                 await callback(payload)
             except Exception as e:
-                log.error(f"Error processing message on {subject}: {e}")
+                log.error(f"Error processing message on {subject}: {formatException(e)}")
 
         try:
         
             # Wait for the response with a timeout (customize as necessary)
-            log.info("Setting up NATS response listener")
-            listener = await self.nc.subscribe(subject, cb=message_handler)
+            log.debug("Setting up NATS response listener")
+            listener = await self.nc.subscribe(subject,queue="worker", cb=message_handler)
             self.listeners[subject] = listener
             log.info("NATS response listener set up")
 
         except Exception as e:
-            log.error(f"Error setting up listener for subject {subject}: {e}")
+            log.error(f"Error setting up listener for subject {subject}: {formatException(e)}")
             raise e
 
     async def unlisten(self, subject: str):
 
         """Shut down the listener for a specific subject."""
         if subject in self.listeners:
-            log.info(f"Shutting down listener for subject {subject}")
+            log.debug(f"Shutting down listener for subject {subject}")
             subscription = self.listeners.pop(subject)
             await subscription.unsubscribe()
             log.info(f"Listener for subject {subject} shut down")
@@ -178,6 +183,10 @@ class WorkerRequest(BaseModel):
     path: str
     data: Dict
 
+class WorkerResponse(BaseModel):
+    work_id: str
+    payload: Dict
+
 class ResultPublisher:
     request: WorkerRequest
     nats: NatsAdapter
@@ -194,20 +203,28 @@ class ResultPublisher:
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
         # Poplulate context
-        #TODO: Generate process guid
         if isinstance(item,ProcessStreamItem):
-            item.process_guid = 'xxxxxxxxxxx'
+            item.process_guid = str(uuid4())
             item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
             # Upload any references to local data
             self._publish_local_data(item)
-            # we need the JSON from here on down
+
+        if isinstance(item,BaseModel):
+            # we need the dict from here on down
             item = item.model_dump()
+        
         
         # Publish results
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(self.nats.post("result", item)) 
+        task = asyncio.create_task(
+            self.nats.post(
+                "result", 
+                WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
+            )
+        )
+
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
@@ -217,7 +234,7 @@ class ResultPublisher:
                     "created_in": "automation-worker",
                     "result_data": item
                 }
-                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{item.self.request.job_id}", data)
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
             
     def _publish_local_data(self, item: ProcessStreamItem):
 
@@ -264,7 +281,7 @@ def _get_error_handler():
     def handler(task):
         e = task.exception()
         if e:
-            log.error(f"Error publishing result: {e}")
+            log.error(f"Error publishing result: {formatException(e)}")
     return handler
 
 class Worker:
@@ -297,7 +314,7 @@ class Worker:
                 log.debug(f"Registered worker for '{model.path}'")
             log.debug(f'End Registering workers')
         except Exception as e:
-            log.error(f'Failed to register workers: {e}')
+            log.error(f'Failed to register workers: {formatException(e)}')
 
     def _get_executor(self):
         """
@@ -317,13 +334,10 @@ class Worker:
 
                 log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, profile_id: {payload.profile_id}, data: {payload.data}"
 
-                #TODO: These should be defined elsewhere.
-
             except Exception as e:
-                msg=f'Error parsing payload - {json_payload} - {str(e)}'
-                await doer.nats.post("result", {'status': msg })
-                #Cannot report to endpoint as message could not be parsed
-                log.error(f"Validation error: {msg}")
+                msg=f'Validation error - {json_payload} - {formatException(e)}'
+                log.error(msg)
+                await doer.nats.post("result", Message(message=msg).model_dump())
                 return 
 
             #Run the worker
@@ -341,9 +355,10 @@ class Worker:
                 publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:
-                log.error(f"Executor error - {log_str} - {e}")
+                msg=f"Executor error - {log_str} - {formatException(e)}"
+                log.error(msg)
                 if publisher:
-                    publisher.result(Message(message=str(e)))
+                    publisher.result(Message(message=msg))
                 
 
         return implementation
