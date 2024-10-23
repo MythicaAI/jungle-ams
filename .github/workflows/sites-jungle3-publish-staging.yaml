@@ -78,6 +78,14 @@ jobs:
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
 
+      - name: Commit new FRONT version
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add ${{ env.VERSION_FRONT_PATH }}
+          git commit -m "Increment Web FRONT version to ${{ steps.read_version.outputs.current_version }}"
+          git push origin main
+
   helm-deploy:
     runs-on: ubuntu-latest
     needs: build-publish
@@ -142,11 +150,3 @@ jobs:
           helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-staging api/helm/api
           kubectl rollout restart deployment/web-front -n api-staging
           kubectl rollout restart deployment/packager -n api-staging
-
-      - name: Commit new FRONT version
-        run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          git add ${{ env.VERSION_FRONT_PATH }}
-          git commit -m "Increment Web FRONT version to ${{ steps.read_version.outputs.current_version }}"
-          git push origin main
