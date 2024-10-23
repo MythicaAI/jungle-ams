@@ -32,5 +32,13 @@ RUN pnpm run build -m "${NODE_ENV}"
 # structure, to support mounting multiple site builds give each dist
 # folder the name of the mounted site
 FROM alpine:latest
+# Install envsubst for runtime environment substitution
+RUN apk add gettext
+
+WORKDIR /
+COPY docker-entrypoint.sh .
+
 WORKDIR /dist/jungle3
 COPY --from=build /build/dist .
+RUN mv index.html index.html.template
+ENTRYPOINT ["/docker-entrypoint.sh"]

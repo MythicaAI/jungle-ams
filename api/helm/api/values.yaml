@@ -19,6 +19,15 @@ domains:
   - dex.mythica.ai
   - dex.mythica.gg
 
+apiBaseUrl: "https://api.mythica.ai/v1"
+imagesBaseUrl: "https://api.mythica.ai/images"
+
+auth0:
+  domain: dev-dtvqj0iuc5rnb6x2.us.auth0.com
+  clientId: caa07HclGxulrcv43hgGziNJx7cQ8GED
+  audience: https://api.mythica.ai/v1
+  redirectUrl: https://api.mythica.ai
+
 serviceAccount:
   secretName: front-end-api-sa
 api:
