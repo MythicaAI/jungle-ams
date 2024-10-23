@@ -31,10 +31,22 @@ jobs:
       AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
+      VERSION_FRONT_PATH: "sites/VERSION_FRONT"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Increment version for FRONT
+        id: increment_version
+        run: |
+          current_version=$(cat ${{ env.VERSION_FRONT_PATH }})
+          IFS='.' read -r major minor patch <<< "$current_version"
+          new_patch=$((patch+1))
+          new_version="v$major.$minor.$new_patch"
+          echo "New Web FRONT version: $new_version"
+          echo "$new_version" > ${{ env.VERSION_FRONT_PATH }}
+          echo "::set-output name=new_version::$new_version"
 
       - name: Setup Docker BuildX
         uses: docker/setup-buildx-action@v3
@@ -60,18 +72,11 @@ jobs:
         with:
           push: true
           context: sites/jungle3
-          tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
+          tags:  |
+            ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ steps.increment_version.outputs.new_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
-
-      - name: Build and push mythica-web-front
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          context: api/nginx
-          tags: ${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:latest
-          build-args: |
-            TAG='latest'
 
   helm-deploy:
     runs-on: ubuntu-latest
@@ -89,10 +94,18 @@ jobs:
       GKE_CLUSTER_NAME: "gke-main-us-central1"
       GKE_CLUSTER_LOCATION: "us-central1"
       WORKLOAD_IDENTITY_PROVIDER: "projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra"
+      VERSION_FRONT_PATH: "sites/VERSION_FRONT"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Read current version for API
+        id: read_version
+        run: |
+          current_version=$(cat ${{ env.VERSION_FRONT_PATH }})
+          echo "Current API version: $current_version"
+          echo "::set-output name=current_version::$current_version"
 
       - name: Google Auth
         id: auth
@@ -119,14 +132,6 @@ jobs:
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER_NAME }} \
             --region ${{ env.GKE_CLUSTER_LOCATION }} \
             --project ${{ env.PROJECT_ID }}
-
-      - name: Verify Access to Secrets
-        run: |
-          kubectl get secrets -n api-staging
-
-      - name: Check RoleBindings for Service Account
-        run: |
-          kubectl get rolebinding -n api-staging -o yaml | grep 'github-actions-service-account'
 
       - name: Install Helm
         run: |
