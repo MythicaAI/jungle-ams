@@ -104,5 +104,5 @@ jobs:
       - name: Coverage total fail - exit
         if: ${{ steps.PR.outputs.number != null && steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
         run: |
-          echo "cov single fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
+          echo "cov total fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
           exit 1
