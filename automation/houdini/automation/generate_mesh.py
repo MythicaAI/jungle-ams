@@ -6,6 +6,7 @@ import re
 import tempfile
 
 from pydantic import BaseModel
+from ripple.automation import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import OutputFiles
 
@@ -17,7 +18,6 @@ log = logging.getLogger(__name__)
 
 
 def apply_params(asset, params: dict):
-    # TODO: Disambiguate between request and HDA parameters
     for k, v in params.items():
         parm = asset.parmTuple(k)
         if parm:
@@ -32,7 +32,7 @@ def create_inputs(asset, geo, params: dict):
             continue
 
         input_index = int(match.group(1))
-        input_file = v.file_path
+        input_file = v.get('file_path', '')
 
         input_node = None
         if os.path.exists(input_file):
@@ -138,24 +138,24 @@ def generate_mesh_impl(
     return output_zip_file_path
 
 
-class ExportMeshRequest(BaseModel):
+class ExportMeshRequest(ParameterSet):
     hda_file: FileParameter
     hda_definition_index: int
     format: str
 
 
-def generate_mesh(request: ParameterSet, result_callback):
-    model = ExportMeshRequest(**request.params)
+
+def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         result_file_path = generate_mesh_impl(
             model.hda_file.file_path,
             model.hda_definition_index,
             model.format,
-            request.params,
+            model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
             tmp_dir
         )
 
-        result_callback(OutputFiles(
+        responder.result(OutputFiles(
             files = {'mesh': [result_file_path]}
         ))

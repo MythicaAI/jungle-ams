@@ -15,6 +15,7 @@ import { StatusAlarm } from "@components/Status/StatusAlarm";
 import { api } from "@services/api";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useStatusStore } from "@store/statusStore";
+import { LanguageSelect } from "./LanguageSelector";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -174,6 +175,7 @@ export const AuthHeader = () => {
         </Link>
 
         <Stack direction="row" spacing={1}>
+          <LanguageSelect />
           <StatusAlarm />
           {isAuthenticated ? (
             <ProfileMenu name={user && user.name ? user.name : ""} />

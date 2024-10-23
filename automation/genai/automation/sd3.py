@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from diffusers import StableDiffusion3Pipeline
 from ripple.models.streaming import Message
+from ripple.models.params import ParameterSet
+from ripple.automation import ResultPublisher
 
 import torch
 import io
@@ -23,7 +25,7 @@ aspect_ratio_mapping = {
     "2:3": (832, 1216)
 }
 
-class ImageRequest(BaseModel):
+class ImageRequest(ParameterSet):
     prompt: str
     negative_prompt: str = ""
     steps: int = 28
@@ -31,11 +33,7 @@ class ImageRequest(BaseModel):
     aspect_ratio: str = "1:1"
     seed: int = 0
 
-
-
-
-
-def txt2img(request: ImageRequest, progress: callable):
+def txt2img(request: ImageRequest, responder: ResultPublisher):
     try:
         prompt = request.prompt
         negative_prompt = request.negative_prompt
@@ -44,7 +42,7 @@ def txt2img(request: ImageRequest, progress: callable):
         aspect_ratio = request.aspect_ratio
         seed = request.seed
 
-        progress(Message(message=f"Starting Txt 2 Image Generation using SD3 Medium: {request}"))
+        responder.result(Message(message=f"Starting Txt 2 Image Generation using SD3 Medium: {request}"))
 
         # Get width and height from aspect_ratio
         if aspect_ratio in aspect_ratio_mapping:
@@ -62,7 +60,7 @@ def txt2img(request: ImageRequest, progress: callable):
             height=height
         ).images[0]
         
-        progress(Message(message=f"Txt 2 Image Generation Completed: {request}"))
+        responder.result(Message(message=f"Txt 2 Image Generation Completed: {request}"))
 
 
         # Convert image to base64
@@ -70,7 +68,7 @@ def txt2img(request: ImageRequest, progress: callable):
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        progress(Message(message=f"image: {img_str}"))
+        responder.result(Message(message=f"image: {img_str}"))
 
 
     except Exception as e:

@@ -4,8 +4,9 @@ import logging
 import mythica.network as mnet
 import requests
 
+from ripple.automation import ResultPublisher
 from ripple.compile.rpsc import compile_interface
-from ripple.models.params import ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
+from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition
 from typing import Optional
 
@@ -47,9 +48,12 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
         default='usdz'
     )
 
+class GenerateJobDefRequest(ParameterSet):
+    hda_file: FileParameter
 
-def generate_job_defs(request: ParameterSet, result_callback):
-    hda_file = request.params['hda_file']
+
+def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher):
+    hda_file = request.hda_file
 
     type_infos = extract_node_type_info(hda_file.file_path)
 
@@ -57,7 +61,7 @@ def generate_job_defs(request: ParameterSet, result_callback):
         param_spec = compile_interface(json.dumps(type_info, indent=2))
         set_config_params(param_spec, hda_file.file_id, index)
 
-        result_callback(JobDefinition(
+        responder.result(JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
             name=f"Generate {type_info['name']}",
             description=type_info['description'],

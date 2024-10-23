@@ -27,6 +27,10 @@ COPY update-secrets.sh .
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Create a file for testing round trip availability
+RUN mkdir -p /var/www/certbot/.well-known/acme-challenge/
+RUN echo pong > /var/www/certbot/.well-known/acme-challenge/ping.txt
+
 # Listen on port 80 for challenges
 EXPOSE 80
 
@@ -36,7 +40,9 @@ EXPOSE 80
 #
 # ENV EXTRA_ARGS="--testcert"
 
-ENV DOMAINS="oss.mythica.ai,api.mythica.ai,images.mythica.ai,dex.mythica.ai"
+ENV TLS_NAMESPACE=ingress
+ENV TLS_NAME="mythica-letsencrypt-tls"
+ENV DOMAINS="oss.mythica.ai,api.mythica.ai,dex.mythica.ai"
 ENV PATH="/app:${PATH}"
 
 

@@ -1,0 +1,20 @@
+# $schema: meta-schema.json
+name: Tags Schema
+description: The schema for tags
+tables:
+  - name: Tag
+    table_name: tags
+    columns:
+      - name: tag_seq
+        type: BIGINT
+        primary_key: true
+      - name: name
+        type: TEXT
+        nullable: false
+        unique: true
+      - name: owner_seq
+        type: BIGINT
+        foreign_key: profiles.profile_seq
+      - name: created
+        type: TIMESTAMP
+        auto_create: true

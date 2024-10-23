@@ -25,6 +25,6 @@ create_namespace ${NAMESPACE}
 kubectl config set-context --current --namespace=${NAMESPACE}
 
 helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-helm install nats nats/nats
+helm install nats nats/nats -f config.yaml
 
 kubectl apply -f nats-lb.yaml

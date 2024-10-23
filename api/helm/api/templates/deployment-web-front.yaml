@@ -17,11 +17,10 @@ spec:
         {{- include "api.labels" . | nindent 8 }}
         {{- include "api.componentLabels" $componentContext | nindent 8 }}
     spec:
-      nodeSelector:
-        cloud.google.com/compute-class: "Scale-Out"
+      {{- include "api.nodeSelector" $componentContext | nindent 6 }}
       securityContext:
         fsGroup: 101 # use the nginx group for file-system security privileges
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}
       serviceAccountName: api
       initContainers:
         - name: jungle3-build
@@ -77,14 +76,7 @@ spec:
             - name: dist-publish
               mountPath: /publish
               readOnly: true
-            - name: letsencrypt-tls
-              mountPath: "/etc/nginx/tls"
-              readOnly: true
       volumes:
         - name: dist-publish  # ephemeral volume, hosting the dist content
           emptyDir: { }
-        - name: letsencrypt-tls
-          secret:
-            secretName: letsencrypt-tls
-            defaultMode: 0640
       restartPolicy: Always

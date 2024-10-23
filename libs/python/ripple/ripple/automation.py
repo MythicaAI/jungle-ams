@@ -2,6 +2,7 @@ import json
 import os
 import aiohttp
 import logging
+import traceback
 import asyncio
 import nats
 import requests
@@ -11,12 +12,16 @@ from typing import Callable, Type, Optional, Dict
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
+from uuid import uuid4
 
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
+
+def formatException(e):
+    return f" {str(e)}\n{traceback.format_exc()}"
 
 NATS_URL= 'nats://nats.nats:4222'
 API_URL= 'https://api.mythica.ai/v1'
@@ -32,7 +37,7 @@ class NatsAdapter():
         if not self.nc:
             log.debug("Connecting to NATS")
             self.nc = await nats.connect(servers=[self.nats_url])
-            log.debug("Connected to NATS")
+            log.info("Connected to NATS")
 
 
     async def _disconnect(self):
@@ -41,7 +46,7 @@ class NatsAdapter():
             log.debug("Disconnecting from NATS")
             await self.nc.drain()  # Gracefully stop receiving messages
             self.nc = None
-            log.debug("Disconnected from NATS")
+            log.info("Disconnected from NATS")
 
     async def post(self, subject: str, data: dict) -> None:
         """Post data to NATS on subject. """
@@ -51,19 +56,19 @@ class NatsAdapter():
             await(self.nc.publish(subject, json.dumps(data).encode()))
             log.debug(f"Sent to NATS")
         except Exception as e:
-            log.error(f"Sending to NATS failed: {subject} - {data} - {e}")
+            log.error(f"Sending to NATS failed: {subject} - {data} - {formatException(e)}")
         finally:
             if not self.listeners:
                 await self._disconnect()
 
 
     async def listen(self, subject: str, callback: callable):
-        """ Listen to NATS """
-        await self._connect()
-
         if subject in self.listeners:
             log.warning(f"NATS listener already active for subject {subject}")
             return
+
+        """ Listen to NATS """
+        await self._connect()
 
         async def message_handler(msg):
             try:
@@ -71,25 +76,25 @@ class NatsAdapter():
                 log.info(f"Received message on {subject}: {payload}")
                 await callback(payload)
             except Exception as e:
-                log.error(f"Error processing message on {subject}: {e}")
+                log.error(f"Error processing message on {subject}: {formatException(e)}")
 
         try:
         
             # Wait for the response with a timeout (customize as necessary)
-            log.info("Setting up NATS response listener")
-            listener = await self.nc.subscribe(subject, cb=message_handler)
+            log.debug("Setting up NATS response listener")
+            listener = await self.nc.subscribe(subject,queue="worker", cb=message_handler)
             self.listeners[subject] = listener
             log.info("NATS response listener set up")
 
         except Exception as e:
-            log.error(f"Error setting up listener for subject {subject}: {e}")
+            log.error(f"Error setting up listener for subject {subject}: {formatException(e)}")
             raise e
 
     async def unlisten(self, subject: str):
 
         """Shut down the listener for a specific subject."""
         if subject in self.listeners:
-            log.info(f"Shutting down listener for subject {subject}")
+            log.debug(f"Shutting down listener for subject {subject}")
             subscription = self.listeners.pop(subject)
             await subscription.unsubscribe()
             log.info(f"Listener for subject {subject} shut down")
@@ -118,17 +123,17 @@ class RestAdapter():
 
     async def post(self, endpoint: str, data: str) -> None:
         """Post data to an endpoint. """
-        endpoint = os.path.join(API_URL,endpoint)
+        url = API_URL + endpoint
         async with aiohttp.ClientSession() as session:
-            log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
+            log.debug(f"Sending to Endpoint: {url} - {data}" )
             async with session.post(
-                        endpoint, 
+                        url, 
                         json=data, 
                         headers={"Content-Type": "application/json"}) as post_result:
                 if post_result.status in [200,201]:
                     log.debug(f"Endpoint Response: {post_result.status}")
                 else:
-                    log.error(f"Failed to call job API: {endpoint} - {data} - {post_result.status}")
+                    log.error(f"Failed to call job API: {url} - {data} - {post_result.status}")
 
     def post_sync(self, endpoint: str, data: str) -> Optional[str]:
         """Post data to an endpoint synchronously. """
@@ -163,37 +168,12 @@ class RestAdapter():
             return None
 
 
-def start_session(rest: RestAdapter, profile_id: str) -> Optional[str]:
-    url = f"/sessions/direct/{profile_id}"
-    response = rest.get(url)
-    return response['token'] if response else None
-
-
-def upload_file(rest: RestAdapter, token: str, file_path: str) -> Optional[str]:
-    file_id = None
-    with open(file_path, 'rb') as file:
-        file_name = os.path.basename(file_path)
-        file_data = [('files', (file_name, file, 'application/octet-stream'))]
-        response = rest.post_file("/upload/store", token, file_data)
-        file_id = response['files'][0]['file_id'] if response else None
-    return file_id
-
-
-def upload_job_def(rest: RestAdapter, job_def: JobDefinition) -> Optional[str]:
-    definition = {
-        'job_type': job_def.job_type,
-        'name': job_def.name,
-        'description': job_def.description,
-        'params_schema': job_def.parameter_spec.dict()
-    }
-    response = rest.post_sync("/jobs/definitions", definition)
-    return response['job_def_id'] if response else None
 
 
 class WorkerModel(BaseModel):
     path: str
     provider: Callable
-    inputModel: Type[BaseModel]
+    inputModel: Type[ParameterSet]
 
 class WorkerRequest(BaseModel):
     """Contract for requests for work"""
@@ -203,10 +183,106 @@ class WorkerRequest(BaseModel):
     path: str
     data: Dict
 
-class WorkerResponse(WorkerRequest):
-    """Contract for responses to work requess"""
-    result_data: Dict   
+class WorkerResponse(BaseModel):
+    work_id: str
+    payload: Dict
 
+class ResultPublisher:
+    request: WorkerRequest
+    nats: NatsAdapter
+    rest: RestAdapter
+    
+    def __init__(self, request: WorkerRequest, nats: NatsAdapter, rest: RestAdapter) -> None:
+        self.request = request
+        self.nats = nats
+        self.rest = rest
+
+    #Callback for reporting back. 
+    def result(self, item, complete=False):
+        JOB_RESULT_ENDPOINT="/jobs/results/"
+        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
+
+        # Poplulate context
+        if isinstance(item,ProcessStreamItem):
+            item.process_guid = str(uuid4())
+            item.job_id = self.request.job_id if self.request.job_id is not None else ""
+
+            # Upload any references to local data
+            self._publish_local_data(item)
+
+        if isinstance(item,BaseModel):
+            # we need the dict from here on down
+            item = item.model_dump()
+        
+        
+        # Publish results
+        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+
+        task = asyncio.create_task(
+            self.nats.post(
+                "result", 
+                WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
+            )
+        )
+
+        task.add_done_callback(_get_error_handler())
+        if self.request.job_id:
+            if complete:
+                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
+            else:
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item
+                }
+                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
+            
+    def _publish_local_data(self, item: ProcessStreamItem):
+
+
+        def upload_file(token: str, file_path: str) -> Optional[str]:
+            file_id = None
+            with open(file_path, 'rb') as file:
+                file_name = os.path.basename(file_path)
+                file_data = [('files', (file_name, file, 'application/octet-stream'))]
+                response = self.rest.post_file("/upload/store", token, file_data)
+                file_id = response['files'][0]['file_id'] if response else None
+            return file_id
+
+
+        def upload_job_def(job_def: JobDefinition) -> Optional[str]:
+            definition = {
+                'job_type': job_def.job_type,
+                'name': job_def.name,
+                'description': job_def.description,
+                'params_schema': job_def.parameter_spec.dict()
+            }
+            response = self.rest.post_sync("/jobs/definitions", definition)
+            return response['job_def_id'] if response else None
+
+        #TODO: Report errors
+        if isinstance(item, OutputFiles):
+            url = f"/sessions/direct/{self.request.profile_id}"
+            response = self.rest.get(url)
+            token = response['token'] if response else None
+
+            for key, files in item.files.items():
+                for index, file in enumerate(files):
+                    file_id = upload_file(token, file)
+                    files[index] = file_id
+
+        elif isinstance(item, JobDefinition):
+            job_def_id = upload_job_def(item)
+            if job_def_id != None:
+                item.job_def_id = job_def_id
+
+
+
+def _get_error_handler():
+    def handler(task):
+        e = task.exception()
+        if e:
+            log.error(f"Error publishing result: {formatException(e)}")
+    return handler
 
 class Worker:
     def __init__(self) -> None:
@@ -220,7 +296,7 @@ class Worker:
 
         loop = asyncio.get_event_loop()        
         task = loop.create_task(self.nats.listen(subject, self._get_executor()))
-        task.add_done_callback(self._get_error_handler())
+        task.add_done_callback(_get_error_handler())
 
         try:
             loop.run_forever()
@@ -238,56 +314,8 @@ class Worker:
                 log.debug(f"Registered worker for '{model.path}'")
             log.debug(f'End Registering workers')
         except Exception as e:
-            log.error(f'Failed to register workers: {e}')
+            log.error(f'Failed to register workers: {formatException(e)}')
 
-    def _publish_local_data(self, item: ProcessStreamItem):
-        #TODO: Report errors
-        if isinstance(item, OutputFiles):
-            token = start_session(self.rest, self.current_request.profile_id)
-
-            for key, files in item.files.items():
-                for index, file in enumerate(files):
-                    file_id = upload_file(self.rest, token, file)
-                    files[index] = file_id
-        elif isinstance(item, JobDefinition):
-            job_def_id = upload_job_def(self.rest, item)
-            if job_def_id != None:
-                item.job_def_id = job_def_id
-
-
-    #Callback for reporting back. 
-    def _result(self, item: ProcessStreamItem, complete=False):
-        JOB_RESULT_ENDPOINT="/jobs/results/"
-        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
-
-        # Poplulate context
-        #TODO: Generate process guid
-        item.process_guid = 'xxxxxxxxxxx'
-        item.job_id = self.current_request.job_id if self.current_request.job_id is not None else ""
-
-        # Upload any references to local data
-        self._publish_local_data(item)
-
-        # Publish results
-        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
-
-        task = asyncio.create_task(self.nats.post("result", item.json())) 
-        task.add_done_callback(self._get_error_handler())
-        if self.current_request.job_id:
-            if complete:
-                task = asyncio.create_task(self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{item.job_id}"))
-            else:
-                task = asyncio.create_task(self.rest.post(f"{JOB_RESULT_ENDPOINT}/{item.job_id}", item.json()))
-            task.add_done_callback(self._get_error_handler())
-            
-    def _get_error_handler(self):
-        def handler(task):
-            e = task.exception()
-            if e:
-                log.error(str(e))
-                self._result(Message(message=str(e)))
-        return handler
-    
     def _get_executor(self):
         """
         Execute a work unit by trying to find a route that maps
@@ -296,39 +324,41 @@ class Worker:
         reporting status
         """
         doer=self
-        async def implementation(json_payload: str):
+        async def implementation(json_payload):
             try:
                 payload = WorkerRequest(**json_payload)
+                if len(payload.data) == 1 and 'params' in payload.data:
+                    # If it only contains "params", replace payload.data with its content
+                    payload.data = payload.data['params']
+
 
                 log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, profile_id: {payload.profile_id}, data: {payload.data}"
 
-                #TODO: These should be defined elsewhere.
-
             except Exception as e:
-                msg=f'Error parsing payload - {json_payload} - {str(e)}'
-                await doer.nats.post("result", {'status': msg })
-                #Cannot report to endpoint as message could not be parsed
-                log.error(f"Validation error: {msg}")
+                msg=f'Validation error - {json_payload} - {formatException(e)}'
+                log.error(msg)
+                await doer.nats.post("result", Message(message=msg).model_dump())
                 return 
 
             #Run the worker
+            publisher = None
             try:
-                doer.current_request = payload
-
-                doer._result(Progress(progress=0))
+                publisher = ResultPublisher(payload, self.nats, self.rest)
+                publisher.result(Progress(progress=0))
 
                 with tempfile.TemporaryDirectory() as tmpdir:
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
-                    if isinstance(inputs, ParameterSet):
-                        resolve_params(API_URL, tmpdir, inputs)
-                    worker.provider(inputs, doer._result)
+                    resolve_params(API_URL, tmpdir, inputs)
+                    worker.provider(inputs, publisher)
 
-                doer._result(Progress(progress=100), complete=True)
+                publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:
-                log.error(f"Executor error - {log_str} - {e}")
-                doer._result(Message(message=str(e)))
+                msg=f"Executor error - {log_str} - {formatException(e)}"
+                log.error(msg)
+                if publisher:
+                    publisher.result(Message(message=msg))
                 
 
         return implementation

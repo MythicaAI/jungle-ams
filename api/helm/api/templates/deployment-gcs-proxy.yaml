@@ -17,9 +17,8 @@ spec:
         {{- include "api.commonLabels" . | nindent 8 }}
         {{- include "api.componentLabels" $componentContext | nindent 8 }}
     spec:
-      nodeSelector:
-        cloud.google.com/compute-class: "Scale-Out"
-      terminationGracePeriodSeconds: 60
+      {{- include "api.nodeSelector" $componentContext | nindent 6 }}
+      terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}
       serviceAccountName: api
       containers:
         - name: gcs-proxy

@@ -16,6 +16,7 @@ PROFILE = "schema-profiles.yaml"
 GRAPH = "schema-graph.yaml"
 JOBS = "schema-jobs.yaml"
 STREAMING = "schema-streaming.yaml"
+TAGS = "schema-tags.yaml"
 SCHEMA = "meta-schema.json"
 
 

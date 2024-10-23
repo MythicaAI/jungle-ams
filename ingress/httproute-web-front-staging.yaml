@@ -9,12 +9,14 @@ spec:
   parentRefs:
     - kind: Gateway
       namespace: ingress
-      name: external-gateway
+      name: external-gateway-staging
   hostnames:
-    - "api-staging.mythica.ai"
-    - "oss-staging.mythica.ai"
-    - "api-staging.mythica.gg"
     - "oss-staging.mythica.gg"
+    - "api-staging.mythica.gg"
+    - "dex-staging.mythica.gg"
+    - "oss-staging.mythica.ai"
+    - "api-staging.mythica.ai"
+    - "dex-staging.mythica.ai"
   rules:
     - matches:
         - path:

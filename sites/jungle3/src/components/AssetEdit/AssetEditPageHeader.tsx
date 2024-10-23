@@ -13,10 +13,12 @@ import {
 import { LucideChevronLeft, LucidePackage } from "lucide-react";
 import { AssetIdentityHeader } from "@components/AssetIdentityHeader";
 import { useAssetVersionStore } from "@store/assetVersionStore";
+import { useTranslation } from "react-i18next";
 
 export const AssetEditPageHeader = () => {
   const navigate = useNavigate();
   const { name, updateVersion } = useAssetVersionStore();
+  const { t } = useTranslation();
 
   return (
     <Stack gap="15px">
@@ -25,18 +27,18 @@ export const AssetEditPageHeader = () => {
           <IconButton onClick={() => navigate("/packages")}>
             <LucideChevronLeft />
             <LucidePackage />
-            &nbsp; My Packages
+            &nbsp; {t("common.profileMenu.myPackages")}
           </IconButton>
         </ListItemDecorator>
         <ListItemContent>
           <Typography level="h4" component="h1">
-            <b>Package Editor</b>
+            <b>{t("packageEdit.title")}</b>
           </Typography>
         </ListItemContent>
       </List>
       <AssetIdentityHeader />
       <FormControl sx={{ mb: "5px" }}>
-        <FormLabel>Name</FormLabel>
+        <FormLabel>{t("common.name")}</FormLabel>
         <Input
           name="name"
           variant="outlined"

@@ -1,15 +1,13 @@
 name: sites-jungle3-publish-staging
 
 on:
-  # push: # TODO: Uncomment it after the developing
-  #   paths:
-  #     - 'sites/jungle3/**'
-  #     - '.github/workflows/sites-jungle3-publish-staging.yaml'
-  #     - 'api/nginx/**'
   push:
     branches:
-      - "**"
-      # - main # TODO: Uncomment it after the developing to run job only after push on main branch 
+      - main
+    paths:
+      - 'sites/jungle3/**'
+      - '.github/workflows/sites-jungle3-publish-staging.yaml'
+      - 'api/nginx/**'
 
 defaults:
   run:
@@ -27,13 +25,12 @@ jobs:
     env:
       IMAGE_NAME: "mythica-sites-jungle3-build"
       IMAGE_NAME_NGINX: "mythica-web-front"
-      NODE_ENV: "production"
+      NODE_ENV: "staging"
       PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
       AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
-      IS_PROD: 'false'
 
     steps:
       - name: Checkout
@@ -63,18 +60,18 @@ jobs:
         with:
           push: true
           context: sites/jungle3
-          tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
+          tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
-            NODE_ENV=${{ env.IS_PROD == 'true' && 'production' || 'staging' }}
+            NODE_ENV=${{ env.NODE_ENV }}
 
       - name: Build and push mythica-web-front
         uses: docker/build-push-action@v6
         with:
           push: true
           context: api/nginx
-          tags: ${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
+          tags: ${{ env.AR_URL }}/${{ env.IMAGE_NAME_NGINX }}:latest
           build-args: |
-            TAG=${{ env.IS_PROD == 'true' && 'latest' || 'staging-latest' }}
+            TAG='latest'
 
   helm-deploy:
     runs-on: ubuntu-latest
@@ -84,7 +81,7 @@ jobs:
       contents: read
 
     env:
-      NODE_ENV: "production"
+      NODE_ENV: "staging"
       PROJECT_NUMBER: "296075347103"
       PROJECT_ID: "controlnet-407314"
       AR_REPO_LOCATION: "us-central1"
@@ -138,3 +135,5 @@ jobs:
       - name: Deploy Helm Chart
         run: |
           helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-staging api/helm/api
+          kubectl rollout restart deployment/web-front -n api-staging
+          kubectl rollout restart deployment/packager -n api-staging

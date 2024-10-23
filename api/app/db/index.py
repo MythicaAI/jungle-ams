@@ -31,6 +31,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
             {'name': ctx.filename,
              'owner_seq': profile_id_to_seq(ctx.profile_id),
              'locators': locators,
+             'purpose': ctx.purpose,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
              'content_type': content_type}))
@@ -61,11 +62,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         # Create a new NATS event
         if ctx.extension == 'hda':
             parameter_set = ParameterSet(
-                params={
-                    'hda_file': FileParameter(
-                        file_id=file_id
-                    )
-                }
+                hda_file = FileParameter(file_id=file_id)
             )
 
             event = WorkerRequest(

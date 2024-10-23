@@ -17,6 +17,7 @@ import {
   LucideUpload,
 } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface ProfileMenuProps {
   name: string;
@@ -44,6 +45,8 @@ const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => (
 );
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
+  const { t } = useTranslation();
+
   return (
     <Dropdown>
       <MenuButton
@@ -58,32 +61,32 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
       <Menu placement="bottom-end">
         <LinkMenuItem to="/dashboard">
           <LayoutDashboard />
-          Dashboard
+          {t("common.profileMenu.dashboard")}
         </LinkMenuItem>
         <LinkMenuItem to="/profile">
           <LucideEdit />
-          Edit Profile
+          {t("common.profileMenu.editProfile")}
         </LinkMenuItem>
         <LinkMenuItem to="/packages">
           <LucidePackage />
-          My Packages
+          {t("common.profileMenu.myPackages")}
         </LinkMenuItem>
         <LinkMenuItem to="/uploads">
           <LucideUpload />
-          My Uploads
+          {t("common.profileMenu.myUploads")}
         </LinkMenuItem>
         <LinkMenuItem to="/orgs">
           <LucideGroup />
-          Manage Organizations
+          {t("common.profileMenu.manageOrgs")}
         </LinkMenuItem>
         <LinkMenuItem to="/api-keys">
           <LucideKeyRound />
-          API keys
+          {t("common.profileMenu.apiKeys")}
         </LinkMenuItem>
         <Divider orientation="horizontal" />
         <LinkMenuItem to="/logout">
           <LucideLogOut />
-          Logout
+          {t("common.logout")}
         </LinkMenuItem>
       </Menu>
     </Dropdown>

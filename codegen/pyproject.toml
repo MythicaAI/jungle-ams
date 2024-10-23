@@ -14,6 +14,8 @@ python = "<4.0,>=3.10"
 jsonschema = "4.23.0"
 
 # Add development dependencies here
+chevron = "^0.14.0"
+pyyaml = "^6.0.2"
 [tool.poetry.scripts]
 codegen = "codegen:main"
 

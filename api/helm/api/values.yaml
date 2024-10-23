@@ -29,24 +29,33 @@ api:
     maxUnavailable: 1
     maxSurge: 6
     base_url: "https://api.mythica.ai/v1"
+    nodeSelector: scale-out
+    terminationGracePeriodSeconds: 15
   gcsProxy:
     tag: "latest"
     name: "gcs-proxy"
     replicas: 3
     maxUnavailable: 2
     maxSurge: 5
+    nodeSelector: scale-out
+    terminationGracePeriodSeconds: 15
   letsEncrypt:
     tag: "latest"
     name: "lets-encrypt"
+    secretName: mythica-lets-encrypt-tls
     replicas: 1
     maxUnavailable: 1
     maxSurge: 2
+    nodeSelector: scale-out
+    terminationGracePeriodSeconds: 60
   packager:
     tag: "latest"
     name: "packager"
     replicas: 2
     maxUnavailable: 1
     maxSurge: 4
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
   webFront:
     tag: "latest"
     name: "web-front"
@@ -54,3 +63,5 @@ api:
     maxUnavailable: 2
     maxSurge: 10
     nginxConfig: "/etc/nginx/nginx-gke.conf"
+    nodeSelector: scale-out
+    terminationGracePeriodSeconds: 15

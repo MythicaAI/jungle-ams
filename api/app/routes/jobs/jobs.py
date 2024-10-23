@@ -19,7 +19,7 @@ from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
 from ripple.automation import NatsAdapter, WorkerRequest
 from ripple.models.params import ParameterSet, ParameterSpec
-from ripple.runtime.params import populate_constants, validate_params
+from ripple.runtime.params import repair_parameters, validate_params
 from routes.authorization import current_profile
 
 log = logging.getLogger(__name__)
@@ -145,7 +145,7 @@ async def create(
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
         parameter_spec = ParameterSpec(**job_def.params_schema)
-        populate_constants(parameter_spec, request.params)
+        repair_parameters(parameter_spec, request.params)
         valid = validate_params(parameter_spec, request.params)
         if not valid:
             raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Invalid params")

@@ -73,6 +73,11 @@
                   "default": true,
                   "description": "True if the column should auto update, e.g. datetime, bigint composites"
                 },
+                "unique": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "True if the column should be unique"
+                },
                 "foreign_key": {
                   "type": "string",
                   "description": "table.id to use as a foreign key reference"
