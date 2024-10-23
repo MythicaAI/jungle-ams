@@ -29,6 +29,19 @@ spec:
           command: [ "/bin/sh", "-c" ]
           args:
             - cp -R /dist/jungle3 /dist-publish/jungle3
+          env:
+            - name: VITE_API_BASE_URL
+              value: {{ .Values.apiBaseUrl }}
+            - name: VITE_IMAGES_BASE_URL
+              value: {{ .Values.imagesBaseUrl}}
+            - name: VITE_AUTH0_DOMAIN
+              value: {{ .Values.auth0.domain}}
+            - name: VITE_AUTH0_CLIENT_ID
+              value: {{ .Values.auth0.clientId }}
+            - name: VITE_AUTH0_AUDIENCE
+              value: {{ .Values.auth0.audience }}
+            - name: VITE_AUTH0_REDIRECT_URL
+              value: {{ .Values.auth0.redirectUrl }}
           volumeMounts:
             - name: dist-publish
               mountPath: "/dist-publish"

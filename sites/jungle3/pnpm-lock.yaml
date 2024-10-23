@@ -240,6 +240,9 @@ importers:
       vite:
         specifier: ^5.3.1
         version: 5.4.3(@types/node@20.16.4)
+      vite-plugin-runtime-env:
+        specifier: ^0.1.1
+        version: 0.1.1(vite@5.4.3(@types/node@20.16.4))
       vite-tsconfig-paths:
         specifier: ^5.0.1
         version: 5.0.1(typescript@5.5.4)(vite@5.4.3(@types/node@20.16.4))
@@ -4652,6 +4655,11 @@ packages:
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
+
+  vite-plugin-runtime-env@0.1.1:
+    resolution: {integrity: sha512-xm7aw/BV2o6avLi1UCR9mIG+KZVv2UQhoqb4gUIxhiP7hkiLCYnG3aTFLYrHb8CmAzXkTvBRb63yOnAgJWYbgA==}
+    peerDependencies:
+      vite: '*'
 
   vite-tsconfig-paths@5.0.1:
     resolution: {integrity: sha512-yqwv+LstU7NwPeNqajZzLEBVpUFU6Dugtb2P84FXuvaoYA+/70l9MHE+GYfYAycVyPSDYZ7mjOFuYBRqlEpTig==}
@@ -9954,6 +9962,11 @@ snapshots:
       convert-source-map: 2.0.0
 
   vary@1.1.2: {}
+
+  vite-plugin-runtime-env@0.1.1(vite@5.4.3(@types/node@20.16.4)):
+    dependencies:
+      magic-string: 0.30.11
+      vite: 5.4.3(@types/node@20.16.4)
 
   vite-tsconfig-paths@5.0.1(typescript@5.5.4)(vite@5.4.3(@types/node@20.16.4)):
     dependencies:
