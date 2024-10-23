@@ -84,7 +84,7 @@ jobs:
           git config user.email "action@github.com"
           git add ${{ env.VERSION_FRONT_PATH }}
           git commit -m "Increment Web FRONT version to ${{ steps.read_version.outputs.current_version }}"
-          git push origin main
+          git push infra ${{ github.ref_name }}
 
   helm-deploy:
     runs-on: ubuntu-latest
