@@ -1,2 +1,7 @@
 .git
 testing
+
+*.local
+
+**/.venv/
+**/__pycache__/
