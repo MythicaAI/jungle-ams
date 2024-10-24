@@ -158,3 +158,28 @@ To create a `.coverage` file and generate an HTML report for viewing in a browse
 ```bash
 pytest --cov --cov-report=html:coverage
 coverage html
+```
+
+## Deployment and build
+### Staging
+The staging deployment runs automatically after a pull request (PR) is merged into the main branch.
+* `.github/workflows/sites-jungle3-publish-staging.yaml` - Frontend Workflow:
+* `.github/workflows/api-app-publish-staging.yaml` - Backend Workflow:
+These workflows build the latest versions of the application, as well as the versions specified in `VERSION_APP_PATH` and `VERSION_FRONT_PATH`. The deployment only utilizes the latest versions.
+
+### PROD
+To deploy on prod cd to:
+```bash
+cd api/helm/
+```
+To ensure that stable versions of both the frontend and backend are used, the following scripts are provided:
+  * `api/helm/add_tag_for_stable_versions.sh` - This script publishes a unified version of the desired stable frontend and backend versions that you select while following the prompts. It guarantees the use of stable tags by creating a general tag in the format: 
+  ``` bash
+  NEW_TAG="f.${FRONT_VERSION/v./}.b.${APP_VERSION/v./}"
+  ```
+
+  * `api/helm/helm-upgrade-prod.sh` - uses `api/helm/add_tag_for_stable_versions.sh` and deploys with "NEW_TAG" 
+  ``` bash
+    --set image.tag="$NEW_TAG"
+  ```
+

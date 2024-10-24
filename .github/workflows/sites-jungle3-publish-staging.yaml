@@ -23,8 +23,7 @@ jobs:
       contents: write
 
     env:
-      IMAGE_NAME: "mythica-sites-jungle3-build"
-      IMAGE_NAME_NGINX: "mythica-web-front"
+      IMAGE_NAME: "mythica-sites-jungle3-build" # TODO: should be change to mythica-jungle3-build
       NODE_ENV: "staging"
       PROJECT_ID: "296075347103"
       AR_REPO_LOCATION: 'us-central1'
