@@ -430,6 +430,14 @@ def test_tag_files_operations(
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
 
+
+    # test get filtered files when profile does not have access
+    r = client.get(
+        f"{api_base}/tags/types/file/filter",
+        params={},
+    )
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
+
     assert len(o) == model_type_count_to_filter - 1
     for file in o:
         assert file.file_id != filter_files_ids[-1]
@@ -444,6 +452,20 @@ def test_tag_files_operations(
     )
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
+
+    # test get files when profile does not have access
+    r = client.get(
+        f"{api_base}/tags/types/file",
+        params={},
+    )
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
+
+    # test get top files when profile does not have access
+    r = client.get(
+        f"{api_base}/tags/types/file/top",
+        params={},
+    )
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
 
     for tag__type_ids in created_tag__type_ids:
         new_tag_id, file_id = tag__type_ids

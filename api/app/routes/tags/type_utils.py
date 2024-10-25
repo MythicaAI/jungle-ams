@@ -56,7 +56,7 @@ def process_type_model_result(
     tag_type: TagType,
     session: Session,
     type_model_query: Optional[Select],
-    profile: Profile,
+    profile: Optional[Profile],
     limit: int,
     offset: int,
 ) -> Callable:
