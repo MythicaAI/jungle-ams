@@ -1,6 +1,7 @@
 import json
 import os
 import aiohttp
+import concurrent.futures
 import logging
 import traceback
 import asyncio
@@ -53,7 +54,7 @@ class NatsAdapter():
         await self._connect()                
         try:
             log.debug(f"Sending to NATS: {subject} - {data}" )
-            await(self.nc.publish(subject, json.dumps(data).encode()))
+            await self.nc.publish(subject, json.dumps(data).encode())
             log.debug(f"Sent to NATS")
         except Exception as e:
             log.error(f"Sending to NATS failed: {subject} - {data} - {formatException(e)}")
@@ -121,21 +122,7 @@ class RestAdapter():
             log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
             return None
 
-    async def post(self, endpoint: str, data: str) -> None:
-        """Post data to an endpoint. """
-        url = API_URL + endpoint
-        async with aiohttp.ClientSession() as session:
-            log.debug(f"Sending to Endpoint: {url} - {data}" )
-            async with session.post(
-                        url, 
-                        json=data, 
-                        headers={"Content-Type": "application/json"}) as post_result:
-                if post_result.status in [200,201]:
-                    log.debug(f"Endpoint Response: {post_result.status}")
-                else:
-                    log.error(f"Failed to call job API: {url} - {data} - {post_result.status}")
-
-    def post_sync(self, endpoint: str, data: str) -> Optional[str]:
+    def post(self, endpoint: str, data: str) -> Optional[str]:
         """Post data to an endpoint synchronously. """
         url = API_URL + endpoint
         log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
@@ -196,11 +183,10 @@ class ResultPublisher:
         self.request = request
         self.nats = nats
         self.rest = rest
-
+        self.loop = asyncio.get_event_loop()        
+        
     #Callback for reporting back. 
     def result(self, item, complete=False):
-        JOB_RESULT_ENDPOINT="/jobs/results/"
-        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
         # Poplulate context
         if isinstance(item,ProcessStreamItem):
@@ -213,29 +199,37 @@ class ResultPublisher:
         if isinstance(item,BaseModel):
             # we need the dict from here on down
             item = item.model_dump()
-        
-        
-        # Publish results
-        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(
-            self.nats.post(
-                "result", 
-                WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
+        self.loop.run_in_executor(None, self._publish_results, item, complete)
+
+    def _publish_results(self, item, complete):        
+        JOB_RESULT_ENDPOINT="/jobs/results/"
+        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
+
+        try:
+            # Publish results
+            log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+
+            asyncio.run(
+                self.nats.post(
+                    "result", 
+                    WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
+                )
             )
-        )
 
-        task.add_done_callback(_get_error_handler())
-        if self.request.job_id:
-            if complete:
-                self.rest.post_sync(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
-            else:
-                data = {
-                    "created_in": "automation-worker",
-                    "result_data": item
-                }
-                self.rest.post_sync(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
-            
+            if self.request.job_id:
+                if complete:
+                    self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
+                else:
+                    data = {
+                        "created_in": "automation-worker",
+                        "result_data": item
+                    }
+                    self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
+
+        except Exception as e:
+            log.error(f"Error publishing result: {formatException(e)}")
+
     def _publish_local_data(self, item: ProcessStreamItem):
 
 
@@ -256,7 +250,7 @@ class ResultPublisher:
                 'description': job_def.description,
                 'params_schema': job_def.parameter_spec.dict()
             }
-            response = self.rest.post_sync("/jobs/definitions", definition)
+            response = self.rest.post("/jobs/definitions", definition)
             return response['job_def_id'] if response else None
 
         #TODO: Report errors
