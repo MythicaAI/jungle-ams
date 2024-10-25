@@ -27,7 +27,7 @@ STATUS_SUBJECT = "result"
 
 
 # Synchronous wrapper for submitting work to NATS
-async def nats_submit(channel, path, data, work_id):
+async def nats_submit(channel, path, data, work_id, profile_id):
     return_data = None
     try:
         log.info("Starting NATS connection")
@@ -44,6 +44,7 @@ async def nats_submit(channel, path, data, work_id):
         req = {
             'work_id': work_id,
             'path': path,
+            'profile_id': profile_id,
             'data': data
         }
 
@@ -105,11 +106,12 @@ def automation_request(request):
     channel = request_data['channel']
     path = request_data['path']
     data = request_data['data']
+    profile_id = request_data['profile_id']
     
     if not channel:
             return {"work_id": work_id, "result": {"error":"channel not defined in request"}}
     # Synchronously submit work and get result
-    result = asyncio.run(nats_submit(channel, path, data, work_id))
+    result = asyncio.run(nats_submit(channel, path, data, work_id, profile_id))
 
     log.info(f"response - {result}")
 
