@@ -8,7 +8,6 @@ from assets.assets_repo import AssetCreateRequest, AssetCreateResult, AssetCreat
     delete_version, owned_versions, process_join_results, select_asset_version, top, version_by_asset_id, \
     versions_by_commit_ref, versions_by_name
 from db.connection import get_session
-from db.schema.assets import Asset, AssetVersion
 from db.schema.profiles import Profile
 from routes.authorization import current_profile
 
@@ -29,8 +28,7 @@ async def get_assets() -> list[AssetVersionResult]:
     """Get all asset versions"""
     with get_session() as session:
         join_results = session.exec(
-            asset_join_select.where(
-                Asset.asset_seq == AssetVersion.asset_seq)).all()
+            asset_join_select).all()
         return process_join_results(session, join_results)
 
 

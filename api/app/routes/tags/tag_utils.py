@@ -21,8 +21,9 @@ def resolve_and_validate_role_by_org_name(
     profile = resolve_profile(session, profile)
     all_profile_roles = resolve_roles_by_org_name(session, profile, org_name)
 
-    if not validate_roles(required_role, all_profile_roles):
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail=f"Profile does not have the required role: '{required_role}'.",
-        )
+    try:
+        validate_roles(required_role, all_profile_roles)
+    except HTTPException as ex:
+        ex.status_code=HTTPStatus.FORBIDDEN
+        ex.detail=f"Profile does not have the required role: '{required_role}'."
+        raise ex

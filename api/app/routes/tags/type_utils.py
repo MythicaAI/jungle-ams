@@ -6,10 +6,10 @@ from cryptid.cryptid import (
     asset_id_to_seq,
     file_id_to_seq,
 )
-from sqlalchemy import Select, desc, select
+from sqlalchemy import Select, desc
 from sqlmodel import Field, Session
 
-from assets.assets_repo import process_join_results
+from assets.assets_repo import asset_join_select, process_join_results
 from db.schema.assets import AssetTag, Asset, AssetVersion
 from db.schema.media import FileTag, FileContent
 from db.schema.profiles import Profile
@@ -65,7 +65,7 @@ def process_type_model_result(
         subquery = type_model_query.subquery()
 
         query = (
-            select(Asset, AssetVersion)
+            asset_join_select
             .join(subquery, Asset.asset_seq == subquery.c.asset_seq)
             .outerjoin(AssetVersion, subquery.c.asset_seq == AssetVersion.asset_seq)
             .order_by(
