@@ -3,7 +3,7 @@ name: api-app-publish-staging
 on:
   push:
     branches:
-      - "**"
+      - main
     paths:
       - 'api/app/**'
       - 'libs/python/**'

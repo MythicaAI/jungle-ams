@@ -3,7 +3,7 @@ name: sites-jungle3-publish-staging
 on:
   push:
     branches:
-      - "**"
+      - main
     paths:
       - 'sites/jungle3/**'
       - '.github/workflows/sites-jungle3-publish-staging.yaml'
