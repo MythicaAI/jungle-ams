@@ -183,3 +183,21 @@ To ensure that stable versions of both the frontend and backend are used, the fo
     --set image.tag="$NEW_TAG"
   ```
 
+### ROLLBACK
+To rollback to the previous version of Helm on staging, we can use the script:
+```bash
+api/helm/helm_rollback_staging.sh
+```
+It shows the Helm history with revision and description. In the description, there should be text in the format:
+```bash
+"Versions: back: $APP_VERSION, web-front: $FRONT_VERSION"
+```
+This can help you decide which version of the frontend and backend should be rolled back to. After you choose, just type the revision number (following the script's prompts).
+
+At the top of `helm_rollback_staging.sh`, you can see the namespace variable, which can be changed to rollback production:
+
+```bash
+# Namespace and release name
+NAMESPACE="api-staging"
+RELEASE_NAME="api-staging"
+```
