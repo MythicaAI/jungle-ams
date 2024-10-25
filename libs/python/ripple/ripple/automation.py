@@ -1,7 +1,5 @@
 import json
 import os
-import aiohttp
-import concurrent.futures
 import logging
 import traceback
 import asyncio
