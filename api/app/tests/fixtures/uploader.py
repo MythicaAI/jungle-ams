@@ -104,7 +104,7 @@ def uploader(client, api_base):
                 headers=auth_headers)
             assert_status_code(r, HTTPStatus.NOT_FOUND)
 
-        return True
+        return response_files_by_id
 
     return _uploader
 

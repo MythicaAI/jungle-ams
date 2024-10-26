@@ -2,6 +2,7 @@
 
 from datetime import timezone
 from http import HTTPStatus
+from typing import Optional
 
 from cryptid.cryptid import (
     profile_seq_to_id,
@@ -16,7 +17,7 @@ from db.connection import TZ, get_session
 from db.schema.assets import AssetTag, Asset
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
-from routes.authorization import current_profile
+from routes.authorization import current_profile, get_optional_profile
 from routes.tags.type_utils import (
     get_model_type,
     get_type_id_to_seq,
@@ -56,7 +57,6 @@ async def create_tag_for_type(
             .where(model_of_type_model.owner_seq == profile.profile_seq)
             .where(model_type_seq_col == type_seq)
         ).first()
-        print("model_exists", model_exists)
 
         if not model_exists:
             raise HTTPException(
@@ -73,10 +73,17 @@ async def create_tag_for_type(
 @router.get('/{tag_type}')
 async def get_tags_for_type(
     tag_type: TagType,
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    profile: Optional[Profile] = Depends(get_optional_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
 ):
+    type_model: AssetTag = get_model_type(tag_type)
+    if tag_type == TagType.file:
+        if not profile:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                detail="You must be logged into the system to enrich files."
+            )
     type_model: AssetTag = get_model_type(tag_type)
 
     with get_session() as session:
@@ -152,11 +159,17 @@ async def delete_tag(
 @router.get('/{tag_type}/top')
 async def get_top_tags_for_type(
     tag_type: TagType,
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    profile: Optional[Profile] = Depends(get_optional_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
 ):
     type_model: AssetTag = get_model_type(tag_type)
+    if tag_type == TagType.file:
+        if not profile:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                detail="You must be logged into the system to enrich files."
+            )
 
     with get_session() as session:
 
@@ -179,7 +192,7 @@ async def get_top_tags_for_type(
             select(Tag)
             .join(
                 top_tag_subquery, Tag.tag_seq == top_tag_subquery.c.tag_seq
-            )  # pylint: disable=no-member
+            )
             .order_by(
                 col(top_tag_subquery.c.tag_count).desc(),
                 col(Tag.tag_seq).desc(),  # pylint: disable=no-member
@@ -187,13 +200,6 @@ async def get_top_tags_for_type(
         )
 
         tags = session.exec(query).all()
-        from sqlalchemy.dialects import postgresql
-
-        print(
-            query.compile(
-                dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
-            )
-        )
 
         response = [
             TagResponse(
@@ -210,13 +216,20 @@ async def get_top_tags_for_type(
 
 @router.get('/{tag_type}/filter')
 async def get_filtered_model_types_by_tags(
-    tag_type: TagType,   # pylint: disable=unused-argument
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    tag_type: TagType,
+    profile: Optional[Profile] = Depends(get_optional_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
     include: list[str] = Query(None),
     exclude: list[str] = Query(None),
 ):
+    if tag_type == TagType.file:
+        if not profile:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                detail="You must be logged into the system to enrich files."
+            )
+
     type_model: AssetTag = get_model_type(tag_type)
     model_of_type_model: Asset = get_model_of_model_type(tag_type)
     model_type_seq_col = get_model_type_seq_col(tag_type)
