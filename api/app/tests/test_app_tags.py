@@ -229,13 +229,14 @@ def test_tag_asset_operations(api_base, client, create_profile):
     filter_assets_ids = [create_asset(headers) for _ in range(model_type_count_to_filter)]
     include_tags_id_names = [create_tag() for _ in range(include_tags_count_to_filter)]
     exclude_tags_id_names = [create_tag() for _ in range(exclude_tags_count_to_filter)]
-    created_tag__type_ids = []
+    created_tag__type_ids: list[tuple[str, str, str]] = []
     for i in range(model_type_count_to_filter):
         filter_model_type_id = filter_assets_ids[i]
-        for filter_tag_id, _ in include_tags_id_names:
+        for filter_tag_id, filter_tag_name in include_tags_id_names:
             created_tag__type_ids.append(
                 (
                     filter_tag_id,
+                    filter_tag_name,
                     filter_model_type_id,
                 )
             )
@@ -243,10 +244,11 @@ def test_tag_asset_operations(api_base, client, create_profile):
 
         # last model_type_tag has exclude_tags
         if i == top_limit - 1:
-            for filter_tag_id, _ in exclude_tags_id_names:
+            for filter_tag_id, filter_tag_name in exclude_tags_id_names:
                 created_tag__type_ids.append(
                     (
                         filter_tag_id,
+                    filter_tag_name,
                         filter_model_type_id,
                     )
                 )
@@ -279,12 +281,41 @@ def test_tag_asset_operations(api_base, client, create_profile):
         headers=headers,
     )
     assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
+
+    # Test create the already created tag_type
+    new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
+    r = client.post(
+        f"{api_base}/tags/types/asset",
+        json={'tag_id': new_tag_id, "type_id": asset_id},
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.CONFLICT)
+
+    # Test create the already created tag
+    new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
+    r = client.post(f"{api_base}/tags", json={'name': filter_tag_name}, headers=headers)
+    assert_status_code(r, HTTPStatus.CONFLICT)
 
     for tag__type_ids in created_tag__type_ids:
-        new_tag_id, asset_id = tag__type_ids
+        new_tag_id, _, asset_id = tag__type_ids
         delete_type_tag("asset", asset_id, new_tag_id)
 
+    # check was asset_tag deleted
+    new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
+    r = client.get(
+        f"{api_base}/tags/types/asset/filter",
+        params={
+            "limit": model_type_count_to_filter,
+            "offset": 0,
+            "include": [filter_tag_name]
+        },
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    for filter_asset in o:
+        assert asset_id != filter_asset.asset_id
+        
     delete_all_created_tags(tag__type_ids[0] for tag__type_ids in created_tag__type_ids)
 
 
