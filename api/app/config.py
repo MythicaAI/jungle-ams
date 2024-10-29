@@ -43,6 +43,8 @@ class AppConfig(BaseSettings):
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_db: int = 0
+    enable_otel: bool = False
+    otel_endpoint: str = "http://localhost:4317"
 
 
 

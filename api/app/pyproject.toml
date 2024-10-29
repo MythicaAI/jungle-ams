@@ -38,6 +38,14 @@ redis = "5.1.0b7"
 ripple = { path = "../../libs/python/ripple", develop = true }
 cryptid = { path = "../../libs/python/cryptid", develop = true }
 better-profanity = "^0.7.0"
+opentelemetry-instrumentation = "^0.48b0"
+opentelemetry-instrumentation-fastapi = "^0.48b0"
+opentelemetry-instrumentation-httpx = "^0.48b0"
+opentelemetry-exporter-otlp = "^1.27.0"
+opentelemetry-distro = "^0.48b0"
+opentelemetry-api = "^1.27.0"
+opentelemetry-sdk = "^1.27.0"
+opentelemetry-instrumentation-sqlalchemy = "^0.48b0"
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]
