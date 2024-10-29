@@ -9,10 +9,9 @@ from cryptid.cryptid import file_id_to_seq, profile_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from ripple.models.contexts import FilePurpose
 from routes.authorization import current_profile, current_profile_id
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
-
-from ripple.models.contexts import FilePurpose
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -47,8 +46,9 @@ async def by_content(
             .where(FileContent.deleted == None))).first()
         return enrich_file(session, file, profile)
 
+
 @router.get("/by_purpose/{file_purpose}")
-async def get_file_by_purpose(
+async def by_purpose(
         file_purpose: FilePurpose,
         profile: Profile = Depends(current_profile)) -> list[FileUploadResponse]:
     """Query a file by its content hash"""
@@ -58,6 +58,7 @@ async def get_file_by_purpose(
             .where(FileContent.purpose == file_purpose)
             .where(FileContent.deleted == None))).all()
         return enrich_files(session, files, profile)
+
 
 @router.delete('/{file_id}')
 async def delete_by_id(file_id, profile_id: str = Depends(current_profile_id)):
