@@ -7,11 +7,16 @@ import nats
 import requests
 import tempfile
 from pydantic import BaseModel
-from typing import Callable, Type, Optional, Dict
+from typing import Callable, Type, Optional, Dict, Any
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
 from uuid import uuid4
+
+import subprocess
+import sys
+from pathlib import Path
+import venv
 
 # Set up logging
 logging.basicConfig(
@@ -172,6 +177,7 @@ class WorkerResponse(BaseModel):
     work_id: str
     payload: Dict
 
+
 class ResultPublisher:
     request: WorkerRequest
     nats: NatsAdapter
@@ -181,7 +187,6 @@ class ResultPublisher:
         self.request = request
         self.nats = nats
         self.rest = rest
-        self.loop = asyncio.get_event_loop()        
         
     #Callback for reporting back. 
     def result(self, item, complete=False):
@@ -198,35 +203,30 @@ class ResultPublisher:
             # we need the dict from here on down
             item = item.model_dump()
 
-        self.loop.run_in_executor(None, self._publish_results, item, complete)
-
-    def _publish_results(self, item, complete):        
+   
         JOB_RESULT_ENDPOINT="/jobs/results/"
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
-        try:
-            # Publish results
-            log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+        # Publish results
+        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-            asyncio.run(
-                self.nats.post(
-                    "result", 
-                    WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
-                )
+        task = asyncio.create_task(
+            self.nats.post(
+                "result", 
+                WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
             )
-
-            if self.request.job_id:
-                if complete:
-                    self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
-                else:
-                    data = {
-                        "created_in": "automation-worker",
-                        "result_data": item
-                    }
-                    self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
-
-        except Exception as e:
-            log.error(f"Error publishing result: {formatException(e)}")
+        )
+        
+        task.add_done_callback(_get_error_handler())
+        if self.request.job_id:
+            if complete:
+                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
+            else:
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item
+                }
+                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
 
     def _publish_local_data(self, item: ProcessStreamItem):
 
@@ -268,7 +268,6 @@ class ResultPublisher:
                 item.job_def_id = job_def_id
 
 
-
 def _get_error_handler():
     def handler(task):
         e = task.exception()
@@ -281,9 +280,78 @@ class Worker:
         self.workers:dict[str,WorkerModel] = {}
         self.nats = NatsAdapter()
         self.rest = RestAdapter()
+
+    def _get_catalog_provider(self) -> Callable:
+        worker = self
         
-        
+        def impl(request: ParameterSet = None, responder: ResultPublisher=None):
+            ret = {}
+            for path,wk in worker.workers.items():
+                ret.update({path: wk.inputModel.model_json_schema()})
+            responder.result(ret)
+        return impl
+
+    class ScriptRequest(ParameterSet):
+        script: str
+        dependencies: str
+
+    def _get_script_worker(self) -> Callable:
+        worker = self
+
+        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher=None):
+            # Step 1: Create a temporary virtual environment
+            with tempfile.TemporaryDirectory() as tmpdir:
+                venv_dir = Path(tmpdir) / f"venv_{uuid4().hex}"
+                venv.create(venv_dir, with_pip=True)
+                python_executable = venv_dir / "bin" / "python" if os.name != "nt" else venv_dir / "Scripts" / "python.exe"
+                
+                # Step 2: Install dependencies if any are provided
+                if request.dependencies:
+                    dependencies = request.dependencies.replace(",", " ").split()
+                    subprocess.check_call([python_executable, "-m", "pip", "install", *dependencies])
+
+                # Step 3: Write the script to a temporary .py file
+                script_path = Path(tmpdir) / "script.py"
+                with open(script_path, "w") as script_file:
+                    script_file.write(request.script)
+
+                # Step 4: Execute the script and capture the output
+                try:
+                    result = subprocess.run(
+                        [python_executable, str(script_path)],
+                        capture_output=True,
+                        text=True,
+                        check=True
+                    )
+                    # Try to parse stdout as JSON; if parsing fails, wrap it in a dictionary
+                    try:
+                        output = json.loads(result.stdout)
+                    except json.JSONDecodeError:
+                        output = {"output": result.stdout}
+                    
+                    # Post the results to responder
+                    responder.result(output)
+                    
+                except subprocess.CalledProcessError as e:
+                    # Post any errors to the responder
+                    responder.result({"error": e.stderr})
+
+        return impl        
+     
     def start(self,subject: str, workers:list[dict]) -> None:
+        path='/mythica/workers'
+        workers.append({
+            'path':path,
+            'provider': self._get_catalog_provider(),
+            'inputModel': ParameterSet
+        })
+        path='/mythica/script'
+        workers.append({
+            'path':path,
+            'provider': self._get_script_worker(),
+            'inputModel': Worker.ScriptRequest
+        })
+
         self._load_workers(workers)
 
         loop = asyncio.get_event_loop()        
