@@ -1,14 +1,27 @@
 import React from "react";
-import { Box, FormControl, FormLabel, Option, Select } from "@mui/joy";
+import { Box, FormControl, FormLabel, Input, Option, Select } from "@mui/joy";
 import { Link } from "react-router-dom";
 import Textarea from "@mui/joy/Textarea";
 import { useGlobalStore } from "@store/globalStore";
 import { useAssetVersionStore } from "@store/assetVersionStore";
 import { AssetEditVersionDropdown } from "./AssetEditVersionDropdown.tsx";
+import { Tag } from "@queries/tags/types";
 
-export const AssetEditDetailControls = () => {
+type Props = {
+  tags?: Tag[];
+};
+
+export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
   const { orgRoles } = useGlobalStore();
-  const { org_id, description, updateVersion } = useAssetVersionStore();
+  const {
+    org_id,
+    description,
+    updateVersion,
+    tag,
+    customTag,
+    setCustomTag,
+    setTag,
+  } = useAssetVersionStore();
 
   const onUpdateOrg = (
     _event: React.SyntheticEvent | null,
@@ -61,6 +74,36 @@ export const AssetEditDetailControls = () => {
       </FormControl>
 
       <AssetEditVersionDropdown />
+
+      {tags && (
+        <FormControl>
+          <FormLabel>Assign an existing tag</FormLabel>
+          <Select
+            disabled={!!customTag}
+            name="tag"
+            value={tag}
+            onChange={(_, newValue) => {
+              setTag(newValue as string);
+            }}
+            placeholder="Select..."
+          >
+            {tags.map((tag) => (
+              <Option value={tag.tag_id}>{tag.name}</Option>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
+      <FormControl sx={{ mb: "5px" }}>
+        <FormLabel>Create a new tag</FormLabel>
+        <Input
+          name="name"
+          variant="outlined"
+          placeholder="Custom tag..."
+          value={customTag}
+          onChange={(e) => setCustomTag(e.target.value)}
+        />
+      </FormControl>
 
       <FormControl>
         <FormLabel>Description</FormLabel>

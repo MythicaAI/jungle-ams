@@ -1,13 +1,13 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { TopAssetsSlider } from "@components/TopAssetsCarousel/TopAssetsSlider";
+import { TagsPanel } from "@components/TopAssetsCarousel/TopAssetsSlider";
 import { AssetTopResponse } from "types/apiTypes";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../queryClient";
 
-const meta: Meta<typeof TopAssetsSlider> = {
+const meta: Meta<typeof TagsPanel> = {
   title: "Components/TopAssetsSlider",
-  component: TopAssetsSlider,
+  component: TagsPanel,
   decorators: [
     (Story) => (
       <BrowserRouter>
@@ -21,7 +21,7 @@ const meta: Meta<typeof TopAssetsSlider> = {
 
 export default meta;
 
-type Story = StoryObj<typeof TopAssetsSlider>;
+type Story = StoryObj<typeof TagsPanel>;
 
 const mockAssets: AssetTopResponse[] = [
   {
