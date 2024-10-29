@@ -27,6 +27,7 @@ from routes.files.files import delete_file_by_id
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
+from ripple.models.contexts import FilePurpose
 
 log = logging.getLogger(__name__)
 
@@ -65,6 +66,7 @@ def upload_internal(
     """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
     ctx = RequestContext()
+    ctx.purpose = FilePurpose.API_UPLOAD
     ctx.profile_id = profile_id
 
     filename = upload_file.filename

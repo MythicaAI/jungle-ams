@@ -5,6 +5,7 @@ cov_threshold_single_fail=false
 cov_threshold_total_fail=false
 
 output=$(poetry run pytest . --cov --show-capture=no --cov-config=.coveragerc tests/)
+echo $output
 
 # remove pytest-coverage config file
 if [ -f $cov_config_fname ]; then
@@ -139,7 +140,7 @@ else
 fi
 
 badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=pytest-coverage🛡️&message=$total_cov%&color=$expected_badge_color)"
-expected_badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=expected-coverage🛡️&message=$total_cov%&color=$expected_badge_color)"
+expected_badge="![pytest-coverage-badge](https://img.shields.io/static/v1?label=expected-coverage🛡️&message=$test_fail_rate%&color=$expected_badge_color)"
 
 
 # github actions truncates newlines, need to do replace

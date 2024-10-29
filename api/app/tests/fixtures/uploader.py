@@ -8,7 +8,6 @@ from munch import munchify
 from routes.file_uploads import FileUploadResponse
 from tests.shared_test import FileContentTestObj, assert_status_code
 
-
 @pytest.fixture(scope='module')
 def uploader(client, api_base):
     """Uploader factory fixture test content to API"""
@@ -93,6 +92,18 @@ def uploader(client, api_base):
                 follow_redirects=False)
             assert_status_code(r, HTTPStatus.TEMPORARY_REDIRECT)
             assert (r.headers.get('Location') is not None)
+
+        for f in response_files_by_id.values():
+            #validate delete
+            r = client.delete(
+                f"{api_base}/files/{f.file_id}",
+                headers=auth_headers)
+            assert_status_code(r, HTTPStatus.OK)
+            r = client.get(
+                f"{api_base}/files/{f.file_id}",
+                headers=auth_headers)
+            assert_status_code(r, HTTPStatus.NOT_FOUND)
+
         return response_files_by_id
 
     return _uploader
@@ -119,3 +130,4 @@ def request_to_upload_files(
 
         return (i.file_id for i in upload_res.files)
     return _upload_files
+

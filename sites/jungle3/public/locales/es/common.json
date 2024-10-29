@@ -1,0 +1,91 @@
+{
+  "common": {
+    "logout": "Cerrar sesión",
+    "welcome": "Bienvenido",
+    "published": "Publicado",
+    "draft": "Borrador",
+    "name": "Nombre",
+    "description": "Descripción",
+    "sortingPanel": {
+      "options": [
+        {
+          "value": "latest",
+          "label": "Más reciente"
+        },
+        {
+          "value": "oldest",
+          "label": "Más antiguo"
+        }
+      ]
+    },
+    "profileMenu": {
+      "dashboard": "Tablero",
+      "editProfile": "Editar Perfil",
+      "myPackages": "Mis Paquetes",
+      "myUploads": "Mis Subidas",
+      "manageOrgs": "Gestionar Organizaciones",
+      "myOrgs": "Gestionar organizaciones",
+      "apiKeys": "Claves API"
+    }
+  },
+  "myPackages": {
+    "title": "Tus paquetes",
+    "description": "Ver tus propios paquetes y crear nuevos",
+    "createNew": "Crear nuevo paquete"
+  },
+  "packageEdit": {
+    "title": "Editor de paquetes",
+    "details": "Detalles",
+    "files": "Archivos",
+    "thumbnails": "Miniaturas",
+    "links": "Enlaces",
+    "editPackage": "Editar paquete",
+    "update": "Actualizar",
+    "org/namespace": "Org / Espacio de nombres",
+    "createNewOrg": "Crear nueva organización",
+    "chooseExistingOrg": "Elige una org existente...",
+    "filloutDesc": "Rellena una descripción",
+    "version": "Versión"
+  },
+  "myUploads": {
+    "title": "Tus subidas",
+    "description": "Gestiona tus archivos subidos",
+    "allFiles": "Todos los archivos",
+    "hdas": "HDAs",
+    "thumbnails": "Miniaturas",
+    "uploadFiles": "Subir archivos",
+    "pendingUpload": "Subida pendiente",
+    "size": "Tamaño"
+  },
+  "profileSettings": {
+    "title": "Mi perfil",
+    "name": "Nombre",
+    "description": "Descripción",
+    "shortDescriptionPlaceholder": "Descripción breve de tu perfil",
+    "email": "Correo electrónico",
+    "orgs": "Organizaciones",
+    "edit": "Editar"
+  },
+  "manageOrgs": {
+    "title": "Gestionar organizaciones",
+    "description": "Accede a tus membresías y crea nuevas organizaciones",
+    "memberships": "Membresías",
+    "organizations": "Organizaciones",
+    "create": "Crear organización",
+    "notMember": "Actualmente no formas parte de ninguna organización. ¿Te gustaría crear una nueva organización?",
+    "name": "Nombre",
+    "desc": "Descripción",
+    "createBtn": "Crear",
+    "creating": "Creando..."
+  },
+  "apiKeys": {
+    "title": "Claves API",
+    "yourTitle": "Sus claves API",
+    "desc": "Gestiona tus claves de acceso",
+    "generate": "Generar nueva clave",
+    "name": "Nombre",
+    "description": "Descripción",
+    "expires": "Expira en, días",
+    "submit": "Enviar"
+  }
+}

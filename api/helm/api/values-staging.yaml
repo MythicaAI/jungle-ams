@@ -17,6 +17,15 @@ domains:
   - dex-staging.mythica.ai
 serviceAccount:
   secretName: front-end-api-staging-sa
+
+apiBase: https://api-staging.mythica.ai/v1
+imagesBaseUrl: https://api-staging.mythica.ai/images
+
+auth0Domain: dev-dtvqj0iuc5rnb6x2.us.auth0.com
+auth0ClientId: nW2QQHrHc687F6WbZdzgZdd4BFzHMQXl
+auth0Audience: https://api-staging.mythica.ai/v1
+auth0RedirectUrl: https://api-staging.mythica.ai
+
 api:
   app:
     tag: "latest"

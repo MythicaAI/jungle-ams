@@ -30,6 +30,7 @@ import {
   AssetEditLinks,
 } from "@components/AssetEdit";
 import { useGetAssetByVersion, useUpdateAsset } from "@queries/packages";
+import { useTranslation } from "react-i18next";
 import {
   useAssignTagToAsset,
   useCreateTag,
@@ -72,6 +73,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     propVersion,
   );
   const { mutate: updateAsset } = useUpdateAsset();
+  const { t } = useTranslation();
   const { data: tags, error: tagsError } = useGetTags();
   const { mutate: assignTagToAsset, isPending: isAssignTagToAssetLoading } =
     useAssignTagToAsset();
@@ -318,7 +320,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       }}
     >
       <Helmet>
-        <title>Mythica • Edit package</title>
+        <title>Mythica • {t("packageEdit.editPackage")}</title>
       </Helmet>
       <form onSubmit={onSubmit}>
         <Grid container spacing={2} sx={{ flexGrow: 1 }}>
@@ -328,10 +330,10 @@ const AssetEdit: React.FC<AssetEditProps> = ({
 
           <Tabs aria-label="Basic tabs" defaultValue={0} sx={{ width: "100%" }}>
             <TabList>
-              <Tab>Details</Tab>
-              <Tab>Files</Tab>
-              <Tab>Thumbnails</Tab>
-              <Tab>Links</Tab>
+              <Tab>{t("packageEdit.details")}</Tab>
+              <Tab>{t("packageEdit.files")}</Tab>
+              <Tab>{t("packageEdit.thumbnails")}</Tab>
+              <Tab>{t("packageEdit.links")}</Tab>
             </TabList>
 
             <TabPanel value={0}>

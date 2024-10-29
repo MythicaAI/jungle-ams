@@ -1,6 +1,6 @@
-import { Box, Stack, Typography } from "@mui/joy";
 import React from "react";
-import { SORTING_BUTTONS } from "./constants";
+import { Box, Stack, Typography } from "@mui/joy";
+import { useTranslation } from "react-i18next";
 
 export type SortType = "latest" | "oldest";
 
@@ -13,6 +13,11 @@ export const BottomSortingPanel: React.FC<Props> = ({
   sorting,
   setSorting,
 }) => {
+  const { t } = useTranslation();
+  const sortingButtons = t("common.sortingPanel.options", {
+    returnObjects: true,
+  }) as { value: string; label: string }[];
+
   return (
     <Stack
       direction="row"
@@ -28,7 +33,7 @@ export const BottomSortingPanel: React.FC<Props> = ({
         zIndex: 10,
       }}
     >
-      {SORTING_BUTTONS.map((button) => (
+      {sortingButtons.map((button) => (
         <Box
           component="span"
           sx={{

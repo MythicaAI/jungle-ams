@@ -26,6 +26,9 @@
     "axios": "^1.7.2",
     "date-fns": "^3.6.0",
     "framer-motion": "^11.10.0",
+    "i18next": "^23.16.0",
+    "i18next-browser-languagedetector": "^8.0.0",
+    "i18next-http-backend": "^2.6.2",
     "lodash": "^4.17.21",
     "lucide-react": "^0.379.0",
     "qs": "^6.12.3",
@@ -35,8 +38,10 @@
     "react-cookie-consent": "^9.0.0",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
+    "react-i18next": "^15.0.3",
     "react-joyride": "^2.9.2",
     "react-router-dom": "^6.24.0",
+    "react-select": "^5.8.1",
     "react-slick": "^0.30.2",
     "react-sortablejs": "^6.1.4",
     "slick-carousel": "^1.8.1",
@@ -89,6 +94,7 @@
     "ts-jest": "^29.2.1",
     "typescript": "^5.5.2",
     "vite": "^5.3.1",
+    "vite-plugin-runtime-env": "^0.1.1",
     "vite-tsconfig-paths": "^5.0.1"
   },
   "packageManager": "pnpm@9.1.2+sha512.127dc83b9ea10c32be65d22a8efb4a65fb952e8fefbdfded39bdc3c97efc32d31b48b00420df2c1187ace28c921c902f0cb5a134a4d032b8b5295cbfa2c681e2"

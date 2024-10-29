@@ -25,6 +25,7 @@ import { MailCheckIcon, Tag } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { useStatusStore } from "@store/statusStore";
 import { api } from "@services/api";
+import { useTranslation } from "react-i18next";
 
 interface ValidateEmailResponse {
   profile_id: string;
@@ -42,6 +43,7 @@ const ProfileSettings = () => {
   const location = useLocation();
   const isQuickSetup = location.pathname.includes("quick-setup");
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
@@ -99,7 +101,7 @@ const ProfileSettings = () => {
 
   const profileName = (
     <FormControl>
-      <FormLabel>Name</FormLabel>
+      <FormLabel>{t("profileSettings.name")}</FormLabel>
       <Input
         name="name"
         required
@@ -130,7 +132,7 @@ const ProfileSettings = () => {
 
   const profileEmailValidate = (
     <FormControl>
-      <FormLabel>Email</FormLabel>
+      <FormLabel>{t("profileSettings.email")}</FormLabel>
 
       <Input
         name="email"
@@ -146,7 +148,7 @@ const ProfileSettings = () => {
 
   const profileEmailCreate = (
     <FormControl>
-      <FormLabel>Email</FormLabel>
+      <FormLabel>{t("profileSettings.email")}</FormLabel>
 
       <Input
         name="email"
@@ -159,7 +161,7 @@ const ProfileSettings = () => {
 
   const profileDescription = (
     <FormControl>
-      <FormLabel>Description</FormLabel>
+      <FormLabel>{t("profileSettings.description")}</FormLabel>
       <Input
         name="description"
         value={profile.description}
@@ -179,7 +181,7 @@ const ProfileSettings = () => {
         }}
       >
         <Typography level="h2" fontSize="lg">
-          Organizations
+          {t("profileSettings.orgs")}
         </Typography>
         <CardContent>
           <List>
@@ -187,7 +189,7 @@ const ProfileSettings = () => {
               <ListItem key={role.org_id}>{role.org_name}</ListItem>
             ))}
           </List>
-          <Link to="/orgs">Edit</Link>
+          <Link to="/orgs">{t("profileSettings.edit")}</Link>
         </CardContent>
       </Card>
     </FormControl>
@@ -201,7 +203,7 @@ const ProfileSettings = () => {
       {!isQuickSetup && profileOrgs}
       {!isQuickSetup && (
         <Button type="submit" sx={{ marginTop: "10px" }}>
-          Edit
+          {t("profileSettings.edit")}
         </Button>
       )}
       {isQuickSetup && (
@@ -236,7 +238,7 @@ const ProfileSettings = () => {
   return (
     <div>
       <Helmet>
-        <title>Mythica • My Profile</title>
+        <title>Mythica • {t("profileSettings.title")}</title>
       </Helmet>
       <Box p="4px 16px">
         {isCreate ? profileCreate : profile ? profileEdit : profileLoading}

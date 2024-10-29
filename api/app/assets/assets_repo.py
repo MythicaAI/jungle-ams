@@ -3,23 +3,24 @@ import logging
 from datetime import datetime
 from enum import Enum
 from http import HTTPStatus
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
 import sqlalchemy
 from fastapi import HTTPException
-from pydantic import BaseModel, StrictInt
-from sqlmodel import Session, col, delete, desc, insert, or_, select, update
+from pydantic import BaseModel, StrictInt, field_validator
+from sqlmodel import Session, col, delete, desc, insert, or_, select, update, func
 
 from content.locate_content import locate_content_by_seq
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
     org_seq_to_id, \
-    profile_id_to_seq, profile_seq_to_id
+    profile_id_to_seq, profile_seq_to_id, tag_seq_to_id
 from cryptid.location import location
-from db.schema.assets import Asset, AssetVersion
+from db.schema.assets import Asset, AssetVersion, AssetTag
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
+from db.schema.tags import Tag
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
@@ -27,7 +28,25 @@ VERSION_LEN = 3
 FILE_TYPE_CATEGORIES = {'files', 'thumbnails'}
 LINK_TYPE_CATEGORIES = {'links'}
 
-asset_join_select = select(Asset, AssetVersion)
+
+tag_subquery = (
+    select(
+        AssetTag.type_seq.label('asset_seq'),  # pylint: disable=no-member
+        func.json_agg(
+            func.json_build_object(
+                'tag_seq', AssetTag.tag_seq,
+                'tag_name', Tag.name
+            )
+        ).label('tag_to_asset')
+    )
+    .join(Tag, Tag.tag_seq == AssetTag.tag_seq)
+    .group_by(AssetTag.type_seq)
+    .subquery()
+)
+
+asset_join_select = select(Asset, AssetVersion, tag_subquery.c.tag_to_asset).outerjoin(
+    tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+)
 
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
 
@@ -98,6 +117,23 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetVersionContent | str]] = {}
+    tags: Optional[list[Dict[str, Union[int, str]]]] = {}
+
+    @field_validator('tags')
+    @classmethod
+    def make_tags_seq_to_ids(
+        cls, tags: Optional[list[Dict[str, int]]]
+    ) -> Optional[list[Dict[str, str]]]:
+        if tags:
+            tags = [
+                {
+                    "tag_id": tag_seq_to_id(tag["tag_seq"]),
+                    "tag_name": tag["tag_name"],
+                }
+                for tag in tags
+            ]
+        return tags
+
 
 
 class AssetTopResult(AssetVersionResult):
@@ -126,11 +162,12 @@ def resolve_org_name(session: Session, org_seq: int) -> str:
     return ""
 
 
-def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion]]) -> list[AssetVersionResult]:
+def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
+
     results = list()
     for join_result in join_results:
-        asset, ver = join_result
+        asset, ver, tag_to_asset = join_result
         if ver is None:
             # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
@@ -150,7 +187,9 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             version=(ver.major, ver.minor, ver.patch),
             commit_ref=ver.commit_ref,
             created=ver.created,
-            contents=asset_contents_json_to_model(asset_id, ver.contents))
+            contents=asset_contents_json_to_model(asset_id, ver.contents),
+            tags=tag_to_asset,
+        )
         results.append(avr)
     return results
 
@@ -184,12 +223,17 @@ def select_asset_version(session: Session,
             created=None,
             contents={}))]
     else:
-        stmt = select(Asset, AssetVersion).outerjoin(AssetVersion,
-                                                     (Asset.asset_seq == AssetVersion.asset_seq) &
-                                                     (AssetVersion.major == version[0]) &
-                                                     (AssetVersion.minor == version[1]) &
-                                                     (AssetVersion.patch == version[2])).where(
-            Asset.asset_seq == asset_id_to_seq(asset_id))
+        stmt = select(Asset, AssetVersion, tag_subquery.c.tag_to_asset).outerjoin(
+            tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+        ).outerjoin(
+            AssetVersion,
+            (Asset.asset_seq == AssetVersion.asset_seq) &
+            (AssetVersion.major == version[0]) &
+            (AssetVersion.minor == version[1]) &
+            (AssetVersion.patch == version[2])
+        ).where(
+            Asset.asset_seq == asset_id_to_seq(asset_id)
+        )
 
         results = session.exec(stmt).all()
     if not results:
@@ -422,14 +466,16 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
 
 def top(session: Session):
     results = session.exec(
-        select(Asset, AssetVersion, FileContent)
+        select(Asset, AssetVersion, FileContent, tag_subquery.c.tag_to_asset)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-        .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
+        .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq).outerjoin(
+            tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+        )
         .where(AssetVersion.published == True)
         .where(AssetVersion.package_seq != None)
     ).all()
 
-    def avf_to_top(asset, ver, downloads, sorted_versions):
+    def avf_to_top(asset, ver, downloads, sorted_versions, tag_to_asset):
         asset_id = asset_seq_to_id(asset.asset_seq)
         return AssetTopResult(
             asset_id=asset_id,
@@ -448,18 +494,20 @@ def top(session: Session):
             created=ver.created,
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
-            downloads=downloads, )
+            downloads=downloads, 
+            tags=tag_to_asset,
+        )
 
     reduced = {}
     for result in results:
-        asset, ver, file = result
+        asset, ver, file, tag_to_asset = result
         if ver is None or file is None:
             continue
         atr = reduced.get(asset.asset_seq, None)
         version_id = [ver.major, ver.minor, ver.patch]
         if atr is None:
             reduced[asset.asset_seq] = avf_to_top(
-                asset, ver, file.downloads, [])
+                asset, ver, file.downloads, [], tag_to_asset)
         else:
             versions = atr.versions
             versions.append(version_id)
@@ -467,7 +515,8 @@ def top(session: Session):
             atr.downloads += file.downloads
             if version_id > atr.version:
                 reduced[asset.asset_seq] = avf_to_top(
-                    asset, ver, atr.downloads, atr.versions)
+                    asset, ver, atr.downloads, atr.versions, tag_to_asset,
+                )
 
     sort_results = sorted(reduced.values(), key=lambda x: x.downloads, reverse=True)
     return sort_results
@@ -475,7 +524,9 @@ def top(session: Session):
 
 def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResult]:
     results = session.exec(
-        select(Asset, AssetVersion)
+        select(Asset, AssetVersion, tag_subquery.c.tag_to_asset).outerjoin(
+            tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+        )
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .where(Asset.owner_seq == profile_seq)
         .where(Asset.deleted == None)
@@ -491,7 +542,9 @@ def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResu
 
 
 def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
-    results = session.exec(select(Asset, AssetVersion).outerjoin(
+    results = session.exec(select(Asset, AssetVersion, tag_subquery.c.tag_to_asset).outerjoin(
+        tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+    ).outerjoin(
         AssetVersion, Asset.asset_seq == AssetVersion.asset_seq).where(
         Asset.asset_seq == asset_id_to_seq(asset_id)).order_by(
         desc(AssetVersion.major),

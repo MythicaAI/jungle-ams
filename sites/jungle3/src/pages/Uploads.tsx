@@ -34,6 +34,13 @@ import { UploadsSubmitList } from "@components/Uploads/UploadsSubmitList";
 import { Link } from "react-router-dom";
 import { useDeleteUpload, useGetPendingUploads } from "@queries/uploads";
 import { DeleteModal } from "@components/common/DeleteModal";
+import { useTranslation } from "react-i18next";
+
+interface Sort {
+  icon: JSX.Element;
+  name: string;
+  types: string[];
+}
 
 const Uploads = () => {
   const { addError, addWarning } = useStatusStore();
@@ -44,6 +51,7 @@ const Uploads = () => {
   }>({ selectedFile: "", isOpen: false });
   const { data: pendingUploads, error } = useGetPendingUploads();
   const { mutate: deleteUpload, error: deleteError } = useDeleteUpload();
+  const { t } = useTranslation();
 
   const handleError = (err: any) => {
     addError(translateError(err));
@@ -89,18 +97,12 @@ const Uploads = () => {
 
   const [sort, setSort] = useState("all");
 
-  interface Sort {
-    icon: JSX.Element;
-    name: string;
-    types: string[];
-  }
-
   const allSorts: { [key: string]: Sort } = {
-    all: { icon: <LucideFiles />, name: "All Files", types: [] },
+    all: { icon: <LucideFiles />, name: t("myUploads.allFiles"), types: [] },
     hdas: { icon: <LucideFile />, name: "HDAs", types: [".hda", ".hip"] },
     thumbnails: {
       icon: <LucideImage />,
-      name: "Thumbnails",
+      name: t("myUploads.thumbnails"),
       types: [".png", ".jpg", ".jpeg", ".gif", ".webm"],
     },
   };
@@ -124,14 +126,16 @@ const Uploads = () => {
   return (
     <>
       <Helmet>
-        <title>Mythica • My Uploads</title>
+        <title>Mythica • {t("common.profileMenu.myUploads")}</title>
       </Helmet>
       <Card sx={{ mb: "16px", mx: "16px" }}>
         <Stack>
           <Typography textAlign="start" level="h4">
-            Your uploads
+            {t("myUploads.title")}
           </Typography>
-          <Typography textAlign="start">Manage your uploaded files</Typography>
+          <Typography textAlign="start">
+            {t("myUploads.description")}
+          </Typography>
         </Stack>
       </Card>
       <Box mx="16px">
