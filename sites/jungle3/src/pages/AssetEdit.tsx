@@ -31,6 +31,12 @@ import {
 } from "@components/AssetEdit";
 import { useGetAssetByVersion, useUpdateAsset } from "@queries/packages";
 import { useTranslation } from "react-i18next";
+import {
+  useAssignTagToAsset,
+  useCreateTag,
+  useGetTags,
+  useRemoveTagFromAsset,
+} from "@queries/tags";
 
 interface AssetEditProps {
   assetId?: string;
@@ -57,6 +63,9 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     setLinks,
     updateVersion,
     links,
+    tag,
+    initialTag,
+    customTag,
   } = useAssetVersionStore();
   const navigate = useNavigate();
   const { data: assetData, error } = useGetAssetByVersion(
@@ -65,6 +74,12 @@ const AssetEdit: React.FC<AssetEditProps> = ({
   );
   const { mutate: updateAsset } = useUpdateAsset();
   const { t } = useTranslation();
+  const { data: tags, error: tagsError } = useGetTags();
+  const { mutate: assignTagToAsset, isPending: isAssignTagToAssetLoading } =
+    useAssignTagToAsset();
+  const { mutate: createTag, isPending: isCreateTagLoading } = useCreateTag();
+  const { mutate: removeTagFromAsset, isPending: isRemoveTagFromAssetLoading } =
+    useRemoveTagFromAsset();
 
   // org_id state and initial update to first index
   useEffect(() => {
@@ -79,10 +94,14 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       handleError(error);
     }
 
+    if (tagsError) {
+      handleError(tagsError);
+    }
+
     if (assetData) {
       loadAssetVersionResponse(assetData);
     }
-  }, [assetData, error]);
+  }, [assetData, error, tagsError]);
 
   const handleError = (err: any) => {
     addError(translateError(err));
@@ -107,6 +126,8 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       created: r.created || "",
       updated: r.updated,
       published: r.published,
+      initialTag: r.tags && r.tags.length > 0 ? r.tags[0] : undefined,
+      tag: r.tags && r.tags.length > 0 ? r.tags[0].tag_id : undefined,
       files: {},
       thumbnails: {},
       links: [],
@@ -168,21 +189,118 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       return;
     }
 
-    updateAsset(
-      {
-        payload: formJson,
-        assetId: asset_id,
-        assetVersion: sanitizedVersion.join("."),
-      },
-      {
-        onSuccess: (r) => {
-          loadAssetVersionResponse(r);
-          setSuccess(`${r.name}, ${r.version.join(".")} updated`);
-          navigate("/packages");
+    const handleUpdate = () => {
+      if (
+        isCreateTagLoading ||
+        isAssignTagToAssetLoading ||
+        isRemoveTagFromAssetLoading
+      )
+        return;
+
+      updateAsset(
+        {
+          payload: formJson,
+          assetId: asset_id,
+          assetVersion: sanitizedVersion.join("."),
         },
-        onError: (err) => handleError(err),
-      },
-    );
+        {
+          onSuccess: (r) => {
+            console.log("qqq");
+            loadAssetVersionResponse(r);
+            setSuccess(`${r.name}, ${r.version.join(".")} updated`);
+            navigate("/packages");
+          },
+          onError: (err) => handleError(err),
+        },
+      );
+    };
+
+    const isTagDifferentFromInitial =
+      initialTag &&
+      ((customTag && initialTag.tag_name !== customTag) ||
+        (tag && initialTag.tag_id !== tag));
+
+    if (isTagDifferentFromInitial && customTag) {
+      return createTag(customTag, {
+        onSuccess: (res) => {
+          removeTagFromAsset(
+            { tag_id: initialTag?.tag_id, type_id: asset_id },
+            {
+              onSuccess: () => {
+                assignTagToAsset(
+                  { tag_id: res?.tag_id, type_id: asset_id },
+                  {
+                    onSettled: () => {
+                      handleUpdate();
+                    },
+                  },
+                );
+              },
+            },
+          );
+        },
+        onError: (err) => {
+          handleUpdate();
+          handleError(err);
+        },
+      });
+    }
+
+    if (isTagDifferentFromInitial && tag && !customTag) {
+      return assignTagToAsset(
+        { tag_id: tag, type_id: asset_id },
+        {
+          onSuccess: () => {
+            removeTagFromAsset(
+              {
+                tag_id: initialTag?.tag_id,
+                type_id: asset_id,
+              },
+              {
+                onSettled: () => {
+                  handleUpdate();
+                },
+              },
+            );
+          },
+          onError: (err) => {
+            handleUpdate();
+            handleError(err);
+          },
+        },
+      );
+    }
+
+    if (customTag && !initialTag) {
+      return createTag(customTag, {
+        onSuccess: (res) =>
+          assignTagToAsset(
+            { tag_id: res?.tag_id, type_id: asset_id },
+            {
+              onSettled: () => {
+                handleUpdate();
+              },
+            },
+          ),
+        onError: (err) => {
+          handleError(err);
+          handleUpdate();
+        },
+      });
+    }
+
+    if (tag && !customTag && !initialTag) {
+      return assignTagToAsset(
+        { tag_id: tag, type_id: asset_id },
+        {
+          onSettled: () => {
+            handleUpdate();
+          },
+        },
+      );
+    }
+
+    handleUpdate();
   };
 
   return (
@@ -219,7 +337,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
             </TabList>
 
             <TabPanel value={0}>
-              <AssetEditDetailControls />
+              <AssetEditDetailControls tags={tags} />
             </TabPanel>
 
             <TabPanel value={1}>
