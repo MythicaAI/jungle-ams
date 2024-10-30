@@ -27,6 +27,7 @@ export type ProfileResponse = {
   created: ISOTime;
   updated: ISOTime;
   email_verified: boolean;
+  org_roles: { org_id: string; roles: string[] }[];
 };
 
 export type PublicProfileResponse = {
@@ -51,6 +52,7 @@ export const defaultProfileResponse = () => {
     created: "",
     updated: "",
     email_verified: false,
+    org_roles: [],
   };
 };
 
