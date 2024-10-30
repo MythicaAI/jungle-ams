@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from munch import munchify
 import pytest
 
 from profiles.responses import ProfileResponse, SessionStartResponse
@@ -16,7 +17,9 @@ def create_profile(client, api_base: str, email="test@test.com"):
             full_name: str = "Test Profile",
             signature: str = 32 * 'X',
             description: str = "Test description",
-            profile_href: str = "https://nothing.com/") -> ProfileTestObj:
+            profile_href: str = "https://nothing.com/",
+            validate_email=False,
+        ) -> ProfileTestObj:
         r = client.post(f"{api_base}/profiles",
                         json={
                             'name': name,
@@ -46,10 +49,31 @@ def create_profile(client, api_base: str, email="test@test.com"):
         session_response = SessionStartResponse(**r.json())
         assert session_response.profile.profile_id == profile_id
         assert len(session_response.token) > 0
-        auth_token = session_response.token
+        auth_token = session_response.token\
 
-        return ProfileTestObj(
+        test_profile = ProfileTestObj(
             profile=profile,
-            auth_token=auth_token)
+            auth_token=auth_token,
+        )
+        if validate_email:
+            
+            # validate email to add role mythica-tags
+            headers = test_profile.authorization_header()
+            o = munchify(client.get(
+                f"{api_base}/validate-email",
+                headers=headers).json())
+            assert o.owner_id == profile.profile_id
+            assert len(o.link) > 0
+            assert len(o.code) > 0
+            assert o.state == 'link_sent'
+            validate_code = o.code
+
+            o = munchify(client.get(
+                f"{api_base}/validate-email/{validate_code}",
+                headers=headers).json())
+            assert o.owner_id == profile.profile_id
+            assert o.state == 'validated'
+
+        return test_profile
 
     return _create_profile
