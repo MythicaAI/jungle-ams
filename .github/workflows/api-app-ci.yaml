@@ -80,30 +80,20 @@ jobs:
           poetry run alembic -n sqlite upgrade head
           echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
 
-      - name: Run tests
+      - name: Generate coverage for codecov
         if: ${{ steps.PR.outputs.number != null }}
-        id: pytester-cov
+        id: codecov-service
         run: |
-          chmod +x ./prepare_git_cov_table.sh
-          ./prepare_git_cov_table.sh
+          poetry run pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
         shell: bash
-        
-      - name: Comment table-result inside PR
-        if: ${{ steps.PR.outputs.number != null }}
-        uses: ./github/post_git_issue/
-        # pass user input as arguments
-        with:
-          title: Pytest coverage single falls below minimum ${{ env.COVERAGE_SINGLE }}
-          token: ${{secrets.GITHUB_TOKEN}}
-          assignees: ${{github.actor}}
-          # labels: workflow-output-table
-          body: ${{ steps.pytester-cov.outputs.output-table }}
-          repo: ${{ github.repository }}
-          pull_number: ${{ steps.PR.outputs.number }}
 
-      # TODO: Currently skipping failure exit when test coverage falls below env.TEST_FAIL_RATE
-      # - name: Coverage total fail - exit
-      #   if: ${{ steps.PR.outputs.number != null && steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
-      #   run: |
-      #     echo "cov total fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
-      #     exit 1
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

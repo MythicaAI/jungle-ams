@@ -1,15 +1,15 @@
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from auth.cookie import cookie_to_profile
 from auth.generate_token import validate_token
-from db.schema.profiles import Profile, OrgRef, Org
-
+from db.schema.profiles import Org, OrgRef, Profile
 
 log = logging.getLogger(__name__)
+
 
 def get_profile(authorization: str) -> Profile:
     """Given an auth bearer header value, return a Profile object"""
@@ -49,10 +49,10 @@ def resolve_roles_by_org_name(session: Session, profile: Profile, org_name: str)
     """Get the set of roles for a profile in an org"""
     subquery = select(Org).where(Org.name == org_name).subquery()
     org_refs = session.exec(select(OrgRef).join(
-            subquery, subquery.c.org_seq == OrgRef.org_seq
-        ).where(
-            OrgRef.profile_seq == profile.profile_seq
-        )
+        subquery, subquery.c.org_seq == OrgRef.org_seq
+    ).where(
+        OrgRef.profile_seq == profile.profile_seq
+    )
     ).all()
     return {o.role for o in org_refs}
 
@@ -83,14 +83,12 @@ def get_or_create_org_ref(session: Session, org: Org, profile: Profile, role: st
     Check if OrgRef exists, otherwise place an object into this session.
     NOTE: There is no Session.commit().
     """
-    
+
     # Check if an OrgRef with the same org_seq, profile_seq, and role already exists
     existing_entry = session.exec(select(OrgRef).filter_by(
-            org_seq=org.org_seq,
-            profile_seq=profile.profile_seq,
-            role=role
-        )
-    ).first()
+        org_seq=org.org_seq,
+        profile_seq=profile.profile_seq,
+        role=role)).first()
 
     if not existing_entry:
         # If not found, create a new OrgRef entry
