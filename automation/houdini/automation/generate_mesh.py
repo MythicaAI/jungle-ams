@@ -8,7 +8,7 @@ import tempfile
 from pydantic import BaseModel
 from ripple.automation import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import OutputFiles
+from ripple.models.streaming import OutputFiles, ProcessStreamItem
 
 
 logging.basicConfig(
@@ -145,17 +145,17 @@ class ExportMeshRequest(ParameterSet):
 
 
 
-def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher):
+def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> OutputFiles:
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        result_file_path = generate_mesh_impl(
-            model.hda_file.file_path,
-            model.hda_definition_index,
-            model.format,
-            model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
-            tmp_dir
-        )
+    tmp_dir = tempfile.mkdtemp()
+    result_file_path = generate_mesh_impl(
+        model.hda_file.file_path,
+        model.hda_definition_index,
+        model.format,
+        model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
+        tmp_dir
+    )
 
-        responder.result(OutputFiles(
-            files = {'mesh': [result_file_path]}
-        ))
+    return OutputFiles(
+        files = {'mesh': [result_file_path]}
+    )

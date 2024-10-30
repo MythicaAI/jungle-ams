@@ -7,7 +7,7 @@ import nats
 import requests
 import tempfile
 from pydantic import BaseModel
-from typing import Callable, Type, Optional, Dict, Any
+from typing import Callable, Type, Optional, Dict, Any, Literal
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
@@ -157,13 +157,11 @@ class RestAdapter():
             log.error(f"Failed to call job API: {url} - {file_data} - {response.status_code}")
             return None
 
-
-
-
 class WorkerModel(BaseModel):
     path: str
     provider: Callable
     inputModel: Type[ParameterSet]
+    outputModel: Type[ProcessStreamItem]
 
 class WorkerRequest(BaseModel):
     """Contract for requests for work"""
@@ -175,7 +173,7 @@ class WorkerRequest(BaseModel):
 
 class WorkerResponse(BaseModel):
     work_id: str
-    payload: Dict
+    payload: dict
 
 
 class ResultPublisher:
@@ -192,16 +190,12 @@ class ResultPublisher:
     def result(self, item, complete=False):
 
         # Poplulate context
-        if isinstance(item,ProcessStreamItem):
-            item.process_guid = str(uuid4())
-            item.job_id = self.request.job_id if self.request.job_id is not None else ""
+        item.process_guid = str(uuid4())
+        item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
-            # Upload any references to local data
-            self._publish_local_data(item)
+        # Upload any references to local data
+        self._publish_local_data(item)
 
-        if isinstance(item,BaseModel):
-            # we need the dict from here on down
-            item = item.model_dump()
 
    
         JOB_RESULT_ENDPOINT="/jobs/results/"
@@ -213,7 +207,7 @@ class ResultPublisher:
         task = asyncio.create_task(
             self.nats.post(
                 "result", 
-                WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
+                WorkerResponse(work_id=self.request.work_id, payload=item.model_dump()).model_dump()
             )
         )
         
@@ -224,7 +218,7 @@ class ResultPublisher:
             else:
                 data = {
                     "created_in": "automation-worker",
-                    "result_data": item
+                    "result_data": item.model_dump()
                 }
                 self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
 
@@ -233,13 +227,15 @@ class ResultPublisher:
 
         def upload_file(token: str, file_path: str) -> Optional[str]:
             file_id = None
-            with open(file_path, 'rb') as file:
-                file_name = os.path.basename(file_path)
-                file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                response = self.rest.post_file("/upload/store", token, file_data)
-                file_id = response['files'][0]['file_id'] if response else None
-            return file_id
-
+            try:
+                with open(file_path, 'rb') as file:
+                    file_name = os.path.basename(file_path)
+                    file_data = [('files', (file_name, file, 'application/octet-stream'))]
+                    response = self.rest.post_file("/upload/store", token, file_data)
+                    file_id = response['files'][0]['file_id'] if response else None
+                return file_id
+            finally:
+                os.remove(file_path)
 
         def upload_job_def(job_def: JobDefinition) -> Optional[str]:
             definition = {
@@ -281,24 +277,38 @@ class Worker:
         self.nats = NatsAdapter()
         self.rest = RestAdapter()
 
+    class CatalogResponse(ProcessStreamItem):
+        item_type: Literal["catalogResponse"] = "catalogResponse"
+        workers: dict[str, dict[Literal["input", "output"],dict[str, Any]]]
+
     def _get_catalog_provider(self) -> Callable:
         worker = self
         
-        def impl(request: ParameterSet = None, responder: ResultPublisher=None):
+        def impl(request: ParameterSet = None, responder: ResultPublisher=None) -> Worker.CatalogResponse:
             ret = {}
             for path,wk in worker.workers.items():
-                ret.update({path: wk.inputModel.model_json_schema()})
-            responder.result(ret)
+                ret.update({
+                    path: {
+                        "input": wk.inputModel.model_json_schema(),
+                        "output": wk.outputModel.model_json_schema(),                    
+                    }
+                })
+                        
+            return Worker.CatalogResponse(workers=ret)
         return impl
 
     class ScriptRequest(ParameterSet):
         script: str
         dependencies: str
 
+    class ScriptResponse(ProcessStreamItem):
+        item_type: Literal["scriptResponse"] = "scriptReponse"
+        payload: dict[str, Any]
+
     def _get_script_worker(self) -> Callable:
         worker = self
 
-        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher=None):
+        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher=None) -> Worker.ScriptResponse:
             # Step 1: Create a temporary virtual environment
             with tempfile.TemporaryDirectory() as tmpdir:
                 venv_dir = Path(tmpdir) / f"venv_{uuid4().hex}"
@@ -325,12 +335,12 @@ class Worker:
                     )
                     # Try to parse stdout as JSON; if parsing fails, wrap it in a dictionary
                     try:
-                        output = json.loads(result.stdout)
+                        payload = json.loads(result.stdout)
                     except json.JSONDecodeError:
-                        output = {"output": result.stdout}
+                        payload = {"output": result.stdout}
                     
                     # Post the results to responder
-                    responder.result(output)
+                    return Worker.ScriptResponse(payload)
                     
                 except subprocess.CalledProcessError as e:
                     # Post any errors to the responder
@@ -343,13 +353,15 @@ class Worker:
         workers.append({
             'path':path,
             'provider': self._get_catalog_provider(),
-            'inputModel': ParameterSet
+            'inputModel': ParameterSet,
+            'outputModel': Worker.CatalogResponse
         })
         path='/mythica/script'
         workers.append({
             'path':path,
             'provider': self._get_script_worker(),
-            'inputModel': Worker.ScriptRequest
+            'inputModel': Worker.ScriptRequest,
+            'outputModel': Worker.ScriptResponse
         })
 
         self._load_workers(workers)
@@ -410,8 +422,9 @@ class Worker:
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
                     resolve_params(API_URL, tmpdir, inputs)
-                    worker.provider(inputs, publisher)
+                    ret_data = worker.provider(inputs, publisher)
 
+                publisher.result(ret_data)
                 publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:

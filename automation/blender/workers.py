@@ -1,4 +1,4 @@
-from  automation.hello_world import hello_world_api, HelloWorldRequest
+from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
 from ripple.automation import Worker
 
 worker = Worker()
@@ -7,11 +7,10 @@ workers = [
     {
         "path": '/mythica/hello_world',
         "provider": hello_world_api,
-        "inputModel": HelloWorldRequest
+        "inputModel": HelloWorldRequest,
+        "outputModel": HelloWorldResponse
     },
 ]
-
-
 
 def main():
     worker.start('blender',workers)        
