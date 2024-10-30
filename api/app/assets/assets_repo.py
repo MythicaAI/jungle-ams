@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from http import HTTPStatus
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 from urllib.parse import urlparse
 
 import sqlalchemy
@@ -117,9 +117,9 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetVersionContent | str]] = {}
-    tags: Optional[list[Dict[str, Union[int, str]]]] = {}
+    tags: Optional[list[Dict[str, str]]] = {}
 
-    @field_validator('tags')
+    @field_validator("tags", mode="before")
     @classmethod
     def make_tags_seq_to_ids(
         cls, tags: Optional[list[Dict[str, int]]]
