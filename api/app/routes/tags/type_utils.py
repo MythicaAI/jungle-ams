@@ -67,7 +67,6 @@ def process_type_model_result(
         query = (
             asset_join_select
             .join(subquery, Asset.asset_seq == subquery.c.asset_seq)
-            .outerjoin(AssetVersion, subquery.c.asset_seq == AssetVersion.asset_seq)
             .order_by(
                 desc(AssetVersion.major),
                 desc(AssetVersion.minor),

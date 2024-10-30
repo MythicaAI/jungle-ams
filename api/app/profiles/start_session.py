@@ -48,7 +48,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     token = generate_token(profile)
 
     # Convert db profile to profile response
-    profile_response = profile_to_profile_response(profile, ProfileResponse)
+    profile_response = profile_to_profile_response(profile, ProfileResponse, session)
 
     # Add a new session
     profile_session = ProfileSession(profile_seq=profile_seq,

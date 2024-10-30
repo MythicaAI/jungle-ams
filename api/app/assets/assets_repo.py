@@ -44,8 +44,10 @@ tag_subquery = (
     .subquery()
 )
 
-asset_join_select = select(Asset, AssetVersion, tag_subquery.c.tag_to_asset).outerjoin(
-    tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+asset_join_select = (
+    select(Asset, AssetVersion, tag_subquery.c.tag_to_asset)
+    .outerjoin(AssetVersion, AssetVersion.asset_seq == Asset.asset_seq)
+    .outerjoin(tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq)
 )
 
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]

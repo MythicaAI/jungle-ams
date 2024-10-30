@@ -85,10 +85,11 @@ def get_or_create_org_ref(session: Session, org: Org, profile: Profile, role: st
     """
     
     # Check if an OrgRef with the same org_seq, profile_seq, and role already exists
-    existing_entry = session.query(OrgRef).filter_by(
-        org_seq=org.org_seq,
-        profile_seq=profile.profile_seq,
-        role=role
+    existing_entry = session.exec(select(OrgRef).filter_by(
+            org_seq=org.org_seq,
+            profile_seq=profile.profile_seq,
+            role=role
+        )
     ).first()
 
     if not existing_entry:

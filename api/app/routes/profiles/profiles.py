@@ -16,7 +16,7 @@ from profiles.responses import (
     PublicProfileResponse,
     profile_to_profile_response,
 )
-from routes.profiles.queries import profile_roles_query
+from routes.profiles.queries import get_profile_roles_query
 from routes.authorization import current_profile, get_optional_profile
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
@@ -49,6 +49,7 @@ async def get_profile_by_name(
 ) -> list[PublicProfileResponse]:
     """Get asset by name"""
     with get_session() as session:
+        profile_roles_query = get_profile_roles_query(session)
         if exact_match:
             results: tuple[Profile, dict] = session.exec(
                 profile_roles_query.where(Profile.name == profile_name)
@@ -65,6 +66,7 @@ async def get_profile_by_name(
             profile_to_profile_response(
                 x,
                 PublicProfileResponse,
+                session,
                 with_roles=(profile and x.profile_seq == profile.profile_seq),
             )
             for x in results
@@ -88,11 +90,12 @@ async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileRespon
     session.commit()
 
     session.refresh(profile)
+    profile_roles_query = get_profile_roles_query(session)
     profile = session.exec(
         profile_roles_query.where(Profile.profile_seq == profile.profile_seq)
     ).one()
 
-    return profile_to_profile_response(profile, ProfileResponse, with_roles=True)
+    return profile_to_profile_response(profile, ProfileResponse, session, with_roles=True)
 
 
 @router.get('/{profile_id}')
@@ -105,6 +108,7 @@ async def get_profile(
         profile_seq = profile_id_to_seq(profile_id)
         with_roles = auth_profile and auth_profile.profile_seq == profile_seq
         if with_roles:
+            profile_roles_query = get_profile_roles_query(session)
             profile: tuple[Profile, dict] = session.exec(
                 profile_roles_query.where(Profile.profile_seq == profile_seq)
             ).first()
@@ -118,6 +122,7 @@ async def get_profile(
         return profile_to_profile_response(
             profile,
             PublicProfileResponse,
+            session,
             with_roles=with_roles,
         )
 
@@ -146,8 +151,9 @@ async def update_profile(
 
     session.commit()
 
+    profile_roles_query = get_profile_roles_query(session)
     updated = session.exec(
         profile_roles_query.where(Profile.profile_seq == profile.profile_seq)
     ).one()
 
-    return profile_to_profile_response(updated, ProfileResponse, with_roles=True)
+    return profile_to_profile_response(updated, ProfileResponse, session, with_roles=True)
