@@ -15,6 +15,7 @@ from db.connection import get_session
 from db.schema.profiles import Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
+from routes.profiles.queries import get_profile_roles_query
 
 log = logging.getLogger(__name__)
 
@@ -41,14 +42,22 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     #
     # Generate a new token
     #
-    profile = session.exec(select(Profile).where(
-        Profile.profile_seq == profile_seq)).first()
+
+    profile_roles_query = get_profile_roles_query(session)
+    profile_roles = session.exec(
+        profile_roles_query.where(Profile.profile_seq == profile_seq)
+    ).one()
+    profile = None
+    if profile_roles:
+        profile, _ = profile_roles
     if profile is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
     token = generate_token(profile)
 
     # Convert db profile to profile response
-    profile_response = profile_to_profile_response(profile, ProfileResponse, session)
+    profile_response = profile_to_profile_response(
+        profile_roles, ProfileResponse, session, with_roles=True
+    )
 
     # Add a new session
     profile_session = ProfileSession(profile_seq=profile_seq,
