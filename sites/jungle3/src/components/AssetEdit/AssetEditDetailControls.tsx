@@ -12,6 +12,8 @@ type Props = {
   tags?: Tag[];
 };
 
+const TAGS_ROLE = "mythica-tags";
+
 export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
   const { orgRoles } = useGlobalStore();
   const {
@@ -24,6 +26,9 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
     setTag,
   } = useAssetVersionStore();
   const { t } = useTranslation();
+
+  const hasTagsRole =
+    orgRoles && orgRoles.some((entry) => entry.role === TAGS_ROLE);
 
   const onUpdateOrg = (
     _event: React.SyntheticEvent | null,
@@ -96,16 +101,18 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
         </FormControl>
       )}
 
-      <FormControl sx={{ mb: "5px" }}>
-        <FormLabel>Create a new tag</FormLabel>
-        <Input
-          name="name"
-          variant="outlined"
-          placeholder="Custom tag..."
-          value={customTag}
-          onChange={(e) => setCustomTag(e.target.value)}
-        />
-      </FormControl>
+      {hasTagsRole && (
+        <FormControl sx={{ mb: "5px" }}>
+          <FormLabel>Create a new tag</FormLabel>
+          <Input
+            name="name"
+            variant="outlined"
+            placeholder="Custom tag..."
+            value={customTag}
+            onChange={(e) => setCustomTag(e.target.value)}
+          />
+        </FormControl>
+      )}
 
       <FormControl>
         <FormLabel>{t("common.description")}</FormLabel>
