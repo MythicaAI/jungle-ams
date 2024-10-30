@@ -84,7 +84,7 @@ jobs:
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
           git add ${{ env.VERSION_APP_PATH }}
-          git commit -m "Increment Web APP version to ${{ steps.read_version.outputs.current_version }}"
+          git commit -m "Increment Web APP version to ${{ steps.increment_version.outputs.new_version }}"
           git push origin ${{ github.ref_name }}
 
   helm-deploy:
