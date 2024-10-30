@@ -7,6 +7,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import delete, insert, select, update
 
+from auth.data import create_new_org_ref_to_profile_roles
 from cryptid.cryptid import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
@@ -79,6 +80,10 @@ async def validate_email_complete(
         session.exec(delete(ProfileKey).where(
             ProfileKey.key == verification_code
         ))
+        if str(profile.email).endswith("@mythica.ai"):
+            create_new_org_ref_to_profile_roles(
+                session, "mythica", [profile], "mythica-tags"
+            )
 
         session.commit()
 
