@@ -54,7 +54,7 @@ class ImageRequest(ParameterSet):
     aspect_ratio: str = "1:1"
     seed: int = 0
 
-def txt2img(request: ImageRequest, responder: ResultPublisher):
+def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
     try:
         prompt = request.prompt
         negative_prompt = request.negative_prompt
@@ -100,7 +100,7 @@ def txt2img(request: ImageRequest, responder: ResultPublisher):
 
             responder.result(Progress(progress=90))
 
-            responder.result(OutputFiles(files={'image':image_files}))
+            return OutputFiles(files={'image':image_files})
 
 
     except Exception as e:
