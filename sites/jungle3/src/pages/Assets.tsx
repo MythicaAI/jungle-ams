@@ -9,17 +9,38 @@ import { PackageViewCard } from "@components/PackageViewCard";
 import { Helmet } from "react-helmet-async";
 import { useGetTopAssets } from "@queries/assets";
 import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
+import { useGetAssetsByTags, useGetTags } from "@queries/tags";
+import { Tag } from "@queries/tags/types";
+import { TagsPanel } from "@components/TagPanel";
+
+const ALL_ASSETS_TAG = "All assets";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
   // const [search, setSearch] = useState<string>("");
   const [sorting, setSorting] = useState<SortType>("latest");
+  const [selectedTag, setSelectedTag] = useState(ALL_ASSETS_TAG);
+  const {
+    data: assetsByTag,
+    isLoading: isAssetsByTagLoading,
+    error: assetsByTagError,
+  } = useGetAssetsByTags(selectedTag);
+
+  const {
+    data: tags,
+    isLoading: isTagsLoading,
+    error: tagsError,
+  } = useGetTags();
 
   const {
     data: topAssets,
     isLoading: isTopAssetsLoading,
     error: topAssetsError,
   } = useGetTopAssets();
+
+  const handleSetSelectedTag = (value: string) => {
+    setSelectedTag(value);
+  };
 
   const handleError = (err: any) => {
     console.log("ERROR: ", err);
@@ -28,10 +49,12 @@ const Assets = () => {
   };
 
   useEffect(() => {
-    if (topAssetsError) {
-      handleError(topAssetsError);
-    }
-  }, [topAssetsError]);
+    if (topAssetsError) return handleError(topAssetsError);
+
+    if (tagsError) return handleError(tagsError);
+
+    if (assetsByTagError) return handleError(assetsByTagError);
+  }, [topAssetsError, tagsError, assetsByTagError]);
 
   return (
     <>
@@ -39,7 +62,7 @@ const Assets = () => {
         <title>Mythica • All packages</title>
       </Helmet>
 
-      {isTopAssetsLoading ? (
+      {isTopAssetsLoading || isTagsLoading || isAssetsByTagLoading ? (
         <CircularProgress />
       ) : (
         <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
@@ -66,33 +89,36 @@ const Assets = () => {
             </Select>
           </Stack> */}
 
-          {/* <Stack mb="25px">
-            <TopAssetsSlider assets={topAssets as AssetTopResponse[]} />
-          </Stack> */}
+          <Stack mb="25px">
+            <TagsPanel
+              tags={tags as Tag[]}
+              selectedTag={selectedTag}
+              handleChangeTag={handleSetSelectedTag}
+            />
+          </Stack>
 
           <Stack>
             <Grid container spacing={2}>
-              {topAssets &&
-                topAssets
-                  // .filter((version) =>
-                  //   version.name.toLowerCase().includes(search.toLowerCase()),
-                  // )
-                  .sort((a, b) => {
-                    const aDate = new Date(a.created).getTime();
-                    const bDate = new Date(b.created).getTime();
+              {(assetsByTag && selectedTag !== ALL_ASSETS_TAG
+                ? assetsByTag
+                : (topAssets ?? [])
+              )
+                .sort((a, b) => {
+                  const aDate = new Date(a.created).getTime();
+                  const bDate = new Date(b.created).getTime();
 
-                    return sorting === "oldest" ? aDate - bDate : bDate - aDate;
-                  })
-                  .map((av) => (
-                    <Grid
-                      xs={12}
-                      sm={6}
-                      md={4}
-                      key={av.asset_id + "_" + av.version.join(".")}
-                    >
-                      <PackageViewCard av={av} />
-                    </Grid>
-                  ))}
+                  return sorting === "oldest" ? aDate - bDate : bDate - aDate;
+                })
+                .map((av) => (
+                  <Grid
+                    xs={12}
+                    sm={6}
+                    md={4}
+                    key={av.asset_id + "_" + av.version.join(".")}
+                  >
+                    <PackageViewCard av={av} />
+                  </Grid>
+                ))}
             </Grid>
           </Stack>
           <BottomSortingPanel sorting={sorting} setSorting={setSorting} />
