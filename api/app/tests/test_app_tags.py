@@ -7,8 +7,8 @@ from http import HTTPStatus
 from munch import munchify
 
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import FileContentTestObj, assert_status_code, get_random_string
 from tests.fixtures.uploader import request_to_upload_files
+from tests.shared_test import FileContentTestObj, assert_status_code, get_random_string
 
 # length of event data in test events
 test_event_info_len = 10
@@ -35,7 +35,6 @@ def test_tags_operations(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     org_id = o.org_id
-    
 
     def create_asset(headers):
         # create asset in org
@@ -150,6 +149,17 @@ def test_tag_asset_operations(api_base, client, create_profile):
     o = munchify(r.json())
     org_id = o.org_id
 
+    # initial role check
+    r = client.get(
+        f"{api_base}/profiles/{profile.profile_id}/roles",
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    role_names = set()
+    for r in o.org_roles:
+        role_names.update(r.roles)
+    assert "mythica-tags" in role_names
+
     def create_asset(headers):
         # create asset in org
         r = client.post(f"{api_base}/assets", json={'org_id': org_id}, headers=headers)
@@ -248,7 +258,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
                 created_tag__type_ids.append(
                     (
                         filter_tag_id,
-                    filter_tag_name,
+                        filter_tag_name,
                         filter_model_type_id,
                     )
                 )
@@ -315,7 +325,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
     o = munchify(r.json())
     for filter_asset in o:
         assert asset_id != filter_asset.asset_id
-        
+
     delete_all_created_tags(tag__type_ids[0] for tag__type_ids in created_tag__type_ids)
 
 
@@ -334,7 +344,7 @@ def test_wrong_type_model(api_base, client, create_profile):
 
 
 def test_tag_files_operations(
-    api_base, client, create_profile, request_to_upload_files
+        api_base, client, create_profile, request_to_upload_files
 ):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
@@ -460,7 +470,6 @@ def test_tag_files_operations(
     )
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-
 
     # test get filtered files when profile does not have access
     r = client.get(

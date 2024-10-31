@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import delete, insert, select, update
 
 from auth.data import create_new_org_ref_to_profile_roles
+from config import app_config
 from cryptid.cryptid import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
-from routes.authorization import current_profile
+from profiles.invalid_sessions import invalidate_sessions
+from routes.authorization import session_profile
 from validate_email.responses import ValidateEmailResponse, ValidateEmailState
 
 router = APIRouter(prefix="/validate-email", tags=["profiles"])
@@ -23,7 +25,7 @@ KEY_PREFIX = 'v_'
 
 @router.get('/')
 async def validate_email_begin(
-        profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
+        profile: Profile = Depends(session_profile)) -> ValidateEmailResponse:
     """Start validating an email address stored on the current profile"""
     with get_session() as session:
         validate_code = KEY_PREFIX + ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
@@ -47,7 +49,7 @@ async def validate_email_begin(
 @router.get('/{verification_code}')
 async def validate_email_complete(
         verification_code: str,
-        profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
+        profile: Profile = Depends(session_profile)) -> ValidateEmailResponse:
     """Provide a valid verification code to validate email"""
     with get_session() as session:
         validate_profile = session.exec(select(Profile).where(
@@ -82,9 +84,14 @@ async def validate_email_complete(
         ))
         if str(profile.email).endswith("@mythica.ai"):
             create_new_org_ref_to_profile_roles(
-                session, "mythica", [profile], "mythica-tags"
+                session,
+                app_config().mythica_org_name,
+                [profile],
+                "mythica-tags"
             )
 
+        invalidate_sessions(session, profile.profile_seq)
+        
         session.commit()
 
         return ValidateEmailResponse(

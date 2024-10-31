@@ -1,42 +1,26 @@
 """Profiles Queries"""
 
-from sqlalchemy import func
+from pydantic import BaseModel
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, select
 
-from db.schema.profiles import OrgRef, Profile
-
+from db.schema.profiles import Org, OrgRef, Profile
+from profiles.responses import PublicProfileResponse
 
 # Define an alias for OrgRef
 OrgRefAlias = aliased(OrgRef)
 
 
-
-def get_profile_roles_query(session: Session):
-    if session.bind.name == "sqlite":
-        role_aggregation_func = func.group_concat(OrgRefAlias.role, ',')  # pylint: disable=not-callable
-    else:
-        role_aggregation_func = func.array_agg(OrgRefAlias.role)  # pylint: disable=not-callable
-
-    # Subquery to aggregate roles by profile and role
-    roles_subquery = (
-        select(
-            OrgRefAlias.profile_seq,
-            OrgRefAlias.org_seq,
-            role_aggregation_func.label('roles')
-        )
-        .group_by(OrgRefAlias.profile_seq, OrgRefAlias.org_seq)
-    ).subquery()
-    return (
-        select(
-            Profile,
-            func.json_agg(
-                func.json_build_object(
-                    'org_id', roles_subquery.c.org_seq,
-                    'roles', roles_subquery.c.roles
-                )
-            ).label('org_roles'),
-        )
-        .outerjoin(roles_subquery, roles_subquery.c.profile_seq == Profile.profile_seq)
-        .group_by(Profile.profile_seq)
-    )
+def get_profile_roles(session: Session, profile_seq: int) -> ProfileRolesResponse:
+    """Get the profile, organization and associated roles"""
+    results = session.exec(select(Profile, Org, OrgRef)
+                           .where(Profile.profile_seq == profile_seq)
+                           .where(Profile.profile_seq == OrgRef.profile_seq)
+                           .outerjoin(Profile.org_seq, Org.org_seq)
+                           .outerjoin(Org.org_seq, OrgRef.org_seq)
+                           .group_by(Profile.profile_seq)
+                           ).all()
+    profile = results[0]
+    org = results[1]
+    roles = [r.role for r in results]
+    return ProfileRolesResponse(profile=profile, org=org, roles=roles)

@@ -7,15 +7,16 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, constr
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, select, update, delete, insert, col
+from sqlmodel import Session, col, delete, insert, select, update
 
 import auth.roles as roles
-from cryptid.cryptid import org_id_to_seq, profile_id_to_seq, org_seq_to_id, profile_seq_to_id
 from auth.authorization import validate_roles
 from auth.data import resolve_profile, resolve_roles
+from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
-from db.schema.profiles import Profile, Org, OrgRef
-from routes.authorization import current_profile
+from db.schema.profiles import Org, OrgRef, Profile
+from profiles.invalid_sessions import invalidate_sessions
+from routes.authorization import session_profile
 
 MIN_ORG_NAME = 3
 MAX_ORG_NAME = 64
@@ -70,7 +71,7 @@ def resolve_and_validate(session: Session, profile: Profile, org_seq: int, requi
     """Resolve profile, roles and validate against `required_role`"""
     # role validation
     profile = resolve_profile(session, profile)
-    profile_roles = resolve_roles(session, profile, org_seq)
+    profile_roles = resolve_roles(session, profile.profile_seq, org_seq)
     if not validate_roles(required_role, profile_roles):
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail=f"no valid roles in {profile_roles}")
@@ -115,7 +116,7 @@ def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[OrgRefRespons
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_org(
         create: OrgCreateRequest,
-        profile: Profile = Depends(current_profile)
+        profile: Profile = Depends(session_profile)
 ) -> OrgRefResponse:
     """Create a new organization, the creating profile will be an admin"""
     with get_session() as session:
@@ -129,6 +130,7 @@ async def create_org(
         admin = OrgRef(org_seq=org.org_seq, profile_seq=profile.profile_seq,
                        role='admin', author_seq=profile.profile_seq)
         session.add(admin)
+        invalidate_sessions(session, profile.profile_seq)
         session.commit()
         session.refresh(admin)
 
@@ -156,7 +158,7 @@ async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = 
 async def update_org(
         org_id: str,
         req: OrgUpdateRequest,
-        profile: Profile = Depends(current_profile)
+        profile: Profile = Depends(session_profile)
 ) -> OrgResponse:
     """Update an existing organization"""
     with get_session(echo=True) as session:
@@ -182,7 +184,7 @@ async def update_org(
 
 
 @router.delete('/{org_id}')
-async def delete_org(org_id: str, profile: Profile = Depends(current_profile)):
+async def delete_org(org_id: str, profile: Profile = Depends(session_profile)):
     """Removes an existing organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -190,10 +192,12 @@ async def delete_org(org_id: str, profile: Profile = Depends(current_profile)):
         session.exec(update(Org).where(
             Org.org_seq == org_seq).values(
             deleted=sql_now()))
+        invalidate_sessions(session, profile.profile_seq)
+        session.commit()
 
 
 @router.get('/')
-async def get_org(profile: Profile = Depends(current_profile)) -> list[OrgRefResponse]:
+async def get_org(profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Default get returns roles for the requesting profile"""
     with get_session() as session:
         return resolve_org_refs(session,
@@ -203,7 +207,7 @@ async def get_org(profile: Profile = Depends(current_profile)) -> list[OrgRefRes
 
 
 @router.get('/{org_id}')
-async def get_org_by_id(org_id: str = None, profile: Profile = Depends(current_profile)) -> OrgResponse:
+async def get_org_by_id(org_id: str = None, profile: Profile = Depends(session_profile)) -> OrgResponse:
     """Get organization by ID"""
     with (get_session() as session):
         org_seq = org_id_to_seq(org_id)
@@ -233,7 +237,7 @@ async def add_role_to_org(
         org_id: str,
         profile_id: str,
         role: str,
-        profile: Profile = Depends(current_profile)) -> list[OrgRefResponse]:
+        profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Create a new role for an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -245,6 +249,7 @@ async def add_role_to_org(
             profile_seq=profile_seq,
             role=role,
             author_seq=profile.profile_seq))
+        invalidate_sessions(session, profile_seq)
         session.commit()
 
         return resolve_org_refs(
@@ -258,7 +263,7 @@ async def remove_role_from_org(
         org_id: str,
         profile_id: str,
         role: str,
-        profile=Depends(current_profile)) -> list[OrgRefResponse]:
+        profile=Depends(session_profile)) -> list[OrgRefResponse]:
     """Delete a role from an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -268,6 +273,7 @@ async def remove_role_from_org(
             OrgRef.org_seq == org_seq,
             OrgRef.profile_seq == profile_seq,
             OrgRef.role == role))
+        invalidate_sessions(session, profile_seq)
         session.commit()
 
         return resolve_org_refs(

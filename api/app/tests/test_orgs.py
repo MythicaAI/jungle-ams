@@ -4,10 +4,8 @@
 
 from http import HTTPStatus
 
-from fastapi.testclient import TestClient
 from munch import munchify
 
-from main import app
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code
@@ -30,7 +28,6 @@ def test_create_update(client, api_base, create_profile, create_org):
 
 
 def test_org_ref_operations(client, api_base, create_profile, create_org):
-    client = TestClient(app)
     admin_profile_test_info = create_profile()
     user_profile_test_info = create_profile()
     headers = admin_profile_test_info.authorization_header()
@@ -98,3 +95,35 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
         orgs.append(o.org_id)
     assert org_id in orgs
     assert org_id2 in orgs
+
+
+def test_privilege_access(client, api_base, create_profile, create_org):
+    user_profile = create_profile(email="test@somewhere.com")
+    mythica_profile = create_profile(email="test@mythica.ai")
+
+    # validate email to add the mythica roles, this also currently creates
+    # a mythica org if one does not currently exist
+    o = munchify(client.get(
+        f"{api_base}/validate-email",
+        headers=mythica_profile.authorization_header()).json())
+    assert o.owner_id == mythica_profile.profile.profile_id
+    o = munchify(client.get(
+        f"{api_base}/validate-email/{o.code}",
+        headers=mythica_profile.authorization_header()).json())
+    assert o.owner_id == mythica_profile.profile.profile_id
+    assert o.state == 'validated'
+
+    create_org(user_profile)
+
+    # Ensure that the user profile does not get tag create but has admin from creating
+    # new org
+    o = munchify(client.get(f"{api_base}/profiles/{user_profile.profile.profile_id}/roles",
+                            headers=user_profile.authorization_header()).json())
+    assert not any(["mythica-tags" in roles.roles for roles in o.org_roles])
+    assert any(["admin" in roles.roles for roles in o.org_roles])
+
+    # Ensure that mythica profile has tag_create
+    # there will be role mythica-tags because test_profile_email = "test@mythica.ai"
+    o = munchify(client.get(f"{api_base}/profiles/{mythica_profile.profile.profile_id}/roles",
+                            headers=mythica_profile.authorization_header()).json())
+    assert any(["mythica-tags" in roles.roles for roles in o.org_roles])

@@ -9,7 +9,7 @@ from assets.assets_repo import AssetCreateRequest, AssetCreateResult, AssetCreat
     versions_by_commit_ref, versions_by_name
 from db.connection import get_session
 from db.schema.profiles import Profile
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ async def get_top_assets() -> list[AssetTopResult]:
 
 @router.get('/owned')
 async def get_owned_assets(
-        profile: Profile = Depends(current_profile)) -> list[AssetVersionResult]:
+        profile: Profile = Depends(session_profile)) -> list[AssetVersionResult]:
     """Get the list of asset headers owned by the current profile"""
     with get_session() as session:
         return owned_versions(session, profile.profile_seq)
@@ -70,7 +70,7 @@ async def get_asset_by_id(asset_id: str) -> list[AssetVersionResult]:
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_asset(r: AssetCreateRequest,
-                       profile: Profile = Depends(current_profile)
+                       profile: Profile = Depends(session_profile)
                        ) -> AssetCreateResult:
     """Create a new asset for storing revisions or other assets"""
     with get_session() as session:
@@ -82,7 +82,7 @@ async def create_asset_version(asset_id: str,
                                version_str: str,
                                req: AssetCreateVersionRequest,
                                response: Response,
-                               profile: Profile = Depends(current_profile)) \
+                               profile: Profile = Depends(session_profile)) \
         -> AssetVersionResult:
     """Create or update a single asset version"""
     with get_session() as session:
@@ -97,7 +97,7 @@ async def create_asset_version(asset_id: str,
 
 
 @router.delete('/{asset_id}/versions/{version_str}')
-async def delete_asset_version(asset_id: str, version_str: str, profile: Profile = Depends(current_profile)):
+async def delete_asset_version(asset_id: str, version_str: str, profile: Profile = Depends(session_profile)):
     """Delete a specific asset version"""
     with get_session(echo=True) as session:
         delete_version(session, asset_id, version_str, profile.profile_seq)

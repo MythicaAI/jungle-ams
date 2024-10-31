@@ -12,7 +12,7 @@ from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_i
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 from routes.readers.utils import (
     direction_literal_to_db,
     direction_db_to_literal,
@@ -40,7 +40,7 @@ class WebsocketClientOp(ReadClientOp):
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-def create_reader(create: CreateReaderRequest, profile: Profile = Depends(current_profile)) -> ReaderResponse:
+def create_reader(create: CreateReaderRequest, profile: Profile = Depends(session_profile)) -> ReaderResponse:
     """Create a new reader on a source"""
     with get_session() as session:
         r = session.exec(insert(Reader).values(
@@ -72,7 +72,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(curren
 
 
 @router.get("/")
-def get_readers(profile: Profile = Depends(current_profile)) -> list[ReaderResponse]:
+def get_readers(profile: Profile = Depends(session_profile)) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
     with get_session() as session:
         return resolve_results(session.exec(select(Reader)
@@ -80,7 +80,7 @@ def get_readers(profile: Profile = Depends(current_profile)) -> list[ReaderRespo
 
 
 @router.delete("/{reader_id}")
-def delete_reader(reader_id: str, profile: Profile = Depends(current_profile)):
+def delete_reader(reader_id: str, profile: Profile = Depends(session_profile)):
     """Delete a reader by ID"""
     with get_session() as session:
         reader_seq = reader_id_to_seq(reader_id)
@@ -97,7 +97,7 @@ async def reader_dequeue(
         reader_id: str,
         before: Optional[str] = None,
         after: Optional[str] = None,
-        profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
+        profile: Profile = Depends(session_profile)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
     reader_seq = reader_id_to_seq(reader_id)
     with get_session() as session:
@@ -139,7 +139,7 @@ async def websocket_test_connect(websocket: WebSocket):
 @router.websocket("/connect")
 async def websocket_connect_all(
         websocket: WebSocket,
-        profile: Profile = Depends(current_profile),
+        profile: Profile = Depends(session_profile),
     ):
     """Create a profile websocket connection"""
     try:

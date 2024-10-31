@@ -71,15 +71,6 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.profile_id == profile_id
     assert o.name == test_profile_name + "-updated"
     assert o.org_roles is None
-    
-    # Test get roles when get profile by profile_id and with auth_token
-    # there will be role mythica-tags because test_profile_email = "test@mythica.ai"
-    o = munchify(client.get(f"{api_base}/profiles/{profile_id}", headers=headers).json())
-    assert o.profile_id == profile_id
-    assert o.name == test_profile_name + "-updated"
-    assert any(["mythica-tags" in roles.roles for roles in o.org_roles])
-    
-    
 
     # upload content, index FileUploadResponses to AssetVersionContent JSON entries
     # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
@@ -349,8 +340,8 @@ def test_blank_profile_url(client, api_base):
                                'description': test_profile_description})
     assert_status_code(response, HTTPStatus.CREATED)
 
+
 def test_invalid_profile_id(client, api_base):
-    
     r = client.delete(
         f"{api_base}/files",
         headers={"Authorization": "Bearer token"})

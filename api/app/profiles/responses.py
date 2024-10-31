@@ -4,7 +4,6 @@ from typing import Union
 from pydantic import BaseModel, field_validator
 
 from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
-from sqlmodel import Session
 from db.schema.profiles import Profile
 from validate_email.responses import ValidateEmailState, email_validate_state_enum
 
@@ -53,27 +52,18 @@ class PublicProfileResponse(ProfileRoles):
 class SessionStartResponse(BaseModel):
     token: str
     profile: ProfileResponse
+    roles: list[str]
 
 
 def profile_to_profile_response(
-    profile_roles: Union[tuple[Profile, dict], Profile],
-    model_type: type,
-    session: Session,
-    with_roles=False,
+        profile: Profile,
+        model_type: type
 ) -> ProfileResponse | PublicProfileResponse:
     """Convert a profile to a valid profile response object"""
-    org_roles = {}
-    profile = profile_roles
-    if with_roles:
-        profile, org_roles = profile_roles
-        org_roles = org_roles.split(',') if session.bind.name == "sqlite" else org_roles
     profile_data = profile.model_dump()
-    if with_roles:
-        profile_data["org_roles"] = org_roles
     validate_state = email_validate_state_enum(profile.email_validate_state)
     profile_response = model_type(
         **profile_data,
         profile_id=profile_seq_to_id(profile.profile_seq),
-        validate_state=validate_state
-    )
+        validate_state=validate_state)
     return profile_response

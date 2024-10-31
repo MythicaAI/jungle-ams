@@ -12,7 +12,7 @@ from sqlmodel import col, delete, insert, select
 
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile, ProfileKey
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 router = APIRouter(prefix='/keys', tags=['keys'])
 
@@ -41,7 +41,7 @@ def is_naive(dt):
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def generate_key(
         create: KeyGenerateRequest,
-        profile: Profile = Depends(current_profile)
+        profile: Profile = Depends(session_profile)
 ) -> KeyGenerateResponse:
     """Generate a new API Key"""
     with get_session() as session:
@@ -85,7 +85,7 @@ async def generate_key(
 
 
 @router.delete('/{key}')
-async def delete_key(key: str, profile: Profile = Depends(current_profile)):
+async def delete_key(key: str, profile: Profile = Depends(session_profile)):
     """Delete an existing API key"""
     with get_session() as session:
         stmt = delete(ProfileKey).where(ProfileKey.key == key).where(ProfileKey.owner_seq == profile.profile_seq)
@@ -94,7 +94,7 @@ async def delete_key(key: str, profile: Profile = Depends(current_profile)):
 
 
 @router.get('/')
-async def get_keys(profile: Profile = Depends(current_profile)) -> list[KeyGenerateResponse]:
+async def get_keys(profile: Profile = Depends(session_profile)) -> list[KeyGenerateResponse]:
     """Get all API keys for this profile"""
     with get_session() as session:
         # pylint: disable=no-member

@@ -10,7 +10,7 @@ from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from ripple.models.contexts import FilePurpose
-from routes.authorization import current_profile, current_profile_id
+from routes.authorization import session_profile, session_profile_id
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 @router.get("/{file_id}")
 async def get_file_by_id(
         file_id: str,
-        profile: Profile = Depends(current_profile)) -> FileUploadResponse:
+        profile: Profile = Depends(session_profile)) -> FileUploadResponse:
     """Query a file by ID, returns owner event data"""
     file_seq = file_id_to_seq(file_id)
     with get_session() as session:
@@ -37,7 +37,7 @@ async def get_file_by_id(
 @router.get("/by_content/{content_hash}")
 async def get_file_by_content(
         content_hash: str,
-        profile: Profile = Depends(current_profile)) -> FileUploadResponse:
+        profile: Profile = Depends(session_profile)) -> FileUploadResponse:
     """Query a file by its content hash"""
     with get_session() as session:
         file = session.exec((
@@ -50,7 +50,7 @@ async def get_file_by_content(
 @router.get("/by_purpose/{file_purpose}")
 async def get_file_by_purpose(
         file_purpose: FilePurpose,
-        profile: Profile = Depends(current_profile)) -> list[FileUploadResponse]:
+        profile: Profile = Depends(session_profile)) -> list[FileUploadResponse]:
     """Query a file by its content hash"""
     with get_session() as session:
         files = session.exec((
@@ -62,7 +62,7 @@ async def get_file_by_purpose(
 
 
 @router.delete('/{file_id}')
-async def delete_file_by_id(file_id, profile_id: str = Depends(current_profile_id)):
+async def delete_file_by_id(file_id, profile_id: str = Depends(session_profile_id)):
     """Delete a file by its ID"""
     profile_seq = profile_id_to_seq(profile_id)
     with get_session(echo=True) as session:
