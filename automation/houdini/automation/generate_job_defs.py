@@ -7,9 +7,8 @@ import requests
 from ripple.automation import ResultPublisher
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
-from ripple.models.streaming import JobDefinition
-from typing import Optional
-
+from ripple.models.streaming import JobDefinition, ProcessStreamItem
+from typing import Literal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,19 +50,29 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
 class GenerateJobDefRequest(ParameterSet):
     hda_file: FileParameter
 
+class GenerateJobDefResponse(ProcessStreamItem):
+    item_type: Literal["job_defs"] = "job_defs"
+    job_definitions: list[JobDefinition]
 
-def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher):
+
+
+def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
     hda_file = request.hda_file
 
     type_infos = extract_node_type_info(hda_file.file_path)
-
+    ret = []
     for index, type_info in enumerate(type_infos):
         param_spec = compile_interface(json.dumps(type_info, indent=2))
         set_config_params(param_spec, hda_file.file_id, index)
 
-        responder.result(JobDefinition(
+        res = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
             name=f"Generate {type_info['name']}",
             description=type_info['description'],
             parameter_spec=param_spec
-        ))
+        )
+        ret.append(res)
+        responder.result(res)
+        
+    return GenerateJobDefResponse(job_definitions=ret)
+

@@ -21,11 +21,11 @@ test_file_content_type = "application/octet-stream"
 
 
 def test_tags_operations(api_base, client, create_profile):
-    simple_profile = create_profile(email="test@test.ai")
+    simple_profile = create_profile(email="test@test.ai", validate_email=True)
     simple_headers = simple_profile.authorization_header()
     simple_profile = simple_profile.profile
 
-    test_profile = create_profile(email="test@mythica.ai")
+    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
     headers = test_profile.authorization_header()
 
@@ -137,10 +137,10 @@ def test_tags_operations(api_base, client, create_profile):
 
 
 def test_tag_asset_operations(api_base, client, create_profile):
-    test_profile = create_profile(email="test@mythica.ai")
+    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
     headers = test_profile.authorization_header()
-    new_test_profile = create_profile(email="test@mythica.ai")
+    new_test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     new_headers = new_test_profile.authorization_header()
 
     # create org to contain assets
@@ -336,7 +336,7 @@ def test_wrong_type_model(api_base, client, create_profile):
 def test_tag_files_operations(
     api_base, client, create_profile, request_to_upload_files
 ):
-    test_profile = create_profile(email="test@mythica.ai")
+    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
     headers = test_profile.authorization_header()
     new_test_profile = create_profile(email="test@mythica.ai")

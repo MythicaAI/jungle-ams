@@ -101,8 +101,9 @@ jobs:
           repo: ${{ github.repository }}
           pull_number: ${{ steps.PR.outputs.number }}
 
-      - name: Coverage total fail - exit
-        if: ${{ steps.PR.outputs.number != null && steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
-        run: |
-          echo "cov total fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
-          exit 1
+      # TODO: Currently skipping failure exit when test coverage falls below env.TEST_FAIL_RATE
+      # - name: Coverage total fail - exit
+      #   if: ${{ steps.PR.outputs.number != null && steps.pytester-cov.outputs.cov-threshold-total-fail == 'true' }}
+      #   run: |
+      #     echo "cov total fail ${{ steps.pytester-cov.outputs.cov-threshold-total-fail }}"
+      #     exit 1

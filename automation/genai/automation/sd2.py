@@ -51,7 +51,7 @@ class InpaintRequest(ParameterSet):
     map: str #Base64 encoded byte string
     
 
-def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
+def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -> OutputFiles:
     try:
 
         # Decode image from base64
@@ -105,7 +105,7 @@ def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
 
             responder.result(Progress(progress=90))
 
-            responder.result(OutputFiles(files={'image':image_files}))
+            return OutputFiles(files={'image':image_files})
 
     
     except Exception as e:

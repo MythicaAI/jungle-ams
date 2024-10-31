@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from http import HTTPStatus
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 from urllib.parse import urlparse
 
 import sqlalchemy
@@ -44,8 +44,10 @@ tag_subquery = (
     .subquery()
 )
 
-asset_join_select = select(Asset, AssetVersion, tag_subquery.c.tag_to_asset).outerjoin(
-    tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq
+asset_join_select = (
+    select(Asset, AssetVersion, tag_subquery.c.tag_to_asset)
+    .outerjoin(AssetVersion, AssetVersion.asset_seq == Asset.asset_seq)
+    .outerjoin(tag_subquery, tag_subquery.c.asset_seq == Asset.asset_seq)
 )
 
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
@@ -117,9 +119,9 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetVersionContent | str]] = {}
-    tags: Optional[list[Dict[str, Union[int, str]]]] = {}
+    tags: Optional[list[Dict[str, str]]] = {}
 
-    @field_validator('tags')
+    @field_validator("tags", mode="before")
     @classmethod
     def make_tags_seq_to_ids(
         cls, tags: Optional[list[Dict[str, int]]]

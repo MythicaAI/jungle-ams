@@ -3,6 +3,7 @@ import logging
 from  automation.sd2 import img2img_inpaint, InpaintRequest
 from  automation.sd3 import txt2img, ImageRequest
 from ripple.automation import Worker
+from ripple.models.streaming import OutputFiles
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,12 +16,14 @@ workers = [
     {
         "path": '/mythica/inpaint',
         "provider": img2img_inpaint,
-        "inputModel": InpaintRequest
+        "inputModel": InpaintRequest,
+        "outputModel": OutputFiles
     },
     {
         "path": '/stabilityai/stable-diffusion-3-medium',
         "provider": txt2img,
-        "inputModel": ImageRequest
+        "inputModel": ImageRequest,
+        "outputModel": OutputFiles
     },
 ]
 

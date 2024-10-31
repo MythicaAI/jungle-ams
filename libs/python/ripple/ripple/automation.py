@@ -7,11 +7,16 @@ import nats
 import requests
 import tempfile
 from pydantic import BaseModel
-from typing import Callable, Type, Optional, Dict
+from typing import Callable, Type, Optional, Dict, Any, Literal
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
 from uuid import uuid4
+
+import subprocess
+import sys
+from pathlib import Path
+import venv
 
 # Set up logging
 logging.basicConfig(
@@ -152,13 +157,11 @@ class RestAdapter():
             log.error(f"Failed to call job API: {url} - {file_data} - {response.status_code}")
             return None
 
-
-
-
 class WorkerModel(BaseModel):
     path: str
     provider: Callable
     inputModel: Type[ParameterSet]
+    outputModel: Type[ProcessStreamItem]
 
 class WorkerRequest(BaseModel):
     """Contract for requests for work"""
@@ -170,7 +173,8 @@ class WorkerRequest(BaseModel):
 
 class WorkerResponse(BaseModel):
     work_id: str
-    payload: Dict
+    payload: dict
+
 
 class ResultPublisher:
     request: WorkerRequest
@@ -181,65 +185,57 @@ class ResultPublisher:
         self.request = request
         self.nats = nats
         self.rest = rest
-        self.loop = asyncio.get_event_loop()        
         
     #Callback for reporting back. 
     def result(self, item, complete=False):
 
         # Poplulate context
-        if isinstance(item,ProcessStreamItem):
-            item.process_guid = str(uuid4())
-            item.job_id = self.request.job_id if self.request.job_id is not None else ""
+        item.process_guid = str(uuid4())
+        item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
-            # Upload any references to local data
-            self._publish_local_data(item)
+        # Upload any references to local data
+        self._publish_local_data(item)
 
-        if isinstance(item,BaseModel):
-            # we need the dict from here on down
-            item = item.model_dump()
 
-        self.loop.run_in_executor(None, self._publish_results, item, complete)
-
-    def _publish_results(self, item, complete):        
+   
         JOB_RESULT_ENDPOINT="/jobs/results/"
         JOB_COMPLETE_ENDPOINT="/jobs/complete/"
 
-        try:
-            # Publish results
-            log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+        # Publish results
+        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-            asyncio.run(
-                self.nats.post(
-                    "result", 
-                    WorkerResponse(work_id=self.request.work_id, payload=item).model_dump()
-                )
+        task = asyncio.create_task(
+            self.nats.post(
+                "result", 
+                WorkerResponse(work_id=self.request.work_id, payload=item.model_dump()).model_dump()
             )
-
-            if self.request.job_id:
-                if complete:
-                    self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
-                else:
-                    data = {
-                        "created_in": "automation-worker",
-                        "result_data": item
-                    }
-                    self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
-
-        except Exception as e:
-            log.error(f"Error publishing result: {formatException(e)}")
+        )
+        
+        task.add_done_callback(_get_error_handler())
+        if self.request.job_id:
+            if complete:
+                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
+            else:
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item.model_dump()
+                }
+                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
 
     def _publish_local_data(self, item: ProcessStreamItem):
 
 
         def upload_file(token: str, file_path: str) -> Optional[str]:
             file_id = None
-            with open(file_path, 'rb') as file:
-                file_name = os.path.basename(file_path)
-                file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                response = self.rest.post_file("/upload/store", token, file_data)
-                file_id = response['files'][0]['file_id'] if response else None
-            return file_id
-
+            try:
+                with open(file_path, 'rb') as file:
+                    file_name = os.path.basename(file_path)
+                    file_data = [('files', (file_name, file, 'application/octet-stream'))]
+                    response = self.rest.post_file("/upload/store", token, file_data)
+                    file_id = response['files'][0]['file_id'] if response else None
+                return file_id
+            finally:
+                os.remove(file_path)
 
         def upload_job_def(job_def: JobDefinition) -> Optional[str]:
             definition = {
@@ -268,7 +264,6 @@ class ResultPublisher:
                 item.job_def_id = job_def_id
 
 
-
 def _get_error_handler():
     def handler(task):
         e = task.exception()
@@ -281,9 +276,94 @@ class Worker:
         self.workers:dict[str,WorkerModel] = {}
         self.nats = NatsAdapter()
         self.rest = RestAdapter()
+
+    class CatalogResponse(ProcessStreamItem):
+        item_type: Literal["catalogResponse"] = "catalogResponse"
+        workers: dict[str, dict[Literal["input", "output"],dict[str, Any]]]
+
+    def _get_catalog_provider(self) -> Callable:
+        worker = self
         
-        
+        def impl(request: ParameterSet = None, responder: ResultPublisher=None) -> Worker.CatalogResponse:
+            ret = {}
+            for path,wk in worker.workers.items():
+                ret.update({
+                    path: {
+                        "input": wk.inputModel.model_json_schema(),
+                        "output": wk.outputModel.model_json_schema(),                    
+                    }
+                })
+                        
+            return Worker.CatalogResponse(workers=ret)
+        return impl
+
+    class ScriptRequest(ParameterSet):
+        script: str
+        dependencies: str
+
+    class ScriptResponse(ProcessStreamItem):
+        item_type: Literal["scriptResponse"] = "scriptReponse"
+        payload: dict[str, Any]
+
+    def _get_script_worker(self) -> Callable:
+        worker = self
+
+        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher=None) -> Worker.ScriptResponse:
+            # Step 1: Create a temporary virtual environment
+            with tempfile.TemporaryDirectory() as tmpdir:
+                venv_dir = Path(tmpdir) / f"venv_{uuid4().hex}"
+                venv.create(venv_dir, with_pip=True)
+                python_executable = venv_dir / "bin" / "python" if os.name != "nt" else venv_dir / "Scripts" / "python.exe"
+                
+                # Step 2: Install dependencies if any are provided
+                if request.dependencies:
+                    dependencies = request.dependencies.replace(",", " ").split()
+                    subprocess.check_call([python_executable, "-m", "pip", "install", *dependencies])
+
+                # Step 3: Write the script to a temporary .py file
+                script_path = Path(tmpdir) / "script.py"
+                with open(script_path, "w") as script_file:
+                    script_file.write(request.script)
+
+                # Step 4: Execute the script and capture the output
+                try:
+                    result = subprocess.run(
+                        [python_executable, str(script_path)],
+                        capture_output=True,
+                        text=True,
+                        check=True
+                    )
+                    # Try to parse stdout as JSON; if parsing fails, wrap it in a dictionary
+                    try:
+                        payload = json.loads(result.stdout)
+                    except json.JSONDecodeError:
+                        payload = {"output": result.stdout}
+                    
+                    # Post the results to responder
+                    return Worker.ScriptResponse(payload)
+                    
+                except subprocess.CalledProcessError as e:
+                    # Post any errors to the responder
+                    responder.result({"error": e.stderr})
+
+        return impl        
+     
     def start(self,subject: str, workers:list[dict]) -> None:
+        path='/mythica/workers'
+        workers.append({
+            'path':path,
+            'provider': self._get_catalog_provider(),
+            'inputModel': ParameterSet,
+            'outputModel': Worker.CatalogResponse
+        })
+        path='/mythica/script'
+        workers.append({
+            'path':path,
+            'provider': self._get_script_worker(),
+            'inputModel': Worker.ScriptRequest,
+            'outputModel': Worker.ScriptResponse
+        })
+
         self._load_workers(workers)
 
         loop = asyncio.get_event_loop()        
@@ -342,8 +422,9 @@ class Worker:
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
                     resolve_params(API_URL, tmpdir, inputs)
-                    worker.provider(inputs, publisher)
+                    ret_data = worker.provider(inputs, publisher)
 
+                publisher.result(ret_data)
                 publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:

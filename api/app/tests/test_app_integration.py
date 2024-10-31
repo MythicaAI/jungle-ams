@@ -17,7 +17,7 @@ test_profile_name = "test-profile"
 test_profile_full_name = "test-profile-full-name"
 test_profile_description = "test-description"
 test_profile_signature = 'X' * 32
-test_profile_email = "test@test.com"
+test_profile_email = "test@mythica.ai"
 test_profile_tags = {"tag-a": "a", "tag-b": "b", "tag-c": "c"}
 test_profile_href = "https://test.com/"
 test_asset_name = 'test-asset'
@@ -70,6 +70,16 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     o = munchify(client.get(f"{api_base}/profiles/{profile_id}").json())
     assert o.profile_id == profile_id
     assert o.name == test_profile_name + "-updated"
+    assert o.org_roles is None
+    
+    # Test get roles when get profile by profile_id and with auth_token
+    # there will be role mythica-tags because test_profile_email = "test@mythica.ai"
+    o = munchify(client.get(f"{api_base}/profiles/{profile_id}", headers=headers).json())
+    assert o.profile_id == profile_id
+    assert o.name == test_profile_name + "-updated"
+    assert any(["mythica-tags" in roles.roles for roles in o.org_roles])
+    
+    
 
     # upload content, index FileUploadResponses to AssetVersionContent JSON entries
     # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
