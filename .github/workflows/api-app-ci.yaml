@@ -84,7 +84,7 @@ jobs:
         if: ${{ steps.PR.outputs.number != null }}
         id: codecov-service
         run: |
-          poetry run pytest --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          poetry run pytest --timeout=10 --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
         shell: bash
 
       - name: Upload results to Codecov
