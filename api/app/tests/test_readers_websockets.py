@@ -34,6 +34,8 @@ from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
 from ripple.client_ops import ReadClientOp
 
+from tests.shared_test import ProfileTestObj
+
 
 # length of event data in test events
 test_event_info_len = 10
@@ -116,7 +118,7 @@ async def test_websocket(
     create_profile,
     use_test_source_fixture,  # pylint: disable=unused-argument
 ):
-    test_profile = create_profile()
+    test_profile: ProfileTestObj = create_profile()
     auth_header = test_profile.authorization_header()
 
     item_list_length = 10
@@ -135,8 +137,9 @@ async def test_websocket(
     assert "reader_id" in reader
     reader_id = reader["reader_id"]
 
+    client.cookies.update(auth_header)
     with client.websocket_connect(
-        f"{api_base}/readers/connect", headers=auth_header, data={"body": {}}
+        f"{api_base}/readers/connect", data={"body": {}}
     ) as websocket:
         websocket: WebSocketTestSession
 
