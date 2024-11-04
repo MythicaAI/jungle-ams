@@ -12,7 +12,7 @@ from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_i
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
-from routes.authorization import current_profile
+from routes.authorization import current_cookie_profile, current_profile, get_optional_profile
 from routes.readers.utils import (
     direction_literal_to_db,
     direction_db_to_literal,
@@ -139,9 +139,12 @@ async def websocket_test_connect(websocket: WebSocket):
 @router.websocket("/connect")
 async def websocket_connect_all(
         websocket: WebSocket,
-        profile: Profile = Depends(current_profile),
+        profile: Profile = Depends(get_optional_profile),
     ):
     """Create a profile websocket connection"""
+    if not profile:
+        # JavaScript does not support headers for WebSocket connections, use cookies instead.
+        profile = await current_cookie_profile(websocket)
     try:
         log.info("websocket connected to profile %s", profile)
         await reader_connection_manager.connect(websocket, profile)
