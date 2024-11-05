@@ -139,9 +139,9 @@ async def update_profile(
         profile_roles=Depends(session_profile_roles),
 ) -> ProfileResponse:
     """Update the profile of the owning account"""
-    profile, roles = profile_roles
+    profile, profile_roles = profile_roles
     validate_roles(Test(role=auth.roles.profile_update, object_id=profile_id),
-                   roles,
+                   profile_roles,
                    Scope(profile=profile))
 
     profile_seq = profile_id_to_seq(profile_id)
