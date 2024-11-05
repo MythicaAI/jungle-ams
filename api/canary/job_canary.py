@@ -102,7 +102,8 @@ def request_job(endpoint: str, headers: str, job_def_id: str, mesh_file_id: str)
     body = {
         "job_def_id": job_def_id,
         "params": {
-            "input0": { "file_id": mesh_file_id }
+            "input0": { "file_id": mesh_file_id },
+            "format": "usdz"
         }
     }
 
