@@ -1,5 +1,7 @@
-from http import HTTPStatus
 from typing import Annotated, Optional
+
+from http import HTTPStatus
+from fastapi import HTTPException, Header
 
 from fastapi import HTTPException, Header, Security
 from fastapi.security.api_key import APIKeyHeader
@@ -14,6 +16,14 @@ api_header = APIKeyHeader(name="Authorization")
 async def session_profile(authorization: str = Security(api_header)) -> Profile:
     """Dependency that provides the profile record for the current authorization header"""
     return get_profile(authorization)
+
+
+async def current_cookie_profile(request: Union[WebSocket, Request]) -> Profile:
+    """Retrieve the profile based on a token stored in cookies"""
+    token = request.cookies.get("Authorization")
+    if not token:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Not authenticated")
+    return get_profile(token)
 
 
 async def session_profile_roles(authorization: str = Security(api_header)) -> (Profile, list[str]):

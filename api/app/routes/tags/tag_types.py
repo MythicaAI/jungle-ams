@@ -124,13 +124,13 @@ async def get_tags_for_type(
 
 
 @router.delete('/{tag_type}/{tag_id}/{type_id}')
-async def delete_tag(
+async def delete_tag_type(
     tag_type: TagType,
     tag_id: str,
     type_id: str,
     profile: Profile = Depends(session_profile),
 ):
-    """Delete an existing tag on type_model"""
+    """Delete an existing tag associated with a specified model type."""
     type_model = get_model_type(tag_type)
     model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
