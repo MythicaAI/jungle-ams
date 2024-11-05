@@ -12,27 +12,20 @@ from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_i
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
-from routes.authorization import current_cookie_profile, maybe_session_profile
-from routes.readers.utils import (
-    direction_literal_to_db,
-    direction_db_to_literal,
-    reader_to_source_params,
-    resolve_results,
-    select_reader,
-    update_reader_index,
-)
-from routes.readers.manager import ReaderConnectionManager
-from routes.readers.schemas import CreateReaderRequest, ReaderResponse
 from ripple.client_ops import ReadClientOp
 from ripple.funcs import Boundary
 from ripple.models.streaming import StreamItemUnion
 from ripple.source_types import create_source
+from routes.authorization import current_cookie_profile, maybe_session_profile, session_profile
+from routes.readers.manager import ReaderConnectionManager
+from routes.readers.schemas import CreateReaderRequest, ReaderResponse
+from routes.readers.utils import (direction_db_to_literal, direction_literal_to_db, reader_to_source_params,
+                                  resolve_results, select_reader, update_reader_index)
 
 router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
 log = logging.getLogger(__name__)
 
 reader_connection_manager = ReaderConnectionManager()
-
 
 
 class WebsocketClientOp(ReadClientOp):
@@ -135,12 +128,11 @@ async def websocket_test_connect(websocket: WebSocket):
     await websocket.send_json(data={'message': 'hello world'}, mode='text')
 
 
-
 @router.websocket("/connect")
 async def websocket_connect_all(
         websocket: WebSocket,
         profile: Profile = Depends(maybe_session_profile),
-    ):
+):
     """Create a profile websocket connection"""
     if not profile:
         # JavaScript does not support headers for WebSocket connections, use cookies instead.

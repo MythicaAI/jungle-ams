@@ -1,9 +1,7 @@
-from typing import Annotated, Optional
-
 from http import HTTPStatus
-from fastapi import HTTPException, Header
+from typing import Annotated, Optional, Union
 
-from fastapi import HTTPException, Header, Security
+from fastapi import HTTPException, Header, Request, Security, WebSocket
 from fastapi.security.api_key import APIKeyHeader
 
 from auth.data import get_profile, get_profile_roles
