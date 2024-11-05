@@ -9,20 +9,30 @@ from fastapi import HTTPException
 from sqlalchemy.sql.functions import func, now as sql_now
 from sqlmodel import Session, asc, col, delete, insert, select, update
 
-from cryptid.cryptid import profile_seq_to_id
+import auth.roles
+from auth.data import resolve_roles
 from auth.generate_token import generate_token
+from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.connection import get_session
-from db.schema.profiles import Profile, ProfileLocatorOID, ProfileSession
+from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
-from routes.profiles.queries import get_profile_roles_query
+from validate_email.responses import ValidateEmailState
 
 log = logging.getLogger(__name__)
+
+# TODO: move to admin interface
+privileged_emails = {
+    'test@mythica.ai',
+    'jacob@mythica.ai',
+    'pedro@mythica.ai',
+    'kevin@mythica.ai',
+    'bohdan.krupa.mythica@gmail.com',
+}
 
 
 def start_session(session: Session, profile_seq: int, location: str) -> SessionStartResponse:
     """Given a database session start a new session"""
-    profile_id = profile_seq_to_id(profile_seq)
     result = session.exec(update(Profile).values(
         login_count=func.coalesce(Profile.login_count, 0) + 1,
         active=True,
@@ -40,23 +50,46 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     session.commit()
 
     #
-    # Generate a new token
+    # Generate a new token with the profile and role data embedded in the token
+    # for validation to other API endpoints
     #
+    profile_org_results = session.exec(select(Profile, Org, OrgRef)
+                                       .where(Profile.profile_seq == profile_seq)
+                                       .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
+                                       .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
+                                       ).all()
+    roles = set()
+    for r in profile_org_results:
+        _, r_org, r_org_ref = r
+        if r_org is None:
+            break
+        org_id = org_seq_to_id(r_org.org_seq)
+        roles.add(f'{r_org_ref.role}:{org_id}')
 
-    profile_roles_query = get_profile_roles_query(session)
-    profile_roles = session.exec(
-        profile_roles_query.where(Profile.profile_seq == profile_seq)
-    ).one()
-    profile = None
-    if profile_roles:
-        profile, _ = profile_roles
-    if profile is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
-    token = generate_token(profile)
+    profile = profile_org_results[0][0]
+
+    #
+    # add scoped roles for accounts, consider privileged accounts here
+    #
+    if profile.email in privileged_emails \
+            and profile.email_validate_state == \
+            ValidateEmailState.db_value(ValidateEmailState.validated):
+        roles.update(auth.roles.privileged_roles)
+    else:
+        roles.update((
+            f'{auth.roles.alias_asset_editor}:{auth.roles.self_object_scope}',
+            f'{auth.roles.alias_profile_editor}:{auth.roles.self_object_scope}'))
+
+    token = generate_token(
+        profile_seq_to_id(profile.profile_seq),
+        profile.email,
+        profile.email_validate_state,
+        profile.location,
+        list(roles))
 
     # Convert db profile to profile response
     profile_response = profile_to_profile_response(
-        profile_roles, ProfileResponse, session, with_roles=True
+        profile, ProfileResponse
     )
 
     # Add a new session
@@ -68,9 +101,13 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     session.add(profile_session)
     session.commit()
 
+    # resolve all roles across all orgs this profile exists in
+    roles = resolve_roles(session, profile.profile_seq)
+
     result = SessionStartResponse(
         token=token,
-        profile=profile_response)
+        profile=profile_response,
+        roles=list(roles))
 
     return result
 

@@ -21,7 +21,7 @@ from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.assets.assets import convert_version_input, select_asset_version
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
 from routes.files.files import delete_file_by_id
 from routes.storage_client import storage_client
@@ -123,7 +123,7 @@ def upload_internal(
 @router.post('/store')
 async def store_files(
         files: list[UploadFile] = File(...),
-        profile: Profile = Depends(current_profile),
+        profile: Profile = Depends(session_profile),
         storage: StorageClient = Depends(storage_client)) -> UploadResponse:
     """Store a list of files as a profile"""
 
@@ -217,7 +217,7 @@ async def store_and_attach_package(
 
 @router.get('/pending')
 async def pending_uploads(
-        profile: Annotated[Profile, Depends(current_profile)]
+        profile: Annotated[Profile, Depends(session_profile)]
 ) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for
     the current profile"""

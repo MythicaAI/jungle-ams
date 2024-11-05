@@ -11,7 +11,7 @@ from assets.assets_repo import AssetVersionContent
 from routes.type_adapters import register_adapters
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import assert_status_code, get_random_string, make_random_content
+from tests.shared_test import assert_status_code, get_random_string, make_random_content, refresh_auth_token
 
 test_profile_name = "test-profile"
 test_profile_full_name = "test-profile-full-name"
@@ -35,28 +35,13 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
                                   full_name=test_profile_full_name,
                                   signature=test_profile_signature,
                                   description=test_profile_description,
-                                  profile_href=test_profile_href)
+                                  profile_href=test_profile_href,
+                                  validate_email=True)
     profile_id = test_profile.profile.profile_id
     assert profile_id is not None
 
     # get the bearer token authorization header
     headers = test_profile.authorization_header()
-
-    # validate email
-    o = munchify(client.get(
-        f"{api_base}/validate-email",
-        headers=headers).json())
-    assert o.owner_id == profile_id
-    assert len(o.link) > 0
-    assert len(o.code) > 0
-    assert o.state == 'link_sent'
-    validate_code = o.code
-
-    o = munchify(client.get(
-        f"{api_base}/validate-email/{validate_code}",
-        headers=headers).json())
-    assert o.owner_id == profile_id
-    assert o.state == 'validated'
 
     # update the profile data
     o = munchify(client.post(
@@ -70,16 +55,6 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     o = munchify(client.get(f"{api_base}/profiles/{profile_id}").json())
     assert o.profile_id == profile_id
     assert o.name == test_profile_name + "-updated"
-    assert o.org_roles is None
-    
-    # Test get roles when get profile by profile_id and with auth_token
-    # there will be role mythica-tags because test_profile_email = "test@mythica.ai"
-    o = munchify(client.get(f"{api_base}/profiles/{profile_id}", headers=headers).json())
-    assert o.profile_id == profile_id
-    assert o.name == test_profile_name + "-updated"
-    assert any(["mythica-tags" in roles.roles for roles in o.org_roles])
-    
-    
 
     # upload content, index FileUploadResponses to AssetVersionContent JSON entries
     # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
@@ -99,6 +74,10 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     o = munchify(r.json())
     assert profile_id == o.profile_id
     org_id = o.org_id
+
+    # after creating the org, refresh the auth token to get the new roles
+    test_profile.auth_token = refresh_auth_token(client, api_base, test_profile)
+    headers = test_profile.authorization_header()
 
     # create asset in org
     r = client.post(
@@ -349,8 +328,8 @@ def test_blank_profile_url(client, api_base):
                                'description': test_profile_description})
     assert_status_code(response, HTTPStatus.CREATED)
 
+
 def test_invalid_profile_id(client, api_base):
-    
     r = client.delete(
         f"{api_base}/files",
         headers={"Authorization": "Bearer token"})

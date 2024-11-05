@@ -2,16 +2,15 @@
 
 import hashlib
 import itertools
-from http import HTTPStatus
 import json
+from http import HTTPStatus
 
 from munch import munchify
 
 from assets.assets_repo import AssetVersionContent
-
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code, get_random_string, make_random_content
 from tests.fixtures.uploader import uploader
+from tests.shared_test import assert_status_code, get_random_string, make_random_content
 
 test_event_info_len = 10
 next_test_event_id = itertools.count(start=1, step=1)
@@ -70,10 +69,10 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
         assert o.type_id == type_id
         return tag_id, tag_name
 
-    created_tag_ids = []
+    created_tags = []
     for _ in range(top_limit):
         tag_id, tag_name = create_tag()
-        created_tag_ids.append(tag_id)
+        created_tags.append(tag_name)
         create_type_tag("asset", asset_id, tag_id)
 
     files = [make_random_content("hda") for _ in range(2)]
@@ -104,11 +103,11 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     )
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    for tag_id in created_tag_ids:
-        assert tag_id in [tag["tag_id"] for tag in o.tags]
+    for tag in created_tags:
+        assert tag in o.tags
     package_file = [make_random_content("zip") for _ in range(1)]
     uri = f"/upload/package/{asset_id}/{version_str}"
-    response_files = uploader(profile_id, headers, package_file, uri)
+    _ = uploader(profile_id, headers, package_file, uri)
 
     r = client.get(
         f"{api_base}/assets/all",
@@ -120,15 +119,15 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            for tag_id in created_tag_ids:
-                assert tag_id in [tag["tag_id"] for tag in response_asset.tags]
+            for tag in created_tags:
+                assert tag in response_asset.tags
 
     r = client.get(f"{api_base}/assets/{asset_id}/versions/0.2.0")
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
 
-    for tag_id in created_tag_ids:
-        assert tag_id in [tag["tag_id"] for tag in o.tags]
+    for tag in created_tags:
+        assert tag in o.tags
 
     r = client.get(f"{api_base}/assets/{asset_id}")
     assert_status_code(r, HTTPStatus.OK)
@@ -136,8 +135,8 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            for tag_id in created_tag_ids:
-                assert tag_id in [tag["tag_id"] for tag in response_asset.tags]
+            for tag in created_tags:
+                assert tag in response_asset.tags
 
     r = client.get(f"{api_base}/assets/named/{asset_version_name}")
     assert_status_code(r, HTTPStatus.OK)
@@ -146,8 +145,8 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            for tag_id in created_tag_ids:
-                assert tag_id in [tag["tag_id"] for tag in response_asset.tags]
+            for tag in created_tags:
+                assert tag in response_asset.tags
 
     r = client.get(f"{api_base}/assets/top")
     assert_status_code(r, HTTPStatus.OK)
@@ -155,8 +154,8 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            for tag_id in created_tag_ids:
-                assert tag_id in [tag["tag_id"] for tag in response_asset.tags]
+            for tag in created_tags:
+                assert tag in response_asset.tags
 
     r = client.get(
         f"{api_base}/assets/committed_at",
@@ -167,5 +166,5 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            for tag_id in created_tag_ids:
-                assert tag_id in [tag["tag_id"] for tag in response_asset.tags]
+            for tag in created_tags:
+                assert tag in response_asset.tags

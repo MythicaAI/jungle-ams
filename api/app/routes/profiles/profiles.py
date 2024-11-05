@@ -2,22 +2,24 @@
 
 import logging
 from http import HTTPStatus
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlmodel import col, select, update
 
-from cryptid.cryptid import profile_id_to_seq, profile_seq_to_id
+import auth.roles
+from auth.authorization import Scope, Test, validate_roles
+from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
 from db.schema.profiles import Profile
+from profiles.load_profile_and_roles import load_profile_and_roles
 from profiles.responses import (
     ProfileResponse,
-    PublicProfileResponse,
+    ProfileRolesResponse, PublicProfileResponse,
     profile_to_profile_response,
 )
-from routes.profiles.queries import get_profile_roles_query
-from routes.authorization import current_profile, get_optional_profile
+from routes.authorization import maybe_session_profile, session_profile_roles
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -28,11 +30,9 @@ MAX_PROFILE_NAME = 20
 profile_name_str = constr(strip_whitespace=True, min_length=3, max_length=64)
 
 
-# Define a dictionary with the attributes you want to validate
 class CreateUpdateProfileModel(BaseModel):
-    """A model with only allowed public properties for profile creation"""
-
-    name: profile_name_str
+    """Profile subset properties for creation and updating"""
+    name: profile_name_str | None = None
     description: constr(strip_whitespace=True, min_length=0, max_length=400) | None = (
         None
     )
@@ -43,20 +43,18 @@ class CreateUpdateProfileModel(BaseModel):
 
 @router.get('/named/{profile_name}')
 async def get_profile_by_name(
-    profile_name: profile_name_str,
-    exact_match: Optional[bool] = False,
-    profile: Optional[Profile] = Depends(get_optional_profile),
+        profile_name: profile_name_str,
+        exact_match: Optional[bool] = False
 ) -> list[PublicProfileResponse]:
     """Get asset by name"""
     with get_session() as session:
-        profile_roles_query = get_profile_roles_query(session)
         if exact_match:
-            results: tuple[Profile, dict] = session.exec(
-                profile_roles_query.where(Profile.name == profile_name)
+            results = session.exec(
+                select(Profile).where(Profile.name == profile_name)
             ).all()
         else:
-            results: tuple[Profile, dict] = session.exec(
-                profile_roles_query.where(
+            results = session.exec(
+                select(Profile).where(
                     col(Profile.name).contains(  # pylint: disable=no-member
                         profile_name
                     )
@@ -65,12 +63,25 @@ async def get_profile_by_name(
         return [
             profile_to_profile_response(
                 x,
-                PublicProfileResponse,
-                session,
-                with_roles=(profile and x.profile_seq == profile.profile_seq),
-            )
+                PublicProfileResponse)
             for x in results
         ]
+
+
+@router.get('/roles')
+async def roles(
+        profile_roles=Depends(session_profile_roles),
+) -> ProfileRolesResponse:
+    """Get a profile by ID"""
+    with get_session() as session:
+        auth_profile, auth_roles = profile_roles
+        profile, org_roles = load_profile_and_roles(session, auth_profile.profile_seq)
+        profile_response = profile_to_profile_response(profile, PublicProfileResponse)
+
+        return ProfileRolesResponse(
+            profile=profile_response,
+            org_roles=org_roles,
+            auth_roles=list(auth_roles))
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
@@ -90,70 +101,64 @@ async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileRespon
     session.commit()
 
     session.refresh(profile)
-    profile_roles_query = get_profile_roles_query(session)
     profile = session.exec(
-        profile_roles_query.where(Profile.profile_seq == profile.profile_seq)
+        select(Profile).where(Profile.profile_seq == profile.profile_seq)
     ).one()
 
-    return profile_to_profile_response(profile, ProfileResponse, session, with_roles=True)
+    return profile_to_profile_response(profile, ProfileResponse)
 
 
 @router.get('/{profile_id}')
 async def get_profile(
-    profile_id: str,
-    auth_profile: Optional[Profile] = Depends(get_optional_profile),
-) -> PublicProfileResponse:
+        profile_id: str,
+        auth_profile: Optional[Profile] = Depends(maybe_session_profile),
+) -> Union[PublicProfileResponse, ProfileResponse]:
     """Get a profile by ID"""
     with get_session() as session:
         profile_seq = profile_id_to_seq(profile_id)
-        with_roles = auth_profile and auth_profile.profile_seq == profile_seq
-        if with_roles:
-            profile_roles_query = get_profile_roles_query(session)
-            profile: tuple[Profile, dict] = session.exec(
-                profile_roles_query.where(Profile.profile_seq == profile_seq)
-            ).first()
-        else:
-            profile: Profile = session.exec(
-                select(Profile).where(Profile.profile_seq == profile_seq)
-            ).first()
+        profile: Profile = session.exec(
+            select(Profile).where(Profile.profile_seq == profile_seq)
+        ).first()
 
         if profile is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
+        if auth_profile:
+            return profile_to_profile_response(
+                profile,
+                ProfileResponse)
+
         return profile_to_profile_response(
             profile,
-            PublicProfileResponse,
-            session,
-            with_roles=with_roles,
-        )
+            PublicProfileResponse)
 
 
 @router.post('/{profile_id}')
 async def update_profile(
-    profile_id: str,
-    req_profile: CreateUpdateProfileModel,
-    profile: Profile = Depends(current_profile),
+        profile_id: str,
+        req_profile: CreateUpdateProfileModel,
+        profile_roles=Depends(session_profile_roles),
 ) -> ProfileResponse:
     """Update the profile of the owning account"""
-    if profile_id != profile_seq_to_id(profile.profile_seq):
-        raise HTTPException(HTTPStatus.FORBIDDEN, detail='profile not authenticated')
+    profile, profile_roles = profile_roles
+    validate_roles(Test(role=auth.roles.profile_update, object_id=profile_id),
+                   profile_roles,
+                   Scope(profile=profile))
+
     profile_seq = profile_id_to_seq(profile_id)
     session = get_session(echo=True)
-    stmt = (
-        update(Profile)
-        .where(Profile.profile_seq == profile_seq)
-        .values(**req_profile.model_dump(exclude_unset=True))
-    )
+    values = req_profile.model_dump(exclude_unset=True)
 
-    result = session.execute(stmt)
-    rows_affected = result.rowcount
-    if rows_affected == 0:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
+    # Only update if at least one value is supplied
+    if len(values.keys()) > 0:
+        stmt = update(Profile).values(**values).where(Profile.profile_seq == profile_seq)
+        result = session.execute(stmt)
+        rows_affected = result.rowcount
+        if rows_affected == 0:
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
 
-    session.commit()
+        session.commit()
 
-    profile_roles_query = get_profile_roles_query(session)
-    updated = session.exec(
-        profile_roles_query.where(Profile.profile_seq == profile.profile_seq)
+    read_committed = session.exec(
+        select(Profile).where(Profile.profile_seq == profile_seq)
     ).one()
-
-    return profile_to_profile_response(updated, ProfileResponse, session, with_roles=True)
+    return profile_to_profile_response(read_committed, ProfileResponse)

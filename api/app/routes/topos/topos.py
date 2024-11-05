@@ -12,7 +12,7 @@ from cryptid.cryptid import org_id_to_seq, topo_seq_to_id, profile_seq_to_id, or
 from db.connection import get_session
 from db.schema.graph import Topology, TopologyRef
 from db.schema.profiles import Profile, Org
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 
 class TopologyCreateUpdateRequest(BaseModel):
@@ -82,7 +82,7 @@ async def get_topologies() -> list[Topology]:
 @router.post("/", status_code=HTTPStatus.CREATED)
 async def create_topology(
         create: TopologyCreateUpdateRequest,
-        profile: Profile = Depends(current_profile)) -> TopologyResponse:
+        profile: Profile = Depends(session_profile)) -> TopologyResponse:
     """Create a new topology"""
     with get_session() as session:
         org_seq = org_id_to_seq(create.org_id)
@@ -110,7 +110,7 @@ async def create_topology(
 async def update_topology(
         topo_id: str,
         req: TopologyCreateUpdateRequest,
-        profile: Profile = Depends(current_profile)) -> TopologyResponse:
+        profile: Profile = Depends(session_profile)) -> TopologyResponse:
     """Update an existing topology"""
     with get_session() as session:
         update_params = req.model_dump()
@@ -184,7 +184,7 @@ async def create_topo_refs(
         dst_id: str,
         edge_data: dict = Body(...),
         response: Response = Response(),
-        profile: Profile = Depends(current_profile)) -> TopologyRefResponse:
+        profile: Profile = Depends(session_profile)) -> TopologyRefResponse:
     """Create a new topology ref"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)

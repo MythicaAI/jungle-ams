@@ -18,7 +18,7 @@ from sqlmodel import col, delete, insert, select
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
-from routes.authorization import current_profile, get_optional_profile
+from routes.authorization import session_profile, maybe_session_profile
 from routes.tags.type_utils import (
     get_model_type,
     get_type_id_to_seq,
@@ -38,7 +38,7 @@ router = APIRouter(prefix='/types', tags=['tags'])
 async def create_tag_for_type(
     tag_type: TagType,
     create: TagTypeRequest,
-    profile: Profile = Depends(current_profile),
+    profile: Profile = Depends(session_profile),
 ):
     values = create.model_dump()
 
@@ -85,7 +85,7 @@ async def create_tag_for_type(
 @router.get('/{tag_type}')
 async def get_tags_for_type(
     tag_type: TagType,
-    profile: Optional[Profile] = Depends(get_optional_profile),
+    profile: Optional[Profile] = Depends(maybe_session_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
 ):
@@ -128,7 +128,7 @@ async def delete_tag_type(
     tag_type: TagType,
     tag_id: str,
     type_id: str,
-    profile: Profile = Depends(current_profile),
+    profile: Profile = Depends(session_profile),
 ):
     """Delete an existing tag associated with a specified model type."""
     type_model = get_model_type(tag_type)
@@ -171,7 +171,7 @@ async def delete_tag_type(
 @router.get('/{tag_type}/top')
 async def get_top_tags_for_type(
     tag_type: TagType,
-    profile: Optional[Profile] = Depends(get_optional_profile),
+    profile: Optional[Profile] = Depends(maybe_session_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
 ):
@@ -229,7 +229,7 @@ async def get_top_tags_for_type(
 @router.get('/{tag_type}/filter')
 async def get_filtered_model_types_by_tags(
     tag_type: TagType,
-    profile: Optional[Profile] = Depends(get_optional_profile),
+    profile: Optional[Profile] = Depends(maybe_session_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
     include: list[str] = Query(None),

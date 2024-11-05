@@ -23,4 +23,4 @@ rm -rf ${SCRIPT_DIR}/alembic_sqlite/versions
 mkdir -p ${SCRIPT_DIR}/alembic_sqlite/versions
 poetry run alembic -n sqlite revision --autogenerate -m "initial"
 poetry run alembic -n sqlite upgrade head
-poetry run pytest .
+poetry run pytest . $*

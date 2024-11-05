@@ -1,25 +1,25 @@
 """API routing layer and logic for tag management"""
 
+import logging
 from datetime import timezone
 from http import HTTPStatus
-import logging
-from sqlalchemy.exc import IntegrityError
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import delete, insert, select
+
+import auth.roles
+from auth.authorization import Test, validate_roles
 from cryptid.cryptid import (
     profile_seq_to_id,
     tag_seq_to_id,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import delete, insert, select
-
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
-from routes.authorization import current_profile
-from routes.tags.tag_utils import resolve_and_validate_role_by_org_name
+from routes.authorization import session_profile_roles
 from routes.tags.tag_models import TagRequest, TagResponse
 from routes.tags.tag_types import router as tag_types_router
-
 
 log = logging.getLogger(__name__)
 
@@ -29,13 +29,12 @@ router.include_router(tag_types_router)
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_tag(
-    create: TagRequest, profile: Profile = Depends(current_profile)
+        create: TagRequest, profile_roles: Profile = Depends(session_profile_roles)
 ) -> TagResponse:
     """Create a tag"""
     with get_session() as session:
-        resolve_and_validate_role_by_org_name(
-            session, profile, "mythica-tags", org_name="mythica"
-        )
+        profile, roles = profile_roles
+        validate_roles(Test(role=auth.roles.tag_create), roles)
 
         try:
             session.exec(
@@ -67,12 +66,11 @@ async def create_tag(
 
 
 @router.delete('/{name}')
-async def delete_tag(name: str, profile: Profile = Depends(current_profile)):
+async def delete_tag(name: str, profile_roles: Profile = Depends(session_profile_roles)):
     """Delete an existing tag"""
     with get_session() as session:
-        resolve_and_validate_role_by_org_name(
-            session, profile, "mythica-tags", org_name="mythica"
-        )
+        profile, roles = profile_roles
+        validate_roles(Test(role=auth.roles.tag_delete), roles)
         stmt = (
             delete(Tag)
             .where(Tag.name == name)

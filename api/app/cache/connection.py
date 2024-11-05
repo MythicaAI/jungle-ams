@@ -30,9 +30,9 @@ async def cache_connection_lifespan():
         pass
     finally:
         connection_pool = None
-        log.info("redis connection pool closing %s", str_desc)
+        # log.info("redis connection pool closing %s", str_desc)
         await pool.disconnect(False)
-        log.info("redis connection pool closed %s", str_desc)
+        # log.info("redis connection pool closed %s", str_desc)
 
 
 @contextmanager

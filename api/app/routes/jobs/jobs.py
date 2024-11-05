@@ -1,26 +1,26 @@
-import asyncio
 import logging
 from http import HTTPStatus
 from typing import Any
+from uuid import uuid4
 
-from cryptid.location import location
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
-from uuid import uuid4
 
+from config import app_config
 from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
-from config import app_config
+from cryptid.location import location
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
-from routes.authorization import current_profile
 from ripple.automation import NatsAdapter, WorkerRequest
-from ripple.models.params import ParameterSpec, ParameterSet
+from ripple.models.params import ParameterSet, ParameterSpec
 from ripple.runtime.params import repair_parameters, validate_params
+from routes.authorization import session_profile
 
 log = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: Pa
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_job(
         request: JobRequest,
-        profile: Profile = Depends(current_profile)) -> JobResponse:
+        profile: Profile = Depends(session_profile)) -> JobResponse:
     with get_session() as session:
         job_def = session.exec(select(JobDefinition).where(
             JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
@@ -215,7 +215,7 @@ async def create_job_result(
 @router.get('/results/{job_id}')
 async def get_job_results(
         job_id: str,
-        profile: Profile = Depends(current_profile)) -> JobResultResponse:
+        profile: Profile = Depends(session_profile)) -> JobResultResponse:
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()

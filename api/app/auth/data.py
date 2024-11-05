@@ -1,33 +1,36 @@
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from auth.cookie import cookie_to_profile
-from auth.generate_token import validate_token
-from db.schema.profiles import Profile, OrgRef, Org
-
+from auth.generate_token import decode_token
+from db.schema.profiles import Org, OrgRef, Profile
 
 log = logging.getLogger(__name__)
 
-def get_profile(authorization: str) -> Profile:
-    """Given an auth bearer header value, return a Profile object"""
+
+def get_bearer_token(authorization: str) -> str:
+    """Get the bearer token from the authorization header"""
     if not authorization:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             detail='Authorization header missing')
-
     auth_parts = authorization.split(' ')
     if len(auth_parts) != 2 or not auth_parts[0] == 'Bearer':
         raise HTTPException(
             HTTPStatus.BAD_REQUEST, detail=f'Invalid Authorization header "{authorization}"')
+    return auth_parts[1]
 
-    if not validate_token(auth_parts[1]):
-        raise HTTPException(HTTPStatus.UNAUTHORIZED, detail='Invalid token')
 
-    cookie_data = auth_parts[1].split(':')[0]
-    profile = cookie_to_profile(cookie_data)
+def get_profile(authorization: str) -> Profile:
+    """Given an auth bearer header value, return a Profile object"""
+    profile, _ = decode_token(get_bearer_token(authorization))
     return profile
+
+
+def get_profile_roles(authorization: str) -> (Profile, list[str]):
+    """Get the current authorized profile and it's roles from the bearer token"""
+    return decode_token(get_bearer_token(authorization))
 
 
 def resolve_profile(session, profile: Profile) -> Profile:
@@ -38,21 +41,25 @@ def resolve_profile(session, profile: Profile) -> Profile:
     return resolved_profile
 
 
-def resolve_roles(session: Session, profile: Profile, org_seq: int) -> set[str]:
+def resolve_roles(session: Session, profile_seq: int, org_seq: int = None) -> set[str]:
     """Get the set of roles for a profile in an org"""
-    org_refs = session.exec(select(OrgRef).where(
-        OrgRef.org_seq == org_seq, OrgRef.profile_seq == profile.profile_seq)).all()
+    if org_seq is not None:
+        org_refs = session.exec(select(OrgRef).where(
+            OrgRef.org_seq == org_seq, OrgRef.profile_seq == profile_seq)).all()
+    else:
+        org_refs = session.exec(select(OrgRef).where(
+            OrgRef.profile_seq == profile_seq)).all()
     return {o.role for o in org_refs}
 
 
-def resolve_roles_by_org_name(session: Session, profile: Profile, org_name: str) -> set[str]:
+def resolve_roles_by_org_name(session: Session, profile_seq: int, org_name: str) -> set[str]:
     """Get the set of roles for a profile in an org"""
     subquery = select(Org).where(Org.name == org_name).subquery()
     org_refs = session.exec(select(OrgRef).join(
-            subquery, subquery.c.org_seq == OrgRef.org_seq
-        ).where(
-            OrgRef.profile_seq == profile.profile_seq
-        )
+        subquery, subquery.c.org_seq == OrgRef.org_seq
+    ).where(
+        OrgRef.profile_seq == profile_seq
+    )
     ).all()
     return {o.role for o in org_refs}
 
@@ -83,14 +90,12 @@ def get_or_create_org_ref(session: Session, org: Org, profile: Profile, role: st
     Check if OrgRef exists, otherwise place an object into this session.
     NOTE: There is no Session.commit().
     """
-    
+
     # Check if an OrgRef with the same org_seq, profile_seq, and role already exists
     existing_entry = session.exec(select(OrgRef).filter_by(
-            org_seq=org.org_seq,
-            profile_seq=profile.profile_seq,
-            role=role
-        )
-    ).first()
+        org_seq=org.org_seq,
+        profile_seq=profile.profile_seq,
+        role=role)).first()
 
     if not existing_entry:
         # If not found, create a new OrgRef entry
