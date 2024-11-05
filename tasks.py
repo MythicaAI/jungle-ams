@@ -61,6 +61,7 @@ IMAGES = {
         'name': 'mythica-packager',
         'requires': ['api/app']
     },
+    'api/canary': {'name': 'mythica-job-canary'},
     'sites/jungle3': {
         'name': 'mythica-jungle3-build',
         'buildargs': {
@@ -100,7 +101,8 @@ WEB_SERVING = {
     'api/app',
     'api/publish-init',
     'api/lets-encrypt',
-    'api/gcs-proxy'
+    'api/gcs-proxy',
+    'api/canary',
 }
 
 IMAGE_SETS = {

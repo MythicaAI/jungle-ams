@@ -66,3 +66,11 @@ api:
     nginxConfig: "/etc/nginx/nginx-gke-staging.conf"
     nodeSelector: spot
     terminationGracePeriodSeconds: 15
+  canary:
+    tag: "latest"
+    name: "canary"
+    replicas: 1
+    maxUnavailable: 0
+    maxSurge: 2
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
