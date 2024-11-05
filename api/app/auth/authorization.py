@@ -32,6 +32,15 @@ from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.schema.assets import Asset, AssetVersion
 from db.schema.profiles import Org, Profile
 
+# TODO: move to admin interface
+privileged_emails = {
+    'test@mythica.ai',
+    'jacob@mythica.ai',
+    'pedro@mythica.ai',
+    'kevin@mythica.ai',
+    'bohdan.krupa.mythica@gmail.com',
+}
+
 
 class Test(BaseModel):
     """The test to be satisfied"""

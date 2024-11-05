@@ -75,10 +75,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     if profile.email in privileged_emails \
             and profile.email_validate_state == \
             ValidateEmailState.db_value(ValidateEmailState.validated):
-        roles.update((auth.roles.alias_tag_author,
-                      auth.roles.alias_asset_editor,
-                      auth.roles.alias_profile_editor,
-                      auth.roles.alias_org_admin))
+        roles.update(auth.roles.privileged_roles)
     else:
         roles.update((
             f'{auth.roles.alias_asset_editor}:{auth.roles.self_object_scope}',

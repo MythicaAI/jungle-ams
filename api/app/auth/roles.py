@@ -110,6 +110,14 @@ org_role_aliases = {
     alias_org_member,
 }
 
+"""When added to a profile with any scope these allow privileged access"""
+privileged_roles = {
+    alias_tag_author,
+    alias_asset_editor,
+    alias_profile_editor,
+    alias_org_admin
+}
+
 """Build reverse map to get aliases from roles"""
 role_to_alias = {}
 for alias, roles in role_aliases.items():

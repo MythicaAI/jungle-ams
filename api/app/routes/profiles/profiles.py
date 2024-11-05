@@ -19,7 +19,7 @@ from profiles.responses import (
     ProfileRolesResponse, PublicProfileResponse,
     profile_to_profile_response,
 )
-from routes.authorization import maybe_session_profile, session_profile, session_profile_roles
+from routes.authorization import maybe_session_profile, session_profile_roles
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -68,6 +68,22 @@ async def get_profile_by_name(
         ]
 
 
+@router.get('/roles')
+async def roles(
+        profile_roles=Depends(session_profile_roles),
+) -> ProfileRolesResponse:
+    """Get a profile by ID"""
+    with get_session() as session:
+        auth_profile, auth_roles = profile_roles
+        profile, org_roles = load_profile_and_roles(session, auth_profile.profile_seq)
+        profile_response = profile_to_profile_response(profile, PublicProfileResponse)
+
+        return ProfileRolesResponse(
+            profile=profile_response,
+            org_roles=org_roles,
+            auth_roles=list(auth_roles))
+
+
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     """Create a new profile"""
@@ -114,22 +130,6 @@ async def get_profile(
         return profile_to_profile_response(
             profile,
             PublicProfileResponse)
-
-
-@router.get('/{profile_id}/roles')
-async def roles(
-        profile_id: str,
-        _: Optional[Profile] = Depends(session_profile),
-) -> ProfileRolesResponse:
-    """Get a profile by ID"""
-    with get_session() as session:
-        profile_seq = profile_id_to_seq(profile_id)
-        profile, org_roles = load_profile_and_roles(session, profile_seq)
-        profile_response = profile_to_profile_response(profile, PublicProfileResponse)
-        return ProfileRolesResponse(
-            profile=profile_response,
-            org_roles=org_roles,
-        )
 
 
 @router.post('/{profile_id}')

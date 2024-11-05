@@ -4,8 +4,12 @@
 
 from http import HTTPStatus
 
+from munch import munchify
+
+import auth.roles
+from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code
+from tests.shared_test import assert_status_code, refresh_auth_token
 
 
 def test_public_profile(api_base, client, create_profile):
@@ -61,3 +65,44 @@ def test_profile_update_admin(api_base, client, create_profile):
         json=profile_update_payload,
         headers=test_profile.authorization_header())
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
+
+
+def test_privilege_access(client, api_base, create_profile, create_org):
+    user_profile = create_profile(email="test@somewhere.com")
+    mythica_profile = create_profile(email="test@mythica.ai")
+
+    # validate email to add the mythica roles, this also currently creates
+    # a mythica org if one does not currently exist
+    o = munchify(client.get(
+        f"{api_base}/validate-email/",
+        headers=mythica_profile.authorization_header()).json())
+    assert o.owner_id == mythica_profile.profile.profile_id
+    o = munchify(client.get(
+        f"{api_base}/validate-email/{o.code}",
+        headers=mythica_profile.authorization_header()).json())
+    assert o.owner_id == mythica_profile.profile.profile_id
+    assert o.state == 'validated'
+
+    # get the token with the refreshed roles
+    mythica_profile.auth_token = refresh_auth_token(client, api_base, mythica_profile)
+
+    create_org(user_profile)
+
+    # get user token with refreshed org roles
+    user_profile.auth_token = refresh_auth_token(client, api_base, user_profile)
+
+    # Ensure that the user profile
+    #   does not get tag create
+    #   has org-admin on org structure
+    # .  has org-admin:<ID> as auth role
+    o = munchify(client.get(f"{api_base}/profiles/roles/",
+                            headers=user_profile.authorization_header()).json())
+    assert auth.roles.alias_tag_author not in o.auth_roles
+    assert any([auth.roles.alias_org_admin in roles.roles for roles in o.org_roles])
+    for role in o.org_roles:
+        assert f'org-admin:{role.org_id}' in o.auth_roles
+
+    # Ensure that mythica profile has tag_create role
+    o = munchify(client.get(f"{api_base}/profiles/roles/",
+                            headers=mythica_profile.authorization_header()).json())
+    assert auth.roles.alias_tag_author in o.auth_roles

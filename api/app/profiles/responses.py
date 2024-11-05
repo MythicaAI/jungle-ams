@@ -46,9 +46,10 @@ class ProfileOrgRoles(BaseModel):
 
 
 class ProfileRolesResponse(BaseModel):
-    """A profile and all organization roles it is enabled for"""
+    """A profile and all organization roles it owns and if allowed, the auth roles"""
     profile: PublicProfileResponse
     org_roles: list[ProfileOrgRoles]
+    auth_roles: list[str]
 
 
 def profile_to_profile_response(
