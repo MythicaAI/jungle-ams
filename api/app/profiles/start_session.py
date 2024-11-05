@@ -33,7 +33,6 @@ privileged_emails = {
 
 def start_session(session: Session, profile_seq: int, location: str) -> SessionStartResponse:
     """Given a database session start a new session"""
-    profile_id = profile_seq_to_id(profile_seq)
     result = session.exec(update(Profile).values(
         login_count=func.coalesce(Profile.login_count, 0) + 1,
         active=True,
@@ -61,7 +60,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
                                        ).all()
     roles = set()
     for r in profile_org_results:
-        r_profile, r_org, r_org_ref = r
+        _, r_org, r_org_ref = r
         if r_org is None:
             break
         org_id = org_seq_to_id(r_org.org_seq)

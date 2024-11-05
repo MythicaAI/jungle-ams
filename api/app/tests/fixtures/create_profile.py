@@ -52,9 +52,6 @@ def create_profile(client, api_base: str, email="test@test.com"):
             auth_token = session_response.token
             return auth_token
 
-        def refresh_auth_token(test_profile: ProfileTestObj):
-            test_profile.auth_token = start_session()
-
         test_profile = ProfileTestObj(
             profile=profile,
             auth_token=start_session(),

@@ -164,7 +164,7 @@ async def update_org(
 ) -> OrgResponse:
     """Update an existing organization"""
     with get_session(echo=True) as session:
-        profile, roles = profile_roles
+        _, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
@@ -281,7 +281,7 @@ async def remove_role_from_org(
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        profile, roles = profile_roles
+        _, roles = profile_roles
         validate_roles(Test(role=auth.roles.org_remove_role, object_id=org_id),
                        roles)
 

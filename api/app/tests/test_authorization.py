@@ -101,14 +101,6 @@ def test_asset_update():
         profile=Profile(profile_seq=asset_b_owner_seq),
         asset=Asset(owner_seq=asset_a_owner_seq, org_seq=org_a_seq),
         asset_version=AssetVersion(author_seq=asset_a_author_seq))
-    asset_b_owner_scope = Scope(
-        profile=Profile(profile_seq=asset_b_owner_seq),
-        asset=Asset(owner_seq=asset_b_owner_seq),
-        asset_version=AssetVersion(author_seq=asset_b_author_seq))
-    asset_b_author_scope = Scope(
-        profile=Profile(profile_seq=asset_b_author_seq),
-        asset=Asset(owner_seq=asset_b_owner_seq),
-        asset_version=AssetVersion(author_seq=asset_b_author_seq))
     asset_a_super_scope = Scope(
         profile=Profile(profile_seq=superuser_seq),
         asset=Asset(owner_seq=asset_a_owner_seq),
