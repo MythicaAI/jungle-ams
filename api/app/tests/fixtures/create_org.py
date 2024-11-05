@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 import pytest
 
+import auth.roles
 from routes.orgs.orgs import OrgRefResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 
@@ -30,7 +31,7 @@ def create_org(client, api_base):
         assert org_resp.org_name == test_org_name
         assert org_resp.description == test_org_description
         assert org_resp.created is not None
-        assert org_resp.role == 'admin'
+        assert org_resp.role == auth.roles.alias_org_admin
         return org_resp
 
     return _create_org

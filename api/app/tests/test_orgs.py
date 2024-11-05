@@ -6,6 +6,7 @@ from http import HTTPStatus
 
 from munch import munchify
 
+import auth.roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token
@@ -58,7 +59,7 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
         o = munchify(ref)
         assert o.org_id == org_id
         assert o.profile_id == admin_profile_test_info.profile.profile_id
-        assert o.role in {'admin', 'dev'}
+        assert o.role in {auth.roles.alias_org_admin}
 
     # add two user roles
     r = client.post(

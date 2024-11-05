@@ -127,8 +127,10 @@ async def create_org(
         session.refresh(org)
 
         # create the admin from the profile
-        admin = OrgRef(org_seq=org.org_seq, profile_seq=profile.profile_seq,
-                       role='admin', author_seq=profile.profile_seq)
+        admin = OrgRef(org_seq=org.org_seq,
+                       profile_seq=profile.profile_seq,
+                       role=auth.roles.alias_org_admin,
+                       author_seq=profile.profile_seq)
         session.add(admin)
         invalidate_sessions(session, profile.profile_seq)
         session.commit()
