@@ -9,14 +9,14 @@ from pydantic import BaseModel, constr
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col, delete, insert, select, update
 
-import auth.roles as roles
-from auth.authorization import validate_roles
+import auth.roles
+from auth.authorization import Test, validate_roles
 from auth.data import resolve_profile, resolve_roles
 from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile
-from profiles.invalid_sessions import invalidate_sessions
-from routes.authorization import session_profile
+from profiles.invalidate_sessions import invalidate_sessions
+from routes.authorization import session_profile, session_profile_roles
 
 MIN_ORG_NAME = 3
 MAX_ORG_NAME = 64
@@ -158,17 +158,19 @@ async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = 
 async def update_org(
         org_id: str,
         req: OrgUpdateRequest,
-        profile: Profile = Depends(session_profile)
+        profile_roles: Profile = Depends(session_profile_roles)
 ) -> OrgResponse:
     """Update an existing organization"""
     with get_session(echo=True) as session:
+        profile, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 f"org: {org_id} not found")
 
-        resolve_and_validate(session, profile, org_seq, roles.org_update)
+        validate_roles(Test(role=auth.roles.org_update, object_id=org_id),
+                       roles)
 
         r = session.exec(update(Org).where(
             Org.org_seq == org_seq).values(
@@ -184,11 +186,14 @@ async def update_org(
 
 
 @router.delete('/{org_id}')
-async def delete_org(org_id: str, profile: Profile = Depends(session_profile)):
+async def delete_org(org_id: str, profile_roles: Profile = Depends(session_profile_roles)):
     """Removes an existing organization"""
     with get_session() as session:
+        profile, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
-        resolve_and_validate(session, profile, org_seq, roles.org_delete)
+        validate_roles(Test(role=auth.roles.org_delete, object_id=org_id),
+                       roles)
+
         session.exec(update(Org).where(
             Org.org_seq == org_seq).values(
             deleted=sql_now()))
@@ -237,12 +242,14 @@ async def add_role_to_org(
         org_id: str,
         profile_id: str,
         role: str,
-        profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
+        profile_roles: Profile = Depends(session_profile_roles)) -> list[OrgRefResponse]:
     """Create a new role for an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        resolve_and_validate(session, profile, org_seq, roles.org_add_role)
+        profile, roles = profile_roles
+        validate_roles(Test(role=auth.roles.org_add_role, object_id=org_id),
+                       roles)
 
         session.exec(insert(OrgRef).values(
             org_seq=org_seq,
@@ -263,12 +270,15 @@ async def remove_role_from_org(
         org_id: str,
         profile_id: str,
         role: str,
-        profile=Depends(session_profile)) -> list[OrgRefResponse]:
+        profile_roles=Depends(session_profile_roles)) -> list[OrgRefResponse]:
     """Delete a role from an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        resolve_and_validate(session, profile, org_seq, roles.org_remove_role)
+        profile, roles = profile_roles
+        validate_roles(Test(role=auth.roles.org_remove_role, object_id=org_id),
+                       roles)
+
         session.exec(delete(OrgRef).where(
             OrgRef.org_seq == org_seq,
             OrgRef.profile_seq == profile_seq,

@@ -88,7 +88,7 @@ def test_tags_operations(api_base, client, create_profile):
     # Test profile does not have required_role to create tag
     unrequired_role_tag_name = "tag_" + get_random_string(10, digits=False)
     r = client.post(f"{api_base}/tags", json={'name': unrequired_role_tag_name}, headers=simple_headers)
-    assert_status_code(r, HTTPStatus.FORBIDDEN)
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
     created_tag_ids = []
     top_asset_ids = [create_asset(headers) for _ in range(10)]
@@ -158,7 +158,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
     role_names = set()
     for r in o.org_roles:
         role_names.update(r.roles)
-    assert "mythica-tags" in role_names
+    assert "tag-editor" in role_names
 
     def create_asset(headers):
         # create asset in org

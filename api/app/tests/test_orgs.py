@@ -8,14 +8,17 @@ from munch import munchify
 
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code
+from tests.shared_test import assert_status_code, refresh_auth_token
 
 
 def test_create_update(client, api_base, create_profile, create_org):
     test_profile = create_profile()
-    headers = test_profile.authorization_header()
     o = create_org(test_profile)
     org_id = o.org_id
+
+    # refresh the auth token (with roles) after creating an org
+    test_profile.auth_token = refresh_auth_token(client, api_base, test_profile)
+    headers = test_profile.authorization_header()
 
     r = client.post(f"{api_base}/orgs/{org_id}",
                     json={'name': 'test-updated', 'description': 'test-desc', },
@@ -30,7 +33,6 @@ def test_create_update(client, api_base, create_profile, create_org):
 def test_org_ref_operations(client, api_base, create_profile, create_org):
     admin_profile_test_info = create_profile()
     user_profile_test_info = create_profile()
-    headers = admin_profile_test_info.authorization_header()
     org = create_org(admin_profile_test_info)
     org2 = create_org(admin_profile_test_info)
 
@@ -38,8 +40,17 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
     org_id2 = org2.org_id
     admin_id = org.profile_id
 
+    # refresh auth
+    admin_profile_test_info.auth_token = refresh_auth_token(
+        client, api_base, admin_profile_test_info)
+    user_profile_test_info.auth_token = refresh_auth_token(
+        client, api_base, user_profile_test_info)
+    headers = admin_profile_test_info.authorization_header()
+
     # create a new role for the admin
-    r = client.post(f"{api_base}/orgs/{org_id}/roles/{admin_profile_test_info.profile.profile_id}/dev", headers=headers)
+    r = client.post(
+        f"{api_base}/orgs/{org_id}/roles/{admin_profile_test_info.profile.profile_id}/dev",
+        headers=headers)
     assert r.status_code == HTTPStatus.CREATED
     roles = r.json()
     assert len(roles) == 2
@@ -50,12 +61,16 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
         assert o.role in {'admin', 'dev'}
 
     # add two user roles
-    r = client.post(f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/user", headers=headers)
+    r = client.post(
+        f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/user",
+        headers=headers)
     assert r.status_code == HTTPStatus.CREATED
     roles = r.json()
     assert len(roles) == 3
 
-    r = client.post(f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/mod", headers=headers)
+    r = client.post(
+        f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/mod",
+        headers=headers)
     assert r.status_code == HTTPStatus.CREATED
     roles = r.json()
     assert len(roles) == 4
@@ -69,8 +84,9 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
             assert o.role in {'user', 'mod'}
 
     # delete a ref
-    r = client.delete(f'{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/mod',
-                      headers=headers)
+    r = client.delete(
+        f'{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/mod',
+        headers=headers)
     assert r.status_code == HTTPStatus.OK
     assert len(r.json()) == 3
 
@@ -104,7 +120,7 @@ def test_privilege_access(client, api_base, create_profile, create_org):
     # validate email to add the mythica roles, this also currently creates
     # a mythica org if one does not currently exist
     o = munchify(client.get(
-        f"{api_base}/validate-email",
+        f"{api_base}/validate-email/",
         headers=mythica_profile.authorization_header()).json())
     assert o.owner_id == mythica_profile.profile.profile_id
     o = munchify(client.get(
@@ -120,10 +136,10 @@ def test_privilege_access(client, api_base, create_profile, create_org):
     o = munchify(client.get(f"{api_base}/profiles/{user_profile.profile.profile_id}/roles",
                             headers=user_profile.authorization_header()).json())
     assert not any(["mythica-tags" in roles.roles for roles in o.org_roles])
-    assert any(["admin" in roles.roles for roles in o.org_roles])
+    assert any(["org-admin" in roles.roles for roles in o.org_roles])
 
     # Ensure that mythica profile has tag_create
     # there will be role mythica-tags because test_profile_email = "test@mythica.ai"
     o = munchify(client.get(f"{api_base}/profiles/{mythica_profile.profile.profile_id}/roles",
                             headers=mythica_profile.authorization_header()).json())
-    assert any(["mythica-tags" in roles.roles for roles in o.org_roles])
+    assert any(["tag-editor" in roles.roles for roles in o.org_roles])

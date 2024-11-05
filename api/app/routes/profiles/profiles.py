@@ -8,12 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlmodel import col, select, update
 
-from cryptid.cryptid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
+import auth.roles
+from auth.authorization import Scope, Test, validate_roles
+from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
-from db.schema.profiles import Org, OrgRef, Profile
+from db.schema.profiles import Profile
+from profiles.load_profile_and_roles import load_profile_and_roles
 from profiles.responses import (
     ProfileResponse,
-    PublicProfileResponse,
+    ProfileRolesResponse, PublicProfileResponse,
     profile_to_profile_response,
 )
 from routes.authorization import maybe_session_profile, session_profile, session_profile_roles
@@ -29,8 +32,7 @@ profile_name_str = constr(strip_whitespace=True, min_length=3, max_length=64)
 
 class CreateUpdateProfileModel(BaseModel):
     """Profile subset properties for creation and updating"""
-
-    name: profile_name_str
+    name: profile_name_str | None = None
     description: constr(strip_whitespace=True, min_length=0, max_length=400) | None = (
         None
     )
@@ -39,23 +41,10 @@ class CreateUpdateProfileModel(BaseModel):
     email: EmailStr = None
 
 
-class ProfileOrgRoles(BaseModel):
-    org_id: str
-    org_name: str
-    roles: list[str]
-
-
-class ProfileRolesResponse(BaseModel):
-    """Privileged response to queries to a given profiles roles"""
-    profile: PublicProfileResponse
-    org_roles: list[ProfileOrgRoles]
-
-
 @router.get('/named/{profile_name}')
 async def get_profile_by_name(
         profile_name: profile_name_str,
-        exact_match: Optional[bool] = False,
-        profile: Optional[Profile] = Depends(maybe_session_profile),
+        exact_match: Optional[bool] = False
 ) -> list[PublicProfileResponse]:
     """Get asset by name"""
     with get_session() as session:
@@ -130,74 +119,46 @@ async def get_profile(
 @router.get('/{profile_id}/roles')
 async def roles(
         profile_id: str,
-        auth_profile_roles: Optional[Profile] = Depends(session_profile_roles),
+        _: Optional[Profile] = Depends(session_profile),
 ) -> ProfileRolesResponse:
     """Get a profile by ID"""
-    auth_profile, auth_roles = auth_profile_roles
     with get_session() as session:
         profile_seq = profile_id_to_seq(profile_id)
-
-        # collect the set of org references for the requested profile
-        profile_org_results = session.exec(select(Profile, Org, OrgRef)
-                                           .where(Profile.profile_seq == profile_seq)
-                                           .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
-                                           .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
-                                           ).all()
-        roles_by_org_id = {}
-        org_data_by_org_id = {}
-        for r in profile_org_results:
-            r_profile, r_org, r_org_ref = r
-            # Bail out if there are no references to process
-            if r_org is None:
-                return ProfileRolesResponse(
-                    profile=profile_to_profile_response(r_profile, PublicProfileResponse),
-                    org_roles=[]
-                )
-
-            org_id = org_seq_to_id(r_org.org_seq)
-            org_data_by_org_id[org_id] = r_org.name
-            roles_by_org_id.setdefault(org_id, set()).add(r_org_ref.role)
-
-        # Convert all the org references into ProfileOrgRoles
-        profile_org_roles = [
-            ProfileOrgRoles(
-                org_id=i,
-                org_name=org_data_by_org_id.get(i, "##error"),
-                roles=v
-            ) for i, v in roles_by_org_id.items()
-        ]
-        profile = profile_org_results[0][0]
+        profile, org_roles = load_profile_and_roles(session, profile_seq)
+        profile_response = profile_to_profile_response(profile, PublicProfileResponse)
         return ProfileRolesResponse(
-            profile=profile_to_profile_response(profile, PublicProfileResponse),
-            org_roles=profile_org_roles)
+            profile=profile_response,
+            org_roles=org_roles,
+        )
 
 
 @router.post('/{profile_id}')
 async def update_profile(
         profile_id: str,
         req_profile: CreateUpdateProfileModel,
-        profile: Profile = Depends(session_profile),
+        profile_roles=Depends(session_profile_roles),
 ) -> ProfileResponse:
     """Update the profile of the owning account"""
-    if profile_id != profile_seq_to_id(profile.profile_seq):
-        raise HTTPException(HTTPStatus.FORBIDDEN, detail='profile not authenticated')
+    profile, roles = profile_roles
+    validate_roles(Test(role=auth.roles.profile_update, object_id=profile_id),
+                   roles,
+                   Scope(profile=profile))
+
     profile_seq = profile_id_to_seq(profile_id)
     session = get_session(echo=True)
-    stmt = (
-        update(Profile)
-        .where(Profile.profile_seq == profile_seq)
-        .values(**req_profile.model_dump(exclude_unset=True))
-    )
+    values = req_profile.model_dump(exclude_unset=True)
 
-    result = session.execute(stmt)
-    rows_affected = result.rowcount
-    if rows_affected == 0:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
+    # Only update if at least one value is supplied
+    if len(values.keys()) > 0:
+        stmt = update(Profile).values(**values).where(Profile.profile_seq == profile_seq)
+        result = session.execute(stmt)
+        rows_affected = result.rowcount
+        if rows_affected == 0:
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
 
-    session.commit()
+        session.commit()
 
-    updated = session.exec(
-        select(Profile).where(Profile.profile_seq == profile.profile_seq)
+    read_committed = session.exec(
+        select(Profile).where(Profile.profile_seq == profile_seq)
     ).one()
-
-    return profile_to_profile_response(updated, ProfileResponse)
+    return profile_to_profile_response(read_committed, ProfileResponse)

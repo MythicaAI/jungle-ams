@@ -38,8 +38,8 @@ def upgrade():
         )
     ).scalars().all()
     if profiles_with_domain:
-        create_new_org_ref_to_profile_roles(session, "mythica", profiles_with_domain, "mythica-tags")
-        log.warning("Created a new mythica-tags role profile_seq: %s", profiles_with_domain[0].profile_seq)
+        create_new_org_ref_to_profile_roles(session, "mythica", profiles_with_domain, "tag-author")
+        log.warning("Created tag-author roles profile_seq: %s", profiles_with_domain[0].profile_seq)
 
 
 def downgrade():

@@ -7,12 +7,11 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import delete, insert, select, update
 
-from auth.data import create_new_org_ref_to_profile_roles
 from config import app_config
 from cryptid.cryptid import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
-from profiles.invalid_sessions import invalidate_sessions
+from profiles.invalidate_sessions import invalidate_sessions
 from routes.authorization import session_profile
 from validate_email.responses import ValidateEmailResponse, ValidateEmailState
 
@@ -38,6 +37,11 @@ async def validate_email_begin(
                 'source': '/validate_email',
                 'verification_link': validate_link
             }
+        ))
+        session.exec(update(Profile).values(
+            email_validate_state=ValidateEmailState.db_value(ValidateEmailState.link_sent)
+        ).where(
+            Profile.profile_seq == profile.profile_seq
         ))
         session.commit()
         return ValidateEmailResponse(owner_id=profile_seq_to_id(profile.profile_seq),
@@ -73,29 +77,22 @@ async def validate_email_complete(
             raise HTTPException(HTTPStatus.NOT_FOUND, detail='invalid validation source')
 
         # mark the profile email validation complete
-        validated = 2  # TODO: enum unification
         session.exec(update(Profile).values(
-            {Profile.email_validate_state: validated}).where(
+            {Profile.email_validate_state:
+                 ValidateEmailState.db_value(ValidateEmailState.validated)}).where(
             Profile.profile_seq == profile.profile_seq))
 
         # remove the verification code
         session.exec(delete(ProfileKey).where(
             ProfileKey.key == verification_code
         ))
-        if str(profile.email).endswith("@mythica.ai"):
-            create_new_org_ref_to_profile_roles(
-                session,
-                app_config().mythica_org_name,
-                [profile],
-                "mythica-tags"
-            )
 
         invalidate_sessions(session, profile.profile_seq)
-        
+
         session.commit()
 
         return ValidateEmailResponse(
             owner_id=profile_seq_to_id(profile.profile_seq),
             code=verification_code,
-            link='https://api.mythica.ai',
+            link=app_config().api_base_uri,
             state=ValidateEmailState.validated)

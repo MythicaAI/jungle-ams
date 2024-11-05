@@ -5,18 +5,23 @@ _AUDIENCE = "mythica_auth_token"
 
 import jwt
 
-from cryptid.cryptid import profile_id_to_seq, profile_seq_to_id
-from db.schema.profiles import OrgRef, Profile
+from cryptid.cryptid import profile_id_to_seq
+from db.schema.profiles import Profile
 
 
-def generate_token(profile: Profile, org_refs: list[OrgRef] = None) -> str:
+def generate_token(
+        profile_id: str,
+        profile_email: str,
+        profile_email_validate_state: int,
+        profile_location: str,
+        roles: list[str] = None) -> str:
     """Generate a token from a profile and optional list of roles on the profile."""
     payload = {
-        'profile_id': profile_seq_to_id(profile.profile_seq),
-        'email': profile.email or '',
-        'email_vs': profile.email_validate_state,
-        'location': profile.location or '',
-        'roles': [ref.role for ref in org_refs or []],
+        'profile_id': profile_id,
+        'email': profile_email or '',
+        'email_vs': profile_email_validate_state,
+        'location': profile_location or '',
+        'roles': roles or [],
         'aud': _AUDIENCE,
     }
     encoded_jwt = jwt.encode(

@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import delete, insert, select
 
-from auth.authorization import validate_roles
+import auth.roles
+from auth.authorization import Test, validate_roles
 from cryptid.cryptid import (
     profile_seq_to_id,
     tag_seq_to_id,
@@ -16,10 +17,9 @@ from cryptid.cryptid import (
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
-from routes.authorization import session_profile, session_profile_roles
+from routes.authorization import session_profile_roles
 from routes.tags.tag_models import TagRequest, TagResponse
 from routes.tags.tag_types import router as tag_types_router
-from routes.tags.tag_utils import resolve_and_validate_role_by_org_name
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def create_tag(
     """Create a tag"""
     with get_session() as session:
         profile, roles = profile_roles
-        validate_roles("mythica-tags", roles)
+        validate_roles(Test(role=auth.roles.tag_create), roles)
 
         try:
             session.exec(
@@ -66,12 +66,11 @@ async def create_tag(
 
 
 @router.delete('/{name}')
-async def delete_tag(name: str, profile: Profile = Depends(session_profile)):
+async def delete_tag(name: str, profile_roles: Profile = Depends(session_profile_roles)):
     """Delete an existing tag"""
     with get_session() as session:
-        resolve_and_validate_role_by_org_name(
-            session, profile, "mythica-tags", org_name="mythica"
-        )
+        profile, roles = profile_roles
+        validate_roles(Test(role=auth.roles.tag_delete), roles)
         stmt = (
             delete(Tag)
             .where(Tag.name == name)

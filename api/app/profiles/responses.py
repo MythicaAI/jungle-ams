@@ -1,31 +1,13 @@
 from datetime import datetime
-from typing import Union
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
-from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
+from cryptid.cryptid import profile_seq_to_id
 from db.schema.profiles import Profile
 from validate_email.responses import ValidateEmailState, email_validate_state_enum
 
 
-class ProfileRoles(BaseModel):
-    org_roles: list[dict[str, Union[str, list]]] | None = None
-
-    @field_validator('org_roles', mode="before")
-    @classmethod
-    def convert_org_seq_to_id(cls, org_roles: list[dict[int, str]] | None) -> list[dict[str, str]] | None:
-        converted_org_roles = []
-        if org_roles and isinstance(org_roles, list):
-            for org_role in org_roles:
-                if org_role.get("org_id", {}):
-                    org_role["org_id"] = org_seq_to_id(org_role["org_id"])
-                else:
-                    org_role = {}
-                converted_org_roles.append(org_role)
-        return converted_org_roles
-
-
-class ProfileResponse(ProfileRoles):
+class ProfileResponse(BaseModel):
     """A model with only allowed public properties for profile creation"""
     profile_id: str = None
     name: str | None = None
@@ -39,7 +21,7 @@ class ProfileResponse(ProfileRoles):
     validate_state: ValidateEmailState | int = None
 
 
-class PublicProfileResponse(ProfileRoles):
+class PublicProfileResponse(BaseModel):
     """A model with only allows anonymous public properties for profile query"""
     profile_id: str = None
     name: str | None = None
@@ -50,9 +32,23 @@ class PublicProfileResponse(ProfileRoles):
 
 
 class SessionStartResponse(BaseModel):
+    """Response to initiating a session, the token is used as a Bearer token"""
     token: str
     profile: ProfileResponse
     roles: list[str]
+
+
+class ProfileOrgRoles(BaseModel):
+    """List item of organizational membership and allowed roles"""
+    org_id: str
+    org_name: str
+    roles: list[str]
+
+
+class ProfileRolesResponse(BaseModel):
+    """A profile and all organization roles it is enabled for"""
+    profile: PublicProfileResponse
+    org_roles: list[ProfileOrgRoles]
 
 
 def profile_to_profile_response(
