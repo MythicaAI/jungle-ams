@@ -6,6 +6,7 @@ from http import HTTPStatus
 
 from munch import munchify
 
+import auth.roles
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
 from tests.shared_test import FileContentTestObj, assert_status_code, get_random_string
@@ -151,14 +152,11 @@ def test_tag_asset_operations(api_base, client, create_profile):
 
     # initial role check
     r = client.get(
-        f"{api_base}/profiles/{profile.profile_id}/roles",
+        f"{api_base}/profiles/roles/",
         headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-    role_names = set()
-    for r in o.org_roles:
-        role_names.update(r.roles)
-    assert "tag-editor" in role_names
+    assert auth.roles.alias_tag_author in o.auth_roles
 
     def create_asset(headers):
         # create asset in org
