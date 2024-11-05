@@ -251,6 +251,10 @@ async def add_role_to_org(
         validate_roles(Test(role=auth.roles.org_add_role, object_id=org_id),
                        roles)
 
+        if role not in auth.roles.org_role_aliases:
+            raise HTTPException(HTTPStatus.BAD_REQUEST,
+                                detail=f"org role must be one of {auth.roles.org_role_aliases}")
+
         session.exec(insert(OrgRef).values(
             org_seq=org_seq,
             profile_seq=profile_seq,

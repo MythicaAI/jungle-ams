@@ -103,6 +103,13 @@ role_aliases: dict = {
     alias_profile_editor: profile__all_roles,
 }
 
+"""Allowed list of org role aliases"""
+org_role_aliases = {
+    alias_org_admin,
+    alias_org_mod,
+    alias_org_member,
+}
+
 """Build reverse map to get aliases from roles"""
 role_to_alias = {}
 for alias, roles in role_aliases.items():
