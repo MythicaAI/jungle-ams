@@ -8,6 +8,7 @@ on:
       - 'api/app/**'
       - 'libs/python/**'
       - '.github/workflows/api-app-publish-staging.yaml'
+
 defaults:
   run:
     working-directory: .
@@ -19,7 +20,7 @@ jobs:
       repository-projects: read
       pull-requests: write
       id-token: write
-      contents: read
+      contents: write
 
     env:
       IMAGE_NAME: "mythica-app"
@@ -29,6 +30,7 @@ jobs:
       AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
       SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
+      VERSION_APP_PATH: "api/app/VERSION_APP"
 
     steps:
       - name: Checkout
@@ -36,6 +38,18 @@ jobs:
 
       - name: Setup Docker BuildX
         uses: docker/setup-buildx-action@v3
+
+      - name: Increment version for APP
+        id: increment_version
+        run: |
+          current_version=$(cat ${{ env.VERSION_APP_PATH }})
+          current_version="${current_version#v}"
+          IFS='.' read -r major minor patch <<< "$current_version"
+          new_patch=$((patch+1))
+          new_version="v$major.$minor.$new_patch"
+          echo "New Web APP version: $new_version"
+          echo "$new_version" > ${{ env.VERSION_APP_PATH }}
+          echo "::set-output name=new_version::$new_version"
 
       - name: Google Auth
         id: auth
@@ -58,10 +72,20 @@ jobs:
         with:
           push: true
           context: .
-          file: api/app/Dockerfile  
-          tags:  ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
+          file: api/app/Dockerfile
+          tags:  |
+            ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ steps.increment_version.outputs.new_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
+
+      - name: Commit new APP version
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add ${{ env.VERSION_APP_PATH }}
+          git commit -m "Increment Web APP version to ${{ steps.increment_version.outputs.new_version }}"
+          git push origin ${{ github.ref_name }}
 
   helm-deploy:
     runs-on: ubuntu-latest
@@ -79,10 +103,19 @@ jobs:
       GKE_CLUSTER_NAME: "gke-main-us-central1"
       GKE_CLUSTER_LOCATION: "us-central1"
       WORKLOAD_IDENTITY_PROVIDER: "projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra"
+      VERSION_APP_PATH: "api/app/VERSION_APP"
+      VERSION_FRONT_PATH: "sites/VERSION_FRONT"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Read current version for API
+        id: read_version
+        run: |
+          current_version=$(cat ${{ env.VERSION_APP_PATH }})
+          echo "Current API version: $current_version"
+          echo "::set-output name=current_version::$current_version"
 
       - name: Google Auth
         id: auth
@@ -110,19 +143,12 @@ jobs:
             --region ${{ env.GKE_CLUSTER_LOCATION }} \
             --project ${{ env.PROJECT_ID }}
 
-      - name: Verify Access to Secrets
-        run: |
-          kubectl get secrets -n api-staging
-
-      - name: Check RoleBindings for Service Account
-        run: |
-          kubectl get rolebinding -n api-staging -o yaml | grep 'github-actions-service-account'
-
       - name: Install Helm
         run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-staging api/helm/api
+          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-staging api/helm/api \
+            --description "Versions: back: $(cat ${{ env.VERSION_APP_PATH }}), web-front version: $(cat ${{ env.VERSION_FRONT_PATH }})"
           kubectl rollout restart deployment/app -n api-staging

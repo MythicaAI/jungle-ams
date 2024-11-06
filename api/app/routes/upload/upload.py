@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from sqlmodel import and_, select, update
 
 import db.index as db_index
+from assets.repo import convert_version_input, select_asset_version
 from config import app_config
 from context import RequestContext
 from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
@@ -20,14 +21,13 @@ from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from routes.assets.assets import convert_version_input, select_asset_version
-from routes.authorization import current_profile
+from ripple.models.contexts import FilePurpose
+from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
 from routes.files.files import delete_by_id
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
-from ripple.models.contexts import FilePurpose
 
 log = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ def upload_internal(
 @router.post('/store')
 async def store_files(
         files: list[UploadFile] = File(...),
-        profile: Profile = Depends(current_profile),
+        profile: Profile = Depends(session_profile),
         storage: StorageClient = Depends(storage_client)) -> UploadResponse:
     """Store a list of files as a profile"""
 
@@ -217,7 +217,7 @@ async def store_and_attach_package(
 
 @router.get('/pending')
 async def pending(
-        profile: Annotated[Profile, Depends(current_profile)]
+        profile: Annotated[Profile, Depends(session_profile)]
 ) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for
     the current profile"""

@@ -20,7 +20,7 @@ from db.schema.profiles import Profile
 from ripple.automation import NatsAdapter, WorkerRequest
 from ripple.models.params import ParameterSet, ParameterSpec
 from ripple.runtime.params import repair_parameters, validate_params
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 log = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: Pa
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
         request: JobRequest,
-        profile: Profile = Depends(current_profile)) -> JobResponse:
+        profile: Profile = Depends(session_profile)) -> JobResponse:
     """Request a job from an existing definition"""
     with get_session() as session:
         job_def = session.exec(select(JobDefinition).where(
@@ -220,7 +220,7 @@ async def create_result(
 @router.get('/results/{job_id}')
 async def list_results(
         job_id: str,
-        profile: Profile = Depends(current_profile)) -> JobResultResponse:
+        profile: Profile = Depends(session_profile)) -> JobResultResponse:
     """List results for a job"""
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)

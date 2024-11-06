@@ -1,19 +1,40 @@
 from pydantic import BaseModel
 from diffusers import StableDiffusion3Pipeline
-from ripple.models.streaming import Message
+from ripple.models.streaming import Progress, OutputFiles
 from ripple.models.params import ParameterSet
 from ripple.automation import ResultPublisher
 
 import torch
 import io
 import base64
+import tempfile
+import os
+from uuid import uuid4
 
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Load the Stable Diffusion model
-pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16)
-pipe.enable_model_cpu_offload()
-#pipe = pipe.to("cuda")
-        
+pipe = StableDiffusion3Pipeline.from_pretrained(
+    "stabilityai/stable-diffusion-3-medium-diffusers", 
+    text_encoder_3=None,
+    tokenizer_3=None,
+    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+).to(device)
+
+if False and device == "cuda":        
+
+    torch._inductor.config.conv_1x1_as_mm = True
+    torch._inductor.config.coordinate_descent_tuning = True
+    torch._inductor.config.epilogue_fusion = False
+    torch._inductor.config.coordinate_descent_check_all_directions = True
+
+    pipe.transformer.to(memory_format=torch.channels_last)
+    pipe.vae.to(memory_format=torch.channels_last)
+    pipe.transformer = torch.compile(pipe.transformer, mode="max-autotune", fullgraph=True)
+    pipe.vae.decode = torch.compile(pipe.vae.decode, mode="max-autotune", fullgraph=True)
+
+
 # Aspect ratio to width and height mapping
 aspect_ratio_mapping = {
     "1:1": (1024, 1024),
@@ -33,7 +54,7 @@ class ImageRequest(ParameterSet):
     aspect_ratio: str = "1:1"
     seed: int = 0
 
-def txt2img(request: ImageRequest, responder: ResultPublisher):
+def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
     try:
         prompt = request.prompt
         negative_prompt = request.negative_prompt
@@ -42,7 +63,7 @@ def txt2img(request: ImageRequest, responder: ResultPublisher):
         aspect_ratio = request.aspect_ratio
         seed = request.seed
 
-        responder.result(Message(message=f"Starting Txt 2 Image Generation using SD3 Medium: {request}"))
+        responder.result(Progress(progress=10))
 
         # Get width and height from aspect_ratio
         if aspect_ratio in aspect_ratio_mapping:
@@ -51,24 +72,35 @@ def txt2img(request: ImageRequest, responder: ResultPublisher):
             raise Exception("Invalid aspect ratio")
 
         # Generate the image with the given width and height
-        image = pipe(
+        images = pipe(
             prompt,
             negative_prompt=negative_prompt,
             num_inference_steps=num_inference_steps,
             guidance_scale=guidance_scale,
             width=width,
             height=height
-        ).images[0]
+        ).images
         
-        responder.result(Message(message=f"Txt 2 Image Generation Completed: {request}"))
+        responder.result(Progress(progress=80))
 
+        # Use a temporary directory to save all the images
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            image_files = []
+            for img in images:
+                # Generate a unique file ID and path for each image
+                file_id = str(uuid4())
+                filename = f"{file_id}.png"
+                file_path = os.path.join(tmpdirname, filename)
 
-        # Convert image to base64
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                # Save the image to the temporary directory
+                img.save(file_path, format="PNG")
 
-        responder.result(Message(message=f"image: {img_str}"))
+                # Add the file_id and path to the dictionary
+                image_files.append(file_path)
+
+            responder.result(Progress(progress=90))
+
+            return OutputFiles(files={'image':image_files})
 
 
     except Exception as e:

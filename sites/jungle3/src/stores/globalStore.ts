@@ -13,6 +13,7 @@ const defaultProfile: ProfileResponse = {
   description: "",
   email: "",
   email_verified: false,
+  org_roles: [],
 };
 
 interface GlobalState {
@@ -49,10 +50,12 @@ export const useGlobalStore = create<GlobalState>((set) => ({
   updateProfile: (partial: Partial<ProfileResponse>) => {
     set((state) => ({ profile: { ...state.profile, ...partial } }));
   },
-  clearAll: () => set({
-    isLoggedIn: false,
-    authToken: '',
-    refreshToken: '',
-    profile: defaultProfile,
-    orgRoles: []}),
+  clearAll: () =>
+    set({
+      isLoggedIn: false,
+      authToken: "",
+      refreshToken: "",
+      profile: defaultProfile,
+      orgRoles: [],
+    }),
 }));

@@ -5,13 +5,13 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from pydantic import BaseModel
-from sqlmodel import select, update
+from sqlmodel import select, update as sql_update
 
 from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_seq_to_id, topo_id_to_seq, topo_seq_to_id
 from db.connection import get_session
 from db.schema.graph import Topology, TopologyRef
 from db.schema.profiles import Org, Profile
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 
 class TopologyCreateUpdateRequest(BaseModel):
@@ -81,7 +81,7 @@ async def list_all() -> list[Topology]:
 @router.post("/", status_code=HTTPStatus.CREATED)
 async def create(
         create: TopologyCreateUpdateRequest,
-        profile: Profile = Depends(current_profile)) -> TopologyResponse:
+        profile: Profile = Depends(session_profile)) -> TopologyResponse:
     """Create a new topology"""
     with get_session() as session:
         org_seq = org_id_to_seq(create.org_id)
@@ -109,7 +109,7 @@ async def create(
 async def update(
         topo_id: str,
         req: TopologyCreateUpdateRequest,
-        profile: Profile = Depends(current_profile)) -> TopologyResponse:
+        profile: Profile = Depends(session_profile)) -> TopologyResponse:
     """Update an existing topology"""
     with get_session() as session:
         update_params = req.model_dump()
@@ -139,7 +139,7 @@ async def update(
         # Update the topology
         topo_seq = topo_id_to_seq(topo_id)
         r = session.exec(
-            update(Topology).where(
+            sql_update(Topology).where(
                 Topology.topology_seq == topo_seq).where(
                 Topology.owner_seq == profile.profile_seq)
             .values(**update_params))
@@ -183,7 +183,7 @@ async def create_ref(
         dst_id: str,
         edge_data: dict = Body(...),
         response: Response = Response(),
-        profile: Profile = Depends(current_profile)) -> TopologyRefResponse:
+        profile: Profile = Depends(session_profile)) -> TopologyRefResponse:
     """Create a new topology ref"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)

@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
-from sqlmodel import delete, insert, select
+from sqlmodel import delete as sql_delete, insert, select
 
 from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
@@ -16,7 +16,7 @@ from ripple.client_ops import ReadClientOp
 from ripple.funcs import Boundary
 from ripple.models.streaming import StreamItemUnion
 from ripple.source_types import create_source
-from routes.authorization import current_profile
+from routes.authorization import current_cookie_profile, maybe_session_profile, session_profile
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, ReaderResponse
 from routes.readers.utils import (direction_db_to_literal, direction_literal_to_db, reader_to_source_params,
@@ -33,7 +33,7 @@ class WebsocketClientOp(ReadClientOp):
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-def create(create: CreateReaderRequest, profile: Profile = Depends(current_profile)) -> ReaderResponse:
+def create(create: CreateReaderRequest, profile: Profile = Depends(session_profile)) -> ReaderResponse:
     """Create a new reader on a source"""
     with get_session() as session:
         r = session.exec(insert(Reader).values(
@@ -65,7 +65,7 @@ def create(create: CreateReaderRequest, profile: Profile = Depends(current_profi
 
 
 @router.get("/")
-def current(profile: Profile = Depends(current_profile)) -> list[ReaderResponse]:
+def current(profile: Profile = Depends(session_profile)) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
     with get_session() as session:
         return resolve_results(session.exec(select(Reader)
@@ -73,11 +73,11 @@ def current(profile: Profile = Depends(current_profile)) -> list[ReaderResponse]
 
 
 @router.delete("/{reader_id}")
-def delete(reader_id: str, profile: Profile = Depends(current_profile)):
+def delete(reader_id: str, profile: Profile = Depends(session_profile)):
     """Delete a reader by ID"""
     with get_session() as session:
         reader_seq = reader_id_to_seq(reader_id)
-        r = session.exec(delete(Reader)
+        r = session.exec(sql_delete(Reader)
                          .where(Reader.owner_seq == profile.profile_seq)
                          .where(Reader.reader_seq == reader_seq))
         if r.rowcount == 0:
@@ -89,7 +89,7 @@ def delete(reader_id: str, profile: Profile = Depends(current_profile)):
 async def items(reader_id: str,
                 before: Optional[str] = None,
                 after: Optional[str] = None,
-                profile: Profile = Depends(current_profile)) -> list[StreamItemUnion]:
+                profile: Profile = Depends(session_profile)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
     reader_seq = reader_id_to_seq(reader_id)
     with get_session() as session:
@@ -130,9 +130,12 @@ async def test_connect(websocket: WebSocket):
 @router.websocket("/connect")
 async def connect_all(
         websocket: WebSocket,
-        profile: Profile = Depends(current_profile),
+        profile: Profile = Depends(maybe_session_profile),
 ):
     """Create a profile websocket connection"""
+    if not profile:
+        # JavaScript does not support headers for WebSocket connections, use cookies instead.
+        profile = await current_cookie_profile(websocket)
     try:
         log.info("websocket connected to profile %s", profile)
         await reader_connection_manager.connect(websocket, profile)

@@ -16,10 +16,11 @@ from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, fi
     org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
 from cryptid.location import location
-from db.schema.assets import Asset, AssetVersion
+from db.schema.assets import Asset, AssetTag, AssetVersion
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
+from db.schema.tags import Tag
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
@@ -27,7 +28,10 @@ VERSION_LEN = 3
 FILE_TYPE_CATEGORIES = {'files', 'thumbnails'}
 LINK_TYPE_CATEGORIES = {'links'}
 
-asset_join_select = select(Asset, AssetVersion)
+asset_join_select = (
+    select(Asset, AssetVersion)
+    .outerjoin(AssetVersion, AssetVersion.asset_seq == Asset.asset_seq)
+)
 
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
 
@@ -35,6 +39,7 @@ log = logging.getLogger(__name__)
 
 
 class AssetCreateRequest(BaseModel):
+    """Request to generate a parent asset record"""
     org_id: Optional[str] = None
 
 
@@ -98,6 +103,7 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetVersionContent | str]] = {}
+    tags: Optional[list[str]] = {}
 
 
 class AssetTopResult(AssetVersionResult):
@@ -105,6 +111,16 @@ class AssetTopResult(AssetVersionResult):
     when no version has been created. In this case the """
     downloads: int = 0  # Sum of all downloads
     versions: list[list[int]] = []  # Previously available versions
+
+
+def resolve_tags(session: Session, asset_seq: int) -> list[(int, str)]:
+    """Resolve all the tags for an asset"""
+    tag_results = session.exec(
+        select(AssetTag, Tag)
+        .where(AssetTag.type_seq == asset_seq)
+        .outerjoin(Tag, AssetTag.tag_seq == Tag.tag_seq)).all()
+    converted = [r[1].name for r in tag_results]
+    return converted
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -126,8 +142,10 @@ def resolve_org_name(session: Session, org_seq: int) -> str:
     return ""
 
 
-def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion]]) -> list[AssetVersionResult]:
+def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) -> list[
+    AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
+
     results = list()
     for join_result in join_results:
         asset, ver = join_result
@@ -150,7 +168,9 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             version=(ver.major, ver.minor, ver.patch),
             commit_ref=ver.commit_ref,
             created=ver.created,
-            contents=asset_contents_json_to_model(asset_id, ver.contents))
+            contents=asset_contents_json_to_model(asset_id, ver.contents),
+            tags=resolve_tags(session, asset.asset_seq),
+        )
         results.append(avr)
     return results
 
@@ -184,13 +204,16 @@ def select_asset_version(session: Session,
             created=None,
             contents={}))]
     else:
-        stmt = select(Asset, AssetVersion).outerjoin(AssetVersion,
-                                                     (Asset.asset_seq == AssetVersion.asset_seq) &
-                                                     (AssetVersion.major == version[0]) &
-                                                     (AssetVersion.minor == version[1]) &
-                                                     (AssetVersion.patch == version[2])).where(
-            Asset.asset_seq == asset_id_to_seq(asset_id))
-
+        asset_seq = asset_id_to_seq(asset_id)
+        stmt = select(Asset, AssetVersion).outerjoin(
+            AssetVersion,
+            (Asset.asset_seq == AssetVersion.asset_seq) &
+            (AssetVersion.major == version[0]) &
+            (AssetVersion.minor == version[1]) &
+            (AssetVersion.patch == version[2])
+        ).where(
+            Asset.asset_seq == asset_seq
+        )
         results = session.exec(stmt).all()
     if not results:
         return None
@@ -288,7 +311,10 @@ def resolve_contents_as_json(
     return contents
 
 
-def create(session: Session, r: AssetCreateRequest, profile_seq: int) -> AssetCreateResult:
+def create_root(session: Session, r: AssetCreateRequest, profile_seq: int) -> AssetCreateResult:
+    """
+    Create the root asset that is the stable ID for all asset versions
+    """
     org_seq = None
 
     # If the user passes a collection ID ensure that it exists
@@ -448,7 +474,8 @@ def top(session: Session):
             created=ver.created,
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
-            downloads=downloads, )
+            downloads=downloads,
+            tags=resolve_tags(session, asset.asset_seq))
 
     reduced = {}
     for result in results:

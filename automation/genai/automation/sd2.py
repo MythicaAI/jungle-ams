@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from ripple.models.streaming import Message
+from ripple.models.streaming import Progress, OutputFiles
 from ripple.automation import ResultPublisher
 from ripple.models.params import ParameterSet
 
@@ -10,7 +10,9 @@ from torchvision import transforms
 from automation.helpers.sd2_differential_diffusion_pipe import StableDiffusionDiffImg2ImgPipeline
 from io import BytesIO
 import base64
-
+import tempfile
+import os
+from uuid import uuid4
 
 device = "cuda"
 
@@ -49,7 +51,7 @@ class InpaintRequest(ParameterSet):
     map: str #Base64 encoded byte string
     
 
-def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
+def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -> OutputFiles:
     try:
 
         # Decode image from base64
@@ -70,12 +72,11 @@ def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
         guidance_scale = request.guidance_scale
         num_inference_steps = request.num_inference_steps
         num_images_per_prompt = request.num_images_per_prompt
-        
 
-        responder.result(Message(message=f"Starting Txt 2 Image Inpaint using SD2: {request}"))
+        responder.result(Progress(progress=10))
 
-        # Run the pipeline
-        edited_image = sd2_pipe(
+        # Run the pipeline and get the list of images
+        images = sd2_pipe(
             prompt=prompt,
             image=image,
             guidance_scale=guidance_scale,
@@ -83,16 +84,29 @@ def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
             negative_prompt=negative_prompt,
             map=map,
             num_inference_steps=num_inference_steps
-        ).images[0]
+        ).images
 
-        responder.result(Message(message=f"Txt 2 Image Inpaint completed: {request}"))
+        responder.result(Progress(progress=80))
 
-        # Convert the edited image to base64
-        buffered = BytesIO()
-        edited_image.save(buffered, format="PNG")
-        edited_image_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        # Use a temporary directory to save all the images
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            image_files = []
+            for img in images:
+                # Generate a unique file ID and path for each image
+                file_id = str(uuid4())
+                filename = f"{file_id}.png"
+                file_path = os.path.join(tmpdirname, filename)
 
-        responder.result(Message(message=f"image: {edited_image_str}"))
+                # Save the image to the temporary directory
+                img.save(file_path, format="PNG")
+
+                # Add the file_id and path to the dictionary
+                image_files.append(file_path)
+
+            responder.result(Progress(progress=90))
+
+            return OutputFiles(files={'image':image_files})
+
     
     except Exception as e:
         raise e
@@ -100,4 +114,3 @@ def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher):
     finally:
         # Clear CUDA memory
         torch.cuda.empty_cache()
-

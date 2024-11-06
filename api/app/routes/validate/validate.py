@@ -7,10 +7,12 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import delete, insert, select, update
 
+from config import app_config
 from cryptid.cryptid import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
-from routes.authorization import current_profile
+from profiles.invalidate_sessions import invalidate_sessions
+from routes.authorization import session_profile
 from validate_email.responses import ValidateEmailResponse, ValidateEmailState
 
 router = APIRouter(prefix="/validate-email", tags=["profiles"])
@@ -22,7 +24,7 @@ KEY_PREFIX = 'v_'
 
 @router.get('/')
 async def begin_email(
-        profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
+        profile: Profile = Depends(session_profile)) -> ValidateEmailResponse:
     """Start validating an email address stored on the current profile"""
     with get_session() as session:
         validate_code = KEY_PREFIX + ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
@@ -36,6 +38,11 @@ async def begin_email(
                 'verification_link': validate_link
             }
         ))
+        session.exec(update(Profile).values(
+            email_validate_state=ValidateEmailState.db_value(ValidateEmailState.link_sent)
+        ).where(
+            Profile.profile_seq == profile.profile_seq
+        ))
         session.commit()
         return ValidateEmailResponse(owner_id=profile_seq_to_id(profile.profile_seq),
                                      link=validate_link,
@@ -46,7 +53,7 @@ async def begin_email(
 @router.get('/{verification_code}')
 async def complete_email(
         verification_code: str,
-        profile: Profile = Depends(current_profile)) -> ValidateEmailResponse:
+        profile: Profile = Depends(session_profile)) -> ValidateEmailResponse:
     """Provide a valid verification code to validate email"""
     with get_session() as session:
         validate_profile = session.exec(select(Profile).where(
@@ -70,9 +77,9 @@ async def complete_email(
             raise HTTPException(HTTPStatus.NOT_FOUND, detail='invalid validation source')
 
         # mark the profile email validation complete
-        validated = 2  # TODO: enum unification
         session.exec(update(Profile).values(
-            {Profile.email_validate_state: validated}).where(
+            {Profile.email_validate_state:
+                 ValidateEmailState.db_value(ValidateEmailState.validated)}).where(
             Profile.profile_seq == profile.profile_seq))
 
         # remove the verification code
@@ -80,10 +87,12 @@ async def complete_email(
             ProfileKey.key == verification_code
         ))
 
+        invalidate_sessions(session, profile.profile_seq)
+
         session.commit()
 
         return ValidateEmailResponse(
             owner_id=profile_seq_to_id(profile.profile_seq),
             code=verification_code,
-            link='https://api.mythica.ai',
+            link=app_config().api_base_uri,
             state=ValidateEmailState.validated)

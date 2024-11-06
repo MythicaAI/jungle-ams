@@ -2,6 +2,9 @@
 
 from datetime import timezone
 from http import HTTPStatus
+import logging
+from sqlalchemy.exc import IntegrityError
+from typing import Optional
 
 from cryptid.cryptid import (
     profile_seq_to_id,
@@ -13,10 +16,9 @@ from sqlalchemy import func
 from sqlmodel import col, delete, insert, select
 
 from db.connection import TZ, get_session
-from db.schema.assets import AssetTag, Asset
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
-from routes.authorization import current_profile
+from routes.authorization import session_profile, maybe_session_profile
 from routes.tags.type_utils import (
     get_model_type,
     get_type_id_to_seq,
@@ -26,6 +28,9 @@ from routes.tags.type_utils import (
 )
 from routes.tags.tag_models import TagType, TagTypeRequest, TagResponse
 
+
+log = logging.getLogger(__name__)
+
 router = APIRouter(prefix='/types', tags=['tags'])
 
 
@@ -33,12 +38,12 @@ router = APIRouter(prefix='/types', tags=['tags'])
 async def create_tag_for_type(
     tag_type: TagType,
     create: TagTypeRequest,
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    profile: Profile = Depends(session_profile),
 ):
     values = create.model_dump()
 
     type_model = get_model_type(tag_type)
-    model_of_type_model: Asset = get_model_of_model_type(tag_type)
+    model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
     model_type_seq_col = get_model_type_seq_col(tag_type)
 
@@ -56,7 +61,6 @@ async def create_tag_for_type(
             .where(model_of_type_model.owner_seq == profile.profile_seq)
             .where(model_type_seq_col == type_seq)
         ).first()
-        print("model_exists", model_exists)
 
         if not model_exists:
             raise HTTPException(
@@ -64,8 +68,16 @@ async def create_tag_for_type(
                 detail=f"You are not authorized to create tag for this {tag_type}:{values['type_id']}.",
             )
 
-        session.exec(insert(type_model).values(**insert_dict))
-        session.commit()
+        try:
+            session.exec(insert(type_model).values(**insert_dict))
+            session.commit()
+        except IntegrityError as ex:
+            session.rollback()
+            log.error("create_tag error: %s", str(ex))
+            raise HTTPException(
+                HTTPStatus.CONFLICT,
+                detail=f'This tag: {values["tag_id"]} has already been assigned on {str(tag_type)}: {values["type_id"]}.',
+            ) from ex
 
     return {"tag_id": values["tag_id"], "type_id": values["type_id"]}
 
@@ -73,11 +85,17 @@ async def create_tag_for_type(
 @router.get('/{tag_type}')
 async def get_tags_for_type(
     tag_type: TagType,
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    profile: Optional[Profile] = Depends(maybe_session_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
 ):
-    type_model: AssetTag = get_model_type(tag_type)
+    if tag_type == TagType.file:
+        if not profile:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                detail="You must be logged into the system to enrich files."
+            )
+    type_model = get_model_type(tag_type)
 
     with get_session() as session:
 
@@ -106,15 +124,15 @@ async def get_tags_for_type(
 
 
 @router.delete('/{tag_type}/{tag_id}/{type_id}')
-async def delete_tag(
+async def delete_tag_type(
     tag_type: TagType,
     tag_id: str,
     type_id: str,
-    profile: Profile = Depends(current_profile),
+    profile: Profile = Depends(session_profile),
 ):
-    """Delete an existing tag on type_model"""
-    type_model: AssetTag = get_model_type(tag_type)
-    model_of_type_model: Asset = get_model_of_model_type(tag_type)
+    """Delete an existing tag associated with a specified model type."""
+    type_model = get_model_type(tag_type)
+    model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
     model_type_seq_col = get_model_type_seq_col(tag_type)
 
@@ -141,6 +159,7 @@ async def delete_tag(
                     HTTPStatus.NOT_FOUND,
                     detail=f"{tag_type} tag not found.",
                 )
+            session.commit()
             return {"message": f"{tag_type} tag deleted successfully."}
         else:
             raise HTTPException(
@@ -152,11 +171,17 @@ async def delete_tag(
 @router.get('/{tag_type}/top')
 async def get_top_tags_for_type(
     tag_type: TagType,
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    profile: Optional[Profile] = Depends(maybe_session_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
 ):
-    type_model: AssetTag = get_model_type(tag_type)
+    type_model = get_model_type(tag_type)
+    if tag_type == TagType.file:
+        if not profile:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                detail="You must be logged into the system to enrich files."
+            )
 
     with get_session() as session:
 
@@ -179,7 +204,7 @@ async def get_top_tags_for_type(
             select(Tag)
             .join(
                 top_tag_subquery, Tag.tag_seq == top_tag_subquery.c.tag_seq
-            )  # pylint: disable=no-member
+            )
             .order_by(
                 col(top_tag_subquery.c.tag_count).desc(),
                 col(Tag.tag_seq).desc(),  # pylint: disable=no-member
@@ -187,13 +212,6 @@ async def get_top_tags_for_type(
         )
 
         tags = session.exec(query).all()
-        from sqlalchemy.dialects import postgresql
-
-        print(
-            query.compile(
-                dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
-            )
-        )
 
         response = [
             TagResponse(
@@ -210,15 +228,22 @@ async def get_top_tags_for_type(
 
 @router.get('/{tag_type}/filter')
 async def get_filtered_model_types_by_tags(
-    tag_type: TagType,   # pylint: disable=unused-argument
-    profile: Profile = Depends(current_profile),  # pylint: disable=unused-argument
+    tag_type: TagType,
+    profile: Optional[Profile] = Depends(maybe_session_profile),
     limit: int = Query(1, le=100),
     offset: int = 0,
     include: list[str] = Query(None),
     exclude: list[str] = Query(None),
 ):
-    type_model: AssetTag = get_model_type(tag_type)
-    model_of_type_model: Asset = get_model_of_model_type(tag_type)
+    if tag_type == TagType.file:
+        if not profile:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                detail="You must be logged into the system to enrich files."
+            )
+
+    type_model = get_model_type(tag_type)
+    model_of_type_model = get_model_of_model_type(tag_type)
     model_type_seq_col = get_model_type_seq_col(tag_type)
 
     with get_session() as session:

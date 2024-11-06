@@ -6,6 +6,11 @@ type Link = {
   value: string;
 };
 
+type Tag = {
+  tag_id: string;
+  tag_name: string;
+};
+
 interface AssetVersion {
   asset_id: string;
   org_id: string;
@@ -22,6 +27,9 @@ interface AssetVersion {
   files: AssetVersionContentMap;
   thumbnails: AssetVersionContentMap;
   links: Link[];
+  initialTag: Tag;
+  tag: string;
+  customTag: string;
 
   addFile: (file: AssetVersionContent) => AssetVersionContentMap;
   addFiles: (files: AssetVersionContent[]) => AssetVersionContentMap;
@@ -31,6 +39,9 @@ interface AssetVersion {
   removeThumbnail: (file_id: string) => AssetVersionContentMap;
   removeThumbnails: () => AssetVersionContentMap;
   setLinks: (links: Link[]) => Link[];
+  setInitialTag: (tag: Tag) => Tag;
+  setTag: (tag: string) => string;
+  setCustomTag: (tag: string) => string;
   removeLinks: () => AssetVersionContentMap;
   updateVersion: (update: Partial<AssetVersion>) => void;
   clearVersion: () => void;
@@ -50,6 +61,8 @@ const defaultAssetVersion: Partial<AssetVersion> = {
   files: {},
   thumbnails: {},
   links: [],
+  tag: "",
+  customTag: "",
 };
 function createInstance<T>(
   defaultValues: Partial<T>,
@@ -123,9 +136,17 @@ export const useAssetVersionStore = create<AssetVersion>((set, get) => ({
     set(() => ({ links: data }));
     return get().links;
   },
-  clearLinks: () => {
-    set(() => ({ links: [] }));
-    return get().links;
+  setInitialTag: (value: Tag) => {
+    set(() => ({ initialTag: value }));
+    return get().initialTag;
+  },
+  setTag: (value: string) => {
+    set(() => ({ tag: value }));
+    return get().tag;
+  },
+  setCustomTag: (value: string) => {
+    set(() => ({ customTag: value }));
+    return get().customTag;
   },
 
   updateVersion: (update: Partial<AssetVersion>) =>

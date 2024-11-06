@@ -1,0 +1,31 @@
+{{- $componentContext := .Values.api.canary -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $componentContext.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ $componentContext.replicas | default 1 }}
+  strategy:
+    {{- include "api.rolloutStrategy" $componentContext | nindent 4 }}
+  selector:
+    matchLabels:
+      app: {{ $componentContext.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "api.commonLabels" . | nindent 8 }}
+        {{- include "api.componentLabels" $componentContext | nindent 8 }}
+    spec:
+      {{- include "api.nodeSelector" $componentContext | nindent 6 }}
+      terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}
+      serviceAccountName: api
+      containers:
+        - name: canary
+          image: "{{ .Values.imageRepository }}/mythica-job-canary:{{ $componentContext.tag }}"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+      restartPolicy: Always

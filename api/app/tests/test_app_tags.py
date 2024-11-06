@@ -6,9 +6,10 @@ from http import HTTPStatus
 
 from munch import munchify
 
+import auth.roles
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import FileContentTestObj, assert_status_code, get_random_string
 from tests.fixtures.uploader import request_to_upload_files
+from tests.shared_test import FileContentTestObj, assert_status_code, get_random_string
 
 # length of event data in test events
 test_event_info_len = 10
@@ -21,11 +22,11 @@ test_file_content_type = "application/octet-stream"
 
 
 def test_tags_operations(api_base, client, create_profile):
-    simple_profile = create_profile(email="test@test.ai")
+    simple_profile = create_profile(email="test@test.ai", validate_email=True)
     simple_headers = simple_profile.authorization_header()
     simple_profile = simple_profile.profile
 
-    test_profile = create_profile(email="test@mythica.ai")
+    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
     headers = test_profile.authorization_header()
 
@@ -35,7 +36,6 @@ def test_tags_operations(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     org_id = o.org_id
-    
 
     def create_asset(headers):
         # create asset in org
@@ -89,7 +89,7 @@ def test_tags_operations(api_base, client, create_profile):
     # Test profile does not have required_role to create tag
     unrequired_role_tag_name = "tag_" + get_random_string(10, digits=False)
     r = client.post(f"{api_base}/tags", json={'name': unrequired_role_tag_name}, headers=simple_headers)
-    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
     created_tag_ids = []
     top_asset_ids = [create_asset(headers) for _ in range(10)]
@@ -137,10 +137,10 @@ def test_tags_operations(api_base, client, create_profile):
 
 
 def test_tag_asset_operations(api_base, client, create_profile):
-    test_profile = create_profile(email="test@mythica.ai")
+    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
     headers = test_profile.authorization_header()
-    new_test_profile = create_profile(email="test@mythica.ai")
+    new_test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     new_headers = new_test_profile.authorization_header()
 
     # create org to contain assets
@@ -149,6 +149,14 @@ def test_tag_asset_operations(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     org_id = o.org_id
+
+    # initial role check
+    r = client.get(
+        f"{api_base}/profiles/roles/",
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert auth.roles.alias_tag_author in o.auth_roles
 
     def create_asset(headers):
         # create asset in org
@@ -229,13 +237,14 @@ def test_tag_asset_operations(api_base, client, create_profile):
     filter_assets_ids = [create_asset(headers) for _ in range(model_type_count_to_filter)]
     include_tags_id_names = [create_tag() for _ in range(include_tags_count_to_filter)]
     exclude_tags_id_names = [create_tag() for _ in range(exclude_tags_count_to_filter)]
-    created_tag__type_ids = []
+    created_tag__type_ids: list[tuple[str, str, str]] = []
     for i in range(model_type_count_to_filter):
         filter_model_type_id = filter_assets_ids[i]
-        for filter_tag_id, _ in include_tags_id_names:
+        for filter_tag_id, filter_tag_name in include_tags_id_names:
             created_tag__type_ids.append(
                 (
                     filter_tag_id,
+                    filter_tag_name,
                     filter_model_type_id,
                 )
             )
@@ -243,10 +252,11 @@ def test_tag_asset_operations(api_base, client, create_profile):
 
         # last model_type_tag has exclude_tags
         if i == top_limit - 1:
-            for filter_tag_id, _ in exclude_tags_id_names:
+            for filter_tag_id, filter_tag_name in exclude_tags_id_names:
                 created_tag__type_ids.append(
                     (
                         filter_tag_id,
+                        filter_tag_name,
                         filter_model_type_id,
                     )
                 )
@@ -279,11 +289,40 @@ def test_tag_asset_operations(api_base, client, create_profile):
         headers=headers,
     )
     assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
+
+    # Test create the already created tag_type
+    new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
+    r = client.post(
+        f"{api_base}/tags/types/asset",
+        json={'tag_id': new_tag_id, "type_id": asset_id},
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.CONFLICT)
+
+    # Test create the already created tag
+    new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
+    r = client.post(f"{api_base}/tags", json={'name': filter_tag_name}, headers=headers)
+    assert_status_code(r, HTTPStatus.CONFLICT)
 
     for tag__type_ids in created_tag__type_ids:
-        new_tag_id, asset_id = tag__type_ids
+        new_tag_id, _, asset_id = tag__type_ids
         delete_type_tag("asset", asset_id, new_tag_id)
+
+    # check was asset_tag deleted
+    new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
+    r = client.get(
+        f"{api_base}/tags/types/asset/filter",
+        params={
+            "limit": model_type_count_to_filter,
+            "offset": 0,
+            "include": [filter_tag_name]
+        },
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    for filter_asset in o:
+        assert asset_id != filter_asset.asset_id
 
     delete_all_created_tags(tag__type_ids[0] for tag__type_ids in created_tag__type_ids)
 
@@ -303,9 +342,9 @@ def test_wrong_type_model(api_base, client, create_profile):
 
 
 def test_tag_files_operations(
-    api_base, client, create_profile, request_to_upload_files
+        api_base, client, create_profile, request_to_upload_files
 ):
-    test_profile = create_profile(email="test@mythica.ai")
+    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     profile = test_profile.profile
     headers = test_profile.authorization_header()
     new_test_profile = create_profile(email="test@mythica.ai")
@@ -430,6 +469,13 @@ def test_tag_files_operations(
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
 
+    # test get filtered files when profile does not have access
+    r = client.get(
+        f"{api_base}/tags/types/file/filter",
+        params={},
+    )
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
+
     assert len(o) == model_type_count_to_filter - 1
     for file in o:
         assert file.file_id != filter_files_ids[-1]
@@ -444,6 +490,20 @@ def test_tag_files_operations(
     )
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
+
+    # test get files when profile does not have access
+    r = client.get(
+        f"{api_base}/tags/types/file",
+        params={},
+    )
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
+
+    # test get top files when profile does not have access
+    r = client.get(
+        f"{api_base}/tags/types/file/top",
+        params={},
+    )
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
 
     for tag__type_ids in created_tag__type_ids:
         new_tag_id, file_id = tag__type_ids

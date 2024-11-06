@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlmodel import col, delete, select, update
+from sqlmodel import col, delete as sql_delete, select, update
 
 from cryptid.cryptid import profile_id_to_seq
 from db.connection import TZ, get_session
@@ -14,7 +14,7 @@ from db.schema.profiles import Profile, ProfileKey, ProfileSession
 from profiles.auth0_validator import Auth0Validator
 from profiles.responses import SessionStartResponse
 from profiles.start_session import start_session, start_session_with_token_validator
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 log = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ async def key(request: Request, api_key: str) -> SessionStartResponse:
 
         # test for key expiration and remove expired key
         if key_result.expires.replace(tzinfo=TZ).astimezone(timezone.utc) <= datetime.now(timezone.utc):
-            session.exec(delete(ProfileKey).where(col(ProfileKey.key) == api_key))
+            session.exec(sql_delete(ProfileKey).where(col(ProfileKey.key) == api_key))
             session.commit()
             raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} expired")
 
@@ -91,7 +91,7 @@ async def auth0_spa(req: Auth0SpaStartRequest,
 
 
 @router.delete('/')
-async def delete(profile: Profile = Depends(current_profile)):
+async def delete(profile: Profile = Depends(session_profile)):
     """Stop a session for a profile"""
     with get_session() as session:
         session.begin()
@@ -99,7 +99,7 @@ async def delete(profile: Profile = Depends(current_profile)):
             {'active': False}).where(
             col(Profile.profile_seq) == profile.profile_seq))
 
-        session.exec(delete(ProfileSession).where(
+        session.exec(sql_delete(ProfileSession).where(
             col(ProfileSession.profile_seq) == profile.profile_seq))
 
         session.commit()

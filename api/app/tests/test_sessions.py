@@ -96,6 +96,7 @@ def test_start_session_openid(api_base, client):
     o = munchify(r.json())
     assert 'token' in o
     assert len(o.token) > 8
+    assert o.roles == []
 
 
 def test_resume_session_openid():

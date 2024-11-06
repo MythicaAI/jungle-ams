@@ -8,6 +8,7 @@ To run use:
 $ cd api/app
 $ python ./websocket_script_test.py
 """
+
 # TODO: Make it flexible for different envs: dev, local, etc.
 # TODO: Delete even on fails all tested objects
 
@@ -58,7 +59,7 @@ class WebSocketTester:
                 raw: dict = json.loads(output_raw)
                 assert 'index' in raw
                 assert 'payload' in raw
-                #TODO: assert raw["index"] == stream_items[count_events]["index"]
+                # TODO: assert raw["index"] == stream_items[count_events]["index"]
                 count_events += 1
 
         assert page_sized_reads == int(
@@ -79,6 +80,15 @@ class WebSocketTester:
 
         async with httpx.AsyncClient() as client:
             page_size = 3
+            print(
+                "url:",
+                f"{self.http_uri}/readers/",
+                dict(
+                    json={'source': 'events', 'params': {'page_size': page_size}},
+                    headers=auth_header,
+                    timeout=self.timeout,
+                ),
+            )
             await client.post(
                 f"{self.http_uri}/readers/",
                 json={'source': 'events', 'params': {'page_size': page_size}},
@@ -129,10 +139,14 @@ def run_in_process(websocket_uri: str, http_uri: str, num_connections: int):
 if __name__ == "__main__":
     test_websocket_uri = "ws://localhost:50555/v1"
     test_http_uri = "http://localhost:50555/v1"
-    num_of_connections = 5
+    staging_websocket_uri = "ws://api-staging.mythica.ai/v1"
+    staging_http_uri = "http://api-staging.mythica.ai/v1"
+    num_of_connections = 1
 
     process = multiprocessing.Process(
-        target=run_in_process, args=(test_websocket_uri, test_http_uri, num_of_connections)
+        target=run_in_process,
+        # args=(test_websocket_uri, test_http_uri, num_of_connections),
+        args=(staging_websocket_uri, staging_http_uri, num_of_connections),
     )
     process.start()
     process.join()

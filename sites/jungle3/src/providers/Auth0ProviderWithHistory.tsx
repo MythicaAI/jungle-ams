@@ -1,10 +1,12 @@
-import {AppState, Auth0Provider, User} from '@auth0/auth0-react';
+import { AppState, Auth0Provider, User } from "@auth0/auth0-react";
 
 interface Auth0ProviderWithConfigProps {
   children: React.ReactNode;
 }
 
-const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({children}) => {
+const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({
+  children,
+}) => {
   const domain = import.meta.env.VITE_AUTH0_DOMAIN;
   const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
   const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
@@ -16,9 +18,9 @@ const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({child
     window.history.replaceState(
       {},
       document.title,
-      appState?.returnTo || window.location.pathname
+      appState?.returnTo || window.location.pathname,
     );
-  }
+  };
 
   return (
     <Auth0Provider
@@ -27,9 +29,9 @@ const Auth0ProviderWithHistory: React.FC<Auth0ProviderWithConfigProps> = ({child
       onRedirectCallback={redirectHandler}
       cacheLocation="localstorage"
       authorizationParams={{
-          redirect_uri: window.location.origin,
-          audience: audience,
-          scope: "openid profile email"
+        redirect_uri: window.location.origin,
+        audience: audience,
+        scope: "openid profile email",
       }}
     >
       {children}

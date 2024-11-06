@@ -2,16 +2,16 @@
 
 from typing import Callable, Optional, Union
 
+from sqlalchemy import Select, desc
+from sqlmodel import Field, Session
+
+import assets.repo as assets_repo
 from cryptid.cryptid import (
     asset_id_to_seq,
     file_id_to_seq,
 )
-from sqlalchemy import Select, desc, select
-from sqlmodel import Field, Session
-
-from assets.assets_repo import process_join_results
-from db.schema.assets import AssetTag, Asset, AssetVersion
-from db.schema.media import FileTag, FileContent
+from db.schema.assets import Asset, AssetTag, AssetVersion
+from db.schema.media import FileContent, FileTag
 from db.schema.profiles import Profile
 from routes.file_uploads import enrich_files
 from routes.tags.tag_models import TagType
@@ -53,21 +53,19 @@ def get_type_id_to_seq(tag_type: TagType) -> Callable:
 
 
 def process_type_model_result(
-    tag_type: TagType,
-    session: Session,
-    type_model_query: Optional[Select],
-    profile: Profile,
-    limit: int,
-    offset: int,
+        tag_type: TagType,
+        session: Session,
+        type_model_query: Optional[Select],
+        profile: Optional[Profile],
+        limit: int,
+        offset: int,
 ) -> Callable:
     "Dynamically return the type_model response"
     if tag_type == TagType.asset:
         subquery = type_model_query.subquery()
-
         query = (
-            select(Asset, AssetVersion)
+            assets_repo.asset_join_select
             .join(subquery, Asset.asset_seq == subquery.c.asset_seq)
-            .outerjoin(AssetVersion, subquery.c.asset_seq == AssetVersion.asset_seq)
             .order_by(
                 desc(AssetVersion.major),
                 desc(AssetVersion.minor),
@@ -77,7 +75,7 @@ def process_type_model_result(
             .offset(offset)
         )
         results = session.exec(query)
-        return process_join_results(session, results)
+        return assets_repo.process_join_results(session, results)
     elif tag_type == TagType.file:
 
         files = session.exec(

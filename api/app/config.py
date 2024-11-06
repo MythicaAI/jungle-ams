@@ -3,6 +3,7 @@ Application configuration definitions
 """
 import functools
 import tempfile
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -44,6 +45,7 @@ class AppConfig(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
+    mythica_org_name: str = "Mythica"
 
 
 @functools.lru_cache

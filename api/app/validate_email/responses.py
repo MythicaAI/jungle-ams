@@ -9,6 +9,14 @@ class ValidateEmailState(str, Enum):
     link_sent = "link_sent"
     validated = "validated"
 
+    @staticmethod
+    def db_value(str_value):
+        """Return the database value of the enum string"""
+        return (
+            ValidateEmailState.not_validated,
+            ValidateEmailState.link_sent,
+            ValidateEmailState.validated).index(str_value)
+
 
 class ValidateEmailResponse(BaseModel):
     """Response returned to a email validation request"""

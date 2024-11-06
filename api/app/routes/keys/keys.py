@@ -8,11 +8,11 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlmodel import col, delete, insert, select
+from sqlmodel import col, delete as sql_delete, insert, select
 
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile, ProfileKey
-from routes.authorization import current_profile
+from routes.authorization import session_profile
 
 router = APIRouter(prefix='/keys', tags=['keys'])
 
@@ -41,7 +41,7 @@ def is_naive(dt):
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def generate(
         create: KeyGenerateRequest,
-        profile: Profile = Depends(current_profile)
+        profile: Profile = Depends(session_profile)
 ) -> KeyGenerateResponse:
     """Generate a new API Key"""
     with get_session() as session:
@@ -85,16 +85,16 @@ async def generate(
 
 
 @router.delete('/{key}')
-async def delete(key: str, profile: Profile = Depends(current_profile)):
+async def delete(key: str, profile: Profile = Depends(session_profile)):
     """Delete an existing API key"""
     with get_session() as session:
-        stmt = delete(ProfileKey).where(ProfileKey.key == key).where(ProfileKey.owner_seq == profile.profile_seq)
+        stmt = sql_delete(ProfileKey).where(ProfileKey.key == key).where(ProfileKey.owner_seq == profile.profile_seq)
         session.execute(stmt)
         session.commit()
 
 
 @router.get('/')
-async def current(profile: Profile = Depends(current_profile)) -> list[KeyGenerateResponse]:
+async def current(profile: Profile = Depends(session_profile)) -> list[KeyGenerateResponse]:
     """Get all API keys for this profile"""
     with get_session() as session:
         # pylint: disable=no-member

@@ -33,11 +33,13 @@ def upgrade():
     org_name = "mythica"
 
     profiles_with_domain = session.execute(
-        select(Profile).where(Profile.email.like('%@mythica.ai'))
+        select(Profile).where(Profile.email.like('%@mythica.ai')).where(
+            Profile.email_validate_state == 2
+        )
     ).scalars().all()
     if profiles_with_domain:
-        create_new_org_ref_to_profile_roles(session, "mythica", profiles_with_domain, "mythica-tags")
-        log.warning("Created a new mythica-tags role profile_seq: %s", profiles_with_domain[0].profile_seq)
+        create_new_org_ref_to_profile_roles(session, "mythica", profiles_with_domain, "tag-author")
+        log.warning("Created tag-author roles profile_seq: %s", profiles_with_domain[0].profile_seq)
 
 
 def downgrade():
