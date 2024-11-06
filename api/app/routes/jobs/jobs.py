@@ -73,8 +73,9 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
-async def create_job_def(
+async def define_new(
         request: JobDefinitionRequest) -> JobDefinitionResponse:
+    """Create a new job definition"""
     with get_session() as session:
         job_def = JobDefinition(**request.model_dump())
         session.add(job_def)
@@ -84,7 +85,8 @@ async def create_job_def(
 
 
 @router.get('/definitions')
-async def get_job_defs() -> list[JobDefinitionModel]:
+async def list_definitions() -> list[JobDefinitionModel]:
+    """List existing job definitions"""
     with get_session() as session:
         job_defs = session.exec(select(JobDefinition)).all()
         return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
@@ -116,6 +118,7 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, params: str
 
 
 def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: ParameterSet):
+    """Add a new job event to the NATS message bus"""
     [subject, path] = job_type.split("::")
 
     event = WorkerRequest(
@@ -131,9 +134,10 @@ def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: Pa
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def create_job(
+async def create(
         request: JobRequest,
         profile: Profile = Depends(session_profile)) -> JobResponse:
+    """Request a job from an existing definition"""
     with get_session() as session:
         job_def = session.exec(select(JobDefinition).where(
             JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
@@ -197,9 +201,10 @@ def job_result_insert(session: Session, job_seq: int, request: JobResultRequest)
 
 
 @router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
-async def create_job_result(
+async def create_result(
         job_id: str,
         request: JobResultRequest) -> JobResultCreateResponse:
+    """Add a new job result"""
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
@@ -213,9 +218,10 @@ async def create_job_result(
 
 
 @router.get('/results/{job_id}')
-async def get_job_results(
+async def list_results(
         job_id: str,
         profile: Profile = Depends(session_profile)) -> JobResultResponse:
+    """List results for a job"""
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
@@ -233,8 +239,9 @@ async def get_job_results(
 
 
 @router.post('/complete/{job_id}')
-async def set_job_completed(
+async def set_complete(
         job_id: str):
+    """Mark a job as complete"""
     with get_session() as session:
         job_result = session.exec(update(Job)
                                   .where(Job.job_seq == job_id_to_seq(job_id))

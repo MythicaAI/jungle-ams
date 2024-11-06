@@ -7,7 +7,7 @@ from http import HTTPStatus
 
 from munch import munchify
 
-from assets.assets_repo import AssetVersionContent
+from assets.repo import AssetVersionContent
 from routes.type_adapters import register_adapters
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader

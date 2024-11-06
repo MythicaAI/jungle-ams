@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
-from sqlmodel import delete, insert, select
+from sqlmodel import delete as sql_delete, insert, select
 
 from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
@@ -33,16 +33,18 @@ class WebsocketClientOp(ReadClientOp):
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-def create_reader(create: CreateReaderRequest, profile: Profile = Depends(session_profile)) -> ReaderResponse:
+def create(
+        create_req: CreateReaderRequest,
+        profile: Profile = Depends(session_profile)) -> ReaderResponse:
     """Create a new reader on a source"""
     with get_session() as session:
         r = session.exec(insert(Reader).values(
-            source=create.source,
+            source=create_req.source,
             owner_seq=profile.profile_seq,
-            name=create.name,
-            position=create.position,
-            params=create.params,
-            direction=direction_literal_to_db(create.direction),
+            name=create_req.name,
+            position=create_req.position,
+            params=create_req.params,
+            direction=direction_literal_to_db(create_req.direction),
         ))
         if r.rowcount == 0:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
@@ -65,7 +67,7 @@ def create_reader(create: CreateReaderRequest, profile: Profile = Depends(sessio
 
 
 @router.get("/")
-def get_readers(profile: Profile = Depends(session_profile)) -> list[ReaderResponse]:
+def current(profile: Profile = Depends(session_profile)) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
     with get_session() as session:
         return resolve_results(session.exec(select(Reader)
@@ -73,11 +75,11 @@ def get_readers(profile: Profile = Depends(session_profile)) -> list[ReaderRespo
 
 
 @router.delete("/{reader_id}")
-def delete_reader(reader_id: str, profile: Profile = Depends(session_profile)):
+def delete(reader_id: str, profile: Profile = Depends(session_profile)):
     """Delete a reader by ID"""
     with get_session() as session:
         reader_seq = reader_id_to_seq(reader_id)
-        r = session.exec(delete(Reader)
+        r = session.exec(sql_delete(Reader)
                          .where(Reader.owner_seq == profile.profile_seq)
                          .where(Reader.reader_seq == reader_seq))
         if r.rowcount == 0:
@@ -86,11 +88,10 @@ def delete_reader(reader_id: str, profile: Profile = Depends(session_profile)):
 
 
 @router.get("/{reader_id}/items")
-async def reader_dequeue(
-        reader_id: str,
-        before: Optional[str] = None,
-        after: Optional[str] = None,
-        profile: Profile = Depends(session_profile)) -> list[StreamItemUnion]:
+async def items(reader_id: str,
+                before: Optional[str] = None,
+                after: Optional[str] = None,
+                profile: Profile = Depends(session_profile)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
     reader_seq = reader_id_to_seq(reader_id)
     with get_session() as session:
@@ -122,14 +123,14 @@ async def reader_dequeue(
 
 
 @router.websocket("/test/connect")
-async def websocket_test_connect(websocket: WebSocket):
+async def test_connect(websocket: WebSocket):
     """Connect a websocket for all profile data"""
     await websocket.accept()
     await websocket.send_json(data={'message': 'hello world'}, mode='text')
 
 
 @router.websocket("/connect")
-async def websocket_connect_all(
+async def connect_all(
         websocket: WebSocket,
         profile: Profile = Depends(maybe_session_profile),
 ):

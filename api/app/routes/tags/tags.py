@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import delete, insert, select
+from sqlmodel import delete as sql_delete, insert, select
 
 import auth.roles
 from auth.authorization import validate_roles
@@ -28,8 +28,9 @@ router.include_router(tag_types_router)
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def create_tag(
-        create: TagRequest, profile: SessionProfile = Depends(session_profile)
+async def create(
+        create_req: TagRequest,
+        profile: SessionProfile = Depends(session_profile)
 ) -> TagResponse:
     """Create a tag"""
     with get_session() as session:
@@ -38,7 +39,7 @@ async def create_tag(
         try:
             session.exec(
                 insert(Tag).values(
-                    name=create.name,
+                    name=create_req.name,
                     owner_seq=profile.profile_seq,
                 )
             )
@@ -51,13 +52,13 @@ async def create_tag(
                 detail="The tag with the provided name already exists.",
             ) from ex
 
-        result = session.exec(select(Tag).where(Tag.name == create.name)).one_or_none()
+        result = session.exec(select(Tag).where(Tag.name == create_req.name)).one_or_none()
         if result is None:
             raise HTTPException(
                 HTTPStatus.INTERNAL_SERVER_ERROR, detail="failed to create tag"
             )
         return TagResponse(
-            name=create.name,
+            name=create_req.name,
             tag_id=tag_seq_to_id(result.tag_seq),
             owner_id=profile_seq_to_id(profile.profile_seq),
             created=result.created.replace(tzinfo=TZ).astimezone(timezone.utc),
@@ -65,12 +66,12 @@ async def create_tag(
 
 
 @router.delete('/{name}')
-async def delete_tag(name: str, profile: SessionProfile = Depends(session_profile)):
+async def delete(name: str, profile: SessionProfile = Depends(session_profile)):
     """Delete an existing tag"""
     with get_session() as session:
         validate_roles(role=auth.roles.tag_delete, auth_roles=profile.auth_roles)
         stmt = (
-            delete(Tag)
+            sql_delete(Tag)
             .where(Tag.name == name)
             .where(Tag.owner_seq == profile.profile_seq)
         )
@@ -79,7 +80,7 @@ async def delete_tag(name: str, profile: SessionProfile = Depends(session_profil
 
 
 @router.get('/')
-async def get_tags(limit: int = Query(1, le=100), offset: int = 0) -> list[TagResponse]:
+async def list_all(limit: int = Query(1, le=100), offset: int = 0) -> list[TagResponse]:
     """Get all tags"""
     with get_session() as session:
         rows = session.exec(select(Tag).limit(limit).offset(offset)).all()

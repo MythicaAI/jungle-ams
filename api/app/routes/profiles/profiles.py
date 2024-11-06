@@ -6,7 +6,7 @@ from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
-from sqlmodel import col, select, update
+from sqlmodel import col, select, update as sql_update
 
 import auth.roles
 from auth.authorization import Scope, validate_roles
@@ -43,7 +43,7 @@ class CreateUpdateProfileModel(BaseModel):
 
 
 @router.get('/named/{profile_name}')
-async def get_profile_by_name(
+async def by_name(
         profile_name: profile_name_str,
         exact_match: Optional[bool] = False
 ) -> list[PublicProfileResponse]:
@@ -85,7 +85,7 @@ async def roles(
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileResponse:
+async def create(req_profile: CreateUpdateProfileModel) -> ProfileResponse:
     """Create a new profile"""
     session = get_session()
     try:
@@ -109,7 +109,7 @@ async def create_profile(req_profile: CreateUpdateProfileModel) -> ProfileRespon
 
 
 @router.get('/{profile_id}')
-async def get_profile(
+async def by_id(
         profile_id: str,
         auth_profile: Optional[Profile] = Depends(maybe_session_profile),
 ) -> Union[PublicProfileResponse, ProfileResponse]:
@@ -133,7 +133,7 @@ async def get_profile(
 
 
 @router.post('/{profile_id}')
-async def update_profile(
+async def update(
         profile_id: str,
         req_profile: CreateUpdateProfileModel,
         profile: SessionProfile = Depends(session_profile),
@@ -150,7 +150,7 @@ async def update_profile(
 
     # Only update if at least one value is supplied
     if len(values.keys()) > 0:
-        stmt = update(Profile).values(**values).where(Profile.profile_seq == profile_seq)
+        stmt = sql_update(Profile).values(**values).where(Profile.profile_seq == profile_seq)
         result = session.execute(stmt)
         rows_affected = result.rowcount
         if rows_affected == 0:

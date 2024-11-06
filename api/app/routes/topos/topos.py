@@ -3,15 +3,14 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends
-from fastapi import HTTPException, Body, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from pydantic import BaseModel
-from sqlmodel import select, update
+from sqlmodel import select, update as sql_update
 
-from cryptid.cryptid import org_id_to_seq, topo_seq_to_id, profile_seq_to_id, org_seq_to_id, topo_id_to_seq
+from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_seq_to_id, topo_id_to_seq, topo_seq_to_id
 from db.connection import get_session
 from db.schema.graph import Topology, TopologyRef
-from db.schema.profiles import Profile, Org
+from db.schema.profiles import Org, Profile
 from routes.authorization import session_profile
 
 
@@ -64,40 +63,40 @@ def topology_to_response(topology: Topology) -> TopologyResponse:
 
 
 def topology_refs_to_response(
-        refs: list[TopologyRef]) -> list[TopologyRefResponse]:
+        refs_result: list[TopologyRef]) -> list[TopologyRefResponse]:
     """Convert database ref type to API type"""
     responses = [TopologyRefResponse(
         topology_id=topo_seq_to_id(ref.topology_seq),
-        **ref.model_dump()) for ref in refs]
+        **ref.model_dump()) for ref in refs_result]
     return responses
 
 
 @router.get("/")
-async def get_topologies() -> list[Topology]:
+async def list_all() -> list[Topology]:
     """Get all valid topologies"""
     with get_session() as session:
         return session.exec(select(Topology)).all()
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-async def create_topology(
-        create: TopologyCreateUpdateRequest,
+async def create(
+        create_req: TopologyCreateUpdateRequest,
         profile: Profile = Depends(session_profile)) -> TopologyResponse:
     """Create a new topology"""
     with get_session() as session:
-        org_seq = org_id_to_seq(create.org_id)
+        org_seq = org_id_to_seq(create_req.org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
             raise HTTPException(HTTPStatus.FAILED_DEPENDENCY,
-                                detail=f'missing org: {create.org_id}')
-        if not validate_topo_name(create.name):
+                                detail=f'missing org: {create_req.org_id}')
+        if not validate_topo_name(create_req.name):
             raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                detail=f'invalid topo name: {create.name}')
-        if session.exec(select(Topology).where(Topology.name == create.name)).first() is not None:
+                                detail=f'invalid topo name: {create_req.name}')
+        if session.exec(select(Topology).where(Topology.name == create_req.name)).first() is not None:
             raise HTTPException(
-                HTTPStatus.CONFLICT, detail=f'topology already exists: {create.name}')
+                HTTPStatus.CONFLICT, detail=f'topology already exists: {create_req.name}')
 
-        topology = Topology(**create.model_dump(),
+        topology = Topology(**create_req.model_dump(),
                             owner_seq=profile.profile_seq,
                             org_seq=org_seq)
         session.add(topology)
@@ -107,7 +106,7 @@ async def create_topology(
 
 
 @router.post("/{topo_id}")
-async def update_topology(
+async def update(
         topo_id: str,
         req: TopologyCreateUpdateRequest,
         profile: Profile = Depends(session_profile)) -> TopologyResponse:
@@ -140,7 +139,7 @@ async def update_topology(
         # Update the topology
         topo_seq = topo_id_to_seq(topo_id)
         r = session.exec(
-            update(Topology).where(
+            sql_update(Topology).where(
                 Topology.topology_seq == topo_seq).where(
                 Topology.owner_seq == profile.profile_seq)
             .values(**update_params))
@@ -154,7 +153,7 @@ async def update_topology(
 
 
 @router.get("/{topo_id}")
-async def get_topology(topo_id: str) -> TopologyResponse:
+async def by_id(topo_id: str) -> TopologyResponse:
     """Get topology by ID"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)
@@ -164,7 +163,7 @@ async def get_topology(topo_id: str) -> TopologyResponse:
 
 
 @router.get("/{topo_id}/refs")
-async def get_topology_refs(topo_id: str) -> list[TopologyRefResponse]:
+async def refs(topo_id: str) -> list[TopologyRefResponse]:
     """Get all topology refs"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)
@@ -172,13 +171,13 @@ async def get_topology_refs(topo_id: str) -> list[TopologyRefResponse]:
             Topology.topology_seq == topo_seq)).first()
         if topo is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, "Topology not found")
-        refs = session.exec(select(TopologyRef).where(
+        refs_result = session.exec(select(TopologyRef).where(
             TopologyRef.topology_seq == topo.topology_seq)).all()
-        return topology_refs_to_response(refs)
+        return topology_refs_to_response(refs_result)
 
 
 @router.post("/{topo_id}/refs/{src_id}/{dst_id}", status_code=HTTPStatus.CREATED)
-async def create_topo_refs(
+async def create_ref(
         topo_id: str,
         src_id: str,
         dst_id: str,

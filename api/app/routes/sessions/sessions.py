@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlmodel import col, delete, select, update
+from sqlmodel import col, delete as sql_delete, select, update
 
 from cryptid.cryptid import profile_id_to_seq
 from db.connection import TZ, get_session
@@ -47,7 +47,7 @@ async def get_auth_validator() -> Auth0Validator:
 
 
 @router.get('/direct/{profile_id}')
-async def start_session_direct(request: Request, profile_id: str) -> SessionStartResponse:
+async def direct(request: Request, profile_id: str) -> SessionStartResponse:
     """Start a session directly for a profile"""
     client_ip = get_client_ip(request)
     with get_session() as session:
@@ -63,7 +63,7 @@ async def start_session_direct(request: Request, profile_id: str) -> SessionStar
 
 
 @router.get('/key/{api_key}')
-async def start_session_key(request: Request, api_key: str) -> SessionStartResponse:
+async def key(request: Request, api_key: str) -> SessionStartResponse:
     """Start a new session by providing an API key"""
     client_ip = get_client_ip(request)
     with get_session() as session:
@@ -74,7 +74,7 @@ async def start_session_key(request: Request, api_key: str) -> SessionStartRespo
 
         # test for key expiration and remove expired key
         if key_result.expires.replace(tzinfo=TZ).astimezone(timezone.utc) <= datetime.now(timezone.utc):
-            session.exec(delete(ProfileKey).where(col(ProfileKey.key) == api_key))
+            session.exec(sql_delete(ProfileKey).where(col(ProfileKey.key) == api_key))
             session.commit()
             raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} expired")
 
@@ -83,15 +83,15 @@ async def start_session_key(request: Request, api_key: str) -> SessionStartRespo
 
 
 @router.post('/auth0-spa')
-async def start_session_auth0_spa(req: Auth0SpaStartRequest,
-                                  validator: Auth0Validator = Depends(get_auth_validator)) -> SessionStartResponse:
+async def auth0_spa(req: Auth0SpaStartRequest,
+                    validator: Auth0Validator = Depends(get_auth_validator)) -> SessionStartResponse:
     """Post the auth0 user metadata with the access token to begin an API session"""
     session_start = await start_session_with_token_validator(req.access_token, validator)
     return session_start
 
 
 @router.delete('/')
-async def delete_session(profile: Profile = Depends(session_profile)):
+async def delete(profile: Profile = Depends(session_profile)):
     """Stop a session for a profile"""
     with get_session() as session:
         session.begin()
@@ -99,7 +99,7 @@ async def delete_session(profile: Profile = Depends(session_profile)):
             {'active': False}).where(
             col(Profile.profile_seq) == profile.profile_seq))
 
-        session.exec(delete(ProfileSession).where(
+        session.exec(sql_delete(ProfileSession).where(
             col(ProfileSession.profile_seq) == profile.profile_seq))
 
         session.commit()

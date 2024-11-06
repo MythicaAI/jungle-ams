@@ -311,7 +311,10 @@ def resolve_contents_as_json(
     return contents
 
 
-def create(session: Session, r: AssetCreateRequest, profile_seq: int) -> AssetCreateResult:
+def create_root(session: Session, r: AssetCreateRequest, profile_seq: int) -> AssetCreateResult:
+    """
+    Create the root asset that is the stable ID for all asset versions
+    """
     org_seq = None
 
     # If the user passes a collection ID ensure that it exists
