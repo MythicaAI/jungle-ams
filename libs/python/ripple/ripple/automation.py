@@ -431,7 +431,7 @@ class Worker:
                 msg=f"Executor error - {log_str} - {formatException(e)}"
                 log.error(msg)
                 if publisher:
-                    publisher.result(Message(message=msg))
+                    publisher.result(Message(message=msg), complete=True)
                 
 
         return implementation
