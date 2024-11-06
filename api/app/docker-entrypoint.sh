@@ -12,7 +12,7 @@ alembic upgrade head
 
 # Start Gunicorn, write logs to stdout for capture by container runtime
 export PYTHONPATH=/api/app
-fastapi run /api/app/main.py \
+opentelemetry-instrument python /api/app/main.py \
 	--host ${HTTP_LISTEN_ADDR} \
 	--port ${HTTP_LISTEN_PORT} \
 	--workers ${WORKER_COUNT} \

@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1  # Specify the number of replicas you want
+  selector:   # Define a selector for the deployment
+    matchLabels:
+      app: otel-collector  # Match this label with the pod template
+  template:
+    metadata:
+      labels:
+        app: otel-collector  # Ensure this matches the selector
+    spec:
+      containers:
+        - name: otel-collector
+          image: signoz/signoz-otel-collector
+          args:
+            - "--config=/etc/otel-collector-config.yaml"
+          env:
+            - name: SIGNOZ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: SIGNOZ_API_KEY
+          volumeMounts:
+            - name: otel-collector-config
+              mountPath: /etc/otel-collector-config.yaml
+              subPath: otel-collector-config.yaml
+      volumes:
+        - name: otel-collector-config
+          configMap:
+            name: otel-collector-config

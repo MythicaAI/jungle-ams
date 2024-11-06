@@ -17,37 +17,50 @@ from config import app_config
 
 class CustomJSONFormatter(logging.Formatter):
     def format(self, record):
-        record.msg = json.dumps(
+        original_msg = record.msg
+        original_args = record.args
+
+        if original_args:
+            record.msg = original_msg % original_args
+
+        # Build the JSON log entry
+        log_entry = {
+            "message": record.msg,
+            "level": record.levelname,
+            "time": self.formatTime(record),
+        }
+
+        log_entry.update(
             {
-                "message": record.msg,
-                "level": record.levelname,
-                "time": self.formatTime(record),
-                **(record.__dict__ if record.__dict__ else {}),
+                k: v
+                for k, v in record.__dict__.items()
+                if k not in ['msg', 'args', 'levelname', 'asctime', 'message']
             }
         )
-        return super().format(record)
+
+        json_log_entry = json.dumps(log_entry)
+
+        record.msg = original_msg
+
+        return json_log_entry
 
 
 def configure_logging():
     if app_config().enable_otel:
-        # Set up tracing
         tracer_provider = TracerProvider()
         set_tracer_provider(tracer_provider)
         tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
-        # Set up logging
         logger_provider = LoggerProvider()
         set_logger_provider(logger_provider)
 
-        exporter = OTLPLogExporter(endpoint=app_config().otel_endpoint, insecure=True)
+        exporter = OTLPLogExporter(endpoint="localhost:4317", insecure=True)
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
-        # Configure logging with OpenTelemetry handler and custom JSON formatter
         logging.basicConfig(level=logging.INFO)
         otel_log_handler = LoggingHandler(level=logging.INFO)
         logging.getLogger().addHandler(otel_log_handler)
 
-        # Set custom formatter for OpenTelemetry logs
         for handler in logging.getLogger().handlers:
             handler.setFormatter(CustomJSONFormatter())
     else:

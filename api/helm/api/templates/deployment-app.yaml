@@ -59,21 +59,10 @@ spec:
             - name: service-account-vol
               mountPath: /accounts
               readOnly: true
-        - name: otel-collector
-          image: otel/opentelemetry-collector-contrib:latest
-          command:
-            - "--config=/otel-collector-config.yaml"
-          volumeMounts:
-            - name: otel-collector-config
-              mountPath: /otel-collector-config.yaml
-              subPath: otel-collector-config.yaml
       volumes:
         - name: ephemeral-upload-vol
           emptyDir: {}
         - name: service-account-vol
           secret:
             secretName: {{ .Values.serviceAccount.secretName }}
-        - name: otel-collector-config
-          configMap:
-            name: otel-collector-config
       restartPolicy: Always
