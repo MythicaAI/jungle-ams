@@ -249,7 +249,7 @@ class NetworkExportPanel(QtWidgets.QWidget):
                 node = hou.selectedNodes()[0]
                 graph_data = mythica_net.get_node_type(node.type(), False)
             else:
-                graph_data = { "Select a node" }
+                graph_data = "Select a node"
         else:
             graph_data = mythica_net.get_node_types() 
 
