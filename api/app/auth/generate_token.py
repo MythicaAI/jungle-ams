@@ -1,3 +1,7 @@
+"""
+Generate a token from profile session data, retrieve the SessionProfile
+object from a JWT token
+"""
 from config import app_config
 
 _SECRET: bytes = app_config().token_secret_key.encode('utf-8')
@@ -6,7 +10,17 @@ _AUDIENCE = "mythica_auth_token"
 import jwt
 
 from cryptid.cryptid import profile_id_to_seq
-from db.schema.profiles import Profile
+from pydantic import BaseModel
+
+
+class SessionProfile(BaseModel):
+    """Data stored for a session in a token"""
+    profile_seq: int
+    profile_id: str
+    email: str
+    email_validate_state: int
+    location: str
+    auth_roles: set[str]
 
 
 def generate_token(
@@ -31,15 +45,19 @@ def generate_token(
     return encoded_jwt
 
 
-def decode_token(encoded_jwt: str) -> (Profile, list[str]):
+def decode_token(encoded_jwt: str) -> SessionProfile:
     """Decode a JWT token string into the profile and role data"""
     decoded_jwt = jwt.decode(
         jwt=encoded_jwt,
         key=_SECRET,
         audience=_AUDIENCE,
         algorithms=['HS256'])
-    return Profile(
-        profile_seq=profile_id_to_seq(decoded_jwt['profile_id']),
+    profile_id = decoded_jwt['profile_id']
+    profile_seq = profile_id_to_seq(profile_id)
+    return SessionProfile(
+        profile_seq=profile_seq,
+        profile_id=profile_id,
         email=decoded_jwt['email'],
         email_validate_state=int(decoded_jwt['email_vs']),
-        location=decoded_jwt['location'], ), decoded_jwt['roles']
+        location=decoded_jwt['location'],
+        auth_roles=decoded_jwt['roles'])
