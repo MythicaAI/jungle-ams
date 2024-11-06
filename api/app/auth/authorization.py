@@ -20,7 +20,6 @@ Profiles can have roles or have aliases that provide roles with special bindings
 
 """
 
-from argparse import ArgumentError
 from http import HTTPStatus
 from typing import Optional
 
@@ -102,11 +101,6 @@ def validate_roles(
     """
     Validate that the required role is satisfied by the given role set.
     """
-    if role is None:
-        raise ArgumentError(role, "missing role argument")
-    if auth_roles is None:
-        raise ArgumentError(auth_roles, "missing auth_roles")
-
     #
     # Simple case, the profile roles satisfy the test.role exactly
     #

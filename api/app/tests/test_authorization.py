@@ -203,3 +203,12 @@ def test_missing_org_asset_role():
             auth_roles=org_a_member,
             scope=Scope(profile=profile, asset=asset, asset_version=asset_version)
         )
+
+
+def test_simple_global_role():
+    assert validate_roles(role=auth.roles.alias_tag_author, auth_roles=superuser)
+
+
+def test_invalid_role_namespace():
+    with pytest.raises(HTTPException):
+        validate_roles(role="foo/some_role:^", auth_roles=org_a_member)
