@@ -11,6 +11,8 @@ from ripple.models.params import (
     FloatParameterSpec, 
     StringParameterSpec, 
     BoolParameterSpec, 
+    EnumValueSpec,
+    EnumParameterSpec,
     FileParameterSpec, 
     FileParameter
 )
@@ -114,6 +116,29 @@ def test_param_compile():
     assert isinstance(compiled.params['test_toggle'], BoolParameterSpec)
     assert compiled.params['test_toggle'].default is True
 
+    # Enum test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "Menu",
+                "label": "Test Enum",
+                "menu_items": ["a", "b", "c"],
+                "menu_labels": ["A", "B", "C"],
+                "default": 0
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 1
+    assert isinstance(compiled.params['test_enum'], EnumParameterSpec)
+    assert len(compiled.params['test_enum'].values) == 3
+    assert compiled.params['test_enum'].values[0].name == "a"
+    assert compiled.params['test_enum'].values[0].label == "A"
+    assert compiled.params['test_enum'].default == "a"
+
     # File test
     data = """
     {
@@ -161,6 +186,7 @@ def test_param_validate():
         'test_float': FloatParameterSpec(label='test_float', default=0.5),
         'test_str': StringParameterSpec(label='test_str', default=''),
         'test_bool': BoolParameterSpec(label='test_bool', default=True),
+        'test_enum': EnumParameterSpec(label='test_enum', default='a', values=[EnumValueSpec(name='a', label='A')]),
         'test_file': FileParameterSpec(label='test_file', default='')
     })
     set = ParameterSet(
@@ -168,6 +194,7 @@ def test_param_validate():
         test_float=1.5,
         test_str='test',
         test_bool=False,
+        test_enum="a",
         test_file=FileParameter(file_id='file_qfJSVuWRJvq5PmueFPxSjXsEcST')
     )
     assert validate_params(spec, set)
@@ -194,6 +221,13 @@ def test_param_validate():
     assert validate_params(spec, set_good)
     assert validate_params(spec, set_bad) == False
     assert validate_params(spec, set_bad2) == False
+
+    # Enum test
+    spec = ParameterSpec(params={'test_enum': EnumParameterSpec(label='test_enum', default='a', values=[EnumValueSpec(name='a', label='A')])})
+    set_good = ParameterSet(test_enum="a")
+    set_bad = ParameterSet(test_enum="b")
+    assert validate_params(spec, set_good)
+    assert validate_params(spec, set_bad) == False
 
     # Constant test
     spec = ParameterSpec(params={'test_int': IntParameterSpec(label='test', default=0, constant=True)})

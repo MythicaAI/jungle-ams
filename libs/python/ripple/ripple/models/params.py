@@ -34,6 +34,17 @@ class BoolParameterSpec(ParameterSpecModel):
     default: bool
 
 
+class EnumValueSpec(BaseModel):
+    name: str
+    label: str
+
+
+class EnumParameterSpec(ParameterSpecModel):
+    param_type: Literal['enum'] = 'enum'
+    values: list[EnumValueSpec]
+    default: str
+
+
 class FileParameterSpec(ParameterSpecModel):
     param_type: Literal['file'] = 'file'
     default: str | list[str]
@@ -45,6 +56,7 @@ ParameterSpecType = Annotated[
         FloatParameterSpec,
         StringParameterSpec,
         BoolParameterSpec,
+        EnumParameterSpec,
         FileParameterSpec
     ],
     Field(discriminator='param_type')

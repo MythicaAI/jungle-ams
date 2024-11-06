@@ -11,6 +11,7 @@ from ripple.models.params import (
     FloatParameterSpec, 
     StringParameterSpec, 
     BoolParameterSpec,
+    EnumParameterSpec,
     FileParameterSpec, 
     FileParameter
 )
@@ -89,7 +90,7 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
             typematch=int
         elif isinstance(paramSpec, FloatParameterSpec):
             typematch=float
-        elif isinstance(paramSpec, StringParameterSpec):
+        elif isinstance(paramSpec, StringParameterSpec) or isinstance(paramSpec, EnumParameterSpec):
             typematch=str
         elif isinstance(paramSpec, BoolParameterSpec):
             typematch=bool
@@ -100,6 +101,11 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
 
         if typematch:
             if not validate_param(paramSpec,param,typematch):
+                return False
+
+        # Validate enum
+        if isinstance(paramSpec, EnumParameterSpec):
+            if param not in [value.name for value in paramSpec.values]:
                 return False
 
         # Validate constant
