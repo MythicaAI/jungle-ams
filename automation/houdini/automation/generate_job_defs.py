@@ -43,7 +43,6 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
     )
     param_spec.params['format'] = StringParameterSpec(
         label='Format', 
-        constant=True, 
         default='usdz'
     )
 

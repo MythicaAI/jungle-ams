@@ -10,13 +10,13 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col, delete as sql_delete, insert, select, update as sql_update
 
 import auth.roles
-from auth.authorization import Test, validate_roles
-from auth.data import resolve_profile, resolve_roles
+from auth.authorization import validate_roles
+from auth.generate_token import SessionProfile
 from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile
 from profiles.invalidate_sessions import invalidate_sessions
-from routes.authorization import session_profile, session_profile_roles
+from routes.authorization import session_profile
 
 MIN_ORG_NAME = 3
 MAX_ORG_NAME = 64
@@ -65,16 +65,6 @@ class OrgResponse(BaseModel):
 
 
 router = APIRouter(prefix="/orgs", tags=["orgs"])
-
-
-def resolve_and_validate(session: Session, profile: Profile, org_seq: int, required_role: str):
-    """Resolve profile, roles and validate against `required_role`"""
-    # role validation
-    profile = resolve_profile(session, profile)
-    profile_roles = resolve_roles(session, profile.profile_seq, org_seq)
-    if not validate_roles(required_role, profile_roles):
-        raise HTTPException(HTTPStatus.FORBIDDEN,
-                            detail=f"no valid roles in {profile_roles}")
 
 
 def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[OrgRefResponse]:
@@ -160,19 +150,17 @@ async def by_name(org_name: org_name_str, exact_match: Optional[bool] = True) ->
 async def update(
         org_id: str,
         req: OrgUpdateRequest,
-        profile_roles: Profile = Depends(session_profile_roles)
+        profile: SessionProfile = Depends(session_profile)
 ) -> OrgResponse:
     """Update an existing organization"""
     with get_session(echo=True) as session:
-        _, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 f"org: {org_id} not found")
 
-        validate_roles(Test(role=auth.roles.org_update, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_update, object_id=org_id, auth_roles=profile.auth_roles)
 
         r = session.exec(sql_update(Org).where(
             Org.org_seq == org_seq).values(
@@ -188,13 +176,11 @@ async def update(
 
 
 @router.delete('/{org_id}')
-async def delete(org_id: str, profile_roles: Profile = Depends(session_profile_roles)):
+async def delete(org_id: str, profile: SessionProfile = Depends(session_profile)):
     """Removes an existing organization"""
     with get_session() as session:
-        profile, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
-        validate_roles(Test(role=auth.roles.org_delete, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_delete, object_id=org_id, auth_roles=profile.auth_roles)
 
         session.exec(sql_update(Org).where(
             Org.org_seq == org_seq).values(
@@ -244,14 +230,12 @@ async def add_role(
         org_id: str,
         profile_id: str,
         role: str,
-        profile_roles: Profile = Depends(session_profile_roles)) -> list[OrgRefResponse]:
+        profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Create a new role for an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        profile, roles = profile_roles
-        validate_roles(Test(role=auth.roles.org_add_role, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_add_role, object_id=org_id, auth_roles=profile.auth_roles)
 
         if role not in auth.roles.org_role_aliases:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
@@ -276,14 +260,12 @@ async def remove_role(
         org_id: str,
         profile_id: str,
         role: str,
-        profile_roles=Depends(session_profile_roles)) -> list[OrgRefResponse]:
+        profile: SessionProfile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Delete a role from an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        _, roles = profile_roles
-        validate_roles(Test(role=auth.roles.org_remove_role, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_remove_role, object_id=org_id, auth_roles=profile.auth_roles)
 
         session.exec(sql_delete(OrgRef).where(
             OrgRef.org_seq == org_seq,

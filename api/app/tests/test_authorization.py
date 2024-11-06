@@ -1,11 +1,12 @@
+"""Test the authorization module directly"""
 import pytest
 from fastapi import HTTPException
 
 import auth.roles
-from auth.authorization import Scope, Test, validate_roles
-from cryptid.cryptid import asset_seq_to_id, org_seq_to_id
+from auth.authorization import Scope, validate_roles
+from auth.generate_token import SessionProfile
+from cryptid.cryptid import asset_seq_to_id, org_seq_to_id, profile_seq_to_id
 from db.schema.assets import Asset, AssetVersion
-from db.schema.profiles import Profile
 
 org_a_seq = 5
 org_b_seq = 6
@@ -54,94 +55,160 @@ superuser = {
 def test_org_add_role():
     # validate admin of object_a can add role
     assert validate_roles(
-        Test(object_id=org_a, role=auth.roles.org_add_role),
-        org_a_admin)
+        object_id=org_a,
+        role=auth.roles.org_add_role,
+        auth_roles=org_a_admin)
 
     # validate other admin cannot add roles to org_a
     with pytest.raises(HTTPException):
         validate_roles(
-            Test(object_id=org_a, role=auth.roles.org_add_role),
-            org_b_admin)
+            object_id=org_a,
+            role=auth.roles.org_add_role,
+            auth_roles=org_b_admin)
 
     # validate user of org_a can not add role to same group
     with pytest.raises(HTTPException):
         validate_roles(
-            Test(object_id=org_a, role=auth.roles.org_add_role),
-            org_a_member)
+            object_id=org_a,
+            role=auth.roles.org_add_role,
+            auth_roles=org_a_member)
 
     # validate superuser can add a role to same group
     assert validate_roles(
-        Test(object_id=org_a, role=auth.roles.org_add_role),
-        superuser)
+        object_id=org_a,
+        role=auth.roles.org_add_role,
+        auth_roles=superuser)
 
 
 def test_asset_create():
     # validate profile with asset_create can make new assets
     assert validate_roles(
-        Test(role=auth.roles.asset_create),
-        org_a_member)
+        role=auth.roles.asset_create,
+        auth_roles=org_a_member)
 
     # validate superuser can make a new asset
     assert validate_roles(
-        Test(role=auth.roles.asset_create),
-        superuser)
+        role=auth.roles.asset_create,
+        auth_roles=superuser)
 
     # validate profile without asset_create can not make new assets
     with pytest.raises(HTTPException):
-        validate_roles(Test(role=auth.roles.asset_create),
-                       set())
+        validate_roles(
+            role=auth.roles.asset_create,
+            auth_roles=set())
+
+
+def generate_session_profile(profile_seq: int) -> SessionProfile:
+    """Generate a simple test session profile"""
+    return SessionProfile(
+        profile_seq=profile_seq,
+        profile_id=profile_seq_to_id(profile_seq),
+        email='none@none.com',
+        email_validate_state=2,
+        location='local-test',
+        auth_roles=set(),
+    )
 
 
 def test_asset_update():
     asset_a_owner_scope = Scope(
-        profile=Profile(profile_seq=asset_a_owner_seq),
+        profile=generate_session_profile(profile_seq=asset_a_owner_seq),
         asset=Asset(owner_seq=asset_a_owner_seq),
         asset_version=AssetVersion(author_seq=asset_a_author_seq))
     asset_a_org_member_scope = Scope(
-        profile=Profile(profile_seq=asset_b_owner_seq),
+        profile=generate_session_profile(profile_seq=asset_b_owner_seq),
         asset=Asset(owner_seq=asset_a_owner_seq, org_seq=org_a_seq),
         asset_version=AssetVersion(author_seq=asset_a_author_seq))
     asset_a_super_scope = Scope(
-        profile=Profile(profile_seq=superuser_seq),
+        profile=generate_session_profile(profile_seq=superuser_seq),
         asset=Asset(owner_seq=asset_a_owner_seq),
         asset_version=AssetVersion(author_seq=asset_a_author_seq))
 
     # validate owner can modify owned assets
     assert validate_roles(
-        Test(role=auth.roles.asset_update, object_id=asset_a),
-        org_a_member,
-        asset_a_owner_scope)
+        role=auth.roles.asset_update,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_owner_scope)
 
     # validate superuser can modify user assets
     assert validate_roles(
-        Test(role=auth.roles.asset_update, object_id=asset_a),
-        superuser,
-        asset_a_super_scope)
+        role=auth.roles.asset_update,
+        object_id=asset_a,
+        auth_roles=superuser,
+        scope=asset_a_super_scope)
 
     # validate org member can modify assets associated with org
     assert validate_roles(
-        Test(role=auth.roles.asset_update, object_id=asset_a),
-        org_a_member,
-        asset_a_org_member_scope)
+        role=auth.roles.asset_update,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_org_member_scope)
 
     # validate owner
     # validate profile with asset_update on specific asset can modify self assets
-    assert validate_roles(Test(role=auth.roles.asset_update, object_id=asset_a),
-                          org_a_member,
-                          asset_a_owner_scope)
+    assert validate_roles(
+        role=auth.roles.asset_update,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_owner_scope)
 
     # validate profile with asset_update not on org can not modify org assets
     with pytest.raises(HTTPException):
-        validate_roles(Test(role=auth.roles.asset_update, object_id=asset_a),
-                       org_b_admin,
-                       asset_a_org_member_scope)
+        validate_roles(
+            role=auth.roles.asset_update,
+            object_id=asset_a,
+            auth_roles=org_b_admin,
+            scope=asset_a_org_member_scope)
 
 
 def test_global_tag_roles():
     # validate global role
-    assert validate_roles(Test(role=auth.roles.tag_create), superuser)
-    assert validate_roles(Test(role=auth.roles.tag_update), superuser)
+    assert validate_roles(
+        role=auth.roles.tag_create,
+        auth_roles=superuser)
+    assert validate_roles(
+        role=auth.roles.tag_update,
+        auth_roles=superuser)
     with pytest.raises(HTTPException):
-        validate_roles(Test(role=auth.roles.tag_create), org_b_admin)
+        validate_roles(
+            role=auth.roles.tag_create,
+            auth_roles=org_b_admin)
     with pytest.raises(HTTPException):
-        validate_roles(Test(role=auth.roles.tag_update), org_b_admin)
+        validate_roles(
+            role=auth.roles.tag_update,
+            auth_roles=org_b_admin)
+
+
+def test_missing_asset_scope():
+    """Test failure validate asset ownership without an asset_version in scope"""
+    with pytest.raises(HTTPException):
+        profile = generate_session_profile(profile_seq=asset_a_owner_seq)
+        asset = Asset(owner_seq=asset_a_owner_seq)
+        validate_roles(
+            role=auth.roles.asset_update,
+            auth_roles=org_a_member,
+            scope=Scope(profile=profile, asset=asset)
+        )
+
+
+def test_missing_org_asset_role():
+    """Test failure to validate asset role at org level"""
+    with pytest.raises(HTTPException):
+        profile = generate_session_profile(profile_seq=asset_a_owner_seq)
+        asset = Asset(owner_seq=asset_a_owner_seq)
+        asset_version = AssetVersion(author_seq=asset_a_author_seq)
+        validate_roles(
+            role="asset/invalid_role",
+            auth_roles=org_a_member,
+            scope=Scope(profile=profile, asset=asset, asset_version=asset_version)
+        )
+
+
+def test_simple_global_role():
+    assert validate_roles(role=auth.roles.alias_tag_author, auth_roles=superuser)
+
+
+def test_invalid_role_namespace():
+    with pytest.raises(HTTPException):
+        validate_roles(role="foo/some_role:^", auth_roles=org_a_member)

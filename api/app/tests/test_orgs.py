@@ -7,6 +7,7 @@ from http import HTTPStatus
 from munch import munchify
 
 import auth.roles
+from cryptid.cryptid import org_seq_to_id
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token
@@ -21,14 +22,24 @@ def test_create_update(client, api_base, create_profile, create_org):
     test_profile.auth_token = refresh_auth_token(client, api_base, test_profile)
     headers = test_profile.authorization_header()
 
+    payload = {'name': 'test-updated',
+               'description': 'test-desc',
+               }
     r = client.post(f"{api_base}/orgs/{org_id}",
-                    json={'name': 'test-updated', 'description': 'test-desc', },
+                    json=payload,
                     headers=headers)
     assert r.status_code == HTTPStatus.OK
     o = munchify(r.json())
     assert o.name == 'test-updated'
     assert o.description == 'test-desc'
     assert o.org_id == org_id
+
+    # test with a valid org_id that should not exist
+    r = client.post(
+        f"{api_base}/orgs/{org_seq_to_id(1000000)}",
+        json=payload,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
 
 
 def test_org_ref_operations(client, api_base, create_profile, create_org):

@@ -131,11 +131,13 @@ def generate_mesh_impl(
         usdz_node.parm("outfile1").set(output_zip_file_path)
         usdz_node.parm("execute").pressButton()
 
+        output_file_path = output_zip_file_path
+
     hou.hda.uninstallFile(hda_path)
 
     mdarol.end_houdini(hip)
 
-    return output_zip_file_path
+    return output_file_path
 
 
 class ExportMeshRequest(ParameterSet):

@@ -9,7 +9,8 @@ from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlmodel import col, select, update as sql_update
 
 import auth.roles
-from auth.authorization import Scope, Test, validate_roles
+from auth.authorization import Scope, validate_roles
+from auth.generate_token import SessionProfile
 from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
 from db.schema.profiles import Profile
@@ -19,7 +20,7 @@ from profiles.responses import (
     ProfileRolesResponse, PublicProfileResponse,
     profile_to_profile_response,
 )
-from routes.authorization import maybe_session_profile, session_profile_roles
+from routes.authorization import maybe_session_profile, session_profile
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -70,18 +71,17 @@ async def by_name(
 
 @router.get('/roles')
 async def roles(
-        profile_roles=Depends(session_profile_roles),
+        auth_profile=Depends(session_profile),
 ) -> ProfileRolesResponse:
     """Get a profile by ID"""
     with get_session() as session:
-        auth_profile, auth_roles = profile_roles
         profile, org_roles = load_profile_and_roles(session, auth_profile.profile_seq)
         profile_response = profile_to_profile_response(profile, PublicProfileResponse)
 
         return ProfileRolesResponse(
             profile=profile_response,
             org_roles=org_roles,
-            auth_roles=list(auth_roles))
+            auth_roles=list(auth_profile.auth_roles))
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
@@ -136,13 +136,13 @@ async def by_id(
 async def update(
         profile_id: str,
         req_profile: CreateUpdateProfileModel,
-        profile_roles=Depends(session_profile_roles),
+        profile: SessionProfile = Depends(session_profile),
 ) -> ProfileResponse:
     """Update the profile of the owning account"""
-    profile, profile_roles = profile_roles
-    validate_roles(Test(role=auth.roles.profile_update, object_id=profile_id),
-                   profile_roles,
-                   Scope(profile=profile))
+    validate_roles(role=auth.roles.profile_update,
+                   object_id=profile_id,
+                   auth_roles=profile.auth_roles,
+                   scope=Scope(profile=profile))
 
     profile_seq = profile_id_to_seq(profile_id)
     session = get_session(echo=True)
