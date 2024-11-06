@@ -227,6 +227,12 @@ class NetworkExportPanel(QtWidgets.QWidget):
         self.copy_button.clicked.connect(self._copy_to_clipboard)
         layout.addWidget(self.copy_button)
 
+        # Add a current_node_checkbox
+        self.current_node_checkbox = QtWidgets.QCheckBox("Export Only Current Node")
+        self.current_node_checkbox.stateChanged.connect(self._toggle_export)
+        self.current_node_checkbox.setChecked(True)
+        layout.addWidget(self.current_node_checkbox)
+
         self.setLayout(layout)
         self.generate_export()
 
@@ -238,8 +244,14 @@ class NetworkExportPanel(QtWidgets.QWidget):
         self.generate_export()
 
     def generate_export(self):
-        # Handle the current_node_checkbox state change here
-        graph_data = mythica_net.get_node_types() 
+        if self.current_node_checkbox.isChecked():
+            if len(hou.selectedNodes()) > 0:
+                node = hou.selectedNodes()[0]
+                graph_data = mythica_net.get_node_type(node.type(), False)
+            else:
+                graph_data = { "Select a node" }
+        else:
+            graph_data = mythica_net.get_node_types() 
 
         graph_data_text = json.dumps(graph_data, indent=4)
         self.text_edit.setPlainText(graph_data_text)
