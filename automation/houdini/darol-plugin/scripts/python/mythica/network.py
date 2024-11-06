@@ -108,7 +108,7 @@ def get_node_type(node_type, include_code = True):
     num_inputs = node_type.maxNumInputs()
     nt = {
         "root": node_type.isManager(),
-        "subnet": node_type.childTypeCategory().name() or '',
+        "subnet": node_type.childTypeCategory().name() if node_type.childTypeCategory() else '',
         "help": node_type.embeddedHelp(),
         "icon": node_type.icon(),
         "inputs": num_inputs,  # Gather inputs
@@ -123,7 +123,7 @@ def get_node_type(node_type, include_code = True):
     if num_inputs <= MULTI_INPUT_MIN:
         input_labels = [''] * num_inputs
 
-        sections = node_type.definition().sections()
+        sections = node_type.definition().sections() if node_type.definition() else []
         if "DialogScript" in sections:
             dialog_script = sections["DialogScript"].contents()
             matches = re.findall(r'inputlabel\s+(\d+)\s+"([^"]+)"', dialog_script)
