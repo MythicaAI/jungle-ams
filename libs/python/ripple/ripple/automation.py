@@ -226,6 +226,9 @@ class ResultPublisher:
 
 
         def upload_file(token: str, file_path: str) -> Optional[str]:
+            if not os.path.exists(file_path):
+                return None
+
             file_id = None
             try:
                 with open(file_path, 'rb') as file:
