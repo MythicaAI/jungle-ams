@@ -10,18 +10,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 from prometheus_fastapi_instrumentator import Instrumentator
 
-import log_config
 from cache.connection import cache_connection_lifespan
 from config import app_config
 from db.connection import db_connection_lifespan
 from exceptions import register_exceptions
-from proxied_headers_middleware import ProxiedHeadersMiddleware
+from logging_config import configure_logging
+from middlewares.exception_middleware import ExceptionLoggingMiddleware
+from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources
 from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
 #  logging configuration
-log_config.configure()
+configure_logging()
 
 log = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ app.add_middleware(
 app.add_middleware(
     ProxiedHeadersMiddleware
 )
+app.add_middleware(ExceptionLoggingMiddleware)
 
 route_names = [
     'upload',

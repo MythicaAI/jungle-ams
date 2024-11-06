@@ -38,6 +38,7 @@ api:
     maxUnavailable: 1
     maxSurge: 6
     base_url: "https://api.mythica.ai/v1"
+    otel_endpoint: "http://otel-collector:4317"
     nodeSelector: scale-out
     terminationGracePeriodSeconds: 15
   gcsProxy:

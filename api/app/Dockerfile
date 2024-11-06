@@ -54,6 +54,8 @@ ENV HTTP_LISTEN_ADDR=0.0.0.0
 ENV HTTP_LISTEN_PORT=5555
 ENV WORKER_COUNT=3
 ENV API_BASE_URI=http://localhost:50555/v1
+ENV ENABLE_OTEL=True
+ENV ENABLE_ENDPOINT=otel-collector.api-staging:4317
 
 # Expose SQL connection using the environment variable
 ENV SQL_URL=postgresql://test:test@postgres:5432/upload_pipeline
