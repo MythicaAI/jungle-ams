@@ -28,22 +28,22 @@ class DownloadInfoResponse(BaseModel):
     url: str
 
 
-def translate_minio(storage, info) -> str:
+def translate_minio(storage, object_spec) -> str:
     """minio download link creator"""
-    bucket, object_name = info.split(":")
+    bucket, object_name = object_spec.split(":")
     return storage.download_link(bucket, object_name)
 
 
-def translate_gcs(storage, info) -> str:
+def translate_gcs(storage, object_spec) -> str:
     """GCS download link creator"""
-    region_bucket, object_name = info.split(":")
+    region_bucket, object_name = object_spec.split(":")
     _, bucket_name = region_bucket.split('.')
     return storage.download_link(bucket_name, object_name)
 
 
-def translate_test(storage: LocalFileStorageClient, info: str) -> str:
+def translate_test(storage: LocalFileStorageClient, object_spec: str) -> str:
     """LocalStorage download link creator"""
-    return storage.download_link(*info.split(":"))
+    return storage.download_link(*object_spec.split(":"))
 
 
 def increment_download_count(session: Session, file_seq: int):
@@ -65,12 +65,12 @@ def translate_download_url(storage, locators: list[str]) -> str:
     """translate locators to a downloadable URL"""
     for locator in locators:
         log.info("translating %s", locator)
-        locator_type, info = locator.split("://")
+        locator_type, object_spec = locator.split("://")
         translate_func = storage_types.get(locator_type)
         if translate_func is None:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "unsupported storage type %s", locator_type)
 
-        url = translate_func(storage, info)
+        url = translate_func(storage, object_spec)
         if url is not None:
             return url
     raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, detail="no valid locators for file")

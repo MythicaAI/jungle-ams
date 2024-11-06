@@ -63,11 +63,11 @@ def topology_to_response(topology: Topology) -> TopologyResponse:
 
 
 def topology_refs_to_response(
-        refs: list[TopologyRef]) -> list[TopologyRefResponse]:
+        refs_result: list[TopologyRef]) -> list[TopologyRefResponse]:
     """Convert database ref type to API type"""
     responses = [TopologyRefResponse(
         topology_id=topo_seq_to_id(ref.topology_seq),
-        **ref.model_dump()) for ref in refs]
+        **ref.model_dump()) for ref in refs_result]
     return responses
 
 
@@ -80,23 +80,23 @@ async def list_all() -> list[Topology]:
 
 @router.post("/", status_code=HTTPStatus.CREATED)
 async def create(
-        create: TopologyCreateUpdateRequest,
+        create_req: TopologyCreateUpdateRequest,
         profile: Profile = Depends(session_profile)) -> TopologyResponse:
     """Create a new topology"""
     with get_session() as session:
-        org_seq = org_id_to_seq(create.org_id)
+        org_seq = org_id_to_seq(create_req.org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
             raise HTTPException(HTTPStatus.FAILED_DEPENDENCY,
-                                detail=f'missing org: {create.org_id}')
-        if not validate_topo_name(create.name):
+                                detail=f'missing org: {create_req.org_id}')
+        if not validate_topo_name(create_req.name):
             raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                detail=f'invalid topo name: {create.name}')
-        if session.exec(select(Topology).where(Topology.name == create.name)).first() is not None:
+                                detail=f'invalid topo name: {create_req.name}')
+        if session.exec(select(Topology).where(Topology.name == create_req.name)).first() is not None:
             raise HTTPException(
-                HTTPStatus.CONFLICT, detail=f'topology already exists: {create.name}')
+                HTTPStatus.CONFLICT, detail=f'topology already exists: {create_req.name}')
 
-        topology = Topology(**create.model_dump(),
+        topology = Topology(**create_req.model_dump(),
                             owner_seq=profile.profile_seq,
                             org_seq=org_seq)
         session.add(topology)
@@ -171,9 +171,9 @@ async def refs(topo_id: str) -> list[TopologyRefResponse]:
             Topology.topology_seq == topo_seq)).first()
         if topo is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, "Topology not found")
-        refs = session.exec(select(TopologyRef).where(
+        refs_result = session.exec(select(TopologyRef).where(
             TopologyRef.topology_seq == topo.topology_seq)).all()
-        return topology_refs_to_response(refs)
+        return topology_refs_to_response(refs_result)
 
 
 @router.post("/{topo_id}/refs/{src_id}/{dst_id}", status_code=HTTPStatus.CREATED)

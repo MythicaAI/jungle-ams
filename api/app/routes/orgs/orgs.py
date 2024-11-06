@@ -105,13 +105,13 @@ def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[OrgRefRespons
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
-        create: OrgCreateRequest,
+        create_req: OrgCreateRequest,
         profile: Profile = Depends(session_profile)
 ) -> OrgRefResponse:
     """Create a new organization, the creating profile will be an admin"""
     with get_session() as session:
         # create the org
-        org = Org(**create.model_dump())
+        org = Org(**create_req.model_dump())
         session.add(org)
         session.commit()
         session.refresh(org)

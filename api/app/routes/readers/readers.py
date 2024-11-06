@@ -33,16 +33,18 @@ class WebsocketClientOp(ReadClientOp):
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-def create(create: CreateReaderRequest, profile: Profile = Depends(session_profile)) -> ReaderResponse:
+def create(
+        create_req: CreateReaderRequest,
+        profile: Profile = Depends(session_profile)) -> ReaderResponse:
     """Create a new reader on a source"""
     with get_session() as session:
         r = session.exec(insert(Reader).values(
-            source=create.source,
+            source=create_req.source,
             owner_seq=profile.profile_seq,
-            name=create.name,
-            position=create.position,
-            params=create.params,
-            direction=direction_literal_to_db(create.direction),
+            name=create_req.name,
+            position=create_req.position,
+            params=create_req.params,
+            direction=direction_literal_to_db(create_req.direction),
         ))
         if r.rowcount == 0:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
