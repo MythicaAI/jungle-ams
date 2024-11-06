@@ -180,7 +180,7 @@ async def delete_org(org_id: str, profile: SessionProfile = Depends(session_prof
     """Removes an existing organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
-        validate_roles(role=auth.roles.org_delete, object_id=org_id, profile_roles=profile.auth_roles)
+        validate_roles(role=auth.roles.org_delete, object_id=org_id, auth_roles=profile.auth_roles)
 
         session.exec(update(Org).where(
             Org.org_seq == org_seq).values(
