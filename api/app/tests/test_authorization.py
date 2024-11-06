@@ -98,7 +98,7 @@ def test_asset_create():
             auth_roles=set())
 
 
-def generate_session_profile(profile_seq: int):
+def generate_session_profile(profile_seq: int) -> SessionProfile:
     """Generate a simple test session profile"""
     return SessionProfile(
         profile_seq=profile_seq,
@@ -178,3 +178,28 @@ def test_global_tag_roles():
         validate_roles(
             role=auth.roles.tag_update,
             auth_roles=org_b_admin)
+
+
+def test_missing_asset_scope():
+    """Test failure validate asset ownership without an asset_version in scope"""
+    with pytest.raises(HTTPException):
+        profile = generate_session_profile(profile_seq=asset_a_owner_seq)
+        asset = Asset(owner_seq=asset_a_owner_seq)
+        validate_roles(
+            role=auth.roles.asset_update,
+            auth_roles=org_a_member,
+            scope=Scope(profile=profile, asset=asset)
+        )
+
+
+def test_missing_org_asset_role():
+    """Test failure to validate asset role at org level"""
+    with pytest.raises(HTTPException):
+        profile = generate_session_profile(profile_seq=asset_a_owner_seq)
+        asset = Asset(owner_seq=asset_a_owner_seq)
+        asset_version = AssetVersion(author_seq=asset_a_author_seq)
+        validate_roles(
+            role="asset/invalid_role",
+            auth_roles=org_a_member,
+            scope=Scope(profile=profile, asset=asset, asset_version=asset_version)
+        )
