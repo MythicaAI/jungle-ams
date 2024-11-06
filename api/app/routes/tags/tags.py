@@ -9,15 +9,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import delete, insert, select
 
 import auth.roles
-from auth.authorization import Test, validate_roles
+from auth.authorization import validate_roles
+from auth.generate_token import SessionProfile
 from cryptid.cryptid import (
     profile_seq_to_id,
     tag_seq_to_id,
 )
 from db.connection import TZ, get_session
-from db.schema.profiles import Profile
 from db.schema.tags import Tag
-from routes.authorization import session_profile_roles
+from routes.authorization import session_profile
 from routes.tags.tag_models import TagRequest, TagResponse
 from routes.tags.tag_types import router as tag_types_router
 
@@ -29,12 +29,11 @@ router.include_router(tag_types_router)
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create_tag(
-        create: TagRequest, profile_roles: Profile = Depends(session_profile_roles)
+        create: TagRequest, profile: SessionProfile = Depends(session_profile)
 ) -> TagResponse:
     """Create a tag"""
     with get_session() as session:
-        profile, roles = profile_roles
-        validate_roles(Test(role=auth.roles.tag_create), roles)
+        validate_roles(role=auth.roles.tag_create, auth_roles=profile.auth_roles)
 
         try:
             session.exec(
@@ -66,11 +65,10 @@ async def create_tag(
 
 
 @router.delete('/{name}')
-async def delete_tag(name: str, profile_roles: Profile = Depends(session_profile_roles)):
+async def delete_tag(name: str, profile: SessionProfile = Depends(session_profile)):
     """Delete an existing tag"""
     with get_session() as session:
-        profile, roles = profile_roles
-        validate_roles(Test(role=auth.roles.tag_delete), roles)
+        validate_roles(role=auth.roles.tag_delete, auth_roles=profile.auth_roles)
         stmt = (
             delete(Tag)
             .where(Tag.name == name)
