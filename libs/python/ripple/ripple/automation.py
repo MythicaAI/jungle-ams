@@ -226,6 +226,9 @@ class ResultPublisher:
 
 
         def upload_file(token: str, file_path: str) -> Optional[str]:
+            if not os.path.exists(file_path):
+                return None
+
             file_id = None
             try:
                 with open(file_path, 'rb') as file:
@@ -431,7 +434,7 @@ class Worker:
                 msg=f"Executor error - {log_str} - {formatException(e)}"
                 log.error(msg)
                 if publisher:
-                    publisher.result(Message(message=msg))
+                    publisher.result(Message(message=msg), complete=True)
                 
 
         return implementation
