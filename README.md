@@ -214,7 +214,7 @@ http://otel-collector.default:4317.
 Updating OTEL
 To update OpenTelemetry in the cluster, use the following command:
 ```bash
-helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/override-values.yaml --namespace default
+helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.yaml --namespace default
 ```
 Alternatively, you can run the script:
 ```bash
