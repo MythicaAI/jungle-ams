@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Grid, Stack } from "@mui/joy";
+import { Box, CircularProgress, Grid, IconButton, Stack } from "@mui/joy";
 import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
@@ -12,6 +12,7 @@ import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 import { useGetAssetsByTags, useGetTags } from "@queries/tags";
 import { Tag } from "@queries/tags/types";
 import { TagsPanel } from "@components/TagPanel";
+import { LucideBookText } from "lucide-react";
 
 const ALL_ASSETS_TAG = "All assets";
 
@@ -89,12 +90,30 @@ const Assets = () => {
             </Select>
           </Stack> */}
 
-          <Stack mb="25px">
-            <TagsPanel
-              tags={tags as Tag[]}
-              selectedTag={selectedTag}
-              handleChangeTag={handleSetSelectedTag}
-            />
+          <Stack mb="25px" direction="row" gap="10px">
+            <Box width="calc(100% - 40px)">
+              <TagsPanel
+                tags={tags as Tag[]}
+                selectedTag={selectedTag}
+                handleChangeTag={handleSetSelectedTag}
+              />
+            </Box>
+            <Stack
+              alignItems="flex-end"
+              width="40px"
+              justifyContent="flex-start"
+            >
+              <Box
+                width="100%"
+                component="a"
+                href={`${window.location.href}docs`}
+                target="_blank"
+              >
+                <IconButton sx={{ width: "100%", justifyContent: "center" }}>
+                  <LucideBookText />
+                </IconButton>
+              </Box>
+            </Stack>
           </Stack>
 
           <Stack>
