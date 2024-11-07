@@ -40,13 +40,13 @@ ripple = { path = "../../libs/python/ripple", develop = true }
 cryptid = { path = "../../libs/python/cryptid", develop = true }
 better-profanity = "^0.7.0"
 uvicorn = "^0.32.0"
-pydantic = {extras = ["email"], version = "^2.9.2"}
+pydantic = "2.9.2"
+email-validator = "2.2.0"
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]
 sqlalchemy = ["asyncio"]
 authlib = []
-pydantic = ["email"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2"
