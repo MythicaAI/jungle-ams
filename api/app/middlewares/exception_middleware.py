@@ -38,8 +38,13 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
             )
             raise http_exc
         except Exception as exc:
-            logger.exception(
-                "Unhandled exception occurred", extra={"url": str(request.url)}
+            logger.error(
+                "Unhandled exception occurred",
+                exc_info=True,
+                extra={
+                    "url": str(request.url),
+                    "client": request.client.host,
+                },
             )
             raise exc
         finally:

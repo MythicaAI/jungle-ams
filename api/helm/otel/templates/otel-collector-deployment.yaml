@@ -2,16 +2,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: otel-collector
-  namespace: {{ .Release.Namespace }}
+  namespace: default
 spec:
-  replicas: 1  # Specify the number of replicas you want
-  selector:   # Define a selector for the deployment
+  replicas: 1
+  selector:
     matchLabels:
-      app: otel-collector  # Match this label with the pod template
+      app: otel-collector
   template:
     metadata:
       labels:
-        app: otel-collector  # Ensure this matches the selector
+        app: otel-collector
     spec:
       containers:
         - name: otel-collector
@@ -22,7 +22,7 @@ spec:
             - name: SIGNOZ_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: secrets
+                  name: otel-secrets
                   key: SIGNOZ_API_KEY
           volumeMounts:
             - name: otel-collector-config

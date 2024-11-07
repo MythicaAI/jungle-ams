@@ -1,9 +1,10 @@
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: otel-agent
-  namespace: {{ .Release.Namespace }}
+  namespace: default
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: otel-agent
@@ -16,10 +17,10 @@ spec:
         - name: otel-agent
           image: otel/opentelemetry-collector-contrib
           ports:
-          - containerPort: 4317
+            - containerPort: 4317
           env:
             - name: SIGNOZ_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: secrets
+                  name: otel-secrets
                   key: SIGNOZ_API_KEY

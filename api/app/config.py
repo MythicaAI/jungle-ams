@@ -45,7 +45,7 @@ class AppConfig(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
     enable_otel: bool = False
-    otel_endpoint: str = "http://localhost:4317"
+    otel_endpoint: str = "127.0.0.1:4317"
 
     mythica_org_name: str = "Mythica"
 

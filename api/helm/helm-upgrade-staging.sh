@@ -23,10 +23,6 @@ helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml api-sta
     exit 1
 }
 
-helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/override-values.yaml --namespace api-staging
-
 kubectl rollout restart deployment/app -n api-staging
 kubectl rollout restart deployment/packager -n api-staging
 kubectl rollout restart deployment/web-front -n api-staging
-kubectl rollout restart deployment/otel-agent -n api-staging
-kubectl rollout restart deployment/otel-collector -n api-staging

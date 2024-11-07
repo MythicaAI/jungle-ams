@@ -5,7 +5,6 @@ global:
   deploymentEnvironment: api-staging
 otelCollectorEndpoint: ingest.us.signoz.cloud:443
 otelInsecure: false
-signozApiKey: ...
 presets:
   kubeletMetrics:
     authType: none

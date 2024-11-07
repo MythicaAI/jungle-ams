@@ -2,9 +2,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: otel-collector-config
-  namespace: {{ .Release.Namespace }}
+  namespace: default
   annotations:
-    config-update: "2024-10-04"
+    config-update: "2024-11-07"
 data:
   otel-collector-config.yaml: |
     receivers:
@@ -23,7 +23,7 @@ data:
           insecure: false
         timeout: 10s
         headers:
-          "signoz-access-token": ...
+          "signoz-access-token": ${SIGNOZ_API_KEY}
 
     service:
       pipelines:

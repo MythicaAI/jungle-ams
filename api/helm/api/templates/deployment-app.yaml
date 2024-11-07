@@ -47,6 +47,8 @@ spec:
               value: "3"
             - name: API_BASE_URI
               value: {{ .Values.api.app.base_url }}
+            - name: ENABLE_OTEL
+              value: "{{ .Values.api.app.enable_otel }}"
             - name: OTEL_ENDPOINT
               value: {{ .Values.api.app.otel_endpoint }}
           ports:
