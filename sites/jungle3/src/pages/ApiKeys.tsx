@@ -41,6 +41,7 @@ import {
 } from "@queries/apiKeys";
 import { DeleteModal } from "@components/common/DeleteModal";
 import { useTranslation } from "react-i18next";
+import { useGlobalStore } from "@store/globalStore";
 
 const ApiKeys = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -48,6 +49,7 @@ const ApiKeys = () => {
     open: false,
     selectedKey: "",
   });
+  const { profile } = useGlobalStore();
   const { addError, addWarning } = useStatusStore();
   const { data: keys, isLoading, error } = useGetApiKeys();
   const { mutate: addKey } = useAddApiKey();
@@ -76,9 +78,23 @@ const ApiKeys = () => {
       </Helmet>
       <Card sx={{ mb: "16px", mx: "16px" }}>
         <Stack>
-          <Typography textAlign="start" level="h4">
-            {t("apiKeys.yourTitle")}
-          </Typography>
+          <Stack direction="row" justifyContent="space-between">
+            <Typography textAlign="start" level="h4">
+              {t("apiKeys.yourTitle")}
+            </Typography>
+            {profile && (
+              <Stack direction="row" alignItems="center">
+                <Typography>{t("apiKeys.copyId")}</Typography>
+                <IconButton>
+                  <LucideCopy
+                    onClick={() =>
+                      navigator.clipboard.writeText(profile?.profile_id)
+                    }
+                  />
+                </IconButton>
+              </Stack>
+            )}
+          </Stack>
           <Typography textAlign="start">{t("apiKeys.desc")}</Typography>
         </Stack>
       </Card>
