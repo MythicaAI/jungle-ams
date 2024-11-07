@@ -10,7 +10,7 @@ from sqlalchemy.sql.functions import func, now as sql_now
 from sqlmodel import Session, asc, col, delete, insert, select, update
 
 import auth.roles
-from auth.data import resolve_roles
+from auth.data import resolve_org_roles
 from auth.generate_token import generate_token
 from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.connection import get_session
@@ -102,7 +102,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     session.commit()
 
     # resolve all roles across all orgs this profile exists in
-    roles = resolve_roles(session, profile.profile_seq)
+    roles = resolve_org_roles(session, profile.profile_seq)
 
     result = SessionStartResponse(
         token=token,

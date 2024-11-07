@@ -7,7 +7,7 @@ from http import HTTPStatus
 
 from munch import munchify
 
-from assets.assets_repo import AssetVersionContent
+from assets.repo import AssetVersionContent
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code, get_random_string, make_random_content

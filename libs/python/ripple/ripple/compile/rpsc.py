@@ -11,7 +11,9 @@ from ripple.models.params import (
     IntParameterSpec, 
     FloatParameterSpec, 
     StringParameterSpec, 
-    BoolParameterSpec, 
+    BoolParameterSpec,
+    EnumValueSpec,
+    EnumParameterSpec,
     FileParameterSpec
 )
 
@@ -36,6 +38,11 @@ def compile_interface(interface_data: str) -> ParameterSpec:
             param = StringParameterSpec(**value)
         elif value['type'] == 'Toggle':
             param = BoolParameterSpec(**value)
+        elif value['type'] == 'Menu':
+            assert len(value['menu_items']) == len(value['menu_labels'])
+            values = [EnumValueSpec(name=name, label=label) for name, label in zip(value['menu_items'], value['menu_labels'])]
+            default = values[value['default']].name
+            param = EnumParameterSpec(values=values, default=default, label=value['label'])
         else:
             continue
 

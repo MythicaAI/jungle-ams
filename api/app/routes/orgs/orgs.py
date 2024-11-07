@@ -7,16 +7,16 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, constr
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, col, delete, insert, select, update
+from sqlmodel import Session, col, delete as sql_delete, insert, select, update as sql_update
 
 import auth.roles
-from auth.authorization import Test, validate_roles
-from auth.data import resolve_profile, resolve_roles
+from auth.authorization import validate_roles
+from auth.generate_token import SessionProfile
 from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile
 from profiles.invalidate_sessions import invalidate_sessions
-from routes.authorization import session_profile, session_profile_roles
+from routes.authorization import session_profile
 
 MIN_ORG_NAME = 3
 MAX_ORG_NAME = 64
@@ -67,16 +67,6 @@ class OrgResponse(BaseModel):
 router = APIRouter(prefix="/orgs", tags=["orgs"])
 
 
-def resolve_and_validate(session: Session, profile: Profile, org_seq: int, required_role: str):
-    """Resolve profile, roles and validate against `required_role`"""
-    # role validation
-    profile = resolve_profile(session, profile)
-    profile_roles = resolve_roles(session, profile.profile_seq, org_seq)
-    if not validate_roles(required_role, profile_roles):
-        raise HTTPException(HTTPStatus.FORBIDDEN,
-                            detail=f"no valid roles in {profile_roles}")
-
-
 def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[OrgRefResponse]:
     """Given a list of refs, return the resolved reference with extra data present"""
     org_seqs = set()
@@ -114,14 +104,14 @@ def resolve_org_refs(session: Session, refs: list[OrgRef]) -> list[OrgRefRespons
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
-async def create_org(
-        create: OrgCreateRequest,
+async def create(
+        create_req: OrgCreateRequest,
         profile: Profile = Depends(session_profile)
 ) -> OrgRefResponse:
     """Create a new organization, the creating profile will be an admin"""
     with get_session() as session:
         # create the org
-        org = Org(**create.model_dump())
+        org = Org(**create_req.model_dump())
         session.add(org)
         session.commit()
         session.refresh(org)
@@ -142,7 +132,7 @@ async def create_org(
 
 
 @router.get('/named/{org_name}')
-async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[OrgResponse]:
+async def by_name(org_name: org_name_str, exact_match: Optional[bool] = True) -> list[OrgResponse]:
     """Get organization by name"""
     with get_session() as session:
         if exact_match:
@@ -157,24 +147,22 @@ async def get_org_by_name(org_name: org_name_str, exact_match: Optional[bool] = 
 
 
 @router.post('/{org_id}')
-async def update_org(
+async def update(
         org_id: str,
         req: OrgUpdateRequest,
-        profile_roles: Profile = Depends(session_profile_roles)
+        profile: SessionProfile = Depends(session_profile)
 ) -> OrgResponse:
     """Update an existing organization"""
     with get_session(echo=True) as session:
-        _, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 f"org: {org_id} not found")
 
-        validate_roles(Test(role=auth.roles.org_update, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_update, object_id=org_id, auth_roles=profile.auth_roles)
 
-        r = session.exec(update(Org).where(
+        r = session.exec(sql_update(Org).where(
             Org.org_seq == org_seq).values(
             **req.model_dump(), updated=sql_now()))
         if r.rowcount == 0:
@@ -188,15 +176,13 @@ async def update_org(
 
 
 @router.delete('/{org_id}')
-async def delete_org(org_id: str, profile_roles: Profile = Depends(session_profile_roles)):
+async def delete(org_id: str, profile: SessionProfile = Depends(session_profile)):
     """Removes an existing organization"""
     with get_session() as session:
-        profile, roles = profile_roles
         org_seq = org_id_to_seq(org_id)
-        validate_roles(Test(role=auth.roles.org_delete, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_delete, object_id=org_id, auth_roles=profile.auth_roles)
 
-        session.exec(update(Org).where(
+        session.exec(sql_update(Org).where(
             Org.org_seq == org_seq).values(
             deleted=sql_now()))
         invalidate_sessions(session, profile.profile_seq)
@@ -204,7 +190,7 @@ async def delete_org(org_id: str, profile_roles: Profile = Depends(session_profi
 
 
 @router.get('/')
-async def get_org(profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
+async def member_of(profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Default get returns roles for the requesting profile"""
     with get_session() as session:
         return resolve_org_refs(session,
@@ -214,7 +200,7 @@ async def get_org(profile: Profile = Depends(session_profile)) -> list[OrgRefRes
 
 
 @router.get('/{org_id}')
-async def get_org_by_id(org_id: str = None, profile: Profile = Depends(session_profile)) -> OrgResponse:
+async def by_id(org_id: str = None, profile: Profile = Depends(session_profile)) -> OrgResponse:
     """Get organization by ID"""
     with (get_session() as session):
         org_seq = org_id_to_seq(org_id)
@@ -230,7 +216,7 @@ async def get_org_by_id(org_id: str = None, profile: Profile = Depends(session_p
 
 
 @router.get('/{org_id}/roles')
-async def get_org_roles(org_id: str) -> list[OrgRefResponse]:
+async def roles(org_id: str) -> list[OrgRefResponse]:
     """Get all the roles in the organization """
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -240,18 +226,16 @@ async def get_org_roles(org_id: str) -> list[OrgRefResponse]:
 
 
 @router.post('/{org_id}/roles/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
-async def add_role_to_org(
+async def add_role(
         org_id: str,
         profile_id: str,
         role: str,
-        profile_roles: Profile = Depends(session_profile_roles)) -> list[OrgRefResponse]:
+        profile: Profile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Create a new role for an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        profile, roles = profile_roles
-        validate_roles(Test(role=auth.roles.org_add_role, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_add_role, object_id=org_id, auth_roles=profile.auth_roles)
 
         if role not in auth.roles.org_role_aliases:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
@@ -272,20 +256,18 @@ async def add_role_to_org(
 
 
 @router.delete('/{org_id}/roles/{profile_id}/{role}')
-async def remove_role_from_org(
+async def remove_role(
         org_id: str,
         profile_id: str,
         role: str,
-        profile_roles=Depends(session_profile_roles)) -> list[OrgRefResponse]:
+        profile: SessionProfile = Depends(session_profile)) -> list[OrgRefResponse]:
     """Delete a role from an organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        _, roles = profile_roles
-        validate_roles(Test(role=auth.roles.org_remove_role, object_id=org_id),
-                       roles)
+        validate_roles(role=auth.roles.org_remove_role, object_id=org_id, auth_roles=profile.auth_roles)
 
-        session.exec(delete(OrgRef).where(
+        session.exec(sql_delete(OrgRef).where(
             OrgRef.org_seq == org_seq,
             OrgRef.profile_seq == profile_seq,
             OrgRef.role == role))
