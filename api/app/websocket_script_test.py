@@ -137,8 +137,8 @@ def run_in_process(websocket_uri: str, http_uri: str, num_connections: int):
 
 
 if __name__ == "__main__":
-    test_websocket_uri = "ws://localhost:50555/v1"
-    test_http_uri = "http://localhost:50555/v1"
+    test_websocket_uri = "ws://localhost:15555/v1"
+    test_http_uri = "http://localhost:15555/v1"
     staging_websocket_uri = "ws://api-staging.mythica.ai/v1"
     staging_http_uri = "http://api-staging.mythica.ai/v1"
     num_of_connections = 1
