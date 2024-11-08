@@ -54,6 +54,8 @@ ENV HTTP_LISTEN_ADDR=0.0.0.0
 ENV HTTP_LISTEN_PORT=5555
 ENV WORKER_COUNT=3
 ENV API_BASE_URI=http://localhost:15555/v1
+ENV TELEMETRY_ENABLE=True
+ENV TELEMETRY_ENDPOINT=127.0.0.1:4317
 
 # Expose SQL connection using the environment variable
 ENV SQL_URL=postgresql://test:test@postgres:5432/upload_pipeline
