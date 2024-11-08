@@ -7,6 +7,7 @@ on:
       - 'api/packager/**'
       - 'api/bulk-import/**'
       - 'api/publish-init/**'
+      - '.github/workflows/api-app-lint-pr.yaml'
 
 defaults:
   run:
