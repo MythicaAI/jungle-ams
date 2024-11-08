@@ -137,7 +137,7 @@ def get_node_type(node_type, include_code = True):
     # Loop through all the parameters of the node for defaults and to
     # sort out ramp parms. 
     for parmtemp in node_type.parmTemplates():
-        if _isValueParm(parmtemp):
+        if _isValueParm(parmtemp) and not parmtemp.isHidden():
             defaults = _get_parm_defaults(parmtemp)
             if defaults is not None:
                 nt["defaults"][parmtemp.name()] = defaults

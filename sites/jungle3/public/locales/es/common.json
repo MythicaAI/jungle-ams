@@ -86,6 +86,7 @@
     "name": "Nombre",
     "description": "Descripción",
     "expires": "Expira en, días",
-    "submit": "Enviar"
+    "submit": "Enviar",
+    "copyId": "Copiar el ID del perfil de Mythica"
   }
 }
