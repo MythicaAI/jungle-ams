@@ -173,7 +173,7 @@ class PackageUploader(object):
         parser.add_argument(
             "-e", "--endpoint",
             help="API endpoint",
-            default="http://localhost:50555",
+            default="http://localhost:15555",
             required=False
         )
         parser.add_argument(
