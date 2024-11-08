@@ -18,7 +18,7 @@ asyncpg = "0.30.0"
 psycopg2-binary = "^2.9.9"
 google-auth = "^2.29.0"
 google-cloud-storage = "^2.16.0"
-fastapi = "0.115.4"
+fastapi = { version = "0.115.4", extras = ["standard"] }
 pydantic-settings = "^2.3.0"
 python-multipart = "0.0.17"
 jinja2 = "^3.1.4"
