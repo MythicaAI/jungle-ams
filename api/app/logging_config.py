@@ -1,6 +1,7 @@
 import json
 import logging
 import traceback
+from typing import Optional
 
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
@@ -45,12 +46,15 @@ class CustomJSONFormatter(logging.Formatter):
         json_log_entry = json.dumps(log_entry)
 
         return json_log_entry
-def configure_logging():
+
+
+def configure_logging() -> Optional[TracerProvider]:
     logger = logging.getLogger()
-    if app_config().enable_otel:
+    if app_config().telemetry_enable:
         logger.handlers.clear()
         
-        if not isinstance(get_tracer_provider(), TracerProvider):
+        tracer_provider = get_tracer_provider()
+        if not isinstance(tracer_provider, TracerProvider):
             tracer_provider = TracerProvider()
             set_tracer_provider(tracer_provider)
             tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
@@ -58,13 +62,14 @@ def configure_logging():
         logger_provider = LoggerProvider()
         set_logger_provider(logger_provider)
 
-        exporter = OTLPLogExporter(endpoint=app_config().otel_endpoint, insecure=True)
+        exporter = OTLPLogExporter(endpoint=app_config().telemetry_endpoint, insecure=True)
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
         otel_log_handler = LoggingHandler(level=logging.INFO)
         logger.addHandler(otel_log_handler)
 
         otel_log_handler.setFormatter(CustomJSONFormatter())
+        return tracer_provider
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
         for handler in logger.handlers:

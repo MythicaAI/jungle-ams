@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from cache.connection import cache_connection_lifespan
@@ -22,7 +23,7 @@ from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
 #  logging configuration
-configure_logging()
+tracer_provider = configure_logging()
 
 log = logging.getLogger(__name__)
 
@@ -56,6 +57,8 @@ app = FastAPI(
     root_path='/v1',
     lifespan=server_lifespan)
 
+
+FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider)
 Instrumentator().instrument(app).expose(
     app,
     include_in_schema=False,

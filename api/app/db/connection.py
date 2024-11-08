@@ -52,7 +52,7 @@ async def db_connection_lifespan():
     engine_url = app_config().sql_url.strip()
     engine = create_engine(engine_url)
     conn = engine.connect()
-    if app_config().enable_otel:
+    if app_config().telemetry_enable:
         SQLAlchemyInstrumentor().instrument(engine=engine)  
 
     # Setup fallbacks for features that exist in postgres but not sqlite
