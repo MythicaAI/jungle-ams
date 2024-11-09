@@ -84,23 +84,23 @@ def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
         responder.result(Progress(progress=80))
 
         # Use a temporary directory to save all the images
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            image_files = []
-            for img in images:
-                # Generate a unique file ID and path for each image
-                file_id = str(uuid4())
-                filename = f"{file_id}.png"
-                file_path = os.path.join(tmpdirname, filename)
+        tmpdirname = tempfile.mkdtemp()
+        image_files = []
+        for img in images:
+            # Generate a unique file ID and path for each image
+            file_id = str(uuid4())
+            filename = f"{file_id}.png"
+            file_path = os.path.join(tmpdirname, filename)
 
-                # Save the image to the temporary directory
-                img.save(file_path, format="PNG")
+            # Save the image to the temporary directory
+            img.save(file_path, format="PNG")
 
-                # Add the file_id and path to the dictionary
-                image_files.append(file_path)
+            # Add the file_id and path to the dictionary
+            image_files.append(file_path)
 
-            responder.result(Progress(progress=90))
+        responder.result(Progress(progress=90))
 
-            return OutputFiles(files={'image':image_files})
+        return OutputFiles(files={'image':image_files})
 
 
     except Exception as e:
