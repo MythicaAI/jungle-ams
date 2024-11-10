@@ -132,7 +132,7 @@ jobs:
           context: .
           file: ${{ matrix.image }}/Dockerfile
           tags: |
-            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:latest
-            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:latest
+            ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:${{ steps.tag_version.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}          
