@@ -40,3 +40,7 @@ else
   echo "Failed to rollback to revision $TARGET_REVISION."
   exit 1
 fi
+
+kubectl rollout restart deployment/app -n api-staging
+kubectl rollout restart deployment/packager -n api-staging
+kubectl rollout restart deployment/web-front -n api-staging

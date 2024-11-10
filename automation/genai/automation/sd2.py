@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from ripple.models.streaming import Progress, OutputFiles
 from ripple.automation import ResultPublisher
-from ripple.models.params import ParameterSet
+from ripple.models.params import ParameterSet, FileParameter
 
 from typing import List
 import torch
@@ -47,20 +47,16 @@ class InpaintRequest(ParameterSet):
     guidance_scale: float = 7.0
     num_inference_steps: int = 50
     num_images_per_prompt: int = 1
-    image: str #Base64 encoded byte string
-    map: str #Base64 encoded byte string
+    image: FileParameter #Base64 encoded byte string
+    map: FileParameter #Base64 encoded byte string
     
 
 def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -> OutputFiles:
     try:
 
-        # Decode image from base64
-        image_data = base64.b64decode(request.image)
-        map_data = base64.b64decode(request.map)
-
         # Open image and map using PIL
-        image = Image.open(BytesIO(image_data))
-        map = Image.open(BytesIO(map_data))
+        image = Image.open(request.image.file_path)
+        map = Image.open(request.map.file_path)
 
         # Preprocess the images
         image = preprocess_image(image)
@@ -89,23 +85,23 @@ def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -> Outp
         responder.result(Progress(progress=80))
 
         # Use a temporary directory to save all the images
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            image_files = []
-            for img in images:
-                # Generate a unique file ID and path for each image
-                file_id = str(uuid4())
-                filename = f"{file_id}.png"
-                file_path = os.path.join(tmpdirname, filename)
+        tmpdirname = tempfile.mkdtemp()
+        image_files = []
+        for img in images:
+            # Generate a unique file ID and path for each image
+            file_id = str(uuid4())
+            filename = f"{file_id}.png"
+            file_path = os.path.join(tmpdirname, filename)
 
-                # Save the image to the temporary directory
-                img.save(file_path, format="PNG")
+            # Save the image to the temporary directory
+            img.save(file_path, format="PNG")
 
-                # Add the file_id and path to the dictionary
-                image_files.append(file_path)
+            # Add the file_id and path to the dictionary
+            image_files.append(file_path)
 
-            responder.result(Progress(progress=90))
+        responder.result(Progress(progress=90))
 
-            return OutputFiles(files={'image':image_files})
+        return OutputFiles(files={'image':image_files})
 
     
     except Exception as e:
