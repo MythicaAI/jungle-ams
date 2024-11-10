@@ -109,18 +109,21 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
-      - id: generate_tag
-        run: |
-          github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
-
       - name: Tag update
+        uses: nick-fields/retry@v2
         id: tag_version
-        run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          
-          git tag ${{ steps.generate_tag.outputs.new_tag }}
-          git push origin --tags
+        with:
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 5
+          command: |
+            github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+            git config user.name "GitHub Action"
+            git config user.email "action@github.com"
+            git fetch --tags
+            git tag ${{ steps.generate_tag.outputs.new_tag }}
+            git push origin --tags
+            echo "Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Build and push ${{ matrix.image }}
         uses: docker/build-push-action@v6
