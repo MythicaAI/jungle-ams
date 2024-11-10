@@ -50,9 +50,11 @@ NEW_TAG="${LABEL_NAME}-${NEW_VERSION}"
 
 # Current tag
 echo "current_tag=$LATEST_TAG"
+echo "current_tag_version=$VERSION"
 
 # Output the new tag value
 echo "new_tag=$NEW_TAG"
+echo "new_tag_version=$NEW_VERSION"
 
 # Output some more variables
 echo "image_name=$LABEL_NAME"
