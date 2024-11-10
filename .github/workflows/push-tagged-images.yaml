@@ -2,7 +2,7 @@ name: push-tagged-images
 on:
   push:
     branches:
-      - *
+      - '*'
     paths:
       - 'sites/**'
       - 'api/**'
