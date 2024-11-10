@@ -129,7 +129,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: .
+          context: ${{ matrix.image }}
           file: ${{ matrix.image }}/Dockerfile
           tags: |
             ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:latest
