@@ -4,7 +4,7 @@ from typing import Any
 from uuid import uuid4
 
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
@@ -85,10 +85,16 @@ async def define_new(
 
 
 @router.get('/definitions')
-async def list_definitions() -> list[JobDefinitionModel]:
+async def list_definitions(
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[JobDefinitionModel]:
     """List existing job definitions"""
     with get_session() as session:
-        job_defs = session.exec(select(JobDefinition)).all()
+        job_defs = session.exec(select(JobDefinition)
+            .limit(limit)
+            .offset(offset)
+        ).all()
         return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
                 for job_def in job_defs]
 
@@ -219,8 +225,11 @@ async def create_result(
 
 @router.get('/results/{job_id}')
 async def list_results(
-        job_id: str,
-        profile: Profile = Depends(session_profile)) -> JobResultResponse:
+    job_id: str,
+    profile: Profile = Depends(session_profile),
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> JobResultResponse:
     """List results for a job"""
     with get_session() as session:
         job_seq = job_id_to_seq(job_id)
@@ -231,7 +240,10 @@ async def list_results(
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="job_id not owned by profile")
 
         job_results = session.exec(select(JobResult)
-                                   .where(JobResult.job_seq == job_seq)).all()
+            .where(JobResult.job_seq == job_seq)
+            .limit(limit)
+            .offset(offset)
+        ).all()
         results = [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_result_seq),
                                   **job_result.model_dump())
                    for job_result in job_results]

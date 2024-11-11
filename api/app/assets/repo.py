@@ -446,13 +446,15 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
     session.commit()
 
 
-def top(session: Session):
+def top(session: Session, limit: int, offset: int):
     results = session.exec(
         select(Asset, AssetVersion, FileContent)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
         .where(AssetVersion.published == True)
         .where(AssetVersion.package_seq != None)
+        .limit(limit)
+        .offset(offset)
     ).all()
 
     def avf_to_top(asset, ver, downloads, sorted_versions):
@@ -500,21 +502,39 @@ def top(session: Session):
     return sort_results
 
 
-def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResult]:
+def owned_versions(
+    session: Session,
+    profile_seq: int,
+    limit: int,
+    offset: int
+) -> list[AssetVersionResult]:
     results = session.exec(
         select(Asset, AssetVersion)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .where(Asset.owner_seq == profile_seq)
         .where(Asset.deleted == None)
-        .order_by(Asset.asset_seq)).all()
+        .order_by(Asset.asset_seq)
+        .limit(limit)
+        .offset(offset)
+    ).all()
     return process_join_results(session, results)
 
 
-def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResult]:
-    return process_join_results(session, session.exec(
-        asset_join_select.where(
-            Asset.asset_seq == AssetVersion.asset_seq,
-            AssetVersion.name == asset_name)).all())
+def versions_by_name(
+    session: Session,
+    asset_name: str,
+    limit: int,
+    offset: int
+) -> list[AssetVersionResult]:
+    return process_join_results(
+        session, session.exec(
+            asset_join_select.where(
+                Asset.asset_seq == AssetVersion.asset_seq,
+                AssetVersion.name == asset_name)
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
 
 
 def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
@@ -527,7 +547,18 @@ def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionRes
     return process_join_results(session, results)
 
 
-def versions_by_commit_ref(session: Session, commit_ref: str) -> list[AssetVersionResult]:
+def versions_by_commit_ref(
+    session: Session,
+    commit_ref: str,
+    limit: int,
+    offset: int
+) -> list[AssetVersionResult]:
     return process_join_results(session, session.exec(
         asset_join_select.where(Asset.asset_seq == AssetVersion.asset_seq).where(
-            col(AssetVersion.commit_ref).contains(commit_ref))).all())  # pylint: disable=no-member
+            col(  # pylint: disable=no-member
+                AssetVersion.commit_ref
+            ).contains(commit_ref))
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )

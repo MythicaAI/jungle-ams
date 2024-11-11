@@ -3,7 +3,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel
 from sqlmodel import select, update as sql_update
 
@@ -72,10 +72,17 @@ def topology_refs_to_response(
 
 
 @router.get("/")
-async def list_all() -> list[Topology]:
+async def list_all(
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[Topology]:
     """Get all valid topologies"""
     with get_session() as session:
-        return session.exec(select(Topology)).all()
+        return session.exec(
+            select(Topology)
+            .limit(limit)
+            .offset(offset)
+        ).all()
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
@@ -163,7 +170,11 @@ async def by_id(topo_id: str) -> TopologyResponse:
 
 
 @router.get("/{topo_id}/refs")
-async def refs(topo_id: str) -> list[TopologyRefResponse]:
+async def refs(
+    topo_id: str,
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[TopologyRefResponse]:
     """Get all topology refs"""
     with get_session() as session:
         topo_seq = topo_id_to_seq(topo_id)
@@ -172,7 +183,10 @@ async def refs(topo_id: str) -> list[TopologyRefResponse]:
         if topo is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, "Topology not found")
         refs_result = session.exec(select(TopologyRef).where(
-            TopologyRef.topology_seq == topo.topology_seq)).all()
+            TopologyRef.topology_seq == topo.topology_seq)
+            .limit(limit)
+            .offset(offset)
+        ).all()
         return topology_refs_to_response(refs_result)
 
 

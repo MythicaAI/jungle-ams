@@ -3,7 +3,7 @@
 import logging
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 import assets.repo as repo
 from db.connection import get_session
@@ -24,41 +24,61 @@ async def log_request_headers(r: Request):
 
 
 @router.get('/all')
-async def list_all() -> list[repo.AssetVersionResult]:
+async def list_all(
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[repo.AssetVersionResult]:
     """Get all asset versions"""
     with get_session() as session:
         join_results = session.exec(
-            repo.asset_join_select).all()
+            repo.asset_join_select
+            .limit(limit)
+            .offset(offset)
+        ).all()
         return repo.process_join_results(session, join_results)
 
 
 @router.get('/top')
-async def list_top() -> list[repo.AssetTopResult]:
+async def list_top(
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
     with get_session(echo=True) as session:
-        return repo.top(session)
+        return repo.top(session, limit, offset)
 
 
 @router.get('/owned')
 async def list_owned(
-        profile: Profile = Depends(session_profile)) -> list[repo.AssetVersionResult]:
+    profile: Profile = Depends(session_profile),
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[repo.AssetVersionResult]:
     """Get the list of asset headers owned by the current profile"""
     with get_session() as session:
-        return repo.owned_versions(session, profile.profile_seq)
+        return repo.owned_versions(session, profile.profile_seq, limit, offset)
 
 
 @router.get('/named/{asset_name}')
-async def named(asset_name) -> list[repo.AssetVersionResult]:
+async def named(
+    asset_name: str,
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[repo.AssetVersionResult]:
     """Get asset by name"""
     with get_session() as session:
-        return repo.versions_by_name(session, asset_name)
+        return repo.versions_by_name(session, asset_name, limit, offset)
 
 
 @router.get('/committed_at')
-async def committed_at(ref: str) -> list[repo.AssetVersionResult]:
+async def committed_at(
+    ref: str,
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[repo.AssetVersionResult]:
     """Find any asset versions with commit_ref containing ref"""
     with get_session() as session:
-        return repo.versions_by_commit_ref(session, ref)
+        return repo.versions_by_commit_ref(session, ref, limit, offset)
 
 
 @router.get('/{asset_id}')

@@ -4,7 +4,7 @@ from datetime import timezone
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
 from sqlmodel import delete as sql_delete, insert, select
 
@@ -67,11 +67,17 @@ def create(
 
 
 @router.get("/")
-def current(profile: Profile = Depends(session_profile)) -> list[ReaderResponse]:
+def current(profile: Profile = Depends(session_profile),
+    limit: int = Query(10, le=20),
+    offset: int = 0,
+) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
     with get_session() as session:
         return resolve_results(session.exec(select(Reader)
-                                            .where(Reader.owner_seq == profile.profile_seq)).all())
+            .where(Reader.owner_seq == profile.profile_seq)
+            .limit(limit)
+            .offset(offset)
+        ).all())
 
 
 @router.delete("/{reader_id}")
