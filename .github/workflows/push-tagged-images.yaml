@@ -111,7 +111,7 @@ jobs:
           tags: api-app:${{ github.sha }}
           load: true
           build-args: |
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
+            LIBS_PYTHON_IMAGE=localhost/libs-python:${{ github.sha }}
       - name: Save api-app to tar
         run: docker save api-app:${{ github.sha }} > /tmp/api-app.tar
       - name: Upload api-app image
@@ -215,6 +215,6 @@ jobs:
             ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:${{ steps.tag_version.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}    
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            API_APP_IMAGE=api-app:${{ github.sha }}
+            LIBS_PYTHON_IMAGE=localhost/libs-python:${{ github.sha }}
+            API_APP_IMAGE=localhost/api-app:${{ github.sha }}
           load: true
