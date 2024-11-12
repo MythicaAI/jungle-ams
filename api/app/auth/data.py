@@ -2,6 +2,7 @@ import logging
 from http import HTTPStatus
 
 from fastapi import HTTPException
+from jwt import DecodeError
 from sqlmodel import Session, select
 
 from auth.generate_token import SessionProfile, decode_token
@@ -24,7 +25,11 @@ def get_bearer_token(authorization: str) -> str:
 
 def decode_session_profile(authorization: str) -> SessionProfile:
     """Given an auth bearer header value, return a Profile object"""
-    return decode_token(get_bearer_token(authorization))
+    try:
+        return decode_token(get_bearer_token(authorization))
+    except DecodeError:
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST, detail='Invalid authorization token')
 
 
 def resolve_profile(session, profile: Profile) -> Profile:
