@@ -90,18 +90,30 @@ jobs:
         with:
           driver-opts: image=moby/buildkit:latest
 
-      - name: Build base image
+      - name: Build libs-python image
+        uses: docker/build-push-action@v5
+        with:
+          context: libs/python
+          tags: libs-python:${{ github.sha }}
+          outputs: type=docker,dest=/tmp/libs-python.tar
+      - name: Upload libs-python image
+        uses: actions/upload-artifact@v3
+        with:
+          name: libs-python
+          path: /tmp/libs-python.tar
+          retention-days: 1
+
+      - name: Build api-app image
         uses: docker/build-push-action@v5
         with:
           context: api/app
-          tags: base:${{ github.sha }}
-          outputs: type=docker,dest=/tmp/api-app-base.tar
-
-      - name: Upload base image
+          tags: api-app:${{ github.sha }}
+          outputs: type=docker,dest=/tmp/api-app.tar
+      - name: Upload api-app image
         uses: actions/upload-artifact@v3
         with:
-          name: api-app-base-image
-          path: /tmp/api-app-base.tar
+          name: api-app
+          path: /tmp/api-app.tar
           retention-days: 1
 
   build-tag-publish:
@@ -166,15 +178,22 @@ jobs:
             git push origin --tags
             echo "Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: Download api/app base image
+      - name: Download api-app image
         uses: actions/download-artifact@v3
         with:
-          name: api-app-base-image
+          name: api-app
           path: /tmp
 
-      - name: Load base image
+      - name: Download libs-python base image
+        uses: actions/download-artifact@v3
+        with:
+          name: libs-python
+          path: /tmp
+
+      - name: Load images
         run: |
-          docker load --input /tmp/api-app-base.tar
+          docker load --input /tmp/libs-python.tar
+          docker load --input /tmp/api-app.tar
 
       - name: Build and push ${{ matrix.image }}
         uses: docker/build-push-action@v6
@@ -187,4 +206,5 @@ jobs:
             ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:${{ steps.tag_version.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}    
-            API_APP_BASE_IMAGE=api-app-base:${{ github.sha }}
+            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
+            API_APP_IMAGE=api-app:${{ github.sha }}
