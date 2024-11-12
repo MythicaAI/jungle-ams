@@ -218,6 +218,6 @@ helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.ya
 ```
 Alternatively, you can run the script:
 ```bash
-./api/helm/helm-upgrade-otel.sh
+./api/helm/helm-upgrade-telemetry.sh
 ```
 
