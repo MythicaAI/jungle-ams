@@ -23,7 +23,7 @@ from routes.type_adapters import register_adapters
 
 # This must run before the app is created to override the default
 #  logging configuration
-tracer_provider = configure_logging()
+configure_logging()
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +58,6 @@ app = FastAPI(
     lifespan=server_lifespan)
 
 
-FastAPIInstrumentor.instrument_app(app, tracer_provider=tracer_provider)
 Instrumentator().instrument(app).expose(
     app,
     include_in_schema=False,
