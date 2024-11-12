@@ -99,6 +99,9 @@ jobs:
           path: /tmp/libs-python.tar
           retention-days: 1
 
+      - name: Load libs-python image for api-app
+        run: |
+          docker load --input /tmp/libs-python.tar
       - name: Build api-app image
         uses: docker/build-push-action@v5
         with:
