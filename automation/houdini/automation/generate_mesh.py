@@ -55,12 +55,15 @@ def generate_mesh_impl(
     params: dict,
     working_dir: str
 ) -> str:
+    log.info("Preparing scene")
     output_file_name = os.path.basename(hda_path)
     hip = os.path.join(working_dir, f'export_mesh_{output_file_name}.hip')
 
     mdarol.start_houdini(hip)
 
+    log.info("Intalling HDA")
     hou.hda.installFile(hda_path, force_use_assets=True)
+    log.info("Intalling HDA completed")
 
     # Geometry
     obj = hou.node('obj')
@@ -71,8 +74,11 @@ def generate_mesh_impl(
     asset = geo.createNode(assetdef.nodeTypeName())
 
     # Set parms
+    log.info("Applying parameters")
     apply_params(asset, params)
+    log.info("Creating inputs")
     create_inputs(asset, geo, params)
+    log.info("Setting up scene completed")
 
     # Export
     out = hou.node('out')
@@ -85,7 +91,9 @@ def generate_mesh_impl(
         fbx_node.parm("sopoutput").set(output_file_path)
         fbx_node.parm("exportkind").set(0)  # Export in binary format
 
+        log.info("Exporting mesh")
         fbx_node.parm("execute").pressButton()
+        log.info("Exporting mesh completed")
     elif format == 'glb':
         # gltf vs glb export is inferred from the output extension
         output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
@@ -93,7 +101,9 @@ def generate_mesh_impl(
         gltf_node = out.createNode("gltf","gltf_node")
         gltf_node.parm("file").set(output_file_path)
 
+        log.info("Exporting mesh")
         gltf_node.parm("execute").pressButton()
+        log.info("Exporting mesh completed")
     elif format == 'usdz':
         # Export to USD
         output_file_path = os.path.join(working_dir, f"{output_file_name}.usd")
@@ -101,7 +111,9 @@ def generate_mesh_impl(
         usd_node.parm("lopoutput").set(output_file_path)
         usd_node.parm("authortimesamples").set("never")
         usd_node.setInput(0, asset, 0)
+        log.info("Exporting mesh")
         usd_node.parm("execute").pressButton()
+        log.info("Exporting mesh completed")
 
         # Bind material
         if 'material/type' in params and 'material/source_asset' in params:
@@ -129,11 +141,16 @@ def generate_mesh_impl(
         usdz_node = out.createNode("usdzip","usdz_node")
         usdz_node.parm("infile1").set(output_file_path)
         usdz_node.parm("outfile1").set(output_zip_file_path)
+
+        log.info("Packaging usdz")
         usdz_node.parm("execute").pressButton()
+        log.info("Packaging usdz completed")
 
         output_file_path = output_zip_file_path
 
+    log.info("Unintalling HDA")
     hou.hda.uninstallFile(hda_path)
+    log.info("Unintalling HDA completed")
 
     mdarol.end_houdini(hip)
 
@@ -148,6 +165,7 @@ class ExportMeshRequest(ParameterSet):
 
 
 def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> OutputFiles:
+    log.info(f"Starting generate_mesh: {model}")
 
     tmp_dir = tempfile.mkdtemp()
     result_file_path = generate_mesh_impl(
@@ -158,6 +176,7 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Outpu
         tmp_dir
     )
 
+    log.info(f"Completed generate_mesh")
     return OutputFiles(
         files = {'mesh': [result_file_path]}
     )
