@@ -101,12 +101,12 @@ jobs:
 
       - name: Build api-app image
         uses: docker/build-push-action@v5
-        build-args: |
-          LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
         with:
           context: api/app
           tags: api-app:${{ github.sha }}
           outputs: type=docker,dest=/tmp/api-app.tar
+          build-args: |
+            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
       - name: Upload api-app image
         uses: actions/upload-artifact@v3
         with:
