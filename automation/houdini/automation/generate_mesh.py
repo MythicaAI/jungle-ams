@@ -47,7 +47,6 @@ def create_inputs(asset, geo, params: dict):
 
         asset.setInput(input_index, input_node, 0)
 
-
 def generate_mesh_impl(
     hda_path: str,
     hda_definition_index: int,
@@ -80,6 +79,10 @@ def generate_mesh_impl(
     log.info("Creating inputs")
     create_inputs(asset, geo, params)
     log.info("Setting up scene completed")
+
+    log.info("Forcing HDA cook (internal HDA cooks must happen before exporting)")
+    asset.cook(force=True)
+    log.info("HDA cook completed")
 
     # Export
     out = hou.node('out')
@@ -149,9 +152,9 @@ def generate_mesh_impl(
 
         output_file_path = output_zip_file_path
 
-    log.info("Unintalling HDA")
+    log.info("Uninstalling HDA")
     hou.hda.uninstallFile(hda_path)
-    log.info("Unintalling HDA completed")
+    log.info("Uninstalling HDA completed")
 
     return output_file_path
 
