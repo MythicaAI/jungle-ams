@@ -90,12 +90,12 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: libs/python
-          tags: libs-python:${{ github.sha }}
+          tags: localhost/libs-python:${{ github.sha }}
           outputs: type=docker,dest=/tmp/libs-python.tar
       - name: Upload libs-python image
         uses: actions/upload-artifact@v3
         with:
-          name: libs-python
+          name: localhost/libs-python
           path: /tmp/libs-python.tar
           retention-days: 1
 
@@ -106,14 +106,14 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: api/app
-          tags: api-app:${{ github.sha }}
+          tags: localhost/api-app:${{ github.sha }}
           outputs: type=docker,dest=/tmp/api-app.tar
           build-args: |
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
+            LIBS_PYTHON_IMAGE=localhost/libs-python:${{ github.sha }}
       - name: Upload api-app image
         uses: actions/upload-artifact@v3
         with:
-          name: api-app
+          name: localhost/api-app
           path: /tmp/api-app.tar
           retention-days: 1
 
@@ -184,13 +184,13 @@ jobs:
       - name: Download api-app image
         uses: actions/download-artifact@v3
         with:
-          name: api-app
+          name: localhost/api-app
           path: /tmp
 
       - name: Download libs-python base image
         uses: actions/download-artifact@v3
         with:
-          name: libs-python
+          name: localhost/libs-python
           path: /tmp
 
       - name: Load images
@@ -209,5 +209,5 @@ jobs:
             ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:${{ steps.tag_version.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}    
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            API_APP_IMAGE=api-app:${{ github.sha }}
+            LIBS_PYTHON_IMAGE=localhost/libs-python:${{ github.sha }}
+            API_APP_IMAGE=localhost/api-app:${{ github.sha }}
