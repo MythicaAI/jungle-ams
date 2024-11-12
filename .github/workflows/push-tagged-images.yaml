@@ -50,24 +50,9 @@ jobs:
               - 'api/packager/**'
               - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
-            api/houdini-worker/:
-              - 'api/houdini-worker/**'
-              - '.github/workflows/push-tagged-images.yaml'
             api/canary/:
               - 'api/canary/**'
               - 'api/helm/**'
-              - '.github/workflows/push-tagged-images.yaml'
-            automation/blender/:
-              - 'automation/blender/**'
-              - 'libs/python/**'
-              - '.github/workflows/push-tagged-images.yaml'
-            automation/houdini/:
-              - 'automation/houdini/**'
-              - 'libs/python/**'
-              - '.github/workflows/push-tagged-images.yaml'
-            automation/test/:
-              - 'automation/test/**'
-              - 'libs/python/**'
               - '.github/workflows/push-tagged-images.yaml'
             sites/jungle3/:
               - 'sites/jungle3/**'
