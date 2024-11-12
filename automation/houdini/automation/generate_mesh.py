@@ -59,7 +59,8 @@ def generate_mesh_impl(
     output_file_name = os.path.basename(hda_path)
     hip = os.path.join(working_dir, f'export_mesh_{output_file_name}.hip')
 
-    mdarol.start_houdini(hip)
+    log.info("Clearing scene")
+    hou.hipFile.clear(suppress_save_prompt=True)
 
     log.info("Intalling HDA")
     hou.hda.installFile(hda_path, force_use_assets=True)
@@ -151,8 +152,6 @@ def generate_mesh_impl(
     log.info("Unintalling HDA")
     hou.hda.uninstallFile(hda_path)
     log.info("Unintalling HDA completed")
-
-    mdarol.end_houdini(hip)
 
     return output_file_path
 
