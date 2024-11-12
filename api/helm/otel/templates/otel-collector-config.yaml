@@ -4,7 +4,7 @@ metadata:
   name: otel-collector-config
   namespace: default
   annotations:
-    config-update: "2024-11-07"
+    config-update: "2024-11-12"
 data:
   otel-collector-config.yaml: |
     receivers:
