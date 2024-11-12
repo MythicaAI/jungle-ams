@@ -29,12 +29,8 @@ spec:
       serviceAccountName: api
       initContainers:
         - name: jungle3-build
-          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-jungle3-build:v1.0.1
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-jungle3-build:latest
           imagePullPolicy: Always
-          command: [ "/bin/sh", "-c" ]
-          args:
-            - cp -R /dist/jungle3 /dist-publish/jungle3
-
           volumeMounts:
             - name: dist-publish
               mountPath: "/dist-publish"

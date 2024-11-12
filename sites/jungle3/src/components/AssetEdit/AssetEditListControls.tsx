@@ -1,17 +1,17 @@
-import { useAssetVersionStore } from "@store/assetVersionStore";
-import { Box } from "@mui/joy";
-import { AssetEditFileList } from "./AssetEditFileList";
-import { OpenUploadsState } from "types/assetEditTypes";
-import { AssetEditUploadDrawer } from "./AssetEditUploadDrawer";
-import { useState } from "react";
-import { AssetEditThumbnails } from "./AssetEditThumbnails";
+import {useAssetVersionStore} from "@store/assetVersionStore";
+import {Box} from "@mui/joy";
+import {AssetEditFileList} from "./AssetEditFileList";
+import {OpenUploadsState} from "types/assetEditTypes";
+import {AssetEditUploadDrawer} from "./AssetEditUploadDrawer";
+import {useState} from "react";
+import {AssetEditThumbnails} from "./AssetEditThumbnails";
 
 type Props = {
   category: "files" | "thumbnails";
 };
 
-export const AssetEditListControls: React.FC<Props> = ({ category }) => {
-  const { files, thumbnails, removeFile, removeThumbnail } =
+export const AssetEditListControls: React.FC<Props> = ({category}) => {
+  const {files, thumbnails, removeFile, removeThumbnail} =
     useAssetVersionStore();
 
   const [openUploads, setOpenUploads] = useState<OpenUploadsState>({
@@ -29,7 +29,7 @@ export const AssetEditListControls: React.FC<Props> = ({ category }) => {
         <AssetEditFileList
           title={"Files"}
           category={"files"}
-          fileTypeFilters={["hda", "hip"]}
+          fileTypeFilters={[]}
           openUploadList={(category, fileTypeFilters) =>
             setOpenUploads({
               open: true,

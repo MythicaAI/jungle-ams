@@ -41,4 +41,5 @@ COPY docker-entrypoint.sh .
 WORKDIR /dist/jungle3
 COPY --from=build /build/dist .
 RUN mv index.html index.html.template
+CMD [ "cp", "-R", "/dist/jungle3", "/dist-publish/jungle3" ]
 ENTRYPOINT ["/docker-entrypoint.sh"]
