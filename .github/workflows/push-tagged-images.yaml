@@ -69,10 +69,6 @@ jobs:
               - 'automation/test/**'
               - 'libs/python/**'
               - '.github/workflows/push-tagged-images.yaml'
-            api/canary/:
-              - 'api/canary/**'
-              - 'api/helm/**'
-              - '.github/workflows/push-tagged-images.yaml'
             sites/jungle3/:
               - 'sites/jungle3/**'
               - '.github/workflows/push-tagged-images.yaml'
