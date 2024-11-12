@@ -119,7 +119,9 @@ jobs:
 
   build-tag-publish:
     runs-on: ubuntu-latest
-    needs: changes
+    needs:
+      - changes
+      - build-base
     permissions:
       repository-projects: read
       pull-requests: write
