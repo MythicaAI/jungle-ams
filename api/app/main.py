@@ -8,7 +8,6 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from cache.connection import cache_connection_lifespan
@@ -56,7 +55,6 @@ app = FastAPI(
         {'url': 'http://localhost:8080', 'description': 'Local environment'}],
     root_path='/v1',
     lifespan=server_lifespan)
-
 
 Instrumentator().instrument(app).expose(
     app,
