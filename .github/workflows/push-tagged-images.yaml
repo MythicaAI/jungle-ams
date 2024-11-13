@@ -158,15 +158,15 @@ jobs:
         with:
           max_attempts: 3
           retry_on: error
-          timeout_seconds: 5
+          timeout_seconds: 10
           command: |
-            github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
             git config user.name "GitHub Action"
             git config user.email "action@github.com"
-            git fetch --tags
-            git tag ${{ steps.generate_tag.outputs.new_tag }}
+            git fetch --tags --quiet
+            github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+            git tag ${{ steps.tag_version.outputs.new_tag }}
             git push origin --tags
-            echo "Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "Tagged image ${{ matrix.image }} as ${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Download api-app image
         uses: actions/download-artifact@v3
@@ -195,7 +195,7 @@ jobs:
             ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:latest
             ${{ env.AR_URL }}/${{ steps.tag_version.outputs.image_name }}:${{ steps.tag_version.outputs.new_tag_version }}
           build-args: |
-            NODE_ENV=${{ env.NODE_ENV }}    
+            NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
             API_APP_IMAGE=api-app:${{ github.sha }}
           load: true
