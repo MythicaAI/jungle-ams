@@ -3,7 +3,7 @@
 from typing import Callable, Optional
 
 from sqlalchemy import Select, desc
-from sqlmodel import Field, Session
+from sqlmodel import Session
 
 import assets.repo as assets_repo
 
