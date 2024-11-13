@@ -18,7 +18,7 @@ def get_bearer_token(authorization: str) -> str:
     auth_parts = authorization.split(' ')
     if len(auth_parts) != 2 or not auth_parts[0] == 'Bearer':
         raise HTTPException(
-            HTTPStatus.BAD_REQUEST, detail=f'Invalid Authorization header "{authorization}"')
+            HTTPStatus.BAD_REQUEST, detail=f'Authorization must be a Bearer token"')
     return auth_parts[1]
 
 
