@@ -27,9 +27,9 @@ def decode_session_profile(authorization: str) -> SessionProfile:
     """Given an auth bearer header value, return a Profile object"""
     try:
         return decode_token(get_bearer_token(authorization))
-    except DecodeError:
+    except DecodeError as exc:
         raise HTTPException(
-            HTTPStatus.BAD_REQUEST, detail='Invalid authorization token')
+            HTTPStatus.BAD_REQUEST, detail='Invalid authorization token') from exc
 
 
 def resolve_profile(session, profile: Profile) -> Profile:
