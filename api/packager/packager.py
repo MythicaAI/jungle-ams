@@ -18,7 +18,7 @@ from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
 
 from events.events import EventsSession
-from assets.assets_repo import AssetVersionContent, AssetVersionResult
+from assets.repo import AssetVersionContent, AssetVersionResult
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
 

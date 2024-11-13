@@ -21,6 +21,8 @@ from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from db.schema.tags import Tag
+from tags.type_utils import resolve_type_tags
+from tags.tag_models import TagType
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
@@ -103,7 +105,7 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetVersionContent | str]] = {}
-    tags: Optional[list[str]] = {}
+    tags: Optional[list[str]] = []
 
 
 class AssetTopResult(AssetVersionResult):
@@ -111,16 +113,6 @@ class AssetTopResult(AssetVersionResult):
     when no version has been created. In this case the """
     downloads: int = 0  # Sum of all downloads
     versions: list[list[int]] = []  # Previously available versions
-
-
-def resolve_tags(session: Session, asset_seq: int) -> list[(int, str)]:
-    """Resolve all the tags for an asset"""
-    tag_results = session.exec(
-        select(AssetTag, Tag)
-        .where(AssetTag.type_seq == asset_seq)
-        .outerjoin(Tag, AssetTag.tag_seq == Tag.tag_seq)).all()
-    converted = [r[1].name for r in tag_results]
-    return converted
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -169,7 +161,7 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             commit_ref=ver.commit_ref,
             created=ver.created,
             contents=asset_contents_json_to_model(asset_id, ver.contents),
-            tags=resolve_tags(session, asset.asset_seq),
+            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq),
         )
         results.append(avr)
     return results
@@ -475,7 +467,7 @@ def top(session: Session):
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
             downloads=downloads,
-            tags=resolve_tags(session, asset.asset_seq))
+            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq))
 
     reduced = {}
     for result in results:
