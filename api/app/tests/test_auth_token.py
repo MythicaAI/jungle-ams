@@ -1,4 +1,7 @@
 from datetime import datetime, timezone
+from http.client import HTTPException
+
+import pytest
 
 import auth.roles
 from auth.data import decode_session_profile
@@ -30,6 +33,22 @@ def test_auth_token():
     assert profile.email == TEST_EMAIL
     assert profile.email_validate_state == not_sent
     assert profile.profile_seq == profile_seq
+
+
+def test_auth_token_decode_error():
+    invalid_token = (
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+        "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6I"
+        "kpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ"
+        ".SflaKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+    with pytest.raises(HTTPException):
+        _ = decode_session_profile(f"{invalid_token}")
+
+    with pytest.raises(HTTPException):
+        _ = decode_session_profile(f"Boop {invalid_token}")
+
+    with pytest.raises(HTTPException):
+        _ = decode_session_profile(f"Bearer {invalid_token}")
 
 
 def test_auth_token_with_roles():
