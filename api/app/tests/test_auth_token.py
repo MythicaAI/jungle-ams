@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from http.client import HTTPException
 
 import pytest
+from fastapi import HTTPException
 
 import auth.roles
 from auth.data import decode_session_profile
