@@ -39,6 +39,7 @@ privileged_emails = {
     'pedro@mythica.ai',
     'kevin@mythica.ai',
     'bohdan.krupa.mythica@gmail.com',
+    'kyrylo.katkov@gmail.com',
 }
 
 
