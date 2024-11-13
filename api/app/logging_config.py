@@ -1,7 +1,7 @@
 import json
 import logging
+import os
 import traceback
-from typing import Optional
 
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
@@ -14,7 +14,9 @@ from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
     ConsoleSpanExporter,
 )
-from opentelemetry.trace import get_tracer_provider, set_tracer_provider
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.semconv.resource import ResourceAttributes
+from opentelemetry.trace import set_tracer_provider
 from config import app_config
 
 
@@ -31,16 +33,21 @@ class CustomJSONFormatter(logging.Formatter):
 
         if record.exc_info:
             exception_type, exception_value, _ = record.exc_info
-            log_entry.update({
-                "exception_type": getattr(exception_type, "__name__", "Unknown"),
-                "exception_value": str(exception_value),
-                "traceback": traceback.format_exc(),
-            })
+            log_entry.update(
+                {
+                    "exception_type": getattr(exception_type, "__name__", "Unknown"),
+                    "exception_value": str(exception_value),
+                    "traceback": traceback.format_exc(),
+                }
+            )
 
         log_entry.update(
-            {k: v for k, v in record.__dict__.items() if k not in [
-                'msg', 'args', 'levelname', 'asctime', 'message', 'exc_info'
-            ]}
+            {
+                k: v
+                for k, v in record.__dict__.items()
+                if k
+                not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+            }
         )
 
         json_log_entry = json.dumps(log_entry)
@@ -48,29 +55,43 @@ class CustomJSONFormatter(logging.Formatter):
         return json_log_entry
 
 
-def configure_logging() -> Optional[TracerProvider]:
+def get_telemetry_resource() -> Resource:
+    return Resource.create(
+        {
+            ResourceAttributes.SERVICE_NAME: "app",
+            ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv("NAMESPACE", "unknown"),
+            ResourceAttributes.SERVICE_NAMESPACE: os.getenv("NAMESPACE", "unknown"),
+            ResourceAttributes.DEPLOYMENT_ENVIRONMENT: os.getenv(
+                "NAMESPACE", "unknown"
+            ),
+        }
+    )
+
+
+def configure_logging():
     logger = logging.getLogger()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     if app_config().telemetry_enable:
         logger.handlers.clear()
-        
-        tracer_provider = get_tracer_provider()
-        if not isinstance(tracer_provider, TracerProvider):
-            tracer_provider = TracerProvider()
-            set_tracer_provider(tracer_provider)
-            tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
-        logger_provider = LoggerProvider()
+        resource = get_telemetry_resource()
+
+        tracer_provider = TracerProvider(resource=resource)
+        set_tracer_provider(tracer_provider)
+        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+
+        logger_provider = LoggerProvider(resource=resource)
         set_logger_provider(logger_provider)
 
-        exporter = OTLPLogExporter(endpoint=app_config().telemetry_endpoint, insecure=True)
+        exporter = OTLPLogExporter(
+            endpoint=app_config().telemetry_endpoint, insecure=True
+        )
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
         otel_log_handler = LoggingHandler(level=logging.INFO)
         logger.addHandler(otel_log_handler)
 
         otel_log_handler.setFormatter(CustomJSONFormatter())
-        return tracer_provider
     else:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
         for handler in logger.handlers:
             handler.setFormatter(CustomJSONFormatter())
