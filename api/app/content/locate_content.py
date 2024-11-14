@@ -1,4 +1,4 @@
-from sqlmodel import select, Session
+from sqlmodel import Session, select
 
 from db.schema.media import FileContent
 
@@ -15,7 +15,4 @@ def locate_content_by_seq(session: Session, file_seq: int) -> FileContent:
         FileContent.file_seq == file_seq).where(
         FileContent.deleted is not None)
     result = session.exec(stmt)
-    file_content = result.one_or_none()
-    if file_content is None:
-        raise FileNotFoundError
-    return file_content
+    return result.one_or_none()

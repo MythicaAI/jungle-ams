@@ -8,7 +8,7 @@ from munch import munchify
 
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code, get_random_string
+from tests.shared_test import assert_status_code, random_str
 
 json_schema = {
     "type": "object",
@@ -20,7 +20,7 @@ json_schema = {
 
 
 def test_create_update(api_base, client, create_profile, create_org):
-    topo_name = "test-topo-" + get_random_string(10)
+    topo_name = "test-topo-" + random_str(10)
     topo_name_updated = topo_name + "-updated"
     invalid_org = 'foobar'
     test_profile = create_profile()
