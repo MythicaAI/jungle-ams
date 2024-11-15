@@ -8,7 +8,7 @@ from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
     OTLPLogExporter,
 )
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogExporter, SimpleLogRecordProcessor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
@@ -78,7 +78,7 @@ def configure_logging():
 
         tracer_provider = TracerProvider(resource=resource)
         set_tracer_provider(tracer_provider)
-        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleLogExporter()))
 
         logger_provider = LoggerProvider(resource=resource)
         set_logger_provider(logger_provider)
@@ -93,5 +93,14 @@ def configure_logging():
 
         otel_log_handler.setFormatter(CustomJSONFormatter())
     else:
-        for handler in logger.handlers:
-            handler.setFormatter(CustomJSONFormatter())
+        resource = get_telemetry_resource()
+        logger_provider = LoggerProvider(resource=resource)
+        set_logger_provider(logger_provider)
+        
+        logger_provider.add_log_record_processor(SimpleLogRecordProcessor(ConsoleLogExporter()))
+        
+        otel_log_handler = LoggingHandler(level=logging.INFO)
+        logger.addHandler(otel_log_handler)
+        
+        otel_log_handler.setFormatter(CustomJSONFormatter())
+

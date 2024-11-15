@@ -57,6 +57,16 @@ services:
     networks:
       - web
       - storage
+  otel-collector:
+    image: otel/opentelemetry-collector:0.107.0
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:55679:55679"
+    command: >
+      /bin/sh -c "otelcontribcol --config=/etc/otel-collector-config.yaml \
+      2>&1 | tee collector-output.txt"
 volumes:
   dist: # volume reference to share node build contents
 networks:
