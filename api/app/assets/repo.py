@@ -1,3 +1,5 @@
+# pylint: disable=unnecessary-lambda, no-member, unsupported-membership-test
+
 import logging
 from datetime import datetime
 from enum import Enum

@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name, unused-import
+# pylint: disable=redefined-outer-name, unused-import, unsubscriptable-object
 
 """Test dependencies on asset versions"""
 from http import HTTPStatus
