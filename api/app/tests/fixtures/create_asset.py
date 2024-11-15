@@ -10,18 +10,19 @@ from assets.repo import AssetDepencency, AssetFileReference, AssetVersionResult,
     DEPENDENCIES_CONTENT_KEY, \
     FILES_CONTENT_KEY, \
     LINKS_CONTENT_KEY, THUMBNAILS_CONTENT_KEY
-from tests.fixtures.uploader import uploader
 from tests.shared_test import ProfileTestObj, assert_status_code, make_random_content, random_str
 
 
 @pytest.fixture(scope='module')
-def create_asset(client, api_base, uploader):
+def create_asset(client, api_base):
     def _create_asset(
             test_profile: ProfileTestObj,
+            uploader,
             name: str = "asset-name-" + random_str(10),
             description: str = "asset description" + random_str(100),
             published: bool = True,
             commit_ref: str = random_str(8),
+            attach_package: bool = True,
             dependencies: list[tuple[str, tuple[int, ...]]] = []) -> AssetVersionResult:
         # upload content, index FileUploadResponses to AssetVersionContent JSON entries
         # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
@@ -54,7 +55,7 @@ def create_asset(client, api_base, uploader):
             'name': name,
             'description': description,
             'published': published,
-            commit_ref: commit_ref,
+            'commit_ref': commit_ref,
             'contents': {
                 FILES_CONTENT_KEY: hda_files,
                 THUMBNAILS_CONTENT_KEY: thumbnail_files,
@@ -66,6 +67,21 @@ def create_asset(client, api_base, uploader):
                         headers=headers,
                         json=version_body)
         assert_status_code(r, HTTPStatus.CREATED)
-        return AssetVersionResult(**r.json())
+
+        package_id = None
+        if attach_package:
+            package = make_random_content("zip")
+            package_response_files = uploader(
+                test_profile.profile.profile_id,
+                headers,
+                [package],
+                storage_uri=f"/upload/package/{asset_id}/{version_id}")
+            assert len(package_response_files) == 1
+            for file_id, file in package_response_files.items():
+                package_id = file_id
+
+        avr = AssetVersionResult(**r.json())
+        avr.package_id = package_id
+        return avr
 
     return _create_asset

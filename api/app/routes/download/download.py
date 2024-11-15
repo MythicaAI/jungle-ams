@@ -5,7 +5,8 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import select
 
-from content.resolve_download_info import DownloadInfoResponse, increment_download_count, resolve_download_info
+from content.resolve_download_info import DownloadInfoResponse, increment_download_count, resolve_download_info, \
+    translate_download_url
 from cryptid.cryptid import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent

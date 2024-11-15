@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 from enum import Enum
@@ -100,7 +99,7 @@ class AssetCreateVersionRequest(BaseModel):
     description: Optional[str] = None
     published: Optional[bool] = False
     commit_ref: Optional[str] = None
-    contents: Optional[dict[str, list[AssetFileReference | str]]] = None
+    contents: Optional[dict[str, list[AssetFileReference | AssetDepencency | str]]] = None
 
 
 class AssetCreateResult(BaseModel):
@@ -129,7 +128,7 @@ class AssetVersionResult(BaseModel):
     version: list[int] = ZERO_VERSION
     commit_ref: Optional[str] = None
     created: datetime | None = None
-    contents: Dict[str, list[AssetFileReference | str]] = {}
+    contents: Dict[str, list[AssetFileReference | AssetDepencency | str]] = {}
     tags: Optional[list[str]] = {}
 
 
@@ -142,6 +141,7 @@ class AssetTopResult(AssetVersionResult):
 
 class MissingDependencyResult(BaseModel):
     missing_version: Optional[tuple[str, tuple[int, ...]]] = None
+    missing_package_link: bool = False
     missing_package: Optional[str] = None
 
 
@@ -180,8 +180,10 @@ def resolve_org_name(session: Session, org_seq: int) -> str:
     return ""
 
 
-def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) -> list[
-    AssetVersionResult]:
+def process_join_results(
+        session: Session,
+        join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) \
+        -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
 
     results = list()
@@ -203,7 +205,7 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             name=ver.name,
             description=ver.description,
             published=ver.published,
-            version=(ver.major, ver.minor, ver.patch),
+            version=[ver.major, ver.minor, ver.patch],
             commit_ref=ver.commit_ref,
             created=ver.created,
             contents=asset_contents_json_to_model(asset_id, ver.contents),
@@ -279,34 +281,40 @@ def select_asset_dependencies(
     ctx.visit.append((asset_id, tuple(version_id)))
 
     while ctx.visit:
-        # Look for the first asset version in the list, resolve the asset and it's package
+        # Look for the first asset version in the list, resolve the asset, and it's package
         # download information
         asset_id, version_id = ctx.visit.pop()
         avr = select_asset_version(session, asset_id, version_id)
-        if avr is None or avr.package_id is None:
+        if avr is None or avr.published is False:
             ctx.missing.append(
-                MissingDependencyResult(missing_asset=(asset_id, tuple(version_id))))
+                MissingDependencyResult(
+                    missing_version=(asset_id, tuple(version_id))))
+        elif avr.package_id is None:
+            ctx.missing.append(
+                MissingDependencyResult(
+                    missing_version=(asset_id, tuple(version_id)),
+                    missing_package_link=True))
         else:
             download_info = resolve_download_info(session, avr.package_id, storage)
             if download_info is None:
                 ctx.missing.append(
                     MissingDependencyResult(missing_package=avr.package_id))
             else:
+                ctx.results.append(avr)
                 ctx.packages.append(download_info)
 
         dependencies = avr.contents.get(DEPENDENCIES_CONTENT_KEY, {})
         if not dependencies:
             continue
-        for dep in dependencies:
-            asset_dep = AssetDepencency(**dep)
-            key = (asset_dep.asset_id, asset_dep.version)
+        for asset_dep in dependencies:
+            key = (asset_dep.asset_id, tuple(asset_dep.version))
             if key in ctx.visited:
                 continue
             ctx.visited.add(key)
-            ctx.visit.add(key)
+            ctx.visit.append(key)
 
     return AssetDependencyResult(
-        depdencies=ctx.results,
+        dependencies=ctx.results,
         missing=ctx.missing,
         packages=ctx.packages)
 
@@ -334,8 +342,8 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     return event_result
 
 
-def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) \
-        -> dict[str, list[AssetFileReference | str]]:
+def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]]) \
+        -> dict[str, list[AssetFileReference | AssetDepencency | str]]:
     """Convert JSON assert version contents to model objects"""
     converted = {}
     if type(contents) is not dict:
@@ -343,9 +351,9 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) 
         return converted
     for category, content_list in contents.items():
         if category in FILE_TYPE_CATEGORIES:
-            converted[category] = list(map(lambda s: AssetFileReference(**json.loads(s)), content_list))
+            converted[category] = list(map(lambda s: AssetFileReference(**s), content_list))
         elif category in ASSET_VERSION_TYPE_CATEGORIES:
-            converted[category] = list(map(lambda s: AssetFileReference(**json.loads(s)), content_list))
+            converted[category] = list(map(lambda s: AssetDepencency(**s), content_list))
         elif category in LINK_TYPE_CATEGORIES:
             converted[category] = content_list
         else:
@@ -357,23 +365,24 @@ def resolve_content_list(
         session: Session,
         category: str,
         in_content_list: list[Union[str, Dict[str, Any]]]):
+    """For each category return the fully resolved version of list of items in the category"""
     if category in FILE_TYPE_CATEGORIES:
-        return map(partial(resolve_asset_file_reference, session), in_content_list)
+        return list(map(partial(resolve_asset_file_reference, session), in_content_list))
     elif category in ASSET_VERSION_TYPE_CATEGORIES:
-        return map(partial(resolve_asset_dependency, session), in_content_list)
+        return list(map(partial(resolve_asset_dependency, session), in_content_list))
     elif category in LINK_TYPE_CATEGORIES:
-        return map(resolve_asset_link, in_content_list)
+        return list(map(resolve_asset_link, in_content_list))
 
 
 def resolve_asset_file_reference(
         session: Session,
-        file_reference: Union[str, Dict[str, Any]]) -> AssetFileReference:
+        file_reference: Union[str, AssetFileReference]) -> dict:
     if type(file_reference) is str:
         file_id = file_reference
         file_name = None
     else:
-        file_id = file_reference.get('file_id')
-        file_name = file_reference.get('file_name')
+        file_id = file_reference.file_id
+        file_name = file_reference.file_name
         if file_id is None or file_name is None:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
                                 f"file_id and file_name required on {str(file_reference)}")
@@ -386,12 +395,12 @@ def resolve_asset_file_reference(
         file_id=file_seq_to_id(db_file.file_seq),
         file_name=file_name or db_file.name,
         content_hash=db_file.content_hash,
-        size=db_file.size)
+        size=db_file.size).model_dump()
 
 
-def resolve_asset_dependency(session, dep: Dict[str, Any]) -> AssetDepencency:
-    asset_id = dep.get('asset_id')
-    version = dep.get('version')
+def resolve_asset_dependency(session, dep: AssetDepencency) -> dict:
+    asset_id = dep.asset_id
+    version = dep.version
     if asset_id is None or version is None or len(version) != 3:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f'asset_id and version required on {str(dep)}')
@@ -406,7 +415,7 @@ def resolve_asset_dependency(session, dep: Dict[str, Any]) -> AssetDepencency:
         package_id=avr.package_id,
         file_name=package_file.name,
         content_hash=package_file.content_hash,
-        size=package_file.size)
+        size=package_file.size).model_dump()
 
 
 def resolve_asset_link(link):
@@ -422,14 +431,13 @@ def resolve_asset_link(link):
 def resolve_contents_as_json(
         session: Session,
         in_files_categories: dict[str, list[AssetFileReference | str]]) \
-        -> AssetContentDocument:
+        -> str:
     """Convert any partial content references into fully resolved references"""
     contents = {}
 
     # resolve all file content types
     for category, content_list in in_files_categories.items():
-        resolved_content_list = resolve_content_list(session, category, content_list)
-        contents[category] = resolved_content_list
+        contents[category] = resolve_content_list(session, category, content_list)
 
     return contents
 
