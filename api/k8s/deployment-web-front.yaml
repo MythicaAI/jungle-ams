@@ -30,12 +30,13 @@ spec:
       initContainers:
         - name: jungle3-build
           image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-jungle3-build:latest
-          command: ["cp", "-R", "/dist/jungle3", "/dist-publish/jungle3"]
           imagePullPolicy: Always
           volumeMounts:
             - name: dist-publish
-              mountPath: "/dist-publish"
+              mountPath: "/publish"
           env:
+            - name: PUBLISH_PATH
+              value: /publish/jungle3
             - name: VITE_API_BASE_URL
               value: https://api.mythica.ai/v1
             - name: VITE_IMAGES_BASE_URL
