@@ -19,6 +19,7 @@ from pythonjsonlogger import jsonlogger
 
 from assets.repo import AssetVersionContent, AssetVersionResult
 from events.events import EventsSession
+
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
 
