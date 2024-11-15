@@ -9,6 +9,8 @@ import assets.repo as repo
 from db.connection import get_session
 from db.schema.profiles import Profile
 from routes.authorization import session_profile
+from routes.storage_client import storage_client
+from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
 
@@ -94,6 +96,15 @@ async def create_version(asset_id: str,
         if create_or_update == repo.CreateOrUpdate.CREATE:
             response.status_code = HTTPStatus.CREATED
         return version_result
+
+
+@router.get('/{asset_id}/versions/{version_str}/dependencies')
+async def dependencies(
+        asset_id: str,
+        version_str: str,
+        storage: StorageClient = Depends(storage_client)) -> repo.AssetDependencyResult:
+    with get_session() as session:
+        return repo.select_asset_dependencies(session, asset_id, version_str, storage)
 
 
 @router.delete('/{asset_id}/versions/{version_str}')
