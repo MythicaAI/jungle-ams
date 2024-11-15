@@ -1,28 +1,15 @@
-FROM mythica-app:latest AS api
+# Build the packager image from the api app image
+# TODO: remove these internal dependencies
+ARG API_APP_IMAGE=mythica-app
+FROM ${API_APP_IMAGE} AS api-app-image
 
-# Build the packager image from the alpine python distro
-FROM python:3.12-alpine
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL version="1.0.0"
 LABEL name="mythica-packager"
 LABEL description="Automates the packaging of asset versions"
 LABEL tier="automation"
 
-# Build the requirements layer first, it shouldn't be changing very often
-# RUN pip install --upgrade pip google-cloud-storage
-
-
-
-# Copy API from the mythica app image for the packager to interface
-COPY --from=api /api /api
-COPY --from=api /libs /libs
 ENV PYTHONPATH=/api/app
-
-WORKDIR /api/app
-RUN pip install --upgrade pip poetry
-RUN poetry check && \
-    poetry env use python3 && \
-    poetry install --compile --all-extras --without=dev --no-root
 
 WORKDIR /api/packager
 

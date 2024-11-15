@@ -1,4 +1,5 @@
-FROM mythica-app:latest AS api
+ARG API_APP_IMAGE=mythica-app
+FROM ${API_APP_IMAGE} AS api-app-image
 
 FROM hautomation:latest
 LABEL maintainer="jacobrepp@gmail.com"
@@ -15,8 +16,8 @@ RUN apt-get update && apt-get install -y python3-poetry python3-trove-classifier
     && rm -rf /var/lib/apt/lists/*
 
 # Copy API from the mythica app image for the packager to interface
-COPY --from=api /api /api
-COPY --from=api /libs /libs
+COPY --from=api-app-image /api /api
+COPY --from=api-app-image /libs /libs
 ENV PYTHONPATH=/api/app
 
 WORKDIR /api/app

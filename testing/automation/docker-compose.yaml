@@ -1,3 +1,5 @@
+name: automation
+
 #
 # This docker compose creates a testing environment for automation tier services. 
 #
