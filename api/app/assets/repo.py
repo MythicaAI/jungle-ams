@@ -1,3 +1,5 @@
+# pylint: disable=unnecessary-lambda, no-member, unsupported-membership-test
+
 import logging
 from datetime import datetime
 from enum import Enum
@@ -7,7 +9,7 @@ from typing import Any, Dict, Optional, Union
 
 import sqlalchemy
 from fastapi import HTTPException
-from pydantic import AnyHttpUrl, BaseModel, StrictInt, ValidationError
+from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
 from sqlmodel import Session, col, delete, desc, insert, or_, select, update
 
 from content.locate_content import locate_content_by_seq
@@ -126,18 +128,18 @@ class AssetVersionResult(BaseModel):
     name: str | None = None
     description: str | None = None
     published: bool | None = False
-    version: list[int] = ZERO_VERSION
+    version: list[int] = Field(default_factory=lambda: ZERO_VERSION.copy())
     commit_ref: Optional[str] = None
     created: datetime | None = None
-    contents: Dict[str, list[AssetFileReference | AssetDepencency | str]] = {}
-    tags: Optional[list[str]] = []
+    contents: Dict[str, list[AssetFileReference | AssetDepencency | str]] = Field(default_factory=dict)
+    tags: Optional[list[str]] = Field(default_factory=list)
 
 
 class AssetTopResult(AssetVersionResult):
     """Result object for a specific asset version or the asset head object
     when no version has been created. In this case the """
     downloads: int = 0  # Sum of all downloads
-    versions: list[list[int]] = []  # Previously available versions
+    versions: list[list[int]] = Field(default_factory=list)  # Previously available versions
 
 
 class MissingDependencyResult(BaseModel):
@@ -149,18 +151,18 @@ class MissingDependencyResult(BaseModel):
 
 class AssetDependencyResult(BaseModel):
     """Query result from /dependencies"""
-    dependencies: list[AssetVersionResult] = []
-    missing: list[MissingDependencyResult] = []
-    packages: list[DownloadInfoResponse]
+    dependencies: list[AssetVersionResult] = Field(default_factory=list)
+    missing: list[MissingDependencyResult] = Field(default_factory=list)
+    packages: list[DownloadInfoResponse] = Field(default_factory=list)
 
 
 class DependencyQueryContext(BaseModel):
     """Context used for querying package dependencies """
-    results: list[AssetVersionResult] = []
-    visit: list[tuple[str, tuple[int, ...]]] = []
-    visited: set[tuple[str, tuple[int, ...]]] = set()
-    missing: list[MissingDependencyResult] = list()
-    packages: list[DownloadInfoResponse] = list()
+    results: list[AssetVersionResult] = Field(default_factory=list)
+    visit: list[tuple[str, tuple[int, ...]]] = Field(default_factory=list)
+    visited: set[tuple[str, tuple[int, ...]]] = Field(default_factory=set)
+    missing: list[MissingDependencyResult] = Field(default_factory=list)
+    packages: list[DownloadInfoResponse] = Field(default_factory=list)
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
