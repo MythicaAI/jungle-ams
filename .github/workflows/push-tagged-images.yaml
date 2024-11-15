@@ -70,7 +70,7 @@ jobs:
       - changes
 
     # only build base if there is some change
-    if: ${{ needs.changes.outputs.changes }}
+    if: ${{ len(needs.changes.outputs.changes) > 0 }}
     steps:
       - uses: actions/checkout@v4
 
