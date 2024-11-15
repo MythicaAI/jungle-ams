@@ -307,35 +307,35 @@ class Worker:
         request_data: ParameterSet = None
 
     def _get_script_worker(self) -> Callable:
+        doer = self
         def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
             # Prepare the environment to hold the script's namespace
             script_namespace = {}
             if not request.request_data:
                 raise ValueError("request_data is required.")
-            try:
-                # Execute the script directly in the current environment
-                exec(request.script, {}, script_namespace)
 
-                # Prepare request model from request_data
-                if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
-                    request_model = script_namespace["RequestModel"](**request.request_data)
-                else:
-                    raise ValueError("RequestModel not found in script.")
+            # Execute the script directly in the current environment
+            exec(request.script, script_namespace)
 
-                # Run the automation function
-                if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
-                    result = script_namespace["runAutomation"](request_model, responder)
-                else:
-                    raise ValueError("runAutomation function not found in script.")
+            # Prepare request model from request_data
+            if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
+                request_model = script_namespace["RequestModel"](**request.request_data.model_dump())
+            else:
+                raise ValueError("RequestModel not found in script.")
 
-                # Ensure ProcessStreamItem response and return it as payload
-                if isinstance(result, ProcessStreamItem):
-                    return result
-                else:
-                    raise ValueError("runAutomation did not return a ProcessStreamItem.")
+            resolve_params(API_URL, doer.tmpdir, request_model)
 
-            except Exception as e:
-                responder.result(Message(message=f"Script Execution Error: {formatException(e)}"))
+            # Run the automation function
+            if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
+                result = script_namespace["runAutomation"](request_model, responder)
+            else:
+                raise ValueError("runAutomation function not found in script.")
+
+            # Ensure ProcessStreamItem response and return it as payload
+            if isinstance(result, ProcessStreamItem):
+                return result
+            else:
+                raise ValueError("runAutomation did not return a ProcessStreamItem.")
 
         return impl
 
@@ -454,12 +454,14 @@ class Worker:
                 publisher.result(Progress(progress=0))
 
                 with tempfile.TemporaryDirectory() as tmpdir:
+                    doer.tmpdir = tmpdir
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
                     resolve_params(API_URL, tmpdir, inputs)
                     ret_data = worker.provider(inputs, publisher)
 
-                publisher.result(ret_data)
+                    publisher.result(ret_data)
+                    doer.tmpdir = None
                 publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:
