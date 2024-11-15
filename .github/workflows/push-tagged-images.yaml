@@ -174,13 +174,13 @@ jobs:
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
       - name: Download api-app image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: api-app-${{ github.sha }}
           path: /tmp
 
       - name: Download libs-python base image
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: libs-python-${{ github.sha }}
           path: /tmp
