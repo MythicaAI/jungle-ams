@@ -1,4 +1,4 @@
-FROM mythica-app:latest as api
+FROM mythica-app:latest AS api
 
 # Build the packager image from the alpine python distro
 FROM python:3.12-alpine

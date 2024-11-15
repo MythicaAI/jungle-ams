@@ -6,19 +6,20 @@ or worker mode when connected to an events table.
 """
 
 import argparse
-import asyncio
 import logging
 import os
 import tempfile
 import zipfile
 from pathlib import Path
 
+import asyncio
 import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
 
-from events.events import EventsSession
 from assets.repo import AssetVersionContent, AssetVersionResult
+from events.events import EventsSession
+
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
 
