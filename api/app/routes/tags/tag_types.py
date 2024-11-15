@@ -19,14 +19,16 @@ from db.connection import TZ, get_session
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
 from routes.authorization import session_profile, maybe_session_profile
-from routes.tags.type_utils import (
-    get_model_type,
-    get_type_id_to_seq,
+from tags.repo import process_type_model_result
+from tags.tag_models import (
+    TagType,
+    TagTypeRequest,
+    TagResponse,
     get_model_of_model_type,
+    get_model_type,
     get_model_type_seq_col,
-    process_type_model_result,
+    get_type_id_to_seq,
 )
-from routes.tags.tag_models import TagType, TagTypeRequest, TagResponse
 
 
 log = logging.getLogger(__name__)
