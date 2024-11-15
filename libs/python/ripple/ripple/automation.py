@@ -335,7 +335,7 @@ class Worker:
                     raise ValueError("runAutomation did not return a ProcessStreamItem.")
 
             except Exception as e:
-                responder.result({"error": f"Execution error: {str(e)}"})
+                responder.result(Message(message=f"Script Execution Error: {formatException(e)}"))
 
         return impl
 
@@ -344,7 +344,7 @@ class Worker:
             script_namespace = {}
 
             try:
-                exec(request.script, {}, script_namespace)
+                exec(request.script, script_namespace)
 
                 input = None
                 output = None
@@ -359,18 +359,19 @@ class Worker:
                 else:
                     output = ProcessStreamItem
                 
+
+                return Worker.CatalogResponse(
+                    workers={
+                        '/mythica/script': {
+                            'input': input.model_json_schema(),
+                            'output': output.model_json_schema(),
+                            'hidden': True
+                    }
+                })
             except Exception as e:
-                responder.result({"error": f"Execution error: {str(e)}"})
+                responder.result(Message(message=f"Script Interface Generation Error: {formatException(e)}"))
 
-
-            return Worker.CatalogResponse(
-                workers={
-                    '/mythica/script': {
-                        'input': input.model_json_schema(),
-                        'output': output.model_json_schema(),
-                        'hidden': True
-                }
-            })
+            return(Worker.CatalogResponse(workers={}))
         return impl
     
     def start(self,subject: str, workers:list[dict]) -> None:

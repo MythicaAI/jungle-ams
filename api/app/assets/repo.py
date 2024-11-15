@@ -24,6 +24,8 @@ from db.schema.profiles import Org, Profile
 from db.schema.tags import Tag
 from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
+from tags.type_utils import resolve_type_tags
+from tags.tag_models import TagType
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
@@ -45,6 +47,7 @@ asset_join_select = (
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
 
 log = logging.getLogger(__name__)
+
 
 
 class AssetCreateRequest(BaseModel):
@@ -129,7 +132,7 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetFileReference | AssetDepencency | str]] = {}
-    tags: Optional[list[str]] = {}
+    tags: Optional[list[str]] = []
 
 
 class AssetTopResult(AssetVersionResult):
@@ -140,15 +143,26 @@ class AssetTopResult(AssetVersionResult):
 
 
 class MissingDependencyResult(BaseModel):
+    """A missing dependency either version or package"""
     missing_version: Optional[tuple[str, tuple[int, ...]]] = None
     missing_package_link: bool = False
     missing_package: Optional[str] = None
 
 
 class AssetDependencyResult(BaseModel):
+    """Query result from /dependencies"""
     dependencies: list[AssetVersionResult] = []
     missing: list[MissingDependencyResult] = []
     packages: list[DownloadInfoResponse]
+
+
+class DependencyQueryContext(BaseModel):
+    """Context used for querying package dependencies """
+    results: list[AssetVersionResult] = []
+    visit: list[tuple[str, tuple[int, ...]]] = []
+    visited: set[tuple[str, tuple[int, ...]]] = set()
+    missing: list[MissingDependencyResult] = list()
+    packages: list[DownloadInfoResponse] = list()
 
 
 def resolve_tags(session: Session, asset_seq: int) -> list[(int, str)]:
@@ -209,7 +223,7 @@ def process_join_results(
             commit_ref=ver.commit_ref,
             created=ver.created,
             contents=asset_contents_json_to_model(asset_id, ver.contents),
-            tags=resolve_tags(session, asset.asset_seq),
+            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq),
         )
         results.append(avr)
     return results
@@ -259,15 +273,6 @@ def select_asset_version(session: Session,
         return None
     processed_results = process_join_results(session, results)
     return processed_results[0]
-
-
-class DependencyQueryContext(BaseModel):
-    """Context used for querying package dependencies """
-    results: list[AssetVersionResult] = []
-    visit: list[tuple[str, tuple[int, ...]]] = []
-    visited: set[tuple[str, tuple[int, ...]]] = set()
-    missing: list[MissingDependencyResult] = list()
-    packages: list[DownloadInfoResponse] = list()
 
 
 def select_asset_dependencies(
@@ -606,7 +611,7 @@ def top(session: Session):
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
             downloads=downloads,
-            tags=resolve_tags(session, asset.asset_seq))
+            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq))
 
     reduced = {}
     for result in results:
