@@ -163,14 +163,13 @@ jobs:
 
       - name: Push tag
         uses: nick-fields/retry@v2
-        id: tag_version
         with:
           max_attempts: 3
           retry_on: error
           timeout_seconds: 10
           command: |
-            git tag ${{ steps.tag_version.outputs.new_tag }}
-            git push origin ${{ steps.tag_version.outputs.new_tag }}
+            git tag ${{ steps.generate_tag.outputs.new_tag }}
+            git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
       - name: Download api-app image
