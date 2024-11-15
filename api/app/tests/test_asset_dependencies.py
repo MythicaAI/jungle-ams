@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name, unused-import
+
 """Test dependencies on asset versions"""
 from http import HTTPStatus
 
@@ -8,7 +10,6 @@ from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code, make_random_content
 
 
-# pylint: disable=redefined-outer-name, unused-import
 def version_id_as_str(version):
     """Convert version tuple/list to string"""
     return '.'.join(map(str, version))

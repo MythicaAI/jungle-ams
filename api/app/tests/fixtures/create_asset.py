@@ -23,7 +23,7 @@ def create_asset(client, api_base):
             published: bool = True,
             commit_ref: str = random_str(8),
             attach_package: bool = True,
-            dependencies: list[tuple[str, tuple[int, ...]]] = []) -> AssetVersionResult:
+            dependencies: list[tuple[str, tuple[int, ...]]] = None) -> AssetVersionResult:
         # upload content, index FileUploadResponses to AssetVersionContent JSON entries
         # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
         hdas = [make_random_content("hda") for _ in range(2)]
@@ -41,7 +41,7 @@ def create_asset(client, api_base):
         links = ["https://test.com/link", "https://test.com/link2"]
         dependencies = list(map(
             lambda x: json.loads(AssetDepencency(asset_id=x[0], version=x[1]).model_dump_json()),
-            dependencies))
+            dependencies or []))
 
         # create the base asset
         r = client.post(f"{api_base}/assets", headers=headers, json={})
@@ -77,7 +77,7 @@ def create_asset(client, api_base):
                 [package],
                 storage_uri=f"/upload/package/{asset_id}/{version_id}")
             assert len(package_response_files) == 1
-            for file_id, file in package_response_files.items():
+            for file_id, _ in package_response_files.items():
                 package_id = file_id
 
         avr = AssetVersionResult(**r.json())
