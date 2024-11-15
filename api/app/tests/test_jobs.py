@@ -55,11 +55,21 @@ def test_create_update(client, api_base, create_profile):
     o = munchify(r.json())
     job_def_id = o.job_def_id
 
-    # Get job definitions
+    # Get job definition from list
     r = client.get(f'{api_base}/jobs/definitions', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     definitions = r.json()
     assert any([definition['job_def_id'] == job_def_id for definition in definitions])
+
+    # Get job definition directly
+    r = client.get(f'{api_base}/jobs/definitions/{job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definition = r.json()
+    assert definition['job_def_id'] == job_def_id
+
+    # Get invalid job definitions
+    r = client.get(f'{api_base}/jobs/definitions/jobdef_3ZUcvpXisvZeAjWWyHzFpuJdSSKr', headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
 
     # Create an invalid job
     r = client.post(f'{api_base}/jobs',

@@ -51,6 +51,8 @@ spec:
               value: "{{ .Values.api.app.telemetry_enable }}"
             - name: TELEMETRY_ENDPOINT
               value: {{ .Values.api.app.telemetry_endpoint }}
+            - name: NAMESPACE
+              value: {{ .Values.namespace }}
           ports:
             - containerPort: 5555
               name: http-api
