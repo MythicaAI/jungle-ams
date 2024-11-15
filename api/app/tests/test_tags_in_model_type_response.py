@@ -7,10 +7,10 @@ from http import HTTPStatus
 
 from munch import munchify
 
-from assets.repo import AssetVersionContent
+from assets.repo import AssetFileReference
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import assert_status_code, get_random_string, make_random_content
+from tests.shared_test import assert_status_code, make_random_content, random_str
 
 test_event_info_len = 10
 next_test_event_id = itertools.count(start=1, step=1)
@@ -28,7 +28,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     profile_id = test_profile.profile.profile_id
 
     # create org to contain assets
-    org_name = 'org-' + get_random_string(10, digits=False)
+    org_name = 'org-' + random_str(10, digits=False)
     r = client.post(f"{api_base}/orgs/", json={'name': org_name}, headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
@@ -47,7 +47,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
 
     def create_tag():
         # create tag
-        tag_name = "tag_" + get_random_string(10, digits=False)
+        tag_name = "tag_" + random_str(10, digits=False)
         r = client.post(f"{api_base}/tags", json={'name': tag_name}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
@@ -80,7 +80,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     asset_contents = list(
         map(
             lambda x: json.loads(
-                AssetVersionContent(**x.model_dump()).model_dump_json()
+                AssetFileReference(**x.model_dump()).model_dump_json()
             ),
             response_files.values(),
         )

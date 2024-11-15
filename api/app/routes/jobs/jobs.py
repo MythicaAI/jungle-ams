@@ -93,6 +93,17 @@ async def list_definitions() -> list[JobDefinitionModel]:
                 for job_def in job_defs]
 
 
+@router.get('/definitions/{job_def_id}')
+async def by_id(job_def_id: str) -> JobDefinitionModel:
+    """Get job definition by id"""
+    with get_session() as session:
+        job_def = session.exec(select(JobDefinition).where(
+            JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id))).one_or_none()
+        if job_def is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+        return JobDefinitionModel(job_def_id=job_def_id, **job_def.model_dump())
+
+
 def add_job_requested_event(session: Session, job_seq: int, job_def, params: str,
                             profile_seq: int):
     """Add a new event that triggers job processing"""

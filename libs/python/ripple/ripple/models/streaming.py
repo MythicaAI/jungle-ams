@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Any, Literal, Optional, Union
 from uuid import uuid4
 
@@ -73,6 +74,10 @@ class Event(StreamItem):
     """
     item_type: Literal["event"] = "event"
     payload: dict[str, Any] = Field(default_factory=dict)
+    event_type: Optional[str] = None
+    queued: Optional[datetime] = None
+    acked: Optional[datetime] = None
+    completed: Optional[datetime] = None
 
 
 # Build the set of models for verification

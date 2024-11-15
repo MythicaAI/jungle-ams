@@ -35,6 +35,10 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
             return [Event(
                 index=event_seq_to_id(i.event_seq),
                 payload=i.job_data,
+                event_type=i.event_type,
+                queued=i.queued,
+                acked=i.acked,
+                completed=i.completed,
             ) for i in r]
 
     return events_table_source

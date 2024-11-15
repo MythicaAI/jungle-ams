@@ -1,17 +1,17 @@
-import json
 import logging
 from datetime import datetime
 from enum import Enum
+from functools import partial
 from http import HTTPStatus
-from typing import Dict, Optional
-from urllib.parse import urlparse
+from typing import Any, Dict, Optional, Union
 
 import sqlalchemy
 from fastapi import HTTPException
-from pydantic import BaseModel, StrictInt
+from pydantic import AnyHttpUrl, BaseModel, StrictInt, ValidationError
 from sqlmodel import Session, col, delete, desc, insert, or_, select, update
 
 from content.locate_content import locate_content_by_seq
+from content.resolve_download_info import resolve_download_info
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
     org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
@@ -21,12 +21,22 @@ from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from db.schema.tags import Tag
+from routes.download.download import DownloadInfoResponse
+from storage.storage_client import StorageClient
+from tags.tag_models import TagType
+from tags.type_utils import resolve_type_tags
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
 
-FILE_TYPE_CATEGORIES = {'files', 'thumbnails'}
-LINK_TYPE_CATEGORIES = {'links'}
+FILES_CONTENT_KEY = 'files'
+THUMBNAILS_CONTENT_KEY = 'thumbnails'
+LINKS_CONTENT_KEY = 'links'
+DEPENDENCIES_CONTENT_KEY = 'dependencies'
+
+FILE_TYPE_CATEGORIES = {FILES_CONTENT_KEY, THUMBNAILS_CONTENT_KEY}
+ASSET_VERSION_TYPE_CATEGORIES = {DEPENDENCIES_CONTENT_KEY}
+LINK_TYPE_CATEGORIES = {LINKS_CONTENT_KEY}
 
 asset_join_select = (
     select(Asset, AssetVersion)
@@ -49,14 +59,31 @@ class CreateOrUpdate(Enum):
     UPDATE = "update"
 
 
-class AssetVersionContent(BaseModel):
-    """Embedded content in an asset version. When creating a new asset version
-    it is only required to specify the ID of the file media and the relative
-    file name of the content in the package. When the file is resolved during the
-    creation of the version it will receive the content hash and size from the underlying
-    file_id"""
+class AssetFileReference(BaseModel):
+    """Embedded file reference in an asset version content.
+
+    When creating a new asset version only the file_id and the relative path (name) are required.
+
+    When the file is resolved during the creation of the version it will receive the content
+    hash and size from the underlying file_id"""
     file_id: str
     file_name: str
+    content_hash: Optional[str] = None
+    size: Optional[int] = None
+
+
+class AssetDepencency(BaseModel):
+    """Embedded asset version reference (dependency) in asset version content
+
+    When creating a new asset version the asset_id, major, minor, patch are required to
+    specify the dependency of the package.
+
+    When the dependency is resolved the package_id, content_hash, file_id, name and size
+    will be resolved"""
+    asset_id: str
+    version: list[int]
+    package_id: Optional[str] = None
+    file_name: Optional[str] = None
     content_hash: Optional[str] = None
     size: Optional[int] = None
 
@@ -73,7 +100,7 @@ class AssetCreateVersionRequest(BaseModel):
     description: Optional[str] = None
     published: Optional[bool] = False
     commit_ref: Optional[str] = None
-    contents: Optional[dict[str, list[AssetVersionContent | str]]] = None
+    contents: Optional[dict[str, list[AssetFileReference | AssetDepencency | str]]] = None
 
 
 class AssetCreateResult(BaseModel):
@@ -102,8 +129,8 @@ class AssetVersionResult(BaseModel):
     version: list[int] = ZERO_VERSION
     commit_ref: Optional[str] = None
     created: datetime | None = None
-    contents: Dict[str, list[AssetVersionContent | str]] = {}
-    tags: Optional[list[str]] = {}
+    contents: Dict[str, list[AssetFileReference | AssetDepencency | str]] = {}
+    tags: Optional[list[str]] = []
 
 
 class AssetTopResult(AssetVersionResult):
@@ -113,14 +140,27 @@ class AssetTopResult(AssetVersionResult):
     versions: list[list[int]] = []  # Previously available versions
 
 
-def resolve_tags(session: Session, asset_seq: int) -> list[(int, str)]:
-    """Resolve all the tags for an asset"""
-    tag_results = session.exec(
-        select(AssetTag, Tag)
-        .where(AssetTag.type_seq == asset_seq)
-        .outerjoin(Tag, AssetTag.tag_seq == Tag.tag_seq)).all()
-    converted = [r[1].name for r in tag_results]
-    return converted
+class MissingDependencyResult(BaseModel):
+    """A missing dependency either version or package"""
+    missing_version: Optional[tuple[str, tuple[int, ...]]] = None
+    missing_package_link: bool = False
+    missing_package: Optional[str] = None
+
+
+class AssetDependencyResult(BaseModel):
+    """Query result from /dependencies"""
+    dependencies: list[AssetVersionResult] = []
+    missing: list[MissingDependencyResult] = []
+    packages: list[DownloadInfoResponse]
+
+
+class DependencyQueryContext(BaseModel):
+    """Context used for querying package dependencies """
+    results: list[AssetVersionResult] = []
+    visit: list[tuple[str, tuple[int, ...]]] = []
+    visited: set[tuple[str, tuple[int, ...]]] = set()
+    missing: list[MissingDependencyResult] = list()
+    packages: list[DownloadInfoResponse] = list()
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -142,8 +182,10 @@ def resolve_org_name(session: Session, org_seq: int) -> str:
     return ""
 
 
-def process_join_results(session: Session, join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) -> list[
-    AssetVersionResult]:
+def process_join_results(
+        session: Session,
+        join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) \
+        -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
 
     results = list()
@@ -165,11 +207,11 @@ def process_join_results(session: Session, join_results: list[tuple[Asset, Asset
             name=ver.name,
             description=ver.description,
             published=ver.published,
-            version=(ver.major, ver.minor, ver.patch),
+            version=[ver.major, ver.minor, ver.patch],
             commit_ref=ver.commit_ref,
             created=ver.created,
             contents=asset_contents_json_to_model(asset_id, ver.contents),
-            tags=resolve_tags(session, asset.asset_seq),
+            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq),
         )
         results.append(avr)
     return results
@@ -221,6 +263,55 @@ def select_asset_version(session: Session,
     return processed_results[0]
 
 
+def select_asset_dependencies(
+        session: Session,
+        asset_id: str,
+        version_str: str,
+        storage: StorageClient) -> AssetDependencyResult:
+    """Recursively query dependencies for a specific asset version"""
+    version_id = convert_version_input(version_str)
+    ctx = DependencyQueryContext()
+    ctx.visit.append((asset_id, tuple(version_id)))
+
+    while ctx.visit:
+        # Look for the first asset version in the list, resolve the asset, and it's package
+        # download information
+        asset_id, version_id = ctx.visit.pop()
+        avr = select_asset_version(session, asset_id, version_id)
+        if avr is None or avr.published is False:
+            ctx.missing.append(
+                MissingDependencyResult(
+                    missing_version=(asset_id, tuple(version_id))))
+        elif avr.package_id is None:
+            ctx.missing.append(
+                MissingDependencyResult(
+                    missing_version=(asset_id, tuple(version_id)),
+                    missing_package_link=True))
+        else:
+            download_info = resolve_download_info(session, avr.package_id, storage)
+            if download_info is None:
+                ctx.missing.append(
+                    MissingDependencyResult(missing_package=avr.package_id))
+            else:
+                ctx.results.append(avr)
+                ctx.packages.append(download_info)
+
+        dependencies = avr.contents.get(DEPENDENCIES_CONTENT_KEY, {})
+        if not dependencies:
+            continue
+        for asset_dep in dependencies:
+            key = (asset_dep.asset_id, tuple(asset_dep.version))
+            if key in ctx.visited:
+                continue
+            ctx.visited.add(key)
+            ctx.visit.append(key)
+
+    return AssetDependencyResult(
+        dependencies=ctx.results,
+        missing=ctx.missing,
+        packages=ctx.packages)
+
+
 def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     """Add a new event that triggers version packaging"""
     # Create a new pipeline event
@@ -244,8 +335,8 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
     return event_result
 
 
-def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) \
-        -> dict[str, list[AssetVersionContent | str]]:
+def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]]) \
+        -> dict[str, list[AssetFileReference | AssetDepencency | str]]:
     """Convert JSON assert version contents to model objects"""
     converted = {}
     if type(contents) is not dict:
@@ -253,7 +344,9 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) 
         return converted
     for category, content_list in contents.items():
         if category in FILE_TYPE_CATEGORIES:
-            converted[category] = list(map(lambda s: AssetVersionContent(**json.loads(s)), content_list))
+            converted[category] = list(map(lambda s: AssetFileReference(**s), content_list))
+        elif category in ASSET_VERSION_TYPE_CATEGORIES:
+            converted[category] = list(map(lambda s: AssetDepencency(**s), content_list))
         elif category in LINK_TYPE_CATEGORIES:
             converted[category] = content_list
         else:
@@ -264,49 +357,75 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[str]]) 
 def resolve_content_list(
         session: Session,
         category: str,
-        in_content_list: list[AssetVersionContent | str]):
-    resolved_content_list = []
+        in_content_list: list[Union[str, Dict[str, Any]]]):
+    """For each category return the fully resolved version of list of items in the category"""
     if category in FILE_TYPE_CATEGORIES:
-        for asset_content in in_content_list:
-            try:
-                if type(asset_content) is str:
-                    file_id = asset_content
-                    file_name = None
-                else:
-                    file_id = asset_content.file_id
-                    file_name = asset_content.file_name
-                db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
-                content = AssetVersionContent(
-                    file_id=file_seq_to_id(db_file.file_seq),
-                    file_name=file_name or db_file.name,
-                    content_hash=db_file.content_hash,
-                    size=db_file.size)
-                resolved_content_list.append(content.model_dump_json())
-            except FileNotFoundError as exc:
-                raise HTTPException(HTTPStatus.NOT_FOUND,
-                                    detail=f"file '{asset_content.file_id}' not found") from exc
+        return list(map(partial(resolve_asset_file_reference, session), in_content_list))
+    elif category in ASSET_VERSION_TYPE_CATEGORIES:
+        return list(map(partial(resolve_asset_dependency, session), in_content_list))
     elif category in LINK_TYPE_CATEGORIES:
-        for link in in_content_list:
-            try:
-                urlparse(link)
-                resolved_content_list.append(link)
-            except ValueError as e:
-                raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                    detail=f"link '{link}' not valid") from e
-    return resolved_content_list
+        return list(map(resolve_asset_link, in_content_list))
+
+
+def resolve_asset_file_reference(
+        session: Session,
+        file_reference: Union[str, AssetFileReference]) -> dict:
+    file_id = file_reference.file_id
+    file_name = file_reference.file_name
+    if file_id is None or file_name is None:
+        raise HTTPException(HTTPStatus.BAD_REQUEST,
+                            f"file_id and file_name required on {str(file_reference)}")
+    db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
+    if db_file is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND,
+                            detail=f"file '{file_id}' not found")
+
+    return AssetFileReference(
+        file_id=file_seq_to_id(db_file.file_seq),
+        file_name=file_name or db_file.name,
+        content_hash=db_file.content_hash,
+        size=db_file.size).model_dump()
+
+
+def resolve_asset_dependency(session, dep: AssetDepencency) -> dict:
+    asset_id = dep.asset_id
+    version = dep.version
+    if asset_id is None or version is None or len(version) != 3:
+        raise HTTPException(HTTPStatus.BAD_REQUEST,
+                            f'asset_id and version required on {str(dep)}')
+    avr = select_asset_version(session, asset_id, version)
+    if avr is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND,
+                            f'asset {asset_id} {version} not found')
+    package_file = locate_content_by_seq(session, file_id_to_seq(avr.package_id))
+    return AssetDepencency(
+        asset_id=avr.asset_id,
+        version=avr.version,
+        package_id=avr.package_id,
+        file_name=package_file.name,
+        content_hash=package_file.content_hash,
+        size=package_file.size).model_dump()
+
+
+def resolve_asset_link(link):
+    """Ensure the link is parsable"""
+    try:
+        return str(AnyHttpUrl(link))
+    except ValidationError as e:
+        raise HTTPException(HTTPStatus.BAD_REQUEST,
+                            detail=f"link '{link}' not valid") from e
 
 
 def resolve_contents_as_json(
         session: Session,
-        in_files_categories: dict[str, list[AssetVersionContent | str]]) \
-        -> AssetContentDocument:
+        in_files_categories: dict[str, list[AssetFileReference | str]]) \
+        -> str:
     """Convert any partial content references into fully resolved references"""
     contents = {}
 
     # resolve all file content types
     for category, content_list in in_files_categories.items():
-        resolved_content_list = resolve_content_list(session, category, content_list)
-        contents[category] = resolved_content_list
+        contents[category] = resolve_content_list(session, category, content_list)
 
     return contents
 
@@ -475,7 +594,7 @@ def top(session: Session):
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
             downloads=downloads,
-            tags=resolve_tags(session, asset.asset_seq))
+            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq))
 
     reduced = {}
     for result in results:

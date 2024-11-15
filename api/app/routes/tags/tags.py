@@ -18,7 +18,7 @@ from cryptid.cryptid import (
 from db.connection import TZ, get_session
 from db.schema.tags import Tag
 from routes.authorization import session_profile
-from routes.tags.tag_models import TagRequest, TagResponse
+from tags.tag_models import TagRequest, TagResponse
 from routes.tags.tag_types import router as tag_types_router
 
 log = logging.getLogger(__name__)

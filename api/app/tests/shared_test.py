@@ -32,7 +32,7 @@ class ProfileTestObj(BaseModel):
         return {"Authorization": f"Bearer {self.auth_token}"}
 
 
-def get_random_string(length, digits=False):
+def random_str(length: int, digits: bool = False) -> str:
     """Get a random ascii string optionally with digits"""
     characters = string.ascii_letters
     if digits:
@@ -56,7 +56,7 @@ def assert_status_code(response, expected_status_code):
 
 def make_random_content(file_ext: str) -> FileContentTestObj:
     """Create a random (unresolved FileContentTestObj object)"""
-    file_name = ''.join([secrets.choice(string.ascii_letters) for _ in range(10)])
+    file_name = 'file-name' + random_str(10)
     test_content = secrets.token_bytes(16)
     return FileContentTestObj(
         file_name=file_name + '.' + file_ext,

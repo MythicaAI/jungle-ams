@@ -7,11 +7,11 @@ from http import HTTPStatus
 
 from munch import munchify
 
-from assets.repo import AssetVersionContent
+from assets.repo import AssetFileReference
 from routes.type_adapters import register_adapters
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import assert_status_code, get_random_string, make_random_content, refresh_auth_token
+from tests.shared_test import assert_status_code, make_random_content, random_str, refresh_auth_token
 
 test_profile_name = "test-profile"
 test_profile_full_name = "test-profile-full-name"
@@ -61,11 +61,11 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     files = [make_random_content("hda") for _ in range(2)]
     response_files = uploader(profile_id, headers, files)
     asset_contents = list(map(
-        lambda x: json.loads(AssetVersionContent(**x.model_dump()).model_dump_json()),
+        lambda x: json.loads(AssetFileReference(**x.model_dump()).model_dump_json()),
         response_files.values()))
 
     # create org to contain assets
-    org_name = 'org-' + get_random_string(10, digits=False)
+    org_name = 'org-' + random_str(10, digits=False)
     r = client.post(
         f"{api_base}/orgs/",
         json={'name': org_name},
@@ -170,6 +170,31 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.name == test_asset_name + '-updated'
     assert o.version == [0, 2, 0]
     assert len(o.contents['files']) == 1
+
+    # validate that invalid files fail
+    test_asset_ver_json['contents']['files'] = [{'file_id': 'file_foo', 'file_name': 'foo'}]
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0",
+        json=test_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # validate that invalid links fail
+    test_asset_ver_json['contents']['files'] = asset_contents[1:]
+    test_asset_ver_json['contents']['links'] = ['foo']
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0",
+        json=test_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # fix up the asset
+    test_asset_ver_json['contents']['links'] = ['https://valid.com']
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0",
+        json=test_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
 
     # validate asset query at version 0.0.0, still returns empty version info
     r = client.get(
