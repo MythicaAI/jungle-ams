@@ -212,8 +212,10 @@ def deploy_image(c, image_path, target):
         c.run((f"docker tag {image_name}:{commit_hash}"
                f" {repo}/{image_name}:latest"),
               pty=PTY_SUPPORTED)
-        c.run((f"docker push {repo}/{image_name}"
-               " --all-tags"), pty=PTY_SUPPORTED)
+        c.run(f"docker push {repo}/{image_name}:latest",
+              pty=PTY_SUPPORTED)
+        c.run(f"docker push {repo}/{image_name}:{commit_hash}",
+              pty=PTY_SUPPORTED)
 
 
 def run_image(c, image_path, background=False):
