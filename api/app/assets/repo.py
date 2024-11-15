@@ -24,8 +24,8 @@ from db.schema.profiles import Org, Profile
 from db.schema.tags import Tag
 from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
-from tags.type_utils import resolve_type_tags
 from tags.tag_models import TagType
+from tags.type_utils import resolve_type_tags
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
@@ -47,7 +47,6 @@ asset_join_select = (
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
 
 log = logging.getLogger(__name__)
-
 
 
 class AssetCreateRequest(BaseModel):
@@ -163,16 +162,6 @@ class DependencyQueryContext(BaseModel):
     visited: set[tuple[str, tuple[int, ...]]] = set()
     missing: list[MissingDependencyResult] = list()
     packages: list[DownloadInfoResponse] = list()
-
-
-def resolve_tags(session: Session, asset_seq: int) -> list[(int, str)]:
-    """Resolve all the tags for an asset"""
-    tag_results = session.exec(
-        select(AssetTag, Tag)
-        .where(AssetTag.type_seq == asset_seq)
-        .outerjoin(Tag, AssetTag.tag_seq == Tag.tag_seq)).all()
-    converted = [r[1].name for r in tag_results]
-    return converted
 
 
 def resolve_profile_name(session: Session, profile_seq: int) -> str:
@@ -382,15 +371,11 @@ def resolve_content_list(
 def resolve_asset_file_reference(
         session: Session,
         file_reference: Union[str, AssetFileReference]) -> dict:
-    if type(file_reference) is str:
-        file_id = file_reference
-        file_name = None
-    else:
-        file_id = file_reference.file_id
-        file_name = file_reference.file_name
-        if file_id is None or file_name is None:
-            raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                f"file_id and file_name required on {str(file_reference)}")
+    file_id = file_reference.file_id
+    file_name = file_reference.file_name
+    if file_id is None or file_name is None:
+        raise HTTPException(HTTPStatus.BAD_REQUEST,
+                            f"file_id and file_name required on {str(file_reference)}")
     db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
     if db_file is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,

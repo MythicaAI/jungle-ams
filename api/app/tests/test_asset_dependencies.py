@@ -129,7 +129,7 @@ def test_asset_dependencies(client, api_base, create_profile, create_asset, uplo
     contents['thumbnails'] = [x.model_dump() for x in contents['thumbnails']]
     contents['dependencies'] = [
         AssetDepencency(
-            asset_id=dependent_asset.asset_id,
+            asset_id=dependent_asset.asset_id + "foo",
             version=dependent_asset.version).model_dump()]
     body = {
         'contents': contents,
@@ -139,10 +139,29 @@ def test_asset_dependencies(client, api_base, create_profile, create_asset, uplo
         'commit_ref': versioned_asset.commit_ref + '-updated'
     }
 
-    # post the update
+    # post a bad update first to verify the failure case
     new_version = list(versioned_asset.version)
     new_version[2] += 1
     new_version_str = '.'.join(map(str, new_version))
+    r = client.post(
+        f"{api_base}/assets/{versioned_asset.asset_id}/versions/{new_version_str}",
+        json=body,
+        headers=other_profile.authorization_header(),
+    )
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # post another variant of a bad request
+    body['contents']['dependencies'][0]['version'] = [1, 0, 0, 0]
+    r = client.post(
+        f"{api_base}/assets/{versioned_asset.asset_id}/versions/{new_version_str}",
+        json=body,
+        headers=other_profile.authorization_header(),
+    )
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # fix the bad dependency
+    body['contents']['dependencies'][0]['asset_id'] = dependent_asset.asset_id
+    body['contents']['dependencies'][0]['version'] = [1, 0, 0]
     r = client.post(
         f"{api_base}/assets/{versioned_asset.asset_id}/versions/{new_version_str}",
         json=body,

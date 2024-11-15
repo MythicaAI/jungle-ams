@@ -171,6 +171,31 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.version == [0, 2, 0]
     assert len(o.contents['files']) == 1
 
+    # validate that invalid files fail
+    test_asset_ver_json['contents']['files'][0]['file_id'] = asset_contents[1:] + 'foo'
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0",
+        json=test_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # validate that invalid links fail
+    test_asset_ver_json['contents']['files'][0]['file_id'] = asset_contents[1:]
+    test_asset_ver_json['contents']['links'] = ['https:bad']
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0",
+        json=test_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # fix up the asset
+    test_asset_ver_json['contents']['links'] = ['https://valid.com']
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0",
+        json=test_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+
     # validate asset query at version 0.0.0, still returns empty version info
     r = client.get(
         f"{api_base}/assets/{asset_id}/versions/0.0.0",
