@@ -87,20 +87,22 @@ jobs:
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
       - name: Save api-app to tar
         run: |
-          docker save api-app:${{ github.sha }} > /tmp/api-app.tar
-          docker save libs-python:${{ github.sha }} > /tmp/libs-python.tar
+          docker save api-app:${{ github.sha }} > /tmp/api-app-${{ github.sha }}.tar
+          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
       - name: Upload libs-python image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: libs-python
-          path: /tmp/libs-python.tar
+          name: libs-python-${{ github.sha }}
+          path: /tmp/libs-python-${{ github.sha }}.tar
           retention-days: 1
+          overwrite: true
       - name: Upload api-app image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: api-app
-          path: /tmp/api-app.tar
+          name: api-app-${{ github.sha }}
+          path: /tmp/api-app-${{ github.sha }}.tar
           retention-days: 1
+          overwrite: true
 
   build-tag-publish:
     runs-on: ubuntu-latest
@@ -168,25 +170,25 @@ jobs:
           timeout_seconds: 10
           command: |
             git tag ${{ steps.tag_version.outputs.new_tag }}
-            git push origin --tags
-            echo "Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" >> $GITHUB_STEP_SUMMARY
+            git push origin ${{ steps.tag_version.outputs.new_tag }}
+            echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
       - name: Download api-app image
         uses: actions/download-artifact@v3
         with:
-          name: api-app
+          name: api-app-${{ github.sha }}
           path: /tmp
 
       - name: Download libs-python base image
         uses: actions/download-artifact@v3
         with:
-          name: libs-python
+          name: libs-python-${{ github.sha }}
           path: /tmp
 
       - name: Load images
         run: |
-          docker load --input /tmp/libs-python.tar
-          docker load --input /tmp/api-app.tar
+          docker load --input /tmp/libs-python-${{ github.sha }}.tar
+          docker load --input /tmp/api-app-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
         uses: docker/build-push-action@v6
@@ -195,7 +197,6 @@ jobs:
           context: ${{ matrix.image }}
           file: ${{ matrix.image }}/Dockerfile
           tags: |
-            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:latest
             ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
