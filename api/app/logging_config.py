@@ -78,7 +78,7 @@ def configure_logging():
 
         tracer_provider = TracerProvider(resource=resource)
         set_tracer_provider(tracer_provider)
-        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleLogExporter()))
+        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
         logger_provider = LoggerProvider(resource=resource)
         set_logger_provider(logger_provider)
@@ -103,4 +103,3 @@ def configure_logging():
         logger.addHandler(otel_log_handler)
         
         otel_log_handler.setFormatter(CustomJSONFormatter())
-
