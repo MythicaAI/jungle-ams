@@ -4,11 +4,10 @@ from enum import Enum
 from functools import partial
 from http import HTTPStatus
 from typing import Any, Dict, Optional, Union
-from urllib.parse import urlparse
 
 import sqlalchemy
 from fastapi import HTTPException
-from pydantic import BaseModel, StrictInt
+from pydantic import AnyHttpUrl, BaseModel, StrictInt, ValidationError
 from sqlmodel import Session, col, delete, desc, insert, or_, select, update
 
 from content.locate_content import locate_content_by_seq
@@ -411,9 +410,8 @@ def resolve_asset_dependency(session, dep: AssetDepencency) -> dict:
 def resolve_asset_link(link):
     """Ensure the link is parsable"""
     try:
-        urlparse(link)
-        return link
-    except ValueError as e:
+        return str(AnyHttpUrl(link))
+    except ValidationError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             detail=f"link '{link}' not valid") from e
 
