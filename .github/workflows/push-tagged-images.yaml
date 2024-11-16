@@ -69,8 +69,6 @@ jobs:
     needs:
       - changes
 
-    # only build base if there is some change
-    if: ${{ needs.changes.outputs.images.length > 0 }}
     steps:
       - uses: actions/checkout@v4
 
