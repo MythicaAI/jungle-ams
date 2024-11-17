@@ -51,7 +51,7 @@ echo "images:" >> "$OUTPUT_FILE"
 # Read image names from stdin (one per line) or from arguments
 IMAGES="lets-encrypt \
   mythica-app \
-  mythica-canary \
+  mythica-job-canary \
   mythica-editor-build \
   mythica-gcs-proxy \
   mythica-jungle3-build \
