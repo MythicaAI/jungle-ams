@@ -71,7 +71,7 @@ jobs:
 
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-latest-tags.yaml api-staging api/helm/api
+          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-images.yaml api-staging api/helm/api
 
       - name: Rollout deployments
         run: |

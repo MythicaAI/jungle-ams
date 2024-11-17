@@ -24,7 +24,7 @@ spec:
       serviceAccountName: api
       initContainers:
         - name: jungle3-build
-          image: "{{ .Values.imageRepository }}/mythica-jungle3-build:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-jungle3-build") }}
           imagePullPolicy: Always
           command: [ "/bin/sh", "-c" ]
           args:
@@ -46,7 +46,7 @@ spec:
             - name: dist-publish
               mountPath: "/dist-publish"
         - name: editor-build
-          image: "{{ .Values.imageRepository }}/mythica-editor-build:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-editor-build") }}
           imagePullPolicy: Always
           command: [ "/bin/sh", "-c" ]
           args:
@@ -56,7 +56,7 @@ spec:
               mountPath: "/dist-publish"
       containers:
         - name: nginx
-          image: "{{ .Values.imageRepository }}/mythica-web-front:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-web-front") }}
           args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }}" ]
           imagePullPolicy: Always
           env:
