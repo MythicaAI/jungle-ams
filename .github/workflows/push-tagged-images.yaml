@@ -142,10 +142,6 @@ jobs:
       - name: Fetch tags
         run: git fetch --prune --unshallow --tags
 
-      - name: List tags
-        id: list_tags
-        run: git tag -l
-
       - name: Setup Docker BuildX
         uses: docker/setup-buildx-action@v3
         with:

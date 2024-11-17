@@ -30,7 +30,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --prune --unshallow --tags
 
       - name: Generate values file for image tags
         run: |
@@ -69,4 +72,12 @@ jobs:
       - name: Deploy Helm Chart
         run: |
           helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-latest-tags.yaml api-staging api/helm/api
+
+      - name: Rollout deployments
+        run: |
           kubectl rollout restart deployment/app -n api-staging
+          kubectl rollout restart deployment/packager -n api-staging
+          kubectl rollout restart deployment/lets-encrypt -n api-staging
+          kubectl rollout restart deployment/gcs-proxy -n api-staging
+          kubectl rollout restart deployment/web-front -n api-staging
+          kubectl rollout restart deployment/canary -n api-staging
