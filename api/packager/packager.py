@@ -17,9 +17,8 @@ import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
 
-from assets.repo import AssetVersionContent, AssetVersionResult
+from assets.repo import AssetFileReference, AssetVersionResult
 from events.events import EventsSession
-
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
 
@@ -60,7 +59,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_versions(endpoint: str, asset_id: str, version: tuple[int, ...]) -> list[AssetVersionResult]:
+def get_versions(
+        endpoint: str,
+        asset_id: str,
+        version: tuple[int, ...]) -> list[AssetVersionResult]:
     """Get all versions for a given asset"""
     if len(version) != 3:
         raise ValueError("Invalid version format, must be a 3 valued tuple")
@@ -78,29 +80,30 @@ def get_versions(endpoint: str, asset_id: str, version: tuple[int, ...]) -> list
         return sorted([AssetVersionResult(**o)], key=lambda x: x.version, reverse=True)
 
 
-def get_file_contents(v: AssetVersionResult) -> list[AssetVersionContent]:
+def get_file_contents(v: AssetVersionResult) -> list[AssetFileReference]:
     """Return all file contents if they exist"""
-    files = v.contents.get('files')
-    if files is None:
-        return []
-    return files
+    return v.contents.get('files', [])
 
 
-def resolve_contents(endpoint, content: AssetVersionContent) -> DownloadInfoResponse:
+def resolve_contents(endpoint, file: AssetFileReference) -> DownloadInfoResponse:
     """"Resolve content by ID to a resolved download URL"""
-    r = requests.get(f"{endpoint}/v1/download/info/{content.file_id}")
+    r = requests.get(f"{endpoint}/v1/download/info/{file.file_id}")
     if r.status_code != 200:
         raise ConnectionError(r.text)
     dl_info = DownloadInfoResponse(**r.json())
     assert dl_info.url is not None
-    assert dl_info.file_id == content.file_id
+    assert dl_info.file_id == file.file_id
     log.info("resolved %s (%s)",
              dl_info.name,
              dl_info.content_hash)
     return dl_info
 
 
-async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: str, version: tuple[int, ...]):
+async def create_zip_from_asset(
+        output_path: Path,
+        endpoint: str,
+        asset_id: str,
+        version: tuple[int, ...]):
     """Given an output zip file name, resolve all the content of the asset_id and create a zip file"""
 
     versions = get_versions(endpoint, asset_id, version)
@@ -124,7 +127,11 @@ async def create_zip_from_asset(output_path: Path, endpoint: str, asset_id: str,
         await upload_package(endpoint, asset_id, version_str, zip_filename)
 
 
-async def upload_package(endpoint: str, asset_id: str, version_str: str, zip_filename: Path):
+async def upload_package(
+        endpoint: str,
+        asset_id: str,
+        version_str: str,
+        zip_filename: Path):
     """Upload a package update to an asset from a specific zip file"""
     url = f"{endpoint}/v1/upload/package/{asset_id}/{version_str}"
     with open(zip_filename, 'rb') as file:
@@ -141,7 +148,11 @@ async def upload_package(endpoint: str, asset_id: str, version_str: str, zip_fil
                  asset_id, version_str, file_upload.file_id, file_upload.content_hash)
 
 
-async def main(output_path: Path, endpoint: str, asset_id: str, version: tuple[int, ...]):
+async def console_main(
+        output_path: Path,
+        endpoint: str,
+        asset_id: str,
+        version: tuple[int, ...]):
     """Main entrypoint when running with argument overrides (non-worker mode)"""
     await create_zip_from_asset(
         output_path,
@@ -150,7 +161,7 @@ async def main(output_path: Path, endpoint: str, asset_id: str, version: tuple[i
         version)
 
 
-async def exec_job(endpoint, job_data):
+async def exec_job(endpoint: str, job_data):
     """Given the job data from the event, create the ZIP package"""
     asset_id = job_data.get('asset_id')
     if asset_id is None:
@@ -166,7 +177,7 @@ async def exec_job(endpoint, job_data):
         await create_zip_from_asset(Path(tmp_dir), endpoint, asset_id, version)
 
 
-async def worker_entrypoint(endpoint: str):
+async def worker_main(endpoint: str):
     """Async entrypoint to test worker dequeue, looks for SQL_URL
         environment variable to form an initial connection"""
     sql_url = os.environ.get('SQL_URL',
@@ -198,16 +209,20 @@ def setup_logging():
     logger.addHandler(handler)
 
 
-if __name__ == '__main__':
+def main():
     setup_logging()
     args = parse_args()
     if args.asset is not None:
         log.info("asset provided, running command line mode")
-        asyncio.run(main(
+        asyncio.run(console_main(
             Path(args.output),
             args.endpoint,
             args.asset,
             tuple(map(int, args.version.split('.')))))
     else:
         log.info("no asset provided, running in event worker mode")
-        asyncio.run(worker_entrypoint(args.endpoint))
+        asyncio.run(worker_main(args.endpoint))
+
+
+if __name__ == '__main__':
+    main()
