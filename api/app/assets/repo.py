@@ -345,10 +345,20 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]])
         log.warning("asset: %s content is not a dictionary", asset_id)
         return converted
     for category, content_list in contents.items():
+        log.info("Processing category: %s, content_list: %s", category, content_list)
+        if not isinstance(content_list, list):
+            log.warning("asset: %s category %s content_list is not a list: %s", asset_id, category, content_list)
+            continue
         if category in FILE_TYPE_CATEGORIES:
-            converted[category] = list(map(lambda s: AssetFileReference(**s), content_list))
+            try:
+                converted[category] = [AssetFileReference(**s) for s in content_list]
+            except TypeError as e:
+                log.error("asset: %s category %s failed to convert content_list: %s. Error: %s", asset_id, category, content_list, str(e))
         elif category in ASSET_VERSION_TYPE_CATEGORIES:
-            converted[category] = list(map(lambda s: AssetDependency(**s), content_list))
+            try:
+                converted[category] = [AssetDependency(**s) for s in content_list]
+            except TypeError as e:
+                log.error("asset: %s category %s failed to convert content_list: %s. Error: %s", asset_id, category, content_list, str(e))
         elif category in LINK_TYPE_CATEGORIES:
             converted[category] = content_list
         else:
