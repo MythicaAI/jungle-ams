@@ -570,25 +570,43 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
 def delete_asset_and_versions(session: Session, asset_id: str, profile_seq: int):
     asset_seq = asset_id_to_seq(asset_id)
 
-    stmt = delete(AssetVersion).where(
-        AssetVersion.asset_seq == asset_seq, 
-        AssetVersion.author_seq == profile_seq,
-        Asset.owner_seq == profile_seq,
+    asset_versions_to_delete = session.exec(
+        select(AssetVersion)
+        .where(
+            AssetVersion.asset_seq == asset_seq,
+            AssetVersion.author_seq == profile_seq,
+        )
+    ).all()
+    if not asset_versions_to_delete:
+        raise HTTPException(
+            HTTPStatus.FORBIDDEN,
+            detail="Asset versions can be deleted by the asset owner",
+        )
+    session.exec(
+        delete(AssetVersion).where(
+            AssetVersion.asset_seq == asset_seq,
+            AssetVersion.author_seq == profile_seq,
+        )
     )
 
-    result = session.exec(stmt)
-    if result.rowcount == 0:
-        raise HTTPException(HTTPStatus.FORBIDDEN,
-                            detail="asset versions can be deleted by the asset owner")
-
-    stmt = delete(Asset).where(
-        Asset.asset_seq == asset_seq, 
-        Asset.owner_seq == profile_seq,
+    asset_to_delete = session.exec(
+        select(Asset).where(
+            Asset.asset_seq == asset_seq,
+            Asset.owner_seq == profile_seq,
+        )
+    ).one_or_none()
+    if not asset_to_delete:
+        raise HTTPException(
+            HTTPStatus.FORBIDDEN,
+            detail="Asset can be deleted by the asset owner",
+        )
+    session.exec(
+        delete(Asset).where(
+            Asset.asset_seq == asset_seq,
+            Asset.owner_seq == profile_seq,
+        )
     )
-    result = session.exec(stmt)
-    if result.rowcount != 1:
-        raise HTTPException(HTTPStatus.FORBIDDEN,
-                            detail="asset can be deleted by the asset owner")
+
     session.commit()
 
 
