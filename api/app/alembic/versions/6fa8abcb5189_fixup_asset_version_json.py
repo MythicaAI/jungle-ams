@@ -34,21 +34,40 @@ def upgrade() -> None:
     contents_as_string = 0
     contents_with_string_lists = 0
     contents_list_converted = 0
+    contents_list_items_converted = 0
     for av in asset_versions:
         contents = av.contents
         if contents is None:
             continue
         if type(contents) == str:
+            print(f"converting {contents}")
             contents = json.loads(contents)
             contents_as_string += 1
         fixed_contents = dict()
         did_convert = False
         for key, value in contents.items():
+            # links are intended to be strings
+            if key == 'links':
+                continue
             if type(value) == str:
+                # content item was encoded as string
+                print(f"converting {value}")
                 l = json.loads(value)
                 fixed_contents[key] = l
                 contents_list_converted += 1
                 did_convert = True
+            elif type(value) == list:
+                fixed_list = []
+                for item in value:
+                    if type(item) == str:
+                        # item was encoded as string
+                        print(f"converting {item}")
+                        fixed_list = json.loads(item)
+                        did_convert = True
+                        contents_list_items_converted += 1
+                    else:
+                        fixed_list = item
+                fixed_contents[key] = fixed_list
             else:
                 fixed_contents[key] = value
         if did_convert:
@@ -62,9 +81,10 @@ def upgrade() -> None:
             .where(AssetVersion.patch == av.patch))
         session.commit()
     print(f"fixed-up")
-    print(f"  contents as strings: {contents_as_string}")
-    print(f"  contents with string lists: {contents_with_string_lists}")
+    print(f"  contents converted: {contents_as_string}")
+    print(f"  contents with converted lists: {contents_with_string_lists}")
     print(f"  contents list converted: {contents_list_converted}")
+    print(f"  contents list items converted: {contents_list_items_converted}")
 
 
 def downgrade() -> None:
