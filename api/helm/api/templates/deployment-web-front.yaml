@@ -26,10 +26,9 @@ spec:
         - name: jungle3-build
           image: {{ include "api.image" (list . "mythica-jungle3-build") }}
           imagePullPolicy: Always
-          command: [ "/bin/sh", "-c" ]
-          args:
-            - cp -R /dist/jungle3 /dist-publish/jungle3
           env:
+            - name: PUBLISH_PATH
+              value: /publish/jungle3
             - name: VITE_API_BASE_URL
               value: {{ .Values.apiBaseUrl }}
             - name: VITE_IMAGES_BASE_URL
@@ -42,15 +41,6 @@ spec:
               value: {{ .Values.auth0.audience }}
             - name: VITE_AUTH0_REDIRECT_URL
               value: {{ .Values.auth0.redirectUrl }}
-          volumeMounts:
-            - name: dist-publish
-              mountPath: "/dist-publish"
-        - name: editor-build
-          image: {{ include "api.image" (list . "mythica-editor-build") }}
-          imagePullPolicy: Always
-          command: [ "/bin/sh", "-c" ]
-          args:
-            - cp -R /dist/editor /dist-publish/editor
           volumeMounts:
             - name: dist-publish
               mountPath: "/dist-publish"
