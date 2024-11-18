@@ -185,6 +185,22 @@ def test_param_compile():
     assert compiled.params['test_enum'].values[0].label == "A"
     assert compiled.params['test_enum'].default == "a"
 
+    # Empty enum test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "Menu",
+                "label": "Test Enum",
+                "default": 0
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 0
+
     # File test
     data = """
     {
