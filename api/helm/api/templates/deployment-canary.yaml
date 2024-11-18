@@ -22,7 +22,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: canary
-          image: "{{ .Values.imageRepository }}/mythica-job-canary:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-job-canary") }}
           imagePullPolicy: Always
           resources:
             requests:

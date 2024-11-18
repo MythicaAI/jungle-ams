@@ -25,7 +25,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: app
-          image: "{{ .Values.imageRepository }}/mythica-app:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-app") }}
           imagePullPolicy: Always
           resources:
             requests:

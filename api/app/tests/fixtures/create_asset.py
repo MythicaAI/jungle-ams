@@ -6,7 +6,7 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from assets.repo import AssetDepencency, AssetFileReference, AssetVersionResult, \
+from assets.repo import AssetDependency, AssetFileReference, AssetVersionResult, \
     DEPENDENCIES_CONTENT_KEY, \
     FILES_CONTENT_KEY, \
     LINKS_CONTENT_KEY, THUMBNAILS_CONTENT_KEY
@@ -40,7 +40,7 @@ def create_asset(client, api_base):
             thumbnail_response_files.values()))
         links = ["https://test.com/link", "https://test.com/link2"]
         dependencies = list(map(
-            lambda x: json.loads(AssetDepencency(asset_id=x[0], version=x[1]).model_dump_json()),
+            lambda x: json.loads(AssetDependency(asset_id=x[0], version=x[1]).model_dump_json()),
             dependencies or []))
 
         # create the base asset

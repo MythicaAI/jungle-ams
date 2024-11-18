@@ -74,7 +74,7 @@ class AssetFileReference(BaseModel):
     size: Optional[int] = None
 
 
-class AssetDepencency(BaseModel):
+class AssetDependency(BaseModel):
     """Embedded asset version reference (dependency) in asset version content
 
     When creating a new asset version the asset_id, major, minor, patch are required to
@@ -102,7 +102,7 @@ class AssetCreateVersionRequest(BaseModel):
     description: Optional[str] = None
     published: Optional[bool] = False
     commit_ref: Optional[str] = None
-    contents: Optional[dict[str, list[AssetFileReference | AssetDepencency | str]]] = None
+    contents: Optional[dict[str, list[AssetFileReference | AssetDependency | str]]] = None
 
 
 class AssetCreateResult(BaseModel):
@@ -131,7 +131,7 @@ class AssetVersionResult(BaseModel):
     version: list[int] = Field(default_factory=lambda: ZERO_VERSION.copy())
     commit_ref: Optional[str] = None
     created: datetime | None = None
-    contents: Dict[str, list[AssetFileReference | AssetDepencency | str]] = Field(default_factory=dict)
+    contents: Dict[str, list[AssetFileReference | AssetDependency | str]] = Field(default_factory=dict)
     tags: Optional[list[str]] = Field(default_factory=list)
 
 
@@ -338,7 +338,7 @@ def add_version_packaging_event(session: Session, avr: AssetVersionResult):
 
 
 def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]]) \
-        -> dict[str, list[AssetFileReference | AssetDepencency | str]]:
+        -> dict[str, list[AssetFileReference | AssetDependency | str]]:
     """Convert JSON assert version contents to model objects"""
     converted = {}
     if type(contents) is not dict:
@@ -348,7 +348,7 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]])
         if category in FILE_TYPE_CATEGORIES:
             converted[category] = list(map(lambda s: AssetFileReference(**s), content_list))
         elif category in ASSET_VERSION_TYPE_CATEGORIES:
-            converted[category] = list(map(lambda s: AssetDepencency(**s), content_list))
+            converted[category] = list(map(lambda s: AssetDependency(**s), content_list))
         elif category in LINK_TYPE_CATEGORIES:
             converted[category] = content_list
         else:
@@ -389,7 +389,7 @@ def resolve_asset_file_reference(
         size=db_file.size).model_dump()
 
 
-def resolve_asset_dependency(session, dep: AssetDepencency) -> dict:
+def resolve_asset_dependency(session, dep: AssetDependency) -> dict:
     asset_id = dep.asset_id
     version = dep.version
     if asset_id is None or version is None or len(version) != 3:
@@ -400,7 +400,7 @@ def resolve_asset_dependency(session, dep: AssetDepencency) -> dict:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             f'asset {asset_id} {version} not found')
     package_file = locate_content_by_seq(session, file_id_to_seq(avr.package_id))
-    return AssetDepencency(
+    return AssetDependency(
         asset_id=avr.asset_id,
         version=avr.version,
         package_id=avr.package_id,

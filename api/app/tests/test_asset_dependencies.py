@@ -3,7 +3,7 @@
 """Test dependencies on asset versions"""
 from http import HTTPStatus
 
-from assets.repo import AssetDepencency, AssetDependencyResult
+from assets.repo import AssetDependency, AssetDependencyResult
 from tests.fixtures.create_asset import create_asset
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
@@ -128,7 +128,7 @@ def test_asset_dependencies(client, api_base, create_profile, create_asset, uplo
     contents['files'] = [x.model_dump() for x in contents['files']]
     contents['thumbnails'] = [x.model_dump() for x in contents['thumbnails']]
     contents['dependencies'] = [
-        AssetDepencency(
+        AssetDependency(
             asset_id=dependent_asset.asset_id + "foo",
             version=dependent_asset.version).model_dump()]
     body = {
