@@ -31,19 +31,28 @@ def upgrade() -> None:
     session = Session(bind)
 
     asset_versions = session.exec(select(AssetVersion)).all()
+    contents_as_string = 0
+    contents_with_string_lists = 0
+    contents_list_converted = 0
     for av in asset_versions:
         contents = av.contents
         if contents is None:
             continue
         if type(contents) == str:
             contents = json.loads(contents)
+            contents_as_string += 1
         fixed_contents = dict()
+        did_convert = False
         for key, value in contents.items():
             if type(value) == str:
                 l = json.loads(value)
                 fixed_contents[key] = l
+                contents_list_converted += 1
+                did_convert = True
             else:
                 fixed_contents[key] = value
+        if did_convert:
+            contents_with_string_lists += 1
         session.exec(
             update(AssetVersion)
             .values(contents=fixed_contents)
@@ -52,6 +61,10 @@ def upgrade() -> None:
             .where(AssetVersion.minor == av.minor)
             .where(AssetVersion.patch == av.patch))
         session.commit()
+    print(f"fixed-up")
+    print(f"  contents as strings: {contents_as_string}")
+    print(f"  contents with string lists: {contents_with_string_lists}")
+    print(f"  contents list converted: {contents_list_converted}")
 
 
 def downgrade() -> None:
