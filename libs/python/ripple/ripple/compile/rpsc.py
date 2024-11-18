@@ -18,6 +18,15 @@ from ripple.models.params import (
 )
 
 
+def parse_menu_parameter(value: dict) -> EnumParameterSpec:
+    assert len(value['menu_items']) == len(value['menu_labels'])
+    values = [EnumValueSpec(name=name, label=label) for name, label in zip(value['menu_items'], value['menu_labels'])]
+    default = str(value['default'])
+    if default not in value['menu_items']:
+        default = value['menu_items'][0]
+    return EnumParameterSpec(values=values, default=default, label=value['label'])
+
+
 def compile_interface(interface_data: str) -> ParameterSpec:
     """
     Compiles a Houdini interface file into a parameter spec.
@@ -35,14 +44,14 @@ def compile_interface(interface_data: str) -> ParameterSpec:
         elif value['type'] == 'Float':
             param = FloatParameterSpec(**value)
         elif value['type'] == 'String':
-            param = StringParameterSpec(**value)
+            if 'menu_items' in value and 'menu_labels' in value:
+                param = parse_menu_parameter(value)
+            else:
+                param = StringParameterSpec(**value)
         elif value['type'] == 'Toggle':
             param = BoolParameterSpec(**value)
         elif value['type'] == 'Menu':
-            assert len(value['menu_items']) == len(value['menu_labels'])
-            values = [EnumValueSpec(name=name, label=label) for name, label in zip(value['menu_items'], value['menu_labels'])]
-            default = values[value['default']].name
-            param = EnumParameterSpec(values=values, default=default, label=value['label'])
+            param = parse_menu_parameter(value)
         else:
             continue
 
