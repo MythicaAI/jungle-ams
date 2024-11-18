@@ -567,6 +567,31 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
     session.commit()
 
 
+def delete_asset_and_versions(session: Session, asset_id: str, profile_seq: int):
+    asset_seq = asset_id_to_seq(asset_id)
+
+    stmt = delete(AssetVersion).where(
+        AssetVersion.asset_seq == asset_seq, 
+        AssetVersion.author_seq == profile_seq,
+        Asset.owner_seq == profile_seq,
+    )
+
+    result = session.exec(stmt)
+    if result.rowcount == 0:
+        raise HTTPException(HTTPStatus.FORBIDDEN,
+                            detail="asset versions can be deleted by the asset owner")
+
+    stmt = delete(Asset).where(
+        Asset.asset_seq == asset_seq, 
+        Asset.owner_seq == profile_seq,
+    )
+    result = session.exec(stmt)
+    if result.rowcount != 1:
+        raise HTTPException(HTTPStatus.FORBIDDEN,
+                            detail="asset can be deleted by the asset owner")
+    session.commit()
+
+
 def top(session: Session):
     results = session.exec(
         select(Asset, AssetVersion, FileContent)

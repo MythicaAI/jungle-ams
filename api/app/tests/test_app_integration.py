@@ -330,6 +330,24 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.contents['links'][0] == test_link_update1
     assert o.contents['links'][1] == test_link_update2
 
+    r = client.delete(
+        f"{api_base}/assets/{asset_id}", headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+
+    # Ensure asset was deleted
+    r = client.get(
+        f"{api_base}/assets/{asset_id}")
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert len(o) == 0
+
+    # Ensure asset-versions were deleted
+    r = client.get(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0")
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
+
+
 
 def test_invalid_profile_url(client, api_base):
     response = client.post(f"{api_base}/profiles",

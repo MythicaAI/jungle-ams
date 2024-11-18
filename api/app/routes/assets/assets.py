@@ -117,6 +117,15 @@ async def delete_version(
         repo.delete_version(session, asset_id, version_str, profile.profile_seq)
 
 
+@router.delete('/{asset_id}')
+async def delete_asset(
+        asset_id: str,
+        profile: Profile = Depends(session_profile)):
+    """Delete an asset and it's asset-versions"""
+    with get_session(echo=True) as session:
+        repo.delete_asset_and_versions(session, asset_id, profile.profile_seq)
+
+
 @router.get('/{asset_id}/versions/{version_str}')
 async def by_version(
         asset_id: str,
