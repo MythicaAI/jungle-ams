@@ -51,7 +51,10 @@ def compile_interface(interface_data: str) -> ParameterSpec:
         elif value['type'] == 'Toggle':
             param = BoolParameterSpec(**value)
         elif value['type'] == 'Menu':
-            param = parse_menu_parameter(value)
+            if 'menu_items' in value and 'menu_labels' in value:
+                param = parse_menu_parameter(value)
+            else:
+                continue
         else:
             continue
 
