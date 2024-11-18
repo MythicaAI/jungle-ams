@@ -495,8 +495,16 @@ def create_version(session: Session,
     if r.author_id:
         values['author_seq'] = profile_id_to_seq(r.author_id)
         values.pop('author_id')
+        if (
+            avr.author_id 
+            and profile_seq != profile_id_to_seq(avr.author_id)  # Ensure only the author of the version can modify author_id
+            and avr.author_id != r.author_id
+        ):
+            raise HTTPException(HTTPStatus.FORBIDDEN, detail="author_id can be updated by the asset-version author")
     else:
         values['author_seq'] = profile_seq
+        if avr.author_id and profile_id_to_seq(avr.author_id) != profile_seq:
+            values['author_seq'] = profile_id_to_seq(avr.author_id)
 
     create_or_update = CreateOrUpdate.CREATE
 
