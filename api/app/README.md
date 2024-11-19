@@ -1,14 +1,12 @@
 Mythica API application
 =====
 
-See the (API docs)[http://localhost] for more information
+FastAPI application for serving up the Mythica package index and 
+operations on backend.
 
-Running:
+See the (API docs)[http://localhost:8080/docs] for more information
 
-```bash
-fastapi run main.py \
-	--host ${HTTP_LISTEN_ADDR} \
-	--port ${HTTP_LISTEN_PORT} \
-	--workers ${WORKER_COUNT} \
-	--proxy-headers
-```
+Requires storage:
+
+`inv storage-start`
+`inv web-start`

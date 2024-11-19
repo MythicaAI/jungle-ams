@@ -21,8 +21,8 @@ spec:
       terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}
       serviceAccountName: lets-encrypt
       containers:
-        - name: letsencrypt
-          image: "{{ .Values.imageRepository }}/mythica-lets-encrypt:{{ $componentContext.tag }}"
+        - name: lets-encrypt
+          image: {{ include "api.image" (list . "lets-encrypt") }}
           imagePullPolicy: Always
           env:
             - name: DOMAINS

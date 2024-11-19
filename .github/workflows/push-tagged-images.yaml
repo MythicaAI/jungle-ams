@@ -1,0 +1,211 @@
+name: push-tagged-images
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sites/**'
+      - 'api/**'
+      - 'libs/**'
+      - 'automation/**'
+      - '.github/workflows/push-tagged-images.yaml'
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+
+    outputs:
+      images: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # compare to latest commit
+          base: ${{ github.ref }}
+
+          # setup all the filters to match Dockerfile locations
+          filters: |
+            api/app/:
+              - 'libs/python/**'
+              - 'api/app/**'
+              - 'api/helm/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            api/nginx/:
+              - 'api/nginx/**'
+              - 'api/helm/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            api/gcs-proxy/:
+              - 'api/gcs-proxy/**'
+              - 'api/helm/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            api/lets-encrypt/:
+              - 'api/lets-encrypt/**'
+              - 'api/helm/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            api/packager/:
+              - 'api/packager/**'
+              - 'api/helm/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            api/canary/:
+              - 'api/canary/**'
+              - 'api/helm/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            sites/jungle3/:
+              - 'sites/jungle3/**'
+              - '.github/workflows/push-tagged-images.yaml'
+            sites/editor/:
+              - 'sites/editor/**'
+              - '.github/workflows/push-tagged-images.yaml'
+
+  build-base:
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+
+      - name: Build libs-python image
+        uses: docker/build-push-action@v5
+        with:
+          context: libs/python
+          tags: libs-python:${{ github.sha }}
+          load: true
+      - name: Build api-app image
+        uses: docker/build-push-action@v5
+        with:
+          context: api/app
+          tags: api-app:${{ github.sha }}
+          load: true
+          build-args: |
+            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
+      - name: Save api-app to tar
+        run: |
+          docker save api-app:${{ github.sha }} > /tmp/api-app-${{ github.sha }}.tar
+          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
+      - name: Upload libs-python image
+        uses: actions/upload-artifact@v4
+        with:
+          name: libs-python-${{ github.sha }}
+          path: /tmp/libs-python-${{ github.sha }}.tar
+          retention-days: 1
+          overwrite: true
+      - name: Upload api-app image
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-app-${{ github.sha }}
+          path: /tmp/api-app-${{ github.sha }}.tar
+          retention-days: 1
+          overwrite: true
+
+  build-tag-publish:
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+      - build-base
+    permissions:
+      repository-projects: read
+      pull-requests: write
+      id-token: write
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.changes.outputs.images) }}
+
+    env:
+      IMAGE_NAME: "${{ matrix.image }}"
+      NODE_ENV: "staging"
+      PROJECT_ID: "296075347103"
+      AR_REPO_LOCATION: 'us-central1'
+      AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
+      SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
+      WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --prune --unshallow --tags
+
+      - name: Setup Docker BuildX
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Generate tag
+        id: generate_tag
+        run: |
+          github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+
+      - name: Push tag
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 10
+          command: |
+            git tag ${{ steps.generate_tag.outputs.new_tag }}
+            git push origin ${{ steps.generate_tag.outputs.new_tag }}
+            echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
+
+      - name: Download api-app image
+        uses: actions/download-artifact@v4
+        with:
+          name: api-app-${{ github.sha }}
+          path: /tmp
+
+      - name: Download libs-python base image
+        uses: actions/download-artifact@v4
+        with:
+          name: libs-python-${{ github.sha }}
+          path: /tmp
+
+      - name: Load images
+        run: |
+          docker load --input /tmp/libs-python-${{ github.sha }}.tar
+          docker load --input /tmp/api-app-${{ github.sha }}.tar
+
+      - name: Build and push ${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ${{ matrix.image }}
+          file: ${{ matrix.image }}/Dockerfile
+          tags: |
+            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+          build-args: |
+            NODE_ENV=${{ env.NODE_ENV }}
+            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
+            API_APP_IMAGE=api-app:${{ github.sha }}
+          load: true

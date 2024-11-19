@@ -1,6 +1,6 @@
 FROM python:3.12-alpine
 LABEL version="1.0.0"
-LABEL name="mythica-canary"
+LABEL name="mythica-job-canary"
 LABEL description="Automated canary test for the job pipeline"
 LABEL tier="automation"
 

@@ -162,6 +162,7 @@ class WorkerModel(BaseModel):
     provider: Callable
     inputModel: Type[ParameterSet]
     outputModel: Type[ProcessStreamItem]
+    hidden: bool = False
 
 class WorkerRequest(BaseModel):
     """Contract for requests for work"""
@@ -282,7 +283,7 @@ class Worker:
 
     class CatalogResponse(ProcessStreamItem):
         item_type: Literal["catalogResponse"] = "catalogResponse"
-        workers: dict[str, dict[Literal["input", "output"],dict[str, Any]]]
+        workers: Dict[str, Dict[Literal["input", "output", "hidden"], Any]]
 
     def _get_catalog_provider(self) -> Callable:
         worker = self
@@ -293,7 +294,8 @@ class Worker:
                 ret.update({
                     path: {
                         "input": wk.inputModel.model_json_schema(),
-                        "output": wk.outputModel.model_json_schema(),                    
+                        "output": wk.outputModel.model_json_schema(),
+                        "hidden": wk.hidden                   
                     }
                 })
                         
@@ -302,69 +304,99 @@ class Worker:
 
     class ScriptRequest(ParameterSet):
         script: str
-        dependencies: str
-
-    class ScriptResponse(ProcessStreamItem):
-        item_type: Literal["scriptResponse"] = "scriptReponse"
-        payload: dict[str, Any]
+        request_data: ParameterSet = None
 
     def _get_script_worker(self) -> Callable:
-        worker = self
+        doer = self
+        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
+            # Prepare the environment to hold the script's namespace
+            script_namespace = {}
+            if not request.request_data:
+                raise ValueError("request_data is required.")
 
-        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher=None) -> Worker.ScriptResponse:
-            # Step 1: Create a temporary virtual environment
-            with tempfile.TemporaryDirectory() as tmpdir:
-                venv_dir = Path(tmpdir) / f"venv_{uuid4().hex}"
-                venv.create(venv_dir, with_pip=True)
-                python_executable = venv_dir / "bin" / "python" if os.name != "nt" else venv_dir / "Scripts" / "python.exe"
+            # Execute the script directly in the current environment
+            exec(request.script, script_namespace)
+
+            # Prepare request model from request_data
+            if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
+                request_model = script_namespace["RequestModel"](**request.request_data.model_dump())
+            else:
+                raise ValueError("RequestModel not found in script.")
+
+            resolve_params(API_URL, doer.tmpdir, request_model)
+
+            # Run the automation function
+            if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
+                result = script_namespace["runAutomation"](request_model, responder)
+            else:
+                raise ValueError("runAutomation function not found in script.")
+
+            # Ensure ProcessStreamItem response and return it as payload
+            if isinstance(result, ProcessStreamItem):
+                return result
+            else:
+                raise ValueError("runAutomation did not return a ProcessStreamItem.")
+
+        return impl
+
+    def _get_script_interface(self) -> Callable:
+        def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem: 
+            script_namespace = {}
+
+            try:
+                exec(request.script, script_namespace)
+
+                input = None
+                output = None
+                # Prepare request model from request_data
+                if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
+                    input = script_namespace["RequestModel"]
+                else:
+                    raise ValueError("RequestModel not found in script.")
                 
-                # Step 2: Install dependencies if any are provided
-                if request.dependencies:
-                    dependencies = request.dependencies.replace(",", " ").split()
-                    subprocess.check_call([python_executable, "-m", "pip", "install", *dependencies])
+                if "ResponseModel" in script_namespace and callable(script_namespace["ResponseModel"]):
+                    output = script_namespace["ResponseModel"]
+                else:
+                    output = ProcessStreamItem
+                
 
-                # Step 3: Write the script to a temporary .py file
-                script_path = Path(tmpdir) / "script.py"
-                with open(script_path, "w") as script_file:
-                    script_file.write(request.script)
+                return Worker.CatalogResponse(
+                    workers={
+                        '/mythica/script': {
+                            'input': input.model_json_schema(),
+                            'output': output.model_json_schema(),
+                            'hidden': True
+                    }
+                })
+            except Exception as e:
+                responder.result(Message(message=f"Script Interface Generation Error: {formatException(e)}"))
 
-                # Step 4: Execute the script and capture the output
-                try:
-                    result = subprocess.run(
-                        [python_executable, str(script_path)],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    # Try to parse stdout as JSON; if parsing fails, wrap it in a dictionary
-                    try:
-                        payload = json.loads(result.stdout)
-                    except json.JSONDecodeError:
-                        payload = {"output": result.stdout}
-                    
-                    # Post the results to responder
-                    return Worker.ScriptResponse(payload)
-                    
-                except subprocess.CalledProcessError as e:
-                    # Post any errors to the responder
-                    responder.result({"error": e.stderr})
-
-        return impl        
-     
+            return(Worker.CatalogResponse(workers={}))
+        return impl
+    
     def start(self,subject: str, workers:list[dict]) -> None:
         path='/mythica/workers'
         workers.append({
             'path':path,
             'provider': self._get_catalog_provider(),
             'inputModel': ParameterSet,
-            'outputModel': Worker.CatalogResponse
+            'outputModel': Worker.CatalogResponse,
+            'hidden': True
         })
         path='/mythica/script'
         workers.append({
             'path':path,
             'provider': self._get_script_worker(),
             'inputModel': Worker.ScriptRequest,
-            'outputModel': Worker.ScriptResponse
+            'outputModel': ProcessStreamItem
+        })
+        path='/mythica/script/interface'
+        workers.append({
+            'path':path,
+            'provider': self._get_script_interface(),
+            'inputModel': Worker.ScriptRequest,
+            'outputModel': Worker.CatalogResponse,
+            'hidden': True
         })
 
         self._load_workers(workers)
@@ -422,12 +454,14 @@ class Worker:
                 publisher.result(Progress(progress=0))
 
                 with tempfile.TemporaryDirectory() as tmpdir:
+                    doer.tmpdir = tmpdir
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
                     resolve_params(API_URL, tmpdir, inputs)
                     ret_data = worker.provider(inputs, publisher)
 
-                publisher.result(ret_data)
+                    publisher.result(ret_data)
+                    doer.tmpdir = None
                 publisher.result(Progress(progress=100), complete=True)
 
             except Exception as e:

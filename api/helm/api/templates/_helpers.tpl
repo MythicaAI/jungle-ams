@@ -98,3 +98,17 @@ rollingUpdate:
   maxUnavailable: {{ .maxUnavailable | default 1 }}
   maxSurge: {{ .maxSurge | default 2 }}
 {{- end }}
+
+{{/*
+Provide a safe way to lookup info by image name
+*/}}
+{{- define "api.image" -}}
+{{- $root := index . 0 -}}
+{{- $imageName := index . 1 -}}
+{{- $lookup := $root.Values.images -}}
+{{- if hasKey $lookup $imageName -}}
+{{- printf "%s/%s:%s" $root.Values.imageRepository $imageName (get $lookup $imageName) -}}
+{{- else -}}
+{{- fail (printf "Image %s not found in images" $imageName) -}}
+{{- end -}}
+{{- end -}}

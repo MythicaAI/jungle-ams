@@ -22,7 +22,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: packager
-          image: "{{ .Values.imageRepository }}/mythica-packager:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-packager") }}
           imagePullPolicy: Always
           resources:
             requests:

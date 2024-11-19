@@ -24,12 +24,11 @@ spec:
       serviceAccountName: api
       initContainers:
         - name: jungle3-build
-          image: "{{ .Values.imageRepository }}/mythica-jungle3-build:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-jungle3-build") }}
           imagePullPolicy: Always
-          command: [ "/bin/sh", "-c" ]
-          args:
-            - cp -R /dist/jungle3 /dist-publish/jungle3
           env:
+            - name: PUBLISH_PATH
+              value: /publish/jungle3
             - name: VITE_API_BASE_URL
               value: {{ .Values.apiBaseUrl }}
             - name: VITE_IMAGES_BASE_URL
@@ -44,19 +43,10 @@ spec:
               value: {{ .Values.auth0.redirectUrl }}
           volumeMounts:
             - name: dist-publish
-              mountPath: "/dist-publish"
-        - name: editor-build
-          image: "{{ .Values.imageRepository }}/mythica-editor-build:{{ $componentContext.tag }}"
-          imagePullPolicy: Always
-          command: [ "/bin/sh", "-c" ]
-          args:
-            - cp -R /dist/editor /dist-publish/editor
-          volumeMounts:
-            - name: dist-publish
-              mountPath: "/dist-publish"
+              mountPath: "/publish"
       containers:
         - name: nginx
-          image: "{{ .Values.imageRepository }}/mythica-web-front:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-web-front") }}
           args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }}" ]
           imagePullPolicy: Always
           env:

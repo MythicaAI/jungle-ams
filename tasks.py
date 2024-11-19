@@ -2,6 +2,8 @@
 import os
 import re
 import subprocess
+from datetime import datetime, timezone
+from functools import wraps
 
 from invoke import task
 
@@ -52,16 +54,32 @@ TESTING_WEB_DIR = os.path.join(BASE_DIR, 'testing/web')
 TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 
 IMAGES = {
-    'api/nginx': {'name': 'mythica-web-front'},
-    'api/app': {'name': 'mythica-app', 'working_directory': BASE_DIR},
-    'api/publish-init': {'name': 'mythica-publish-init'},
-    'api/lets-encrypt': {'name': 'mythica-lets-encrypt'},
-    'api/gcs-proxy': {'name': 'mythica-gcs-proxy'},
+    'api/nginx': {
+        'name': 'mythica-web-front'
+    },
+    'api/app': {
+        'name': 'mythica-app',
+        'requires': ['libs/python'],
+    },
+    'libs/python': {
+        'name': 'mythica-libs-python',
+    },
+    'api/publish-init': {
+        'name': 'mythica-publish-init'
+    },
+    'api/lets-encrypt': {
+        'name': 'mythica-lets-encrypt'
+    },
+    'api/gcs-proxy': {
+        'name': 'mythica-gcs-proxy'
+    },
     'api/packager': {
         'name': 'mythica-packager',
-        'requires': ['api/app']
+        'requires': ['api/app', 'libs/python'],
     },
-    'api/canary': {'name': 'mythica-job-canary'},
+    'api/canary': {
+        'name': 'mythica-job-canary'
+    },
     'sites/jungle3': {
         'name': 'mythica-jungle3-build',
         'buildargs': {
@@ -71,23 +89,31 @@ IMAGES = {
     'sites/editor': {
         'name': 'mythica-editor-build',
     },
-    'testing/storage/minio-config': {'name': 'minio-config'},
-    'automation/test': {'name': 'mythica-auto-test', 'working_directory': BASE_DIR},
-    'automation/blender': {'name': 'mythica-auto-blender', 'working_directory': BASE_DIR},
+    'testing/storage/minio-config': {
+        'name': 'minio-config'
+    },
+    'automation/test': {
+        'name': 'mythica-auto-test',
+        'requires': ['libs/python'],
+    },
+    'automation/blender': {
+        'name': 'mythica-auto-blender',
+        'requires': ['libs/python'],
+    },
     'automation/genai': {
         'name': 'mythica-auto-genai',
+        'requires': ['libs/python'],
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
         },
-        'working_directory': BASE_DIR
     },
     'automation/houdini': {
         'name': 'mythica-auto-houdini',
+        'requires': ['libs/python'],
         'buildargs': {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
-        'working_directory': BASE_DIR
     },
 }
 
@@ -162,14 +188,8 @@ def stop_docker_compose(c, docker_compose_path):
 def build_image(c, image_path):
     """Build a docker image"""
 
-    # Set the working directory higher in the tree when more context is needed from
-    # the monorepo
-    if IMAGES[image_path].get('working_directory') is not None:
-        dockerfile_path = os.path.join(os.path.join(image_path, 'Dockerfile'))
-        working_directory = IMAGES[image_path].get('working_directory')
-    else:
-        dockerfile_path = 'Dockerfile'
-        working_directory = os.path.join(BASE_DIR, image_path)
+    dockerfile_path = 'Dockerfile'
+    working_directory = os.path.join(BASE_DIR, image_path)
 
     image_name = IMAGES[image_path]['name']
     requires = IMAGES[image_path].get('requires')
@@ -212,8 +232,10 @@ def deploy_image(c, image_path, target):
         c.run((f"docker tag {image_name}:{commit_hash}"
                f" {repo}/{image_name}:latest"),
               pty=PTY_SUPPORTED)
-        c.run((f"docker push {repo}/{image_name}"
-               " --all-tags"), pty=PTY_SUPPORTED)
+        c.run(f"docker push {repo}/{image_name}:latest",
+              pty=PTY_SUPPORTED)
+        c.run(f"docker push {repo}/{image_name}:{commit_hash}",
+              pty=PTY_SUPPORTED)
 
 
 def run_image(c, image_path, background=False):
@@ -261,6 +283,23 @@ def copy_dist_files(c, image_path):
         print(f"Removing temporary container '{container_id}'...")
         c.run(f"docker rm {container_id}", hide=True)
         print("Temporary container removed.")
+
+
+def timed(func):
+    """Decorator to time invoke tasks and log their execution times."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = datetime.now(timezone.utc)
+        result = func(*args, **kwargs)
+        end_time = datetime.now(timezone.utc)
+
+        duration = end_time - start_time
+        task_name = func.__name__
+        print(f"{task_name}: completed in {duration.seconds} seconds")
+        return result
+
+    return wrapper
 
 
 @task
@@ -345,12 +384,14 @@ def image_path_action(c, image, action, **kwargs):
 
 
 @task(help={'image': f'Image path to build: {IMAGES.keys()}'})
+@timed
 def docker_build(c, image='all'):
     """Build a docker image by sub path or set name"""
     image_path_action(c, image, build_image)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})
+@timed
 def docker_deploy(c, image='all', target='gcs'):
     """Deploy a docker image by sub path set name"""
     image_path_action(c, image, build_image)
@@ -360,6 +401,7 @@ def docker_deploy(c, image='all', target='gcs'):
 @task(help={
     'image': f'Image path to run: {IMAGES.keys()}',
     'background': 'Run the image in the background'})
+@timed
 def docker_run(c, image='api/app', background=False):
     """Run a docker image by path"""
     image_path_action(c, image, run_image, background=background)

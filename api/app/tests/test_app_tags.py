@@ -9,7 +9,7 @@ from munch import munchify
 import auth.roles
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
-from tests.shared_test import FileContentTestObj, assert_status_code, get_random_string
+from tests.shared_test import FileContentTestObj, assert_status_code, random_str
 
 # length of event data in test events
 test_event_info_len = 10
@@ -31,7 +31,7 @@ def test_tags_operations(api_base, client, create_profile):
     headers = test_profile.authorization_header()
 
     # create org to contain assets
-    org_name = 'org-' + get_random_string(10, digits=False)
+    org_name = 'org-' + random_str(10, digits=False)
     r = client.post(f"{api_base}/orgs/", json={'name': org_name}, headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
@@ -51,7 +51,7 @@ def test_tags_operations(api_base, client, create_profile):
 
     def create_tag():
         # create tag
-        tag_name = "tag_" + get_random_string(10, digits=False)
+        tag_name = "tag_" + random_str(10, digits=False)
         r = client.post(f"{api_base}/tags", json={'name': tag_name}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
@@ -87,7 +87,7 @@ def test_tags_operations(api_base, client, create_profile):
             delete_type_tag("asset", asset_id, tag_id)
 
     # Test profile does not have required_role to create tag
-    unrequired_role_tag_name = "tag_" + get_random_string(10, digits=False)
+    unrequired_role_tag_name = "tag_" + random_str(10, digits=False)
     r = client.post(f"{api_base}/tags", json={'name': unrequired_role_tag_name}, headers=simple_headers)
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
@@ -117,7 +117,7 @@ def test_tags_operations(api_base, client, create_profile):
 
     # Test deletion of a tag from a non-existent type_model
     r = client.delete(
-        f"{api_base}/tags/types/asset{tag_id}/{get_random_string(10, digits=False)}",
+        f"{api_base}/tags/types/asset{tag_id}/{random_str(10, digits=False)}",
         headers=headers,
     )
     assert_status_code(r, HTTPStatus.NOT_FOUND)
@@ -144,7 +144,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
     new_headers = new_test_profile.authorization_header()
 
     # create org to contain assets
-    org_name = 'org-' + get_random_string(10, digits=False)
+    org_name = 'org-' + random_str(10, digits=False)
     r = client.post(f"{api_base}/orgs/", json={'name': org_name}, headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
@@ -171,7 +171,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
 
     def create_tag():
         # create tag
-        tag_name = "tag_" + get_random_string(10, digits=False)
+        tag_name = "tag_" + random_str(10, digits=False)
         r = client.post(f"{api_base}/tags", json={'name': tag_name}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
@@ -331,7 +331,7 @@ def test_wrong_type_model(api_base, client, create_profile):
     test_profile = create_profile(email="test@mythica.ai")
     headers = test_profile.authorization_header()
     r = client.get(
-        f"{api_base}/tags/types/{get_random_string(23)}",
+        f"{api_base}/tags/types/{random_str(23)}",
         params={
             "limit": 100,
             "offset": 0,
@@ -367,7 +367,7 @@ def test_tag_files_operations(
 
     def create_tag():
         # create tag
-        tag_name = "tag_" + get_random_string(10, digits=False)
+        tag_name = "tag_" + random_str(10, digits=False)
         r = client.post(f"{api_base}/tags", json={'name': tag_name}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())

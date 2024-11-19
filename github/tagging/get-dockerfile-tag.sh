@@ -22,19 +22,17 @@ if [ -z "$LABEL_NAME" ]; then
 fi
 
 # Get latest tag for this path prefix
-LATEST_TAG=$(git tag -l "${LABEL_NAME}-v*" --sort=-v:refname | head -n 1)
+LATEST_TAG=$(git tag -l "versions/${LABEL_NAME}/*" --sort=-v:refname | head -n 1)
 
 # Update the current tag
 if [ -z "$LATEST_TAG" ]; then
-  # No existing tag found, starting at v1.0.0
-  LATEST_TAG=${LABEL_NAME}-v1.0.0
+  # No existing tag found, starting at 1.0.0
+  LATEST_TAG="versions/${LABEL_NAME}/v1.0.0"
 fi
 
 # Extract the version number
-VERSION=$(echo ${LATEST_TAG} | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+$')
-
-# Remove 'v' prefix for version manipulation
-VERSION_NUM=${VERSION#v}
+VERSION=$(echo ${LATEST_TAG} | cut -d/ -f3)
+VERSION_NUM=$(echo $VERSION | sed s/^v// | grep -oE '[0-9]+\.[0-9]+\.[0-9]+$')
 
 # Extract major, minor, patch using cut
 major=$(echo "$VERSION_NUM" | cut -d. -f1)
@@ -43,16 +41,18 @@ patch=$(echo "$VERSION_NUM" | cut -d. -f3)
 
 # Increment patch version
 new_patch=$((patch + 1))
-# echo "Version num $VERSION -> $VERSION_NUM -> $major $minor $patch -> $new_patch"
+# echo "Version num $VERSION_NUM -> $major $minor $patch -> $new_patch"
 
 NEW_VERSION="v$major.$minor.$new_patch"
-NEW_TAG="${LABEL_NAME}-${NEW_VERSION}"
+NEW_TAG="versions/${LABEL_NAME}/${NEW_VERSION}"
 
 # Current tag
 echo "current_tag=$LATEST_TAG"
+echo "current_tag_version=$VERSION"
 
 # Output the new tag value
 echo "new_tag=$NEW_TAG"
+echo "new_tag_version=$NEW_VERSION"
 
 # Output some more variables
 echo "image_name=$LABEL_NAME"
