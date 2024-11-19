@@ -270,7 +270,8 @@ class ReaderConnectionManager:
             try:
                 await task
             except asyncio.CancelledError:
-                log.debug("task cancelled: %s", task)
+                pass
+            log.debug("task cancelled: %s", task)
 
     async def process_message(self, websocket: WebSocket, profile: Profile):
         """
@@ -302,6 +303,7 @@ class ReaderConnectionManager:
             try:
                 reader_seq = reader_id_to_seq(msg['reader_id'])
             except IdError as ex:
+                log.error(str(ex))
                 await websocket.send_json({'error': str(ex)})
                 return
 
