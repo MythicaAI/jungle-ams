@@ -52,11 +52,18 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
       <MenuButton
         sx={{
           cursor: "pointer",
-          height: "54px",
+          minWidth: "48px",
+          height: "42px",
+          padding: 0,
         }}
         id="profileMenuButton"
       >
-        <Avatar variant="outlined" alt={name}></Avatar>
+        <Avatar
+          variant="outlined"
+          size="sm"
+          alt={name}
+          sx={{ width: "28px", height: "28px" }}
+        />
       </MenuButton>
       <Menu placement="bottom-end">
         <LinkMenuItem to="/dashboard">
