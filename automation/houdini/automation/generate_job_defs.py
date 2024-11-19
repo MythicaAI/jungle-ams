@@ -61,6 +61,10 @@ def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher
     type_infos = extract_node_type_info(hda_file.file_path)
     ret = []
     for index, type_info in enumerate(type_infos):
+        category = type_info['category']
+        if category != 'SOP':
+            continue
+
         param_spec = compile_interface(json.dumps(type_info, indent=2))
         set_config_params(param_spec, hda_file.file_id, index)
 
