@@ -1,5 +1,16 @@
-import { Button, Card, styled, Table } from "@mui/joy";
+import {
+  Button,
+  Card,
+  FormControl,
+  FormLabel,
+  Input,
+  Option,
+  Select,
+  styled,
+  Table,
+} from "@mui/joy";
 import { v4 } from "uuid";
+import { jwtDecode } from "jwt-decode";
 import {
   extractValidationErrors,
   postData,
@@ -8,11 +19,19 @@ import {
 import { UploadResponse } from "types/apiTypes";
 import { useStatusStore } from "@store/statusStore";
 import { AxiosError, AxiosProgressEvent, AxiosRequestConfig } from "axios";
-import { FileUploadStatus, useUploadStore } from "@store/uploadStore";
+import { FileObj, FileUploadStatus, useUploadStore } from "@store/uploadStore";
 import { UploadButton } from "@components/common/UploadButton";
 import { LucideUploadCloud } from "lucide-react";
 import Cookies from "universal-cookie";
 import { useTranslation } from "react-i18next";
+import {
+  useAssignTagToFile,
+  useCreateFileTag,
+  useGetFileTags,
+  useRemoveTagFromFile,
+} from "@queries/tags";
+import { useGlobalStore } from "@store/globalStore";
+import { TAGS_ROLE } from "@components/AssetEdit/AssetEditDetailControls";
 
 const VisuallyHiddenInput = styled("input")`
   clip: rect(0 0 0 0);
@@ -30,8 +49,25 @@ export const UploadsSubmitList = function () {
   const { trackUploads, pendingUploads, setUploadProgress, setPendingUploads } =
     useUploadStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
+  const { data: fileTags, isLoading } = useGetFileTags();
+  const { mutate: assignTagToAsset, isPending: isAssignTagToAssetLoading } =
+    useAssignTagToFile();
+  const { mutate: createTag, isPending: isCreateTagLoading } =
+    useCreateFileTag();
+
+  const { orgRoles } = useGlobalStore();
   const cookies = new Cookies();
   const { t } = useTranslation();
+  const hasTagsRole =
+    orgRoles && orgRoles.some((entry) => entry.role === TAGS_ROLE);
+
+  console.log("orgRoles: ", orgRoles);
+
+  console.log("pendingUploads: ", pendingUploads);
+
+  const authTokenFromCookies = cookies.get("auth_token");
+  const decodedToken = jwtDecode(authTokenFromCookies);
+  console.log("decodedToken: ", decodedToken);
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
@@ -57,10 +93,8 @@ export const UploadsSubmitList = function () {
     // create the form data
     const formData = new FormData();
     pendingUploads.forEach((item) => {
-      formData.append("files", item, item.name);
+      formData.append("files", item.file, item.file.name);
     });
-
-    const authTokenFromCookies = cookies.get("auth_token");
 
     // configure axios for uploading
     const config: AxiosRequestConfig = {
@@ -79,6 +113,36 @@ export const UploadsSubmitList = function () {
         }));
         trackUploads(uploads);
         setSuccess(`${uploads.length} uploaded`);
+        const uploadedFiles = r.files;
+
+        pendingUploads.forEach((upload) => {
+          const uploadedFile = uploadedFiles.find(
+            (obj) =>
+              obj.file_name === upload.file.name &&
+              obj.size === upload.file.size,
+          );
+          if (!uploadedFile) return;
+
+          if (upload.tag && !upload.customTag) {
+            return assignTagToAsset({
+              tag_id: upload.tag,
+              type_id: uploadedFile.file_id,
+            });
+          }
+
+          if (upload.customTag && !upload.tag) {
+            return createTag(upload.customTag, {
+              onSuccess: (res) =>
+                assignTagToAsset({
+                  tag_id: res?.tag_id,
+                  type_id: uploadedFile.file_id,
+                }),
+              onError: (err: any) => {
+                handleError(err);
+              },
+            });
+          }
+        });
       })
       .catch((err) => handleError(err))
       .finally(() => {
@@ -99,9 +163,18 @@ export const UploadsSubmitList = function () {
       console.log("no fileList found");
       return;
     }
-    setPendingUploads([...pendingUploads, ...fileList]);
+    const payload = Array.from(fileList).map((item) => ({
+      file: item,
+      tag: "",
+      customTag: "",
+      id: v4(),
+    }));
+
+    setPendingUploads([...pendingUploads, ...payload]);
     fileInput.value = "";
   };
+
+  console.log("pendingUploads: ", pendingUploads);
 
   const showPendingUploads = () =>
     !(!pendingUploads || pendingUploads.length == 0);
@@ -137,11 +210,74 @@ export const UploadsSubmitList = function () {
               </tr>
             </thead>
             <tbody>
-              {pendingUploads.map((file) => (
-                <tr key={v4()}>
-                  <td align="left">{file.name}</td>
-                  <td align="right">{file.size}</td>
-                </tr>
+              {pendingUploads.map((item) => (
+                <>
+                  <tr key={v4()}>
+                    <td align="left" style={{ borderBottom: "none" }}>
+                      {item.file.name}
+                    </td>
+                    <td align="right" style={{ borderBottom: "none" }}>
+                      {item.file.size}
+                    </td>
+                  </tr>
+                  {(fileTags || hasTagsRole) && (
+                    <tr>
+                      <td>
+                        <FormControl sx={{ marginBottom: "6px" }}>
+                          <Select
+                            disabled={!!item.customTag}
+                            name="tag"
+                            value={item.tag}
+                            onChange={(_, newValue) => {
+                              const updatedFiles = updateFileTag(
+                                pendingUploads,
+                                item.id,
+                                (item) => {
+                                  return {
+                                    ...item,
+                                    customTag: "",
+                                    tag: newValue as string,
+                                  };
+                                },
+                              );
+                              setPendingUploads(updatedFiles);
+                            }}
+                            placeholder="Select a tag"
+                          >
+                            {fileTags?.map((tag) => (
+                              <Option value={tag.tag_id}>{tag.name}</Option>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </td>
+
+                      <td>
+                        <FormControl sx={{ marginBottom: "6px" }}>
+                          <Input
+                            name="customFileTag"
+                            variant="outlined"
+                            placeholder="Create a new tag"
+                            value={item.customTag}
+                            onChange={(e) => {
+                              const updatedFiles = updateFileTag(
+                                pendingUploads,
+                                item.id,
+                                (item) => {
+                                  return {
+                                    ...item,
+                                    customTag: e.target.value as string,
+                                    tag: "",
+                                  };
+                                },
+                              );
+                              setPendingUploads(updatedFiles);
+                            }}
+                          />
+                        </FormControl>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </Table>
@@ -153,3 +289,11 @@ export const UploadsSubmitList = function () {
     </Card>
   );
 };
+
+function updateFileTag(
+  array: FileObj[],
+  id: string,
+  modifyCallback: (payload: FileObj) => FileObj,
+) {
+  return array.map((item) => (item.id === id ? modifyCallback(item) : item));
+}

@@ -67,7 +67,13 @@ export const AssetEditUploadDrawer: React.FC<AssetEditUploadDrawerProps> = ({
         open={openUploads.open}
         onKeyDown={onUploadDrawerKeyDown}
         onClose={() => setOpenUploads({ open: false, opened: false })}
-        size="lg"
+        slotProps={{
+          content: {
+            sx: {
+              width: "80%",
+            },
+          },
+        }}
       >
         <Sheet
           sx={{

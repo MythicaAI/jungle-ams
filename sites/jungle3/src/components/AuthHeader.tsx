@@ -119,7 +119,7 @@ export const AuthHeader = () => {
         const input = data as Partial<ProfileResponse>;
         const merged = mergeWithDefaults(defaultProfileResponse(), input);
         setProfile(merged as unknown as ProfileResponse);
-        api.get<ResolvedOrgRef[]>({ path: "/orgs/" }).then((data) => {
+        api.get<ResolvedOrgRef[]>({ path: `/orgs` }).then((data) => {
           setOrgRoles(data);
         });
       });

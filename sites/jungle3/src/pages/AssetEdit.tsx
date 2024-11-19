@@ -33,8 +33,8 @@ import { useGetAssetByVersion, useUpdateAsset } from "@queries/packages";
 import { useTranslation } from "react-i18next";
 import {
   useAssignTagToAsset,
-  useCreateTag,
-  useGetTags,
+  useCreateAssetTag,
+  useGetAssetTags,
   useRemoveTagFromAsset,
 } from "@queries/tags";
 
@@ -74,10 +74,11 @@ const AssetEdit: React.FC<AssetEditProps> = ({
   );
   const { mutate: updateAsset } = useUpdateAsset();
   const { t } = useTranslation();
-  const { data: tags, error: tagsError } = useGetTags();
+  const { data: tags, error: tagsError } = useGetAssetTags();
   const { mutate: assignTagToAsset, isPending: isAssignTagToAssetLoading } =
     useAssignTagToAsset();
-  const { mutate: createTag, isPending: isCreateTagLoading } = useCreateTag();
+  const { mutate: createTag, isPending: isCreateTagLoading } =
+    useCreateAssetTag();
   const { mutate: removeTagFromAsset, isPending: isRemoveTagFromAssetLoading } =
     useRemoveTagFromAsset();
 

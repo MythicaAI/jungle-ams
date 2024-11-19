@@ -1,14 +1,22 @@
 import {
   Box,
+  Button,
   Card,
   Divider,
+  FormControl,
+  FormLabel,
   IconButton,
+  Input,
   List,
   ListDivider,
   ListItem,
   ListItemButton,
   ListItemContent,
   ListItemDecorator,
+  Modal,
+  ModalClose,
+  Select,
+  Sheet,
   Stack,
   Typography,
 } from "@mui/joy";
@@ -43,6 +51,10 @@ interface Sort {
 }
 
 const Uploads = () => {
+  const [tagModalOpen, setTagModalOpen] = useState<{
+    isOpen: boolean;
+    selectedFile: FileUploadStatus | null;
+  }>({ isOpen: false, selectedFile: null });
   const { addError, addWarning } = useStatusStore();
   const { trackUploads, uploads, updateUpload } = useUploadStore();
   const [deleteModal, setDeleteModal] = useState<{
@@ -93,6 +105,14 @@ const Uploads = () => {
   const refreshFiles = (files: FileUploadResponse[]) => {
     trackUploads(files as FileUploadStatus[]);
     updateProgressForFiles(files);
+  };
+
+  const handleOpenTagModal = (file: FileUploadStatus) => {
+    setTagModalOpen({ isOpen: true, selectedFile: file });
+  };
+
+  const handleCloseTagModal = () => {
+    setTagModalOpen({ isOpen: false, selectedFile: null });
   };
 
   const [sort, setSort] = useState("all");
@@ -177,11 +197,13 @@ const Uploads = () => {
                   </Stack>
                 </ListItemDecorator>
                 <Divider orientation="vertical" sx={{ margin: "0 10px" }} />
+
                 <ListItemContent
                   sx={{
                     width: "calc(100% - 82px)",
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "space-between",
                   }}
                 >
                   <Typography sx={{ textAlign: "left" }} noWrap>
@@ -189,6 +211,15 @@ const Uploads = () => {
                       {value.file_name}
                     </Link>
                   </Typography>
+                  <Button
+                    variant="plain"
+                    size="sm"
+                    onClick={() => {
+                      handleOpenTagModal(value);
+                    }}
+                  >
+                    <Typography>Edit tag</Typography>
+                  </Button>
                 </ListItemContent>
               </ListItem>
             ))}
@@ -203,6 +234,96 @@ const Uploads = () => {
           });
         }}
       />
+      <Modal
+        aria-labelledby="modal-title"
+        aria-describedby="modal-desc"
+        open={tagModalOpen.isOpen}
+        onClose={handleCloseTagModal}
+        sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+      >
+        <Sheet
+          variant="outlined"
+          sx={{
+            width: "100%",
+            maxWidth: 400,
+            borderRadius: "md",
+            p: 3,
+            boxShadow: "lg",
+          }}
+        >
+          <ModalClose variant="plain" sx={{ m: 1 }} />
+          <Typography
+            component="h2"
+            id="modal-title"
+            level="h4"
+            textColor="inherit"
+            sx={{ fontWeight: "lg", mb: 3 }}
+          >
+            Edit tag
+          </Typography>
+          <Stack mb="20px" gap="5px">
+            <FormControl sx={{ marginBottom: "6px" }}>
+              <FormLabel>Select an existing tag</FormLabel>
+              <Select
+                // disabled={!!item.customTag}
+                name="tag"
+                // value={item.tag}
+                // onChange={(_, newValue) => {
+                //   const updatedFiles = updateFileTag(
+                //     pendingUploads,
+                //     item.id,
+                //     (item) => {
+                //       return {
+                //         ...item,
+                //         customTag: "",
+                //         tag: newValue as string,
+                //       };
+                //     },
+                //   );
+                //   setPendingUploads(updatedFiles);
+                // }}
+                placeholder="Select a tag"
+              >
+                {/* {fileTags?.map((tag) => (
+                  <Option value={tag.tag_id}>{tag.name}</Option>
+                ))} */}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ marginBottom: "6px" }}>
+              <FormLabel>Create a custom tag</FormLabel>
+              <Input
+                name="customFileTag"
+                variant="outlined"
+                placeholder="Create a new tag"
+                // value={item.customTag}
+                onChange={(e) => {
+                  //   const updatedFiles = updateFileTag(
+                  //     pendingUploads,
+                  //     item.id,
+                  //     (item) => {
+                  //       return {
+                  //         ...item,
+                  //         customTag: e.target.value as string,
+                  //         tag: "",
+                  //       };
+                  //     },
+                  //   );
+                  //   setPendingUploads(updatedFiles);
+                  // }
+                }}
+              />
+            </FormControl>
+          </Stack>
+          <Stack direction="row" justifyContent="flex-end" gap="8px">
+            <Button variant="plain" size="sm" onClick={handleCloseTagModal}>
+              Cancel
+            </Button>
+            <Button variant="solid" size="sm">
+              Confirm
+            </Button>
+          </Stack>
+        </Sheet>
+      </Modal>
     </>
   );
 };
