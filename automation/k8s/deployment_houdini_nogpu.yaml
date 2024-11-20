@@ -29,4 +29,13 @@ spec:
           command: ["/bin/bash", "houdini.sh"]
           stdin: true
           tty: true
+          resources:
+            limits:
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 4Gi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 4Gi
       restartPolicy: Always
