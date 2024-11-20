@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -21,7 +21,7 @@ class FileUploadResponse(BaseModel):
     content_type: str
     content_hash: str = ""
     created: datetime
-    tags: Optional[list[str]] = []
+    tags: Optional[list[dict[str, Union[str, int]]]] = []
 
 
 def enrich_file(
