@@ -12,14 +12,20 @@ import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 import { useGetAssetsByTags, useGetTags } from "@queries/tags";
 import { Tag } from "@queries/tags/types";
 import { TagsPanel } from "@components/TagPanel";
+import { useSearchParams } from "react-router-dom";
 
 const ALL_ASSETS_TAG = "All assets";
+const COMPETITION_TAG = "Competition";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // const [search, setSearch] = useState<string>("");
   const [sorting, setSorting] = useState<SortType>("latest");
-  const [selectedTag, setSelectedTag] = useState(ALL_ASSETS_TAG);
+  const [selectedTag, setSelectedTag] = useState(
+    searchParams.get("tag") ?? COMPETITION_TAG,
+  );
   const {
     data: assetsByTag,
     isLoading: isAssetsByTagLoading,
@@ -40,6 +46,7 @@ const Assets = () => {
 
   const handleSetSelectedTag = (value: string) => {
     setSelectedTag(value);
+    setSearchParams({ tag: value });
   };
 
   const handleError = (err: any) => {
