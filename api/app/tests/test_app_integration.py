@@ -340,25 +340,74 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
         f"{api_base}/assets/{asset_id}/versions/0.2.0",
         json=test_asset_ver_json,
         headers=new_headers)
-    assert_status_code(r, HTTPStatus.FORBIDDEN)
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
     o = munchify(r.json())
-    assert o.detail == "author_id can be updated by the asset-version author"
+    assert f"role unauthorized for asset {asset_id}" in o.detail
+    
+    # create org to for new_profile
+    r = client.post(
+        f"{api_base}/orgs/",
+        json={'name': 'org-' + random_str(10, digits=False)},
+        headers=new_headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    new_profile_org_id = o.org_id
+
+    # after creating the org, refresh the auth token to get the new roles
+    new_profile.auth_token = refresh_auth_token(client, api_base, new_profile)
+    new_headers = new_profile.authorization_header()
+
+    # create asset for new_profile
+    r = client.post(
+        f"{api_base}/assets",
+        json={'org_id': new_profile_org_id},
+        headers=new_headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    new_profile_asset_id = o.asset_id
+
+    new_profile_asset_ver_json = {
+        'commit_ref': 'test_commit_ref-updated-2',
+        'name':  'new_profile_asset_ver_json',
+        'contents': {'files': [],
+                     'links': [test_link_update1, test_link_update2]},
+        'author_id': new_profile_id,
+    }
+    r = client.post(
+        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
+        json=new_profile_asset_ver_json,
+        headers=new_headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    assert o.author_id == new_profile_id
 
     # Test: Ensure author_id remains unchanged when not provided
-    test_asset_ver_json.pop("author_id")
+    # test as asset-owner
+    new_profile_asset_ver_json.pop("author_id", None)
     r = client.post(
-        f"{api_base}/assets/{asset_id}/versions/0.2.0",
-        json=test_asset_ver_json,
+        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
+        json=new_profile_asset_ver_json,
         headers=new_headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-    assert o.author_id == profile_id
+    assert o.author_id == new_profile_id
 
-    # Test: Successfully change author_id when requested by the asset-version author
-    test_asset_ver_json["author_id"] = new_profile_id
+    # Test: Ensure author_id remains unchanged when not provided
+    # test as super-admin
+    new_profile_asset_ver_json.pop("author_id", None)
     r = client.post(
-        f"{api_base}/assets/{asset_id}/versions/0.2.0",
-        json=test_asset_ver_json,
+        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
+        json=new_profile_asset_ver_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert o.author_id == new_profile_id
+
+    # Test: Ensure author_id remains unchanged when super-admin updates author_id
+    new_profile_asset_ver_json["author_id"] = profile_id
+    r = client.post(
+        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
+        json=new_profile_asset_ver_json,
         headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
