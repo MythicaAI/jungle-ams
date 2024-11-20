@@ -3,6 +3,7 @@
 import importlib
 import logging
 from contextlib import asynccontextmanager
+import sys
 
 import uvicorn
 from fastapi import FastAPI
@@ -71,7 +72,8 @@ app.add_middleware(
 app.add_middleware(
     ProxiedHeadersMiddleware
 )
-app.add_middleware(ExceptionLoggingMiddleware)
+if not "pytest" in sys.argv[0] or not "pytest" in sys.modules:
+    app.add_middleware(ExceptionLoggingMiddleware)
 
 route_names = [
     'upload',

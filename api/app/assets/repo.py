@@ -132,7 +132,7 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetFileReference | AssetDependency | str]] = Field(default_factory=dict)
-    tags: Optional[list[str]] = Field(default_factory=list)
+    tags: Optional[list[dict[str, Union[str, int]]]] = Field(default_factory=list)
 
 
 class AssetTopResult(AssetVersionResult):

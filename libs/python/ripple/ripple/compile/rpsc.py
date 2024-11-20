@@ -40,7 +40,10 @@ def compile_interface(interface_data: str) -> ParameterSpec:
     
     for name, value in data['defaults'].items():
         if value['type'] == 'Int':
-            param = IntParameterSpec(**value)
+            if 'menu_items' in value and 'menu_labels' in value:
+                param = parse_menu_parameter(value)
+            else:
+                param = IntParameterSpec(**value)
         elif value['type'] == 'Float':
             param = FloatParameterSpec(**value)
         elif value['type'] == 'String':

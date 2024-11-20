@@ -8,12 +8,15 @@ export const StatusAlarm = () => {
       <MenuButton
         id="notifications"
         sx={{
-          display: { xs: "none", sm: "block" },
-
-          height: "54px",
+          display: { xs: "none", sm: "flex" },
+          alignItems: "center",
+          justifyContent: "center",
+          height: "42px",
+          width: "auto",
+          padding: "0 12px",
         }}
       >
-        <LucideBell />
+        <LucideBell size={20} />
       </MenuButton>
 
       <Menu placement="bottom-end">
