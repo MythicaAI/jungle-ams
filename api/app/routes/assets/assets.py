@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 import assets.repo as repo
 from auth.generate_token import SessionProfile
 from db.connection import get_session
-from db.schema.profiles import Profile
 from routes.authorization import session_profile
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
