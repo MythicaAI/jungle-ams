@@ -235,7 +235,7 @@ async def add_role(
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        validate_roles(role=auth.roles.org_add_role, object_id=org_id, auth_roles=profile.auth_roles)
+        validate_roles(role=auth.roles.org_create_role, object_id=org_id, auth_roles=profile.auth_roles)
 
         if role not in auth.roles.org_role_aliases:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
@@ -265,7 +265,7 @@ async def remove_role(
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        validate_roles(role=auth.roles.org_remove_role, object_id=org_id, auth_roles=profile.auth_roles)
+        validate_roles(role=auth.roles.org_delete_role, object_id=org_id, auth_roles=profile.auth_roles)
 
         session.exec(sql_delete(OrgRef).where(
             OrgRef.org_seq == org_seq,

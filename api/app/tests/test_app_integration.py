@@ -330,10 +330,30 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.contents['links'][0] == test_link_update1
     assert o.contents['links'][1] == test_link_update2
 
+    other_profile = create_profile()
+    other_headers = other_profile.authorization_header()
+    
+    r = client.delete(
+        f"{api_base}/assets/{asset_id}", headers=other_headers)
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
+    o = munchify(r.json())
+    assert f"role unauthorized for asset {asset_id}" in o.detail
+    
     r = client.delete(
         f"{api_base}/assets/{asset_id}", headers=headers)
     assert_status_code(r, HTTPStatus.OK)
+
+    r = client.delete(
+        f"{api_base}/assets/{asset_id}", headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
     o = munchify(r.json())
+    assert f"asset {asset_id} not found" in o.detail
+
+    r = client.delete(
+        f"{api_base}/assets/{asset_id}/versions/0.2.0", headers=headers)
+    assert_status_code(r, HTTPStatus.FORBIDDEN)
+    o = munchify(r.json())
+    assert o.detail == "asset version be deleted by the asset owner"
 
     # Ensure asset was deleted
     r = client.get(

@@ -6,6 +6,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 import assets.repo as repo
+from auth.generate_token import SessionProfile
 from db.connection import get_session
 from db.schema.profiles import Profile
 from routes.authorization import session_profile
@@ -43,7 +44,7 @@ async def list_top() -> list[repo.AssetTopResult]:
 
 @router.get('/owned')
 async def list_owned(
-        profile: Profile = Depends(session_profile)) -> list[repo.AssetVersionResult]:
+        profile: SessionProfile = Depends(session_profile)) -> list[repo.AssetVersionResult]:
     """Get the list of asset headers owned by the current profile"""
     with get_session() as session:
         return repo.owned_versions(session, profile.profile_seq)
@@ -72,7 +73,7 @@ async def by_id(asset_id: str) -> list[repo.AssetVersionResult]:
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(r: repo.AssetCreateRequest,
-                 profile: Profile = Depends(session_profile)
+                 profile: SessionProfile = Depends(session_profile)
                  ) -> repo.AssetCreateResult:
     """Create a new asset for storing revisions or other assets"""
     with get_session() as session:
@@ -84,7 +85,7 @@ async def create_version(asset_id: str,
                          version_str: str,
                          req: repo.AssetCreateVersionRequest,
                          response: Response,
-                         profile: Profile = Depends(session_profile)) \
+                         profile: SessionProfile = Depends(session_profile)) \
         -> repo.AssetVersionResult:
     """Create or update a single asset version"""
     with get_session() as session:
@@ -111,7 +112,7 @@ async def dependencies(
 async def delete_version(
         asset_id: str,
         version_str: str,
-        profile: Profile = Depends(session_profile)):
+        profile: SessionProfile = Depends(session_profile)):
     """Delete a specific asset version"""
     with get_session(echo=True) as session:
         repo.delete_version(session, asset_id, version_str, profile.profile_seq)
@@ -120,10 +121,10 @@ async def delete_version(
 @router.delete('/{asset_id}')
 async def delete_asset(
         asset_id: str,
-        profile: Profile = Depends(session_profile)):
+        profile: SessionProfile = Depends(session_profile)):
     """Delete an asset and it's asset-versions"""
     with get_session(echo=True) as session:
-        repo.delete_asset_and_versions(session, asset_id, profile.profile_seq)
+        repo.delete_asset_and_versions(session, asset_id, profile)
 
 
 @router.get('/{asset_id}/versions/{version_str}')

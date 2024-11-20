@@ -8,10 +8,15 @@ from http import HTTPStatus
 from typing import Any, Dict, Optional, Union
 
 import sqlalchemy
+from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
-from sqlmodel import Session, col, delete, desc, insert, or_, select, update
+from sqlmodel import Session, col, desc, insert, or_, select, update
 
+from auth.generate_token import SessionProfile
+import auth.roles
+from auth.authorization import Scope, validate_roles
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
@@ -43,6 +48,7 @@ LINK_TYPE_CATEGORIES = {LINKS_CONTENT_KEY}
 asset_join_select = (
     select(Asset, AssetVersion)
     .outerjoin(AssetVersion, AssetVersion.asset_seq == Asset.asset_seq)
+    .where(Asset.deleted == None, AssetVersion.deleted == None)
 )
 
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
@@ -238,7 +244,8 @@ def select_asset_version(session: Session,
     """Execute a select against the asset versions table"""
     if version == ZERO_VERSION:
         asset = session.exec(select(Asset).where(
-            Asset.asset_seq == asset_id_to_seq(asset_id))).first()
+            Asset.asset_seq == asset_id_to_seq(asset_id))
+        .where(Asset.deleted == None)).first()
         if asset is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} found")
         results = [(asset, AssetVersion(
@@ -257,7 +264,7 @@ def select_asset_version(session: Session,
             (AssetVersion.patch == version[2])
         ).where(
             Asset.asset_seq == asset_seq
-        )
+        ).where(Asset.deleted == None, AssetVersion.deleted == None)
         results = session.exec(stmt).all()
     if not results:
         return None
@@ -485,7 +492,8 @@ def create_version(session: Session,
         org_seq = org_id_to_seq(org_id)
         asset_seq = asset_id_to_seq(asset_id)
         update_result = session.exec(update(Asset).values(
-            org_seq=org_seq).where(
+            org_seq=org_seq)
+            .where(Asset.deleted == None).where(
             Asset.asset_seq == asset_seq).where(
             Asset.owner_seq == profile_seq))
         if update_result.rowcount != 1:
@@ -525,7 +533,8 @@ def create_version(session: Session,
                 AssetVersion.asset_seq == asset_id_to_seq(avr.asset_id)).where(
                 AssetVersion.major == version_id[0]).where(
                 AssetVersion.minor == version_id[1]).where(
-                AssetVersion.patch == version_id[2])
+                AssetVersion.patch == version_id[2]).where(
+                AssetVersion.deleted == None)
             result = session.exec(stmt)
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -553,13 +562,22 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
     version_id = convert_version_input(version_str)
     asset_seq = asset_id_to_seq(asset_id)
 
-    stmt = delete(AssetVersion).where(
-        AssetVersion.asset_seq == asset_seq,
-        AssetVersion.major == version_id[0],
-        AssetVersion.minor == version_id[1],
-        AssetVersion.patch == version_id[2], or_(
-            AssetVersion.author_seq == profile_seq,
-            Asset.owner_seq == profile_seq))
+    stmt = (
+        update(AssetVersion)
+        .values(deleted=sql_now())
+        .where(
+            AssetVersion.asset_seq == asset_seq,
+            AssetVersion.major == version_id[0],
+            AssetVersion.minor == version_id[1],
+            AssetVersion.patch == version_id[2],
+            AssetVersion.deleted == None,
+            or_(
+                AssetVersion.author_seq == profile_seq,
+                AssetVersion.asset_seq == Asset.asset_seq,
+                Asset.owner_seq == profile_seq,
+            )
+        )
+    )
     result = session.exec(stmt)
     if result.rowcount != 1:
         raise HTTPException(HTTPStatus.FORBIDDEN,
@@ -567,45 +585,50 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
     session.commit()
 
 
-def delete_asset_and_versions(session: Session, asset_id: str, profile_seq: int):
+
+
+def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionProfile):
     asset_seq = asset_id_to_seq(asset_id)
 
-    asset_versions_to_delete = session.exec(
-        select(AssetVersion)
-        .where(
-            AssetVersion.asset_seq == asset_seq,
-            AssetVersion.author_seq == profile_seq,
-        )
-    ).all()
-    if not asset_versions_to_delete:
+    try:
+        asset = session.exec(
+            select(Asset)
+            .where(
+                Asset.asset_seq == asset_seq,
+            )
+            .where(Asset.deleted == None)
+        ).one()
+    except NoResultFound as ex:
+        log.error("Delete an asset error: %s", str(ex))
         raise HTTPException(
-            HTTPStatus.FORBIDDEN,
-            detail="Asset versions can be deleted by the asset owner",
-        )
-    session.exec(
-        delete(AssetVersion).where(
-            AssetVersion.asset_seq == asset_seq,
-            AssetVersion.author_seq == profile_seq,
-        )
+            HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found"
+        ) from ex
+
+    scope = Scope(profile=profile, asset=asset)
+
+    validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_id,
+        auth_roles=profile.auth_roles,
+        scope=scope,
+        only_asset=True,
     )
 
-    asset_to_delete = session.exec(
-        select(Asset).where(
-            Asset.asset_seq == asset_seq,
-            Asset.owner_seq == profile_seq,
-        )
-    ).one_or_none()
-    if not asset_to_delete:
-        raise HTTPException(
-            HTTPStatus.FORBIDDEN,
-            detail="Asset can be deleted by the asset owner",
-        )
-    session.exec(
-        delete(Asset).where(
-            Asset.asset_seq == asset_seq,
-            Asset.owner_seq == profile_seq,
-        )
+    stmt = (
+        update(Asset)
+        .values(deleted=sql_now())
+        .where(Asset.deleted == None)
+        .where(Asset.asset_seq == asset_seq)
     )
+    session.exec(stmt)
+
+    stmt = (
+        update(AssetVersion)
+        .values(deleted=sql_now())
+        .where(AssetVersion.deleted == None)
+        .where(AssetVersion.asset_seq == asset_seq)
+    )
+    session.exec(stmt)
 
     session.commit()
 
@@ -617,6 +640,7 @@ def top(session: Session):
         .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
         .where(AssetVersion.published == True)
         .where(AssetVersion.package_seq != None)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
     ).all()
 
     def avf_to_top(asset, ver, downloads, sorted_versions):
@@ -669,7 +693,7 @@ def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResul
         select(Asset, AssetVersion)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .where(Asset.owner_seq == profile_seq)
-        .where(Asset.deleted == None)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
         .order_by(Asset.asset_seq)).all()
     return process_join_results(session, results)
 
@@ -683,7 +707,8 @@ def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResu
 
 def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
     results = session.exec(select(Asset, AssetVersion).outerjoin(
-        AssetVersion, Asset.asset_seq == AssetVersion.asset_seq).where(
+        AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
+        .where(Asset.deleted == None, AssetVersion.deleted == None).where(
         Asset.asset_seq == asset_id_to_seq(asset_id)).order_by(
         desc(AssetVersion.major),
         desc(AssetVersion.minor),
