@@ -7,14 +7,12 @@ on:
     paths:
       - 'libs/python/**'
       - '.github/workflows/libs-python-ci.yaml'
-      - '.github/workflows/_base-python-ci.yaml'
   pull_request:
     branches:
       - '**'
     paths:
       - 'libs/**'
       - '.github/workflows/libs-python-ci.yaml'
-      - '.github/workflows/_base-python-ci.yaml'
 
 jobs:
   changes:

@@ -18,7 +18,7 @@ domains:
 serviceAccount:
   secretName: front-end-api-staging-sa
 
-apiBase: https://api-staging.mythica.ai/v1
+apiBaseUrl: https://api-staging.mythica.ai/v1
 imagesBaseUrl: https://api-staging.mythica.ai/images
 
 auth0:
