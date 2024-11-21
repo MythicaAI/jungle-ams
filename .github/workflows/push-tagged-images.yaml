@@ -35,27 +35,21 @@ jobs:
             api/app/:
               - 'libs/python/**'
               - 'api/app/**'
-              - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
             api/nginx/:
               - 'api/nginx/**'
-              - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
             api/gcs-proxy/:
               - 'api/gcs-proxy/**'
-              - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
             api/lets-encrypt/:
               - 'api/lets-encrypt/**'
-              - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
             api/packager/:
               - 'api/packager/**'
-              - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
             api/canary/:
               - 'api/canary/**'
-              - 'api/helm/**'
               - '.github/workflows/push-tagged-images.yaml'
             sites/jungle3/:
               - 'sites/jungle3/**'

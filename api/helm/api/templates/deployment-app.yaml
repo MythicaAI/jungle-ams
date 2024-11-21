@@ -53,6 +53,12 @@ spec:
               value: {{ .Values.api.app.telemetry_endpoint }}
             - name: NAMESPACE
               value: {{ .Values.namespace }}
+            - name: AUTH0_DOMAIN
+              value: {{ .Values.auth0.domain}}
+            - name: AUTH0_CLIENT_ID
+              value: {{ .Values.auth0.clientId }}
+            - name: AUTH0_AUDIENCE
+              value: {{ .Values.auth0.audience }}
           ports:
             - containerPort: 5555
               name: http-api
