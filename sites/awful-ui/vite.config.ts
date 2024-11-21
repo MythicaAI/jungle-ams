@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin, ViteDevServer } from 'vite';
-
+import {v4 as uuidv4} from 'uuid';
 // In-memory store for URLs
 const urlStore: { [key: string]: string } = {};
 
@@ -16,7 +16,7 @@ const gcsKeyMiddleware = (): Plugin => ({
 
 
       // Generate a UUID as the key
-      const key = `gcsfile_${filename}`;
+      const key = `gcsfile_${uuidv4()}_${filename}`;
 
       // Store the URL path and query string in the in-memory store
       urlStore[key] = encodedUrlPath;

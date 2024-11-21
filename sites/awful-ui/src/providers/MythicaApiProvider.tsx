@@ -46,6 +46,13 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return response.data;
   };
 
+  const getFiles = async ():Promise<GetFileResponse[]> => {
+    const response = await axios.get(`${BASE_URL}/upload/pending`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+    });
+    return response.data;
+  };
+
   // Function to fetch the URL key from the special VITE middleware
   const getUrlKey = async (url: string) => {
     const res = await fetch(`/gcs-keys${url}`);
@@ -81,6 +88,7 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authToken, 
         profile,
         getFile, 
+        getFiles,
         getDownloadInfo, 
         uploadFile
       }}

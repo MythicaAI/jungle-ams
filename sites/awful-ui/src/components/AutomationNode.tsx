@@ -51,18 +51,39 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const typingTimeout = useRef(500);
   const [execMessage, setExecMessage] = useState<string>('');
 
+  // Handler for FileParameter inputs detected by AutomationInputs
   const handleFileParameterDetected = useCallback((fileParams: Record<string, FileParamType>) => {
     setFileParams(fileParams);
     updateNodeInternals(node.id);
   }, [node.id, updateNodeInternals]);
 
+  // Handler for FileOutput keys detected by AutomationOutputs
   const handleFileOutputDetected = useCallback((fileOutputKeys: Set<string>) => {
     setFileOutputs(fileOutputKeys);
     updateNodeInternals(node.id);
   }, [node.id, updateNodeInternals]);
 
+  // Handler for running the automation
+  const handleRunAutomation = () => {
+    if (isScriptNode) {
+      runAutomation(node.data.worker, node.id, node.data.path, {script:scriptContent, request_data: {...inputData, ...fileInputs}});
+    } else {  
+      runAutomation(node.data.worker, node.id, node.data.path, {...inputData, ...fileInputs});
+    }
+  };
 
+  // Handler for Monaco editor changes
+  const handleEditorChange = (value: string | undefined) => {
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
+    setScriptContent(value || '');
+    typingTimeout.current = setTimeout(() => {
+      runAutomation(node.data.worker, node.id, scriptInterfacePath, {'script': value || ''});
+    }, 2000); // Adjust delay as needed
+  };
 
+  // Update fileInputs when flowData changes or when the fileparams change
   useEffect(() => {
     if (fileParams) {
         Object.keys(fileParams).forEach((paramKey) => {
@@ -95,15 +116,6 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     }
   }, [fileParams, flowData, node, updateNodeInternals]);
 
-
-
-  const handleRunAutomation = () => {
-    if (isScriptNode) {
-      runAutomation(node.data.worker, node.id, node.data.path, {script:scriptContent, request_data: {...inputData, ...fileInputs}});
-    } else {  
-      runAutomation(node.data.worker, node.id, node.data.path, {...inputData, ...fileInputs});
-    }
-  };
 
 
   /**
@@ -181,23 +193,13 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   setFlowData, 
   automationOutput, 
   getFile
-]); // Dependency on workerOutput changes
+]);
 
   const inputPositions = Array.from(Object.keys(fileParams))
     .map((_, index) => `${(index + 1) * (100 / (Object.keys(fileParams).length + 1))}%`);
   const outputPositions = Array.from(fileOutputs)
     .map((_, index, array) => `${(index + 1) * (100 / (array.length + 1))}%`);
 
-  // Handler for Monaco editor changes
-  const handleEditorChange = (value: string | undefined) => {
-    if (typingTimeout.current) {
-      clearTimeout(typingTimeout.current);
-    }
-    setScriptContent(value || '');
-    typingTimeout.current = setTimeout(() => {
-      runAutomation(node.data.worker, node.id, scriptInterfacePath, {'script': value || ''});
-    }, 2000); // Adjust delay as needed
-  };
 
   const template = `
 from pydantic import BaseModel, Field
