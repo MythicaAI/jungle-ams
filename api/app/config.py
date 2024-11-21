@@ -48,6 +48,10 @@ class AppConfig(BaseSettings):
     telemetry_endpoint: str = "127.0.0.1:4317"
 
     mythica_org_name: str = "Mythica"
+    node_env: str = "local"
+    libs_python_image: str = ""
+    api_app_image: str = ""
+    build_version: str = "local-dev"
 
 
 @functools.lru_cache

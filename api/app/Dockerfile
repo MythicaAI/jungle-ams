@@ -1,4 +1,5 @@
 ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+ARG BUILD_VERSION=local-dev
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 LABEL maintainer="jacobrepp@gmail.com"

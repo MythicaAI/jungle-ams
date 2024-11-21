@@ -10,14 +10,15 @@ from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
 )
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
     ConsoleSpanExporter,
 )
-from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.trace import set_tracer_provider
+
 from config import app_config
 
 
@@ -47,7 +48,7 @@ class CustomJSONFormatter(logging.Formatter):
                 k: v
                 for k, v in record.__dict__.items()
                 if k
-                not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+                   not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
             }
         )
 

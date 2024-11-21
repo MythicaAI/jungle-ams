@@ -2,8 +2,8 @@
 
 import importlib
 import logging
-from contextlib import asynccontextmanager
 import sys
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
@@ -110,7 +110,12 @@ def health():
 def main():
     """Main entry point setup core systems and validate dependencies before serving clients"""
     cfg = app_config()
-    print('database validated')
+    print(f"build version: {app_config().build_version}")
+    print(f"  libs/python image: {app_config().libs_python_image}")
+    print(f"  api/app image: {app_config().api_app_image}")
+    print(f"  base url: {app_config().api_base_uri}")
+    
+    print("database validated")
     print(f"temporary upload folder is {cfg.upload_folder}")
     uvicorn.run("main:app",
                 host=cfg.http_listen_addr,
