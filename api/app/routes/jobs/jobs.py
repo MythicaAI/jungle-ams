@@ -86,7 +86,7 @@ async def define_new(
 
 @router.get('/definitions')
 async def list_definitions(
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[JobDefinitionModel]:
     """List existing job definitions"""
@@ -227,7 +227,7 @@ async def create_result(
 async def list_results(
     job_id: str,
     profile: Profile = Depends(session_profile),
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> JobResultResponse:
     """List results for a job"""

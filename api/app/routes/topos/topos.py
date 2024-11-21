@@ -73,7 +73,7 @@ def topology_refs_to_response(
 
 @router.get("/")
 async def list_all(
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[Topology]:
     """Get all valid topologies"""
@@ -172,7 +172,7 @@ async def by_id(topo_id: str) -> TopologyResponse:
 @router.get("/{topo_id}/refs")
 async def refs(
     topo_id: str,
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[TopologyRefResponse]:
     """Get all topology refs"""

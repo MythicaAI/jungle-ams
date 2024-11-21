@@ -25,7 +25,7 @@ async def log_request_headers(r: Request):
 
 @router.get('/all')
 async def list_all(
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[repo.AssetVersionResult]:
     """Get all asset versions"""
@@ -40,7 +40,7 @@ async def list_all(
 
 @router.get('/top')
 async def list_top(
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
@@ -51,7 +51,7 @@ async def list_top(
 @router.get('/owned')
 async def list_owned(
     profile: Profile = Depends(session_profile),
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[repo.AssetVersionResult]:
     """Get the list of asset headers owned by the current profile"""
@@ -62,7 +62,7 @@ async def list_owned(
 @router.get('/named/{asset_name}')
 async def named(
     asset_name: str,
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[repo.AssetVersionResult]:
     """Get asset by name"""
@@ -73,7 +73,7 @@ async def named(
 @router.get('/committed_at')
 async def committed_at(
     ref: str,
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[repo.AssetVersionResult]:
     """Find any asset versions with commit_ref containing ref"""

@@ -68,7 +68,7 @@ def create(
 
 @router.get("/")
 def current(profile: Profile = Depends(session_profile),
-    limit: int = Query(10, le=20),
+    limit: int = Query(10, le=100),
     offset: int = 0,
 ) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
