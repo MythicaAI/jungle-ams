@@ -10,31 +10,31 @@ Roles and role aliases see auth.authorization for usage of role verification
 org_create = 'org/create'
 org_update = 'org/update'
 org_delete = 'org/delete'
-org_asset_add = 'org/asset/add'
-org_asset_remove = 'org/asset/remove'
+org_asset_create = 'org/asset/create'
+org_asset_delete = 'org/asset/delete'
 org_asset_update = 'org/asset/update'
-org_add_role = 'org/role/add'
-org_remove_role = 'org/role/remove'
+org_create_role = 'org/role/create'
+org_delete_role = 'org/role/delete'
 org__all_roles = {
     org_create,
     org_update,
     org_delete,
-    org_asset_add,
-    org_asset_remove,
+    org_asset_create,
+    org_asset_delete,
     org_asset_update,
-    org_add_role,
-    org_remove_role,
+    org_create_role,
+    org_delete_role,
 }
 org__member_roles = {
-    org_asset_add,
+    org_asset_create,
     org_asset_update,
-    org_asset_remove,
+    org_asset_delete,
 }
 org__mod_roles = {
     *org__member_roles,
     org_update,
-    org_add_role,
-    org_remove_role
+    org_create_role,
+    org_delete_role
 }
 
 #
