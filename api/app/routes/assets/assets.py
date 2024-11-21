@@ -92,7 +92,7 @@ async def create_version(asset_id: str,
                                                                asset_id,
                                                                version_str,
                                                                req,
-                                                               profile.profile_seq)
+                                                               profile)
         if create_or_update == repo.CreateOrUpdate.CREATE:
             response.status_code = HTTPStatus.CREATED
         return version_result
@@ -133,7 +133,8 @@ async def by_version(
     """Get the asset version for a given asset and version"""
     version_id = repo.convert_version_input(version_str)
     with get_session() as session:
-        version = repo.select_asset_version(session, asset_id, version_id)
+        avr_results = repo.select_asset_version(session, asset_id, version_id)
+        version = repo.process_join_results(session, avr_results)[0] if avr_results else None
         if version is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}', version {version_id} not found")
         return version

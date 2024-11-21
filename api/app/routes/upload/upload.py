@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from sqlmodel import and_, select, update
 
 import db.index as db_index
-from assets.repo import convert_version_input, select_asset_version
+from assets.repo import convert_version_input, process_join_results, select_asset_version
 from config import app_config
 from context import RequestContext
 from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
@@ -178,7 +178,8 @@ async def store_and_attach_package(
 
     # do the upload
     with get_session(echo=True) as session:
-        avr = select_asset_version(session, asset_id, version_id)
+        avr_results = select_asset_version(session, asset_id, version_id)
+        avr = process_join_results(session, avr_results)[0] if avr_results else None
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
