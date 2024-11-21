@@ -28,6 +28,7 @@ def process_type_model_result(
         subquery = type_model_query.subquery()
         query = (
             assets_repo.asset_join_select
+            .where(AssetVersion.published == True)
             .join(subquery, Asset.asset_seq == subquery.c.asset_seq)
             .order_by(
                 desc(AssetVersion.major),

@@ -163,6 +163,17 @@ def test_tag_asset_operations(api_base, client, create_profile):
         r = client.post(f"{api_base}/assets", json={'org_id': org_id}, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
+        test_asset_ver_json = {
+            'commit_ref':  'test_commit_ref-updated-2',
+            'name':  'test_asset_name-updated-2',
+            'contents': {'files': []},
+            'published': True,
+        }
+        r = client.post(
+            f"{api_base}/assets/{o.asset_id}/versions/0.1.0",
+            json=test_asset_ver_json,
+            headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
         return o.asset_id
 
     asset_id = create_asset(headers)
