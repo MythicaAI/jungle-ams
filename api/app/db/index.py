@@ -60,7 +60,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         event_id = event_seq_to_id(event_seq)
 
         # Create a new NATS event
-        if ctx.extension in ('hda', 'hdalc', 'hdanc'):
+        if ctx.extension in ('hda', 'hdalc'):
             parameter_set = ParameterSet(
                 hda_file = FileParameter(file_id=file_id)
             )
