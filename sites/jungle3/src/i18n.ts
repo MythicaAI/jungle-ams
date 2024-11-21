@@ -8,7 +8,8 @@ i18n
   .use(initReactI18next)
   .init({
     debug: true,
-    fallbackLng: "en",
+    fallbackLng: ["en"],
+    supportedLngs: ["en", "es"],
     ns: ["common"],
     defaultNS: "common",
     backend: {

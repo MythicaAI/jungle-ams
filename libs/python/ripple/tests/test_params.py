@@ -116,16 +116,39 @@ def test_param_compile():
     assert isinstance(compiled.params['test_toggle'], BoolParameterSpec)
     assert compiled.params['test_toggle'].default is True
 
-    # Enum test
+    # Menu enum test
     data = """
     {
         "defaults": {
             "test_enum": {
                 "type": "Menu",
                 "label": "Test Enum",
-                "menu_items": ["a", "b", "c"],
+                "menu_items": ["0", "1", "2"],
                 "menu_labels": ["A", "B", "C"],
                 "default": 0
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 1
+    assert isinstance(compiled.params['test_enum'], EnumParameterSpec)
+    assert len(compiled.params['test_enum'].values) == 3
+    assert compiled.params['test_enum'].values[0].name == "0"
+    assert compiled.params['test_enum'].values[0].label == "A"
+    assert compiled.params['test_enum'].default == "0"
+
+    # String enum test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "String",
+                "label": "Test Enum",
+                "menu_items": ["a", "b", "c"],
+                "menu_labels": ["A", "B", "C"],
+                "default": "a"
             }
         },
         "inputLabels": []
@@ -138,6 +161,68 @@ def test_param_compile():
     assert compiled.params['test_enum'].values[0].name == "a"
     assert compiled.params['test_enum'].values[0].label == "A"
     assert compiled.params['test_enum'].default == "a"
+
+    # Int enum test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "Int",
+                "label": "Test Enum",
+                "menu_items": ["0", "1", "2"],
+                "menu_labels": ["A", "B", "C"],
+                "default": 0
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 1
+    assert isinstance(compiled.params['test_enum'], EnumParameterSpec)
+    assert len(compiled.params['test_enum'].values) == 3
+    assert compiled.params['test_enum'].values[0].name == "0"
+    assert compiled.params['test_enum'].values[0].label == "A"
+    assert compiled.params['test_enum'].default == "0"
+
+    # Bad enum default test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "String",
+                "label": "Test Enum",
+                "menu_items": ["a", "b", "c"],
+                "menu_labels": ["A", "B", "C"],
+                "default": "bad"
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 1
+    assert isinstance(compiled.params['test_enum'], EnumParameterSpec)
+    assert len(compiled.params['test_enum'].values) == 3
+    assert compiled.params['test_enum'].values[0].name == "a"
+    assert compiled.params['test_enum'].values[0].label == "A"
+    assert compiled.params['test_enum'].default == "a"
+
+    # Empty enum test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "Menu",
+                "label": "Test Enum",
+                "default": 0
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 0
 
     # File test
     data = """

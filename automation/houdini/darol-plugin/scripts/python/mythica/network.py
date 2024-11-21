@@ -938,9 +938,12 @@ def _get_parm_defaults(parmtemp):
     if hasattr(parmtemp, "maxValue"):
         _parm["max"] = parmtemp.maxValue()
 
-    if isinstance(parmtemp, hou.MenuParmTemplate):
-        _parm["menu_items"] = parmtemp.menuItems()
-        _parm["menu_labels"] = parmtemp.menuLabels()
+    if isinstance(parmtemp, hou.MenuParmTemplate) or isinstance(parmtemp, hou.StringParmTemplate) or isinstance(parmtemp, hou.IntParmTemplate):
+        menu_items = parmtemp.menuItems()
+        menu_labels = parmtemp.menuLabels()
+        if len(menu_items) > 0 and len(menu_labels) > 0:
+            _parm["menu_items"] = menu_items
+            _parm["menu_labels"] = menu_labels
 
     default = None
     if isinstance(parmtemp, hou.RampParmTemplate):

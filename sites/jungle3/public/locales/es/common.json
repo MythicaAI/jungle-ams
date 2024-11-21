@@ -45,7 +45,8 @@
     "createNewOrg": "Crear nueva organización",
     "chooseExistingOrg": "Elige una org existente...",
     "filloutDesc": "Rellena una descripción",
-    "version": "Versión"
+    "version": "Versión",
+    "publicView": "Vista pública"
   },
   "myUploads": {
     "title": "Tus subidas",

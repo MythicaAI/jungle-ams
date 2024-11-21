@@ -45,7 +45,8 @@
     "createNewOrg": "Create New Organization",
     "chooseExistingOrg": "Choose an existing org...",
     "filloutDesc": "Fill out a description",
-    "version": "Version"
+    "version": "Version",
+    "publicView": "Public view"
   },
   "myUploads": {
     "title": "Your uploads",

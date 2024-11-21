@@ -2,6 +2,8 @@
 import os
 import re
 import subprocess
+from datetime import datetime, timezone
+from functools import wraps
 
 from invoke import task
 
@@ -283,6 +285,23 @@ def copy_dist_files(c, image_path):
         print("Temporary container removed.")
 
 
+def timed(func):
+    """Decorator to time invoke tasks and log their execution times."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = datetime.now(timezone.utc)
+        result = func(*args, **kwargs)
+        end_time = datetime.now(timezone.utc)
+
+        duration = end_time - start_time
+        task_name = func.__name__
+        print(f"{task_name}: completed in {duration.seconds} seconds")
+        return result
+
+    return wrapper
+
+
 @task
 def docker_cleanup(c):
     """Cleanup docker artifacts"""
@@ -365,12 +384,14 @@ def image_path_action(c, image, action, **kwargs):
 
 
 @task(help={'image': f'Image path to build: {IMAGES.keys()}'})
+@timed
 def docker_build(c, image='all'):
     """Build a docker image by sub path or set name"""
     image_path_action(c, image, build_image)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})
+@timed
 def docker_deploy(c, image='all', target='gcs'):
     """Deploy a docker image by sub path set name"""
     image_path_action(c, image, build_image)
@@ -380,6 +401,7 @@ def docker_deploy(c, image='all', target='gcs'):
 @task(help={
     'image': f'Image path to run: {IMAGES.keys()}',
     'background': 'Run the image in the background'})
+@timed
 def docker_run(c, image='api/app', background=False):
     """Run a docker image by path"""
     image_path_action(c, image, run_image, background=background)
