@@ -48,17 +48,15 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({ inputSchema: schema,
         }
 
         // Detect FileParameter (scalar or array)
-        if (fieldSchema.$ref === '#/$defs/FileParameter') {
+        if (fieldSchema.$ref === '#/$defs/FileParameter'
+            || (fieldSchema.type === 'object' && fieldSchema.title === 'FileParameter')
+            || (fieldSchema.type === 'array' && fieldSchema.items?.title === 'FileParameter')
+            || (fieldSchema.type === 'array' && fieldSchema.items?.$ref === '#/$defs/FileParameter')
+        ) {
             const isArray = fieldSchema.type === FileParamType.Array;
             fileParamsCollector[key] = isArray ? FileParamType.Array : FileParamType.Scalar;
 
             return null; // Do not render a form field for FileParameter
-        }
-
-        if (fieldSchema.type === 'array' && fieldSchema.items?.$ref === '#/$defs/FileParameter') {
-            // Array of FileParameters
-            fileParamsCollector[key]= FileParamType.Array;
-            return null; // Do not render a form field for FileParameter array
         }
 
         switch (fieldSchema.type) {

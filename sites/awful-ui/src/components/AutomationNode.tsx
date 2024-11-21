@@ -83,7 +83,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
                 } else {
                     // Take the first file_id and create a single-entry array
                     const firstFile = files[0];
-                    const fileDictArray = firstFile ? [{ file_id: firstFile.file_id }] : [];
+                    const fileDictArray = firstFile ? { file_id: firstFile.file_id } : {};
 
                     setFileInputs((prev) => ({
                         ...prev,
