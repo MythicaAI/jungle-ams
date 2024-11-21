@@ -162,6 +162,29 @@ def test_param_compile():
     assert compiled.params['test_enum'].values[0].label == "A"
     assert compiled.params['test_enum'].default == "a"
 
+    # Int enum test
+    data = """
+    {
+        "defaults": {
+            "test_enum": {
+                "type": "Int",
+                "label": "Test Enum",
+                "menu_items": ["0", "1", "2"],
+                "menu_labels": ["A", "B", "C"],
+                "default": 0
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 1
+    assert isinstance(compiled.params['test_enum'], EnumParameterSpec)
+    assert len(compiled.params['test_enum'].values) == 3
+    assert compiled.params['test_enum'].values[0].name == "0"
+    assert compiled.params['test_enum'].values[0].label == "A"
+    assert compiled.params['test_enum'].default == "0"
+
     # Bad enum default test
     data = """
     {

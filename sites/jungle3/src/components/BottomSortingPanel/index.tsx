@@ -36,6 +36,7 @@ export const BottomSortingPanel: React.FC<Props> = ({
       {sortingButtons.map((button) => (
         <Box
           component="span"
+          key={button.value}
           sx={{
             background: sorting === button.value ? "#000" : "#fff",
 

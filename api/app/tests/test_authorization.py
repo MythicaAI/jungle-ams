@@ -52,31 +52,31 @@ superuser = {
 }
 
 
-def test_org_add_role():
+def test_org_create_role():
     # validate admin of object_a can add role
     assert validate_roles(
         object_id=org_a,
-        role=auth.roles.org_add_role,
+        role=auth.roles.org_create_role,
         auth_roles=org_a_admin)
 
     # validate other admin cannot add roles to org_a
     with pytest.raises(HTTPException):
         validate_roles(
             object_id=org_a,
-            role=auth.roles.org_add_role,
+            role=auth.roles.org_create_role,
             auth_roles=org_b_admin)
 
     # validate user of org_a can not add role to same group
     with pytest.raises(HTTPException):
         validate_roles(
             object_id=org_a,
-            role=auth.roles.org_add_role,
+            role=auth.roles.org_create_role,
             auth_roles=org_a_member)
 
     # validate superuser can add a role to same group
     assert validate_roles(
         object_id=org_a,
-        role=auth.roles.org_add_role,
+        role=auth.roles.org_create_role,
         auth_roles=superuser)
 
 
@@ -160,6 +160,112 @@ def test_asset_update():
             object_id=asset_a,
             auth_roles=org_b_admin,
             scope=asset_a_org_member_scope)
+
+
+def test_asset_delete():
+    asset_a_owner_scope = Scope(
+        profile=generate_session_profile(profile_seq=asset_a_owner_seq),
+        asset=Asset(owner_seq=asset_a_owner_seq),
+        asset_version=AssetVersion(author_seq=asset_a_author_seq))
+    asset_a_org_member_scope = Scope(
+        profile=generate_session_profile(profile_seq=asset_b_owner_seq),
+        asset=Asset(owner_seq=asset_a_owner_seq, org_seq=org_a_seq),
+        asset_version=AssetVersion(author_seq=asset_a_author_seq))
+    asset_a_super_scope = Scope(
+        profile=generate_session_profile(profile_seq=superuser_seq),
+        asset=Asset(owner_seq=asset_a_owner_seq),
+        asset_version=AssetVersion(author_seq=asset_a_author_seq))
+
+    # validate owner can delete owned assets
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_owner_scope)
+
+    # validate superuser can delete user assets
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=superuser,
+        scope=asset_a_super_scope)
+
+    # validate org member can delete assets associated with org
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_org_member_scope)
+
+    # validate owner
+    # validate profile with asset_delete on specific asset can delete self assets
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_owner_scope)
+
+    # validate profile with asset_delete not on org can not delete org assets
+    with pytest.raises(HTTPException):
+        validate_roles(
+            role=auth.roles.asset_delete,
+            object_id=asset_a,
+            auth_roles=org_b_admin,
+            scope=asset_a_org_member_scope)
+
+
+def test_validate_role_only_asset():
+    asset_a_owner_scope = Scope(
+        profile=generate_session_profile(profile_seq=asset_a_owner_seq),
+        asset=Asset(owner_seq=asset_a_owner_seq))
+    asset_a_org_member_scope = Scope(
+        profile=generate_session_profile(profile_seq=asset_b_owner_seq),
+        asset=Asset(owner_seq=asset_a_owner_seq, org_seq=org_a_seq))
+    asset_a_super_scope = Scope(
+        profile=generate_session_profile(profile_seq=superuser_seq),
+        asset=Asset(owner_seq=asset_a_owner_seq))
+
+    # validate owner can delete owned assets
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_owner_scope,
+        only_asset=True)
+
+    # validate superuser can delete user assets
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=superuser,
+        scope=asset_a_super_scope,
+        only_asset=True)
+
+    # validate org member can delete assets associated with org
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_org_member_scope,
+        only_asset=True)
+
+    # validate owner
+    # validate profile with asset_delete on specific asset can delete self assets
+    assert validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_a,
+        auth_roles=org_a_member,
+        scope=asset_a_owner_scope,
+        only_asset=True)
+
+    # validate profile with asset_delete not on org can not delete org assets
+    with pytest.raises(HTTPException):
+        validate_roles(
+            role=auth.roles.asset_delete,
+            object_id=asset_a,
+            auth_roles=org_b_admin,
+            scope=asset_a_org_member_scope,
+            only_asset=True)
 
 
 def test_global_tag_roles():

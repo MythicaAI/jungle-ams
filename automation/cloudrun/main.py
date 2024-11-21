@@ -132,4 +132,4 @@ def automation_request(request):
     log.info(f"response - {result}")
 
     # Return the result
-    return {"work_id": work_id, "result": result}
+    return ({"work_id": work_id, "result": result}, 200, headers)

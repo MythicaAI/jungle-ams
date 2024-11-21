@@ -7,7 +7,7 @@ export const LanguageSelect = () => {
   const [value, setValue] = React.useState(i18n.language);
 
   return (
-    <Box sx={{ minWidth: 120 }}>
+    <Box sx={{ minWidth: 120, height: 42 }}>
       <Select
         value={value}
         //@ts-ignore
@@ -17,6 +17,7 @@ export const LanguageSelect = () => {
         }}
         variant="outlined"
         color="neutral"
+        sx={{ height: 42 }}
       >
         <Option value="en">English</Option>
         <Option value="es">Español</Option>

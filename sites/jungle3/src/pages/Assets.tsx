@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Grid, IconButton, Stack } from "@mui/joy";
+import { Box, CircularProgress, Grid, Stack } from "@mui/joy";
 import { useEffect, useState } from "react";
 import {
   extractValidationErrors,
@@ -12,15 +12,20 @@ import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 import { useGetAssetsByTags, useGetTags } from "@queries/tags";
 import { Tag } from "@queries/tags/types";
 import { TagsPanel } from "@components/TagPanel";
-import { LucideBookText } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 const ALL_ASSETS_TAG = "All assets";
+const COMPETITION_TAG = "Competition";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // const [search, setSearch] = useState<string>("");
   const [sorting, setSorting] = useState<SortType>("latest");
-  const [selectedTag, setSelectedTag] = useState(ALL_ASSETS_TAG);
+  const [selectedTag, setSelectedTag] = useState(
+    searchParams.get("tag") ?? COMPETITION_TAG,
+  );
   const {
     data: assetsByTag,
     isLoading: isAssetsByTagLoading,
@@ -41,6 +46,7 @@ const Assets = () => {
 
   const handleSetSelectedTag = (value: string) => {
     setSelectedTag(value);
+    setSearchParams({ tag: value });
   };
 
   const handleError = (err: any) => {
@@ -91,29 +97,13 @@ const Assets = () => {
           </Stack> */}
 
           <Stack mb="25px" direction="row" gap="10px">
-            <Box width="calc(100% - 40px)">
+            <Box width="100%">
               <TagsPanel
                 tags={tags as Tag[]}
                 selectedTag={selectedTag}
                 handleChangeTag={handleSetSelectedTag}
               />
             </Box>
-            <Stack
-              alignItems="flex-end"
-              width="40px"
-              justifyContent="flex-start"
-            >
-              <Box
-                width="100%"
-                component="a"
-                href={`${window.location.href}docs`}
-                target="_blank"
-              >
-                <IconButton sx={{ width: "100%", justifyContent: "center" }}>
-                  <LucideBookText />
-                </IconButton>
-              </Box>
-            </Stack>
           </Stack>
 
           <Stack>

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 import traceback
 
 from opentelemetry._logs import set_logger_provider
@@ -69,8 +70,12 @@ def get_telemetry_resource() -> Resource:
 
 
 def configure_logging():
+    # Skip if pytest is running
+    if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+        return
     logger = logging.getLogger()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     if app_config().telemetry_enable:
         logger.handlers.clear()
 

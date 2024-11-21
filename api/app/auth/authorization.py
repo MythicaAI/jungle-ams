@@ -72,7 +72,7 @@ def validate_asset_ownership_scope(
     # The profile is the owner of the asset or author of the version
     if scope.profile and \
             (scope.asset.owner_seq == scope.profile.profile_seq or
-                not only_asset and scope.asset_version.author_seq == scope.profile.profile_seq):
+            not only_asset and scope.asset_version.author_seq == scope.profile.profile_seq):
         return True
 
     # Look for a org scoped role by alias on the profile
