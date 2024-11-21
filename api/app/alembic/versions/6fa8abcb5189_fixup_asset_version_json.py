@@ -56,6 +56,9 @@ def upgrade() -> None:
                 fixed_contents[key] = l
                 contents_list_converted += 1
                 did_convert = True
+            elif type(value) == dict:
+                fixed_list = [value]
+                fixed_contents[key] = fixed_list
             elif type(value) == list:
                 fixed_list = []
                 for item in value:
