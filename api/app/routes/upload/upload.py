@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlmodel import and_, select, update
 
@@ -217,7 +217,9 @@ async def store_and_attach_package(
 
 @router.get('/pending')
 async def pending(
-        profile: Annotated[Profile, Depends(session_profile)]
+    profile: Annotated[Profile, Depends(session_profile)],
+    limit: int = Query(10, le=100),
+    offset: int = 0,
 ) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for
     the current profile"""
@@ -225,5 +227,8 @@ async def pending(
         owned_files = session.exec(select(FileContent)
         .where(
             and_(FileContent.owner_seq == profile.profile_seq,
-                 FileContent.deleted == None))).all()
+                 FileContent.deleted == None))
+            .limit(limit)
+            .offset(offset)
+        ).all()
         return enrich_files(session, owned_files, profile)
