@@ -287,12 +287,13 @@ def resolve_content_list(
                                     detail=f"file '{asset_content.file_id}' not found") from exc
     elif category in LINK_TYPE_CATEGORIES:
         for link in in_content_list:
-            try:
-                urlparse(link)
-                resolved_content_list.append(link)
-            except ValueError as e:
-                raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                    detail=f"link '{link}' not valid") from e
+            parsed = urlparse(link)
+            if not parsed.scheme or not parsed.netloc:
+                raise HTTPException(
+                    HTTPStatus.BAD_REQUEST,
+                    detail=f"link '{link}' is not valid"
+                )
+            resolved_content_list.append(link)
     return resolved_content_list
 
 

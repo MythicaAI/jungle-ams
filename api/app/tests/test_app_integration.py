@@ -296,6 +296,16 @@ def test_create_profile_and_assets(api_base, client, create_profile, uploader):
     assert o.name == test_asset_name + '-updated-2'
     assert len(o.contents['files']) == 0
 
+    test_asset_ver_json["contents"] = {'files': [], 'links': ["121{[(_()21212"]}
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/{version_str}",
+        json=test_asset_ver_json,
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+    test_asset_ver_json["contents"] = {'files': [],
+                     'links': [test_link_update1, test_link_update2]}
+
     r = client.get(
         f"{api_base}/assets/{asset_id}/versions/0.2.0")
     assert_status_code(r, HTTPStatus.OK)
