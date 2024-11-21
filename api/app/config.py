@@ -44,7 +44,7 @@ class AppConfig(BaseSettings):
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_db: int = 0
-    telemetry_enable: bool = False
+    telemetry_enable: bool = True
     telemetry_endpoint: str = "127.0.0.1:4317"
 
     mythica_org_name: str = "Mythica"
