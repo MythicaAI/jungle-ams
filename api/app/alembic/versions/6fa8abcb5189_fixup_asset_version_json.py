@@ -62,7 +62,7 @@ def upgrade() -> None:
                     if type(item) == str:
                         # item was encoded as string
                         print(f"converting {item}")
-                        fixed_list = json.loads(item)
+                        fixed_list.append(json.loads(item))
                         did_convert = True
                         contents_list_items_converted += 1
                     else:
