@@ -9,6 +9,7 @@ type MythicaApiContextType = {
   authToken: string;
   profile?: Profile;
   getFile: (fileId: string) => Promise<GetFileResponse>;
+  getFiles: () => Promise<GetFileResponse[]>;
   getDownloadInfo: (fileId: string) => Promise<GetDownloadInfoResponse>;
   uploadFile: (formData: FormData) => Promise<UploadFileResponse>;
 };

@@ -1,5 +1,4 @@
-// FileViewerNode.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi';
@@ -16,18 +15,33 @@ const INPUT_FILES = 'inputFiles';
 const OUTPUT_FILES = 'outputFiles';
 
 const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
-  const { getFile, getDownloadInfo } = useMythicaApi();
+  const selectFileRef = useRef<HTMLSelectElement>(null);
+  const { getFiles, getDownloadInfo } = useMythicaApi();
   const { flowData, setFlowData, notifyTargets } = useAwfulFlow();
+  const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<Array<GetDownloadInfoResponse | null>>([]);
   const [selectedPane, setSelectedPane] = useState(0);
+  const [showFileSelector, setShowFileSelector] = useState(false);
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
   
-  const inputFlowData = (flowData[id] || {})[INPUT_FILES] as (GetFileResponse|null)[];
-  
-  const file_ids = (inputFlowData as GetFileResponse[])
-    ?.map((file: GetFileResponse) => file?.file_id || '')
-    .join(', ')
-    || '';
+  const inputFlowData = (flowData[id] || {})[INPUT_FILES] as (GetFileResponse | null)[];
 
+  // Fetch available files for the file chooser whenever te file selector is shown
+  useEffect(() => {
+    const fetchAvailableFiles = async () => {
+      try {
+        const files = await getFiles();
+        setApiFiles(files);
+      } catch (error) {
+        console.error('Error fetching available files:', error);
+      }
+    };
+
+    if (showFileSelector) fetchAvailableFiles();
+  }, [showFileSelector, getFiles]);
+
+
+  //get download info for selected files whenever inputFlowData changes
   useEffect(() => {
     const getDownloads = async (files: Array<GetFileResponse | null>): Promise<Array<GetDownloadInfoResponse | null>> => {
       const dInfos: Array<GetDownloadInfoResponse | null> = [];
@@ -42,38 +56,95 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
       setFlowData(id, OUTPUT_FILES, files);
       notifyTargets(id, OUTPUT_FILES, files);
       return dInfos;
-    };
-
+    }
     inputFlowData && getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
-  }, [setDownloadInfo, inputFlowData, id, getDownloadInfo, setFlowData, notifyTargets]);
+  }, [inputFlowData, setDownloadInfo, getDownloadInfo, setFlowData, id, notifyTargets]);
 
-  const handleFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const clean = e.target.value.replace(/\s/g, '');
-    const files: Array<GetFileResponse | null> = [];
-    if (!clean.match(/^,*$/g)) {
-      for (const file_id of clean.split(',')) {
-        try {
-          files.push(await getFile(file_id));
-        } catch (error) {
-          files.push(null);
+  // Update the selected files whenever the file selector is closed
+  useEffect(() => {
+    const handleFileSelection = () => {
+      if (!selectFileRef) return;
+      const filesById = new Map<string, GetFileResponse>();
+      apiFiles.forEach((file)=>{
+        if (file)
+          filesById.set(file.file_id, file);
+      });
+
+      const selectedFiles = [];
+      const options = selectFileRef.current?.selectedOptions;
+      if (options) {
+        for(const option of options){
+          const file = filesById.get(option.value);
+          file && selectedFiles.push(file);
         }
       }
-    }
-    setFlowData(id, INPUT_FILES, files);
-  };
+      const selectedNames = selectedFiles.map(file => file.file_name);
+      
+      setSelectedFileNames(selectedNames);
+      
+      setFlowData(id, INPUT_FILES, selectedFiles);
+    };
+  
+    if (!showFileSelector) handleFileSelection()
+  }, [showFileSelector, apiFiles, setFlowData, id]);
+  
+
 
   return (
     <div className="mythica-node file-viewer-node">
       <h3>File Viewer</h3>
 
-      {/* Input for manual file ID entry */}
-      <input
-        type="text"
-        defaultValue={file_ids || ''}
-        onBlur={handleFilesChange}
-        placeholder="File_IDs separated by commas"
-        style={{ width: '96%', marginBottom: '10px' }}
-      />
+      <div style={{ marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input 
+            onClick={() => setShowFileSelector(!showFileSelector)}
+            type="text"
+            value={selectedFileNames.join(', ') || 'Click to Select Files...'}
+            readOnly
+            style={{ 
+              flex: 1,
+              padding: '4px',
+              border: '1px solid #ccc',
+              borderRadius: '4px'
+            }}
+          />
+          <button
+            onClick={() => setShowFileSelector(!showFileSelector)}
+            style={{
+              padding: '4px 8px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {showFileSelector ? 'Apply' : 'Select'}
+          </button>
+        </div>
+
+        {(
+          <select
+            ref={selectFileRef}
+            multiple
+            style={{ 
+              visibility: showFileSelector ? 'visible' : 'hidden',
+              display: showFileSelector ? 'block' : 'none',
+              width: '100%',
+              marginTop: '8px',
+              padding: '5px',
+              height: '200px',
+              maxHeight:'600px'
+            }}
+          >
+            {apiFiles.map((file) => (
+              <option key={file.file_id} value={file.file_id}>
+                {file.file_name || file.file_id}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {/* Target handle for accepting incoming file ID connections */}
       <div
@@ -130,11 +201,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
                 >
                   {fileInfo ? (
                     <>
-                      {fileInfo.content_type === 'application/jpeg' ||
-                      fileInfo.content_type === 'application/jpg' ||
-                      fileInfo.content_type === 'application/gif' ||
-                      fileInfo.content_type === 'application/png' ||
-                      fileInfo.content_type.startsWith('image/') ? (
+                      {fileInfo.content_type.startsWith('image/') ? (
                         <img
                           src={fileInfo.url}
                           alt={fileInfo.name}
