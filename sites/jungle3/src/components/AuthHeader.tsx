@@ -169,7 +169,7 @@ export const AuthHeader = () => {
           <Box
             width="100%"
             component="a"
-            href={`${window.location.href}docs`}
+            href={`${window.location.origin}/docs`}
             target="_blank"
             sx={{
               display: "flex",

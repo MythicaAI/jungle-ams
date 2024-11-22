@@ -64,6 +64,7 @@ class AssetVersion(SQLModel, table=True):
     author_seq: int = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+    deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
 # sequences for table asset_tags
 

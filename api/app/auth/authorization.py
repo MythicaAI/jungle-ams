@@ -55,7 +55,8 @@ def validate_asset_ownership_scope(
         role: str,
         auth_roles: set[str],
         object_id: Optional[str] = None,
-        scope: Optional[Scope] = None) -> bool:
+        scope: Optional[Scope] = None,
+        only_asset: bool = False) -> bool:
     """Internally validate the roles against the asset ownership logic"""
 
     # without an asset in the scope, the role check will succeed
@@ -64,14 +65,14 @@ def validate_asset_ownership_scope(
         return True
 
     # testing asset roles requires the asset_version to be provided
-    if scope.asset_version is None:
+    if not only_asset and scope.asset_version is None:
         raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
                             f'{role} missing asset_version scope')
 
     # The profile is the owner of the asset or author of the version
     if scope.profile and \
             (scope.asset.owner_seq == scope.profile.profile_seq or
-             scope.asset_version.author_seq == scope.profile.profile_seq):
+            not only_asset and scope.asset_version.author_seq == scope.profile.profile_seq):
         return True
 
     # Look for a org scoped role by alias on the profile
@@ -98,7 +99,8 @@ def validate_roles(
         role: str,
         auth_roles: set[str],
         object_id: Optional[str] = None,
-        scope: Optional[Scope] = None) -> bool:
+        scope: Optional[Scope] = None,
+        **kwargs) -> bool:
     """
     Validate that the required role is satisfied by the given role set.
     """
@@ -132,7 +134,7 @@ def validate_roles(
         self_scope_alias = f'{alias}:{self_object_scope}'
         if self_scope_alias in auth_roles:
             if role.startswith('asset/'):
-                return validate_asset_ownership_scope(role, auth_roles, object_id, scope)
+                return validate_asset_ownership_scope(role, auth_roles, object_id, scope, **kwargs)
             elif role.startswith('profile/'):
                 if scope.profile and \
                         object_id == profile_seq_to_id(scope.profile.profile_seq):

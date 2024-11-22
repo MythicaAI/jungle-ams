@@ -5,12 +5,18 @@ from datetime import datetime
 from enum import Enum
 from functools import partial
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 import sqlalchemy
+from sqlalchemy.sql.functions import now as sql_now
+from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
-from sqlmodel import Session, col, delete, desc, insert, or_, select, update
+from sqlmodel import Session, col, desc, insert, or_, select, update
+
+import auth.roles
+from auth.authorization import Scope, validate_roles
+from auth.generate_token import SessionProfile
 
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
@@ -43,6 +49,7 @@ LINK_TYPE_CATEGORIES = {LINKS_CONTENT_KEY}
 asset_join_select = (
     select(Asset, AssetVersion)
     .outerjoin(AssetVersion, AssetVersion.asset_seq == Asset.asset_seq)
+    .where(Asset.deleted == None, AssetVersion.deleted == None)
 )
 
 VersionTuple = tuple[StrictInt, StrictInt, StrictInt]
@@ -234,11 +241,12 @@ def convert_version_input(version: str) -> tuple[int, ...]:
 
 def select_asset_version(session: Session,
                          asset_id: str,
-                         version: tuple[int, ...]) -> AssetVersionResult | None:
+                         version: tuple[int, ...]) -> Iterable[tuple[Asset, AssetVersion]] | None:
     """Execute a select against the asset versions table"""
     if version == ZERO_VERSION:
         asset = session.exec(select(Asset).where(
-            Asset.asset_seq == asset_id_to_seq(asset_id))).first()
+            Asset.asset_seq == asset_id_to_seq(asset_id))
+        .where(Asset.deleted == None)).first()
         if asset is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} found")
         results = [(asset, AssetVersion(
@@ -257,12 +265,11 @@ def select_asset_version(session: Session,
             (AssetVersion.patch == version[2])
         ).where(
             Asset.asset_seq == asset_seq
-        )
+        ).where(Asset.deleted == None, AssetVersion.deleted == None)
         results = session.exec(stmt).all()
     if not results:
         return None
-    processed_results = process_join_results(session, results)
-    return processed_results[0]
+    return results
 
 
 def select_asset_dependencies(
@@ -279,7 +286,8 @@ def select_asset_dependencies(
         # Look for the first asset version in the list, resolve the asset, and it's package
         # download information
         asset_id, version_id = ctx.visit.pop()
-        avr = select_asset_version(session, asset_id, version_id)
+        avr_results = select_asset_version(session, asset_id, version_id)
+        avr = process_join_results(session, avr_results)[0] if avr_results else None
         if avr is None or avr.published is False:
             ctx.missing.append(
                 MissingDependencyResult(
@@ -395,7 +403,8 @@ def resolve_asset_dependency(session, dep: AssetDependency) -> dict:
     if asset_id is None or version is None or len(version) != 3:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f'asset_id and version required on {str(dep)}')
-    avr = select_asset_version(session, asset_id, version)
+    avr_results = select_asset_version(session, asset_id, version)
+    avr = process_join_results(session, avr_results)[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             f'asset {asset_id} {version} not found')
@@ -460,15 +469,40 @@ def create_version(session: Session,
                    asset_id: str,
                    version_str: str,
                    r: AssetCreateVersionRequest,
-                   profile_seq: int) -> tuple[CreateOrUpdate, AssetVersionResult]:
+                   profile: SessionProfile) -> tuple[CreateOrUpdate, AssetVersionResult]:
+    profile_seq = profile.profile_seq
+
     version_id = convert_version_input(version_str)
     if version_id == ZERO_VERSION:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed")
 
     # Find an existing asset version
-    avr = select_asset_version(session, asset_id, version_id)
+    avr_results = select_asset_version(session, asset_id, version_id)
+    avr = process_join_results(session, avr_results)[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
+
+    asset_instance, asset_version_instance = avr_results[0]
+
+    if avr.version == ZERO_VERSION:
+        create_or_update = CreateOrUpdate.CREATE
+        scope = Scope(profile=profile, asset=asset_instance, asset_version=None)
+        validate_dict = dict(
+            role=auth.roles.asset_create,
+            object_id=asset_id,
+            auth_roles=profile.auth_roles,
+            scope=scope,
+            only_asset=True)
+    else:
+        create_or_update = CreateOrUpdate.UPDATE
+        scope = Scope(profile=profile, asset=asset_instance, asset_version=asset_version_instance)
+        validate_dict = dict(
+            role=auth.roles.asset_update,
+            object_id=asset_id,
+            auth_roles=profile.auth_roles,
+            scope=scope)
+
+    validate_roles(**validate_dict)
 
     values = r.model_dump(exclude_unset=True)
 
@@ -485,26 +519,29 @@ def create_version(session: Session,
         org_seq = org_id_to_seq(org_id)
         asset_seq = asset_id_to_seq(asset_id)
         update_result = session.exec(update(Asset).values(
-            org_seq=org_seq).where(
+            org_seq=org_seq)
+            .where(Asset.deleted == None).where(
             Asset.asset_seq == asset_seq).where(
             Asset.owner_seq == profile_seq))
         if update_result.rowcount != 1:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
 
-    # Use provided author or default to calling profile on creation
-    if r.author_id:
-        values['author_seq'] = profile_id_to_seq(r.author_id)
-        values.pop('author_id')
+    # Only author of an asset can change the asset's author
+    if create_or_update == CreateOrUpdate.UPDATE:
+        if (
+            r.author_id
+            and scope.asset_version.author_seq == scope.profile.profile_seq
+        ):
+            values['author_seq'] = profile_id_to_seq(r.author_id)
     else:
         values['author_seq'] = profile_seq
-
-    create_or_update = CreateOrUpdate.CREATE
+    values.pop('author_id', None)
 
     # Create the revision, fails if the revision already exists
     # this could be optimized more using upsert but this will likely hold
     # up well enough
     try:
-        if avr.version == ZERO_VERSION:
+        if create_or_update == CreateOrUpdate.CREATE:
             stmt = insert(AssetVersion).values(
                 asset_seq=asset_id_to_seq(avr.asset_id),
                 major=version_id[0],
@@ -525,7 +562,8 @@ def create_version(session: Session,
                 AssetVersion.asset_seq == asset_id_to_seq(avr.asset_id)).where(
                 AssetVersion.major == version_id[0]).where(
                 AssetVersion.minor == version_id[1]).where(
-                AssetVersion.patch == version_id[2])
+                AssetVersion.patch == version_id[2]).where(
+                AssetVersion.deleted == None)
             result = session.exec(stmt)
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -534,11 +572,11 @@ def create_version(session: Session,
             log.info("asset version updated %s, version %s",
                      asset_id,
                      version_id)
-            create_or_update = CreateOrUpdate.UPDATE
         session.commit()
 
         # read back the join result, add and commit the event back
-        read_back = select_asset_version(session, asset_id, version_id)
+        avr_results = select_asset_version(session, asset_id, version_id)
+        read_back = process_join_results(session, avr_results)[0] if avr_results else None
         add_version_packaging_event(session, read_back)
         session.commit()
 
@@ -553,17 +591,74 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
     version_id = convert_version_input(version_str)
     asset_seq = asset_id_to_seq(asset_id)
 
-    stmt = delete(AssetVersion).where(
-        AssetVersion.asset_seq == asset_seq,
-        AssetVersion.major == version_id[0],
-        AssetVersion.minor == version_id[1],
-        AssetVersion.patch == version_id[2], or_(
-            AssetVersion.author_seq == profile_seq,
-            Asset.owner_seq == profile_seq))
+    stmt = (
+        update(AssetVersion)
+        .values(deleted=sql_now())
+        .where(
+            AssetVersion.asset_seq == asset_seq,
+            AssetVersion.major == version_id[0],
+            AssetVersion.minor == version_id[1],
+            AssetVersion.patch == version_id[2],
+            AssetVersion.deleted == None,
+            or_(
+                AssetVersion.author_seq == profile_seq,
+                AssetVersion.asset_seq == Asset.asset_seq,
+                Asset.owner_seq == profile_seq,
+            )
+        )
+    )
     result = session.exec(stmt)
     if result.rowcount != 1:
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail="asset version be deleted by the asset owner")
+    session.commit()
+
+
+
+
+def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionProfile):
+    asset_seq = asset_id_to_seq(asset_id)
+
+    try:
+        asset = session.exec(
+            select(Asset)
+            .where(
+                Asset.asset_seq == asset_seq,
+            )
+            .where(Asset.deleted == None)
+        ).one()
+    except NoResultFound as ex:
+        log.error("Delete an asset error: %s", str(ex))
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found"
+        ) from ex
+
+    scope = Scope(profile=profile, asset=asset)
+
+    validate_roles(
+        role=auth.roles.asset_delete,
+        object_id=asset_id,
+        auth_roles=profile.auth_roles,
+        scope=scope,
+        only_asset=True,
+    )
+
+    stmt = (
+        update(Asset)
+        .values(deleted=sql_now())
+        .where(Asset.deleted == None)
+        .where(Asset.asset_seq == asset_seq)
+    )
+    session.exec(stmt)
+
+    stmt = (
+        update(AssetVersion)
+        .values(deleted=sql_now())
+        .where(AssetVersion.deleted == None)
+        .where(AssetVersion.asset_seq == asset_seq)
+    )
+    session.exec(stmt)
+
     session.commit()
 
 
@@ -574,6 +669,7 @@ def top(session: Session):
         .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
         .where(AssetVersion.published == True)
         .where(AssetVersion.package_seq != None)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
     ).all()
 
     def avf_to_top(asset, ver, downloads, sorted_versions):
@@ -626,7 +722,7 @@ def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResul
         select(Asset, AssetVersion)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .where(Asset.owner_seq == profile_seq)
-        .where(Asset.deleted == None)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
         .order_by(Asset.asset_seq)).all()
     return process_join_results(session, results)
 
@@ -640,7 +736,8 @@ def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResu
 
 def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
     results = session.exec(select(Asset, AssetVersion).outerjoin(
-        AssetVersion, Asset.asset_seq == AssetVersion.asset_seq).where(
+        AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
+        .where(Asset.deleted == None, AssetVersion.deleted == None).where(
         Asset.asset_seq == asset_id_to_seq(asset_id)).order_by(
         desc(AssetVersion.major),
         desc(AssetVersion.minor),

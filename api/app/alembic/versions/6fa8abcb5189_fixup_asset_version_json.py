@@ -56,13 +56,16 @@ def upgrade() -> None:
                 fixed_contents[key] = l
                 contents_list_converted += 1
                 did_convert = True
+            elif type(value) == dict:
+                fixed_list = [value]
+                fixed_contents[key] = fixed_list
             elif type(value) == list:
                 fixed_list = []
                 for item in value:
                     if type(item) == str:
                         # item was encoded as string
                         print(f"converting {item}")
-                        fixed_list = json.loads(item)
+                        fixed_list.append(json.loads(item))
                         did_convert = True
                         contents_list_items_converted += 1
                     else:
