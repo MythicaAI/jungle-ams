@@ -185,25 +185,30 @@ def create_network(network_data, parent_node):
 
     nodes = network_data.get("networks", [])
     for node_data in nodes:
-        if parent_node is None:
-            parent_node = hou.node('/')
+        try:
+            if parent_node is None:
+                if node_data["id"]!='/':
+                    raise Exception(f"Cannot import complete object networks into a root Target path - {node_data['id']}")
+                node = hou.node('/')
 
-        if parent_node.path() == '/':
-            if node_data["id"]!='/':
-                raise Exception("Cannot import complete object networks into a non-root Target path ")
-            node = parent_node.node(node_data["id"])
-        else:
-            node = parent_node.createNode(node_data["type"], node_name=node_data["id"])
-            _set_nodeinfo(node, node_data)
-        # Recursive call for subnetworks
-        if "networks" in node_data and not node.isLockedHDA():
-            create_network(node_data, node)
+            elif parent_node.path() == '/':
+                node = parent_node.node(node_data["id"])
+            else:
+                try:
+                    node = parent_node.createNode(node_data["type"], node_name=node_data["id"])
+                except:
+                    node = parent_node.createNode("subnet", node_name=node_data["id"])
+                _set_nodeinfo(node, node_data)
+            # Recursive call for subnetworks
+            if "networks" in node_data and not node.isLockedHDA():
+                create_network(node_data, node)
+        except Exception as e:
+            print(f"Error creating network: {e} {node_data['id']}")
 
     # Create connections
     _create_connections(nodes, parent_node)
-    if parent_node.isNetwork():
+    if parent_node and parent_node.isNetwork():
         parent_node.layoutChildren()
-
 
 """
 depth-first (if `traverse_subnet`)  traversal of the `_node` and its children.
