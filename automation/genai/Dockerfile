@@ -1,13 +1,14 @@
 # Reference the library base image
 ARG LIBS_PYTHON_IMAGE=mythica-libs-python
 
-# Setup HuggingFace API KEY
-ARG HF_AUTHTOKEN=replaceme
 
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Use the specified CUDA base image
 FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
+# Setup HuggingFace API KEY
+ARG HF_AUTHTOKEN=replaceme
+
 LABEL maintainer="pedro@mythica.ai"
 LABEL name="mythica-auto-genai"
 LABEL description="Automation for mythica gen aiservices"

@@ -66,7 +66,7 @@ class NetworkExportPanel(QtWidgets.QWidget):
         graph_data = mythica_net.get_network(
             hou.selectedNodes() if self.current_node_checkbox.isChecked() else hou.node('/'),
             self.export_subnet.isChecked(),
-            False,
+            True,
             False
         ) 
 
@@ -149,9 +149,10 @@ class NetworkImportPanel(QtWidgets.QWidget):
     def _create_network(self):
         try:
             json_data = self.text_edit.toPlainText()
-
+            print ( self.selected_node.path())
             data = json.loads(json_data)
-            mythica_net.create_network(data, self.selected_node)
+            parent = self.selected_node if hou.node('/').path() != self.selected_node.path() else None
+            mythica_net.create_network(data, parent)
             
             if self.selected_node.isNetwork():
                 self.selected_node.layoutChildren()
