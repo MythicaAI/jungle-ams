@@ -12,15 +12,16 @@ import {
 } from "@mui/joy";
 import {
   LucideCircleMinus,
-  LucideDoorClosed,
   LucideEdit,
   LucideLink,
   LucidePlusCircle,
   LucideSave,
+  LucideX,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import React, { useState } from "react";
 import { AssetVersionContent, AssetVersionContentMap } from "types/apiTypes.ts";
+import { useAssetVersionStore } from "@store/assetVersionStore";
 
 interface AssetEditFileListProps {
   title: string;
@@ -34,7 +35,14 @@ interface AssetEditFileListProps {
 interface AssetFileEditableProps {
   content: AssetVersionContent;
   editing: boolean;
-  save: (path: string) => void;
+  setEditing: (value: {
+    isEditing: boolean;
+    file: AssetVersionContent;
+  }) => void;
+  save: (
+    oldFile: AssetVersionContent,
+    updatedFile: AssetVersionContent,
+  ) => void;
   cancel: () => void;
 }
 
@@ -42,17 +50,15 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (
   props: AssetFileEditableProps,
 ) => {
   const [path, setPath] = useState(props.content.file_name);
-  const initialPath = props.content.file_name;
 
   const handleCancel = () => {
-    // revert to initial path, stop editing
-    props.save(initialPath);
-    props.editing = false;
+    props.cancel();
   };
 
   const handleSave = () => {
-    props.save(path);
-    props.editing = false;
+    const oldFile = props.content;
+    const newFile = { ...props.content, file_name: path };
+    props.save(oldFile, newFile);
   };
 
   return (
@@ -65,17 +71,22 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (
             placeholder="Enter File Name..."
             minRows={1}
             maxRows={3}
+            sx={{ width: "70%" }}
           />
           <IconButton onClick={handleSave}>
             <LucideSave />
           </IconButton>
           <IconButton onClick={handleCancel}>
-            <LucideDoorClosed />
+            <LucideX />
           </IconButton>
         </>
       ) : (
         <React.Fragment>
-          <LucideEdit />
+          <LucideEdit
+            onClick={() =>
+              props.setEditing({ isEditing: true, file: props.content })
+            }
+          />
           {path} ({props.content.file_id})
         </React.Fragment>
       )}
@@ -83,11 +94,25 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (
   );
 };
 
-const handleEditSave = () => {};
-const handleEditCancel = () => {};
-
 export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
   const navigate = useNavigate();
+  const [editing, setEditing] = React.useState<{
+    isEditing: boolean;
+    file: AssetVersionContent | null;
+  }>({ isEditing: false, file: null });
+  const { removeFile, addFile } = useAssetVersionStore();
+
+  const handleEditSave = (
+    oldFile: AssetVersionContent,
+    updatedFile: AssetVersionContent,
+  ) => {
+    removeFile(oldFile.file_id);
+    addFile(updatedFile);
+    setEditing({ isEditing: false, file: null });
+  };
+  const handleEditCancel = () => {
+    setEditing({ isEditing: false, file: null });
+  };
 
   return (
     <FormControl>
@@ -125,8 +150,9 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
                 <ListItemButton role="menuitem" data-testid="assetFileEditable">
                   <AssetFileEditable
                     content={file}
-                    editing={false}
-                    save={() => handleEditSave()}
+                    editing={editing.file?.file_id === file.file_id}
+                    setEditing={setEditing}
+                    save={handleEditSave}
                     cancel={() => handleEditCancel()}
                   />
                 </ListItemButton>
