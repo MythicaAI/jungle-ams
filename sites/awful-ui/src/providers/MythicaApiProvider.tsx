@@ -79,6 +79,11 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     return response.data; // Return the file data response
   };
+  const deleteFile = async (fileId: string):Promise<void> => {
+    await axios.delete(`${BASE_URL}/files/${fileId}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+    });
+  }
 
   return (
     <MythicaApiContext.Provider 
@@ -90,7 +95,8 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getFile, 
         getFiles,
         getDownloadInfo, 
-        uploadFile
+        uploadFile,
+        deleteFile
       }}
     >
       {children}

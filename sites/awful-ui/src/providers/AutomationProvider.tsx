@@ -19,6 +19,14 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [workerAutomations, setAutomations] = useState<WorkerAutomations>({});
     const [executionData, setExecutionData] = useState<{ [workerId: string]: ExecutionData }>({});
     
+    const getSaveData = () => {  
+        return executionData;
+    }
+
+    const restoreSaveData = (execData: {[workerId:string]:ExecutionData}) => {
+        setExecutionData(execData);
+    }
+    
     const getExecutionData = (nodeId: string) => {
         
         return executionData[nodeId] || { 
@@ -183,7 +191,16 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, [loadAutomations, loaded, authToken, workerAutomations]); // Only re-run when apiKey changes
 
     return (
-        <AutomationContext.Provider value={{ workers, automations: workerAutomations, allAutomations, getExecutionData, loadAutomations, runAutomation, parseAutomation }}>
+        <AutomationContext.Provider value={{ 
+            workers, 
+            automations: workerAutomations, 
+            allAutomations, 
+            getExecutionData, 
+            getSaveData, 
+            restoreSaveData, 
+            loadAutomations, 
+            runAutomation, 
+            parseAutomation }}>
             {children}
         </AutomationContext.Provider>
     );

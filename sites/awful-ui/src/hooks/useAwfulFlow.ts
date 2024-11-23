@@ -2,7 +2,7 @@
 import  { Dispatch, SetStateAction, useContext } from 'react';
 import { createContext } from 'react';
 import { FlowDataType } from '../types/AwfulFlow';
-import { Node, Edge, Connection, EdgeChange, NodeChange } from '@xyflow/react';
+import { Node, Edge, Connection, EdgeChange, NodeChange, ReactFlowInstance } from '@xyflow/react';
 import { GetFileResponse } from '../types/MythicaApi';
 
 type AwfulFlowContextType = {
@@ -18,6 +18,11 @@ type AwfulFlowContextType = {
   notifyTargets: (sourceId: string, sourceHandle: string, value: (GetFileResponse|null)[]) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
+  onSave: (filename: string) => void;
+  onRestore: (filename: string) => void;
+  savedAwfulsById: Record<string, GetFileResponse>;
+  savedAwfulsByName: Record<string, GetFileResponse>;
+  setRfInstance: Dispatch<SetStateAction<ReactFlowInstance<Node, Edge>>>;
 };
 
 // Main context for Node Data and Connections

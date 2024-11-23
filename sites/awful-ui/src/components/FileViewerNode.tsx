@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Handle, Position,useUpdateNodeInternals } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAwfulFlow from '../hooks/useAwfulFlow';
@@ -10,41 +10,43 @@ import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 import JSONViewer from './JSONViewer';
 interface FileViewerNodeProps {
   id: string;
+  data:{
+    selectedPane: number;
+    selectedFileIds: string[]; 
+    selectedFileNames: string[];
+  }
 }
 
 const INPUT_FILES = 'inputFiles';
 const OUTPUT_FILES = 'outputFiles';
 
-const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
+const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
   const { getFiles, getDownloadInfo } = useMythicaApi();
   const { flowData, setFlowData, notifyTargets } = useAwfulFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<Array<GetDownloadInfoResponse | null>>([]);
-  const [selectedPane, setSelectedPane] = useState(0);
+  const [selectedPane, setSelectedPane] = useState(node.data.selectedPane || 0);
   const [showFileSelector, setShowFileSelector] = useState(false);
-  const [selectedFileNames, setSelectedFileNames] = useState<string[]>([]);
-  
-  const inputFlowData = (flowData[id] || {})[INPUT_FILES] as (GetFileResponse | null)[];
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>(node.data.selectedFileIds || []);
+  const [selectedFileNames, setSelectedFileNames] = useState<string[]>(node.data.selectedFileNames || []);
+  const updateNodeInternals = useUpdateNodeInternals();
 
-  // Fetch available files for the file chooser whenever te file selector is shown
-  useEffect(() => {
-    const fetchAvailableFiles = async () => {
-      try {
-        const files = await getFiles();
-        setApiFiles(files);
-      } catch (error) {
-        console.error('Error fetching available files:', error);
-      }
-    };
+  const [initialized, setInitialized] = useState(false);
 
-    if (showFileSelector) fetchAvailableFiles();
-  }, [showFileSelector, getFiles]);
+  const inputFlowData = (flowData[node.id] || {})[INPUT_FILES] as (GetFileResponse | null)[];
 
+  const fetchAvailableFiles = useCallback(async () => {
+    try {
+      const files = await getFiles();
+      setApiFiles(files);
+    } catch (error) {
+      console.error('Error fetching available files:', error);
+    }
+  }, [getFiles]);
 
-  //get download info for selected files whenever inputFlowData changes
-  useEffect(() => {
-    const getDownloads = async (files: Array<GetFileResponse | null>): Promise<Array<GetDownloadInfoResponse | null>> => {
+  const getDownloads = useCallback(
+    async (files: Array<GetFileResponse | null>): Promise<Array<GetDownloadInfoResponse | null>> => {
       const dInfos: Array<GetDownloadInfoResponse | null> = [];
       for (const file of files) {
         try {
@@ -54,16 +56,21 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
           dInfos.push(null);
         }
       }
-      setFlowData(id, OUTPUT_FILES, files);
-      notifyTargets(id, OUTPUT_FILES, files);
+      setFlowData(node.id, OUTPUT_FILES, files);
+      notifyTargets(node.id, OUTPUT_FILES, files);
       return dInfos;
-    }
-    inputFlowData && getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
-  }, [inputFlowData, setDownloadInfo, getDownloadInfo, setFlowData, id, notifyTargets]);
+    },
+    [getDownloadInfo, setFlowData, notifyTargets, node.id]
+  );
+  
+  const toggleFileSelector = () => {
+    if (!showFileSelector) fetchAvailableFiles();
+    else handleFileSelection();
+    setShowFileSelector(!showFileSelector);
+  }
 
-  // Update the selected files whenever the file selector is closed
-  useEffect(() => {
-    const handleFileSelection = () => {
+  const handleFileSelection = useCallback(
+    () => {
       if (!selectFileRef) return;
       const filesById = new Map<string, GetFileResponse>();
       apiFiles.forEach((file)=>{
@@ -73,21 +80,57 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
 
       const selectedFiles = [];
       const options = selectFileRef.current?.selectedOptions;
-      if (options) {
+      if (options && options.length > 0) {
         for(const option of options){
           const file = filesById.get(option.value);
           file && selectedFiles.push(file);
         }
       }
+
       const selectedNames = selectedFiles.map(file => file.file_name);
+      const selectedIds = selectedFiles.map(file => file.file_id);
       
+      setSelectedFileIds(selectedIds);
       setSelectedFileNames(selectedNames);
       
-      setFlowData(id, INPUT_FILES, selectedFiles);
-    };
-  
-    if (!showFileSelector) handleFileSelection()
-  }, [showFileSelector, apiFiles, setFlowData, id]);
+      setFlowData(node.id, INPUT_FILES, selectedFiles);
+      updateNodeInternals(node.id);
+    },
+    [apiFiles, setFlowData, node.id, updateNodeInternals]
+  );
+
+  // Update node save data 
+  useEffect(() => {
+    if (initialized) {
+      node.data.selectedPane = selectedPane;
+      node.data.selectedFileIds = selectedFileIds;
+      node.data.selectedFileNames = selectedFileNames;
+    } else {
+      setInitialized(true);
+    }
+  }, [selectedPane, selectedFileIds, node.data, initialized, selectedFileNames]);
+
+  //get download info for selected files whenever inputFlowData changes
+  useEffect(() => {
+    inputFlowData && getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
+  }, [inputFlowData, setDownloadInfo, getDownloads]); 
+
+
+  // force files to update when the component is first mounted
+  useEffect(() => {
+    fetchAvailableFiles().then(() => {
+      const selectCtl = selectFileRef.current;
+      if (selectCtl) {
+        for (let i=0; i < selectCtl.options.length; i++) {
+          const option = selectCtl.options.item(i);
+          if (option && option.value in selectedFileIds) {
+            option.selected = true;
+          }
+        }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchAvailableFiles]);
   
 
   const cardstyle = { height: 400, width: 400 }
@@ -111,7 +154,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
             }}
           />
           <button
-            onClick={() => setShowFileSelector(!showFileSelector)}
+            onClick={toggleFileSelector}
             style={{
               padding: '4px 8px',
               backgroundColor: '#007bff',
@@ -138,6 +181,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
               height: '200px',
               maxHeight:'600px'
             }}
+            defaultValue={selectedFileIds}
           >
             {apiFiles.map((file) => (
               <option key={file.file_name + file.file_id} value={file.file_id}>
@@ -210,7 +254,8 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
                             className="imageviewer"
                             style={cardstyle}
                           />
-                        ) : fileInfo.content_type === 'application/json' ? (
+                        ) : fileInfo.content_type === 'application/json' ||
+                           fileInfo.content_type === 'application/awful' ? (
                           <JSONViewer 
                             style={{
                               ...cardstyle,
