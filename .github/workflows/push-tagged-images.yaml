@@ -35,28 +35,22 @@ jobs:
             api/app/:
               - 'libs/python/**'
               - 'api/app/**'
-              - '.github/workflows/push-tagged-images.yaml'
             api/nginx/:
               - 'api/nginx/**'
-              - '.github/workflows/push-tagged-images.yaml'
             api/gcs-proxy/:
               - 'api/gcs-proxy/**'
-              - '.github/workflows/push-tagged-images.yaml'
             api/lets-encrypt/:
               - 'api/lets-encrypt/**'
-              - '.github/workflows/push-tagged-images.yaml'
             api/packager/:
               - 'api/packager/**'
-              - '.github/workflows/push-tagged-images.yaml'
             api/canary/:
               - 'api/canary/**'
-              - '.github/workflows/push-tagged-images.yaml'
             sites/jungle3/:
               - 'sites/jungle3/**'
-              - '.github/workflows/push-tagged-images.yaml'
             sites/editor/:
               - 'sites/editor/**'
-              - '.github/workflows/push-tagged-images.yaml'
+            sites/awful-ui/:
+              - 'sites/awful-ui/**'
 
   build-base:
     runs-on: ubuntu-latest
