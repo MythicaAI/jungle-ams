@@ -20,6 +20,12 @@ networks:
   storage:
     driver: bridge
     name: storage
+    external: true
   web:
     driver: bridge
     name: web
+    external: true
+  observe:
+    driver: bridge
+    name: observe
+    external: true
