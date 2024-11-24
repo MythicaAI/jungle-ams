@@ -33,6 +33,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const { getExecutionData, runAutomation, parseAutomation } = useAutomation();       //provides automation related services. 
   const { flowData, setFlowData, notifyTargets} = useAwfulFlow();   //node data mapped to connections
 
+  
   const [inputSpec, setInputSpec] = useState(!isScriptNode?node.data.spec.input:{title:'Empty',type:'string'});
   const [outputSpec, setOutputSpec] = useState(!isScriptNode?node.data.spec.input:{title:'Empty',type:'string'});
 
@@ -45,9 +46,10 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   const {getFile} = useMythicaApi();
 
-  const executionData = getExecutionData(node.id);  
-  const nodeState = executionData.state || NodeState.Clean;
-  const automationOutput = executionData.output as AutomationOutputType & { workers?: { [key: string]: { input?: JSONSchema, output?: JSONSchema } } };
+  const myFlowData = flowData[node.id];
+  
+  const myExecutionData = getExecutionData(node.id);  
+  const nodeState = myExecutionData.state || NodeState.Clean;
   const typingTimeout = useRef(500);
   const [execMessage, setExecMessage] = useState<string>('');
 
@@ -88,7 +90,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     if (fileParams) {
         Object.keys(fileParams).forEach((paramKey) => {
             const fileParamType = fileParams[paramKey];
-            const files = flowData[node.id]?.[paramKey] as { file_id: string }[] | undefined;
+            const files = myFlowData?.[paramKey] as { file_id: string }[] | undefined;
 
             if (files && Array.isArray(files)) {
                 if (fileParamType === FileParamType.Array) {
@@ -114,7 +116,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             }
         });
     }
-  }, [fileParams, flowData, node, updateNodeInternals]);
+  }, [fileParams, myFlowData]);
 
 
 
@@ -126,7 +128,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
    * and notify our connections of hte change.
    */
   useEffect(() => {
-    const executed = nodeState === NodeState.Executed; 
+    const executed = myExecutionData.state === NodeState.Executed; 
     const fetchAndResolveFiles = async (fileIds: string[]) => {
         const resolvedFiles = [];
         for (const file_id of fileIds) {
@@ -142,8 +144,10 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     };
 
     const processAutomationOutput = async () => {
-        try {
-            if (isScriptNode && executed && executionData.path === scriptInterfacePath) {
+      const automationOutput = myExecutionData.output as AutomationOutputType & { workers?: { [key: string]: { input?: JSONSchema, output?: JSONSchema } } };
+ 
+      try {
+            if (isScriptNode && executed && myExecutionData.path === scriptInterfacePath) {
                 if (automationOutput.workers) {
                     const thisAutomation = automationOutput.workers?.[scriptPath] || {};
                     const automationTask = parseAutomation(node.id, {
@@ -155,7 +159,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
                     });
                     setInputSpec(automationTask[0].spec.input);
                     setOutputSpec(automationTask[0].spec.output);
-                    executionData.state = NodeState.Clean;
+                    myExecutionData.state = NodeState.Clean;
                 }
             } else if (executed) {
                 if (automationOutput.files) {
@@ -169,7 +173,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
                         }
                     }
                 }
-                executionData.state = NodeState.Done;
+                myExecutionData.state = NodeState.Done;
             }
             if (automationOutput && automationOutput.message) {
                 setExecMessage(automationOutput.message as string);
@@ -178,22 +182,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             }
         } catch (error) {
             console.error('Error parsing worker output', error);  
-            executionData.state = NodeState.Error;
+            myExecutionData.state = NodeState.Error;
         }
     };
 
     processAutomationOutput();
-}, [
-  executionData, 
-  isScriptNode, 
-  node, 
-  nodeState, 
-  notifyTargets, 
-  parseAutomation, 
-  setFlowData, 
-  automationOutput, 
-  getFile
-]);
+},  [ myExecutionData ]);
 
   const inputPositions = Array.from(Object.keys(fileParams))
     .map((_, index) => `${(index + 1) * (100 / (Object.keys(fileParams).length + 1))}%`);
@@ -224,7 +218,7 @@ def runAutomation(request: RequestModel, responder: ResultPublisher) -> Response
       <p>State: {nodeState}</p>
 
       <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
-      <AutomationOutputs key={JSON.stringify(outputSpec)} outputSchema={outputSpec} outputData={automationOutput || {}} onFileOutputDetected={handleFileOutputDetected} />
+      <AutomationOutputs key={JSON.stringify(outputSpec)} outputSchema={outputSpec} outputData={myExecutionData.output || {}} onFileOutputDetected={handleFileOutputDetected} />
 
       {/* Render handles for FileParameter inputs */}
       {Array.from(Object.keys(fileParams)).map((paramKey, index) => (
