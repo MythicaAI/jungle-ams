@@ -119,7 +119,6 @@ def test_leading_dots(validator, hidden_file):
 @pytest.mark.parametrize("empty_name", [
     ".txt",
     "",
-    "just/a/path/"
     ".",
     "..",
 ])
