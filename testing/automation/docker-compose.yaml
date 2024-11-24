@@ -11,8 +11,8 @@ services:
       - web
       - storage
   houdini-worker:
-    container_name: houdini-worker
-    image: mythica-houdini-worker:latest
+    container_name: houdini
+    image: mythica-auto-houdini:latest
     networks:
       - web
       - storage
@@ -24,8 +24,4 @@ networks:
   web:
     driver: bridge
     name: web
-    external: true
-  observe:
-    driver: bridge
-    name: observe
     external: true
