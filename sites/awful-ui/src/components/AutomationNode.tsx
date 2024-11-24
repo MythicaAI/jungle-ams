@@ -187,7 +187,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     };
 
     processAutomationOutput();
-},  [ myExecutionData ]);
+},  [myExecutionData, isScriptNode, node.id, getFile,  notifyTargets, parseAutomation, setFlowData]);
 
   const inputPositions = Array.from(Object.keys(fileParams))
     .map((_, index) => `${(index + 1) * (100 / (Object.keys(fileParams).length + 1))}%`);
