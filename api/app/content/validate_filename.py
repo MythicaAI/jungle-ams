@@ -102,10 +102,6 @@ class FileInfo(BaseModel):
             raise ValueError(
                 'Filename must have a name part, not just extension',
             )
-        if not ext:
-            raise ValueError(
-                'File extensions are required'
-            )
 
         if ext.lower() in dangerous_extensions:
             raise ValueError(
