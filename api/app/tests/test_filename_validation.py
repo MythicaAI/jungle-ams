@@ -29,116 +29,108 @@ def test_unicode_normalization(validator):
     assert "non-normalized Unicode characters" in str(exc.value)
 
 
-def test_directory_traversal(validator):
-    malicious_paths = [
-        "../file.txt",
-        "../../file.txt",
-        "/etc/passwd",
-        "folder/../file.txt",
-        "..\\file.txt",  # Windows style
-        "folder\\..\\file.txt",  # Windows style
-    ]
-
-    for path in malicious_paths:
-        with pytest.raises(ValidationError) as exc:
-            validator(path)
-        assert "directory traversal patterns" in str(exc.value) \
-               or "period" in str(exc.value) \
-               or "can only" in str(exc.value) \
-               or "contains invalid" in str(exc.value) \
-               or "forward slash" in str(exc.value)
+@pytest.mark.parametrize("malicious_paths", [
+    "../file.txt",
+    "../../file.txt",
+    "/etc/passwd",
+    "folder/../../file.txt",
+    "..\\file.txt",  # Windows style
+    "folder\\..\\file.txt",  # Windows style
+])
+def test_directory_traversal(validator, malicious_paths):
+    with pytest.raises(ValidationError) as exc:
+        validator(malicious_paths)
+    assert "directory traversal patterns" in str(exc.value) \
+           or "period" in str(exc.value) \
+           or "can only" in str(exc.value) \
+           or "contains invalid" in str(exc.value) \
+           or "forward slash" in str(exc.value)
 
 
-def test_null_bytes(validator):
-    malicious_nulls = [
-        "file\x00.txt",
-        "file\u0000.txt",
-        "malicious\x00hidden.txt",
-    ]
-
-    for filename in malicious_nulls:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "null bytes" in str(exc.value)
+@pytest.mark.parametrize("malicious_nulls", [
+    "file\x00.txt",
+    "file\u0000.txt",
+    "malicious\x00hidden.txt",
+])
+def test_null_bytes(validator, malicious_nulls):
+    with pytest.raises(ValidationError) as exc:
+        validator(malicious_nulls)
+    assert "null bytes" in str(exc.value)
 
 
-def test_invalid_characters(validator):
-    invalid_chars = [
-        "file<.txt",
-        "file>.txt",
-        'file".txt',
-        "file:.txt",
-        "file?.txt",
-        "file*.txt",
-        "file|.txt",
-        "file/.txt",
-        "file\\.txt",
-    ]
-
-    for filename in invalid_chars:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "invalid characters" in str(exc.value) \
-               or "can only" in str(exc.value)
-
-
-def test_control_characters(validator):
-    control_chars = [
-        "file\n.txt",  # newline
-        "file\r.txt",  # carriage return
-        "file\t.txt",  # tab
-        "file\b.txt",  # backspace
-        "file\f.txt",  # form feed
-    ]
-
-    for filename in control_chars:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "control characters" in str(exc.value)
+@pytest.mark.parametrize("invalid_chars", [
+    "file<.txt",
+    "file>.txt",
+    'file".txt',
+    "file:.txt",
+    "file?.txt",
+    "file*.txt",
+    "file|.txt",
+    "file/.txt",
+    "file\\.txt",
+])
+def test_invalid_characters(validator, invalid_chars):
+    with pytest.raises(ValidationError) as exc:
+        validator(invalid_chars)
+    assert "invalid characters" in str(exc.value) \
+           or "can only" in str(exc.value) \
+           or "must have a name" in str(exc.value)
 
 
-def test_leading_trailing_spaces(validator):
-    invalid_spaces = [
-        " file.txt",
-        "file.txt ",
-        "  file.txt",
-        "file.txt  ",
-    ]
-
-    for filename in invalid_spaces:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "start or end with spaces" in str(exc.value)
-
-
-def test_leading_dots(validator):
-    hidden_files = [
-        ".hidden.txt",
-        "..file.txt",
-        ".ssh.txt",
-    ]
-
-    for filename in hidden_files:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "start with a period" in str(exc.value)
+@pytest.mark.parametrize("control_chars", [
+    "file\n.txt",  # newline
+    "file\r.txt",  # carriage return
+    "file\t.txt",  # tab
+    "file\b.txt",  # backspace
+    "file\f.txt",  # form feed
+])
+def test_control_characters(validator, control_chars):
+    with pytest.raises(ValidationError) as exc:
+        validator(control_chars)
+    assert "control characters" in str(exc.value)
 
 
-def test_empty_filename(validator):
-    empty_names = [
-        ".txt",
-        "",
-        ".",
-        "..",
-    ]
+@pytest.mark.parametrize("invalid_space", [
+    " file.txt",
+    "file.txt ",
+    "  file.txt",
+    "file.txt  ",
+]
+                         )
+def test_leading_trailing_spaces(validator, invalid_space):
+    with pytest.raises(ValidationError) as exc:
+        validator(invalid_space)
+    assert "start or end with spaces" in str(exc.value)
 
-    for filename in empty_names:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "must have a name part" in str(exc.value) \
-               or "min_length" in str(exc.value) \
-               or "period" in str(exc.value) \
-               or "at least 1" in str(exc.value)
+
+@pytest.mark.parametrize("hidden_file", [
+    ".hidden.txt",
+    "..file.txt",
+    "path/.hidden",
+    ".ssh.txt",
+])
+def test_leading_dots(validator, hidden_file):
+    with pytest.raises(ValidationError) as exc:
+        validator(hidden_file)
+    assert "start with a period" in str(exc.value) \
+           or "have a name part" in str(exc.value)
+
+
+@pytest.mark.parametrize("empty_name", [
+    ".txt",
+    "",
+    "just/a/path/"
+    ".",
+    "..",
+])
+def test_empty_filename(validator, empty_name):
+    with pytest.raises(ValidationError) as exc:
+        validator(empty_name)
+    assert "must have a name part" in str(exc.value) \
+           or "min_length" in str(exc.value) \
+           or "period" in str(exc.value) \
+           or "at least 1" in str(exc.value) \
+           or "extensions are required" in str(exc.value)
 
 
 @pytest.mark.parametrize("dangerous_ext", [
@@ -158,25 +150,23 @@ def test_dangerous_extensions(validator, dangerous_ext):
     assert "extension is potentially dangerous" in str(exc.value)
 
 
-def test_invalid_patterns(validator):
-    invalid_patterns = [
-        "file@.txt",
-        "file#.txt",
-        "file$.txt",
-        "file%.txt",
-        "file^.txt",
-        "file&.txt",
-        "file+.txt",
-        "file=.txt",
-        "file`.txt",
-        "file{}.txt",
-        "file[].txt",
-    ]
-
-    for filename in invalid_patterns:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "can only contain letters" in str(exc.value)
+@pytest.mark.parametrize("invalid_pattern", [
+    "file@.txt",
+    "file#.txt",
+    "file$.txt",
+    "file%.txt",
+    "file^.txt",
+    "file&.txt",
+    "file+.txt",
+    "file=.txt",
+    "file`.txt",
+    "file{}.txt",
+    "file[].txt",
+])
+def test_invalid_patterns(validator, invalid_pattern):
+    with pytest.raises(ValidationError) as exc:
+        validator(invalid_pattern)
+    assert "can only contain letters" in str(exc.value)
 
 
 def test_path_length(validator):
@@ -189,21 +179,19 @@ def test_path_length(validator):
     assert "at most" in str(exc.value)
 
 
-def test_valid_filenames(validator):
-    valid_files = [
-        "normal.txt",
-        "report-2024.pdf",
-        "my file.png",
-        "sample_data.csv",
-        "image-1.jpg",
-        "document1.pdf",
-        "sub-path/myhda.hda",
-        "two/paths/something.hdalc"
-    ]
-
-    for filename in valid_files:
-        # Should not raise any exception
-        assert validator(filename) is True
+@pytest.mark.parametrize("valid_file", [
+    "normal.txt",
+    "report-2024.pdf",
+    "my file.png",
+    "sample_data.csv",
+    "image-1.jpg",
+    "document1.pdf",
+    "sub-path/myhda.hda",
+    "two/paths/something.hdalc"
+])
+def test_valid_filenames(validator, valid_file):
+    # Should not raise any exception
+    assert validator(valid_file) is True
 
 
 @pytest.mark.parametrize("test_input,expected_message", [
@@ -222,14 +210,13 @@ def test_combined_validations(validator, test_input, expected_message):
     assert expected_message in str(exc.value)
 
 
-def test_case_insensitive_extensions(validator):
-    uppercase_extensions = [
-        "malicious.EXE",
-        "script.VBS",
-        "macro.XLSM",
-    ]
-
-    for filename in uppercase_extensions:
-        with pytest.raises(ValidationError) as exc:
-            validator(filename)
-        assert "extension is potentially dangerous" in str(exc.value)
+@pytest.mark.parametrize("uppercase_extension", [
+    "malicious.EXE",
+    "script.VBS",
+    "macro.XLSM",
+]
+                         )
+def test_case_insensitive_extensions(validator, uppercase_extension):
+    with pytest.raises(ValidationError) as exc:
+        validator(uppercase_extension)
+    assert "extension is potentially dangerous" in str(exc.value)

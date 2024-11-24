@@ -63,6 +63,9 @@ class FileInfo(BaseModel):
                 'Filename contains null bytes',
             )
 
+        # Collapse directories
+        value = os.path.relpath(value)
+
         if value.startswith('.'):
             raise ValueError(
                 'Filename cannot start with a period',
@@ -92,11 +95,16 @@ class FileInfo(BaseModel):
                 'Filename cannot start or end with spaces',
             )
 
-        # Validate name and extension
+        # Validate name and extension is not empty or path/.hidden
         name, ext = os.path.splitext(value)
-        if not name:
+        basename = os.path.basename(value)
+        if not name or not basename or basename.startswith('.'):
             raise ValueError(
                 'Filename must have a name part, not just extension',
+            )
+        if not ext:
+            raise ValueError(
+                'File extensions are required'
             )
 
         if ext.lower() in dangerous_extensions:
