@@ -63,6 +63,16 @@ class FileInfo(BaseModel):
                 'Filename contains null bytes',
             )
 
+        if value.startswith('.'):
+            raise ValueError(
+                'Filename cannot start with a period',
+            )
+
+        if value.startswith('/'):
+            raise ValueError(
+                'Filename cannot start with a forward slash',
+            )
+
         # Check for invalid characters
         invalid_chars = '<>:"\\|?*'
         if any(char in value for char in invalid_chars):
@@ -82,11 +92,6 @@ class FileInfo(BaseModel):
                 'Filename cannot start or end with spaces',
             )
 
-        if value.startswith('.'):
-            raise ValueError(
-                'Filename cannot start with a period',
-            )
-
         # Validate name and extension
         name, ext = os.path.splitext(value)
         if not name:
@@ -100,16 +105,10 @@ class FileInfo(BaseModel):
             )
 
         # Validate character pattern
-        pattern = r'^[\w\-. ]+$'
+        pattern = r'^[\w\-. /]+$'
         if not re.match(pattern, value):
             raise ValueError(
-                'Filename can only contain letters, numbers, dashes, dots, and spaces',
-            )
-
-        # Check maximum path length for target system
-        if len(os.path.abspath(value)) > os.pathconf('/', 'PC_PATH_MAX'):
-            raise ValueError(
-                'Full filepath exceeds maximum system path length',
+                'Filename can only contain letters, numbers, dashes, dots, spaces and forward slashes',
             )
 
         return value

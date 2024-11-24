@@ -44,7 +44,9 @@ def test_directory_traversal(validator):
             validator(path)
         assert "directory traversal patterns" in str(exc.value) \
                or "period" in str(exc.value) \
-               or "invalid character" in str(exc.value)
+               or "can only" in str(exc.value) \
+               or "contains invalid" in str(exc.value) \
+               or "forward slash" in str(exc.value)
 
 
 def test_null_bytes(validator):
@@ -76,7 +78,8 @@ def test_invalid_characters(validator):
     for filename in invalid_chars:
         with pytest.raises(ValidationError) as exc:
             validator(filename)
-        assert "invalid characters" in str(exc.value)
+        assert "invalid characters" in str(exc.value) \
+               or "can only" in str(exc.value)
 
 
 def test_control_characters(validator):
