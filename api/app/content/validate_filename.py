@@ -21,8 +21,8 @@ dangerous_extensions = {
     '.xlsm',
 
     # Other potentially dangerous formats
-    '.chm', '.hlp', '.wsf', '.wsc', '.wsh', '.application', '.gadget',
-    '.msp', '.mst', '.ops', '.pcd', '.prg', '.wch', '.workflow',
+    '.chm', '.hlp', '.application',
+    '.mst', '.ops', '.pcd', '.prg', '.wch', '.workflow',
 
     # Archive formats that could contain dangerous files
     # TODO: archive validation
