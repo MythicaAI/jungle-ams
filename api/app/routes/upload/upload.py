@@ -15,6 +15,7 @@ from sqlmodel import and_, select, update
 import db.index as db_index
 from assets.repo import convert_version_input, process_join_results, select_asset_version
 from config import app_config
+from content.validate_filename import validate_filename
 from context import RequestContext
 from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
 from db.connection import get_session
@@ -70,6 +71,7 @@ def upload_internal(
     ctx.profile_id = profile_id
 
     filename = upload_file.filename
+    validate_filename(filename)
     extension = filename.rpartition(".")[-1].lower()
 
     ctx.extension = extension

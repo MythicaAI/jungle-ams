@@ -8,18 +8,18 @@ from http import HTTPStatus
 from typing import Any, Dict, Iterable, Optional, Union
 
 import sqlalchemy
-from sqlalchemy.sql.functions import now as sql_now
-from sqlalchemy.orm.exc import NoResultFound
 from fastapi import HTTPException
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col, desc, insert, or_, select, update
 
 import auth.roles
 from auth.authorization import Scope, validate_roles
 from auth.generate_token import SessionProfile
-
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
+from content.validate_filename import validate_filename
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
     org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
@@ -246,7 +246,7 @@ def select_asset_version(session: Session,
     if version == ZERO_VERSION:
         asset = session.exec(select(Asset).where(
             Asset.asset_seq == asset_id_to_seq(asset_id))
-        .where(Asset.deleted == None)).first()
+                             .where(Asset.deleted == None)).first()
         if asset is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} found")
         results = [(asset, AssetVersion(
@@ -382,6 +382,7 @@ def resolve_asset_file_reference(
         file_reference: Union[str, AssetFileReference]) -> dict:
     file_id = file_reference.file_id
     file_name = file_reference.file_name
+    validate_filename(file_name)
     if file_id is None or file_name is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f"file_id and file_name required on {str(file_reference)}")
@@ -520,7 +521,7 @@ def create_version(session: Session,
         asset_seq = asset_id_to_seq(asset_id)
         update_result = session.exec(update(Asset).values(
             org_seq=org_seq)
-            .where(Asset.deleted == None).where(
+        .where(Asset.deleted == None).where(
             Asset.asset_seq == asset_seq).where(
             Asset.owner_seq == profile_seq))
         if update_result.rowcount != 1:
@@ -529,8 +530,8 @@ def create_version(session: Session,
     # Only author of an asset can change the asset's author
     if create_or_update == CreateOrUpdate.UPDATE:
         if (
-            r.author_id
-            and scope.asset_version.author_seq == scope.profile.profile_seq
+                r.author_id
+                and scope.asset_version.author_seq == scope.profile.profile_seq
         ):
             values['author_seq'] = profile_id_to_seq(r.author_id)
     else:
@@ -612,8 +613,6 @@ def delete_version(session: Session, asset_id: str, version_str: str, profile_se
         raise HTTPException(HTTPStatus.FORBIDDEN,
                             detail="asset version be deleted by the asset owner")
     session.commit()
-
-
 
 
 def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionProfile):
@@ -737,7 +736,7 @@ def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResu
 def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
     results = session.exec(select(Asset, AssetVersion).outerjoin(
         AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-        .where(Asset.deleted == None, AssetVersion.deleted == None).where(
+    .where(Asset.deleted == None, AssetVersion.deleted == None).where(
         Asset.asset_seq == asset_id_to_seq(asset_id)).order_by(
         desc(AssetVersion.major),
         desc(AssetVersion.minor),
