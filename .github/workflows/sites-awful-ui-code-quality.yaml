@@ -1,0 +1,45 @@
+name: sites-awful-ui-code-quality
+
+on:
+  push:
+    paths:
+      - 'sites/awful-ui/**'
+
+defaults:
+  run:
+    working-directory: sites/awful-ui
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: sites/awful-ui/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install
+      - run: pnpm run lint
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: sites/awful-ui/pnpm-lock.yaml
+      - name: install dependencies
+        run: pnpm install
+      - run: pnpm run test
