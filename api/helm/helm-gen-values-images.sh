@@ -8,12 +8,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 OUTPUT_FILE=${OUTPUT_FILE:-"$SCRIPT_DIR/api/values-images.yaml"}
 
+TAG_PREFIX=${1:-versions}
+
 # Function to get tags for a specific image from local git
 get_image_tag() {
     local image_name=$1
 
     # Query version tag for the image name
-    git tag -l "versions/${image_name}/*" --sort=-v:refname | head -n 1
+    git tag -l "${TAG_PREFIX}/${image_name}/*" --sort=-v:refname | head -n 1
 }
 
 # Function to extract version from tag
