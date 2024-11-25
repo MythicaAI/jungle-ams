@@ -36,52 +36,27 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for full context
 
+      - name: Fetch tags
+        run: git fetch --prune --unshallow --tags
+
       - name: Display input and context
         run: |
-          echo "Input value: ${{ github.event.inputs.exampleInput }}"
+          echo "Input value: ${{ github.event.inputs.component }}"
           echo "Triggered by: ${{ github.event_name }}"
           echo "Repository: ${{ github.repository }}"
           echo "Branch: ${{ github.ref }}"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+    
+      - uses: nick-fields/retry@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'  # Enable npm caching
-
-      # Add error handling
-      - name: Example task with error handling
-        run: |
-          set -e  # Exit immediately if a command exits with non-zero status
-          {
-            # Your commands here
-            echo "Executing main task..."
-          } || {
-            echo "Error: Task failed"
-            exit 1
-          }
-        shell: bash
-
-      # Add conditional step
-      - name: Production-only step
-        if: github.event.inputs.environment == 'production'
-        run: echo "Executing production-specific tasks"
-
-      # Add artifact upload
-      - name: Upload artifacts
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            dist/
-            *.log
-          retention-days: 5
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 10
+          command: |
+            github/tagging/tag-for-release.sh ${{ github.event.inputs.component }} > $GITHUB_STEP_SUMMARY
 
       # Add status notification
       - name: Notify on failure
@@ -93,5 +68,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: '❌ Workflow failed. Please check the logs.'
+              body: '❌ Promotion failed. Please check the logs.'
             })

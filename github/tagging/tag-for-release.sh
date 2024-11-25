@@ -23,7 +23,9 @@ tag_for_release() {
     fi
 
     release_tag=$(echo $tag | sed s/^versions/releases/)
-    github tag $tag $release_tag
+    git tag $release_tag $tag
+    git push origin $release_tag
+    echo "## Promoted ${tag} to ${release_tag}"
 }
 
 tag_all_for_release() {
