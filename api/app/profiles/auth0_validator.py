@@ -1,13 +1,13 @@
 """Implements the bridging logic to the auth0 backend system as a swappable API"""
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from http import HTTPStatus
 import httpx
 import jwt
 from pydantic import BaseModel
 
+from auth.generate_token import _AUDIENCE, _SECRET
 from config import app_config
 
 log = logging.getLogger(__name__)
@@ -44,35 +44,38 @@ class AuthTokenValidator(ABC):
 class Auth0ValidatorFake(AuthTokenValidator):
     """Fake validator for auth0"""
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super().__init__()
-        default_token = {
-            "sub": "googleoth|1096710971",
-            "iat": datetime.now(timezone.utc).second,
-            "exp": (datetime.now(timezone.utc) + timedelta(minutes=10)).second,
-            "scope": "openid profile email"
-        }
-        default_profile = {
-            "email": "test@test.com",
-            "email_verified": True,
-            "name": "Test User",
-            "nickname": "test"
-        }
-        for k, v in kwargs.items():
-            if k in default_token:
-                default_token[k] = v
-            elif k in default_profile:
-                default_profile[k] = v
-        self.fake_token = ValidTokenPayload(**default_token)
-        self.fake_profile = UserProfile(**default_profile)
+        self.signing_key = None
+        self.alg = []
 
-    async def validate(self, _: str) -> ValidTokenPayload:
-        """Return a faked validation response"""
-        return self.fake_token
+    async def validate(self, token: str) -> ValidTokenPayload:
+        """Return a decoded validation response from token"""
+        
+        decoded_jwt = jwt.decode(
+            jwt=token,
+            key=_SECRET,
+            audience=_AUDIENCE,
+            algorithms=['HS256'])
+        return ValidTokenPayload(
+            sub=decoded_jwt['sub'],
+            scope=decoded_jwt['scope'],
+            iat=decoded_jwt['iat'],
+            exp=decoded_jwt['exp'])
 
     async def query_user_profile(self, token: str) -> UserProfile:
-        """Return a faked user profile"""
-        return self.fake_profile
+        """Return a decode user profile from token"""
+        decoded_jwt = jwt.decode(
+            jwt=token,
+            key=_SECRET,
+            audience=_AUDIENCE,
+            algorithms=['HS256'])
+        return UserProfile(
+            email=decoded_jwt["email"],
+            email_verified=decoded_jwt.get("email_verified", False),
+            nickname=decoded_jwt.get("nickname", ""),
+            name=decoded_jwt.get("name", ""),
+        )
 
 
 class Auth0Validator(AuthTokenValidator):

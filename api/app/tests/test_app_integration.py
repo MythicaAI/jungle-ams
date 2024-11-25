@@ -12,7 +12,7 @@ from assets.repo import AssetFileReference
 from routes.type_adapters import register_adapters
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import assert_status_code, make_random_content, random_str, refresh_auth_token
+from tests.shared_test import ProfileTestObj, assert_status_code, make_random_content, random_str, refresh_auth_token
 
 test_profile_name = "test-profile"
 test_profile_full_name = "test-profile-full-name"
@@ -31,7 +31,7 @@ test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader):
     register_adapters()
-    test_profile = create_profile(name=test_profile_name,
+    test_profile: ProfileTestObj = create_profile(name=test_profile_name,
                                   email=test_profile_email,
                                   full_name=test_profile_full_name,
                                   signature=test_profile_signature,

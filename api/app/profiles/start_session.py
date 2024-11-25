@@ -149,57 +149,8 @@ async def start_session_with_token_validator(token: str, validator: AuthTokenVal
         # with an email verification on our side before allowing the new sub to take over the profile
         # select the oldest profile, what to do with the rest?
         oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
-        session_start = await associate_profile(session, oldest_profile, valid_token, user_profile)
+        session_start = await create_profile_locator_oid(session, valid_token, oldest_profile.profile_seq)
         return session_start
-
-
-async def associate_profile(
-        session: Session,
-        profile: Profile,
-        valid_token: ValidTokenPayload,
-        user_profile: UserProfile) -> SessionStartResponse:
-    if user_profile.email_verified:
-        validate_email_state = 1
-    else:
-        validate_email_state = 0
-    profile_insert = session.exec(insert(Profile).values(
-        name=user_profile.nickname,
-        full_name=user_profile.name,
-        email=user_profile.email,
-        email_validate_state=validate_email_state,
-        location=valid_token.sub,
-    ))
-    profile_seq = profile_insert.inserted_primary_key[0]
-
-    session.exec(insert(ProfileLocatorOID).values(
-        sub=valid_token.sub,
-        owner_seq=profile_seq,
-    ))
-    session.commit()
-
-    profile = session.exec(select(Profile).where(Profile.profile_seq == profile_seq)).one_or_none()
-    if profile is None:
-        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
-    return start_session(session, profile.profile_seq, valid_token.sub)
-
-
-async def merge_profile(
-        session: Session,
-        valid_token: ValidTokenPayload,
-        user_profile: UserProfile,
-        _: ProfileLocatorOID) -> SessionStartResponse:
-    results = session.exec(select(Profile).where(col(Profile.email) == user_profile.email)).all()
-    profile = None
-    if results is None or len(results) == 0:
-        owner_seq = await create_profile_for_oid(session, valid_token, user_profile)
-        await create_profile_locator_oid(session, valid_token, owner_seq)
-    else:
-        profile = next(sorted(results, key=lambda p: p.profile_seq))
-
-    if profile is None:
-        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
-    return start_session(session, profile.profile_seq, valid_token.sub)
-
 
 def email_validate_state(email_verified) -> int:
     if email_verified:

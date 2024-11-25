@@ -4,13 +4,14 @@ Test the session creation from different contexts including negative cases
 
 # pylint: disable=redefined-outer-name, unused-import
 
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+import random
 
+import jwt
 from munch import munchify
-from sqlmodel import col, select
 
-from db.connection import get_session
-from db.schema.profiles import ProfileSession
+from auth.generate_token import _AUDIENCE, _SECRET
 from main import app
 from profiles.auth0_validator import Auth0ValidatorFake
 from routes.sessions.sessions import get_auth_validator
@@ -19,47 +20,7 @@ from tests.fixtures.create_profile import create_profile
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
-def test_start_session_direct(api_base, client, create_profile):
-    # main test case
-    test_profile: ProfileTestObj = create_profile()
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert 'token' in o
-    assert 'profile' in o
-    assert len(o.token) > 8
-
-    # invalid profile ID
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id[0:7]}')
-    assert_status_code(r, HTTPStatus.BAD_REQUEST)
-
-    # missing profile ID
-    r = client.get(f'{api_base}/sessions/direct/')
-    assert_status_code(r, HTTPStatus.NOT_FOUND)
-
-    # delete the profile session
-    r = client.delete(f'{api_base}/sessions/', headers=test_profile.authorization_header())
-    assert_status_code(r, HTTPStatus.OK)
-
-
-def test_resume_session_direct(api_base, client, create_profile):
-    test_profile: ProfileTestObj = create_profile()
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert 'token' in o
-    assert 'profile' in o
-    assert len(o.token) > 8
-
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-
-    with get_session() as session:
-        ## assert token is present
-        s = session.exec(select(ProfileSession).where(col(ProfileSession.auth_token) == o.token)).one_or_none()
-        assert s is not None
-
+test_profile_email = "test@mythica.ai"
 
 def test_start_session_api_key(api_base, client, create_profile):
     test_profile: ProfileTestObj = create_profile()
@@ -86,10 +47,36 @@ def test_start_session_openid(api_base, client):
         return Auth0ValidatorFake()
 
     app.dependency_overrides[get_auth_validator] = get_fake_auth_validator
+    
+    def generate_token(payload):
+        encoded_jwt = jwt.encode(
+            payload=payload,
+            key=_SECRET,
+            algorithm='HS256')
+        return encoded_jwt
+
+    now = datetime.now(timezone.utc)
+    user_id = random.randint(1, 99999999)
+    sub = 'googleoath|' + str(user_id)
+    token = generate_token({
+        "iss": "https://dev-dtvqj0iuc5rnb6x2.us.auth0.com/",
+        "sub": sub,
+        "email": test_profile_email,
+        "email_verified": True,
+        "aud": [
+            "http://localhost:5555/v1",
+            _AUDIENCE,
+            "https://dev-dtvqj0iuc5rnb6x2.us.auth0.com/userinfo"
+        ],
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(hours=10)).timestamp()),
+        "scope": "openid profile email",
+        "azp": "4CZhQWoNm1WH8l8042LeF38qHrUTR2ax"
+    })
 
     test_data = {
-        'access_token': "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkZvRkFTbk9wWDZjY3J1TUtRd0pEQSJ9.eyJpc3MiOiJodHRwczovL2Rldi1kdHZxajBpdWM1cm5iNngyLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDEwMTEwODA0MDY1OTk0NjIwNTgzNyIsImF1ZCI6WyJodHRwOi8vbG9jYWxob3N0OjU1NTUvdjEiLCJodHRwczovL2Rldi1kdHZxajBpdWM1cm5iNngyLnVzLmF1dGgwLmNvbS91c2VyaW5mbyJdLCJpYXQiOjE3MjQ4MTY2MzMsImV4cCI6MTcyNDkwMzAzMywic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsImF6cCI6IjRDWmhRV29ObTFXSDhsODA0MkxlRjM4cUhyVVRSMmF4In0.hEisquIMeyE560laKqSj0WdWcAkZBN0y3kobtyb4lkDlyz2we7pXkhkgNnZk_TKvlm3reC4yH_CLN_Kw_QDKkPHOJXtANE_ELmqhKintoWQ9wNROdqJJ1mGSVO-YUQXWyBmMUdHeCcwbfb1D0u6m2J1t8HVEW2RVNuy16Nk7ocbMwri5jGVYd2DUT-_zO9qcgEHnjCEOY-Q1HjMshin3tgh-H2voIAyOz3ydNghtdT4svoYJzPk6NpIMiGo6_J5H2uUlDo0wSjr2-71LV7aV9lw6bFg2F28LgpGt7HnUKEE2C0HxDDKo2y4i1LhN7alTmAGOHDX-2vEHZWjNBb9LVQ",
-        'user_id': 'googleoath|12345678'
+        'access_token': token,
+        'user_id': sub,
     }
     r = client.post(f'{api_base}/sessions/auth0-spa', json=test_data)
     assert_status_code(r, HTTPStatus.OK)
@@ -97,6 +84,7 @@ def test_start_session_openid(api_base, client):
     assert 'token' in o
     assert len(o.token) > 8
     assert o.roles == []
+    assert o.profile.email == test_profile_email
 
 
 def test_resume_session_openid():

@@ -1,15 +1,23 @@
 """Shared test routines to be used across test modules"""
 
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import logging
 import secrets
 import string
 from http import HTTPStatus
+import jwt
 
 from pydantic import BaseModel
 
-from profiles.responses import ProfileResponse, SessionStartResponse
+from munch import munchify
+
+from auth.generate_token import _AUDIENCE, _SECRET
+from main import app
+from routes.sessions.sessions import get_auth_validator
+from profiles.auth0_validator import Auth0ValidatorFake
+from profiles.responses import ProfileResponse
 
 log = logging.getLogger(__name__)
 
@@ -64,16 +72,54 @@ def make_random_content(file_ext: str) -> FileContentTestObj:
         contents=test_content,
         content_hash=hashlib.sha1(test_content).hexdigest(),
         content_type=f"application/{file_ext}",
-        size=len(test_content))
+        size=len(test_content),
+    )
 
 
-def refresh_auth_token(client, api_base, test_profile):
+async def get_fake_auth_validator() -> Auth0ValidatorFake:
+    return Auth0ValidatorFake()
+
+
+def refresh_auth_token(client, api_base, test_profile: ProfileTestObj) -> str:
     """Refresh the auth token after modifying the organization privileges"""
-    profile_id = test_profile.profile.profile_id
-    r = client.get(f"{api_base}/sessions/direct/{profile_id}")
+    app.dependency_overrides[get_auth_validator] = get_fake_auth_validator
+
+    token = test_profile.auth_token
+
+    decoded_jwt = jwt.decode(
+        jwt=token, key=_SECRET, audience=_AUDIENCE, algorithms=['HS256']
+    )
+
+    sub = decoded_jwt["location"]
+
+    def generate_token(payload):
+        encoded_jwt = jwt.encode(payload=payload, key=_SECRET,  algorithm='HS256', )
+        return encoded_jwt
+
+    now = datetime.now(timezone.utc)
+    token = generate_token(
+        {
+            "iss": "https://dev-dtvqj0iuc5rnb6x2.us.auth0.com/",
+            "sub": sub,
+            "email": decoded_jwt["email"],
+            "email_verified": True,
+            "aud": [
+                "http://localhost:5555/v1",
+                _AUDIENCE,
+                "https://dev-dtvqj0iuc5rnb6x2.us.auth0.com/userinfo",
+            ],
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(hours=10)).timestamp()),
+            "scope": "openid profile email",
+            "azp": "4CZhQWoNm1WH8l8042LeF38qHrUTR2ax",
+        }
+    )
+
+    test_data = {'access_token': token, 'user_id': sub}
+    r = client.post(f'{api_base}/sessions/auth0-spa', json=test_data)
     assert_status_code(r, HTTPStatus.OK)
-    session_response = SessionStartResponse(**r.json())
-    assert session_response.profile.profile_id == profile_id
-    assert len(session_response.token) > 0
-    auth_token = session_response.token
-    return auth_token
+    o = munchify(r.json())
+    assert 'token' in o
+    assert len(o.token) > 8
+    assert o.profile.email == decoded_jwt["email"]
+    return o.token
