@@ -10,6 +10,7 @@ on:
         default: "all"
         type: choice
         options:
+          - all
           - lets-encrypt
           - mythica-app
           - mythica-job-canary
@@ -21,10 +22,9 @@ on:
 # Define reusable environment variables
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  NODE_VERSION: '18.x'
 
 jobs:
-  example_job:
+  promote:
     runs-on: ubuntu-latest
     
     # Add timeout to prevent hanging jobs
@@ -37,9 +37,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for full context
-
       - name: Fetch tags
         run: git fetch --prune --unshallow --tags
 
@@ -57,16 +54,3 @@ jobs:
           timeout_seconds: 10
           command: |
             github/tagging/tag-for-release.sh ${{ github.event.inputs.component }} > $GITHUB_STEP_SUMMARY
-
-      # Add status notification
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '❌ Promotion failed. Please check the logs.'
-            })
