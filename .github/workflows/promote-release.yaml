@@ -26,7 +26,11 @@ env:
 jobs:
   promote:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+
     # Add timeout to prevent hanging jobs
     timeout-minutes: 10
     
