@@ -13,7 +13,7 @@ get_image_tag() {
 
 
 # Function to generate YAML for a single image
-build_release_tag() {
+tag_for_release() {
     local image_name=$1
     tag=$(get_image_tag "$image_name")
 
@@ -23,10 +23,10 @@ build_release_tag() {
     fi
 
     release_tag=$(echo $tag | sed s/^versions/releases/)
-    echo $release_tag
+    github tag $tag $release_tag
 }
 
-promote_all() {
+tag_all_for_release() {
     # Read image names from stdin (one per line) or from arguments
     IMAGES="lets-encrypt \
         mythica-app \
@@ -37,13 +37,13 @@ promote_all() {
         mythica-packager \
         mythica-web-front"
     for image_name in $IMAGES; do
-        build_release_tag "$image_name"
+        tag_for_release "$image_name"
     done
 }
 
 IMAGE_ARG=${1:-all}
 if [ "$IMAGE_ARG" == "all" ]; then
-    promote_all
+    tag_all_for_release
 else
-    build_release_tag $IMAGE_ARG
+    tag_for_release $IMAGE_ARG
 fi

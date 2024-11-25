@@ -1,0 +1,97 @@
+name: promote-release
+
+# Add multiple trigger events for flexibility
+on:
+  workflow_dispatch:  # Manual triggering
+    inputs:
+      component:
+        description: "Components to release"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - lets-encrypt
+          - mythica-app
+          - mythica-job-canary
+          - mythica-editor-build
+          - mythica-jungle3-build
+          - mythica-packager
+          - mythica-web-front
+
+# Define reusable environment variables
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NODE_VERSION: '18.x'
+
+jobs:
+  example_job:
+    runs-on: ubuntu-latest
+    
+    # Add timeout to prevent hanging jobs
+    timeout-minutes: 10
+    
+    # Add concurrency to prevent parallel runs
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for full context
+
+      - name: Display input and context
+        run: |
+          echo "Input value: ${{ github.event.inputs.exampleInput }}"
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'  # Enable npm caching
+
+      # Add error handling
+      - name: Example task with error handling
+        run: |
+          set -e  # Exit immediately if a command exits with non-zero status
+          {
+            # Your commands here
+            echo "Executing main task..."
+          } || {
+            echo "Error: Task failed"
+            exit 1
+          }
+        shell: bash
+
+      # Add conditional step
+      - name: Production-only step
+        if: github.event.inputs.environment == 'production'
+        run: echo "Executing production-specific tasks"
+
+      # Add artifact upload
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            *.log
+          retention-days: 5
+
+      # Add status notification
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ Workflow failed. Please check the logs.'
+            })
