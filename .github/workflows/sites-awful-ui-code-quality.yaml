@@ -1,9 +1,20 @@
 name: sites-awful-ui-code-quality
 
 on:
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'api/app/**'
+      - 'libs/python/**'
+      - '.github/workflows/api-app-ci.yaml'
+
   push:
+    branches:
+      - '**'
     paths:
       - 'sites/awful-ui/**'
+      - '.github/workflows/sites-awful-ui-code-quality.yaml'
 
 defaults:
   run:
@@ -32,6 +43,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v3
         with:
           version: 9
@@ -43,3 +55,15 @@ jobs:
       - name: install dependencies
         run: pnpm install
       - run: pnpm run test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+      - uses: docker/build-push-action@v5
+        with:
+          context: sites/awful-ui
+          tags: test
+
