@@ -71,3 +71,10 @@ api:
     nginxConfig: "/etc/nginx/nginx-gke.conf"
     nodeSelector: scale-out
     terminationGracePeriodSeconds: 15
+  canary:
+    name: "canary"
+    replicas: 0
+    maxUnavailable: 0
+    maxSurge: 0
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
