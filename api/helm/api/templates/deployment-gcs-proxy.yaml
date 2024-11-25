@@ -22,7 +22,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: gcs-proxy
-          image: "{{ .Values.imageRepository }}/mythica-gcs-proxy:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-gcs-proxy") }}
           imagePullPolicy: Always
           resources:
             requests:

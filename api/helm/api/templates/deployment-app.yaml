@@ -25,7 +25,7 @@ spec:
       serviceAccountName: api
       containers:
         - name: app
-          image: "{{ .Values.imageRepository }}/mythica-app:{{ $componentContext.tag }}"
+          image: {{ include "api.image" (list . "mythica-app") }}
           imagePullPolicy: Always
           resources:
             requests:
@@ -47,6 +47,18 @@ spec:
               value: "3"
             - name: API_BASE_URI
               value: {{ .Values.api.app.base_url }}
+            - name: TELEMETRY_ENABLE
+              value: "{{ .Values.api.app.telemetry_enable }}"
+            - name: TELEMETRY_ENDPOINT
+              value: {{ .Values.api.app.telemetry_endpoint }}
+            - name: NAMESPACE
+              value: {{ .Values.namespace }}
+            - name: AUTH0_DOMAIN
+              value: {{ .Values.auth0.domain}}
+            - name: AUTH0_CLIENT_ID
+              value: {{ .Values.auth0.clientId }}
+            - name: AUTH0_AUDIENCE
+              value: {{ .Values.auth0.audience }}
           ports:
             - containerPort: 5555
               name: http-api

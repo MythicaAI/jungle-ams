@@ -137,7 +137,7 @@ def get_node_type(node_type, include_code = True):
     # Loop through all the parameters of the node for defaults and to
     # sort out ramp parms. 
     for parmtemp in node_type.parmTemplates():
-        if _isValueParm(parmtemp):
+        if _isValueParm(parmtemp) and not parmtemp.isHidden():
             defaults = _get_parm_defaults(parmtemp)
             if defaults is not None:
                 nt["defaults"][parmtemp.name()] = defaults
@@ -185,25 +185,30 @@ def create_network(network_data, parent_node):
 
     nodes = network_data.get("networks", [])
     for node_data in nodes:
-        if parent_node is None:
-            parent_node = hou.node('/')
+        try:
+            if parent_node is None:
+                if node_data["id"]!='/':
+                    raise Exception(f"Cannot import complete object networks into a root Target path - {node_data['id']}")
+                node = hou.node('/')
 
-        if parent_node.path() == '/':
-            if node_data["id"]!='/':
-                raise Exception("Cannot import complete object networks into a non-root Target path ")
-            node = parent_node.node(node_data["id"])
-        else:
-            node = parent_node.createNode(node_data["type"], node_name=node_data["id"])
-            _set_nodeinfo(node, node_data)
-        # Recursive call for subnetworks
-        if "networks" in node_data and not node.isLockedHDA():
-            create_network(node_data, node)
+            elif parent_node.path() == '/':
+                node = parent_node.node(node_data["id"])
+            else:
+                try:
+                    node = parent_node.createNode(node_data["type"], node_name=node_data["id"])
+                except:
+                    node = parent_node.createNode("subnet", node_name=node_data["id"])
+                _set_nodeinfo(node, node_data)
+            # Recursive call for subnetworks
+            if "networks" in node_data and not node.isLockedHDA():
+                create_network(node_data, node)
+        except Exception as e:
+            print(f"Error creating network: {e} {node_data['id']}")
 
     # Create connections
     _create_connections(nodes, parent_node)
-    if parent_node.isNetwork():
+    if parent_node and parent_node.isNetwork():
         parent_node.layoutChildren()
-
 
 """
 depth-first (if `traverse_subnet`)  traversal of the `_node` and its children.
@@ -938,9 +943,12 @@ def _get_parm_defaults(parmtemp):
     if hasattr(parmtemp, "maxValue"):
         _parm["max"] = parmtemp.maxValue()
 
-    if isinstance(parmtemp, hou.MenuParmTemplate):
-        _parm["menu_items"] = parmtemp.menuItems()
-        _parm["menu_labels"] = parmtemp.menuLabels()
+    if isinstance(parmtemp, hou.MenuParmTemplate) or isinstance(parmtemp, hou.StringParmTemplate) or isinstance(parmtemp, hou.IntParmTemplate):
+        menu_items = parmtemp.menuItems()
+        menu_labels = parmtemp.menuLabels()
+        if len(menu_items) > 0 and len(menu_labels) > 0:
+            _parm["menu_items"] = menu_items
+            _parm["menu_labels"] = menu_labels
 
     default = None
     if isinstance(parmtemp, hou.RampParmTemplate):

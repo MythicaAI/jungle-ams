@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mythica-app"
-version = "0.0.1"
+version = "1.0.0"
 description = "FastAPI service to provide asset services."
 authors = ["Jacob Repp <jacobrepp@gmail.com>"]
 license = "MIT"
@@ -8,36 +8,48 @@ readme = "README.md"
 homepage = "https://github.com/MythicaAI/infra/api/app"
 repository = "https://github.com/MythicaAI/infra"
 keywords = ["game assets", "file management", "sqlite", "cache", "graph", "games"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "<4.0,>=3.10"
 minio = "^7.2.5"
-sqlalchemy = "2.0.31"
-asyncpg = "^0.29.0"
+sqlalchemy = "2.0.36"
+asyncpg = "0.30.0"
 psycopg2-binary = "^2.9.9"
 google-auth = "^2.29.0"
 google-cloud-storage = "^2.16.0"
-fastapi = "0.111.1"
+fastapi = { version = "0.115.4", extras = ["standard"] }
 pydantic-settings = "^2.3.0"
-python-multipart = "^0.0.9"
+python-multipart = "0.0.17"
 jinja2 = "^3.1.4"
-sqlmodel = "^0.0.19"
+sqlmodel = "0.0.22"
 prometheus-fastapi-instrumentator = "^7.0.0"
 typing-extensions = "^4.12.2"
 alembic = "^1.13.1"
 asyncio = "3.4.3"
 python-json-logger = "2.0.7"
 base58 = "2.1.1"
-authlib = "1.3.1"
-pyjwt = { version = "2.8.0", extras = ["crypto"] }
+authlib = "1.3.2"
+pyjwt = { version = "2.9.0",  extras = ["crypto"] }
 fastapi-auth0 = "0.5.0"
-starlette = "0.37.2"
-tzdata = "2024.1"
-websockets = "13.0.1"
-redis = "5.1.0b7"
+starlette = "0.41.2"
+tzdata = "2024.2"
+websockets = "13.1"
+redis = "5.2.0"
 ripple = { path = "../../libs/python/ripple", develop = true }
 cryptid = { path = "../../libs/python/cryptid", develop = true }
 better-profanity = "^0.7.0"
+opentelemetry-instrumentation = "^0.48b0"
+opentelemetry-instrumentation-fastapi = "^0.48b0"
+opentelemetry-instrumentation-httpx = "^0.48b0"
+opentelemetry-exporter-otlp = "^1.27.0"
+opentelemetry-distro = "^0.48b0"
+opentelemetry-api = "^1.27.0"
+opentelemetry-sdk = "^1.27.0"
+opentelemetry-instrumentation-sqlalchemy = "^0.48b0"
+uvicorn = "^0.32.0"
+pydantic = "2.9.2"
+email-validator = "2.2.0"
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]

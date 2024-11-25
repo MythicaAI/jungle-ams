@@ -1,5 +1,14 @@
+# Reference the library base image
+ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+
+
+FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
+
 # Use the specified CUDA base image
 FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
+# Setup HuggingFace API KEY
+ARG HF_AUTHTOKEN=replaceme
+
 LABEL maintainer="pedro@mythica.ai"
 LABEL name="mythica-auto-genai"
 LABEL description="Automation for mythica gen aiservices"
@@ -11,9 +20,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PATH="/usr/local/bin:$PATH"
-
-# Setup HuggingFace API KEY
-ARG HF_AUTHTOKEN
 
 # Install Python 3.11 and dependencies
 RUN apt-get update && \
@@ -43,10 +49,9 @@ ENV PATH="/home/appuser/.local/bin:$PATH"
 
 
 # Copy monorepo dependencies
-COPY /libs/python/cryptid /libs/python/cryptid
-COPY /libs/python/ripple /libs/python/ripple
+COPY --from=libs-python-image /libs/python /libs/python
 
-COPY /automation/genai/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 # Set working directory
 RUN pip install --no-cache-dir -r /app/requirements.txt
@@ -54,7 +59,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 #Set HuggingFace token before initialize and model download
 ENV HF_TOKEN=${HF_AUTHTOKEN}
 
-COPY /automation/genai /app
+COPY . /app
 WORKDIR /app
 
 #This is an expensive project to test, unless you comment this out. 

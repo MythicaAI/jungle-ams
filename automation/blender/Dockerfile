@@ -1,3 +1,6 @@
+ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
+
 # Use the specified CUDA base image
 FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
 LABEL maintainer="pedro@mythica.ai"
@@ -51,17 +54,15 @@ RUN adduser -u 5678 --disabled-password --gecos "" appuser && \
 USER appuser
 ENV PATH="/home/appuser/.local/bin:$PATH"
 
-
 # Copy monorepo dependencies
-COPY /libs/python/cryptid /libs/python/cryptid
-COPY /libs/python/ripple /libs/python/ripple
+COPY --from=libs-python-image /libs/python /libs/python
 
-COPY /automation/blender/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 # Set working directory
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY /automation/blender /app
+COPY . /app
 WORKDIR /app
 
 #ENTRYPOINT ["python3.11", "workers.py"]

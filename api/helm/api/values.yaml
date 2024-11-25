@@ -32,16 +32,16 @@ serviceAccount:
   secretName: front-end-api-sa
 api:
   app:
-    tag: "16723a14"
     name: "app"
     replicas: 3
     maxUnavailable: 1
     maxSurge: 6
     base_url: "https://api.mythica.ai/v1"
+    telemetry_enable: "true"
+    telemetry_endpoint: "http://otel-collector.default:4317"
     nodeSelector: scale-out
     terminationGracePeriodSeconds: 15
   gcsProxy:
-    tag: "latest"
     name: "gcs-proxy"
     replicas: 3
     maxUnavailable: 2
@@ -49,7 +49,6 @@ api:
     nodeSelector: scale-out
     terminationGracePeriodSeconds: 15
   letsEncrypt:
-    tag: "latest"
     name: "lets-encrypt"
     secretName: mythica-lets-encrypt-tls
     replicas: 1
@@ -58,7 +57,6 @@ api:
     nodeSelector: scale-out
     terminationGracePeriodSeconds: 60
   packager:
-    tag: "latest"
     name: "packager"
     replicas: 2
     maxUnavailable: 1
@@ -66,7 +64,6 @@ api:
     nodeSelector: spot
     terminationGracePeriodSeconds: 15
   webFront:
-    tag: "74f6da56"
     name: "web-front"
     replicas: 5
     maxUnavailable: 2

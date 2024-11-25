@@ -1,13 +1,22 @@
+ARG LIBS_PYTHON_IMAGE=mythica-libs-python
 ARG HOUDINI_VERSION=20.5.370
+
+# Image for monorepo library dependencies
+FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Gather python dependencies - do the worker deps here too.
 FROM python:3.11-slim AS python-dependency-downloader
 
-# Copy monorepo dependencies
-COPY /libs/python/cryptid /libs/python/cryptid
-COPY /libs/python/ripple /libs/python/ripple
+LABEL maintainer="pedro@mythica.ai"
+LABEL name="mythica-auto-houdini"
+LABEL description="Automation for mythica gen aiservices"
+LABEL version="1.0.0"
+LABEL tier="auto"
 
-COPY /automation/houdini/requirements.txt /tmp/requirements.txt
+# Copy monorepo dependencies
+COPY --from=libs-python-image /libs/python /libs/python
+
+COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
 
 # Build the primary image
@@ -43,7 +52,7 @@ RUN cp /app/sideFXLabs/SideFXLabs.json /root/houdini20.5/packages/SideFXLabs.jso
 RUN sed -i 's|"$HOUDINI_PACKAGE_PATH/SideFXLabs20.5"|"/app/sideFXLabs"|g' /root/houdini20.5/packages/SideFXLabs.json
 
 # Copy our code over
-COPY /automation/houdini /app
+COPY . /app
 
 # Install darol plugin 
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages

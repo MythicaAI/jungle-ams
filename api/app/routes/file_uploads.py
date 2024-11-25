@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional, Union
 
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -7,6 +8,8 @@ from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_seq_to_id
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from tags.type_utils import resolve_type_tags
+from tags.tag_models import TagType
 
 
 class FileUploadResponse(BaseModel):
@@ -18,6 +21,7 @@ class FileUploadResponse(BaseModel):
     content_type: str
     content_hash: str = ""
     created: datetime
+    tags: Optional[list[dict[str, Union[str, int]]]] = []
 
 
 def enrich_file(
@@ -37,6 +41,7 @@ def enrich_file(
         created=file.created,
         event_ids=[],
         content_hash=file.content_hash,
+        tags=resolve_type_tags(session, TagType.file, file.file_seq),
     )
 
     for oe in owned_events:
@@ -67,6 +72,7 @@ def enrich_files(
             created=of.created,
             event_ids=[],
             content_hash=of.content_hash,
+            tags=resolve_type_tags(session, TagType.file, of.file_seq),
         )
     for oe in owned_events:
         job_data = oe.job_data

@@ -201,3 +201,23 @@ At the top of `helm_rollback_staging.sh`, you can see the namespace variable, wh
 NAMESPACE="api-staging"
 RELEASE_NAME="api-staging"
 ```
+
+# K8s
+
+## OTEL (Open-Telemetry) with SigNoz
+
+OpenTelemetry (OTEL) has been integrated to log application logs, with services configured to forward logs to SigNoz.
+
+It requires the SIGNOZ_API_KEY secret, which is accessible throughout the cluster and is stored in the default namespace. The OTEL collector endpoint is reachable at:
+http://otel-collector.default:4317.
+
+Updating OTEL
+To update OpenTelemetry in the cluster, use the following command:
+```bash
+helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.yaml --namespace default
+```
+Alternatively, you can run the script:
+```bash
+./api/helm/helm-upgrade-telemetry.sh
+```
+

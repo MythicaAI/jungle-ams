@@ -1,3 +1,5 @@
+name: web
+
 #
 # This docker compose creates a backend testing environment for 
 # storage tier services. You can run this compose set with -d (--detach)
@@ -9,34 +11,23 @@ services:
     volumes:
       - dist:/dist
     environment:
-      VITE_API_BASE_URL: http://localhost:50555/v1
+      PUBLISH_PATH: /dist/jungle3
+      VITE_API_BASE_URL: http://localhost:15555/v1
       VITE_IMAGES_BASE_URL: http://localhost:8080/images
       VITE_AUTH0_DOMAIN: dev-dtvqj0iuc5rnb6x2.us.auth0.com
       VITE_AUTH0_CLIENT_ID: 4CZhQWoNm1WH8l8042LeF38qHrUTR2ax
-      VITE_AUTH0_AUDIENCE: http://localhost:50555/v1
+      VITE_AUTH0_AUDIENCE: http://localhost:15555/v1
       VITE_AUTH0_REDIRECT_URL: http://localhost:8080
-#  editor:
-#    container_name: editor
-#    image: mythica-editor-build:latest
-#    volumes:
-#      - dist:/dist
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
     depends_on:
       - jungle3
-#      - editor
       - app
     ports:
       - "8080:80"
     volumes:
       - dist:/dist
-    dns:
-      - 34.118.224.10  # Tailscale DNS server for svc.cluster.local
-    dns_search:
-      - svc.cluster.local  # Ensure svc.cluster.local is a search domain
-    dns_opt:
-      - ndots:2  # Set ndots to 1
     networks:
       - web
       - storage
@@ -47,13 +38,7 @@ services:
       MINIO_ENDPOINT: minio:9000
       LOCAL_STORAGE_PATH: /tmp/local_storage
     ports:
-      - "50555:5555"
-    dns:
-      - 34.118.224.10  # Tailscale DNS server for svc.cluster.local
-    dns_search:
-      - svc.cluster.local  # Ensure svc.cluster.local is a search domain
-    dns_opt:
-      - ndots:2  # Set ndots to 1
+      - "15555:5555"
     networks:
       - web
       - storage

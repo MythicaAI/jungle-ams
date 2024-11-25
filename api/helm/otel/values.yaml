@@ -1,0 +1,39 @@
+global:
+  storageClass: gce-resizable
+  cloud: gcp/autogke
+  clusterName: gke-main-us-central1
+  deploymentEnvironment: api-staging
+otelCollectorEndpoint: ingest.us.signoz.cloud:443
+otelInsecure: false
+presets:
+  kubernetesAttributes:
+    enabled: true
+    passthrough: false
+    extractMetadatas:
+      - k8s.namespace.name
+      - k8s.deployment.name
+      - k8s.pod.name
+      - k8s.node.name
+  kubeletMetrics:
+    authType: none
+    endpoint: ${K8S_NODE_NAME}:10255
+  otlpExporter:
+    enabled: true
+    collectionInterval: 30s
+  logsCollection:
+    enabled: true
+    blacklist:
+      enabled: true
+      signozLogs: false
+      namespaces:
+        - api
+        - api-staging
+      pods:
+        - app
+        - lets-encrypt
+        - gcs-proxy
+        
+  resourceDetection:
+    detectors:
+      - gcp
+      - system

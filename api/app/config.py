@@ -33,7 +33,6 @@ class AppConfig(BaseSettings):
     auth0_audience: str = Field('http://localhost:5555/v1', alias='api_base_uri')
     auth0_domain: str = 'dev-dtvqj0iuc5rnb6x2.us.auth0.com'
     auth0_client_id: str = '4CZhQWoNm1WH8l8042LeF38qHrUTR2ax'
-    auth0_client_secret: str = '-vxSQgFB0y82_LGpO8FB-A59HTbiElKSgOleFu_Mt1qO7NXjWf67NDYIqLAHyGuO'
 
     http_listen_addr: str = '0.0.0.0'
     http_listen_port: int = 5555
@@ -44,6 +43,8 @@ class AppConfig(BaseSettings):
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_db: int = 0
+    telemetry_enable: bool = False
+    telemetry_endpoint: str = "127.0.0.1:4317"
 
     mythica_org_name: str = "Mythica"
 

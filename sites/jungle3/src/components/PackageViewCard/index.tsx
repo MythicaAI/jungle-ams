@@ -13,7 +13,7 @@ import { LucidePackage } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AssetTopResponse } from "types/apiTypes";
 import { SxProps } from "@mui/joy/styles/types/theme";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 type Props = {
   av: AssetTopResponse;
@@ -71,56 +71,58 @@ export const PackageViewCard: React.FC<Props> = ({ av, sxStyles }) => {
               color: "white", // white text color for better contrast
               padding: "8px", // some padding to make it look nicer
               width: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              wordBreak: "break-word",
 
               height: showVersion ? "78px" : "61px",
               transition: "max-height 0.3 ease",
-              ...(!av.org_name &&
+              ...(!av.author_name &&
                 !showVersion && { display: "flex", alignItems: "center" }),
             }}
           >
             {av.name}
 
-            {(av.org_name || showVersion) && (
+            {(av.author_name || showVersion) && (
               <Stack direction="row" justifyContent="space-between">
                 <Typography
                   fontSize={12}
                   sx={{ display: "block", color: "#b1b1b1" }}
                 >
-                  {av.org_name}
+                  {av.author_name}
                 </Typography>
 
-                <AnimatePresence>
-                  {showVersion && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                {showVersion && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <Stack
+                      direction="row"
+                      gap="4px"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Stack
-                        direction="row"
-                        gap="4px"
-                        onClick={(e) => e.stopPropagation()}
+                      <DownloadButton
+                        file_id={av.package_id}
+                        icon={<LucidePackage />}
+                      />
+                      <Chip
+                        key={av.version.join(".")}
+                        variant="soft"
+                        color={"neutral"}
+                        size="lg"
+                        component={Link}
+                        to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
+                        sx={{ borderRadius: "xl" }}
                       >
-                        <DownloadButton
-                          file_id={av.package_id}
-                          icon={<LucidePackage />}
-                        />
-                        <Chip
-                          key={av.version.join(".")}
-                          variant="soft"
-                          color={"neutral"}
-                          size="lg"
-                          component={Link}
-                          to={`/assets/${av.asset_id}/versions/${av.version.join(".")}`}
-                          sx={{ borderRadius: "xl" }}
-                        >
-                          {av.version.join(".")}
-                        </Chip>
-                      </Stack>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        {av.version.join(".")}
+                      </Chip>
+                    </Stack>
+                  </motion.div>
+                )}
               </Stack>
             )}
           </Typography>
