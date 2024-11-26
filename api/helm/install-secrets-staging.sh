@@ -20,10 +20,21 @@ op signin
 SIGNOZ_API_KEY=$(op read op://Infrastructure/api-staging-secrets/signoz-api-key)
 CLOUD_SQL_URL=$(op read op://Infrastructure/api-staging-secrets/sql-url)
 CLOUD_SQL_ASYNC_URL=$(op read op://Infrastructure/api-staging-secrets/sql-async-url)
+SERVICE_ACCOUNT_JSON=$(op read op://Infrastructure/front-end-api-staging-sa/service-account.json)
+AUTH0_CLIENT_ID=$(op read op://Infrastructure/api-staging-secrets/auth0-client-id)
+AUTH0_CLIENT_SECRET=$(op read op://Infrastructure/api-staging-secrets/auth0-client-secret)
+AUTH0_DOMAIN=$(op read op://Infrastructure/api-staging-secrets/auth0-domain)
 
 kubectl delete secret/secrets -n api-staging
 kubectl create secret generic secrets \
   --from-literal=SIGNOZ_API_KEY=$SIGNOZ_API_KEY \
   --from-literal=SQL_URL=$CLOUD_SQL_URL \
   --from-literal=SQL_ASYNC_URL=$CLOUD_SQL_ASYNC_URL \
+  --from-literal=AUTH0_CLIENT_ID=$AUTH0_CLIENT_ID \
+  --from-literal=AUTH0_CLIENT_SECRET=$AUTH0_CLIENT_SECRET \
+  --from-literal=AUTH0_DOMAIN=$AUTH0_DOMAIN \
+  --namespace=api-staging
+kubectl delete secret/front-end-api-staging-sa -n api-staging
+kubectl create secret generic front-end-api-staging-sa \
+  --from-literal=service-account.json="$SERVICE_ACCOUNT_JSON" \
   --namespace=api-staging

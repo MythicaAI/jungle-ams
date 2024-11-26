@@ -27,8 +27,10 @@ spec:
           env:
             - name: DOMAINS
               value: "{{ join "," .Values.domains }}"
-            - name: SECRET_NAME
+            - name: TLS_NAME
               value: {{ $componentContext.secretName }}
+            - name: TLS_NAMESPACE
+              value: ingress
           volumeMounts:
             - name: lets-encrypt-storage
               mountPath: /etc/letsencrypt
