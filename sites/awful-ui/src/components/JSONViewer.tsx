@@ -4,12 +4,14 @@ import MonacoEditor, { loader } from '@monaco-editor/react';
 const JSONViewer = ({ fileUrl, style }: { fileUrl: string, style: React.CSSProperties }) => {
   useEffect(() => {
     loader.init().then((monaco) => {
-      monaco.editor.createModel(
-        `Loading...`, // Placeholder content initially
-        'json', // Language mode
-        monaco.Uri.parse(fileUrl) // URI for the remote file
-      );
-
+      const uri = monaco.Uri.parse(fileUrl)
+      if (!monaco.editor.getModel(uri))
+         monaco.editor.createModel(
+          `Loading...`, // Placeholder content initially
+          'json', // Language mode
+          uri // URI for the remote file
+        );
+      
       // Fetch the file and update the model directly
       fetch(fileUrl)
         .then((response) => response.json())
