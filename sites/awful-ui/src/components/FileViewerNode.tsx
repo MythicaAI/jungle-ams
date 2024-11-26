@@ -227,6 +227,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
                         ) : (
                           <div style={{ height: '100px' }}>
                             <p>Unsupported file type: {fileInfo.content_type}</p>
+                            <a href={fileInfo.url} target='_blank' rel='noreferrer'>Download</a>
                           </div>
                         )}
                       </>
