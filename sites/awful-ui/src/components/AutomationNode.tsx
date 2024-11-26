@@ -116,7 +116,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             }
         });
     }
-  }, [fileParams, myFlowData]);
+    updateNodeInternals(node.id);
+  }, [fileParams, myFlowData,updateNodeInternals, node.id]);
 
 
 
@@ -236,7 +237,7 @@ def runAutomation(request: RequestModel, responder: ResultPublisher) -> Response
             position={Position.Top}
             id={paramKey}
             isConnectable
-            style={{ background: '#555' }}
+            style={{ background: '#007bff' }}
           />
           <span className='label'>
             { paramKey } 
