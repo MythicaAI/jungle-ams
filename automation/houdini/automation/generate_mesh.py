@@ -1,14 +1,12 @@
 import hou
 import logging
-import mythica.darol as mdarol
 import os
 import re
 import tempfile
 
-from pydantic import BaseModel
 from ripple.automation import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import OutputFiles, ProcessStreamItem
+from ripple.models.streaming import OutputFiles
 
 
 logging.basicConfig(
@@ -56,7 +54,6 @@ def generate_mesh_impl(
 ) -> str:
     log.info("Preparing scene")
     output_file_name = os.path.basename(hda_path)
-    hip = os.path.join(working_dir, f'export_mesh_{output_file_name}.hip')
 
     log.info("Clearing scene")
     hou.hipFile.clear(suppress_save_prompt=True)
@@ -155,7 +152,7 @@ def generate_mesh_impl(
     log.info("Uninstalling HDA")
     hou.hda.uninstallFile(hda_path)
     log.info("Uninstalling HDA completed")
-
+    hou.hipFile.clear(suppress_save_prompt=True)
     return output_file_path
 
 

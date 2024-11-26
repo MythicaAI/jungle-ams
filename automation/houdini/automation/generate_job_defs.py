@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 
 def extract_node_type_info(hda_path: str) -> list[dict]:
+    hou.hipFile.clear(suppress_save_prompt=True)
     hou.hda.installFile(hda_path, force_use_assets=True)
 
     result = []
@@ -26,7 +27,7 @@ def extract_node_type_info(hda_path: str) -> list[dict]:
         result.append(type_info)
 
     hou.hda.uninstallFile(hda_path)
-
+    hou.hipFile.clear(suppress_save_prompt=True)
     return result
 
 
