@@ -88,3 +88,17 @@ jobs:
 
           kubectl rollout restart deployment/canary -n api
           kubectl rollout status deployment/canary -n api
+
+      - uses: actions-tools/yaml-outputs@v2
+        id: deployed_yaml
+        with:
+          file-path: 'api/helm/api/values-images.yaml'
+      - run: |
+          echo "${{ steps.deployed_yaml.outputs.images }}"
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
+        with:
+          args: 'Production helm deploy complete'
+          args: "''' ${{ steps.deployed_yaml.outputs.images }} ```"
