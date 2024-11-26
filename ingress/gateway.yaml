@@ -27,7 +27,7 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: letsencrypt-tls
+          - name: mythica-lets-encrypt-tls
       allowedRoutes:
         kinds:
           - group: gateway.networking.k8s.io

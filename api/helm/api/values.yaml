@@ -28,6 +28,7 @@ auth0:
 
 serviceAccount:
   secretName: front-end-api-sa
+  email: front-end-api-sa@controlnet-407314.iam.gserviceaccount.com
 api:
   app:
     name: "app"

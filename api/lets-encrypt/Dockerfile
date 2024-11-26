@@ -40,8 +40,10 @@ EXPOSE 80
 #
 # ENV EXTRA_ARGS="--testcert"
 
+# location to attempt to install the generated cert
 ENV TLS_NAMESPACE=ingress
-ENV TLS_NAME="mythica-letsencrypt-tls"
+ENV TLS_NAME="mythica-lets-encrypt-tls"
+
 ENV DOMAINS="oss.mythica.ai,api.mythica.ai,dex.mythica.ai"
 ENV PATH="/app:${PATH}"
 
