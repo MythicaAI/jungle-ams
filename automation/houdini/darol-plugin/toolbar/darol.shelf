@@ -47,6 +47,11 @@ class NetworkExportPanel(QtWidgets.QWidget):
         layout.addWidget(self.current_node_checkbox)
 
         # Add a current_node_checkbox
+        self.export_hda = QtWidgets.QCheckBox("Export HDA Internals")
+        self.export_hda.stateChanged.connect(self._toggle_export)
+        layout.addWidget(self.export_hda)
+
+        # Add a current_node_checkbox
         self.export_subnet = QtWidgets.QCheckBox("Export Subnetworks")
         self.export_subnet.stateChanged.connect(self._toggle_export)
         layout.addWidget(self.export_subnet)
@@ -66,9 +71,7 @@ class NetworkExportPanel(QtWidgets.QWidget):
         graph_data = mythica_net.get_network(
             hou.selectedNodes() if self.current_node_checkbox.isChecked() else hou.node('/'),
             self.export_subnet.isChecked(),
-            True,
-            False
-        ) 
+            self.export_hda.isChecked()) 
 
         self.text_edit.setPlainText(graph_data)
 
