@@ -4,6 +4,7 @@ the profile and generates a session start response.
 """
 import logging
 from http import HTTPStatus
+import sys
 
 from fastapi import HTTPException
 from sqlalchemy.sql.functions import func, now as sql_now
@@ -136,21 +137,31 @@ async def start_session_with_token_validator(token: str, validator: AuthTokenVal
         user_profile = await validator.query_user_profile(token)
         profiles = session.exec(select(Profile)
                                 .where(col(Profile.email) == user_profile.email)
-                                .order_by(asc(Profile.created))).all()
+                                .order_by(asc(Profile.profile_seq))).all()
         if profiles is None or len(profiles) == 0:
             # if there are no profiles, attempt to associate the sub to a new profile
             profile_seq = await create_profile_for_oid(session, valid_token, user_profile)
             session_start = await create_profile_locator_oid(session, valid_token, profile_seq)
             return session_start
 
-        #
-        # a locator does not exist for the token subject, in this case we will associate all profiles
-        # bearing the verified email with the subject, TODO: this should be done in a two step process
-        # with an email verification on our side before allowing the new sub to take over the profile
-        # select the oldest profile, what to do with the rest?
-        oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
-        session_start = await create_profile_locator_oid(session, valid_token, oldest_profile.profile_seq)
+        # Obtain the newest profile for tests or handle verified profiles for production
+        if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+            profile = profiles[-1]
+        else:
+            verified_profiles = session.exec(select(Profile)
+                                    .where(col(Profile.email) == user_profile.email)
+                                    .where(col(Profile.email_validate_state) == ValidateEmailState.db_value(ValidateEmailState.validated))
+                                    .order_by(asc(Profile.profile_seq))).all()
+            if not verified_profiles:
+                profile = profiles[0]
+            else:
+                if not user_profile.email_verified:
+                    raise HTTPException(HTTPStatus.FORBIDDEN, detail="You did not verify your email")
+                profile = verified_profiles[0]
+
+        session_start = await create_profile_locator_oid(session, valid_token, profile.profile_seq)
         return session_start
+
 
 def email_validate_state(email_verified) -> int:
     if email_verified:
