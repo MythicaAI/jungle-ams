@@ -106,6 +106,7 @@ jobs:
 
   build-tag-publish:
     runs-on: ubuntu-latest
+    environment: main
     needs:
       - changes
       - build-base
