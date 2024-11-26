@@ -24,28 +24,60 @@ services:
     depends_on:
       - jungle3
       - app
+      - otel-collector
     ports:
       - "8080:80"
     volumes:
       - dist:/dist
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - web
       - storage
+      - observe
   app:
     container_name: app
     image: mythica-app:latest
     environment:
       MINIO_ENDPOINT: minio:9000
       LOCAL_STORAGE_PATH: /tmp/local_storage
+      REDIS_HOST: redis
     ports:
       - "15555:5555"
     networks:
       - web
       - storage
+      - observe
+  # open telemetry side car for scraping nginx logs
+  otel-collector:
+    container_name: otel-sidecar
+    image: otel/opentelemetry-collector-contrib:latest
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+
+    # Map both the logs for processing and the external config
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./logs:/var/log/nginx:ro
+      - ./export:/var/log/export/:rwz"
+    ports:
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+    networks:
+      - web
+      - observe
 volumes:
   dist: # volume reference to share node build contents
 networks:
   storage:
+    driver: bridge
+    name: storage
+    external: true
+  observe:
     driver: bridge
     name: storage
     external: true

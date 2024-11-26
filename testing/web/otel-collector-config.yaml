@@ -1,0 +1,84 @@
+---
+# otel-collector-config.yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Nginx metrics receiver
+  nginx:
+    endpoint: http://nginx:80/nginx_status
+    collection_interval: 10s
+
+  # Log receiver for Nginx logs
+  filelog:
+    include: [ /var/log/nginx/access.log, /var/log/nginx/error.log ]
+    start_at: beginning
+    operators:
+      # Parser for access logs
+      - type: regex_parser
+        id: access-regex
+        regex: '^(?P<remote_addr>[^ ]*) - (?P<remote_user>[^ ]*) \[(?P<time_local>[^\]]*)\] "(?P<request>[^"]*)" (?P<status>[^ ]*) (?P<body_bytes_sent>[^ ]*) "(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"$'
+        timestamp:
+          parse_from: attributes.time_local
+          layout_type: strptime
+          layout: '%d/%b/%Y:%H:%M:%S %z'
+        source: access.log
+
+      # Parser for error logs
+      - type: regex_parser
+        id: error-regex
+        regex: '(?P<time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>\w+)\] (?P<pid>\d+)#(?P<tid>\d+): \*(?P<message>.*)'
+        timestamp:
+          parse_from: attributes.time
+          layout_time: strptime
+          layout: '%Y/%m/%d %H:%M:%S'
+        source: error.log
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1000
+    spike_limit_mib: 200
+
+  # Add attributes to logs
+  resource:
+    attributes:
+      - key: service.name
+        value: nginx
+        action: upsert
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: nginx
+
+  debug:
+    verbosity: detailed
+
+  # Add optional exporters for logs (example with console output)
+  file:
+    path: /var/log/export/otel-log.json
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ otlp, nginx ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ prometheus, debug ]
+
+    logs:
+      receivers: [ filelog ]
+      processors: [ resource, batch ]
+      exporters: [ debug, file ]
+
+  telemetry:
+    logs:
+      level: "debug"

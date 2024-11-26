@@ -1,0 +1,20 @@
+name: web
+
+#
+# This docker compose creates a backend testing environment for 
+# observability tier services.
+#
+services:
+  otel-collector:
+    container_name: collector
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:55679:55679"
+    #command: ["--config=/etc/otel-collector-config.yaml"]
+networks:
+  observe:
+    driver: bridge
+    name: observe

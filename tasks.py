@@ -52,6 +52,7 @@ NODE_ENV = os.environ.get('NODE_ENV', 'dev')
 TESTING_STORAGE_DIR = os.path.join(BASE_DIR, 'testing/storage')
 TESTING_WEB_DIR = os.path.join(BASE_DIR, 'testing/web')
 TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
+TESTING_OBSERVE_DIR = os.path.join(BASE_DIR, 'testing/observe')
 
 IMAGES = {
     'api/nginx': {
@@ -366,6 +367,18 @@ def auto_start(c):
 def auto_stop(c):
     """Stop automation tier components"""
     stop_docker_compose(c, TESTING_AUTO_DIR)
+
+
+@task
+def observe_start(c):
+    """Start observability tier components"""
+    start_docker_compose(c, TESTING_OBSERVE_DIR, cleanup_web_dist)
+
+
+@task(post=[cleanup_web_dist])
+def observe_stop(c):
+    """Stop observability tier components"""
+    stop_docker_compose(c, TESTING_OBSERVE_DIR)
 
 
 def image_path_action(c, image, action, **kwargs):

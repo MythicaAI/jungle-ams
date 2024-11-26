@@ -8,16 +8,17 @@ from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
     OTLPLogExporter,
 )
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogExporter, SimpleLogRecordProcessor
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
-    ConsoleSpanExporter,
 )
-from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.trace import set_tracer_provider
+
 from config import app_config
 
 
@@ -47,7 +48,7 @@ class CustomJSONFormatter(logging.Formatter):
                 k: v
                 for k, v in record.__dict__.items()
                 if k
-                not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+                   not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
             }
         )
 
@@ -60,10 +61,10 @@ def get_telemetry_resource() -> Resource:
     return Resource.create(
         {
             ResourceAttributes.SERVICE_NAME: "app",
-            ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv("NAMESPACE", "unknown"),
-            ResourceAttributes.SERVICE_NAMESPACE: os.getenv("NAMESPACE", "unknown"),
+            ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv("NAMESPACE", "api-dev"),
+            ResourceAttributes.SERVICE_NAMESPACE: os.getenv("NAMESPACE", "api-dev"),
             ResourceAttributes.DEPLOYMENT_ENVIRONMENT: os.getenv(
-                "NAMESPACE", "unknown"
+                "NAMESPACE", "local"
             ),
         }
     )
@@ -72,24 +73,42 @@ def get_telemetry_resource() -> Resource:
 def configure_logging():
     # Skip if pytest is running
     if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+        print("logging disabled under pytest")
         return
+
     logger = logging.getLogger()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     if app_config().telemetry_enable:
         logger.handlers.clear()
 
+        #
+        # Metadata and access configuration
+        #
         resource = get_telemetry_resource()
+        headers = [('signoz-access-token', app_config().telemetry_token)]
 
+        #
+        # OpenTelemetry Tracer configuration
+        #
         tracer_provider = TracerProvider(resource=resource)
         set_tracer_provider(tracer_provider)
-        tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        span_exporter = OTLPSpanExporter(
+            endpoint=app_config().telemetry_endpoint,
+            insecure=app_config().telemetry_insecure,
+            headers=headers,
+        )
+        tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
 
+        #
+        # OpenTelemetry Logging Exporter
+        #
         logger_provider = LoggerProvider(resource=resource)
         set_logger_provider(logger_provider)
-
         exporter = OTLPLogExporter(
-            endpoint=app_config().telemetry_endpoint, insecure=True
+            endpoint=app_config().telemetry_endpoint,
+            insecure=app_config().telemetry_insecure,
+            headers=headers,
         )
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 
@@ -98,5 +117,13 @@ def configure_logging():
 
         otel_log_handler.setFormatter(CustomJSONFormatter())
     else:
-        for handler in logger.handlers:
-            handler.setFormatter(CustomJSONFormatter())
+        resource = get_telemetry_resource()
+        logger_provider = LoggerProvider(resource=resource)
+        set_logger_provider(logger_provider)
+
+        logger_provider.add_log_record_processor(SimpleLogRecordProcessor(ConsoleLogExporter()))
+
+        otel_log_handler = LoggingHandler(level=logging.INFO)
+        logger.addHandler(otel_log_handler)
+
+        otel_log_handler.setFormatter(CustomJSONFormatter())

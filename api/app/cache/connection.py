@@ -1,9 +1,9 @@
 # global usage is not understood by pylint
 # pylint: disable=global-statement,global-variable-not-assigned
-
 import logging
 from contextlib import asynccontextmanager, contextmanager
 
+import asyncio
 from redis.asyncio import ConnectionPool, StrictRedis
 
 from config import app_config
@@ -41,4 +41,5 @@ def get_redis() -> StrictRedis:
     global connection_pool
     redis = StrictRedis(connection_pool=connection_pool)
     yield redis
-    redis.close()
+    loop = asyncio.get_running_loop()
+    loop.create_task(redis.close(), name="close redis")

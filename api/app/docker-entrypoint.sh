@@ -12,7 +12,7 @@ alembic upgrade head
 
 # Start Gunicorn, write logs to stdout for capture by container runtime
 export PYTHONPATH=/api/app
-export OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
+
 opentelemetry-instrument uvicorn main:app \
 	--host ${HTTP_LISTEN_ADDR} \
 	--port ${HTTP_LISTEN_PORT} \
