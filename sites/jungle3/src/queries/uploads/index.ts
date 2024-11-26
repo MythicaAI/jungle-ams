@@ -22,7 +22,7 @@ export const useDeleteUpload = () => {
       await api.del({
         path: `${UploadsApiPath.FILES}/${id}`,
       }),
-    onSuccess: async () => {
+    onSettled: async () => {
       queryClient.invalidateQueries({ queryKey: [UploadsQuery.PENDING_LiST] });
     },
   });

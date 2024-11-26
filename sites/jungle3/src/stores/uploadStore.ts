@@ -15,13 +15,21 @@ export type FileUploadMap = {
   [key: string]: FileUploadStatus;
 };
 
+export type FileObj = {
+  file: File;
+  tag: string;
+  customTag: string;
+  id: string;
+};
+
 export interface UploadState {
-  pendingUploads: File[];
+  // pendingUploads: File[];
+  pendingUploads: FileObj[];
   uploads: FileUploadMap;
   progress: number;
   progressState: UploadProgressState;
 
-  setPendingUploads: (files: File[]) => void;
+  setPendingUploads: (files: FileObj[]) => void;
   setUploadProgress: (progress: number) => void;
   trackUpload: (upload: FileUploadStatus) => void;
   trackUploads: (uploads: FileUploadStatus[]) => void;
@@ -80,7 +88,8 @@ export const useUploadStore = create<UploadState>((set) => ({
   progress: 0,
   progressState: UploadProgressState.None,
 
-  setPendingUploads: (files: File[]) => set(() => ({ pendingUploads: files })),
+  setPendingUploads: (files: FileObj[]) =>
+    set(() => ({ pendingUploads: files })),
   setUploadProgress: (progress: number) =>
     set((state) => {
       let progressState = UploadProgressState.InProgress;

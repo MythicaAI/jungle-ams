@@ -9,7 +9,7 @@ import { PackageViewCard } from "@components/PackageViewCard";
 import { Helmet } from "react-helmet-async";
 import { useGetTopAssets } from "@queries/assets";
 import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
-import { useGetAssetsByTags, useGetTags } from "@queries/tags";
+import { useGetAssetsByTags, useGetAssetTags } from "@queries/tags";
 import { Tag } from "@queries/tags/types";
 import { TagsPanel } from "@components/TagPanel";
 import { useSearchParams } from "react-router-dom";
@@ -36,7 +36,7 @@ const Assets = () => {
     data: tags,
     isLoading: isTagsLoading,
     error: tagsError,
-  } = useGetTags();
+  } = useGetAssetTags();
 
   const {
     data: topAssets,

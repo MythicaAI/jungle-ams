@@ -12,7 +12,7 @@ type Props = {
   tags?: Tag[];
 };
 
-const TAGS_ROLE = "mythica-tags";
+export const TAGS_ROLE = "tag/create";
 
 export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
   const { orgRoles } = useGlobalStore();
@@ -26,6 +26,8 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
     setTag,
   } = useAssetVersionStore();
   const { t } = useTranslation();
+
+  console.log("tag: ", tag);
 
   const hasTagsRole =
     orgRoles && orgRoles.some((entry) => entry.role === TAGS_ROLE);
@@ -95,7 +97,9 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
             placeholder="Select..."
           >
             {tags.map((tag) => (
-              <Option value={tag.tag_id}>{tag.name}</Option>
+              <Option value={tag.tag_id} key={tag.tag_id}>
+                {tag.name}
+              </Option>
             ))}
           </Select>
         </FormControl>

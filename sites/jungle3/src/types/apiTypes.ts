@@ -152,6 +152,7 @@ export interface FileUploadResponse {
   content_type: string;
   content_hash: string;
   download_url: string;
+  tags: { tag_id: string; tag_name: string }[];
 }
 
 export interface FileInfoResponse {
