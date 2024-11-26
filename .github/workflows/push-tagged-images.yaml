@@ -210,4 +210,4 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         uses: Ilshidur/action-discord@master
         with:
-          args: '{{ matrix.image }}:{{ steps.generate_tag.outputs.new_tag_version }} is now available for testing at https://api-staging.mythica.gg.'
+          args: '${{ matrix.image }}:${{ steps.generate_tag.outputs.new_tag_version }} is now available for testing at https://api-staging.mythica.gg.'
