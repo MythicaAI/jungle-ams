@@ -1,0 +1,6 @@
+receivers:
+
+exporters:
+
+service:
+  pipelines:

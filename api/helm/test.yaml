@@ -1,0 +1,557 @@
+---
+# Source: api/templates/service-account-lets-encrypt.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lets-encrypt
+  namespace: api
+---
+# Source: api/templates/persistent-volume.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: api-pvc
+  namespace: api
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard-rwo
+---
+# Source: api/templates/pvc-lets-encrypt.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lets-encrypt
+  namespace: api
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard-rwo
+---
+# Source: api/templates/role-binding-lets-encrypt.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: api
+  name: lets-encrypt
+subjects:
+  - kind: ServiceAccount
+    name: lets-encrypt
+    namespace: api
+roleRef:
+  kind: Role
+  name: lets-encrypt-secret-access
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: api/templates/service-app.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: api
+  labels:
+    myth.tier: web
+    myth.release: production
+    app: app
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http-api
+  selector:
+    app: app
+---
+# Source: api/templates/service-gcs-proxy.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: gcs-proxy
+  namespace: api
+  labels:
+    myth.tier: web
+    myth.release: production
+    app: gcs-proxy
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http-proxy
+  selector:
+    app: gcs-proxy
+---
+# Source: api/templates/service-lets-encrypt.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lets-encrypt
+  namespace: api
+  labels:
+    myth.tier: web
+    myth.release: production
+    app: lets-encrypt
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app: lets-encrypt
+---
+# Source: api/templates/service-web-front.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-front
+  namespace: api
+  labels:
+    myth.tier: web
+    myth.release: production
+    app: web-front
+  annotations:
+    networking.gke.io/load-balancer-type: "Internal"
+    cloud.google.com/neg: '{"exposed_ports": {"80":{}}}'
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app: web-front
+---
+# Source: api/templates/deployment-app.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: api
+  labels:
+    helm.sh/chart: api-0.1.0
+    app.kubernetes.io/name: api
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    myth.tier: web
+    myth.release: production
+    app: app
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 6
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: api-0.1.0
+        app.kubernetes.io/name: api
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/managed-by: Helm
+        myth.tier: web
+        myth.release: production
+        app: app
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      terminationGracePeriodSeconds: 15
+      serviceAccountName: api
+      containers:
+        - name: app
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-app:v1.0.27
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+          env:
+            - name: SQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: SQL_URL
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
+            - name: GCS_SERVICE_ENABLE
+              value: "true"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/accounts/service-account.json"
+            - name: WORKER_COUNT
+              value: "3"
+            - name: API_BASE_URI
+              value: https://api.mythica.ai/v1
+            - name: TELEMETRY_ENABLE
+              value: "true"
+            - name: TELEMETRY_ENDPOINT
+              value: http://otel-collector.default:4317
+            - name: NAMESPACE
+              value: api
+            - name: AUTH0_DOMAIN
+              value: dev-dtvqj0iuc5rnb6x2.us.auth0.com
+            - name: AUTH0_CLIENT_ID
+              value: caa07HclGxulrcv43hgGziNJx7cQ8GED
+            - name: AUTH0_AUDIENCE
+              value: https://api.mythica.ai/v1
+          ports:
+            - containerPort: 5555
+              name: http-api
+          volumeMounts:
+            - name: ephemeral-upload-vol
+              mountPath: /uploads
+              readOnly: false
+            - name: service-account-vol
+              mountPath: /accounts
+              readOnly: true
+      volumes:
+        - name: ephemeral-upload-vol
+          emptyDir: {}
+        - name: service-account-vol
+          secret:
+            secretName: front-end-api-sa
+      restartPolicy: Always
+---
+# Source: api/templates/deployment-canary.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 
+  namespace: api
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: 
+  template:
+    metadata:
+      labels:
+        myth.tier: web
+        myth.release: production
+        app: 
+    spec:
+      nodeSelector:
+      terminationGracePeriodSeconds: 
+      serviceAccountName: api
+      containers:
+        - name: canary
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-job-canary:v1.0.8
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+      restartPolicy: Always
+---
+# Source: api/templates/deployment-gcs-proxy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcs-proxy
+  namespace: api
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 5
+  selector:
+    matchLabels:
+      app: gcs-proxy
+  template:
+    metadata:
+      labels:
+        myth.tier: web
+        myth.release: production
+        app: gcs-proxy
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      terminationGracePeriodSeconds: 15
+      serviceAccountName: api
+      containers:
+        - name: gcs-proxy
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-gcs-proxy:v1.0.11
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+              name: http-proxy
+      restartPolicy: Always
+---
+# Source: api/templates/deployment-lets-encrypt.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lets-encrypt
+  namespace: api
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: lets-encrypt
+  template:
+    metadata:
+      labels:
+        myth.tier: web
+        myth.release: production
+        app: lets-encrypt
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      terminationGracePeriodSeconds: 60
+      serviceAccountName: lets-encrypt
+      containers:
+        - name: lets-encrypt
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/lets-encrypt:v1.0.11
+          imagePullPolicy: Always
+          env:
+            - name: DOMAINS
+              value: "oss.mythica.ai,oss.mythica.gg,api.mythica.ai,api.mythica.gg,images.mythica.ai,images.mythica.gg,dex.mythica.ai,dex.mythica.gg"
+            - name: SECRET_NAME
+              value: mythica-lets-encrypt-tls
+          volumeMounts:
+            - name: lets-encrypt-storage
+              mountPath: /etc/letsencrypt
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+      volumes:
+        # Nodal ephemeral volume used by the CSI driver
+        - name: lets-encrypt-storage
+          persistentVolumeClaim:
+            claimName: lets-encrypt
+      restartPolicy: Always
+---
+# Source: api/templates/deployment-packager.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: packager
+  namespace: api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: packager
+  template:
+    metadata:
+      labels:
+        myth.tier: web
+        myth.release: production
+        app: packager
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-spot: "true"
+      terminationGracePeriodSeconds: 15
+      serviceAccountName: api
+      containers:
+        - name: packager
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-packager:v1.0.12
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+          env:
+            - name: SQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: SQL_ASYNC_URL
+            - name: PACKAGER_ENDPOINT
+              value: "http://app.api:80"
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
+          volumeMounts:
+            - name: ephemeral-packaged-content
+              mountPath: /tmp
+              readOnly: false
+      volumes:
+        - name: ephemeral-packaged-content
+          emptyDir: { }
+      restartPolicy: Always
+---
+# Source: api/templates/deployment-web-front.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-front
+  namespace: api
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 10
+  selector:
+    matchLabels:
+      app: web-front
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: api-0.1.0
+        app.kubernetes.io/name: api
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/managed-by: Helm
+        myth.tier: web
+        myth.release: production
+        app: web-front
+    spec:
+      nodeSelector:
+        cloud.google.com/compute-class: "Scale-Out"
+      securityContext:
+        fsGroup: 101 # use the nginx group for file-system security privileges
+      terminationGracePeriodSeconds: 15
+      serviceAccountName: api
+      initContainers:
+        - name: jungle3-build
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-jungle3-build:v1.0.10
+          imagePullPolicy: Always
+          env:
+            - name: PUBLISH_PATH
+              value: /publish/jungle3
+            - name: VITE_API_BASE_URL
+              value: https://api.mythica.ai/v1
+            - name: VITE_IMAGES_BASE_URL
+              value: https://api.mythica.ai/images
+            - name: VITE_AUTH0_DOMAIN
+              value: dev-dtvqj0iuc5rnb6x2.us.auth0.com
+            - name: VITE_AUTH0_CLIENT_ID
+              value: caa07HclGxulrcv43hgGziNJx7cQ8GED
+            - name: VITE_AUTH0_AUDIENCE
+              value: https://api.mythica.ai/v1
+            - name: VITE_AUTH0_REDIRECT_URL
+              value: https://api.mythica.ai
+          volumeMounts:
+            - name: dist-publish
+              mountPath: "/publish"
+      containers:
+        - name: nginx
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-web-front:v1.0.11
+          args: [ "nginx", "-c", "/etc/nginx/nginx-gke.conf" ]
+          imagePullPolicy: Always
+          env:
+            - name: API_ENDPOINT
+              value: api.app:5555
+            - name: DEX_ENDPOINT
+              value: dex.dex:5556
+            - name: EXTERNAL_IP
+              value: 35.190.85.177
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          volumeMounts:
+            - name: dist-publish
+              mountPath: /publish
+              readOnly: true
+      volumes:
+        - name: dist-publish  # ephemeral volume, hosting the dist content
+          emptyDir: { }
+      restartPolicy: Always
+---
+# Source: api/templates/httphealthcheck-web-front.yaml
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: web-front
+  namespace: api
+spec:
+  default:
+    checkIntervalSec: 5
+    timeoutSec: 3
+    healthyThreshold: 2
+    unhealthyThreshold: 2
+    logConfig:
+      enabled: true
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 80
+        host: api.mythica.ai
+        requestPath: /healthz
+  targetRef:
+    group: ""
+    kind: Service
+    name: web-front
+---
+# Source: api/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "release-name-api-test-connection"
+  labels:
+    helm.sh/chart: api-0.1.0
+    app.kubernetes.io/name: api
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    myth.tier: web
+    myth.release: production
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['api.api-:80']
+  restartPolicy: Never

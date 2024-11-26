@@ -1,0 +1,60 @@
+name: promote-release
+
+# Add multiple trigger events for flexibility
+on:
+  workflow_dispatch:  # Manual triggering
+    inputs:
+      component:
+        description: "Components to release"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - lets-encrypt
+          - mythica-app
+          - mythica-job-canary
+          - mythica-editor-build
+          - mythica-jungle3-build
+          - mythica-packager
+          - mythica-web-front
+
+# Define reusable environment variables
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+
+    # Add timeout to prevent hanging jobs
+    timeout-minutes: 10
+    
+    # Add concurrency to prevent parallel runs
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch tags
+        run: git fetch --prune --unshallow --tags
+
+      - name: Display input and context
+        run: |
+          echo "Input value: ${{ github.event.inputs.component }}"
+          echo "Triggered by: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
+    
+      - uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 10
+          command: |
+            github/tagging/tag-for-release.sh ${{ github.event.inputs.component }} > $GITHUB_STEP_SUMMARY

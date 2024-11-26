@@ -1,19 +1,20 @@
 """Main entrypoint for FastAPI app creation"""
-
 import importlib
 import logging
-from contextlib import asynccontextmanager
 import sys
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
-from prometheus_fastapi_instrumentator import Instrumentator
+from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor as OpenTelemetryInstrumentor
+from prometheus_fastapi_instrumentator import Instrumentator as PrometheusInstrumentor
 
-from cache.connection import cache_connection_lifespan
+from cache.connection import cache_connection_lifespan, get_redis
 from config import app_config
-from db.connection import db_connection_lifespan
+from db.connection import db_connection_lifespan, get_session
 from exceptions import register_exceptions
 from logging_config import configure_logging
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
@@ -57,10 +58,14 @@ app = FastAPI(
     root_path='/v1',
     lifespan=server_lifespan)
 
-Instrumentator().instrument(app).expose(
+# Add the prometheus metrics endpoint /metrics for scraping
+PrometheusInstrumentor().instrument(app).expose(
     app,
     include_in_schema=False,
     tags=["internal", "metrics"])
+
+# Add the FastAPI instrumentation
+OpenTelemetryInstrumentor.instrument_app(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -102,9 +107,14 @@ register_streaming_sources()
 
 
 @app.get("/", include_in_schema=False, tags=["internal", "health"])
-def health():
+async def health():
     """Health check"""
-    return "Alive and well"
+    with get_session() as session, get_redis() as redis:
+        cache_health_status = await redis.info()
+        return {'healthy': True,
+                'tracing': trace.get_current_span().is_recording(),
+                'db': session.is_active,
+                'cache': 'redis_version' in cache_health_status}
 
 
 def main():

@@ -43,8 +43,10 @@ class AppConfig(BaseSettings):
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_db: int = 0
-    telemetry_enable: bool = False
-    telemetry_endpoint: str = "127.0.0.1:4317"
+    telemetry_enable: bool = True
+    telemetry_insecure: bool = False
+    telemetry_endpoint: str = "https://ingest.us.signoz.com:443"
+    telemetry_token: str = 'doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG'
 
     mythica_org_name: str = "Mythica"
 

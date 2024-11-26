@@ -14,8 +14,6 @@ domains:
   - oss.mythica.gg
   - api.mythica.ai
   - api.mythica.gg
-  - images.mythica.ai
-  - images.mythica.gg
   - dex.mythica.ai
   - dex.mythica.gg
 
@@ -30,6 +28,7 @@ auth0:
 
 serviceAccount:
   secretName: front-end-api-sa
+  email: front-end-api-sa@controlnet-407314.iam.gserviceaccount.com
 api:
   app:
     name: "app"
@@ -70,4 +69,11 @@ api:
     maxSurge: 10
     nginxConfig: "/etc/nginx/nginx-gke.conf"
     nodeSelector: scale-out
+    terminationGracePeriodSeconds: 15
+  canary:
+    name: "canary"
+    replicas: 0
+    maxUnavailable: 0
+    maxSurge: 0
+    nodeSelector: spot
     terminationGracePeriodSeconds: 15

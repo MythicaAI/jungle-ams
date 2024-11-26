@@ -1,4 +1,4 @@
-ARG LIBS_PYTHON_IMAGE
+ARG LIBS_PYTHON_IMAGE=mythica-libs-python
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Use the specified CUDA base image

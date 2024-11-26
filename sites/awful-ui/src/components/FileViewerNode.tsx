@@ -7,6 +7,7 @@ import useAwfulFlow from '../hooks/useAwfulFlow';
 import USDViewer from './USDViewer';
 import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 
+import JSONViewer from './JSONViewer';
 interface FileViewerNodeProps {
   id: string;
 }
@@ -89,6 +90,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
   }, [showFileSelector, apiFiles, setFlowData, id]);
   
 
+  const cardstyle = { height: 400, width: 400 }
 
   return (
     <div className="mythica-node file-viewer-node">
@@ -138,10 +140,10 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
             }}
           >
             {apiFiles.map((file) => (
-              <option key={file.file_id} value={file.file_id}>
+              <option key={file.file_name + file.file_id} value={file.file_id}>
                 {file.file_name || file.file_id}
               </option>
-            ))}
+            )).sort((a, b) => (a?.key || -1) < (b?.key || 1) ? -1 : 1)}
           </select>
         )}
       </div>
@@ -190,45 +192,53 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = ({ id }) => {
             </div>
 
             {/* Pane Content */}
-            <div style={{ position: 'relative', height: '400px', width: '400px' }}>
-              {downloadInfo.map((fileInfo, index) => (
-                <div
-                  key={index}
-                  style={{
-                    position: 'absolute',
-                    visibility: index === selectedPane ? 'visible' : 'hidden',
-                  }}
-                >
-                  {fileInfo ? (
-                    <>
-                      {fileInfo.content_type.startsWith('image/') ? (
-                        <img
-                          src={fileInfo.url}
-                          alt={fileInfo.name}
-                          className="imageviewer"
-                          style={{ maxWidth: '100%' }}
-                        />
-                      ) : fileInfo.content_type === 'application/json' ? (
-                        <div>
-                          <a href={fileInfo.url}>{fileInfo.name}</a> - {fileInfo.content_type}
-                        </div>
-                      ) : fileInfo.content_type === 'application/usd' ||
-                        fileInfo.content_type === 'application/usdz' ? (
-                        <USDViewer
-                          src={fileInfo.url}
-                          alt={fileInfo.name}
-                          style={{ height: 400, width: 400 }}
-                        />
-                      ) : (
-                        <p>Unsupported file type: {fileInfo.content_type}</p>
-                      )}
-                    </>
-                  ) : (
-                    <p>Error loading file</p>
-                  )}
-                </div>
-              ))}
+            <div style={{ position: 'relative' }}>
+              {downloadInfo.map((fileInfo, index) =>
+                index === selectedPane ? (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'block', // Ensure the content is visible and takes up space
+                    }}
+                  >
+                    {fileInfo ? (
+                      <>
+                        {fileInfo.content_type.startsWith('image/') ? (
+                          <img
+                            src={fileInfo.url}
+                            alt={fileInfo.name}
+                            className="imageviewer"
+                            style={cardstyle}
+                          />
+                        ) : fileInfo.content_type === 'application/json' ? (
+                          <JSONViewer 
+                            style={{
+                              ...cardstyle,
+                              width: '640px'
+                            }} 
+                            fileUrl={fileInfo.url} />
+                        ) : fileInfo.content_type === 'application/usd' ||
+                          fileInfo.content_type === 'application/usdz' ? (
+                          <USDViewer
+                            src={fileInfo.url}
+                            alt={fileInfo.name}
+                            style={cardstyle}
+                          />
+                        ) : (
+                          <div style={{ height: '100px' }}>
+                            <p>Unsupported file type: {fileInfo.content_type}</p>
+                            <a href={fileInfo.url} target='_blank' rel='noreferrer'>Download</a>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p>Error loading file</p>
+                    )}
+                  </div>
+                ) : null // Only render the selected pane
+              )}
             </div>
+
           </div>
         </div>
       )}
