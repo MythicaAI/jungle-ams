@@ -3,20 +3,13 @@ import {
   Button,
   Card,
   Divider,
-  FormControl,
-  FormLabel,
   IconButton,
-  Input,
   List,
   ListDivider,
   ListItem,
   ListItemButton,
   ListItemContent,
   ListItemDecorator,
-  Modal,
-  ModalClose,
-  Select,
-  Sheet,
   Stack,
   Typography,
 } from "@mui/joy";
@@ -43,6 +36,15 @@ import { Link } from "react-router-dom";
 import { useDeleteUpload, useGetPendingUploads } from "@queries/uploads";
 import { DeleteModal } from "@components/common/DeleteModal";
 import { useTranslation } from "react-i18next";
+import {
+  useAssignTagToFile,
+  useCreateFileTag,
+  useGetAllTags,
+  useRemoveTagFromFile,
+} from "@queries/tags";
+import { useGlobalStore } from "@store/globalStore";
+import { TAGS_ROLE } from "@components/AssetEdit/AssetEditDetailControls";
+import { FileTagModal } from "@components/common/FileTagModal";
 
 interface Sort {
   icon: JSX.Element;
@@ -55,7 +57,12 @@ const Uploads = () => {
     isOpen: boolean;
     selectedFile: FileUploadStatus | null;
   }>({ isOpen: false, selectedFile: null });
-  const { addError, addWarning } = useStatusStore();
+  const [tagModalInputs, setTagModalInputs] = useState<{
+    dropdownTag: string | null;
+    customTag: string | null;
+  }>({ dropdownTag: null, customTag: null });
+  const { setSuccess, addError, addWarning } = useStatusStore();
+  const { orgRoles } = useGlobalStore();
   const { trackUploads, uploads, updateUpload } = useUploadStore();
   const [deleteModal, setDeleteModal] = useState<{
     selectedFile: string;
@@ -64,6 +71,13 @@ const Uploads = () => {
   const { data: pendingUploads, error } = useGetPendingUploads();
   const { mutate: deleteUpload, error: deleteError } = useDeleteUpload();
   const { t } = useTranslation();
+  const { data: allTags } = useGetAllTags();
+
+  const { mutate: removeTagFromFile } = useRemoveTagFromFile();
+  const { mutate: assignTagToFile } = useAssignTagToFile();
+  const { mutate: createFileTag } = useCreateFileTag();
+  const hasTagsRole =
+    orgRoles && orgRoles.some((entry) => entry.role === TAGS_ROLE);
 
   const handleError = (err: any) => {
     addError(translateError(err));
@@ -113,6 +127,120 @@ const Uploads = () => {
 
   const handleCloseTagModal = () => {
     setTagModalOpen({ isOpen: false, selectedFile: null });
+    setTagModalInputs({ dropdownTag: null, customTag: null });
+  };
+
+  const handleUpdateTag = () => {
+    const customTag = tagModalInputs.customTag;
+    const dropdownTag = tagModalInputs.dropdownTag;
+    if (!tagModalOpen) return;
+
+    if (
+      tagModalOpen?.selectedFile?.tags &&
+      tagModalOpen?.selectedFile?.tags.length > 0
+    ) {
+      const prevTag = tagModalOpen.selectedFile.tags[0];
+
+      const isDifferent =
+        (customTag && prevTag.tag_name !== customTag) ||
+        (dropdownTag && prevTag.tag_id !== dropdownTag);
+      if (!isDifferent) return;
+
+      return removeTagFromFile(
+        {
+          type_id: tagModalOpen?.selectedFile?.file_id as string,
+          tag_id: prevTag.tag_id,
+        },
+        {
+          onSuccess: () => {
+            if (dropdownTag && !customTag) {
+              return assignTagToFile(
+                {
+                  tag_id: dropdownTag,
+                  type_id: tagModalOpen.selectedFile?.file_id as string,
+                },
+                {
+                  onSuccess: () => {
+                    setSuccess("Tag updated");
+                  },
+                  onError: (err) => {
+                    handleError(err);
+                  },
+                },
+              );
+            }
+
+            if (customTag && !dropdownTag) {
+              return createFileTag(customTag, {
+                onSuccess: (res) => {
+                  assignTagToFile(
+                    {
+                      tag_id: res.tag_id,
+                      type_id: tagModalOpen.selectedFile?.file_id as string,
+                    },
+                    {
+                      onSuccess: () => {
+                        setSuccess("Tag updated");
+                      },
+                      onError: (err) => {
+                        handleError(err);
+                      },
+                    },
+                  );
+                },
+                onError: (err) => {
+                  handleError(err);
+                },
+              });
+            }
+          },
+          onError: (err) => {
+            handleError(err);
+          },
+        },
+      );
+    }
+
+    if (dropdownTag && !customTag) {
+      return assignTagToFile(
+        {
+          tag_id: dropdownTag,
+          type_id: tagModalOpen.selectedFile?.file_id as string,
+        },
+        {
+          onSuccess: () => {
+            setSuccess("Tag updated");
+          },
+          onError: (err) => {
+            handleError(err);
+          },
+        },
+      );
+    }
+
+    if (customTag && !dropdownTag) {
+      return createFileTag(customTag, {
+        onSuccess: (res) => {
+          assignTagToFile(
+            {
+              tag_id: res.tag_id,
+              type_id: tagModalOpen.selectedFile?.file_id as string,
+            },
+            {
+              onSuccess: () => {
+                setSuccess("Tag updated");
+              },
+              onError: (err) => {
+                handleError(err);
+              },
+            },
+          );
+        },
+        onError: (err) => {
+          handleError(err);
+        },
+      });
+    }
   };
 
   const [sort, setSort] = useState("all");
@@ -211,15 +339,22 @@ const Uploads = () => {
                       {value.file_name}
                     </Link>
                   </Typography>
-                  <Button
-                    variant="plain"
-                    size="sm"
-                    onClick={() => {
-                      handleOpenTagModal(value);
-                    }}
-                  >
-                    <Typography>Edit tag</Typography>
-                  </Button>
+                  <Stack direction="row" alignItems="center" gap="8px">
+                    {value.tags && value.tags.length > 0 && (
+                      <Button disabled variant="outlined">
+                        {value.tags[0].tag_name}
+                      </Button>
+                    )}
+                    <Button
+                      variant="plain"
+                      size="sm"
+                      onClick={() => {
+                        handleOpenTagModal(value);
+                      }}
+                    >
+                      <Typography>Edit tag</Typography>
+                    </Button>
+                  </Stack>
                 </ListItemContent>
               </ListItem>
             ))}
@@ -234,96 +369,15 @@ const Uploads = () => {
           });
         }}
       />
-      <Modal
-        aria-labelledby="modal-title"
-        aria-describedby="modal-desc"
-        open={tagModalOpen.isOpen}
-        onClose={handleCloseTagModal}
-        sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}
-      >
-        <Sheet
-          variant="outlined"
-          sx={{
-            width: "100%",
-            maxWidth: 400,
-            borderRadius: "md",
-            p: 3,
-            boxShadow: "lg",
-          }}
-        >
-          <ModalClose variant="plain" sx={{ m: 1 }} />
-          <Typography
-            component="h2"
-            id="modal-title"
-            level="h4"
-            textColor="inherit"
-            sx={{ fontWeight: "lg", mb: 3 }}
-          >
-            Edit tag
-          </Typography>
-          <Stack mb="20px" gap="5px">
-            <FormControl sx={{ marginBottom: "6px" }}>
-              <FormLabel>Select an existing tag</FormLabel>
-              <Select
-                // disabled={!!item.customTag}
-                name="tag"
-                // value={item.tag}
-                // onChange={(_, newValue) => {
-                //   const updatedFiles = updateFileTag(
-                //     pendingUploads,
-                //     item.id,
-                //     (item) => {
-                //       return {
-                //         ...item,
-                //         customTag: "",
-                //         tag: newValue as string,
-                //       };
-                //     },
-                //   );
-                //   setPendingUploads(updatedFiles);
-                // }}
-                placeholder="Select a tag"
-              >
-                {/* {fileTags?.map((tag) => (
-                  <Option value={tag.tag_id}>{tag.name}</Option>
-                ))} */}
-              </Select>
-            </FormControl>
-            <FormControl sx={{ marginBottom: "6px" }}>
-              <FormLabel>Create a custom tag</FormLabel>
-              <Input
-                name="customFileTag"
-                variant="outlined"
-                placeholder="Create a new tag"
-                // value={item.customTag}
-                onChange={(e) => {
-                  //   const updatedFiles = updateFileTag(
-                  //     pendingUploads,
-                  //     item.id,
-                  //     (item) => {
-                  //       return {
-                  //         ...item,
-                  //         customTag: e.target.value as string,
-                  //         tag: "",
-                  //       };
-                  //     },
-                  //   );
-                  //   setPendingUploads(updatedFiles);
-                  // }
-                }}
-              />
-            </FormControl>
-          </Stack>
-          <Stack direction="row" justifyContent="flex-end" gap="8px">
-            <Button variant="plain" size="sm" onClick={handleCloseTagModal}>
-              Cancel
-            </Button>
-            <Button variant="solid" size="sm">
-              Confirm
-            </Button>
-          </Stack>
-        </Sheet>
-      </Modal>
+      <FileTagModal
+        tagModalOpen={tagModalOpen}
+        tagModalInputs={tagModalInputs}
+        setTagModalInputs={setTagModalInputs}
+        handleUpdateTag={handleUpdateTag}
+        allTags={allTags}
+        hasTagsRole={!!hasTagsRole}
+        handleCloseModal={handleCloseTagModal}
+      />
     </>
   );
 };

@@ -12,7 +12,7 @@ type Props = {
   tags?: Tag[];
 };
 
-export const TAGS_ROLE = "mythica-tags";
+export const TAGS_ROLE = "tag/create";
 
 export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
   const { orgRoles } = useGlobalStore();

@@ -5,6 +5,20 @@ import { TagsApiPath, TagsQuery, TagType } from "./enums";
 import { Tag } from "./types";
 import { AssetTopResponse } from "types/apiTypes";
 import { PackagesQuery } from "@queries/packages/enums";
+import { UploadsQuery } from "@queries/uploads/enums";
+
+export const useGetAllTags = () => {
+  return useQuery<Tag[]>({
+    queryKey: [TagsQuery.TAGS_LIST_ALL],
+    queryFn: async () =>
+      await api.get({
+        path: `${TagsApiPath.TAGS}`,
+        query: {
+          limit: 100,
+        },
+      }),
+  });
+};
 
 export const useGetAssetTags = () => {
   return useQuery<Tag[]>({
@@ -59,6 +73,7 @@ export const useCreateAssetTag = () => {
       }),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: [TagsQuery.TAGS_LIST_ASSETS] });
+      queryClient.invalidateQueries({ queryKey: [TagsQuery.TAGS_LIST_ALL] });
     },
   });
 };
@@ -76,6 +91,7 @@ export const useCreateFileTag = () => {
       }),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: [TagsQuery.TAGS_LIST_FILES] });
+      queryClient.invalidateQueries({ queryKey: [TagsQuery.TAGS_LIST_ALL] });
     },
   });
 };
@@ -105,11 +121,9 @@ export const useAssignTagToAsset = () => {
 
 export const useAssignTagToFile = () => {
   const queryClient = useQueryClient();
-  let assetId = "";
 
   return useMutation({
     mutationFn: async (payload: { tag_id: string; type_id: string }) => {
-      assetId = payload.type_id;
       return await api.post({
         path: `${TagsApiPath.TAGS}${TagsApiPath.TYPES}/${TagType.FILE}`,
         body: {
@@ -120,7 +134,7 @@ export const useAssignTagToFile = () => {
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({
-        queryKey: [PackagesQuery.ASSETS, assetId],
+        queryKey: [UploadsQuery.PENDING_LiST],
       });
     },
   });
@@ -147,18 +161,16 @@ export const useRemoveTagFromAsset = () => {
 
 export const useRemoveTagFromFile = () => {
   const queryClient = useQueryClient();
-  let assetId = "";
 
   return useMutation({
     mutationFn: async (payload: { tag_id: string; type_id: string }) => {
-      assetId = payload.type_id;
       return await api.del({
         path: `${TagsApiPath.TAGS}${TagsApiPath.TYPES}/${TagType.FILE}/${payload.tag_id}/${payload.type_id}`,
       });
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({
-        queryKey: [PackagesQuery.ASSETS, assetId],
+        queryKey: [UploadsQuery.PENDING_LiST],
       });
     },
   });

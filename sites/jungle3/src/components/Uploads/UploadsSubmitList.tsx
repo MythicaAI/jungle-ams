@@ -2,7 +2,6 @@ import {
   Button,
   Card,
   FormControl,
-  FormLabel,
   Input,
   Option,
   Select,
@@ -10,7 +9,6 @@ import {
   Table,
 } from "@mui/joy";
 import { v4 } from "uuid";
-import { jwtDecode } from "jwt-decode";
 import {
   extractValidationErrors,
   postData,
@@ -27,8 +25,7 @@ import { useTranslation } from "react-i18next";
 import {
   useAssignTagToFile,
   useCreateFileTag,
-  useGetFileTags,
-  useRemoveTagFromFile,
+  useGetAllTags,
 } from "@queries/tags";
 import { useGlobalStore } from "@store/globalStore";
 import { TAGS_ROLE } from "@components/AssetEdit/AssetEditDetailControls";
@@ -49,11 +46,9 @@ export const UploadsSubmitList = function () {
   const { trackUploads, pendingUploads, setUploadProgress, setPendingUploads } =
     useUploadStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
-  const { data: fileTags, isLoading } = useGetFileTags();
-  const { mutate: assignTagToAsset, isPending: isAssignTagToAssetLoading } =
-    useAssignTagToFile();
-  const { mutate: createTag, isPending: isCreateTagLoading } =
-    useCreateFileTag();
+  const { data: fileTags } = useGetAllTags();
+  const { mutate: assignTagToAsset } = useAssignTagToFile();
+  const { mutate: createTag } = useCreateFileTag();
 
   const { orgRoles } = useGlobalStore();
   const cookies = new Cookies();
@@ -61,13 +56,7 @@ export const UploadsSubmitList = function () {
   const hasTagsRole =
     orgRoles && orgRoles.some((entry) => entry.role === TAGS_ROLE);
 
-  console.log("orgRoles: ", orgRoles);
-
-  console.log("pendingUploads: ", pendingUploads);
-
   const authTokenFromCookies = cookies.get("auth_token");
-  const decodedToken = jwtDecode(authTokenFromCookies);
-  console.log("decodedToken: ", decodedToken);
 
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
@@ -251,30 +240,32 @@ export const UploadsSubmitList = function () {
                         </FormControl>
                       </td>
 
-                      <td>
-                        <FormControl sx={{ marginBottom: "6px" }}>
-                          <Input
-                            name="customFileTag"
-                            variant="outlined"
-                            placeholder="Create a new tag"
-                            value={item.customTag}
-                            onChange={(e) => {
-                              const updatedFiles = updateFileTag(
-                                pendingUploads,
-                                item.id,
-                                (item) => {
-                                  return {
-                                    ...item,
-                                    customTag: e.target.value as string,
-                                    tag: "",
-                                  };
-                                },
-                              );
-                              setPendingUploads(updatedFiles);
-                            }}
-                          />
-                        </FormControl>
-                      </td>
+                      {hasTagsRole && (
+                        <td>
+                          <FormControl sx={{ marginBottom: "6px" }}>
+                            <Input
+                              name="customFileTag"
+                              variant="outlined"
+                              placeholder="Create a new tag"
+                              value={item.customTag}
+                              onChange={(e) => {
+                                const updatedFiles = updateFileTag(
+                                  pendingUploads,
+                                  item.id,
+                                  (item) => {
+                                    return {
+                                      ...item,
+                                      customTag: e.target.value as string,
+                                      tag: "",
+                                    };
+                                  },
+                                );
+                                setPendingUploads(updatedFiles);
+                              }}
+                            />
+                          </FormControl>
+                        </td>
+                      )}
                     </tr>
                   )}
                 </>

@@ -8,7 +8,6 @@ import {
   ListItem,
   ListItemContent,
   ListItemDecorator,
-  Stack,
   Typography,
 } from "@mui/joy";
 import { FormEvent, useEffect, useState } from "react";
@@ -17,20 +16,20 @@ import { useAssetVersionStore } from "@store/assetVersionStore";
 import { FileUploadStatus, useUploadStore } from "@store/uploadStore";
 import { LucideCircleCheck } from "lucide-react";
 import { AssetVersionContentMap } from "types/apiTypes";
-import { TagCard } from "@components/TagCard";
+//import { TagCard } from "@components/TagCard";
 
-const MY_FILES_TAG = {
-  name: "My files",
-  tag_id: "",
-  owner_id: "",
-  created: "",
-};
-const ALL_FILES_TAG = {
-  name: "All files",
-  tag_id: "",
-  owner_id: "",
-  created: "",
-};
+// const MY_FILES_TAG = {
+//   name: "My files",
+//   tag_id: "",
+//   owner_id: "",
+//   created: "",
+// };
+// const ALL_FILES_TAG = {
+//   name: "All files",
+//   tag_id: "",
+//   owner_id: "",
+//   created: "",
+// };
 
 interface UploadsReadyListProps {
   category?: string;
@@ -57,7 +56,7 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = ({
   const [filteredUploadFiles, setFilteredUploadFiles] = useState<
     FileUploadStatus[]
   >([]);
-  const [selectedTag, setSelectedTag] = useState(MY_FILES_TAG.name);
+  // const [selectedTag, setSelectedTag] = useState(MY_FILES_TAG.name);
 
   useEffect(() => {
     updateFileList(uploadNameFilter);
@@ -218,7 +217,7 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = ({
       <List size="sm">
         <UploadListHeader />
         <ListDivider />
-        <Stack direction="row" gap="8px" mt="8px">
+        {/* <Stack direction="row" gap="8px" mt="8px">
           <Box
             onClick={() => {
               setSelectedTag(MY_FILES_TAG.name);
@@ -229,7 +228,7 @@ export const UploadsReadyList: React.FC<UploadsReadyListProps> = ({
           <Box onClick={() => setSelectedTag(ALL_FILES_TAG.name)}>
             <TagCard tag={ALL_FILES_TAG} selectedTag={selectedTag} />
           </Box>
-        </Stack>
+        </Stack> */}
         <Input
           name="file-name"
           value={uploadNameFilter}
