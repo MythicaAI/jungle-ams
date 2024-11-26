@@ -1,4 +1,4 @@
-import { AssetVersionResponse } from "types/apiTypes.ts";
+import {AssetVersionResponse} from "types/apiTypes.ts";
 
 const defaultThumbnailImg = "/houdini.svg";
 
@@ -10,9 +10,15 @@ export const getThumbnailImg = (version: AssetVersionResponse): string => {
   if (!thumbnails || !thumbnails.length) {
     return defaultThumbnailImg;
   }
+
   const file_name = thumbnails[0].file_name;
+  const file_parts = file_name.split(".");
+  if (file_parts.length < 2) {
+    return defaultThumbnailImg;
+  }
+
   const content_hash = thumbnails[0].content_hash;
-  const extension = file_name.split(".")[1];
+  const extension = file_parts.at(-1);
   const baseUrl = import.meta.env.VITE_IMAGES_BASE_URL;
   return `${baseUrl}/${content_hash}.${extension}`;
 };

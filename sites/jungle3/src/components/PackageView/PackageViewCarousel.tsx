@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Box, IconButton, AspectRatio, Skeleton } from "@mui/joy";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AssetVersionContent, AssetVersionResponse } from "types/apiTypes.ts";
+import React, {useState} from "react";
+import {AspectRatio, Box, IconButton, Skeleton} from "@mui/joy";
+import {ChevronLeft, ChevronRight} from "lucide-react";
+import {AssetVersionContent, AssetVersionResponse} from "types/apiTypes.ts";
 
 export interface PackageViewCarouselProps {
   thumbnails?: string[];
@@ -15,7 +15,7 @@ interface ImageRef {
 const assetContentToImageRef = (avc: AssetVersionContent): ImageRef => {
   const file_name = avc.file_name;
   const content_hash = avc.content_hash;
-  const extension = file_name.split(".")[1];
+  const extension = file_name.split(".").at(-1);
   const baseUrl = import.meta.env.VITE_IMAGES_BASE_URL;
   return {
     file_name: file_name,
@@ -57,7 +57,7 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
       animation={false}
       width={800}
       height={600}
-      sx={{ borderRadius: "6px" }}
+      sx={{borderRadius: "6px"}}
     />
   ) : (
     <Box
@@ -70,7 +70,7 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
     >
       <AspectRatio
         ratio="4/3"
-        sx={{ background: "transparent", borderRadius: "8px" }}
+        sx={{background: "transparent", borderRadius: "8px"}}
       >
         <img
           src={thumbnailRefs[currentIndex].url}
@@ -93,7 +93,7 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
           transform: "translateY(-50%)",
         }}
       >
-        <ChevronLeft />
+        <ChevronLeft/>
       </IconButton>
 
       <IconButton
@@ -105,9 +105,9 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
           transform: "translateY(-50%)",
         }}
       >
-        <ChevronRight />
+        <ChevronRight/>
       </IconButton>
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+      <Box sx={{display: "flex", justifyContent: "center", mt: 2}}>
         {thumbnailRefs.map((_, slideIndex) => (
           <Box
             key={slideIndex}
