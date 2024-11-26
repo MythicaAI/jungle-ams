@@ -24,6 +24,7 @@ SERVICE_ACCOUNT_JSON=$(op read op://Infrastructure/front-end-api-staging-sa/serv
 AUTH0_CLIENT_ID=$(op read op://Infrastructure/api-staging-secrets/auth0-client-id)
 AUTH0_CLIENT_SECRET=$(op read op://Infrastructure/api-staging-secrets/auth0-client-secret)
 AUTH0_DOMAIN=$(op read op://Infrastructure/api-staging-secrets/auth0-domain)
+
 kubectl delete secret/secrets -n api-staging
 kubectl create secret generic secrets \
   --from-literal=SIGNOZ_API_KEY=$SIGNOZ_API_KEY \
