@@ -188,6 +188,7 @@ jobs:
           docker load --input /tmp/api-app-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
+        id: build_push
         uses: docker/build-push-action@v6
         with:
           push: true
@@ -202,7 +203,14 @@ jobs:
           load: true
 
       - name: Send Discord notification
+        if: always()
         run: |
+          IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+          if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
+              MESSAGE="❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+              MESSAGE="✅ $IMAGE is now available for testing at https://api-staging.mythica.gg"
+          fi
           curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
                -H "Content-Type: application/json" \
-               --data '{"content": "${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} is now available for testing at https://api-staging.mythica.gg." }'
+               --data '{"content": "$MESSAGE" }'
