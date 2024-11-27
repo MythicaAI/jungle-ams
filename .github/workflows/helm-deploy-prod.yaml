@@ -102,4 +102,3 @@ jobs:
         uses: Ilshidur/action-discord@master
         with:
           args: 'Production updated ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-'
