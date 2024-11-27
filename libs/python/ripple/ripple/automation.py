@@ -6,17 +6,15 @@ import asyncio
 import nats
 import requests
 import tempfile
-from pydantic import BaseModel
+import warnings
+
+from pydantic import BaseModel, model_validator
 from typing import Callable, Type, Optional, Dict, Any, Literal
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
 from uuid import uuid4
 
-import subprocess
-import sys
-from pathlib import Path
-import venv
 
 # Set up logging
 logging.basicConfig(
@@ -113,26 +111,15 @@ class RestAdapter():
     def __init__(self, api_url=API_URL) -> None:
         self.api_url = api_url
 
-    def get(self, endpoint: str, data: dict={}) -> Optional[str]:
+    def get(self, endpoint: str, data: dict={}, token: str = None) -> Optional[str]:
         """Get data from an endpoint."""
         url = API_URL + endpoint
         log.debug(f"Getting from Endpoint: {url} - {data}" )
-        response = requests.get(url)
-        if response.status_code in [200,201]:
-            log.debug(f"Endpoint Response: {response.status_code}")
-            return response.json()
-        else:
-            log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
-            return None
-
-    def post(self, endpoint: str, data: str) -> Optional[str]:
-        """Post data to an endpoint synchronously. """
-        url = API_URL + endpoint
-        log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
-        response = requests.post(
-            url, 
-            json=data, 
-            headers={"Content-Type": "application/json"}
+        response = requests.get(
+            url,
+            headers={
+                "Authorization": "Bearer %s" % token
+            }
         )
         if response.status_code in [200,201]:
             log.debug(f"Endpoint Response: {response.status_code}")
@@ -141,7 +128,26 @@ class RestAdapter():
             log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
             return None
 
-    def post_file(self, endpoint: str, token: str, file_data: list) -> Optional[str]:
+    def post(self, endpoint: str,  data: str, token: str) -> Optional[str]:
+        """Post data to an endpoint synchronously. """
+        url = API_URL + endpoint
+        log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
+        response = requests.post(
+            url, 
+            json=data, 
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer %s" % token
+            }
+        )
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
+            return None
+
+    def post_file(self, endpoint: str, file_data: list, token: str) -> Optional[str]:
         """Post file to an endpoint."""
         url = API_URL + endpoint
         log.debug(f"Sending file to Endpoint: {url} - {file_data}" )
@@ -169,9 +175,18 @@ class WorkerRequest(BaseModel):
     work_id: str
     job_id: Optional[str] = None
     profile_id: Optional[str] = None
+    auth_token: Optional[str] = None
     path: str
     data: Dict
 
+    @model_validator(mode='after')
+    def warn_deprecated_fields(self):
+        if self.profile_id is not None:
+            warnings.warn(
+                "'profile_id' is deprecated and will be removed in the future. Use auth_token instead.",
+                DeprecationWarning
+            )
+        return self
 class WorkerResponse(BaseModel):
     work_id: str
     payload: dict
@@ -188,7 +203,7 @@ class ResultPublisher:
         self.rest = rest
         
     #Callback for reporting back. 
-    def result(self, item, complete=False):
+    def result(self, item:ProcessStreamItem, complete=False):
 
         # Poplulate context
         item.process_guid = str(uuid4())
@@ -215,18 +230,18 @@ class ResultPublisher:
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
-                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "")
+                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
             else:
                 data = {
                     "created_in": "automation-worker",
                     "result_data": item.model_dump()
                 }
-                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data)
+                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
 
     def _publish_local_data(self, item: ProcessStreamItem):
 
 
-        def upload_file(token: str, file_path: str) -> Optional[str]:
+        def upload_file(file_path: str) -> Optional[str]:
             if not os.path.exists(file_path):
                 return None
 
@@ -235,7 +250,7 @@ class ResultPublisher:
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = self.rest.post_file("/upload/store", token, file_data)
+                    response = self.rest.post_file("/upload/store",  file_data, self.request.auth_token)
                     file_id = response['files'][0]['file_id'] if response else None
                 return file_id
             finally:
@@ -246,20 +261,23 @@ class ResultPublisher:
                 'job_type': job_def.job_type,
                 'name': job_def.name,
                 'description': job_def.description,
-                'params_schema': job_def.parameter_spec.dict()
+                'params_schema': job_def.parameter_spec.model_dump()
             }
-            response = self.rest.post("/jobs/definitions", definition)
+            response = self.rest.post("/jobs/definitions", definition, self.request.auth_token)
             return response['job_def_id'] if response else None
 
         #TODO: Report errors
         if isinstance(item, OutputFiles):
-            url = f"/sessions/direct/{self.request.profile_id}"
-            response = self.rest.get(url)
-            token = response['token'] if response else None
+            
+            if self.request.auth_token is None and self.request.profile_id is not None:
+                url = f"/sessions/direct/{self.request.profile_id}"
+                response = self.rest.get(url)
+                self.request.auth_token = response['token'] if response else None
+                warnings.warn("Using deprecated 'profile_id' to get auth token. Use 'auth_token' instead.", DeprecationWarning)
 
             for key, files in item.files.items():
                 for index, file in enumerate(files):
-                    file_id = upload_file(token, file)
+                    file_id = upload_file(file)
                     files[index] = file_id
 
         elif isinstance(item, JobDefinition):
@@ -438,8 +456,7 @@ class Worker:
                     # If it only contains "params", replace payload.data with its content
                     payload.data = payload.data['params']
 
-
-                log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, profile_id: {payload.profile_id}, data: {payload.data}"
+                log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
 
             except Exception as e:
                 msg=f'Validation error - {json_payload} - {formatException(e)}'
