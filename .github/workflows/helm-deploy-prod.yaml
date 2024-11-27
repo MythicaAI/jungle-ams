@@ -101,5 +101,5 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         uses: Ilshidur/action-discord@master
         with:
-          args: 'Production helm deploy complete'
-          args: "''' ${{ steps.deployed_yaml.outputs.images }} ```"
+          args: 'Production updated ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+'
