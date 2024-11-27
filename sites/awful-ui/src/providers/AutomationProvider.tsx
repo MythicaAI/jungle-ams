@@ -14,7 +14,7 @@ const BASE_URL = 'https://automation-296075347103.us-central1.run.app';
 
 const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [workers] = useState(WORKERS);
-    const { profile } = useMythicaApi(); 
+    const { authToken } = useMythicaApi(); 
     const [loaded,  setLoaded] = useState(false);
     const [workerAutomations, setAutomations] = useState<WorkerAutomations>({});
     const [executionData, setExecutionData] = useState<{ [workerId: string]: ExecutionData }>({});
@@ -60,7 +60,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
      * MythicaApiProvider when an API key is enterered)
      */
     const loadAutomations = useCallback(async () => {
-        if (!profile?.profile_id) return; // Ensure profileId is available
+        if (!authToken) return; // Ensure profileId is available
     
         const loadedAutomations: WorkerAutomations = {};
     
@@ -71,7 +71,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         work_id: "",  // Generate or retrieve unique work_id if needed
                         channel: worker,
                         path: "/mythica/workers",
-                        profile_id: profile.profile_id,  // Use dynamic profile_id
+                        auth_token: authToken,  // Use dynamic profile_id
                         data: {},
                     }, {
                         headers: {
@@ -96,7 +96,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
         console.debug('Final structure of loadedAutomations:', loadedAutomations);
         setAutomations(loadedAutomations);
-    },[parseAutomation, profile, workers]);
+    },[parseAutomation, authToken, workers]);
 
     const allAutomations = useMemo(() => {
         const flatAutomations: { [uri: string]: AutomationTask } = {};
@@ -120,7 +120,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
      * @returns 
      */
     const runAutomation = async (worker: string, nodeId: string, path: string, inputData: dictionary) => {
-        if (!profile?.profile_id) return;
+        if (!authToken) return;
 
         try {
             // Set initial state to "running"
@@ -140,7 +140,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 work_id: nodeId,
                 channel: worker,
                 path: path,
-                profile_id: profile.profile_id, // Use profile_id dynamically
+                auth_token: authToken,
                 data: inputData,
             });
 
@@ -172,7 +172,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     useEffect(() => {
-        if (!loaded && profile?.profile_id) {
+        if (!loaded && authToken) {
             try {
                 loadAutomations();
                 setLoaded(true);
@@ -180,7 +180,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 console.error("Failed to load automations:", error);
             }
         }
-    }, [loadAutomations, loaded, profile?.profile_id, workerAutomations]); // Only re-run when apiKey changes
+    }, [loadAutomations, loaded, authToken, workerAutomations]); // Only re-run when apiKey changes
 
     return (
         <AutomationContext.Provider value={{ workers, automations: workerAutomations, allAutomations, getExecutionData, loadAutomations, runAutomation, parseAutomation }}>
