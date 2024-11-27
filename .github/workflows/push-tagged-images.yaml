@@ -29,9 +29,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # compare to latest commit
-          base: ${{ github.ref }}
-
           # setup all the filters to match Dockerfile locations
           filters: |
             api/app/:
@@ -215,4 +212,4 @@ jobs:
           fi
           curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
                -H "Content-Type: application/json" \
-               --data '{"content": "$MESSAGE" }'
+               --data '{"content": "$MESSAGE", "sender": "Infra Notifications" }'
