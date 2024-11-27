@@ -90,6 +90,9 @@ IMAGES = {
     'sites/editor': {
         'name': 'mythica-editor-build',
     },
+    'sites/awful-ui': {
+        'name': 'mythica-awful-ui-build',
+    },
     'testing/storage/minio-config': {
         'name': 'minio-config'
     },
