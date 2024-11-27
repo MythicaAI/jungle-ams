@@ -207,11 +207,8 @@ jobs:
             API_APP_IMAGE=api-app:${{ github.sha }}
           load: true
 
-      - name: Discord notification
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_USERNAME: InfraNotifications
-        uses: Ilshidur/action-discord@master
-        with:
-          args: '${{ matrix.image }}:${{ steps.generate_tag.outputs.new_tag_version }} is now available for testing at https://api-staging.mythica.gg.'
-          username: "Infra Notifications"
+      - name: Send Discord notification
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+               -H "Content-Type: application/json" \
+               --data '{"content": "${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} is now available for testing at https://api-staging.mythica.gg." }'
