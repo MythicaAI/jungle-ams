@@ -190,7 +190,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       return;
     }
 
-    const handleUpdate = () => {
+    const handleUpdate = (shouldNotRedirect?: boolean) => {
       if (
         isCreateTagLoading ||
         isAssignTagToAssetLoading ||
@@ -206,15 +206,18 @@ const AssetEdit: React.FC<AssetEditProps> = ({
         },
         {
           onSuccess: (r) => {
-            console.log("qqq");
             loadAssetVersionResponse(r);
-            setSuccess(`${r.name}, ${r.version.join(".")} updated`);
-            navigate("/packages");
+            if (!shouldNotRedirect) {
+              setSuccess(`${r.name}, ${r.version.join(".")} updated`);
+              navigate("/packages");
+            }
           },
           onError: (err) => handleError(err),
         },
       );
     };
+
+    const SHOULD_NOT_REDIRECT = true;
 
     const isTagDifferentFromInitial =
       initialTag &&
@@ -231,8 +234,11 @@ const AssetEdit: React.FC<AssetEditProps> = ({
                 assignTagToAsset(
                   { tag_id: res?.tag_id, type_id: asset_id },
                   {
-                    onSettled: () => {
+                    onSuccess: () => {
                       handleUpdate();
+                    },
+                    onError: () => {
+                      handleUpdate(SHOULD_NOT_REDIRECT);
                     },
                   },
                 );
@@ -241,7 +247,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
           );
         },
         onError: (err) => {
-          handleUpdate();
+          handleUpdate(SHOULD_NOT_REDIRECT);
           handleError(err);
         },
       });
@@ -258,14 +264,17 @@ const AssetEdit: React.FC<AssetEditProps> = ({
                 type_id: asset_id,
               },
               {
-                onSettled: () => {
+                onError: () => {
+                  handleUpdate(SHOULD_NOT_REDIRECT);
+                },
+                onSuccess: () => {
                   handleUpdate();
                 },
               },
             );
           },
           onError: (err) => {
-            handleUpdate();
+            handleUpdate(SHOULD_NOT_REDIRECT);
             handleError(err);
           },
         },
@@ -278,14 +287,17 @@ const AssetEdit: React.FC<AssetEditProps> = ({
           assignTagToAsset(
             { tag_id: res?.tag_id, type_id: asset_id },
             {
-              onSettled: () => {
+              onSuccess: () => {
                 handleUpdate();
+              },
+              onError: () => {
+                handleUpdate(SHOULD_NOT_REDIRECT);
               },
             },
           ),
         onError: (err) => {
           handleError(err);
-          handleUpdate();
+          handleUpdate(SHOULD_NOT_REDIRECT);
         },
       });
     }
@@ -294,8 +306,11 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       return assignTagToAsset(
         { tag_id: tag, type_id: asset_id },
         {
-          onSettled: () => {
+          onSuccess: () => {
             handleUpdate();
+          },
+          onError: () => {
+            handleUpdate(SHOULD_NOT_REDIRECT);
           },
         },
       );

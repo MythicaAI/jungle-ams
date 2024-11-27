@@ -16,6 +16,9 @@ export const TAGS_ROLE = "tag/create";
 
 export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
   const { orgRoles } = useGlobalStore();
+  const uniqueOrgs = [
+    ...new Map(orgRoles.map((org) => [org.org_id, org])).values(),
+  ];
   const {
     org_id,
     description,
@@ -26,8 +29,6 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
     setTag,
   } = useAssetVersionStore();
   const { t } = useTranslation();
-
-  console.log("tag: ", tag);
 
   const hasTagsRole =
     orgRoles && orgRoles.some((entry) => entry.role === TAGS_ROLE);
@@ -55,7 +56,7 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
           )}
         </FormLabel>
 
-        {orgRoles.length > 0 ? (
+        {uniqueOrgs.length > 0 ? (
           <Select
             variant="soft"
             name="org_id"
@@ -64,12 +65,12 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
             multiple={false}
             onChange={onUpdateOrg}
           >
-            {orgRoles.map((role) => (
+            {uniqueOrgs.map((role) => (
               <Option key={role.org_id} value={role.org_id}>
                 {role.org_name}
               </Option>
             ))}
-            {org_id! in orgRoles ? (
+            {org_id! in uniqueOrgs ? (
               <Option key={org_id} value={org_id}>
                 {org_id} (not a member)
               </Option>
