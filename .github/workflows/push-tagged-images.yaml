@@ -37,6 +37,7 @@ jobs:
             api/app/:
               - 'libs/python/**'
               - 'api/app/**'
+              - '.github/workflows/push-tagged-images.yaml' # always build at least one image if the workflow changes
             api/nginx/:
               - 'api/nginx/**'
             api/gcs-proxy/:
@@ -205,11 +206,12 @@ jobs:
       - name: Send Discord notification
         if: always()
         run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
           IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
-              MESSAGE="❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              MESSAGE="❌ $PR_TITLE: $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
-              MESSAGE="✅ $IMAGE is now available for testing at https://api-staging.mythica.gg"
+              MESSAGE="✅ $PR_TITLE: $IMAGE is now available for testing at https://api-staging.mythica.gg"
           fi
           curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
                -H "Content-Type: application/json" \
