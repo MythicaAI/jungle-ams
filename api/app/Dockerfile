@@ -19,6 +19,8 @@ RUN chown -R appuser /api/app && \
     chown -R appuser /uploads
 
 
+USER appuser
+
 # Put all application data into the container /app directory, do this as late
 # as possible to aid in the docker layer cache coherency
 COPY . .
@@ -28,7 +30,6 @@ RUN poetry check && \
     poetry env use python3 && \
     poetry install --compile --all-extras --without=dev --no-root
 
-USER appuser
 # Application server listen port, see ./docker-entrypoint.sh
 EXPOSE 5555
 
