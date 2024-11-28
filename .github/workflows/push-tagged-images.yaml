@@ -207,7 +207,7 @@ jobs:
         if: always()
         run: |
           echo "{" > message.json
-          echo -n "\"content\": \"" > message.json
+          echo -n "\"content\": \"" >> message.json
           echo -n "PR: ${{ github.event.pull_request.title }} " >> message.json
           echo IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} >> $GITHUB_ENV
           if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
