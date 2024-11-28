@@ -4,6 +4,7 @@ import re
 import subprocess
 from datetime import datetime, timezone
 from functools import wraps
+from locale import windows_locale
 
 from invoke import task
 
@@ -53,6 +54,7 @@ TESTING_STORAGE_DIR = os.path.join(BASE_DIR, 'testing/storage')
 TESTING_WEB_DIR = os.path.join(BASE_DIR, 'testing/web')
 TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 TESTING_OBSERVE_DIR = os.path.join(BASE_DIR, 'testing/observe')
+TESTING_MNT_DIR = os.path.join(BASE_DIR, 'testing/mnt')
 
 IMAGES = {
     'api/nginx': {
@@ -150,6 +152,23 @@ IMAGE_SETS = {
     },
 }
 
+LOCAL_MOUNT_POINTS = {
+    'blockstore': 'testing/mnt/blockstore',
+    'pgdata': 'testing/mnt/pgdata',
+    'static': 'testing/mnt/static'
+}
+
+def generate_mount_env_file() -> str:
+    """Generate an env file with the OS specific mount points as environment variables"""
+    env_file_path = os.path.join(TESTING_MNT_DIR, 'os_mount_paths.env')
+    with open(env_file_path, "w+") as f:
+        for name, mnt_point in LOCAL_MOUNT_POINTS.items():
+            abs_path = os.path.join(BASE_DIR, mnt_point)
+            # Convert to platform-specific format
+            abs_path = os.path.normpath(abs_path)
+            # Write env var in KEY=value format
+            f.write(f"{name.upper()}_PATH={abs_path}\n")
+    return os.path.normpath(env_file_path)
 
 def get_commit_hash(ref='HEAD'):
     """Return a short commit hash for the current HEAD commit"""
@@ -176,17 +195,19 @@ def parse_expose_to_ports(image_path):
 
 def start_docker_compose(c, docker_compose_path, cleanup_fn=None):
     """Cleanly start a docker compose instance"""
+    env_file_path = generate_mount_env_file()
     with c.cd(docker_compose_path):
-        c.run('docker compose down --timeout 1')
+        c.run(f'docker compose --env-file {env_file_path} down --timeout 1')
         # cleanup_fn(c) if cleanup_fn is not None else None
-        c.run('docker compose -f ./docker-compose.yaml up -d',
+        c.run(f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml up -d',
               pty=PTY_SUPPORTED)
 
 
 def stop_docker_compose(c, docker_compose_path):
     """Shutdown a docker compose instance"""
+    env_file_path = generate_mount_env_file()
     with c.cd(docker_compose_path):
-        c.run('docker compose -f ./docker-compose.yaml down --timeout 3')
+        c.run(f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
 
 
 def build_image(c, image_path):

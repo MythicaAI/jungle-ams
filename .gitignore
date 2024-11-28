@@ -57,3 +57,5 @@ __pycache__
 **/output
 
 *.local
+
+testing/mnt/os_mount_paths.env
