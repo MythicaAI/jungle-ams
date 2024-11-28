@@ -11,6 +11,9 @@ on:
       - 'libs/**'
       - 'automation/**'
       - '.github/workflows/push-tagged-images.yaml'
+  push:
+    branches:
+      - fix-tagging-message
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -212,6 +215,7 @@ jobs:
               echo "✅ $IMAGE is now available for testing at https://api-staging.mythica.gg" >> message.json
           fi
           echo "\" }" >> message.json
+          cat message.json
           curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
                -H "Content-Type: application/json" \
                --data @message.json
