@@ -70,19 +70,13 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: "../mnt/pgdata"
+      device: ${PGDATA_PATH}
   blockstore:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: "../mnt/blockstore"
-  mldata:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "../mnt/mldata"
+      device: ${BLOCKSTORE_PATH}
 
 networks:
   storage:
