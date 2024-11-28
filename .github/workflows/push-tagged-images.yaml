@@ -206,15 +206,17 @@ jobs:
       - name: Send Discord notification
         if: always()
         run: |
-          echo "{ \"content\"=\"" > message.json
-          echo "PR: ${{ github.event.pull_request.title }}" >> message.json
+          echo "{" > message.json
+          echo -n "\"content\": \"" > message.json
+          echo -n "PR: ${{ github.event.pull_request.title }} " >> message.json
           echo IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} >> $GITHUB_ENV
           if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
-              echo "❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> message.json
+              echo -n "❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> message.json
           else
-              echo "✅ $IMAGE is now available for testing at https://api-staging.mythica.gg" >> message.json
+              echo -n "✅ $IMAGE available for testing at https://api-staging.mythica.gg" >> message.json
           fi
-          echo "\" }" >> message.json
+          echo -n "\"" >> message.json
+          echo "}" >> message.json
           cat message.json
           curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
                -H "Content-Type: application/json" \
