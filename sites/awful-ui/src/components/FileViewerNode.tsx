@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Handle, Position,useUpdateNodeInternals } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAwfulFlow from '../hooks/useAwfulFlow';
@@ -30,7 +30,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const [showFileSelector, setShowFileSelector] = useState(false);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>(node.data.selectedFileIds || []);
   const [selectedFileNames, setSelectedFileNames] = useState<string[]>(node.data.selectedFileNames || []);
-  const updateNodeInternals = useUpdateNodeInternals();
 
   const [initialized, setInitialized] = useState(false);
 
@@ -69,6 +68,18 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     setShowFileSelector(!showFileSelector);
   }
 
+  const setFileSelections = (file_ids: string[]) => {
+    const selectCtl = selectFileRef.current;
+    if (selectCtl) {
+      for (let i = 0; i < selectCtl.options.length; i++) {
+        const option = selectCtl.options.item(i);
+        if (option && option.value in file_ids) {
+          option.selected = true;
+        }
+      }
+    }
+  }
+
   const handleFileSelection = useCallback(
     () => {
       if (!selectFileRef) return;
@@ -94,9 +105,9 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       setSelectedFileNames(selectedNames);
       
       setFlowData(node.id, INPUT_FILES, selectedFiles);
-      updateNodeInternals(node.id);
+      //updateNodeInternals(node.id);
     },
-    [apiFiles, setFlowData, node.id, updateNodeInternals]
+    [apiFiles, setFlowData, node.id]
   );
 
   // Update node save data 
@@ -112,22 +123,24 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
   //get download info for selected files whenever inputFlowData changes
   useEffect(() => {
-    inputFlowData && getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
+    if (inputFlowData && inputFlowData.length > 0) {
+      const selectedFiles = inputFlowData.filter(file => file !== null) as GetFileResponse[];
+      setFileSelections(selectedFiles.map(file => file.file_id));
+      const selectedNames = selectedFiles.map(file => file.file_name);
+      const selectedIds = selectedFiles.map(file => file.file_id);
+      
+      setSelectedFileIds(selectedIds);
+      setSelectedFileNames(selectedNames);
+      
+      getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
+    } 
   }, [inputFlowData, setDownloadInfo, getDownloads]); 
 
 
   // force files to update when the component is first mounted
   useEffect(() => {
     fetchAvailableFiles().then(() => {
-      const selectCtl = selectFileRef.current;
-      if (selectCtl) {
-        for (let i=0; i < selectCtl.options.length; i++) {
-          const option = selectCtl.options.item(i);
-          if (option && option.value in selectedFileIds) {
-            option.selected = true;
-          }
-        }
-      }
+      setFileSelections(selectedFileIds);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchAvailableFiles]);
@@ -312,3 +325,5 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 };
 
 export default FileViewerNode;
+
+
