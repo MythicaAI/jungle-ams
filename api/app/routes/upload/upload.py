@@ -6,10 +6,10 @@ import shutil
 import string
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlmodel import and_, select, update
 
 import db.index as db_index
@@ -17,7 +17,7 @@ from assets.repo import convert_version_input, process_join_results, select_asse
 from config import app_config
 from content.validate_filename import validate_filename
 from context import RequestContext
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, org_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
@@ -51,6 +51,19 @@ class UploadResponse(BaseModel):
     files: list[FileUploadResponse]
 
 
+def validate_file_visibility(value: str) -> str:
+    # Allow only 'private', 'public', or 'org_{id}' format
+    if not value:
+        return "public"
+    if value.startswith("org_"):
+        # validate org id
+        org_id_to_seq(value)
+        return value
+    if value not in {"private", "public"}:
+        raise ValueError("Visibility must be 'private', 'public', or 'org_{id}' format.")
+    return value
+
+
 def get_target_bucket(mappings: dict[BucketType, set], extension: str) -> BucketType:
     """Map an extension to a target bucket used for storage"""
     for bucket_type, extension_set in mappings.items():
@@ -63,12 +76,15 @@ def upload_internal(
         storage: StorageClient,
         bucket_mappings: dict[BucketType, set],
         profile_id: str,
-        upload_file: UploadFile) -> RequestContext:
+        upload_file: UploadFile,
+        file_visibility: str
+    ) -> RequestContext:
     """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
     ctx = RequestContext()
     ctx.purpose = FilePurpose.API_UPLOAD
     ctx.profile_id = profile_id
+    ctx.visibility = file_visibility
 
     filename = upload_file.filename
     validate_filename(filename)
@@ -124,9 +140,11 @@ def upload_internal(
 
 @router.post('/store')
 async def store_files(
+        file_visibility: str = "private",
         files: list[UploadFile] = File(...),
         profile: Profile = Depends(session_profile),
-        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
+        storage: StorageClient = Depends(storage_client),
+) -> UploadResponse:
     """Store a list of files as a profile"""
 
     log.info("handling upload for profile: %s", profile)
@@ -134,6 +152,7 @@ async def store_files(
     if not files:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
 
+    visibility = validate_file_visibility(file_visibility)
     response_files = []
     for file in files:
         # do the upload
@@ -141,7 +160,7 @@ async def store_files(
             storage,
             USER_BUCKET_MAPPINGS,
             profile_seq_to_id(profile.profile_seq),
-            file)
+            file, file_visibility=visibility)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
@@ -162,8 +181,10 @@ async def store_files(
 async def store_and_attach_package(
         asset_id: str,
         version_str: str,
+        file_visibility: str = "private",
         files: list[UploadFile] = File(...),
-        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
+        storage: StorageClient = Depends(storage_client),
+    ) -> UploadResponse:
     """Provide a package upload to a specific asset and version"""
     if not files:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
@@ -174,6 +195,7 @@ async def store_and_attach_package(
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f'no content type for file {file.filename}')
 
     version_id = convert_version_input(version_str)
+    visibility = validate_file_visibility(file_visibility)
 
     log.info("package uploading for asset: %s %s", asset_id, version_id)
     response_files = []
@@ -185,7 +207,9 @@ async def store_and_attach_package(
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
-        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author_id, file)
+        ctx = upload_internal(
+            storage, PACKAGE_BUCKET_MAPPINGS, avr.author_id, 
+            file, file_visibility=visibility)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(

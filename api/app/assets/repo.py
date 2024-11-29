@@ -195,7 +195,7 @@ def process_join_results(
         session: Session,
         join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) \
         -> list[AssetVersionResult]:
-    """Process the join result of Asset, AssetVersion and FileContent tables"""
+    """Process the join result of Asset, AssetVersion tables"""
 
     results = list()
     for join_result in join_results:
@@ -661,7 +661,7 @@ def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionP
     session.commit()
 
 
-def top(session: Session):
+def top(session: Session, profile: SessionProfile):
     results = session.exec(
         select(Asset, AssetVersion, FileContent)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
@@ -698,6 +698,15 @@ def top(session: Session):
         asset, ver, file = result
         if ver is None or file is None:
             continue
+
+        try:
+            if profile and not file.visibility == "public":
+                validate_roles(role=auth.roles.file_get,
+                                object_id=file.visibility, auth_roles=profile.auth_roles,
+                                scope=Scope(profile=profile, file=file))
+        except HTTPException:
+            continue
+
         atr = reduced.get(asset.asset_seq, None)
         version_id = [ver.major, ver.minor, ver.patch]
         if atr is None:
