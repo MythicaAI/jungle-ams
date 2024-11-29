@@ -80,14 +80,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   // Handler for FileParameter inputs detected by AutomationInputs
   const handleFileParameterDetected = useCallback((fileParams: Record<string, FileParamType>) => {
     setFileParams(fileParams);
-    updateNodeInternals(node.id);
-  }, [node.id, updateNodeInternals]);
+  }, []);
 
   // Handler for FileOutput keys detected by AutomationOutputs
   const handleFileOutputDetected = useCallback((fileOutputKeys: Set<string>) => {
     setFileOutputs(fileOutputKeys);
-    updateNodeInternals(node.id);
-  }, [node.id, updateNodeInternals]);
+  }, []);
 
   // Handler for running the automation
   const handleRunAutomation = () => {
