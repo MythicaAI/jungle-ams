@@ -19,6 +19,8 @@ export interface AutomationNodeProps {
     automation: string;
     inputData: dictionary;
     scriptContent: string;
+    fileparams: Record<string, FileParamType>;
+    fileOutputs: Set<string>;
   }
 }
 
