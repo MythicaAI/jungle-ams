@@ -127,11 +127,7 @@ export const AssetEditVersionDropdown = () => {
   }, [sanitizedVersion]);
 
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      alignItems={{ xs: "flex-start", sm: "center" }}
-      gap="15px"
-    >
+    <Stack alignItems="flex-start" gap="15px">
       <FormControl error={isVersionZero(sanitizedVersion)}>
         <FormLabel>{t("packageEdit.version")}</FormLabel>
         <Input

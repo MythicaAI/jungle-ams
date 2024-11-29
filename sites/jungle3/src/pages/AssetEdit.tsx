@@ -7,6 +7,7 @@ import {
   Tab,
   Box,
   TabPanel,
+  tabClasses,
 } from "@mui/joy";
 import { useGlobalStore } from "@store/globalStore";
 import { useEffect } from "react";
@@ -42,6 +43,9 @@ interface AssetEditProps {
   assetId?: string;
   version?: string;
 }
+
+const TabStyle = { ":focus": { outline: "none" } };
+const TabPanelStyle = { padding: "12px 0 0" };
 
 const AssetEdit: React.FC<AssetEditProps> = ({
   assetId: propAssetId = undefined,
@@ -344,27 +348,51 @@ const AssetEdit: React.FC<AssetEditProps> = ({
             <AssetEditPageHeader />
           </Grid>
 
-          <Tabs aria-label="Basic tabs" defaultValue={0} sx={{ width: "100%" }}>
-            <TabList>
-              <Tab>{t("packageEdit.details")}</Tab>
-              <Tab>{t("packageEdit.files")}</Tab>
-              <Tab>{t("packageEdit.thumbnails")}</Tab>
-              <Tab>{t("packageEdit.links")}</Tab>
+          <Tabs
+            aria-label="tabs"
+            defaultValue={0}
+            sx={{ width: "100%", padding: "8px", bgcolor: "transparent" }}
+          >
+            <TabList
+              disableUnderline
+              sx={{
+                p: 0.5,
+                gap: 0.5,
+                borderRadius: "8px",
+                bgcolor: "background.level1",
+                [`& .${tabClasses.root}[aria-selected="true"]`]: {
+                  boxShadow: "sm",
+                  bgcolor: "background.surface",
+                },
+              }}
+            >
+              <Tab sx={TabStyle} disableIndicator>
+                {t("packageEdit.details")}
+              </Tab>
+              <Tab sx={TabStyle} disableIndicator>
+                {t("packageEdit.files")}
+              </Tab>
+              <Tab sx={TabStyle} disableIndicator>
+                {t("packageEdit.thumbnails")}
+              </Tab>
+              <Tab sx={TabStyle} disableIndicator>
+                {t("packageEdit.links")}
+              </Tab>
             </TabList>
 
-            <TabPanel value={0}>
+            <TabPanel value={0} sx={TabPanelStyle}>
               <AssetEditDetailControls tags={tags} />
             </TabPanel>
 
-            <TabPanel value={1}>
+            <TabPanel value={1} sx={TabPanelStyle}>
               <AssetEditListControls category="files" />
             </TabPanel>
 
-            <TabPanel value={2}>
+            <TabPanel value={2} sx={TabPanelStyle}>
               <AssetEditListControls category="thumbnails" />
             </TabPanel>
 
-            <TabPanel value={3}>
+            <TabPanel value={3} sx={TabPanelStyle}>
               <AssetEditLinks />
             </TabPanel>
           </Tabs>
