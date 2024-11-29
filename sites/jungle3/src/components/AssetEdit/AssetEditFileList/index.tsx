@@ -7,6 +7,7 @@ import {
   ListItemButton,
   ListItemDecorator,
   Sheet,
+  Stack,
   Textarea,
   Typography,
 } from "@mui/joy";
@@ -71,7 +72,7 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (
             placeholder="Enter File Name..."
             minRows={1}
             maxRows={3}
-            sx={{ width: "70%" }}
+            sx={{ width: "100%" }}
           />
           <IconButton onClick={handleSave}>
             <LucideSave />
@@ -81,14 +82,18 @@ const AssetFileEditable: React.FC<AssetFileEditableProps> = (
           </IconButton>
         </>
       ) : (
-        <React.Fragment>
-          <LucideEdit
-            onClick={() =>
-              props.setEditing({ isEditing: true, file: props.content })
-            }
-          />
+        <Stack
+          direction="row"
+          alignItems="center"
+          gap="5px"
+          onClick={() =>
+            props.setEditing({ isEditing: true, file: props.content })
+          }
+          sx={{ width: "100%" }}
+        >
+          <LucideEdit />
           {path} ({props.content.file_id})
-        </React.Fragment>
+        </Stack>
       )}
     </React.Fragment>
   );
@@ -147,7 +152,17 @@ export const AssetEditFileList: React.FC<AssetEditFileListProps> = (props) => {
                     <LucideCircleMinus />
                   </IconButton>
                 </ListItemDecorator>
-                <ListItemButton role="menuitem" data-testid="assetFileEditable">
+                <ListItemButton
+                  role="menuitem"
+                  data-testid="assetFileEditable"
+                  sx={{
+                    borderRadius: "8px",
+                    margin:
+                      editing.file?.file_id === file.file_id ? "0" : "0 -6px",
+                    padding: "6px",
+                    minHeight: "50px",
+                  }}
+                >
                   <AssetFileEditable
                     content={file}
                     editing={editing.file?.file_id === file.file_id}
