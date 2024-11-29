@@ -26,7 +26,8 @@ const AwfulUI: React.FC = () => {
     onDragOver, 
     nodes, 
     edges, 
-    onEdgesChange 
+    onEdgesChange,
+    setRfInstance
   } = useAwfulFlow();
 
 
@@ -51,6 +52,7 @@ const AwfulUI: React.FC = () => {
           onEdgesDelete={onDisconnect}
           onDrop={onDrop}
           onDragOver={onDragOver}
+          onInit={setRfInstance}
           nodeTypes={nodeTypes}
           deleteKeyCode="Delete"
           fitView

@@ -1,10 +1,11 @@
 // providers/NodeDataProvider.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { FlowDataType, ConnectionMap } from '../types/AwfulFlow';
 import { AwfulFlowContext } from '../hooks/useAwfulFlow';
-import { useReactFlow, useNodesState, Node, Connection, Edge, addEdge, useEdgesState } from '@xyflow/react';
+import { useReactFlow, useNodesState, Node, Connection, Edge, addEdge, useEdgesState, ReactFlowInstance } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import useAutomation from '../hooks/useAutomation';
+import useMythicaApi from '../hooks/useMythicaApi';
 import { GetFileResponse } from '../types/MythicaApi';
 
 
@@ -15,13 +16,121 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const {screenToFlowPosition} = useReactFlow();
-  const { allAutomations } = useAutomation();
+  const {getSaveData, restoreSaveData} = useAutomation();
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge> | undefined>(undefined);
+  const {setViewport} = useReactFlow();
+  
+  const {uploadFile, getFiles, getDownloadInfo, deleteFile, authToken} = useMythicaApi();
+  const [savedAwfulsById, setSavedAwfulsById] = useState<Record<string, GetFileResponse>>({});
+  const [savedAwfulsByName, setSavedAwfulsByName] = useState<Record<string, GetFileResponse>>({});
+
   
   const getId = () => `awful_node_${uuidv4()}`;
+  
+
+  
+  const fetchFiles = useCallback(
+    async () => {
+      if (!authToken) return;
+      try {  
+        // Filter files with the .awful extension
+        const files = (await getFiles())
+          .filter(file => file.file_name.endsWith('.awful'))
+          .map(file => {
+            file.file_name = file.file_name.replace(/\.awful$/,'')
+            return file;
+          });
+        
+        const filesByIdMap = {} as Record<string,GetFileResponse>
+        files.forEach((file) => filesByIdMap[file.file_id] = file);
+        setSavedAwfulsById(filesByIdMap);
+        const filesByNameMap = {} as Record<string,GetFileResponse>
+        files.forEach((file) => filesByNameMap[file.file_name] = file);
+        setSavedAwfulsByName(filesByNameMap);
+      } catch (error) {
+        console.error('Failed to fetch saved files:', error);
+      }
+    }
+  , [getFiles, setSavedAwfulsById, setSavedAwfulsByName, authToken]);
+
+  // Fetch saved files when the component loads
+  useEffect(() => {
+    fetchFiles();
+  }, [authToken, fetchFiles]);
+
+
+
+  // Save the current flow to the API
+  const onSave = useCallback(
+    async (filename: string | null) => {
+      if (rfInstance) {
+        const flow = rfInstance.toObject();
+        const mythicaFlow = {
+          flowData: flowData,
+          connections: connections,
+          executionData: getSaveData()
+        }
+        const saveState = {
+          flow: flow,
+          mythicaFlow: mythicaFlow
+        }
+        const blob = new Blob([JSON.stringify(saveState)], { type: 'application/json' });
+        const formData = new FormData();
+        formData.append('files', blob, `${filename}.awful`);
+
+        try {
+          if (filename && savedAwfulsByName[filename]) {
+            const file = savedAwfulsByName[filename];
+            await deleteFile(file.file_id);
+          }
+          await uploadFile(formData);
+          await fetchFiles();
+          console.log(`File ${filename}.awful saved successfully`);
+        } catch (error) {
+          console.error(`Failed to save file ${filename}.awful:`, error);
+        }
+      }
+    },
+    [rfInstance, flowData, connections, savedAwfulsByName, getSaveData, uploadFile, fetchFiles, deleteFile]
+  );
+
+  // Restore a specific file from the API
+  const onRestore = useCallback(
+    async (filename: string) => {
+      try {
+        const files = await getFiles();
+        const file = files.find((f) => f.file_name === `${filename}.awful`);
+        if (!file) {
+          console.error(`File ${filename}.awful not found`);
+          return;
+        }
+
+        const fileData = await getDownloadInfo(file.file_id);
+        const response = await fetch(fileData.url); // Fetch the file content from the URL
+        const savedState = await response.json(); // Assuming the file content is JSON
+  
+
+        const { x = 0, y = 0, zoom = 1 } = savedState.flow.viewport || {};
+        setNodes(savedState.flow.nodes || []);
+        setFlowDataState(savedState.mythicaFlow.flowData || {});
+        restoreSaveData(savedState.mythicaFlow.executionData || {});
+
+        setConnections(savedState.mythicaFlow.connections || {});
+
+        setEdges(savedState.flow.edges || []);
+        setViewport({ x, y, zoom });
+        console.log(`File ${filename}.awful restored successfully`);
+      } catch (error) {
+        console.error(`Failed to restore file ${filename}.awful:`, error);
+      }
+    },
+    [getFiles, getDownloadInfo, setNodes, restoreSaveData, setViewport, setEdges]
+  );
 
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     doDragOver(event);
   };
+
 
   const doDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -60,12 +169,14 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             id: getId(),
             type: 'worker',
             position,
-            data: allAutomations[nodeType],
+            data: {
+              automation: nodeType,
+            }
           };
       }
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition, nodeType, setNodes, allAutomations]
+    [nodeType, screenToFlowPosition, setNodes]
   );
 
 
@@ -203,6 +314,11 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       setNodeType,
       onDragOver, 
       onDrop, 
+      onSave,
+      onRestore,
+      savedAwfulsById,
+      savedAwfulsByName,
+      setRfInstance: setRfInstance as React.Dispatch<React.SetStateAction<ReactFlowInstance<Node, Edge>>>
       }}>
       {children}
     </AwfulFlowContext.Provider>

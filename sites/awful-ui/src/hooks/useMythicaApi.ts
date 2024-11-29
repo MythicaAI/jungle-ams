@@ -12,6 +12,7 @@ type MythicaApiContextType = {
   getFiles: () => Promise<GetFileResponse[]>;
   getDownloadInfo: (fileId: string) => Promise<GetDownloadInfoResponse>;
   uploadFile: (formData: FormData) => Promise<UploadFileResponse>;
+  deleteFile: (fileId: string) => Promise<void>;
 };
 
 export const MythicaApiContext = createContext<MythicaApiContextType | undefined>(undefined);
