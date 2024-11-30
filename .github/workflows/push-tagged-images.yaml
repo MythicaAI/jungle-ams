@@ -206,17 +206,20 @@ jobs:
       - name: Send Discord notification
         if: always()
         run: |
-          echo "{" > message.json
-          echo -n "\"content\": \"" >> message.json
-          echo -n "PR: ${{ github.event.pull_request.title }} " >> message.json
-          echo IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} >> $GITHUB_ENV
+          PR="${{ github.event.pull_request.title }}"
+          IMAGE="${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}"
           if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
-              echo -n "❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> message.json
+              MESSAGE="❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
-              echo -n "✅ $IMAGE available for testing at https://api-staging.mythica.gg" >> message.json
+              MESSAGE="✅ $IMAGE available for testing at https://api-staging.mythica.gg"
           fi
-          echo -n "\"" >> message.json
-          echo "}" >> message.json
+          # use heredoc + jq to properly escape intput strings
+          cat << EOF > message.json
+          {
+            "content": $(jq -n --arg msg "$MESSAGE" --arg pr "$PR" '$pr - $msg'),
+            "username": "Infra Notifications"
+          }
+          EOF
           cat message.json
           curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
                -H "Content-Type: application/json" \
