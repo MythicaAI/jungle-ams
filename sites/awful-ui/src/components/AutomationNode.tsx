@@ -84,14 +84,16 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const typingTimeout = useRef(2000);
 
   // Handler for FileParameter inputs detected by AutomationInputs
-  const handleFileParameterDetected = useCallback((fileParams: Record<string, FileParamType>) => {
-    setInputFileKeys(fileParams);
-  }, []);
+  const handleFileParameterDetected = useCallback((inputFileKeys: Record<string, FileParamType>) => {
+    setInputFileKeys(inputFileKeys);
+    updateNodeInternals(node.id);
+  }, [updateNodeInternals, node.id]);
 
   // Handler for FileOutput keys detected by AutomationOutputs
   const handleFileOutputDetected = useCallback((fileOutputKeys: Set<string>) => {
     setOutputFileKeys(fileOutputKeys);
-  }, []);
+    updateNodeInternals(node.id);
+  }, [updateNodeInternals, node.id]);
 
   // Handler for running the automation
   const handleRunAutomation = () => {
@@ -271,7 +273,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       <p>State: {nodeState}</p>
 
       <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
-      <AutomationOutputs key={JSON.stringify(outputSpec)} outputSchema={outputSpec} outputData={myExecutionData.output || {}} onFileOutputDetected={handleFileOutputDetected} />
+      <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output || {}} onFileOutputDetected={handleFileOutputDetected} />
 
       {/* Render handles for FileParameter inputs */}
       {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (

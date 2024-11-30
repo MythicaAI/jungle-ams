@@ -7,7 +7,7 @@ import tempfile
 from ripple.automation import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import OutputFiles
-
+from pydantic import Field
 
 logging.basicConfig(
     level=logging.INFO,
@@ -161,9 +161,10 @@ class ExportMeshRequest(ParameterSet):
     hda_definition_index: int
     format: str
 
+class ExportMeshResponse(OutputFiles):
+    files: dict[str, list[str]] = Field(default={"mesh": []})
 
-
-def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> OutputFiles:
+def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
     log.info(f"Starting generate_mesh: {model}")
 
     tmp_dir = tempfile.mkdtemp()
@@ -176,6 +177,6 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Outpu
     )
 
     log.info(f"Completed generate_mesh")
-    return OutputFiles(
+    return ExportMeshResponse(
         files = {'mesh': [result_file_path]}
     )

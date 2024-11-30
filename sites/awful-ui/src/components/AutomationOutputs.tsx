@@ -52,7 +52,7 @@ const AutomationOutputs: React.FC<AutomationOutputProps> = ({ outputSchema, outp
             const fileKeys =
                 fieldSchema.type === 'object' && fieldSchema.default
                     ? Object.keys(fieldSchema.default)
-                    : [];
+                    : ['?'];
             if (fileKeys.sort().join(',') !== [...fileOutputs].sort().join(',')) {
                 setFileOutputs((prevFileOutputs) => {
                     const newFileOutputs = new Set(prevFileOutputs);
