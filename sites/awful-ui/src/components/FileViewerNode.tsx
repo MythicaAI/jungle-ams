@@ -73,8 +73,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     if (selectCtl) {
       for (let i = 0; i < selectCtl.options.length; i++) {
         const option = selectCtl.options.item(i);
-        if (option && option.value in file_ids) {
+        if (!option) continue;
+        if (option.value in file_ids) {
           option.selected = true;
+        } else {
+          option.selected = false;
         }
       }
     }
@@ -110,16 +113,22 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     [apiFiles, setFlowData, node.id]
   );
 
+  useEffect(() => {
+    fetchAvailableFiles().then(() => {
+      setFileSelections(selectedFileIds);
+      setInitialized(true);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Update node save data 
   useEffect(() => {
     if (initialized) {
       node.data.selectedPane = selectedPane;
       node.data.selectedFileIds = selectedFileIds;
       node.data.selectedFileNames = selectedFileNames;
-    } else {
-      setInitialized(true);
     }
-  }, [selectedPane, selectedFileIds, node.data, initialized, selectedFileNames]);
+  }, [selectedPane, selectedFileIds, selectedFileNames, node, initialized]);
 
   //get download info for selected files whenever inputFlowData changes
   useEffect(() => {
@@ -136,15 +145,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     } 
   }, [inputFlowData, setDownloadInfo, getDownloads]); 
 
-
-  // force files to update when the component is first mounted
-  useEffect(() => {
-    fetchAvailableFiles().then(() => {
-      setFileSelections(selectedFileIds);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAvailableFiles]);
-  
 
   const cardstyle = { height: 400, width: 400 }
 
