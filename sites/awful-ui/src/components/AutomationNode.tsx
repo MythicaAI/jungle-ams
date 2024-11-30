@@ -78,10 +78,10 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
 
-  const [scriptContent, setScriptContent] = useState<string>(node.data.scriptContent || template); // State to store Monaco editor content
+  const [scriptContent, setScriptContent] = useState<string>(node.data.scriptContent); // State to store Monaco editor content
  
- 
-  const typingTimeout = useRef(2000);
+  const timeout = 2000;
+  const typingTimeout = useRef(timeout);
 
   // Handler for FileParameter inputs detected by AutomationInputs
   const handleFileParameterDetected = useCallback((inputFileKeys: Record<string, FileParamType>) => {
@@ -105,15 +105,15 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   };
 
   // Handler for Monaco editor changes
-  const handleEditorChange = (value: string | undefined) => {
+  const handleEditorChange = useCallback((value: string | undefined) => {
     if (typingTimeout.current) {
       clearTimeout(typingTimeout.current);
     }
     setScriptContent(value || '');
     typingTimeout.current = setTimeout(() => {
       runAutomation(automationTask.worker, node.id, scriptInterfacePath, { 'script': value || '' });
-    }, typingTimeout.current); // Adjust delay as needed
-  };
+    }, timeout); // Adjust delay as needed
+  }, [runAutomation, automationTask.worker, node.id]);
 
   /**
    * Update fileInputs with the resolved file_id values
@@ -249,6 +249,11 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     processAutomationOutput();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myExecutionData]);
+
+  // Update interface when component loads
+   useEffect(() => {
+    if (!scriptContent) handleEditorChange(template);
+  }, [scriptContent, handleEditorChange]);
 
   // Update node save data when it changes
   useEffect(() => {
