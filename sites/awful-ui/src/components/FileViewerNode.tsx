@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi';
@@ -228,9 +228,9 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         <div />
       ) : (
         <div>
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' , height: '100%' }}>
             {/* Tab Navigation */}
-            <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid #ccc' }}>
+            <div style={{ display: 'flex', overflowX: 'scroll', borderBottom: '1px solid #ccc' }}>
               {downloadInfo.map((fileInfo, index) => (
                 <button
                   key={index}
@@ -251,13 +251,16 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
             {/* Pane Content */}
             <div style={{ position: 'relative' }}>
               {downloadInfo.map((fileInfo, index) =>
-                index === selectedPane ? (
+                (
                   <div
                     key={index}
                     style={{
+                      position: index === selectedPane ? 'relative' : 'absolute',
+                      visibility: index === selectedPane ? 'visible' : 'hidden',
                       display: 'block', // Ensure the content is visible and takes up space
                     }}
                   >
+                    <div style={{ }}>
                     {fileInfo ? (
                       <>
                         {fileInfo.content_type.startsWith('image/') ? (
@@ -288,12 +291,14 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                             <a href={fileInfo.url} target='_blank' rel='noreferrer'>Download</a>
                           </div>
                         )}
+                        
                       </>
                     ) : (
                       <p>Error loading file</p>
                     )}
                   </div>
-                ) : null // Only render the selected pane
+                  </div>
+                ) // Only render the selected pane
               )}
             </div>
 
@@ -324,6 +329,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   );
 };
 
-export default FileViewerNode;
+export default memo(FileViewerNode);
 
 
