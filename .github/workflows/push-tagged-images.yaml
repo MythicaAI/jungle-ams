@@ -206,8 +206,11 @@ jobs:
       - name: Send Discord notification
         if: always()
         run: |
-          PR="${{ github.event.pull_request.title }}"
-          IMAGE="${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}"
+          echo "PR=${{ github.event.pull_request.title }}" >> $GITHUB_ENV
+          echo "IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}" >> $GITHUB_ENV
+          if [ "$PR" == "" ]; then
+            echo "PR=Commit ${{ github.sha }}" >> $GITHUB_ENV
+          fi
           if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
               MESSAGE="❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           else
