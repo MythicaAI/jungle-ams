@@ -252,8 +252,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   // Update interface when component loads
    useEffect(() => {
-    if (!scriptContent) handleEditorChange(template);
-  }, [scriptContent, handleEditorChange]);
+    if (isScriptNode && !scriptContent) handleEditorChange(template);
+  }, [scriptContent, isScriptNode , handleEditorChange]);
 
   // Update node save data when it changes
   useEffect(() => {
