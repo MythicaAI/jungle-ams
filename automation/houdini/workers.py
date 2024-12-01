@@ -1,8 +1,7 @@
 from automation.generate_job_defs import generate_job_defs, GenerateJobDefRequest, GenerateJobDefResponse
-from automation.generate_mesh import generate_mesh, ExportMeshRequest
+from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
 from automation.helloworld import hello_world_api, HelloWorldRequest, HelloWorldResponse
 from ripple.automation import Worker
-from ripple.models.streaming import OutputFiles
 worker = Worker()
 
 workers = [
@@ -22,7 +21,7 @@ workers = [
         "path": '/mythica/generate_mesh',
         "provider": generate_mesh,
         "inputModel": ExportMeshRequest,
-        "outputModel": OutputFiles
+        "outputModel": ExportMeshResponse
     }
 ]
 
