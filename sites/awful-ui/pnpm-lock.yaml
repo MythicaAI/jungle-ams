@@ -66,6 +66,9 @@ importers:
       vite:
         specifier: ^5.0.12
         version: 5.4.10
+      vite-plugin-runtime-env:
+        specifier: ^0.1.1
+        version: 0.1.1(vite@5.4.10)
 
 packages:
 
@@ -991,6 +994,9 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
+  magic-string@0.30.14:
+    resolution: {integrity: sha512-5c99P1WKTed11ZC0HMJOj6CDIue6F8ySu+bJL+85q1zBEIY8IklrJ1eiKC2NDRh3Ct3FcvmJPyQHb9erXMTJNw==}
+
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
     engines: {node: '>= 8'}
@@ -1217,6 +1223,11 @@ packages:
   uuid@11.0.2:
     resolution: {integrity: sha512-14FfcOJmqdjbBPdDjFQyk/SdT4NySW4eM0zcG+HqbHP5jzuH56xO3J1DGhgs/cEMCfwYi3HQI1gnTO62iaG+tQ==}
     hasBin: true
+
+  vite-plugin-runtime-env@0.1.1:
+    resolution: {integrity: sha512-xm7aw/BV2o6avLi1UCR9mIG+KZVv2UQhoqb4gUIxhiP7hkiLCYnG3aTFLYrHb8CmAzXkTvBRb63yOnAgJWYbgA==}
+    peerDependencies:
+      vite: '*'
 
   vite@5.4.10:
     resolution: {integrity: sha512-1hvaPshuPUtxeQ0hsVH3Mud0ZanOLwVTneA1EgbAM5LhaZEqyPWGRQ7BtaMvUrTDeEaC8pxtj6a6jku3x4z6SQ==}
@@ -2237,6 +2248,10 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
+  magic-string@0.30.14:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.0
+
   merge2@1.4.1: {}
 
   micromatch@4.0.8:
@@ -2437,6 +2452,11 @@ snapshots:
       react: 18.3.1
 
   uuid@11.0.2: {}
+
+  vite-plugin-runtime-env@0.1.1(vite@5.4.10):
+    dependencies:
+      magic-string: 0.30.14
+      vite: 5.4.10
 
   vite@5.4.10:
     dependencies:

@@ -48,8 +48,9 @@ def runAutomation(request: RequestModel, responder: ResultPublisher) -> Response
 `;
 
 const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
-  const scriptPath = '/mythica/script';
-  const scriptInterfacePath = '/mythica/script/interface';
+  const scriptPath = import.meta.env.VITE_AWFUL_SCRIPT_PATH;
+  const scriptInterfacePath = import.meta.env.VITE_AWFUL_SCRIPT_INTERFACE_PATH;
+  
   const updateNodeInternals = useUpdateNodeInternals();
 
   const { getExecutionData, runAutomation, parseAutomation, allAutomations } = useAutomation();       //provides automation related services. 
@@ -113,7 +114,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     typingTimeout.current = setTimeout(() => {
       runAutomation(automationTask.worker, node.id, scriptInterfacePath, { 'script': value || '' });
     }, timeout); // Adjust delay as needed
-  }, [runAutomation, automationTask.worker, node.id]);
+  }, [runAutomation, automationTask.worker, node.id, scriptInterfacePath]);
 
   /**
    * Update fileInputs with the resolved file_id values
@@ -221,15 +222,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         myExecutionData.state = NodeState.Error;
       }
     },
-    [
-      myExecutionData, 
-      isScriptNode, 
-      node.id, 
-      getFile, 
-      notifyTargets, 
-      parseAutomation, 
-      setFlowData
-    ]
+    [myExecutionData, isScriptNode, scriptInterfacePath, scriptPath, node.id, parseAutomation, getFile, setFlowData, notifyTargets]
   );
 
   // Update fileInputs when flowData changes or when the fileparams change

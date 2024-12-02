@@ -6,9 +6,7 @@ import axios from 'axios';
 
 import { Profile, GetDownloadInfoResponse, GetFileResponse, UploadFileResponse } from '../types/MythicaApi';
 
-const BASE_URL = '/mythica-api';
-
-
+const BASE_URL = import.meta.env.VITE_MYTHICA_API_URL;
 
 const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize apiKey with value from localStorage if it exists
@@ -65,8 +63,14 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { Authorization: `Bearer ${authToken}` }
     });
     const src = response.data.url;
+    if (import.meta.env.DEV) {
+      // DEV mode: Use the VITE middleware to generate a URL key
     const encodedSrc = `${new URL(src).pathname}${new URL(src).search}`;
-    response.data.url = `/${await getUrlKey(encodedSrc)}`;
+      response.data.url = `/${await getUrlKey(encodedSrc)}`;
+    } else {
+      // PROD mode: Use the gcs-files_ proxy in the nginx config
+      response.data.url = `/gcs-files_${new URL(src).pathname.split('/').pop()}`
+    }
     return response.data; // Return the URL for downloading
   };
 
