@@ -8,6 +8,7 @@ import {
   Box,
   TabPanel,
   tabClasses,
+  CircularProgress,
 } from "@mui/joy";
 import { useGlobalStore } from "@store/globalStore";
 import { useEffect } from "react";
@@ -51,7 +52,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
   assetId: propAssetId = undefined,
   version: propVersion = "0.0.0",
 }) => {
-  const { orgRoles } = useGlobalStore();
+  const { orgRoles, isOrgRolesLoading } = useGlobalStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
   const {
     asset_id,
@@ -70,12 +71,14 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     tag,
     initialTag,
     customTag,
+    isLoading: isAssetVersionLoading,
   } = useAssetVersionStore();
   const navigate = useNavigate();
-  const { data: assetData, error } = useGetAssetByVersion(
-    propAssetId,
-    propVersion,
-  );
+  const {
+    data: assetData,
+    error,
+    isLoading: isAssetDataLoading,
+  } = useGetAssetByVersion(propAssetId, propVersion);
   const { mutate: updateAsset } = useUpdateAsset();
   const { t } = useTranslation();
   const { data: tags, error: tagsError } = useGetAssetTags();
@@ -322,6 +325,9 @@ const AssetEdit: React.FC<AssetEditProps> = ({
 
     handleUpdate();
   };
+
+  if (isAssetDataLoading || isOrgRolesLoading || isAssetVersionLoading)
+    return <CircularProgress />;
 
   return (
     <Sheet

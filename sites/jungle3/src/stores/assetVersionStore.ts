@@ -30,6 +30,7 @@ interface AssetVersion {
   initialTag: Tag;
   tag: string;
   customTag: string;
+  isLoading: boolean;
 
   addFile: (file: AssetVersionContent) => AssetVersionContentMap;
   addFiles: (files: AssetVersionContent[]) => AssetVersionContentMap;
@@ -63,6 +64,7 @@ const defaultAssetVersion: Partial<AssetVersion> = {
   links: [],
   tag: "",
   customTag: "",
+  isLoading: true,
 };
 function createInstance<T>(
   defaultValues: Partial<T>,
@@ -150,7 +152,8 @@ export const useAssetVersionStore = create<AssetVersion>((set, get) => ({
   },
 
   updateVersion: (update: Partial<AssetVersion>) =>
-    set((state) => ({ ...state, ...update })),
+    set((state) => ({ ...state, ...update, isLoading: false })),
 
-  clearVersion: () => set((state) => ({ ...state, ...defaultAssetVersion })),
+  clearVersion: () =>
+    set((state) => ({ ...state, ...defaultAssetVersion, isLoading: false })),
 }));
