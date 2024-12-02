@@ -20,7 +20,7 @@ fi
 
 echo "envsubst finished on $PWD/index.html"
 
-cp -a /dist/jungle3 ${PUBLISH_PATH}
+cp -a /dist/awful-ui ${PUBLISH_PATH}
 if [ $? -ne 0 ]; then
   "copy to ${PUBLISH_PATH} failed"
   exit 1
