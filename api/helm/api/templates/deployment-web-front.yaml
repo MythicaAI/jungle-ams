@@ -44,6 +44,15 @@ spec:
           volumeMounts:
             - name: dist-publish
               mountPath: "/publish"
+        - name: awful-ui-build
+          image: {{ include "api.image" (list . "mythica-awful-ui-build") }}
+          imagePullPolicy: Always
+          env:
+            - name: PUBLISH_PATH
+              value: /publish/awful-ui
+          volumeMounts:
+            - name: dist-publish
+              mountPath: "/publish"              
       containers:
         - name: nginx
           image: {{ include "api.image" (list . "mythica-web-front") }}
