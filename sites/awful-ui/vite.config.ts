@@ -34,6 +34,9 @@ export default defineConfig({
     gcsKeyMiddleware(),
     react()
   ],
+  build: {
+    target: 'es2022', // Or a modern browser version like 'chrome91'
+  },
   server: {
     headers: {
       "Cross-Origin-Embedder-Policy": "require-corp",
