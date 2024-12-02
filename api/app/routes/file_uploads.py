@@ -22,6 +22,7 @@ class FileUploadResponse(BaseModel):
     content_hash: str = ""
     created: datetime
     tags: Optional[list[dict[str, Union[str, int]]]] = []
+    visibility: str = "public"
 
 
 def enrich_file(
@@ -42,6 +43,7 @@ def enrich_file(
         event_ids=[],
         content_hash=file.content_hash,
         tags=resolve_type_tags(session, TagType.file, file.file_seq),
+        visibility=file.visibility,
     )
 
     for oe in owned_events:
@@ -73,6 +75,7 @@ def enrich_files(
             event_ids=[],
             content_hash=of.content_hash,
             tags=resolve_type_tags(session, TagType.file, of.file_seq),
+            visibility=of.visibility,
         )
     for oe in owned_events:
         job_data = oe.job_data

@@ -6,7 +6,10 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select, update
 
+from auth.authorization import Scope, validate_roles
+import auth.roles
 from cryptid.cryptid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
+from auth.generate_token import SessionProfile
 from db.schema.media import FileContent
 from storage.local_file_uploader import LocalFileStorageClient
 from storage.storage_client import StorageClient
@@ -76,13 +79,17 @@ def translate_download_url(storage, locators: list[str]) -> str:
 def resolve_download_info(
         session: Session,
         file_id,
-        storage: StorageClient) -> Optional[DownloadInfoResponse]:
+        storage: StorageClient,
+        profile: SessionProfile) -> Optional[DownloadInfoResponse]:
     """Given a file_id and storage client resolve the download info"""
     file_seq = file_id_to_seq(file_id)
-    increment_download_count(session, file_seq)
     file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).one_or_none()
     if file is None:
         return None
+    validate_roles(role=auth.roles.file_get,
+        object_id=file.visibility, auth_roles=profile.auth_roles,
+        scope=Scope(profile=profile, file=file))
+    increment_download_count(session, file_seq)
     locator_list = file.locators['locators']
     return DownloadInfoResponse(
         **file.model_dump(),

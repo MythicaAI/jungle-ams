@@ -6,10 +6,10 @@ import shutil
 import string
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from sqlmodel import and_, select, update
 
 import db.index as db_index
@@ -52,7 +52,6 @@ class UploadResponse(BaseModel):
 
 
 def validate_file_visibility(value: str) -> str:
-    # Allow only 'private', 'public', or 'org_{id}' format
     if not value:
         return "public"
     if value.startswith("org_"):
@@ -60,7 +59,9 @@ def validate_file_visibility(value: str) -> str:
         org_id_to_seq(value)
         return value
     if value not in {"private", "public"}:
-        raise ValueError("Visibility must be 'private', 'public', or 'org_{id}' format.")
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST, 
+            detail=f"Wrong visibility value: {value}. It must be 'private', 'public', or 'org_{{id}}' format.")
     return value
 
 
@@ -140,7 +141,7 @@ def upload_internal(
 
 @router.post('/store')
 async def store_files(
-        file_visibility: str = "private",
+        file_visibility: str = "public",
         files: list[UploadFile] = File(...),
         profile: Profile = Depends(session_profile),
         storage: StorageClient = Depends(storage_client),
@@ -171,7 +172,9 @@ async def store_files(
             size=file.size,
             content_type=file.content_type,
             content_hash=ctx.content_hash,
-            created=datetime.now(timezone.utc)))
+            created=datetime.now(timezone.utc),
+            visibility=visibility)
+        )
     return UploadResponse(
         message=f'uploaded {len(response_files)} files',
         files=response_files)
@@ -181,7 +184,7 @@ async def store_files(
 async def store_and_attach_package(
         asset_id: str,
         version_str: str,
-        file_visibility: str = "private",
+        file_visibility: str = "public",
         files: list[UploadFile] = File(...),
         storage: StorageClient = Depends(storage_client),
     ) -> UploadResponse:
@@ -220,7 +223,8 @@ async def store_and_attach_package(
             size=file.size,
             content_type=file.content_type,
             content_hash=ctx.content_hash,
-            created=datetime.now(timezone.utc)))
+            created=datetime.now(timezone.utc),
+            visibility=visibility))
 
         # if a package existed, mark it as deleted
         if avr.package_id:

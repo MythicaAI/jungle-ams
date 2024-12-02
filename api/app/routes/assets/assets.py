@@ -102,9 +102,10 @@ async def create_version(asset_id: str,
 async def dependencies(
         asset_id: str,
         version_str: str,
-        storage: StorageClient = Depends(storage_client)) -> repo.AssetDependencyResult:
+        storage: StorageClient = Depends(storage_client),
+        profile: SessionProfile = Depends(session_profile)) -> repo.AssetDependencyResult:
     with get_session() as session:
-        return repo.select_asset_dependencies(session, asset_id, version_str, storage)
+        return repo.select_asset_dependencies(session, asset_id, version_str, storage, profile)
 
 
 @router.delete('/{asset_id}/versions/{version_str}')

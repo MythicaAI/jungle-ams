@@ -78,6 +78,11 @@
                   "default": false,
                   "description": "True if the column should be unique"
                 },
+                "default": {
+                  "type": "string",
+                  "default": false,
+                  "description": "Default value in column"
+                },
                 "foreign_key": {
                   "type": "string",
                   "description": "table.id to use as a foreign key reference"

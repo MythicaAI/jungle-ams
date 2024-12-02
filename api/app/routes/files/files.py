@@ -29,12 +29,11 @@ async def by_id(
                 and_(
                     FileContent.file_seq == file_seq,
                     FileContent.deleted == None))).first()
-        if not file.visibility == "public":
-            validate_roles(role=auth.roles.file_get,
-                            object_id=file.visibility, auth_roles=profile.auth_roles,
-                            scope=Scope(profile=profile, file=file))
-
         if file:
+            if not file.visibility == "public":
+                validate_roles(role=auth.roles.file_get,
+                object_id=file.visibility, auth_roles=profile.auth_roles,
+                scope=Scope(profile=profile, file=file))
             return enrich_file(session, file, profile)
         else:
             raise HTTPException(status_code=404, detail="File not found")

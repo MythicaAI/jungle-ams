@@ -119,6 +119,8 @@ def validate_roles(
     # provided by the profile.
     #
     aliases_for_role = role_to_alias.get(role, [])
+    if role.startswith("file/"):
+        return validate_file_ownership_scope(role, auth_roles, object_id, scope)
     for alias in aliases_for_role:
         # cases such as global org-admin matching against org/add_asset or asset/update
         if alias in auth_roles:
@@ -137,8 +139,6 @@ def validate_roles(
         if self_scope_alias in auth_roles:
             if role.startswith('asset/'):
                 return validate_asset_ownership_scope(role, auth_roles, object_id, scope, **kwargs)
-            elif role.startswith("org/file"):
-                return validate_file_ownership_scope(role, auth_roles, object_id, scope)
             elif role.startswith('profile/'):
                 if scope.profile and \
                         object_id == profile_seq_to_id(scope.profile.profile_seq):
