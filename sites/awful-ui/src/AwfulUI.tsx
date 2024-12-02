@@ -56,6 +56,8 @@ const AwfulUI: React.FC = () => {
           nodeTypes={nodeTypes}
           deleteKeyCode="Delete"
           fitView
+          minZoom={0.1}
+          maxZoom={1}
         >
           <MiniMap zoomable pannable />
           <Controls />

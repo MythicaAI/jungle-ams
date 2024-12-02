@@ -19,6 +19,8 @@ export interface AutomationNodeProps {
     automation: string;
     inputData: dictionary;
     scriptContent: string;
+    inputSpec: JSONSchema;
+    outputSpec: JSONSchema;
   }
 }
 
@@ -48,64 +50,70 @@ def runAutomation(request: RequestModel, responder: ResultPublisher) -> Response
 const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const scriptPath = '/mythica/script';
   const scriptInterfacePath = '/mythica/script/interface';
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const { getExecutionData, runAutomation, parseAutomation, allAutomations } = useAutomation();       //provides automation related services. 
   const automationTask = allAutomations[node.data.automation];
   const isScriptNode = automationTask.path === scriptPath;
-
-  const { flowData, setFlowData, notifyTargets } = useAwfulFlow();   //node data mapped to connections
-
-
-  const [inputSpec, setInputSpec] = useState(!isScriptNode ? automationTask.spec.input : { title: 'Empty', type: 'string' });
-  const [outputSpec, setOutputSpec] = useState(!isScriptNode ? automationTask.spec.input : { title: 'Empty', type: 'string' });
-
-  const [inputData, setInputData] = useState<dictionary>(node.data.inputData); // State to store input data
-  const [fileParams, setFileParams] = useState<Record<string, FileParamType>>(node.data.fileparams || []); // Store file_id parameters
-  const [fileInputs, setFileInputs] = useState<dictionary>({});
-  const [fileOutputs, setFileOutputs] = useState<Set<string>>(node.data.fileOutputs || new Set()); // Store file_id parameters
-  const [scriptContent, setScriptContent] = useState<string>(node.data.scriptContent || template); // State to store Monaco editor content
-  const updateNodeInternals = useUpdateNodeInternals();
+  const myExecutionData = getExecutionData(node.id);
+  const nodeState = myExecutionData.state || NodeState.Clean;
 
   const { getFile } = useMythicaApi();
 
+  const { flowData, setFlowData, notifyTargets } = useAwfulFlow();   //node data mapped to connections
   const myFlowData = flowData[node.id];
+  const [flowExecutionMessage, setFlowExecutionMessage] = useState<string>('');
 
-  const myExecutionData = getExecutionData(node.id);
-  const nodeState = myExecutionData.state || NodeState.Clean;
-  const typingTimeout = useRef(500);
-  const [execMessage, setExecMessage] = useState<string>('');
+  //Input and Outputs Interface specs in JSONSpec (script Nodes are set later)
+  const [inputSpec, setInputSpec] = useState(!isScriptNode ? automationTask.spec.input : node.data.inputSpec || { title: 'Empty', type: 'string' });
+  const [outputSpec, setOutputSpec] = useState(!isScriptNode ? automationTask.spec.output : node.data.outputSpec || { title: 'Empty', type: 'string' });
+
+  //Input File parameters detected by AutomationInputs and type (array or scalar)
+  const [inputFileKeys, setInputFileKeys] = useState<Record<string, FileParamType>>({}); 
+  //Output File parameters detected by AutomationOutputs
+  const [outputFileKeys, setOutputFileKeys] = useState<Set<string>>(new Set()); // Store file_id parameters
+  
+  //Input (form) data from AutomationInputs component
+  const [inputData, setInputData] = useState<dictionary>(node.data.inputData);
+  //FileParameter  Inputs are handled separately based on flowData
+  const [fileInputData, setFileInputData] = useState<dictionary>({});
+
+  const [scriptContent, setScriptContent] = useState<string>(node.data.scriptContent); // State to store Monaco editor content
+ 
+  const timeout = 2000;
+  const typingTimeout = useRef(timeout);
 
   // Handler for FileParameter inputs detected by AutomationInputs
-  const handleFileParameterDetected = useCallback((fileParams: Record<string, FileParamType>) => {
-    setFileParams(fileParams);
+  const handleFileParameterDetected = useCallback((inputFileKeys: Record<string, FileParamType>) => {
+    setInputFileKeys(inputFileKeys);
     updateNodeInternals(node.id);
-  }, [node.id, updateNodeInternals]);
+  }, [updateNodeInternals, node.id]);
 
   // Handler for FileOutput keys detected by AutomationOutputs
   const handleFileOutputDetected = useCallback((fileOutputKeys: Set<string>) => {
-    setFileOutputs(fileOutputKeys);
+    setOutputFileKeys(fileOutputKeys);
     updateNodeInternals(node.id);
-  }, [node.id, updateNodeInternals]);
+  }, [updateNodeInternals, node.id]);
 
   // Handler for running the automation
   const handleRunAutomation = () => {
     if (isScriptNode) {
-      runAutomation(automationTask.worker, node.id, automationTask.path, { script: scriptContent, request_data: { ...inputData, ...fileInputs } });
+      runAutomation(automationTask.worker, node.id, automationTask.path, { script: scriptContent, request_data: { ...inputData, ...fileInputData } });
     } else {
-      runAutomation(automationTask.worker, node.id, automationTask.path, { ...inputData, ...fileInputs });
+      runAutomation(automationTask.worker, node.id, automationTask.path, { ...inputData, ...fileInputData });
     }
   };
 
   // Handler for Monaco editor changes
-  const handleEditorChange = (value: string | undefined) => {
+  const handleEditorChange = useCallback((value: string | undefined) => {
     if (typingTimeout.current) {
       clearTimeout(typingTimeout.current);
     }
     setScriptContent(value || '');
     typingTimeout.current = setTimeout(() => {
       runAutomation(automationTask.worker, node.id, scriptInterfacePath, { 'script': value || '' });
-    }, 2000); // Adjust delay as needed
-  };
+    }, timeout); // Adjust delay as needed
+  }, [runAutomation, automationTask.worker, node.id]);
 
   /**
    * Update fileInputs with the resolved file_id values
@@ -115,9 +123,9 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
    */
   const updateFileInputs = useCallback(
     () => {
-      if (fileParams) {
-        Object.keys(fileParams).forEach((paramKey) => {
-          const fileParamType = fileParams[paramKey];
+      if (inputFileKeys) {
+        Object.keys(inputFileKeys).forEach((paramKey) => {
+          const fileParamType = inputFileKeys[paramKey];
           const files = myFlowData?.[paramKey] as { file_id: string }[] | undefined;
 
           if (files && Array.isArray(files)) {
@@ -127,7 +135,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
                 file_id: file.file_id,
               }));
 
-              setFileInputs((prev) => ({
+              setFileInputData((prev) => ({
                 ...prev,
                 [paramKey]: fileDictArray, // Array of { file_id: file_id }
               }));
@@ -136,7 +144,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
               const firstFile = files[0];
               const fileDictArray = firstFile ? { file_id: firstFile.file_id } : {};
 
-              setFileInputs((prev) => ({
+              setFileInputData((prev) => ({
                 ...prev,
                 [paramKey]: fileDictArray, // Single-entry array
               }));
@@ -145,7 +153,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         });
       }
     },
-    [fileParams, myFlowData]
+    [inputFileKeys, myFlowData]
   );
 
   /**
@@ -204,9 +212,9 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           myExecutionData.state = NodeState.Done;
         }
         if (automationOutput && automationOutput.message) {
-          setExecMessage(automationOutput.message as string);
+          setFlowExecutionMessage(automationOutput.message as string);
         } else {
-          setExecMessage('');
+          setFlowExecutionMessage('');
         }
       } catch (error) {
         console.error('Error parsing worker output', error);
@@ -226,14 +234,14 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   // Update fileInputs when flowData changes or when the fileparams change
   useEffect(() => {
-    if (fileParams)
+    if (inputFileKeys)
       updateFileInputs();
     else
-      setFileInputs({});
+      setFileInputData({});
 
     updateNodeInternals(node.id);
     
-  }, [fileParams, node.id, setFileInputs, updateNodeInternals, updateFileInputs]);
+  }, [inputFileKeys, flowData, node.id, setFileInputData, updateNodeInternals, updateFileInputs]);
 
 
   // Process automation output when execution data changes
@@ -243,23 +251,24 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   }, [myExecutionData]);
 
   // Update interface when component loads
-  useEffect(() => {
-    if (scriptContent) handleEditorChange(scriptContent);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+   useEffect(() => {
+    if (isScriptNode && !scriptContent) handleEditorChange(template);
+  }, [scriptContent, isScriptNode , handleEditorChange]);
 
-  // Update node save data when scriptContent or inputData changes
+  // Update node save data when it changes
   useEffect(() => {
     node.data.scriptContent = scriptContent;
     node.data.inputData = inputData;
-    node.data.fileparams = fileParams;
-    node.data.fileOutputs = fileOutputs;
-  }, [node.data, inputData, scriptContent, fileParams, fileOutputs]);
+    if (isScriptNode) {
+      node.data.inputSpec = inputSpec;
+      node.data.outputSpec = outputSpec;
+    } 
+  }, [node.data, inputData, scriptContent, inputSpec, outputSpec, isScriptNode]);
 
 
-  const inputPositions = Array.from(Object.keys(fileParams))
-    .map((_, index) => `${(index + 1) * (100 / (Object.keys(fileParams).length + 1))}%`);
-  const outputPositions = Array.from(fileOutputs)
+  const inputPositions = Array.from(Object.keys(inputFileKeys))
+    .map((_, index) => `${(index + 1) * (100 / (Object.keys(inputFileKeys).length + 1))}%`);
+  const outputPositions = Array.from(outputFileKeys)
     .map((_, index, array) => `${(index + 1) * (100 / (array.length + 1))}%`);
 
 
@@ -269,10 +278,10 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       <p>State: {nodeState}</p>
 
       <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
-      <AutomationOutputs key={JSON.stringify(outputSpec)} outputSchema={outputSpec} outputData={myExecutionData.output || {}} onFileOutputDetected={handleFileOutputDetected} />
+      <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output || {}} onFileOutputDetected={handleFileOutputDetected} />
 
       {/* Render handles for FileParameter inputs */}
-      {Array.from(Object.keys(fileParams)).map((paramKey, index) => (
+      {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
         <div
           key={paramKey}
           className="file-handle"
@@ -292,7 +301,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           <span className='label'>
             {paramKey}
             {
-              (fileParams[paramKey] === FileParamType.Array) ? '[ ]' : ''
+              (inputFileKeys[paramKey] === FileParamType.Array) ? '[ ]' : ''
             }
           </span>
         </div>
@@ -309,12 +318,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             onChange={handleEditorChange}
             options={{ minimap: { enabled: false } }}
           />
-          <pre style={{ width: 640, overflow: 'scroll' }}>{execMessage}</pre>
+          <pre style={{ width: 640, overflow: 'scroll' }}>{flowExecutionMessage}</pre>
         </div>
       )}
 
       {/* Render handles for OutputFiles */}
-      {Array.from(fileOutputs).map((outputKey, index) => (
+      {Array.from(outputFileKeys).map((outputKey, index) => (
         <div
           key={outputKey}
           className="file-handle"
