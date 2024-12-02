@@ -34,6 +34,7 @@ export default defineConfig({
     gcsKeyMiddleware(),
     react()
   ],
+  base: '/awful/',
   build: {
     target: 'es2022', // Or a modern browser version like 'chrome91'
   },
