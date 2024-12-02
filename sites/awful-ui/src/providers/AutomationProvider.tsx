@@ -7,10 +7,8 @@ import { dictionary, WorkerAutomations, ExecutionData, AutomationTask, Automatio
 import { AutomationContext } from '../hooks/useAutomation';
 
 // Static worker list and endpoint
-const WORKERS = ['houdini', 'blender', ]; //'genai'
-const BASE_URL = 'https://automation-296075347103.us-central1.run.app';
-
-
+const WORKERS: string[] = import.meta.env.VITE_AWFUL_WORKERS.split(','); //'genai'
+const BASE_URL: string = import.meta.env.VITE_AWFUL_REST_URL;
 
 const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [workers] = useState(WORKERS);
