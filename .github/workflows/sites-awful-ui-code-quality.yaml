@@ -5,9 +5,8 @@ on:
     branches:
       - '**'
     paths:
-      - 'api/app/**'
-      - 'libs/python/**'
-      - '.github/workflows/api-app-ci.yaml'
+      - 'sites/awful-ui/**'
+      - '.github/workflows/sites-awful-ui-code-quality.yaml'
 
   push:
     branches:
