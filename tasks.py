@@ -4,7 +4,8 @@ import re
 import subprocess
 from datetime import datetime, timezone
 from functools import wraps
-from locale import windows_locale
+from pathlib import Path
+from os import PathLike
 
 from invoke import task
 
@@ -57,64 +58,39 @@ TESTING_OBSERVE_DIR = os.path.join(BASE_DIR, 'testing/observe')
 TESTING_MNT_DIR = os.path.join(BASE_DIR, 'testing/mnt')
 
 IMAGES = {
-    'api/nginx': {
-        'name': 'mythica-web-front'
-    },
+    'api/nginx': {},
     'api/app': {
-        'name': 'mythica-app',
         'requires': ['libs/python'],
     },
-    'libs/python': {
-        'name': 'mythica-libs-python',
-    },
-    'api/publish-init': {
-        'name': 'mythica-publish-init'
-    },
-    'api/lets-encrypt': {
-        'name': 'mythica-lets-encrypt'
-    },
-    'api/gcs-proxy': {
-        'name': 'mythica-gcs-proxy'
-    },
+    'libs/python': {},
+    'api/publish-init': {},
+    'api/lets-encrypt': {},
+    'api/gcs-proxy': {},
     'api/packager': {
-        'name': 'mythica-packager',
         'requires': ['api/app', 'libs/python'],
     },
-    'api/canary': {
-        'name': 'mythica-job-canary'
-    },
+    'api/canary': {},
     'sites/jungle3': {
-        'name': 'mythica-jungle3-build',
         'buildargs': {
             'NODE_ENV': NODE_ENV,
         }
     },
-    'sites/editor': {
-        'name': 'mythica-editor-build',
-    },
-    'sites/awful-ui': {
-        'name': 'mythica-awful-ui-build',
-    },
-    'testing/storage/minio-config': {
-        'name': 'minio-config'
-    },
+    'sites/editor': {},
+    'sites/awful-ui': {},
+    'testing/storage/minio-config': {},
     'automation/test': {
-        'name': 'mythica-auto-test',
         'requires': ['libs/python'],
     },
     'automation/blender': {
-        'name': 'mythica-auto-blender',
         'requires': ['libs/python'],
     },
     'automation/genai': {
-        'name': 'mythica-auto-genai',
         'requires': ['libs/python'],
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
         },
     },
     'automation/houdini': {
-        'name': 'mythica-auto-houdini',
         'requires': ['libs/python'],
         'buildargs': {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
@@ -158,6 +134,23 @@ LOCAL_MOUNT_POINTS = {
     'static': 'testing/mnt/static'
 }
 
+
+def get_git_tags(prefix):
+    """Get git tags matching prefix, sorted by version."""
+    result = subprocess.run(['git', 'tag', '-l', prefix, '--sort=-v:refname'],
+                          capture_output=True, text=True)
+    return result.stdout.strip().split('\n')
+
+
+def parse_dockerfile_label_name(dockerfile_path: PathLike) -> str:
+    """Extract the name label from Dockerfile."""
+    with open(dockerfile_path, "r") as f:
+        content = f.read()
+        match = re.search(r'LABEL\s+name=["\'](.*?)["\']', content)
+        if match:
+            return match.group(1)
+    raise ValueError(f"LABEL name= not found in {dockerfile_path}")
+
 def generate_mount_env_file() -> str:
     """Generate an env file with the OS specific mount points as environment variables"""
     env_file_path = os.path.join(TESTING_MNT_DIR, 'os_mount_paths.env')
@@ -170,6 +163,7 @@ def generate_mount_env_file() -> str:
             f.write(f"{name.upper()}_PATH={abs_path}\n")
     return os.path.normpath(env_file_path)
 
+
 def get_commit_hash(ref='HEAD'):
     """Return a short commit hash for the current HEAD commit"""
     result = subprocess.run(
@@ -179,9 +173,9 @@ def get_commit_hash(ref='HEAD'):
     return result.stdout.strip()
 
 
-def parse_expose_to_ports(image_path):
+def parse_expose_to_ports(dockerfile_path: PathLike):
     """Parse the EXPOSE ports from a Dockerfile"""
-    with open(os.path.join(BASE_DIR, image_path, 'Dockerfile'), 'r') as file:
+    with open(dockerfile_path, 'r') as file:
         lines = file.readlines()
     ports = []
     expose_pattern = re.compile(r'^EXPOSE\s+(\d+)(?:\/\w+)?$', re.IGNORECASE)
@@ -210,13 +204,14 @@ def stop_docker_compose(c, docker_compose_path):
         c.run(f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
 
 
-def build_image(c, image_path):
+def build_image(c, image_path: PathLike):
     """Build a docker image"""
 
-    dockerfile_path = 'Dockerfile'
-    working_directory = os.path.join(BASE_DIR, image_path)
+    working_directory = Path(BASE_DIR) / image_path
+    dockerfile_path = working_directory / 'Dockerfile'
+    parse_expose_to_ports(dockerfile_path)
 
-    image_name = IMAGES[image_path]['name']
+    image_name = parse_dockerfile_label_name(dockerfile_path)
     requires = IMAGES[image_path].get('requires')
     if requires is not None:
         for image in requires:
@@ -241,7 +236,8 @@ def build_image(c, image_path):
 
 def deploy_image(c, image_path, target):
     """Deploy a docker image"""
-    image_name = IMAGES[image_path]['name']
+    dockerfile_path = Path(image_path) / 'Dockerfile'
+    image_name = parse_dockerfile_label_name(dockerfile_path)
     commit_hash = get_commit_hash()
     if target == "gcs":
         repo = GCS_IMAGE_REPO
@@ -263,11 +259,13 @@ def deploy_image(c, image_path, target):
               pty=PTY_SUPPORTED)
 
 
-def run_image(c, image_path, background=False):
+def run_image(c, image_path: PathLike, background=False):
     """Run a docker image by path"""
-    ports = parse_expose_to_ports(image_path)
+    working_directory = Path(BASE_DIR) / image_path
+    dockerfile_path = working_directory / 'Dockerfile'
+    image_name = parse_dockerfile_label_name(dockerfile_path)
+    ports = parse_expose_to_ports(dockerfile_path)
     port_args = ' '.join([f'-p {port}:{port}' for port in ports])
-    image_name = IMAGES[image_path]['name']
     commit_hash = get_commit_hash()
     args = list()
     args.append(port_args)
@@ -288,7 +286,8 @@ def copy_dist_files(c, image_path):
     copy the files to a local directory from the container to make
     them available for serving or moving to the next distribution point
     """
-    image_name = IMAGES[image_path]['name']
+    dockerfile_path = Path(image_path) / 'Dockerfile'
+    image_name = parse_dockerfile_label_name(dockerfile_path)
     commit_hash = get_commit_hash()
     source_path = '/dist'
 
