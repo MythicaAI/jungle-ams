@@ -18,7 +18,6 @@ WORKDIR /api/app
 RUN chown -R appuser /api/app && \
     chown -R appuser /uploads
 
-
 USER appuser
 
 # Put all application data into the container /app directory, do this as late
