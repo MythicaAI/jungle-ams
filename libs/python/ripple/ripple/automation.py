@@ -26,7 +26,12 @@ def formatException(e):
     return f" {str(e)}\n{traceback.format_exc()}"
 
 NATS_URL= 'nats://nats.nats:4222'
-API_URL= 'https://api.mythica.ai/v1'
+
+def get_api_url(env):
+    if (env == 'staging'):
+        return 'https://api-staging.mythica.gg/v1'
+    else:
+        return 'https://api.mythica.ai/v1'
 
 class NatsAdapter():
     def __init__(self, nats_url=NATS_URL) -> None:
@@ -108,15 +113,12 @@ class NatsAdapter():
 
 
 class RestAdapter():
-    def __init__(self, api_url=API_URL) -> None:
-        self.api_url = api_url
-
+    
     def get(self, endpoint: str, data: dict={}, token: str = None) -> Optional[str]:
         """Get data from an endpoint."""
-        url = API_URL + endpoint
-        log.debug(f"Getting from Endpoint: {url} - {data}" )
+        log.debug(f"Getting from Endpoint: {endpoint} - {data}" )
         response = requests.get(
-            url,
+            endpoint,
             headers={
                 "Authorization": "Bearer %s" % token
             }
@@ -125,15 +127,14 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
+            log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
             return None
 
     def post(self, endpoint: str,  data: str, token: str) -> Optional[str]:
         """Post data to an endpoint synchronously. """
-        url = API_URL + endpoint
         log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
         response = requests.post(
-            url, 
+            endpoint, 
             json=data, 
             headers={
                 "Content-Type": "application/json",
@@ -144,15 +145,14 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {url} - {data} - {response.status_code}")
+            log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
             return None
 
     def post_file(self, endpoint: str, file_data: list, token: str) -> Optional[str]:
         """Post file to an endpoint."""
-        url = API_URL + endpoint
-        log.debug(f"Sending file to Endpoint: {url} - {file_data}" )
+        log.debug(f"Sending file to Endpoint: {endpoint} - {file_data}" )
         response = requests.post(
-            url, 
+            endpoint, 
             files=file_data, 
             headers={"Authorization": "Bearer %s" % token}
         )
@@ -160,7 +160,7 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {url} - {file_data} - {response.status_code}")
+            log.error(f"Failed to call job API: {endpoint} - {file_data} - {response.status_code}")
             return None
 
 class WorkerModel(BaseModel):
@@ -176,6 +176,7 @@ class WorkerRequest(BaseModel):
     job_id: Optional[str] = None
     profile_id: Optional[str] = None
     auth_token: Optional[str] = None
+    env: Literal['staging','production'] = 'production'
     path: str
     data: Dict
 
@@ -209,8 +210,10 @@ class ResultPublisher:
         item.process_guid = str(uuid4())
         item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
+        api_url = get_api_url(self.request.env)
+
         # Upload any references to local data
-        self._publish_local_data(item)
+        self._publish_local_data(item, api_url)
 
 
    
@@ -230,7 +233,7 @@ class ResultPublisher:
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
-                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
+                self.rest.post(f"{api_url}{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
             else:
                 data = {
                     "created_in": "automation-worker",
@@ -238,7 +241,7 @@ class ResultPublisher:
                 }
                 self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
 
-    def _publish_local_data(self, item: ProcessStreamItem):
+    def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
 
         def upload_file(file_path: str) -> Optional[str]:
@@ -250,7 +253,7 @@ class ResultPublisher:
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = self.rest.post_file("/upload/store",  file_data, self.request.auth_token)
+                    response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token)
                     file_id = response['files'][0]['file_id'] if response else None
                 return file_id
             finally:
@@ -263,7 +266,7 @@ class ResultPublisher:
                 'description': job_def.description,
                 'params_schema': job_def.parameter_spec.model_dump()
             }
-            response = self.rest.post("/jobs/definitions", definition, self.request.auth_token)
+            response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token)
             return response['job_def_id'] if response else None
 
         #TODO: Report errors
@@ -322,6 +325,7 @@ class Worker:
 
     class ScriptRequest(ParameterSet):
         script: str
+        env: Literal['staging','production'] = 'production' 
         request_data: ParameterSet = None
 
     def _get_script_worker(self) -> Callable:
@@ -341,7 +345,7 @@ class Worker:
             else:
                 raise ValueError("RequestModel not found in script.")
 
-            resolve_params(API_URL, doer.tmpdir, request_model)
+            resolve_params(get_api_url(request.env), doer.tmpdir, request_model)
 
             # Run the automation function
             if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
@@ -474,7 +478,7 @@ class Worker:
                     doer.tmpdir = tmpdir
                     worker = doer.workers[payload.path] 
                     inputs = worker.inputModel(**payload.data)
-                    resolve_params(API_URL, tmpdir, inputs)
+                    resolve_params(get_api_url(payload.env), tmpdir, inputs)
                     ret_data = worker.provider(inputs, publisher)
 
                     publisher.result(ret_data)
