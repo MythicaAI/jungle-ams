@@ -7,7 +7,7 @@ export type ResultData = {
 
 interface AutomationOutputProps {
     outputSchema: JSONSchema | undefined;
-    outputData: ResultData;
+    outputData: ResultData | null;
     onFileOutputDetected: (fileOutputs: Set<string>) => void;
 }
 
@@ -67,7 +67,7 @@ const AutomationOutputs: React.FC<AutomationOutputProps> = ({ outputSchema, outp
         return (
             <div key={key}>
                 <label>{key}:</label>
-                <span>{JSON.stringify(outputData[key])}</span>
+                <span>{JSON.stringify(outputData?.[key]) || ''}</span>
             </div>
         );
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { JSONSchema, JSONSchemaProperty } from '../types/JSONSchema';
 import { FileParamType } from '../types/Automation';
 
@@ -151,4 +151,4 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({ inputSchema: schema,
     return retValue;
 };
 
-export default AutomationInputs;
+export default memo(AutomationInputs);
