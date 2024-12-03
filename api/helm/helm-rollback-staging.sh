@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Namespace and release name
+# Namespace and environment name
 NAMESPACE="api-staging"
 RELEASE_NAME="api-staging"
 
 # Fetch and display the Helm release history
-echo "Fetching Helm history for release '$RELEASE_NAME' in namespace '$NAMESPACE'..."
+echo "Fetching Helm history for '$RELEASE_NAME' in namespace '$NAMESPACE'..."
 helm history $RELEASE_NAME --namespace $NAMESPACE
 
 # Ask the user to input the revision number

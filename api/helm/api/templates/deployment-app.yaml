@@ -37,6 +37,10 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_URL
+            - name: MYTHICA_ENVIRONMENT
+              value: "{{ .Values.release }}"
+            - name: APP_IMAGE_VERSION
+              value: {{ include "api.imageVersion" (list . "mythica-app") }}
             - name: MYTHICA_LOCATION
               value: "gke-us-central1"
             - name: GCS_SERVICE_ENABLE

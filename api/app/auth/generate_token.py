@@ -28,6 +28,7 @@ def generate_token(
         profile_email: str,
         profile_email_validate_state: int,
         profile_location: str,
+        environment: str,
         roles: list[str] = None) -> str:
     """Generate a token from a profile and optional list of roles on the profile."""
     payload = {
@@ -36,6 +37,7 @@ def generate_token(
         'email_vs': profile_email_validate_state,
         'location': profile_location or '',
         'roles': roles or [],
+        'env': environment,
         'aud': _AUDIENCE,
     }
     encoded_jwt = jwt.encode(
