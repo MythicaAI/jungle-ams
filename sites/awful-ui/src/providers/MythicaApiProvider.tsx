@@ -63,9 +63,9 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { Authorization: `Bearer ${authToken}` }
     });
     const src = response.data.url;
-    if (import.meta.env.DEV) {
+    if (import.meta.env.MODE === 'development') {
       // DEV mode: Use the VITE middleware to generate a URL key
-    const encodedSrc = `${new URL(src).pathname}${new URL(src).search}`;
+      const encodedSrc = `${new URL(src).pathname}${new URL(src).search}`;
       response.data.url = `/${await getUrlKey(encodedSrc)}`;
     } else {
       // PROD mode: Use the gcs-files_ proxy in the nginx config
