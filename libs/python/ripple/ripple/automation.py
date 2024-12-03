@@ -217,8 +217,8 @@ class ResultPublisher:
 
 
    
-        JOB_RESULT_ENDPOINT="/jobs/results/"
-        JOB_COMPLETE_ENDPOINT="/jobs/complete/"
+        JOB_RESULT_ENDPOINT=f"{api_url}/jobs/results/"
+        JOB_COMPLETE_ENDPOINT=f"{api_url}/jobs/complete/"
 
         # Publish results
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
@@ -233,13 +233,13 @@ class ResultPublisher:
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
-                self.rest.post(f"{api_url}{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
+                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
             else:
                 data = {
                     "created_in": "automation-worker",
                     "result_data": item.model_dump()
                 }
-                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
+                self.rest.post(f"{api_url}{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
@@ -273,7 +273,7 @@ class ResultPublisher:
         if isinstance(item, OutputFiles):
             
             if self.request.auth_token is None and self.request.profile_id is not None:
-                url = f"/sessions/direct/{self.request.profile_id}"
+                url = f"{api_url}/sessions/direct/{self.request.profile_id}"
                 response = self.rest.get(url)
                 self.request.auth_token = response['token'] if response else None
                 warnings.warn("Using deprecated 'profile_id' to get auth token. Use 'auth_token' instead.", DeprecationWarning)
