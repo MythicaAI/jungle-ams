@@ -49,7 +49,7 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
       <FormControl>
         <FormLabel>
           {t("packageEdit.org/namespace")}
-          {!org_id && orgRoles.length == 0 && (
+          {!org_id && uniqueOrgs.length == 0 && (
             <Box ml="10px">
               <Link to={"/orgs"}>{t("packageEdit.createNewOrg")}</Link>
             </Box>
@@ -78,9 +78,7 @@ export const AssetEditDetailControls: React.FC<Props> = ({ tags }) => {
               ""
             )}
           </Select>
-        ) : (
-          ""
-        )}
+        ) : null}
       </FormControl>
 
       <AssetEditVersionDropdown />

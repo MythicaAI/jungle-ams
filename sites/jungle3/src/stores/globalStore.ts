@@ -23,6 +23,7 @@ interface GlobalState {
 
   profile: ProfileResponse;
   orgRoles: ResolvedOrgRef[];
+  isOrgRolesLoading: boolean;
 
   setAuthToken: (token: string) => void;
   setProfile: (profile: ProfileResponse) => void;
@@ -38,6 +39,7 @@ export const useGlobalStore = create<GlobalState>((set) => ({
 
   profile: defaultProfile,
   orgRoles: [],
+  isOrgRolesLoading: true,
 
   setAuthToken: (authToken: string) =>
     set({ authToken: authToken, isLoggedIn: authToken !== "" }),
@@ -46,7 +48,7 @@ export const useGlobalStore = create<GlobalState>((set) => ({
   setProfile: (profile: ProfileResponse) => {
     set({ profile: profile });
   },
-  setOrgRoles: (roles) => set({ orgRoles: roles }),
+  setOrgRoles: (roles) => set({ orgRoles: roles, isOrgRolesLoading: false }),
   updateProfile: (partial: Partial<ProfileResponse>) => {
     set((state) => ({ profile: { ...state.profile, ...partial } }));
   },
