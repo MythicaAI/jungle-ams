@@ -77,7 +77,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         work_id: "",  // Generate or retrieve unique work_id if needed
                         channel: worker,
                         path: "/mythica/workers",
-                        env: import.meta.env.MODE,
+                        env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
                         auth_token: authToken,  // Use dynamic profile_id
                         data: {},
                     }, {

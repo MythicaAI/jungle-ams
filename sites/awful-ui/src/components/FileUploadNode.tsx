@@ -1,5 +1,5 @@
 // FileUploadNode.tsx
-import React from 'react';
+import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi'; // Import Auth context
@@ -73,4 +73,4 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
   );
 };
 
-export default FileUploadNode;
+export default memo(FileUploadNode);

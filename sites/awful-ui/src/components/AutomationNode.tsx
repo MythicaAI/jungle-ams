@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import MonacoEditor from '@monaco-editor/react';
 
@@ -239,14 +239,11 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   // Process automation output when execution data changes
   useEffect(() => {
-    processAutomationOutput();
+    const executed = myExecutionData.state === NodeState.Executed;
+    if (executed) processAutomationOutput();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myExecutionData]);
 
-  // Update interface when component loads
-   useEffect(() => {
-    if (isScriptNode && !scriptContent) handleEditorChange(template);
-  }, [scriptContent, isScriptNode , handleEditorChange]);
 
   // Update node save data when it changes
   useEffect(() => {
@@ -271,7 +268,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       <p>State: {nodeState}</p>
 
       <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
-      <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output || {}} onFileOutputDetected={handleFileOutputDetected} />
+      <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output} onFileOutputDetected={handleFileOutputDetected} />
 
       {/* Render handles for FileParameter inputs */}
       {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
@@ -347,4 +344,4 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   );
 };
 
-export default AutomationNode;
+export default memo(AutomationNode);
