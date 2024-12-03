@@ -16,6 +16,7 @@ profile_id = profile_seq_to_id(profile_seq)
 not_sent = 0
 sent = 1
 location = 'localhost'
+environment = 'test'
 roles = []
 
 
@@ -25,6 +26,7 @@ def test_auth_token():
         TEST_EMAIL,
         not_sent,
         location,
+        environment,
         roles,
     )
     assert token is not None
@@ -33,6 +35,8 @@ def test_auth_token():
     assert profile.email == TEST_EMAIL
     assert profile.email_validate_state == not_sent
     assert profile.profile_seq == profile_seq
+    assert profile.environment == environment
+
 
 
 def test_auth_token_decode_error():

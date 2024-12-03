@@ -20,6 +20,7 @@ class SessionProfile(BaseModel):
     email: str
     email_validate_state: int
     location: str
+    environment: str
     auth_roles: set[str]
 
 
@@ -62,4 +63,5 @@ def decode_token(encoded_jwt: str) -> SessionProfile:
         email=decoded_jwt['email'],
         email_validate_state=int(decoded_jwt['email_vs']),
         location=decoded_jwt['location'],
+        environment=decoded_jwt['env'],
         auth_roles=decoded_jwt['roles'])

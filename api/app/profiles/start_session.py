@@ -87,7 +87,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
         profile.email,
         profile.email_validate_state,
         profile.location,
-        app_config().environment,
+        app_config().mythica_environment,
         list(roles))
 
     # Convert db profile to profile response
