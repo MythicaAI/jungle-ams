@@ -37,6 +37,7 @@ export default defineConfig({
   base: '/awful/',
   build: {
     target: 'es2022', // Or a modern browser version like 'chrome91'
+    sourcemap: true,
   },
   server: {
     headers: {
