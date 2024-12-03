@@ -141,7 +141,8 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     output: null
                 },
             }));
-            
+            const env = import.meta.env.MODE === 'staging' ? 'staging' : 'production';
+            if (inputData.script) inputData.env = env
             // Send request to the backend
             const response = await axios.post(BASE_URL, {
                 work_id: nodeId,
