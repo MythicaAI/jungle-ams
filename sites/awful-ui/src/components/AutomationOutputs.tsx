@@ -53,16 +53,27 @@ const AutomationOutputs: React.FC<AutomationOutputProps> = ({ outputSchema, outp
                 fieldSchema.type === 'object' && fieldSchema.default
                     ? Object.keys(fieldSchema.default)
                     : ['?'];
-            if (fileKeys.sort().join(',') !== [...fileOutputs].sort().join(',')) {
-                setFileOutputs((prevFileOutputs) => {
-                    const newFileOutputs = new Set(prevFileOutputs);
-                    fileKeys.forEach((file) => newFileOutputs.add(file));
-                    return newFileOutputs;
+        
+            const sortedFileKeys = fileKeys.sort().join(',');
+            const sortedPrevFileOutputs = [...fileOutputs].sort().join(',');
+        
+            if (sortedFileKeys !== sortedPrevFileOutputs) {
+            setFileOutputs((prevFileOutputs) => {
+                
+                const newFileOutputs = new Set(prevFileOutputs);
+                newFileOutputs.forEach((file) => {
+                    if (!fileKeys.includes(file)) {
+                        newFileOutputs.delete(file);
+                    }
                 })
+                fileKeys.forEach((file) => newFileOutputs.add(file));
+                return newFileOutputs;
+            });
             }
-
+        
             return null;
         }
+        
 
         return (
             <div key={key}>
