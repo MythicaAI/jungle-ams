@@ -126,7 +126,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
      * @param inputData 
      * @returns 
      */
-    const runAutomation = async (worker: string, nodeId: string, path: string, inputData: dictionary) => {
+    const runAutomation = useCallback(async (worker: string, nodeId: string, path: string, inputData: dictionary) => {
         if (!authToken) return;
 
         try {
@@ -178,7 +178,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 },
             }));
         }
-    };
+    }, [authToken]);
 
     useEffect(() => {
         if (!loaded && authToken) {

@@ -7,7 +7,7 @@ import useAwfulFlow from '../hooks/useAwfulFlow';
 import USDViewer from './USDViewer';
 import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 
-import JSONViewer from './JSONViewer';
+import CodeViewer from './CodeViewer';
 interface FileViewerNodeProps {
   id: string;
   data:{
@@ -152,7 +152,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     <div className="mythica-node file-viewer-node">
       <h3>File Viewer</h3>
 
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ marginBottom: '10px' }} className='nodrag'>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <input 
             onClick={() => setShowFileSelector(!showFileSelector)}
@@ -271,12 +271,21 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                             style={cardstyle}
                           />
                         ) : fileInfo.content_type === 'application/json' ||
-                           fileInfo.content_type === 'application/awful' ? (
-                          <JSONViewer 
+                          fileInfo.content_type === 'application/awful' ? (
+                          <CodeViewer 
                             style={{
                               ...cardstyle,
                               width: '640px'
-                            }} 
+                            }}
+                            language="json" 
+                            fileUrl={fileInfo.url} />
+                        ) : fileInfo.content_type === 'application/awjs' ? (
+                          <CodeViewer 
+                            style={{
+                              ...cardstyle,
+                              width: '640px'
+                            }}
+                            language="javascript" 
                             fileUrl={fileInfo.url} />
                         ) : fileInfo.content_type === 'application/usd' ||
                           fileInfo.content_type === 'application/usdz' ? (
@@ -296,7 +305,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                     ) : (
                       <p>Error loading file</p>
                     )}
-                  </div>
+                    </div>
                   </div>
                 ) // Only render the selected pane
               )}

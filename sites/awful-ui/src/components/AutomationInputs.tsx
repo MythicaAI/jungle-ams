@@ -1,19 +1,14 @@
 import React, { useState, useEffect, memo } from 'react';
 import { JSONSchema, JSONSchemaProperty } from '../types/JSONSchema';
-import { FileParamType } from '../types/Automation';
-
-type InputData = {
-    [key: string]: unknown;
-};
-
+import { dictionary, FileParamType } from '../types/Automation';
 
 interface AutomationInputProps {
     inputSchema: JSONSchema | undefined;
-    onChange: (formData: InputData) => void;
+    onChange: (formData: dictionary) => void;
     onFileParameterDetected: (fileParams: Record<string, FileParamType>) => void; }
 
 const AutomationInputs: React.FC<AutomationInputProps> = ({ inputSchema: schema, onChange, onFileParameterDetected }) => {
-    const [formData, setFormData] = useState<InputData>({});
+    const [formData, setFormData] = useState<dictionary>({});
     const [fileParams, setFileParams] = useState<Record<string, FileParamType>>({});
 
     useEffect(() => {
