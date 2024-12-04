@@ -74,6 +74,7 @@ def test_auth_token_with_roles():
         TEST_EMAIL,
         sent,
         location,
+        environment,
         [r.role for r in org_roles])
     assert token is not None
     decode_profile = decode_token(token)
