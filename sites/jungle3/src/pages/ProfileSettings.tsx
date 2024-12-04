@@ -9,6 +9,7 @@ import {
   Card,
   Typography,
   CardContent,
+  Stack,
 } from "@mui/joy";
 import { ProfileResponse } from "types/apiTypes";
 import { useCookies } from "react-cookie";
@@ -122,7 +123,7 @@ const ProfileSettings = () => {
     </FormControl>
   );
 
-  const verifiedLabel = profile.email_verified ? (
+  const verifiedLabel = profile.validate_state ? (
     <Tag color="success" />
   ) : (
     <Button onClick={onRequestEmailVerification}>
@@ -141,8 +142,11 @@ const ProfileSettings = () => {
         value={profile.email}
         onChange={(e) => updateProfile({ email: e.target.value })}
         endDecorator={verifiedLabel}
+        sx={{ mb: "10px" }}
       />
-      <Box>Email Validation State: {profile.email_verified}</Box>
+      <Box sx={{ textAlign: "start" }}>
+        Email Validation State: {profile.validate_state}
+      </Box>
     </FormControl>
   );
 
@@ -176,7 +180,6 @@ const ProfileSettings = () => {
       <Card
         variant="outlined"
         sx={{
-          minHeight: "280px",
           width: 320,
         }}
       >
@@ -184,9 +187,11 @@ const ProfileSettings = () => {
           {t("profileSettings.orgs")}
         </Typography>
         <CardContent>
-          <List>
+          <List marker="disc">
             {orgRoles.map((role) => (
-              <ListItem key={role.org_id}>{role.org_name}</ListItem>
+              <ListItem key={role.org_id} sx={{ textAlign: "start" }}>
+                {role.org_name}
+              </ListItem>
             ))}
           </List>
           <Link to="/orgs">{t("profileSettings.edit")}</Link>
@@ -197,27 +202,33 @@ const ProfileSettings = () => {
 
   const profileEdit = profile && (
     <Form onSubmit={onUpdateProfile}>
-      {profileName}
-      {profileDescription}
-      {!isQuickSetup && profileEmailValidate}
-      {!isQuickSetup && profileOrgs}
-      {!isQuickSetup && (
-        <Button type="submit" sx={{ marginTop: "10px" }}>
-          {t("profileSettings.edit")}
-        </Button>
-      )}
-      {isQuickSetup && (
-        <Button
-          sx={{ marginTop: "10px" }}
-          onClick={() => {
-            localStorage.setItem("shouldStartOnboarding", "false");
-            sessionStorage.setItem("showOnboardingSuccess", "true");
-            navigate("/welcome");
-          }}
-        >
-          Confirm and proceed
-        </Button>
-      )}
+      <Stack gap="10px">
+        {profileName}
+        {profileDescription}
+        {!isQuickSetup && profileEmailValidate}
+        {!isQuickSetup && profileOrgs}
+        {!isQuickSetup && (
+          <Button
+            type="submit"
+            sx={{ width: "fit-content", margin: "10px auto 0" }}
+          >
+            {t("profileSettings.edit")}
+          </Button>
+        )}
+
+        {isQuickSetup && (
+          <Button
+            sx={{ width: "fit-content", margin: "10px auto 0" }}
+            onClick={() => {
+              localStorage.setItem("shouldStartOnboarding", "false");
+              sessionStorage.setItem("showOnboardingSuccess", "true");
+              navigate("/welcome");
+            }}
+          >
+            Confirm and proceed
+          </Button>
+        )}
+      </Stack>
     </Form>
   );
 
