@@ -12,6 +12,7 @@ from sqlmodel import Session, asc, col, delete, insert, select, update
 import auth.roles
 from auth.data import resolve_org_roles
 from auth.generate_token import generate_token
+from config import app_config
 from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
@@ -86,6 +87,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
         profile.email,
         profile.email_validate_state,
         profile.location,
+        app_config().mythica_environment,
         list(roles))
 
     # Convert db profile to profile response

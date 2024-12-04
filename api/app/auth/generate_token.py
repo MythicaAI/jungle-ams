@@ -20,6 +20,7 @@ class SessionProfile(BaseModel):
     email: str
     email_validate_state: int
     location: str
+    environment: str
     auth_roles: set[str]
 
 
@@ -28,6 +29,7 @@ def generate_token(
         profile_email: str,
         profile_email_validate_state: int,
         profile_location: str,
+        environment: str,
         roles: list[str] = None) -> str:
     """Generate a token from a profile and optional list of roles on the profile."""
     payload = {
@@ -36,6 +38,7 @@ def generate_token(
         'email_vs': profile_email_validate_state,
         'location': profile_location or '',
         'roles': roles or [],
+        'env': environment,
         'aud': _AUDIENCE,
     }
     encoded_jwt = jwt.encode(
@@ -60,4 +63,5 @@ def decode_token(encoded_jwt: str) -> SessionProfile:
         email=decoded_jwt['email'],
         email_validate_state=int(decoded_jwt['email_vs']),
         location=decoded_jwt['location'],
+        environment=decoded_jwt['env'],
         auth_roles=decoded_jwt['roles'])

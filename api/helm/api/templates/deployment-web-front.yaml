@@ -41,6 +41,12 @@ spec:
               value: {{ .Values.auth0.audience }}
             - name: VITE_AUTH0_REDIRECT_URL
               value: {{ .Values.auth0.redirectUrl }}
+            - name: VITE_SITE_IMAGE_VERSION
+              value: {{ include "api.imageVersion" (list . "mythica-jungle3-build") }}
+            - name: VITE_APP_IMAGE_VERSION
+              value: {{ include "api.imageVersion" (list . "mythica-app") }}
+            - name: VITE_MYTHICA_ENVIRONMENT
+              value: {{ .Values.release }}
           volumeMounts:
             - name: dist-publish
               mountPath: "/publish"

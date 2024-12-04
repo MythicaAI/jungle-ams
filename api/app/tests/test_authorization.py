@@ -106,8 +106,8 @@ def generate_session_profile(profile_seq: int) -> SessionProfile:
         email='none@none.com',
         email_validate_state=2,
         location='local-test',
-        auth_roles=set(),
-    )
+        environment='test',
+        auth_roles=set())
 
 
 def test_asset_update():

@@ -6,7 +6,7 @@
 replicaCount: 1
 namespace: "api-staging"
 tier: "web"
-release: "staging"
+release: "staging"  # note that helm release is mapped to MYTHICA_ENVIRONMENT in k8s deployments
 hostnameDecorator: "-staging"
 domains:
   - oss-staging.mythica.gg
