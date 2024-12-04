@@ -58,17 +58,22 @@ const AutomationOutputs: React.FC<AutomationOutputProps> = ({ outputSchema, outp
             const sortedPrevFileOutputs = [...fileOutputs].sort().join(',');
         
             if (sortedFileKeys !== sortedPrevFileOutputs) {
-            setFileOutputs((prevFileOutputs) => {
-                
-                const newFileOutputs = new Set(prevFileOutputs);
-                newFileOutputs.forEach((file) => {
-                    if (!fileKeys.includes(file)) {
-                        newFileOutputs.delete(file);
+                setFileOutputs((prevFileOutputs) => {
+                    
+                    const newFileOutputs = new Set(prevFileOutputs);
+                    newFileOutputs.forEach((file) => {
+                        if (!fileKeys.includes(file)) {
+                            newFileOutputs.delete(file);
+                        }
+                    })
+                    fileKeys.forEach((file) => newFileOutputs.add(file));
+                    // Check if newFileOutputs is different from prevFileOutputs
+                    if ([...newFileOutputs].sort().join(',') !== [...prevFileOutputs].sort().join(',')) {
+                        return newFileOutputs;
                     }
-                })
-                fileKeys.forEach((file) => newFileOutputs.add(file));
-                return newFileOutputs;
-            });
+
+                    return prevFileOutputs; // No changes
+                });
             }
         
             return null;
