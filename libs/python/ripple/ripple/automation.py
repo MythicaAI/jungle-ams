@@ -239,7 +239,7 @@ class ResultPublisher:
                     "created_in": "automation-worker",
                     "result_data": item.model_dump()
                 }
-                self.rest.post(f"{api_url}{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
+                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 

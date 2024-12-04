@@ -1,16 +1,10 @@
 from automation.generate_job_defs import generate_job_defs, GenerateJobDefRequest, GenerateJobDefResponse
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
-from automation.helloworld import hello_world_api, HelloWorldRequest, HelloWorldResponse
+from automation.run_hda import run_hda, RunHdaRequest, RunHdaResponse
 from ripple.automation import Worker
 worker = Worker()
 
 workers = [
-    {
-        "path": '/mythica/hello_world',
-        "provider": hello_world_api,
-        "inputModel": HelloWorldRequest,
-        "outputModel": HelloWorldResponse
-    },
     {
         "path": '/mythica/generate_job_defs',
         "provider": generate_job_defs,
@@ -22,7 +16,14 @@ workers = [
         "provider": generate_mesh,
         "inputModel": ExportMeshRequest,
         "outputModel": ExportMeshResponse
+    },
+    {
+        "path": '/mythica/hda',
+        "provider": run_hda,
+        "inputModel": RunHdaRequest,
+        "outputModel": RunHdaResponse
     }
+
 ]
 
 def force_limited_commercial_mode():
