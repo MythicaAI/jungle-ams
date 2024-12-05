@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import logging
 from http import HTTPStatus
 from typing import Any
@@ -17,6 +18,8 @@ from db.connection import get_session
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
 from ripple.automation import NatsAdapter, WorkerRequest
 from ripple.models.params import ParameterSet, ParameterSpec
 from ripple.runtime.params import repair_parameters, validate_params
@@ -24,6 +27,7 @@ from routes.authorization import session_profile
 
 log = logging.getLogger(__name__)
 
+tracer = trace.get_tracer(__name__)
 
 class JobDefinitionRequest(BaseModel):
     job_type: str
@@ -149,35 +153,41 @@ async def create(
         request: JobRequest,
         profile: Profile = Depends(session_profile)) -> JobResponse:
     """Request a job from an existing definition"""
-    with get_session() as session:
-        job_def = session.exec(select(JobDefinition).where(
-            JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
-        if job_def is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+    with tracer.start_as_current_span("job.status") as span:
+        with get_session() as session:
+            job_def = session.exec(select(JobDefinition).where(
+                JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
+            if job_def is None:
+                span.set_status(Status(StatusCode.ERROR, "Job definition not found"))
+                raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
-        parameter_spec = ParameterSpec(**job_def.params_schema)
-        repair_parameters(parameter_spec, request.params)
-        valid = validate_params(parameter_spec, request.params)
-        if not valid:
-            raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Invalid params")
+            parameter_spec = ParameterSpec(**job_def.params_schema)
+            repair_parameters(parameter_spec, request.params)
+            valid = validate_params(parameter_spec, request.params)
+            if not valid:
+                span.set_status(Status(StatusCode.ERROR, "Invalid job parameters"))
+                raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Invalid params")
 
-        job = session.exec(insert(Job).values(
-            job_def_seq=job_def_id_to_seq(request.job_def_id),
-            owner_seq=profile.profile_seq,
-            params=request.params.model_dump()))
-        job_seq = job.inserted_primary_key[0]
+            job = session.exec(insert(Job).values(
+                job_def_seq=job_def_id_to_seq(request.job_def_id),
+                owner_seq=profile.profile_seq,
+                params=request.params.model_dump()))
+            job_seq = job.inserted_primary_key[0]
 
-        event_result = add_job_requested_event(session, job_seq, job_def, request.params.model_dump(),
-                                               profile.profile_seq)
-        event_id = event_seq_to_id(event_result.inserted_primary_key[0])
-        session.commit()
+            span.set_attribute("job.id", job_seq_to_id(job_seq))
+            span.set_attribute("job.started", datetime.now(timezone.utc))
 
-        add_job_nats_event(job_seq, profile.profile_seq, job_def.job_type, request.params)
+            event_result = add_job_requested_event(session, job_seq, job_def, request.params.model_dump(),
+                                                profile.profile_seq)
+            event_id = event_seq_to_id(event_result.inserted_primary_key[0])
+            session.commit()
 
-        return JobResponse(
-            job_id=job_seq_to_id(job_seq),
-            event_id=event_id,
-            job_def_id=request.job_def_id)
+            add_job_nats_event(job_seq, profile.profile_seq, job_def.job_type, request.params)
+
+            return JobResponse(
+                job_id=job_seq_to_id(job_seq),
+                event_id=event_id,
+                job_def_id=request.job_def_id)
 
 
 def job_result_insert(session: Session, job_seq: int, request: JobResultRequest):
@@ -216,16 +226,21 @@ async def create_result(
         job_id: str,
         request: JobResultRequest) -> JobResultCreateResponse:
     """Add a new job result"""
-    with get_session() as session:
-        job_seq = job_id_to_seq(job_id)
-        job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
-        if job is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
+    with tracer.start_as_current_span("job.status") as span:
+        span.set_attribute("job.id", job_id)
+        with get_session() as session:
+            job_seq = job_id_to_seq(job_id)
+            job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
+            if job is None:
+                span.set_status(Status(StatusCode.ERROR, "Job not found"))
+                raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
 
-        job_result = job_result_insert(session, job_seq, request)
-        job_result_seq = job_result.inserted_primary_key[0]
-        session.commit()
-        return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
+            job_result = job_result_insert(session, job_seq, request)
+            span.set_attribute("job.result", request.result_data)
+            span.set_attribute("job.result.time", datetime.now(timezone.utc))
+            job_result_seq = job_result.inserted_primary_key[0]
+            session.commit()
+            return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
 
 
 @router.get('/results/{job_id}')
@@ -253,11 +268,18 @@ async def list_results(
 async def set_complete(
         job_id: str):
     """Mark a job as complete"""
-    with get_session() as session:
-        job_result = session.exec(update(Job)
-                                  .where(Job.job_seq == job_id_to_seq(job_id))
-                                  .where(Job.completed == None)
-                                  .values(completed=sql_now()))
-        if job_result.rowcount == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
-        session.commit()
+    with tracer.start_as_current_span("job.status") as span:
+        span.set_attribute("job.id", job_id)
+        with get_session() as session:
+            job_result = session.exec(update(Job)
+                                    .where(Job.job_seq == job_id_to_seq(job_id))
+                                    .where(Job.completed == None)
+                                    .values(completed=sql_now()))
+            if job_result.rowcount == 0:
+                span.set_status(Status(StatusCode.ERROR, "Job not found or already completed"))
+                log.error(f"Job {job_id} not found or already completed")
+                raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
+
+            span.set_attribute("job.completed", datetime.now(timezone.utc))
+            span.set_status(Status(StatusCode.OK))
+            session.commit()

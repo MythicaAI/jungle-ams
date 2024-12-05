@@ -5,7 +5,17 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import HTTPException, Request
 import logging
 
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.metrics import get_meter_provider
+
+
 logger = logging.getLogger(__name__)
+
+span = trace.get_current_span()
+meter = get_meter_provider().get_meter(__name__)
+counter = meter.create_counter("request-count")
+histogram = meter.create_histogram("request-latency")
 
 
 class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
@@ -28,6 +38,7 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
             "method": request.method,
             "headers": str(headers),
             "body": body.decode('utf-8', errors='ignore') if body else "",
+            "start_time": start_time,
         }
 
         try:
@@ -48,22 +59,29 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
                 except UnicodeDecodeError:
                     log_params["response_body"] = "<Non-decodable body>"
 
-                logger.error("Error response", extra=log_params)
-
+                logger.warning("Error response", extra=log_params)
+            if response.status_code >= 500:
+                logger.critical("Server error response", extra=log_params)
             return response
         except HTTPException as http_exc:
             log_params.update(
                 {"status_code": http_exc.status_code, "detail": http_exc.detail}
             )
             logger.error("HTTP Exception occurred", extra=log_params)
+            span.record_exception(http_exc)
+            span.set_status(Status(StatusCode.ERROR, "HTTP Exception occurred"))
             raise http_exc
         except Exception as exc:
-            logger.error(
+            logger.critical(
                 "Unhandled exception occurred", exc_info=True, extra=log_params
             )
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR, "internal error"))
             raise exc
         finally:
             # Log the request duration
             duration = time.time() - start_time
+            histogram.record(duration, log_params)
             log_params.update({"duration": duration})
             logger.info("Request completed", extra=log_params)
+            counter.add(1, {"name": str(request.url), **log_params, "duration": duration})

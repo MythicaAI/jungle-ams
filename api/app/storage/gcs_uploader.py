@@ -1,12 +1,14 @@
 from datetime import timedelta
 from io import BytesIO
+import logging
 
 from cryptid.location import location
 from google.cloud import storage
 
+from config import app_config
 from context import RequestContext
 from storage.bucket_types import BucketType
-from storage.storage_client import StorageClient
+from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
 
 # Configure GCS bucket mappings here directly - this could get more involved as bucket limits,
 # regional and migrations occur
@@ -26,6 +28,8 @@ def validate_bucket_mappings():
 
 validate_bucket_mappings()
 
+log = logging.getLogger(__name__)
+
 
 class Client(StorageClient):
     """Implementation of GCS storage client"""
@@ -38,16 +42,21 @@ class Client(StorageClient):
 
     def upload(self, ctx: RequestContext, bucket_type: BucketType):
         """Upload the object in the request context to the bucket"""
-        ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
-        bucket = self.gcs.bucket(ctx.bucket_name)
-        object_name = ctx.content_hash + '.' + ctx.extension
+        with tracer.start_as_current_span("file.upload") as span:
+            span.set_attribute("file.id", ctx.file_id)
+            ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
+            bucket = self.gcs.bucket(ctx.bucket_name)
+            object_name = ctx.content_hash + '.' + ctx.extension
+            log.info(f"Upload file to the bucket. id: {ctx.file_id=}, name: {object_name}")
+            span.set_attribute("file.name", object_name)
 
-        blob = bucket.blob(object_name)
-        blob.upload_from_filename(ctx.local_filepath)
-        ctx.add_object_locator(
-            'gcs',
-            location() + '.' + ctx.bucket_name,
-            object_name)
+            blob = bucket.blob(object_name)
+            blob.upload_from_filename(ctx.local_filepath)
+            ctx.add_object_locator(
+                'gcs',
+                location() + '.' + ctx.bucket_name,
+                object_name)
+        upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": object_name})
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
         """Streaming not currently implemented for GCS"""
@@ -55,8 +64,13 @@ class Client(StorageClient):
 
     def download_link(self, bucket_name: str, object_name: str):
         """Get a pre-signed URL to down the object"""
-        bucket = self.gcs.bucket(bucket_name)
-        blob = bucket.blob(object_name)
+        with tracer.start_as_current_span("file.download") as span:
+            span.set_attribute("file.name", object_name)
+            log.info(f"Request to download file from the bucket. name: {object_name}")
+            log.info(f"{app_config().telemetry_endpoint,=}")
+            bucket = self.gcs.bucket(bucket_name)
+            blob = bucket.blob(object_name)
+        download_counter.add(1, {"bucket_name": bucket_name, "file_name": object_name})
         return blob.generate_signed_url(version="v4", expiration=timedelta(days=7), method="GET")
 
 

@@ -8,7 +8,7 @@ from minio.error import S3Error
 from config import app_config
 from context import RequestContext
 from storage.bucket_types import BucketType
-from storage.storage_client import StorageClient
+from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
 
 log = logging.getLogger(__name__)
 
@@ -49,18 +49,23 @@ class Client(StorageClient):
         any S3 compatible backend including GCS or a minio gateway for
         transparent object migrations.
         """
-        ctx.bucket_name = _create_bucket(self.minio, bucket_type)
+        with tracer.start_as_current_span("file.upload") as span:
+            span.set_attribute("file.id", ctx.file_id)
+            ctx.bucket_name = _create_bucket(self.minio, bucket_type)
 
-        ctx.object_name = ctx.content_hash + '.' + ctx.extension
-        # Upload the file, renaming it in the process
-        try:
-            self.minio.fput_object(
-                ctx.bucket_name, ctx.object_name, ctx.local_filepath)
-            log.info("%s uploaded to bucket %s", ctx.object_name, ctx.bucket_name)
-            ctx.add_object_locator("minio", ctx.bucket_name, ctx.object_name)
-        except S3Error as exc:
-            log.exception("upload failed to %s:%s", ctx.bucket_name, ctx.object_name)
-            raise exc
+            ctx.object_name = ctx.content_hash + '.' + ctx.extension
+            log.info(f"Upload file to the minio bucket. id: {ctx.file_id=}, name: {ctx.object_name}")
+            span.set_attribute("file.name", ctx.object_name)
+            # Upload the file, renaming it in the process
+            try:
+                self.minio.fput_object(
+                    ctx.bucket_name, ctx.object_name, ctx.local_filepath)
+                log.info("%s uploaded to bucket %s", ctx.object_name, ctx.bucket_name)
+                ctx.add_object_locator("minio", ctx.bucket_name, ctx.object_name)
+            except S3Error as exc:
+                log.exception("upload failed to %s:%s", ctx.bucket_name, ctx.object_name)
+                raise exc
+            upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": ctx.object_name})
 
     def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
         """Upload object via the streaming API"""
@@ -97,7 +102,11 @@ class Client(StorageClient):
 
     def download_link(self, bucket_name: str, object_name: str):
         """Get a pre-signed URL to down the object"""
-        return self.minio.presigned_get_object(bucket_name, object_name)
+        with tracer.start_as_current_span("file.download") as span:
+            span.set_attribute("file.name", object_name)
+            log.info(f"Request to download file from the minio bucket. name: {object_name}")
+            download_counter.add(1, {"bucket_name": bucket_name, "file_name": object_name})
+            return self.minio.presigned_get_object(bucket_name, object_name)
 
 
 def create_client():
