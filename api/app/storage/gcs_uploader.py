@@ -5,7 +5,6 @@ import logging
 from cryptid.location import location
 from google.cloud import storage
 
-from config import app_config
 from context import RequestContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
@@ -47,7 +46,7 @@ class Client(StorageClient):
             ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
             bucket = self.gcs.bucket(ctx.bucket_name)
             object_name = ctx.content_hash + '.' + ctx.extension
-            log.info(f"Upload file to the bucket. id: {ctx.file_id=}, name: {object_name}")
+            log.info("Upload file to the bucket. id: %s, name: %s", ctx.file_id, object_name)
             span.set_attribute("file.name", object_name)
 
             blob = bucket.blob(object_name)
@@ -66,8 +65,7 @@ class Client(StorageClient):
         """Get a pre-signed URL to down the object"""
         with tracer.start_as_current_span("file.download") as span:
             span.set_attribute("file.name", object_name)
-            log.info(f"Request to download file from the bucket. name: {object_name}")
-            log.info(f"{app_config().telemetry_endpoint,=}")
+            log.info("Request to download file from the bucket. name: %s", object_name)
             bucket = self.gcs.bucket(bucket_name)
             blob = bucket.blob(object_name)
         download_counter.add(1, {"bucket_name": bucket_name, "file_name": object_name})

@@ -277,7 +277,7 @@ async def set_complete(
                                     .values(completed=sql_now()))
             if job_result.rowcount == 0:
                 span.set_status(Status(StatusCode.ERROR, "Job not found or already completed"))
-                log.error(f"Job {job_id} not found or already completed")
+                log.error("Job %s not found or already completed", job_id)
                 raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
 
             span.set_attribute("job.completed", datetime.now(timezone.utc))
