@@ -34,9 +34,20 @@ async def validation_error(_: Request, exc: ValidationError):
         content=exc.json()
     )
 
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
+
+span = trace.get_current_span()
+
+
+async def other_errors(_: Request, exc: Exception):
+    span.record_exception(exc)
+    span.set_status(Status(StatusCode.ERROR, "Unexpected Exception occurred"))
+
 
 def register_exceptions(app):
     """Register all built-in exception handlers in this module"""
     app.add_exception_handler(IdError, api_id_error)
     app.add_exception_handler(SequenceError, api_seq_error)
     app.add_exception_handler(ValidationError, validation_error)
+    app.add_exception_handler(Exception, other_errors)

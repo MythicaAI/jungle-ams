@@ -42,11 +42,11 @@ data:
       pipelines:
         logs:
           receivers: [otlp]
-          exporters: [logging, otlp]
+          exporters: [otlp]
         metrics:
           receivers: [otlp]
           processors: [batch]
-          exporters: [otlp]
+          exporters: [logging, otlp]
         traces:
           receivers: [otlp]
           processors: [batch]
