@@ -226,7 +226,7 @@ def build_image(c, image_path: PathLike):
     commit_hash = get_commit_hash()
     with c.cd(working_directory):
         c.run(
-            (f"docker buildx build --platform={IMAGE_PLATFORM} --no-cache"
+            (f"docker buildx build --platform={IMAGE_PLATFORM}"
              f" {buildarg_str} -f {dockerfile_path}"
              f"  -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
