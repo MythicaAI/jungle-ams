@@ -12,7 +12,7 @@ const defaultProfile: ProfileResponse = {
   profile_base_href: "",
   description: "",
   email: "",
-  email_verified: false,
+  validate_state: false,
   org_roles: [],
 };
 

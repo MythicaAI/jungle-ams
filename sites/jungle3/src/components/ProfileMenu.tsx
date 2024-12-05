@@ -7,17 +7,10 @@ import {
   MenuButton,
   MenuItem,
 } from "@mui/joy";
-import {
-  LayoutDashboard,
-  LucideEdit,
-  LucideGroup,
-  LucideKeyRound,
-  LucideLogOut,
-  LucidePackage,
-  LucideUpload,
-} from "lucide-react";
-import { Link as RouterLink } from "react-router-dom";
+import { LucideLogOut } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { NAV_LINKS } from "./constants";
 
 interface ProfileMenuProps {
   name: string;
@@ -25,30 +18,53 @@ interface ProfileMenuProps {
 
 interface LinkMenuItemProps {
   to: string;
+  handleNavigate: (to: string) => void;
   children: React.ReactNode;
+  isActive?: boolean;
 }
 
-const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => (
-  <MenuItem
-    component={RouterLink}
-    to={props.to}
-    sx={{
-      textDecoration: "none",
-      color: "inherit",
-      "&:hover": {
+const MENU_TIMEOUT = 100;
+
+const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => {
+  return (
+    <MenuItem
+      sx={{
         textDecoration: "none",
-      },
-    }}
-  >
-    {props.children}
-  </MenuItem>
-);
+        color: "inherit",
+        "&:hover": {
+          textDecoration: "none",
+        },
+      }}
+      onClick={() => props.handleNavigate(props.to)}
+      selected={props.isActive}
+    >
+      {props.children}
+    </MenuItem>
+  );
+};
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
+  const location = useLocation();
+
+  const handleOpenChange = React.useCallback(
+    (_: React.SyntheticEvent | null, isOpen: boolean) => {
+      setOpen(isOpen);
+    },
+    [],
+  );
+
+  const handleNavigate = (to: string) => {
+    setOpen(false);
+    setTimeout(() => {
+      navigate(to);
+    }, MENU_TIMEOUT);
+  };
 
   return (
-    <Dropdown>
+    <Dropdown open={open} onOpenChange={handleOpenChange}>
       <MenuButton
         sx={{
           cursor: "pointer",
@@ -66,32 +82,18 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
         />
       </MenuButton>
       <Menu placement="bottom-end">
-        <LinkMenuItem to="/dashboard">
-          <LayoutDashboard />
-          {t("common.profileMenu.dashboard")}
-        </LinkMenuItem>
-        <LinkMenuItem to="/profile">
-          <LucideEdit />
-          {t("common.profileMenu.editProfile")}
-        </LinkMenuItem>
-        <LinkMenuItem to="/packages">
-          <LucidePackage />
-          {t("common.profileMenu.myPackages")}
-        </LinkMenuItem>
-        <LinkMenuItem to="/uploads">
-          <LucideUpload />
-          {t("common.profileMenu.myUploads")}
-        </LinkMenuItem>
-        <LinkMenuItem to="/orgs">
-          <LucideGroup />
-          {t("common.profileMenu.manageOrgs")}
-        </LinkMenuItem>
-        <LinkMenuItem to="/api-keys">
-          <LucideKeyRound />
-          {t("common.profileMenu.apiKeys")}
-        </LinkMenuItem>
+        {NAV_LINKS.map((navItem) => (
+          <LinkMenuItem
+            handleNavigate={handleNavigate}
+            to={navItem.to}
+            isActive={location.pathname === navItem.to}
+          >
+            {navItem.icon}
+            {t(navItem.translation)}
+          </LinkMenuItem>
+        ))}
         <Divider orientation="horizontal" />
-        <LinkMenuItem to="/logout">
+        <LinkMenuItem handleNavigate={handleNavigate} to="/logout">
           <LucideLogOut />
           {t("common.logout")}
         </LinkMenuItem>

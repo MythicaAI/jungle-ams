@@ -26,7 +26,7 @@ export type ProfileResponse = {
   active: boolean;
   created: ISOTime;
   updated: ISOTime;
-  email_verified: boolean;
+  validate_state: boolean;
   org_roles: { org_id: string; roles: string[] }[];
 };
 
@@ -51,7 +51,7 @@ export const defaultProfileResponse = () => {
     active: false,
     created: "",
     updated: "",
-    email_verified: false,
+    validate_state: false,
     org_roles: [],
   };
 };
