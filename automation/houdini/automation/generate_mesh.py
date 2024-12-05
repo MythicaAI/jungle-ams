@@ -78,7 +78,17 @@ def generate_mesh_impl(
     log.info("Setting up scene completed")
 
     log.info("Forcing HDA cook (internal HDA cooks must happen before exporting)")
-    asset.cook(force=True)
+    try:
+        asset.cook(force=True)
+    except Exception as e:
+        log.error(f"Cook failed with exception: {e}")
+        for error in asset.errors():
+            log.error(f"Cook Error: {error}")
+        for warning in asset.warnings():
+            log.error(f"Cook Warning: {warning}")
+        for message in asset.messages():
+            log.error(f"Cook Message: {message}")
+        raise
     log.info("HDA cook completed")
 
     # Export
