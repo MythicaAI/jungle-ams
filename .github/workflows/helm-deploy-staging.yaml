@@ -80,6 +80,8 @@ jobs:
       - name: Deploy Helm Chart
         run: |
           helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-images.yaml api-staging api/helm/api
+          echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
+          cat api/helm/api/values-images.yaml >> $GITHUB_STEP_SUMMARY
 
       - name: Rollout deployments
         run: |
