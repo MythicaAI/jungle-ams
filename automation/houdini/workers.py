@@ -44,7 +44,7 @@ def force_limited_commercial_mode():
     print('License set to limited commercial mode')
 
 def main():
-    force_limited_commercial_mode()
+    #force_limited_commercial_mode()
     worker.start('houdini',workers)
 
 if __name__ == "__main__":

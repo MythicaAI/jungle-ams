@@ -138,11 +138,14 @@ def transpiler(code):
     tree = ast.parse(preprocess(code))
     transpiler = Transpiler()
     transpiler.visit(tree)
-    jscode = ''.join(transpiler.transpiled_code).replace('\n','\n\t')
+    jscode = ''.join(transpiler.transpiled_code).replace('\n','\n\t\t')
     jscode = f"""
-const parmTemplateGroup: typeof hou.ParmTemplateGroup = () => {{
-    {jscode}
-    return hou_parm_template_group;
-}}  
+(function(hou) {{
+    const parmTemplateGroup = () => {{
+        {jscode}
+        return hou_parm_template_group;
+    }}
+    return parmTemplateGroup();
+}});  
     """ 
     return jscode
