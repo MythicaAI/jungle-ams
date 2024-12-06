@@ -61,6 +61,7 @@ superuser = {
     roles.alias_tag_author,
     roles.alias_org_admin,
     roles.alias_asset_editor,
+    roles.alias_core_create,
 }
 
 
@@ -160,7 +161,8 @@ def test_asset_create():
     with pytest.raises(RoleError):
         validate_roles(
             role=roles.asset_create,
-            auth_roles=set())
+            auth_roles=set(),
+            scope=Scope(profile=build_session_profile(superuser_seq)))
 
 
 def test_asset_update():
