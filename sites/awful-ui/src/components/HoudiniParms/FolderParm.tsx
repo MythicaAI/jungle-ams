@@ -1,6 +1,6 @@
 import React from 'react';
 import hou from '../../types/Houdini';
-import { parmView } from './ParmController'; // Reuse the view controller for nested templates
+import { ParmFactory } from './ParmFactory'; // Reuse the view controller for nested templates
 import { dictionary } from '../../types/Automation';
 
 export interface FolderParmProps {
@@ -21,7 +21,7 @@ const FolderParm: React.FC<FolderParmProps> = ({template, onChange, runtimeData 
                 <div className="folder-content">
                     {template.parm_templates.map((parmTemplate, index) => (
                         <div key={template.name + index} className="parm-item">
-                            {parmView(parmTemplate,onChange)}
+                            <ParmFactory parmTemplate={parmTemplate} onChange={onChange} />
                         </div>
                     ))}
                 </div>
@@ -34,7 +34,7 @@ const FolderParm: React.FC<FolderParmProps> = ({template, onChange, runtimeData 
                 <div className="folder-content">
                     {template.parm_templates.map((parmTemplate, index) => (
                         <div key={template.name + index} className="parm-item">
-                            {parmView(parmTemplate,onChange)}
+                            <ParmFactory parmTemplate={parmTemplate} onChange={onChange} />
                         </div>
                     ))}
                 </div>
@@ -48,7 +48,7 @@ const FolderParm: React.FC<FolderParmProps> = ({template, onChange, runtimeData 
             <div className="folder-content">
                 {template.parm_templates.map((parmTemplate, index) => (
                     <div key={template.name + index} className="parm-item">
-                        {parmView(parmTemplate,onChange)}
+                        <ParmFactory parmTemplate={parmTemplate} onChange={onChange} />
                     </div>
                 ))}
             </div>
