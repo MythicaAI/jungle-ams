@@ -36,6 +36,11 @@ org__mod_roles = {
     org_create_role,
     org_delete_role
 }
+org__edit_roles = {
+    org_update,
+    org_create_role,
+    org_delete_role,
+}
 
 #
 # `Asset` roles
@@ -45,6 +50,10 @@ asset_update = 'asset/update'
 asset_delete = 'asset/delete'
 asset__all_roles = {
     asset_create,
+    asset_update,
+    asset_delete,
+}
+asset__edit_roles = {
     asset_update,
     asset_delete,
 }
@@ -70,6 +79,16 @@ tag__all_roles = {
     tag_update,
     tag_delete,
 }
+tag__edit_roles = {
+    tag_update,
+    tag_delete
+}
+
+# Object creation roles (no scope)
+core__create_roles = {
+    org_create,
+    asset_create,
+}
 
 # Bind all roles
 all_roles = {
@@ -85,6 +104,7 @@ alias_org_member = "org-member"
 alias_asset_editor = "asset-editor"
 alias_profile_editor = 'profile-editor'
 alias_tag_author = "tag-author"
+alias_core_create = "core-create"
 
 # marker used in the scope match of a role to indicate that it must match
 # the current input scope, e.g. asset_edit must match the owner, author or org
@@ -101,6 +121,7 @@ role_aliases: dict = {
     alias_org_member: org__member_roles,
     alias_asset_editor: asset__all_roles,
     alias_profile_editor: profile__all_roles,
+    alias_core_create: core__create_roles,
 }
 
 """Allowed list of org role aliases"""
