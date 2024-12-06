@@ -14,6 +14,7 @@ import Sidebar from './components/Sidebar';
 import AutomationNode from './components/AutomationNode';
 import FileUploadNode from './components/FileUploadNode';
 import FileViewerNode from './components/FileViewerNode';
+import HDANode from './components/HDANode';
 
 
 // Main Awful UI component
@@ -33,6 +34,7 @@ const AwfulUI: React.FC = () => {
 
   const nodeTypes = useMemo(
     () => ({
+      hdaWorker: HDANode,
       worker: AutomationNode,
       fileUpload: FileUploadNode,
       fileViewer: FileViewerNode,

@@ -177,6 +177,16 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             data: {},
           };
           break;
+        case 'houdini://mythica/hda':
+          newNode = {
+            id: getId(),
+            type: 'hdaWorker',
+            position,
+            data: {
+              automation: nodeType,
+            },
+          };
+          break;
         default:
           // Handle other types (e.g., generic worker)
           newNode = {

@@ -7,7 +7,6 @@ import MythicaApiProvider from './providers/MythicaApiProvider';
 import AwfulFlowProvider from './providers/AwfulFlowProvider';
 import AwfulUI from './AwfulUI';
 
-import './index.css';
 
 const App: React.FC = () => (
   <ReactFlowProvider>

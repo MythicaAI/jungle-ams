@@ -166,6 +166,9 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
    */
   const processAutomationOutput = useCallback(
     async () => {
+
+      const automationOutput = myExecutionData.output as AutomationOutputType & { workers?: { [key: string]: { input?: JSONSchema, output?: JSONSchema } } };
+
       const fetchAndResolveFiles = async (fileIds: string[]) => {
         const resolvedFiles = [];
         for (const file_id of fileIds) {
@@ -180,43 +183,53 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         return resolvedFiles;
       };
 
-      const executed = myExecutionData.state === NodeState.Executed;
-      const automationOutput = myExecutionData.output as AutomationOutputType & { workers?: { [key: string]: { input?: JSONSchema, output?: JSONSchema } } };
+      const generateAutomationInterface = () => {
+        if (automationOutput.workers) {
+          const thisAutomation = automationOutput.workers?.[scriptPath] || {};
+          const automationTask = parseAutomation(node.id, {
+            internal: {
+              hidden: false,
+              input: thisAutomation.input as JSONSchema,
+              output: thisAutomation.output as JSONSchema,
+            },
+          });
+          setInputSpec(automationTask[0].spec.input);
+          setOutputSpec(automationTask[0].spec.output);
+          myExecutionData.state = NodeState.Clean;
+        }
+      }
 
-      try {
-        if (isScriptNode && executed && myExecutionData.path === scriptInterfacePath) {
-          if (automationOutput.workers) {
-            const thisAutomation = automationOutput.workers?.[scriptPath] || {};
-            const automationTask = parseAutomation(node.id, {
-              internal: {
-                hidden: false,
-                input: thisAutomation.input as JSONSchema,
-                output: thisAutomation.output as JSONSchema,
-              },
-            });
-            setInputSpec(automationTask[0].spec.input);
-            setOutputSpec(automationTask[0].spec.output);
-            myExecutionData.state = NodeState.Clean;
-          }
-        } else if (executed) {
-          if (automationOutput.files) {
-            const fileKeys = Object.keys(automationOutput.files);
-            for (const fileKey of fileKeys) {
-              const fileIds = automationOutput.files[fileKey];
-              if (Array.isArray(fileIds)) {
-                const resolvedFiles = await fetchAndResolveFiles(fileIds);
+      const updateFlowData = () => {
+        if (automationOutput.files) {
+          const fileKeys = Object.keys(automationOutput.files);
+          for (const fileKey of fileKeys) {
+            const fileIds = automationOutput.files[fileKey];
+            if (Array.isArray(fileIds)) {
+              fetchAndResolveFiles(fileIds).then((resolvedFiles) => {
                 setFlowData(node.id, fileKey, resolvedFiles); // Update flowData with resolved files
                 notifyTargets(node.id, fileKey, resolvedFiles); // Notify connections of the change
-              }
+                myExecutionData.state = NodeState.Done;
+              });
             }
           }
-          myExecutionData.state = NodeState.Done;
         }
+      }
+
+      const processOutputMessage= () => {
         if (automationOutput && automationOutput.message) {
           setFlowExecutionMessage(automationOutput.message as string);
         } else {
           setFlowExecutionMessage('');
+        } 
+      }
+
+      try {
+        if (isScriptNode && myExecutionData.path === scriptInterfacePath) {
+          generateAutomationInterface();
+        } else  {
+          updateFlowData();
         }
+        processOutputMessage();
       } catch (error) {
         console.error('Error parsing worker output', error);
         myExecutionData.state = NodeState.Error;
@@ -298,7 +311,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       ))}
       <p />
       {isScriptNode && (
-        <div className="script-editor">
+        <div className="script-editor nodrag">
           <MonacoEditor
             width="640px"
             height="480px"
