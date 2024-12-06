@@ -19,6 +19,7 @@ class RequestContext:
         self.extension: str = ''
         self.locators: list = []
         self.purpose: FilePurpose = FilePurpose.UNDEFINED
+        self.visibility: str = 'public'
 
     def add_object_locator(self, backend, bucket_name, object_name):
         """Add a backend storage locator reference"""

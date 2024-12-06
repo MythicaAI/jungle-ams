@@ -15,6 +15,7 @@ org_asset_delete = 'org/asset/delete'
 org_asset_update = 'org/asset/update'
 org_create_role = 'org/role/create'
 org_delete_role = 'org/role/delete'
+org_file_get = 'org/file/get'
 org__all_roles = {
     org_create,
     org_update,
@@ -24,11 +25,13 @@ org__all_roles = {
     org_asset_update,
     org_create_role,
     org_delete_role,
+    org_file_get,
 }
 org__member_roles = {
     org_asset_create,
     org_asset_update,
     org_asset_delete,
+    org_file_get,
 }
 org__mod_roles = {
     *org__member_roles,
@@ -71,11 +74,21 @@ tag__all_roles = {
     tag_delete,
 }
 
+
+#
+# `File` roles
+#
+file_get = 'file/get'
+file__all_roles = {
+    file_get,
+}
+
 # Bind all roles
 all_roles = {
     *org__all_roles,
     *asset__all_roles,
-    *tag__all_roles
+    *tag__all_roles,
+    *file__all_roles,
 }
 
 # Aliases to bind profiles to specific roles

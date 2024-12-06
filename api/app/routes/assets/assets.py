@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 import assets.repo as repo
 from auth.generate_token import SessionProfile
 from db.connection import get_session
-from routes.authorization import session_profile
+from routes.authorization import maybe_session_profile, session_profile
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
 
@@ -35,10 +35,10 @@ async def list_all() -> list[repo.AssetVersionResult]:
 
 
 @router.get('/top')
-async def list_top() -> list[repo.AssetTopResult]:
+async def list_top(profile: SessionProfile = Depends(maybe_session_profile)) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
     with get_session(echo=True) as session:
-        return repo.top(session)
+        return repo.top(session, profile)
 
 
 @router.get('/owned')
@@ -102,9 +102,10 @@ async def create_version(asset_id: str,
 async def dependencies(
         asset_id: str,
         version_str: str,
-        storage: StorageClient = Depends(storage_client)) -> repo.AssetDependencyResult:
+        storage: StorageClient = Depends(storage_client),
+        profile: SessionProfile = Depends(session_profile)) -> repo.AssetDependencyResult:
     with get_session() as session:
-        return repo.select_asset_dependencies(session, asset_id, version_str, storage)
+        return repo.select_asset_dependencies(session, asset_id, version_str, storage, profile)
 
 
 @router.delete('/{asset_id}/versions/{version_str}')

@@ -195,7 +195,7 @@ def process_join_results(
         session: Session,
         join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) \
         -> list[AssetVersionResult]:
-    """Process the join result of Asset, AssetVersion and FileContent tables"""
+    """Process the join result of Asset, AssetVersion tables"""
 
     results = list()
     for join_result in join_results:
@@ -276,7 +276,8 @@ def select_asset_dependencies(
         session: Session,
         asset_id: str,
         version_str: str,
-        storage: StorageClient) -> AssetDependencyResult:
+        storage: StorageClient,
+        profile: SessionProfile) -> AssetDependencyResult:
     """Recursively query dependencies for a specific asset version"""
     version_id = convert_version_input(version_str)
     ctx = DependencyQueryContext()
@@ -298,7 +299,7 @@ def select_asset_dependencies(
                     missing_version=(asset_id, tuple(version_id)),
                     missing_package_link=True))
         else:
-            download_info = resolve_download_info(session, avr.package_id, storage)
+            download_info = resolve_download_info(session, avr.package_id, storage, profile)
             if download_info is None:
                 ctx.missing.append(
                     MissingDependencyResult(missing_package=avr.package_id))
@@ -367,18 +368,19 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]])
 def resolve_content_list(
         session: Session,
         category: str,
-        in_content_list: list[Union[str, Dict[str, Any]]]):
+        in_content_list: list[Union[str, Dict[str, Any]]], profile: SessionProfile):
     """For each category return the fully resolved version of list of items in the category"""
     if category in FILE_TYPE_CATEGORIES:
-        return list(map(partial(resolve_asset_file_reference, session), in_content_list))
+        return list(map(partial(resolve_asset_file_reference, session, profile), in_content_list))
     elif category in ASSET_VERSION_TYPE_CATEGORIES:
-        return list(map(partial(resolve_asset_dependency, session), in_content_list))
+        return list(map(partial(resolve_asset_dependency, session, profile), in_content_list))
     elif category in LINK_TYPE_CATEGORIES:
         return list(map(resolve_asset_link, in_content_list))
 
 
 def resolve_asset_file_reference(
         session: Session,
+        profile: SessionProfile,
         file_reference: Union[str, AssetFileReference]) -> dict:
     file_id = file_reference.file_id
     file_name = file_reference.file_name
@@ -386,7 +388,7 @@ def resolve_asset_file_reference(
     if file_id is None or file_name is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f"file_id and file_name required on {str(file_reference)}")
-    db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
+    db_file = locate_content_by_seq(session, file_id_to_seq(file_id), profile)
     if db_file is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             detail=f"file '{file_id}' not found")
@@ -398,7 +400,7 @@ def resolve_asset_file_reference(
         size=db_file.size).model_dump()
 
 
-def resolve_asset_dependency(session, dep: AssetDependency) -> dict:
+def resolve_asset_dependency(session, profile: SessionProfile, dep: AssetDependency) -> dict:
     asset_id = dep.asset_id
     version = dep.version
     if asset_id is None or version is None or len(version) != 3:
@@ -409,7 +411,7 @@ def resolve_asset_dependency(session, dep: AssetDependency) -> dict:
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             f'asset {asset_id} {version} not found')
-    package_file = locate_content_by_seq(session, file_id_to_seq(avr.package_id))
+    package_file = locate_content_by_seq(session, file_id_to_seq(avr.package_id), profile)
     return AssetDependency(
         asset_id=avr.asset_id,
         version=avr.version,
@@ -430,14 +432,15 @@ def resolve_asset_link(link):
 
 def resolve_contents_as_json(
         session: Session,
-        in_files_categories: dict[str, list[AssetFileReference | str]]) \
+        in_files_categories: dict[str, list[AssetFileReference | str]],
+        profile: SessionProfile) \
         -> str:
     """Convert any partial content references into fully resolved references"""
     contents = {}
 
     # resolve all file content types
     for category, content_list in in_files_categories.items():
-        contents[category] = resolve_content_list(session, category, content_list)
+        contents[category] = resolve_content_list(session, category, content_list, profile)
 
     return contents
 
@@ -512,7 +515,7 @@ def create_version(session: Session,
     # and converted to json for serialization into storage
     contents = values.get('contents')
     if contents is not None:
-        values['contents'] = resolve_contents_as_json(session, r.contents)
+        values['contents'] = resolve_contents_as_json(session, r.contents, profile)
 
     # if the org_id is specified issue an update against the root asset
     org_id = values.pop('org_id', None)
@@ -661,7 +664,7 @@ def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionP
     session.commit()
 
 
-def top(session: Session):
+def top(session: Session, profile: SessionProfile):
     results = session.exec(
         select(Asset, AssetVersion, FileContent)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
@@ -698,6 +701,15 @@ def top(session: Session):
         asset, ver, file = result
         if ver is None or file is None:
             continue
+
+        try:
+            if profile and not file.visibility == "public":
+                validate_roles(role=auth.roles.file_get,
+                                object_id=file.visibility, auth_roles=profile.auth_roles,
+                                scope=Scope(profile=profile, file=file))
+        except HTTPException:
+            continue
+
         atr = reduced.get(asset.asset_seq, None)
         version_id = [ver.major, ver.minor, ver.patch]
         if atr is None:

@@ -16,15 +16,18 @@ def uploader(client, api_base):
             profile_id: str,
             auth_headers,
             files: list[FileContentTestObj],
-            storage_uri='/upload/store') -> dict[str, FileUploadResponse]:
+            storage_uri='/upload/store',
+            file_visibility: str = "public") -> dict[str, FileUploadResponse]:
 
         file_data = list(map(
             lambda x: ('files', (x.file_name, x.contents, x.content_type)),
             files))
+        params = {"file_visibility": file_visibility}
 
         r = client.post(
             f"{api_base}{storage_uri}",
             files=file_data,
+            params=params,
             headers=auth_headers)
         assert_status_code(r, HTTPStatus.OK)
         o = munchify(r.json())
@@ -77,7 +80,7 @@ def uploader(client, api_base):
 
             # validate download info API
             r = client.get(
-                f"{api_base}/download/info/{o.file_id}")
+                f"{api_base}/download/info/{o.file_id}", headers=auth_headers)
             assert_status_code(r, HTTPStatus.OK)
             o = munchify(r.json())
             assert o.file_id == test_file.file_id
@@ -89,7 +92,7 @@ def uploader(client, api_base):
             # validate download redirect API
             r = client.get(
                 f"{api_base}/download/{o.file_id}",
-                follow_redirects=False)
+                follow_redirects=False, headers=auth_headers)
             assert_status_code(r, HTTPStatus.TEMPORARY_REDIRECT)
             assert (r.headers.get('Location') is not None)
 
@@ -113,6 +116,7 @@ def uploader(client, api_base):
 def request_to_upload_files(
     client,
     api_base,
+    file_visibility: str = "public",
 ) -> tuple[str]:
 
     def _upload_files(headers: dict, files: list[FileContentTestObj]):
@@ -120,9 +124,10 @@ def request_to_upload_files(
             ('files', (file.file_name, file.contents, file.content_type))
             for file in files
         ]
+        params = {"file_visibility": file_visibility}
         
         upload_res =  client.post(
-            f"{api_base}/upload/store", files=files, headers=headers
+            f"{api_base}/upload/store", files=files, headers=headers, params=params
         )
         assert_status_code(upload_res, HTTPStatus.OK)
         upload_res = munchify(upload_res.json())

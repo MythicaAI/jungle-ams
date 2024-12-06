@@ -5,11 +5,15 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import select
 
+import auth.roles
+from auth.authorization import Scope, validate_roles
+from auth.generate_token import SessionProfile
 from content.resolve_download_info import DownloadInfoResponse, increment_download_count, resolve_download_info, \
     translate_download_url
 from cryptid.cryptid import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
+from routes.authorization import session_profile
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
 
@@ -21,10 +25,11 @@ router = APIRouter(prefix="/download", tags=["files"])
 @router.get('/info/{file_id}')
 async def info(
         file_id: str,
-        storage: StorageClient = Depends(storage_client)) -> DownloadInfoResponse:
+        storage: StorageClient = Depends(storage_client),
+        profile: SessionProfile = Depends(session_profile)) -> DownloadInfoResponse:
     """Return information needed to download the file including the temporary URL"""
     with get_session() as session:
-        response = resolve_download_info(session, file_id, storage)
+        response = resolve_download_info(session, file_id, storage, profile)
         if response is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"{file_id} not found")
         return response
@@ -34,7 +39,8 @@ async def info(
 async def redirect(
         file_id: str,
         response: Response,
-        storage: StorageClient = Depends(storage_client)):
+        storage: StorageClient = Depends(storage_client),
+        profile: SessionProfile = Depends(session_profile)):
     """Redirects to a temporary download link from a valid file_id"""
     with get_session() as session:
         file_seq = file_id_to_seq(file_id)
@@ -42,6 +48,9 @@ async def redirect(
         file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).first()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
+        validate_roles(role=auth.roles.file_get,
+            object_id=file.visibility, auth_roles=profile.auth_roles,
+            scope=Scope(profile=profile, file=file))
         locator_list = file.locators['locators']
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
         response.headers['location'] = translate_download_url(storage, locator_list)

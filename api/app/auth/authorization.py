@@ -30,6 +30,7 @@ from auth.generate_token import SessionProfile
 from auth.roles import role_to_alias, self_object_scope
 from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.schema.assets import Asset, AssetVersion
+from db.schema.media import FileContent
 from db.schema.profiles import Org
 
 # TODO: move to admin interface
@@ -49,6 +50,7 @@ class Scope(BaseModel):
     org: Optional[Org] = None
     asset: Optional[Asset] = None
     asset_version: Optional[AssetVersion] = None
+    file: Optional[FileContent] = None
 
 
 def validate_asset_ownership_scope(
@@ -117,6 +119,8 @@ def validate_roles(
     # provided by the profile.
     #
     aliases_for_role = role_to_alias.get(role, [])
+    if role.startswith("file/"):
+        return validate_file_ownership_scope(role, auth_roles, object_id, scope)
     for alias in aliases_for_role:
         # cases such as global org-admin matching against org/add_asset or asset/update
         if alias in auth_roles:
@@ -149,3 +153,45 @@ def validate_roles(
     raise HTTPException(
         HTTPStatus.UNAUTHORIZED,
         f'{role} not satisfied by {auth_roles}"')
+
+
+def validate_file_ownership_scope(
+        role: str,
+        auth_roles: set[str],
+        object_id: Optional[str] = None,
+        scope: Optional[Scope] = None) -> bool:
+    """Validate the roles against the file ownership logic"""
+
+    # without an file in the scope, the role check will succeed
+    # e.g. org/file/get
+    if scope is None or scope.file is None:
+        return True
+
+    # The profile is the owner of the file
+    if scope.profile and \
+            (scope.file.owner_seq == scope.profile.profile_seq):
+        return True
+
+    # Look for a org scoped role by alias on the profile
+    # e.g. org-member or org-admin (depending on test.role check)
+    if object_id:  # should be string
+        if object_id == "public":
+            return True
+        elif object_id == "private":
+            raise HTTPException(HTTPStatus.UNAUTHORIZED,
+                                f'{role} role unauthorized to read files in org_id:{object_id}')
+        elif object_id.startswith("org_"):            
+            org_scope_rule = f'org/{role}'
+            org_id = org_seq_to_id(object_id)
+            aliases_for_role = role_to_alias.get(org_scope_rule)
+            if aliases_for_role is None:
+                raise HTTPException(HTTPStatus.UNAUTHORIZED,
+                                    f'{role} does not map to any aliases')
+            for alias in aliases_for_role:
+                test_scoped_role = f'{alias}:{org_id}'
+                if test_scoped_role in auth_roles:
+                    return True
+
+    # File scope checks failed
+    raise HTTPException(HTTPStatus.UNAUTHORIZED,
+                        f'{role} role unauthorized for file {object_id}')

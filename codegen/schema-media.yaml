@@ -49,6 +49,10 @@ tables:
       - name: locators
         type: JSON
         description: Array of content locators
+      - name: visibility
+        type: TEXT
+        default: "private"
+        nullable: False
   # Cross table relation between file and tags
   - name: FileTag
     table_name: file_tags

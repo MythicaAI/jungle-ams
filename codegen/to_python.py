@@ -181,7 +181,6 @@ def enrich_data(table, column):
     is_auto_create = column.get('auto_create', False)
     is_auto_update = column.get('auto_update', False)
     sql_type = column['type']
-    is_unique_string = bool(sql_type=='TEXT' and column.get('unique', False))
     py_type, py_value = get_py_type(column)
 
     # primary keys are default not nullable
@@ -223,6 +222,10 @@ def enrich_data(table, column):
     # add default if not yet populated and field is not a primary key
     has_default = any(filter(lambda fp: fp.startswith('default'), field_props))
     if not has_default and not is_primary_key:
+        if column.get('default', False):
+            py_value = column.get('default')
+            if sql_type=='TEXT':
+                py_value = f"'{py_value}'"
         field_props.extend(default_prop(py_value))
 
     # validate the field properties before rendering them
@@ -232,10 +235,11 @@ def enrich_data(table, column):
     # sizing requires dropping down to the SQLAlchemy base types, use existing field
     # props and replace with sa_column property
     
-    if is_unique_string:
-        table.setdefault("table_args", []).append(
-            f"UniqueConstraint('{column['name']}', name='uq_{table['table_name']}_{column['name']}')"
-        )
+    if sql_type=='TEXT':
+        if column.get('unique', False):
+            table.setdefault("table_args", []).append(
+                f"UniqueConstraint('{column['name']}', name='uq_{table['table_name']}_{column['name']}')"
+            )            
 
     if sql_type == 'BIGINT' or sql_type == 'INTEGER':
         sa_sequence_def(table, column, is_auto_update)

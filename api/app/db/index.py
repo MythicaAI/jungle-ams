@@ -34,7 +34,9 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
              'purpose': ctx.purpose,
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
-             'content_type': content_type}))
+             'content_type': content_type,
+             'visibility': ctx.visibility,
+        }))
         session.commit()
         file_id = file_seq_to_id(file_content_result.inserted_primary_key[0])
 
