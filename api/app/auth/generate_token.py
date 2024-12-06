@@ -61,7 +61,7 @@ def decode_token(encoded_jwt: str) -> SessionProfile:
         profile_seq=profile_seq,
         profile_id=profile_id,
         email=decoded_jwt['email'],
-        email_validate_state=int(decoded_jwt['email_vs']),
-        location=decoded_jwt['location'],
-        environment=decoded_jwt['env'],
+        email_validate_state=int(decoded_jwt.get('email_vs', 0)),
+        location=decoded_jwt.get('location', 'none'),
+        environment=decoded_jwt.get('env', 'none'),
         auth_roles=decoded_jwt['roles'])
