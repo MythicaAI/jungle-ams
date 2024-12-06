@@ -5,8 +5,8 @@
 from http import HTTPStatus
 
 from munch import munchify
+from ripple.auth import roles
 
-import auth.roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token
@@ -97,12 +97,12 @@ def test_privilege_access(client, api_base, create_profile, create_org):
     # .  has org-admin:<ID> as auth role
     o = munchify(client.get(f"{api_base}/profiles/roles/",
                             headers=user_profile.authorization_header()).json())
-    assert auth.roles.alias_tag_author not in o.auth_roles
-    assert any([auth.roles.alias_org_admin in roles.roles for roles in o.org_roles])
+    assert roles.alias_tag_author not in o.auth_roles
+    assert any([roles.alias_org_admin in r.roles for r in o.org_roles])
     for role in o.org_roles:
         assert f'org-admin:{role.org_id}' in o.auth_roles
 
     # Ensure that mythica profile has tag_create role
     o = munchify(client.get(f"{api_base}/profiles/roles/",
                             headers=mythica_profile.authorization_header()).json())
-    assert auth.roles.alias_tag_author in o.auth_roles
+    assert roles.alias_tag_author in o.auth_roles

@@ -26,7 +26,7 @@ cryptid = { path = "../cryptid", develop = true }
 requests = ">=2.14.0"
 aiohttp = "3.10.10"
 nats-py = "^2.9.0"
-
+pyjwt = { version = "2.9.0",  extras = ["crypto"] }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2"

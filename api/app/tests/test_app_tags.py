@@ -1,12 +1,12 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 import hashlib
-import itertools
 from http import HTTPStatus
 
+import itertools
 from munch import munchify
+from ripple.auth import roles
 
-import auth.roles
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
 from tests.shared_test import FileContentTestObj, assert_status_code, random_str
@@ -156,7 +156,7 @@ def test_tag_asset_operations(api_base, client, create_profile):
         headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
-    assert auth.roles.alias_tag_author in o.auth_roles
+    assert roles.alias_tag_author in o.auth_roles
 
     def create_asset(headers):
         # create asset in org
@@ -164,8 +164,8 @@ def test_tag_asset_operations(api_base, client, create_profile):
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         test_asset_ver_json = {
-            'commit_ref':  'test_commit_ref-updated-2',
-            'name':  'test_asset_name-updated-2',
+            'commit_ref': 'test_commit_ref-updated-2',
+            'name': 'test_asset_name-updated-2',
             'contents': {'files': []},
             'published': True,
         }

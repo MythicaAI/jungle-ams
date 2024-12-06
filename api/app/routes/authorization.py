@@ -1,12 +1,12 @@
 from http import HTTPStatus
 from typing import Annotated, Optional, Union
 
+from cryptid.cryptid import profile_seq_to_id
 from fastapi import HTTPException, Header, Request, Security, WebSocket
 from fastapi.security.api_key import APIKeyHeader
+from ripple.models.sessions import SessionProfile
 
 from auth.data import decode_session_profile
-from auth.generate_token import SessionProfile
-from cryptid.cryptid import profile_seq_to_id
 
 api_header = APIKeyHeader(name="Authorization")
 

@@ -15,7 +15,7 @@ Profiles can have roles or have aliases that provide roles with special bindings
 
     validate_roles(
         Test(role=org/add_member, object_id=org_X),
-        {auth.roles.asset_update},
+        {roles.asset_update},
         Scope(asset=<current-asset>...))
 
 """
@@ -23,14 +23,10 @@ Profiles can have roles or have aliases that provide roles with special bindings
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import HTTPException
 from pydantic import BaseModel
-
-from auth.generate_token import SessionProfile
-from auth.roles import role_to_alias, self_object_scope
-from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
-from db.schema.assets import Asset, AssetVersion
-from db.schema.profiles import Org
+from ripple.auth.roles import role_to_alias, self_object_scope
+from ripple.models.assets import AssetVersionRef
+from ripple.models.sessions import OrgRef, SessionProfile
 
 # TODO: move to admin interface
 privileged_emails = {
@@ -43,55 +39,51 @@ privileged_emails = {
 }
 
 
+class RoleError(Exception):
+    """Raised when a role check fails"""
+
+    def __init__(self, message: str):
+        self.message = message
+
+
 class Scope(BaseModel):
     """The currently scoped objects to test against"""
     profile: Optional[SessionProfile] = None
-    org: Optional[Org] = None
-    asset: Optional[Asset] = None
-    asset_version: Optional[AssetVersion] = None
+    org: Optional[OrgRef] = None
+    asset_version: Optional[AssetVersionRef] = None
 
 
 def validate_asset_ownership_scope(
         role: str,
         auth_roles: set[str],
-        object_id: Optional[str] = None,
-        scope: Optional[Scope] = None,
-        only_asset: bool = False) -> bool:
+        scope: Optional[Scope] = None) -> bool:
     """Internally validate the roles against the asset ownership logic"""
 
-    # without an asset in the scope, the role check will succeed
-    # e.g. asset/create
-    if scope is None or scope.asset is None:
-        return True
-
-    # testing asset roles requires the asset_version to be provided
-    if not only_asset and scope.asset_version is None:
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
-                            f'{role} missing asset_version scope')
+    # asset_version does not yet exist e.g. asset_create
+    if scope.asset_version is None:
+        raise RoleError(f"no asset_version in scope")
 
     # The profile is the owner of the asset or author of the version
     if scope.profile and \
-            (scope.asset.owner_seq == scope.profile.profile_seq or
-            not only_asset and scope.asset_version.author_seq == scope.profile.profile_seq):
+            (scope.asset_version.owner_id == scope.profile.profile_id or
+             scope.asset_version.author_id == scope.profile.profile_id):
         return True
 
     # Look for a org scoped role by alias on the profile
     # e.g. org-member or org-admin (depending on test.role check)
-    if scope.asset.org_seq:
+    if scope.asset_version.org_id:
         org_scope_rule = f'org/{role}'
-        org_id = org_seq_to_id(scope.asset.org_seq)
+        org_id = scope.asset_version.org_id
         aliases_for_role = role_to_alias.get(org_scope_rule)
         if aliases_for_role is None:
-            raise HTTPException(HTTPStatus.UNAUTHORIZED,
-                                f'{role} does not map to any aliases')
+            raise RoleError(f'{role} does not map to any aliases')
         for alias in aliases_for_role:
             test_scoped_role = f'{alias}:{org_id}'
             if test_scoped_role in auth_roles:
                 return True
 
     # Asset scope checks failed
-    raise HTTPException(HTTPStatus.UNAUTHORIZED,
-                        f'{role} role unauthorized for asset {object_id}')
+    raise RoleError(f'{role} role unauthorized for asset {scope.asset_version.asset_id}')
 
 
 def validate_roles(
@@ -99,8 +91,7 @@ def validate_roles(
         role: str,
         auth_roles: set[str],
         object_id: Optional[str] = None,
-        scope: Optional[Scope] = None,
-        **kwargs) -> bool:
+        scope: Optional[Scope] = None) -> bool:
     """
     Validate that the required role is satisfied by the given role set.
     """
@@ -134,18 +125,14 @@ def validate_roles(
         self_scope_alias = f'{alias}:{self_object_scope}'
         if self_scope_alias in auth_roles:
             if role.startswith('asset/'):
-                return validate_asset_ownership_scope(role, auth_roles, object_id, scope, **kwargs)
+                return validate_asset_ownership_scope(role, auth_roles, scope)
             elif role.startswith('profile/'):
                 if scope.profile and \
-                        object_id == profile_seq_to_id(scope.profile.profile_seq):
+                        object_id == scope.profile.profile_id:
                     return True
-                raise HTTPException(HTTPStatus.UNAUTHORIZED,
-                                    f'{role} profile mismatch')
+                raise RoleError(f'{role} profile mismatch')
             else:
-                raise HTTPException(HTTPStatus.UNAUTHORIZED,
-                                    f'{role}, scope matching not available')
+                raise RoleError(f'{role}, scope matching not available')
 
     # Exit case will always raise
-    raise HTTPException(
-        HTTPStatus.UNAUTHORIZED,
-        f'{role} not satisfied by {auth_roles}"')
+    raise RoleError(f'{role} not satisfied by {auth_roles}"')

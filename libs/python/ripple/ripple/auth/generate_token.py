@@ -2,26 +2,17 @@
 Generate a token from profile session data, retrieve the SessionProfile
 object from a JWT token
 """
-from config import app_config
 
-_SECRET: bytes = app_config().token_secret_key.encode('utf-8')
+from ripple.config import ripple_config
+from ripple.models.sessions import SessionProfile
+
+_SECRET: bytes = ripple_config().ripple_token_secret_key.encode('utf-8')
 _AUDIENCE = "mythica_auth_token"
 
 import jwt
 
 from cryptid.cryptid import profile_id_to_seq
 from pydantic import BaseModel
-
-
-class SessionProfile(BaseModel):
-    """Data stored for a session in a token"""
-    profile_seq: int
-    profile_id: str
-    email: str
-    email_validate_state: int
-    location: str
-    environment: str
-    auth_roles: set[str]
 
 
 def generate_token(

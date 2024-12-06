@@ -3,9 +3,9 @@ from http import HTTPStatus
 
 from fastapi import HTTPException
 from jwt import DecodeError, InvalidTokenError
+from ripple.auth.generate_token import SessionProfile, decode_token
 from sqlmodel import Session, select
 
-from auth.generate_token import SessionProfile, decode_token
 from db.schema.profiles import OrgRef, Profile
 
 log = logging.getLogger(__name__)

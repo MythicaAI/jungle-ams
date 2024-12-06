@@ -4,15 +4,15 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Optional
 
+from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, constr
+from ripple.auth import roles
+from ripple.auth.authorization import validate_roles
+from ripple.models.sessions import SessionProfile
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col, delete as sql_delete, insert, select, update as sql_update
 
-import auth.roles
-from auth.authorization import validate_roles
-from auth.generate_token import SessionProfile
-from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile
 from profiles.invalidate_sessions import invalidate_sessions
@@ -119,7 +119,7 @@ async def create(
         # create the admin from the profile
         admin = OrgRef(org_seq=org.org_seq,
                        profile_seq=profile.profile_seq,
-                       role=auth.roles.alias_org_admin,
+                       role=roles.alias_org_admin,
                        author_seq=profile.profile_seq)
         session.add(admin)
         invalidate_sessions(session, profile.profile_seq)
@@ -160,7 +160,7 @@ async def update(
             raise HTTPException(HTTPStatus.NOT_FOUND,
                                 f"org: {org_id} not found")
 
-        validate_roles(role=auth.roles.org_update, object_id=org_id, auth_roles=profile.auth_roles)
+        validate_roles(role=roles.org_update, object_id=org_id, auth_roles=profile.auth_roles)
 
         r = session.exec(sql_update(Org).where(
             Org.org_seq == org_seq).values(
@@ -180,7 +180,7 @@ async def delete(org_id: str, profile: SessionProfile = Depends(session_profile)
     """Removes an existing organization"""
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
-        validate_roles(role=auth.roles.org_delete, object_id=org_id, auth_roles=profile.auth_roles)
+        validate_roles(role=roles.org_delete, object_id=org_id, auth_roles=profile.auth_roles)
 
         session.exec(sql_update(Org).where(
             Org.org_seq == org_seq).values(
@@ -216,7 +216,7 @@ async def by_id(org_id: str = None, profile: Profile = Depends(session_profile))
 
 
 @router.get('/{org_id}/roles')
-async def roles(org_id: str) -> list[OrgRefResponse]:
+async def member_roles(org_id: str) -> list[OrgRefResponse]:
     """Get all the roles in the organization """
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
@@ -235,11 +235,11 @@ async def add_role(
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        validate_roles(role=auth.roles.org_create_role, object_id=org_id, auth_roles=profile.auth_roles)
+        validate_roles(role=roles.org_create_role, object_id=org_id, auth_roles=profile.auth_roles)
 
-        if role not in auth.roles.org_role_aliases:
+        if role not in roles.org_role_aliases:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                detail=f"org role must be one of {auth.roles.org_role_aliases}")
+                                detail=f"org role must be one of {roles.org_role_aliases}")
 
         session.exec(insert(OrgRef).values(
             org_seq=org_seq,
@@ -265,7 +265,7 @@ async def remove_role(
     with get_session() as session:
         org_seq = org_id_to_seq(org_id)
         profile_seq = profile_id_to_seq(profile_id)
-        validate_roles(role=auth.roles.org_delete_role, object_id=org_id, auth_roles=profile.auth_roles)
+        validate_roles(role=roles.org_delete_role, object_id=org_id, auth_roles=profile.auth_roles)
 
         session.exec(sql_delete(OrgRef).where(
             OrgRef.org_seq == org_seq,

@@ -1,11 +1,11 @@
 import logging
 
+from cryptid.cryptid import IdError, SequenceError
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from starlette.status import HTTP_400_BAD_REQUEST
-
-from cryptid.cryptid import IdError, SequenceError
+from ripple.auth.authorization import RoleError
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,14 @@ async def validation_error(_: Request, exc: ValidationError):
         content=exc.json()
     )
 
+
+async def role_error(_: Request, exc: RoleError):
+    return JSONResponse(
+        status_code=HTTP_401_UNAUTHORIZED,
+        content={'detail': exc.message}
+    )
+
+
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -50,4 +58,5 @@ def register_exceptions(app):
     app.add_exception_handler(IdError, api_id_error)
     app.add_exception_handler(SequenceError, api_seq_error)
     app.add_exception_handler(ValidationError, validation_error)
+    app.add_exception_handler(RoleError, role_error)
     app.add_exception_handler(Exception, other_errors)
