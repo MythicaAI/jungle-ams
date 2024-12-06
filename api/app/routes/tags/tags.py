@@ -4,22 +4,22 @@ import logging
 from datetime import timezone
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import delete as sql_delete, insert, select
-
-import auth.roles
-from auth.authorization import validate_roles
-from auth.generate_token import SessionProfile
 from cryptid.cryptid import (
     profile_seq_to_id,
     tag_seq_to_id,
 )
+from fastapi import APIRouter, Depends, HTTPException, Query
+from ripple.auth import roles
+from ripple.auth.authorization import validate_roles
+from ripple.models.sessions import SessionProfile
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import delete as sql_delete, insert, select
+
 from db.connection import TZ, get_session
 from db.schema.tags import Tag
 from routes.authorization import session_profile
-from tags.tag_models import TagRequest, TagResponse
 from routes.tags.tag_types import router as tag_types_router
+from tags.tag_models import TagRequest, TagResponse
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def create(
 ) -> TagResponse:
     """Create a tag"""
     with get_session() as session:
-        validate_roles(role=auth.roles.tag_create, auth_roles=profile.auth_roles)
+        validate_roles(role=roles.tag_create, auth_roles=profile.auth_roles)
 
         try:
             session.exec(
@@ -69,7 +69,7 @@ async def create(
 async def delete(name: str, profile: SessionProfile = Depends(session_profile)):
     """Delete an existing tag"""
     with get_session() as session:
-        validate_roles(role=auth.roles.tag_delete, auth_roles=profile.auth_roles)
+        validate_roles(role=roles.tag_delete, auth_roles=profile.auth_roles)
         stmt = (
             sql_delete(Tag)
             .where(Tag.name == name)

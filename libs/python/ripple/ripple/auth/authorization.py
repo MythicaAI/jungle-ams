@@ -83,7 +83,7 @@ def validate_asset_ownership_scope(
                 return True
 
     # Asset scope checks failed
-    raise RoleError('{role} role unauthorized for asset {object_id}')
+    raise RoleError(f'{role} role unauthorized for asset {scope.asset_version.asset_id}')
 
 
 def validate_roles(

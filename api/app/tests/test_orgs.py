@@ -4,10 +4,10 @@
 
 from http import HTTPStatus
 
-from munch import munchify
-
-import auth.roles
 from cryptid.cryptid import org_seq_to_id
+from munch import munchify
+from ripple.auth import roles
+
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token
@@ -67,54 +67,54 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
 
     # create a new role for the admin
     r = client.post(
-        f"{api_base}/orgs/{org_id}/roles/{admin_profile_test_info.profile.profile_id}/{auth.roles.alias_org_member}",
+        f"{api_base}/orgs/{org_id}/roles/{admin_profile_test_info.profile.profile_id}/{roles.alias_org_member}",
         headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
-    roles = r.json()
-    assert len(roles) == 2
-    for ref in roles:
+    auth_roles_json = r.json()
+    assert len(auth_roles_json) == 2
+    for ref in auth_roles_json:
         o = munchify(ref)
         assert o.org_id == org_id
         assert o.profile_id == admin_profile_test_info.profile.profile_id
-        assert o.role in {auth.roles.alias_org_admin, auth.roles.alias_org_member}
+        assert o.role in {roles.alias_org_admin, roles.alias_org_member}
 
     # add two user roles
     r = client.post(
-        f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/{auth.roles.alias_org_member}",
+        f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/{roles.alias_org_member}",
         headers=headers)
     assert r.status_code == HTTPStatus.CREATED
-    roles = r.json()
-    assert len(roles) == 3
+    auth_roles_json = r.json()
+    assert len(auth_roles_json) == 3
 
     r = client.post(
-        f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/{auth.roles.alias_org_mod}",
+        f"{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/{roles.alias_org_mod}",
         headers=headers)
     assert r.status_code == HTTPStatus.CREATED
-    roles = r.json()
-    assert len(roles) == 4
+    auth_roles = r.json()
+    assert len(auth_roles) == 4
 
-    for role in roles:
+    for role in auth_roles:
         o = munchify(role)
         assert o.org_id == org_id
         assert o.author_id == admin_id
 
         if o.profile_id == user_profile_test_info.profile.profile_id:
-            assert o.role in {auth.roles.alias_org_member, auth.roles.alias_org_mod}
+            assert o.role in {roles.alias_org_member, roles.alias_org_mod}
 
     # delete a ref
     r = client.delete(
-        f'{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/{auth.roles.alias_org_mod}',
+        f'{api_base}/orgs/{org_id}/roles/{user_profile_test_info.profile.profile_id}/{roles.alias_org_mod}',
         headers=headers)
     assert r.status_code == HTTPStatus.OK
     assert len(r.json()) == 3
 
     # create the user role in org2
     r = client.post(
-        f"{api_base}/orgs/{org_id2}/roles/{user_profile_test_info.profile.profile_id}/{auth.roles.alias_org_member}",
+        f"{api_base}/orgs/{org_id2}/roles/{user_profile_test_info.profile.profile_id}/{roles.alias_org_member}",
         headers=headers)
     assert r.status_code == HTTPStatus.CREATED
-    roles = r.json()
-    assert len(roles) == 2  # admin and user
+    auth_roles = r.json()
+    assert len(auth_roles) == 2  # admin and user
 
     # query the roles for the user
     user_headers = user_profile_test_info.authorization_header()
@@ -125,7 +125,7 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
     for role in r.json():
         o = munchify(role)
         assert o.profile_id == user_profile_test_info.profile.profile_id
-        assert o.role == auth.roles.alias_org_member
+        assert o.role == roles.alias_org_member
         assert o.org_id in {org_id, org_id2}
         orgs.append(o.org_id)
     assert org_id in orgs

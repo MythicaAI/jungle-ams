@@ -4,14 +4,14 @@ import logging
 from http import HTTPStatus
 from typing import Optional, Union
 
+from cryptid.cryptid import profile_id_to_seq
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
+from ripple.auth import roles
+from ripple.auth.authorization import Scope, validate_roles
+from ripple.models.sessions import SessionProfile
 from sqlmodel import col, select, update as sql_update
 
-import auth.roles
-from auth.authorization import Scope, validate_roles
-from auth.generate_token import SessionProfile
-from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
 from db.schema.profiles import Profile
 from profiles.load_profile_and_roles import load_profile_and_roles
@@ -70,7 +70,7 @@ async def by_name(
 
 
 @router.get('/roles')
-async def roles(
+async def active_roles(
         auth_profile=Depends(session_profile),
 ) -> ProfileRolesResponse:
     """Get a profile by ID"""
@@ -139,7 +139,7 @@ async def update(
         profile: SessionProfile = Depends(session_profile),
 ) -> ProfileResponse:
     """Update the profile of the owning account"""
-    validate_roles(role=auth.roles.profile_update,
+    validate_roles(role=roles.profile_update,
                    object_id=profile_id,
                    auth_roles=profile.auth_roles,
                    scope=Scope(profile=profile))
