@@ -1,12 +1,11 @@
 """Test the authorization module directly"""
-import pytest
-from fastapi import HTTPException
-
 import auth.roles
-from auth.authorization import Scope, validate_roles
-from auth.generate_token import SessionProfile
+import pytest
 from cryptid.cryptid import asset_seq_to_id, org_seq_to_id, profile_seq_to_id
 from db.schema.assets import Asset, AssetVersion
+from fastapi import HTTPException
+from ripple.auth.authorization import Scope, validate_roles
+from ripple.auth.generate_token import SessionProfile
 
 org_a_seq = 5
 org_b_seq = 6
