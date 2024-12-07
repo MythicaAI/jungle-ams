@@ -33,9 +33,7 @@ const USDViewer: React.FC<USDViewerProps> = ({ src, alt, style }) => {
   const oldrefs: Record<string,methodType | boolean> = useMemo(() => ({}), []);
   useEffect(() => {
     if (viewerRef.current) {
-      
-      oldrefs.oldMethod = viewerRef.current.getBoundingClientRect as methodType;
-      const curBox = oldrefs.oldMethod(); 
+      const curBox = viewerRef.current.getBoundingClientRect(); 
       if (!oldrefs.subs) {
         curBox.width = curBox.width / viewport.zoom;
         curBox.height = curBox.height / viewport.zoom;
