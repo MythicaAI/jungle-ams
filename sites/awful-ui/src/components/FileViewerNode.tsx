@@ -270,18 +270,12 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                         ) : fileInfo.content_type === 'application/json' ||
                           fileInfo.content_type === 'application/awful' ? (
                           <CodeViewer 
-                            style={{
-                              ...viewerStyle,
-                              width: '640px'
-                            }}
+                            style={viewerStyle}
                             language="json" 
                             fileUrl={fileInfo.url} />
                         ) : fileInfo.content_type === 'application/awjs' ? (
                           <CodeViewer 
-                            style={{
-                              ...viewerStyle,
-                              width: '640px'
-                            }}
+                            style={viewerStyle}
                             language="javascript" 
                             fileUrl={fileInfo.url} />
                         ) : fileInfo.content_type === 'application/usd' ||
