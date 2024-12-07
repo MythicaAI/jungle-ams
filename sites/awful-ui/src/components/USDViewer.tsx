@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useViewport } from '@xyflow/react';
 
 type methodType = () => { width: number, height: number, top: number, left: number, right: number, bottom: number }
@@ -28,14 +28,15 @@ interface USDViewerProps {
 }
 
 const USDViewer: React.FC<USDViewerProps> = ({ src, alt, style }) => {
-  const viewerRef = React.useRef<USDViewerType>(null);
+  const viewerRef = React.useRef<HTMLElement>(null);
   const viewport = useViewport();
+  const oldrefs: Record<string,methodType | boolean> = useMemo(() => ({}), []);
   useEffect(() => {
     if (viewerRef.current) {
       
-      viewerRef.current.oldMethod = viewerRef.current.getBoundingClientRect as methodType;
-      const curBox = viewerRef.current.oldMethod(); 
-      if (!viewerRef.current.subs) {
+      oldrefs.oldMethod = viewerRef.current.getBoundingClientRect as methodType;
+      const curBox = oldrefs.oldMethod(); 
+      if (!oldrefs.subs) {
         curBox.width = curBox.width / viewport.zoom;
         curBox.height = curBox.height / viewport.zoom;
       }
@@ -46,10 +47,10 @@ const USDViewer: React.FC<USDViewerProps> = ({ src, alt, style }) => {
           curBox.width, 
           curBox.height);
       };
-      viewerRef.current.subs = true
+      oldrefs.subs = true
     }
 
-  }, [viewport.zoom]);
+  }, [oldrefs, viewport.zoom]);
 
   return (
     <div style={style}>
@@ -57,8 +58,6 @@ const USDViewer: React.FC<USDViewerProps> = ({ src, alt, style }) => {
         ref={viewerRef}
         src={src}
         alt={alt}
-        width="100%"
-        height="100%"
       ></usd-viewer>
     </div>
   );
