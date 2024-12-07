@@ -23,7 +23,7 @@ const FolderSetParm: React.FC<FolderSetParmProps> = ({ template, onChange, runti
     }, [activeFolder, runtimeData, template.parm_templates]);
 
     return (
-        <div className="folder-set-parm">
+        <div className="folder-container">
             {/* Tab header */}
             <div className="folder-tabs">
                 {template.parm_templates.map((folder: hou.FolderParmTemplate, index) => (
