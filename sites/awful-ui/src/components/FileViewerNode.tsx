@@ -146,7 +146,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   }, [inputFlowData, setDownloadInfo, getDownloads]); 
 
 
-  const cardstyle = { height: 400, width: 400 }
+  const columnWidth = 200;
+  const viewerWidth = 640; 
+  const viewerHeight = 480; 
+  const columnStyle = { width: columnWidth }
+  const viewerStyle = { height: viewerHeight, width: viewerWidth }
 
   return (
     <div className="mythica-node file-viewer-node">
@@ -227,24 +231,17 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       {(!downloadInfo || downloadInfo.length === 0) ? (
         <div />
       ) : (
-        <div>
-          <div style={{ display: 'flex', flexDirection: 'column' , height: '100%' }}>
+        <div className='nodrag nowheel folder-container'>
+          <div style={{ display: 'flex', flexDirection: 'row' , height: '100%' }}>
             {/* Tab Navigation */}
-            <div style={{ display: 'flex', overflowX: 'scroll', borderBottom: '1px solid #ccc' }}>
+            <div className="folder-tabs vertical" style={{...columnStyle, overflow:'clip'}}>
               {downloadInfo.map((fileInfo, index) => (
-                <button
+                <div
                   key={index}
                   onClick={() => setSelectedPane(index)}
-                  style={{
-                    flex: 'none',
-                    padding: '10px 20px',
-                    cursor: 'pointer',
-                    borderBottom: selectedPane === index ? '2px solid #007bff' : 'none',
-                    background: selectedPane === index ? '#f0f0f0' : '#fff',
-                  }}
-                >
+                  className={`folder-tab ${(selectedPane === index) ? 'active' : ''}`}>
                   {fileInfo?.name || 'Error!'}
-                </button>
+                </div>
               ))}
             </div>
 
@@ -253,6 +250,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
               {downloadInfo.map((fileInfo, index) =>
                 (
                   <div
+                    className='folder-content'
                     key={index}
                     style={{
                       position: index === selectedPane ? 'relative' : 'absolute',
@@ -267,14 +265,13 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                           <img
                             src={fileInfo.url}
                             alt={fileInfo.name}
-                            className="imageviewer"
-                            style={cardstyle}
+                            style={viewerStyle}
                           />
                         ) : fileInfo.content_type === 'application/json' ||
                           fileInfo.content_type === 'application/awful' ? (
                           <CodeViewer 
                             style={{
-                              ...cardstyle,
+                              ...viewerStyle,
                               width: '640px'
                             }}
                             language="json" 
@@ -282,7 +279,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                         ) : fileInfo.content_type === 'application/awjs' ? (
                           <CodeViewer 
                             style={{
-                              ...cardstyle,
+                              ...viewerStyle,
                               width: '640px'
                             }}
                             language="javascript" 
@@ -292,10 +289,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                           <USDViewer
                             src={fileInfo.url}
                             alt={fileInfo.name}
-                            style={cardstyle}
+                            style={viewerStyle}
                           />
                         ) : (
-                          <div style={{ height: '100px' }}>
+                          <div 
+                          style={{height:'100px'}}>
                             <p>Unsupported file type: {fileInfo.content_type}</p>
                             <a href={fileInfo.url} target='_blank' rel='noreferrer'>Download</a>
                           </div>

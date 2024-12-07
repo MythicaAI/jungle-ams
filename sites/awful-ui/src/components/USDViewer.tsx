@@ -4,7 +4,8 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
-      'usd-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { src: string; alt?: string };
+      'usd-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> 
+                    & { src: string; alt?: string, width: string, height: string };
     }
   }
 }
@@ -22,6 +23,9 @@ const USDViewer: React.FC<USDViewerProps> = ({ src, alt, style }) => {
       <usd-viewer
         src={src}
         alt={alt}
+        width="100%"
+        height="100%"
+        
       ></usd-viewer>
     </div>
   );
