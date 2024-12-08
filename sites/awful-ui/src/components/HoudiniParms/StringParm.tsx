@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import hou from '../../types/Houdini';
 import { dictionary } from '../../types/Automation';
 
 export interface StringParmProps {
     template: hou.StringParmTemplate;
     onChange?: (formData: dictionary) => void; // Callback for value changes
-    runtimeData?: { values: string []};
 }
 
-const StringParm: React.FC<StringParmProps> = ({template, onChange, runtimeData = {values:null}}) => {
+const StringParm: React.FC<StringParmProps> = ({template, onChange}) => {
     const getDefaultValues = () => {
         return template.default_value.length === template.num_components
             ? template.default_value
@@ -28,11 +27,6 @@ const StringParm: React.FC<StringParmProps> = ({template, onChange, runtimeData 
         ret[template.name] = updatedValues
         onChange?.(ret); // Notify parent about the change
     };
-
-    useEffect(() => {
-        runtimeData.values = values;
-    }, [runtimeData, values]);
-
 
     return (
         <div className="string-parm" title={template.help}>

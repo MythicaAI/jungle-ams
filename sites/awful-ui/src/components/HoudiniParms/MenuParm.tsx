@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import hou from '../../types/Houdini';
 import { dictionary } from '../../types/Automation';
 
 interface MenuParmProps {
     template: hou.MenuParmTemplate;
     onChange: (formData: dictionary) => void; 
-    runtimeData?: { value: string };
 }
 
-const MenuParm: React.FC<MenuParmProps> = ({ template, onChange, runtimeData = {value: ''} }) => {
+const MenuParm: React.FC<MenuParmProps> = ({ template, onChange }) => {
     const {
         label,
         menu_items = [],
@@ -43,9 +42,6 @@ const MenuParm: React.FC<MenuParmProps> = ({ template, onChange, runtimeData = {
         handleChange(val);
     };
 
-    useEffect(() => {
-        runtimeData.value = selectedValue;
-    }, [runtimeData, selectedValue]);
 
     // Helper to get label for a given menu item index
     const getLabelForItem = (item: string, index: number) => {

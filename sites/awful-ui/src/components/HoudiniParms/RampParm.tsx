@@ -10,34 +10,25 @@ interface RampPoint {
 interface RampParmProps {
     template: hou.RampParmTemplate;
     onChange?: (formData: dictionary) => void;
-    runtimeData?: { points?: RampPoint[] };
 }
 
 // Default to a simple 2-point ramp if none provided
 function getDefaultPoints(): RampPoint[] {
     return [
-        { x: 0, y: 0.5 },
-        { x: 1, y: 0.5 }
+        { x: 0, y: 0 },
+        { x: 1, y: 1 }
     ];
 }
 
-const RampParm: React.FC<RampParmProps> = ({ template, onChange, runtimeData = {} }) => {
+const RampParm: React.FC<RampParmProps> = ({ template, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [points, setPoints] = useState<RampPoint[]>(() => {
-        return runtimeData.points && runtimeData.points.length > 0
-            ? runtimeData.points
-            : getDefaultPoints();
+        return getDefaultPoints();
     });
 
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const canvasSize = {width: 300, height: 150};
 
-    // Sync runtimeData
-    useEffect(() => {
-        if (runtimeData) {
-            runtimeData.points = points;
-        }
-    }, [runtimeData, points]);
 
     const commitChange = useCallback((newPoints: RampPoint[]) => {
         setPoints(newPoints);

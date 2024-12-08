@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import hou from '../../types/Houdini';
 import { dictionary } from '../../types/Automation';
 
 export interface FloatParmProps {
     template: hou.FloatParmTemplate;
     onChange: (formData: dictionary) => void; // Callback for value changes
-    runtimeData?: { values: number[]};
 }
 
-const FloatParm: React.FC<FloatParmProps> = ({template, onChange, runtimeData = {values:null}}) => {
+const FloatParm: React.FC<FloatParmProps> = ({template, onChange}) => {
     const getDefaultValues = () => {
         return template.default_value.length === template.num_components
             ? template.default_value
@@ -47,10 +46,6 @@ const FloatParm: React.FC<FloatParmProps> = ({template, onChange, runtimeData = 
         ret[template.name] = updatedValues
         onChange(ret); // Notify parent about the change
     };
-
-    useEffect(() => {
-        runtimeData.values = values;
-    }, [runtimeData, values]);
 
     return (
         <div className="float-parm" title={template.help}>
