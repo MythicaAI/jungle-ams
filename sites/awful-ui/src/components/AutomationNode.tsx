@@ -315,13 +315,14 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   // Update node save data when it changes
   useEffect(() => {
-    node.data.scriptContent = scriptContent;
     node.data.inputData = inputData;
     if (isScriptNode) {
+      node.data.scriptContent = scriptContent;
       node.data.inputSpec = inputSpec;
       node.data.outputSpec = outputSpec;
     } 
-  }, [node.data, inputData, scriptContent, inputSpec, outputSpec, isScriptNode]);
+    node.data.executionData = myExecutionData;
+  }, [node.data, inputData, scriptContent, inputSpec, outputSpec, isScriptNode, myExecutionData]);
 
 
   const inputPositions = Array.from(Object.keys(inputFileKeys))
