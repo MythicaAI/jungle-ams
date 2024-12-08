@@ -3,17 +3,29 @@ import hou
 import tempfile
 from typing import Literal
 from ripple.automation import ResultPublisher
+from pydantic import BaseModel
 from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import ProcessStreamItem, OutputFiles
+from ripple.models.streaming import ProcessStreamItem
+from typing import Any
 import mythica.network as mnet
 import mythica.parm_transpiler as mpt
 
 class RunHdaRequest(ParameterSet):
     hdas: list[FileParameter]
 
+class NodeType(BaseModel):
+    root: bool
+    subnet: str
+    help: str
+    icon: str
+    inputs: int
+    outputs: int
+    code: str
+    defaults: dict[str, Any]
+
 class RunHdaResponse(ProcessStreamItem):
     item_type: Literal["resp"] = "resp"
-    node_types: list[str] 
+    node_types: list[NodeType]
 
 def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
     obj = hou.node('obj')
