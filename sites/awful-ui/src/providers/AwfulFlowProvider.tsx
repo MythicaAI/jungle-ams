@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { FlowDataType, ConnectionMap } from '../types/AwfulFlow';
 import { AwfulFlowContext } from '../hooks/useAwfulFlow';
-import { useReactFlow, useNodesState, Node, Connection, Edge, addEdge, useEdgesState, ReactFlowInstance } from '@xyflow/react';
+import { useReactFlow, useNodesState, Node, Connection, Edge, addEdge, useEdgesState, ReactFlowInstance, NodeResizeControl, ResizeControlProps } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import useMythicaApi from '../hooks/useMythicaApi';
 import { GetFileResponse } from '../types/MythicaApi';
@@ -27,7 +27,40 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const getId = () => `awful_node_${uuidv4()}`;
   
 
-  
+  const NodeResizer = (props: ResizeControlProps) => {
+    const controlStyle = {
+      background: 'transparent',
+      border: 'none',
+    };
+    function ResizeIcon() {
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          strokeWidth="2"
+          stroke="#666"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ position: 'absolute', right: 5, bottom: 5 }}
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <polyline points="16 20 20 20 20 16" />
+          <line x1="14" y1="14" x2="20" y2="20" />
+          <polyline points="8 4 4 4 4 8" />
+          <line x1="4" y1="4" x2="10" y2="10" />
+        </svg>
+      );
+    }
+    return (
+      <NodeResizeControl {...props} style={controlStyle}>
+        <ResizeIcon />
+      </NodeResizeControl>
+    );
+  }
+
   const fetchFiles = useCallback(
     async () => {
       if (!authToken) return;
@@ -320,7 +353,8 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   );
 
   return (
-    <AwfulFlowContext.Provider value={{ 
+    <AwfulFlowContext.Provider value={{
+      NodeResizer, 
       flowData, 
       setFlowData, 
       onConnect, 
