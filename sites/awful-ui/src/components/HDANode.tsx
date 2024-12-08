@@ -7,13 +7,27 @@ import useAwfulFlow from "../hooks/useAwfulFlow";
 import { GetFileResponse } from "../types/MythicaApi";
 import { NodeState } from "../types/AwfulFlow";
 import ParmGroup from "./HoudiniParms/ParmGroup";
-import { dictionary } from "../types/Automation";
+import { dictionary, ExecutionData } from "../types/Automation";
 
+type InterfaceExecutionData = ExecutionData & {
+    output: {
+      node_types: [{
+        root: boolean;
+        subnet: string;
+        help: string;
+        inputs: number;
+        outputs: number;
+        defaults: dictionary;
+        code: string;
+      }];
+      [key: string]: unknown;
+    }
+};
 export interface HDANodeProps {
     id: string;
     data: {
       automation: string;
-      parmTemplates: (hou.ParmTemplateGroup)[];
+      interfaceData: InterfaceExecutionData;
     }
 }
 
@@ -23,9 +37,14 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
     const { flowData } = useAwfulFlow();
     const inputFlowFiles = (flowData[node.id] || {})[INPUT_FILE] as (GetFileResponse | null)[];
 
-    const { getExecutionData, runAutomation, allAutomations} = useAutomation();
+    const { initAutomation, runAutomation, allAutomations} = useAutomation();
     const automationTask = allAutomations[node.data.automation]
-    const myExecutionData = getExecutionData(node.id);
+    const [ myInterfaceData, setMyInterfaceData ] = useState<ExecutionData>(
+        node.data.interfaceData || initAutomation(automationTask)
+    );
+    //const [ myExecutionData, setMyExecutionData ] = useState<ExecutionData>(
+    //    node.data.executionData || initAutomation(automationTask)
+    //);
     const [parmTemplateGroups, setParmTemplateGroups] = useState<hou.ParmTemplateGroup[]>([]);
     
     const [inputData,setInputData] = useState<dictionary>({});
@@ -37,10 +56,10 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
 
     const updateInterface = useCallback(() => {
 
-        if (myExecutionData.state !== NodeState.Executed) return;
+        if (myInterfaceData.state !== NodeState.Executed) return;
 
         try{
-            const strPts = (myExecutionData.output?.parm_templates || []) as string[];
+            const strPts = (myInterfaceData as InterfaceExecutionData).output?.node_types.map((nt) => nt.code) || [];
             const parmTGs = [];
             for (const strPt of strPts) {
                 const getParmTemplateGroup = eval(strPt);
@@ -49,30 +68,36 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
             setParmTemplateGroups(parmTGs);
             if(parmTGs.length>0)
                 parmTGs[0].draw();
-            myExecutionData.state=NodeState.Done;
+            myInterfaceData.state=NodeState.Done;
         } catch (e) {
             console.error('Error parsing worker output', e);
-            myExecutionData.state = NodeState.Error;
+            myInterfaceData.state = NodeState.Error;
         }
     
-    }, [myExecutionData]);
+    }, [myInterfaceData]);
 
     const updateHdaDef = useCallback(() => {
-        if (inputFlowFiles && inputFlowFiles.length > 0) runAutomation(automationTask.worker, node.id, automationTask.path, { hdas: [inputFlowFiles[0]] });
+        if (inputFlowFiles && inputFlowFiles.length > 0) 
+            runAutomation(
+                automationTask.worker, 
+                node.id, 
+                automationTask.path, 
+                { hdas: [inputFlowFiles[0]] },
+                setMyInterfaceData
+            );
     }, [automationTask.worker, automationTask.path, inputFlowFiles, node.id, runAutomation]);
 
     useEffect(() => { 
         updateInterface();
-    }, [myExecutionData.output, updateInterface]);
+    }, [myInterfaceData.output, updateInterface]);
 
     useEffect(() => {
         updateHdaDef();
     }, [inputFlowFiles, updateHdaDef]);
 
     return (
-        <div className={`mythica-node worker ${myExecutionData.state}`}>
+        <div className={`mythica-node worker`}>
           <h3>{automationTask.uri}</h3>
-          <p>State: {myExecutionData.state}</p>
         
           {/* Render handles for FileParameter inputs */}
             <div

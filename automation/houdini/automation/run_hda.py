@@ -13,12 +13,12 @@ class RunHdaRequest(ParameterSet):
 
 class RunHdaResponse(ProcessStreamItem):
     item_type: Literal["resp"] = "resp"
-    parm_templates: list[str]  
+    node_types: list[str] 
 
 def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
     obj = hou.node('obj')
 
-    hdadef = []
+    nodeTypes = []
 
     for hda in request.hdas:    
         hou.hda.installFile(hda.file_path, force_use_assets=True)
@@ -29,12 +29,12 @@ def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaRespons
             nodeType = mnet.get_node_type(assetdef.nodeType())
 
             # Generate litegraph class in the temp directory
-            code = mpt.transpiler(nodeType['code'])
-
+            nodeType['code'] = mpt.transpiler(nodeType['code'])
+            
             # Add the file path to the hdadef array
-            hdadef.append(code)
+            nodeTypes.append(nodeType)
 
         # Uninstall the HDA file after processing
         hou.hda.uninstallFile(hda.file_path)
 
-    return RunHdaResponse(parm_templates=hdadef) 
+    return RunHdaResponse(node_types=nodeTypes) 

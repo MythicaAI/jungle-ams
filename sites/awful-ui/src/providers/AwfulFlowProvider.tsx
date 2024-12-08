@@ -4,7 +4,6 @@ import type { FlowDataType, ConnectionMap } from '../types/AwfulFlow';
 import { AwfulFlowContext } from '../hooks/useAwfulFlow';
 import { useReactFlow, useNodesState, Node, Connection, Edge, addEdge, useEdgesState, ReactFlowInstance } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
-import useAutomation from '../hooks/useAutomation';
 import useMythicaApi from '../hooks/useMythicaApi';
 import { GetFileResponse } from '../types/MythicaApi';
 
@@ -16,7 +15,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const {screenToFlowPosition} = useReactFlow();
-  const {getSaveData, restoreSaveData} = useAutomation();
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge> | undefined>(undefined);
   const {setViewport,deleteElements} = useReactFlow();
   
@@ -68,7 +66,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       const mythicaFlow = {
         flowData: flowData,
         connections: connections,
-        executionData: getSaveData()
       }
       const saveState = {
         flow: flow,
@@ -112,7 +109,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       const { x = 0, y = 0, zoom = 1 } = savedState.flow.viewport || {};
       setNodes(savedState.flow.nodes);
       setFlowDataState(savedState.mythicaFlow.flowData || {});
-      restoreSaveData(savedState.mythicaFlow.executionData || {});
 
       setConnections(savedState.mythicaFlow.connections || {});
 
@@ -127,7 +123,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   const deleteFlowData = () => {
     setFlowDataState({});
-    restoreSaveData({});
     setConnections({});
   } 
   /* Because the Automation node handles are not updated immediately after 

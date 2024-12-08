@@ -15,26 +15,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { authToken } = useMythicaApi(); 
     const [loaded,  setLoaded] = useState(false);
     const [workerAutomations, setAutomations] = useState<WorkerAutomations>({});
-    const [executionData, setExecutionData] = useState<{ [workerId: string]: ExecutionData }>({});
-    
-    const getSaveData = () => {  
-        return executionData;
-    }
 
-    const restoreSaveData = (execData: {[workerId:string]:ExecutionData}) => {
-        setExecutionData(execData);
-    }
-    
-    const getExecutionData = (nodeId: string) => {
-        
-        return executionData[nodeId] || { 
-            worker: '', 
-            path: '', 
-            state: NodeState.Clean, 
-            input: null, 
-            output: null 
-        };
-    }
     
     /**
      * Parse a workerSpec into a list of AutomationTasks. Worker specs are raw responses 
@@ -117,6 +98,15 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return flatAutomations;
     }, [workerAutomations]);
 
+    const initAutomation = (task: AutomationTask): ExecutionData => {
+        return {
+            worker: task.worker,
+            path: task.path,
+            state: NodeState.Clean,
+            input: {},
+            output: {}
+        }
+    }
     /**
      * Execute an automation. 
      * 
@@ -126,21 +116,16 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
      * @param inputData 
      * @returns 
      */
-    const runAutomation = useCallback(async (worker: string, nodeId: string, path: string, inputData: dictionary) => {
+
+    const runAutomation = useCallback(async (worker: string, nodeId: string, path: string, inputData: dictionary, responseCallback: React.Dispatch<React.SetStateAction<ExecutionData>>) => {
         if (!authToken) return;
 
-        try {
-            // Set initial state to "running"
-            setExecutionData((prevData) => ({
+        try {    
+            responseCallback((prevData) => ({
                 ...prevData,
-                [nodeId]: { 
-                    worker: worker,
-                    path: path,
-                    state: NodeState.Running,
-                    input: inputData,
-                    output: null
-                },
+                state: NodeState.Running,
             }));
+
             const env = import.meta.env.MODE === 'staging' ? 'staging' : 'production';
             if (inputData.script) inputData.env = env
             // Send request to the backend
@@ -154,28 +139,19 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
 
             // Update worker state to "executed" with result
-            setExecutionData((prevData) => ({
+            responseCallback((prevData) => ({
                 ...prevData,
-                [nodeId]: { 
-                    worker: worker,
-                    path: path,
-                    state: NodeState.Executed,
-                    input: inputData, 
-                    output: response.data.result
-                },
+                state: NodeState.Executed,
+                output: response.data.result,
             }));
+
         } catch (error) {
             console.error(`Failed to run worker ${nodeId}`, error);
             // Update state to "error" if there was an issue
-            setExecutionData((prevData) => ({
+            responseCallback((prevData) => ({
                 ...prevData,
-                [nodeId]: { 
-                    worker: worker,
-                    path: path,
-                    state: NodeState.Error,
-                    input: inputData, 
-                    output: { message: error }
-                },
+                state: NodeState.Error,
+                output: {message: error},
             }));
         }
     }, [authToken]);
@@ -196,10 +172,8 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             workers, 
             automations: workerAutomations, 
             allAutomations, 
-            getExecutionData, 
-            getSaveData, 
-            restoreSaveData, 
-            loadAutomations, 
+            loadAutomations,
+            initAutomation,
             runAutomation, 
             parseAutomation }}>
             {children}

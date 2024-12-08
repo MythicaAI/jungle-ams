@@ -7,11 +7,9 @@ type AutomationContextType = {
     workers: string[];
     automations: WorkerAutomations;
     allAutomations: { [uri: string]: AutomationTask };
-    getExecutionData: (workerId: string) => ExecutionData;
-    getSaveData:() => { [workerId: string]: ExecutionData };
-    restoreSaveData:(execData: { [workerId: string]: ExecutionData }) => void;
     loadAutomations: () => Promise<void>;
-    runAutomation: (worker: string, nodeId: string, path: string, inputs: dictionary) => Promise<void>;
+    initAutomation: (task: AutomationTask) => void;
+    runAutomation: (worker: string, nodeId: string, path: string, inputs: dictionary, responseCallback:React.Dispatch<React.SetStateAction<ExecutionData>>) => Promise<void>;
     parseAutomation: (worker: string, workerSpecs:{[path:string]:AutomationSpec}) => AutomationTask[];
 };
 
