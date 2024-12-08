@@ -6,13 +6,9 @@ import { dictionary } from '../../types/Automation';
 export interface FolderParmProps {
     template: hou.FolderParmTemplate;
     onChange: (formData: dictionary) => void; // Callback for value changes
-    runtimeData?: {nonce: null}
 }
 
-const FolderParm: React.FC<FolderParmProps> = ({template, onChange, runtimeData = {nonce: null}}) => {
-
-    template.setRuntimeData(runtimeData);
-    
+const FolderParm: React.FC<FolderParmProps> = ({template, onChange}) => {
 
     // Render based on folder_type
     if (template.folder_type === 'Tabs') {

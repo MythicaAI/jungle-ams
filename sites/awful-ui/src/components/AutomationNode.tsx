@@ -9,9 +9,26 @@ import useMythicaApi from '../hooks/useMythicaApi';
 import AutomationInputs from './AutomationInputs';
 import AutomationOutputs from './AutomationOutputs';
 
-import { dictionary, FileParamType } from '../types/Automation';
+import { dictionary, ExecutionData, FileParamType } from '../types/Automation';
 import { NodeState } from "../types/AwfulFlow";
 import { JSONSchema } from '../types/JSONSchema';
+
+export type AutomationExecutionData = ExecutionData & {
+  output: {
+    files?: {
+      [key: string]: string[];
+    };
+    [key: string]: unknown;
+  }
+};
+type InterfaceExecutionData = ExecutionData & {
+  output: {
+    workers?: { 
+      [key: string]: { input?: JSONSchema, output?: JSONSchema } 
+    }
+    [key: string]: unknown;
+  }
+};
 
 export interface AutomationNodeProps {
   id: string;
@@ -21,15 +38,9 @@ export interface AutomationNodeProps {
     scriptContent: string;
     inputSpec: JSONSchema;
     outputSpec: JSONSchema;
+    executionData: ExecutionData;
   }
 }
-
-export type AutomationOutputType = {
-  files?: {
-    [key: string]: string[];
-  };
-  [key: string]: unknown;
-};
 
 const template = `
 from pydantic import BaseModel, Field
@@ -53,12 +64,16 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const { getExecutionData, runAutomation, parseAutomation, allAutomations } = useAutomation();       //provides automation related services. 
+  const { initAutomation, runAutomation, parseAutomation, allAutomations } = useAutomation();       //provides automation related services. 
   const automationTask = allAutomations[node.data.automation];
   const isScriptNode = automationTask.path === scriptPath;
-  const myExecutionData = getExecutionData(node.id);
-  const nodeState = myExecutionData.state || NodeState.Clean;
-
+  
+  const [ myExecutionData, setMyExecutionData ] = useState<ExecutionData>(
+    node.data.executionData || initAutomation(automationTask)
+  );
+  const [ myInterfaceData, setMyInterfaceData ] = useState<ExecutionData>(
+    node.data.executionData || initAutomation(automationTask)
+  );
   const { getFile } = useMythicaApi();
 
   const { flowData, setFlowData, notifyTargets } = useAwfulFlow();   //node data mapped to connections
@@ -99,9 +114,24 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   // Handler for running the automation
   const handleRunAutomation = () => {
     if (isScriptNode) {
-      runAutomation(automationTask.worker, node.id, automationTask.path, { script: scriptContent, request_data: { ...inputData, ...fileInputData } });
+      runAutomation(
+        automationTask.worker, 
+        node.id,
+        automationTask.path, 
+        { 
+          script: scriptContent, 
+          request_data: { ...inputData, ...fileInputData } 
+        },
+        setMyExecutionData
+        );
     } else {
-      runAutomation(automationTask.worker, node.id, automationTask.path, { ...inputData, ...fileInputData });
+      runAutomation(
+        automationTask.worker,
+        node.id, 
+        automationTask.path, 
+        { ...inputData, ...fileInputData },
+        setMyExecutionData
+      );
     }
   };
 
@@ -112,7 +142,13 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     }
     setScriptContent(value || '');
     typingTimeout.current = setTimeout(() => {
-      runAutomation(automationTask.worker, node.id, scriptInterfacePath, { 'script': value || '' });
+      runAutomation(
+        automationTask.worker, 
+        node.id, 
+        scriptInterfacePath, 
+        { 'script': value || '' },
+        setMyInterfaceData      
+      );
     }, timeout); // Adjust delay as needed
   }, [runAutomation, automationTask.worker, node.id, scriptInterfacePath]);
 
@@ -157,6 +193,48 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     [inputFileKeys, myFlowData]
   );
 
+  const processOutputMessage= useCallback((execData: ExecutionData)  => {
+    const automationOutput = execData.output;
+    if (automationOutput && automationOutput.message) {
+      setFlowExecutionMessage(automationOutput.message as string);
+    } else {
+      setFlowExecutionMessage('');
+    } 
+  },[]);
+
+  const processInterfaceOutput = useCallback(
+    async () => {
+      
+      const generateAutomationInterface = () => {
+        const automationOutput = (myInterfaceData as InterfaceExecutionData).output;
+        if (automationOutput.workers) {
+          const thisAutomation = automationOutput.workers?.[scriptPath] || {};
+          const automationTask = parseAutomation(node.id, {
+            internal: {
+              hidden: false,
+              input: thisAutomation.input as JSONSchema,
+              output: thisAutomation.output as JSONSchema,
+            },
+          });
+          setInputSpec(automationTask[0].spec.input);
+          setOutputSpec(automationTask[0].spec.output);
+          myInterfaceData.state = NodeState.Clean;
+        }
+      }
+
+
+      try {
+        generateAutomationInterface();
+        processOutputMessage(myInterfaceData);
+      } catch (error) {
+        console.error('Error parsing worker output', error);
+        myInterfaceData.state = NodeState.Error;
+      }
+    },
+    [myInterfaceData, scriptPath, parseAutomation, node.id, processOutputMessage]
+  );
+
+
   /**
    * We have to special case scriptInterfacePath execution
    * as we get back a JSONSchema object that we need to parse
@@ -167,7 +245,6 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const processAutomationOutput = useCallback(
     async () => {
 
-      const automationOutput = myExecutionData.output as AutomationOutputType & { workers?: { [key: string]: { input?: JSONSchema, output?: JSONSchema } } };
 
       const fetchAndResolveFiles = async (fileIds: string[]) => {
         const resolvedFiles = [];
@@ -183,23 +260,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         return resolvedFiles;
       };
 
-      const generateAutomationInterface = () => {
-        if (automationOutput.workers) {
-          const thisAutomation = automationOutput.workers?.[scriptPath] || {};
-          const automationTask = parseAutomation(node.id, {
-            internal: {
-              hidden: false,
-              input: thisAutomation.input as JSONSchema,
-              output: thisAutomation.output as JSONSchema,
-            },
-          });
-          setInputSpec(automationTask[0].spec.input);
-          setOutputSpec(automationTask[0].spec.output);
-          myExecutionData.state = NodeState.Clean;
-        }
-      }
-
       const updateFlowData = () => {
+        const automationOutput = (myExecutionData as AutomationExecutionData).output;
         if (automationOutput.files) {
           const fileKeys = Object.keys(automationOutput.files);
           for (const fileKey of fileKeys) {
@@ -215,28 +277,17 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         }
       }
 
-      const processOutputMessage= () => {
-        if (automationOutput && automationOutput.message) {
-          setFlowExecutionMessage(automationOutput.message as string);
-        } else {
-          setFlowExecutionMessage('');
-        } 
-      }
-
       try {
-        if (isScriptNode && myExecutionData.path === scriptInterfacePath) {
-          generateAutomationInterface();
-        } else  {
-          updateFlowData();
-        }
-        processOutputMessage();
+        updateFlowData();
+        processOutputMessage(myExecutionData);
       } catch (error) {
         console.error('Error parsing worker output', error);
         myExecutionData.state = NodeState.Error;
       }
     },
-    [myExecutionData, isScriptNode, scriptInterfacePath, scriptPath, node.id, parseAutomation, getFile, setFlowData, notifyTargets]
+    [ myExecutionData, node.id, setFlowData, getFile, notifyTargets, processOutputMessage]
   );
+
 
   // Update fileInputs when flowData changes or when the fileparams change
   useEffect(() => {
@@ -254,9 +305,13 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   useEffect(() => {
     const executed = myExecutionData.state === NodeState.Executed;
     if (executed) processAutomationOutput();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myExecutionData]);
+  }, [myExecutionData, processAutomationOutput]);
 
+  // Process automation output when execution data changes
+  useEffect(() => {
+    const executed = myInterfaceData.state === NodeState.Executed;
+    if (executed) processInterfaceOutput();
+  }, [myInterfaceData, processInterfaceOutput]);
 
   // Update node save data when it changes
   useEffect(() => {
@@ -276,9 +331,9 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
 
   return (
-    <div className={`mythica-node worker ${nodeState}`}>
+    <div className={`mythica-node worker ${myExecutionData.state}`}>
       <h3>{automationTask.uri}</h3>
-      <p>State: {nodeState}</p>
+      <p>State: {myExecutionData.state}</p>
 
       <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
       <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output} onFileOutputDetected={handleFileOutputDetected} />
@@ -349,7 +404,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       }
       <p />
 
-      <button onClick={handleRunAutomation} disabled={nodeState! in [NodeState.Clean, NodeState.Error]}>
+      <button onClick={handleRunAutomation} disabled={myExecutionData.state! in [NodeState.Clean, NodeState.Error]}>
         Run Automation
       </button>
 

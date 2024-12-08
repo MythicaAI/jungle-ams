@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import hou from '../../types/Houdini';
 import { dictionary } from '../../types/Automation';
 
 export interface IntParmProps {
     template: hou.IntParmTemplate;
     onChange: (formData: dictionary) => void; // Callback for value changes
-    runtimeData?: { values: number[]};
 }
 
-const IntParm: React.FC<IntParmProps> = ({template, onChange, runtimeData = {values:null}}) => {
+const IntParm: React.FC<IntParmProps> = ({template, onChange}) => {
     const getDefaultValues = () => {
         return template.default_value.length === template.num_components
             ? template.default_value
@@ -48,10 +47,6 @@ const IntParm: React.FC<IntParmProps> = ({template, onChange, runtimeData = {val
         onChange(ret); // Notify parent about the change
     };
 
-    useEffect(() => {
-        runtimeData.values = values;
-    }, [runtimeData, values]);
-    
     return (
         <div className="int-parm" title={template.help}>
             <label>{template.label}</label>
