@@ -17,11 +17,10 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U test" ]
-      interval: 5s
+      test: [ "CMD", "pg_isready --username=test" ]
+      interval: 3s
       timeout: 5s
       retries: 5
-      start_period: 10s
     networks:
       - storage
   minio:
@@ -34,10 +33,10 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - blockstore:/blockstore
-    command: server /blockstore --console-address ":9001"
+      - objstore:/objstore
+    command: server /objstore --console-address ":9001"
     healthcheck:
-      test: [ "CMD-SHELL", "mc ping local --count 1" ]
+      test: [ "CMD", "mc ping local" ]
       interval: 3s
       timeout: 5s
       retries: 5
@@ -65,12 +64,17 @@ services:
       - "6379:6379"
     networks:
       - storage
-    healthcheck:
-      test: [ "CMD-SHELL", "redis-cli", "ping" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
+  nats:
+    container_name: nats
+    image: nats:latest
+    command: "--jetstream"
+    ports:
+      - "4222:4222"  # clients
+      - "8222:8222"  # http monitoring
+    volumes:
+      - nats:/data
+    networks:
+      - storage
 volumes:
   pgdata:
     driver: local
@@ -78,12 +82,18 @@ volumes:
       type: none
       o: bind
       device: ${PGDATA_PATH}
-  blockstore:
+  objstore:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${BLOCKSTORE_PATH}
+      device: ${OBJSTORE_PATH}
+  nats:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${NATS_PATH}
 
 networks:
   storage:
