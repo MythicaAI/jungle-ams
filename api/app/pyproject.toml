@@ -17,7 +17,7 @@ sqlalchemy = "2.0.36"
 asyncpg = "0.30.0"
 psycopg2-binary = "^2.9.9"
 google-auth = "^2.29.0"
-google-cloud-storage = "^2.16.0"
+google-cloud-storage = {extras = ["tracing"], version = "^2.19.0"}
 fastapi = { version = "0.115.4", extras = ["standard"] }
 pydantic-settings = "^2.3.0"
 python-multipart = "0.0.17"
@@ -50,6 +50,11 @@ opentelemetry-instrumentation-sqlalchemy = "^0.48b0"
 uvicorn = "^0.32.0"
 pydantic = "2.9.2"
 email-validator = "2.2.0"
+opentelemetry-exporter-gcp-trace = "1.7.0"
+opentelemetry-propagator-gcp = "1.7.0"
+opentelemetry-exporter-cloud-trace = "0.10b1"
+google-cloud-trace = ">=0.13b0"
+googleapis-common-protos = "^1.66.0"
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]
