@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ChangeEvent, useState } from 'react';
 import hou from '../../types/Houdini';
 import { dictionary } from '../../types/Automation';
 
@@ -8,16 +8,15 @@ export interface FloatParmProps {
 }
 
 const FloatParm: React.FC<FloatParmProps> = ({template, onChange}) => {
-    const getDefaultValues = () => {
-        return template.default_value.length === template.num_components
+    
+    const [values, setValues] = useState<number[]>(() =>
+        template.default_value.length === template.num_components
             ? template.default_value
-            : Array<number>(template.num_components).fill(0);
-    }
-
-    const [values, setValues] = useState<number[]>(getDefaultValues());
-
-    const handleChange = (index: number, newValue: string) => {
-        const parsedValue = parseFloat(newValue);
+            : Array<number>(template.num_components).fill(0)
+    );
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const parsedValue = parseFloat(e.target.value) || 0;
+        const index =  e.target.getAttribute('parm-index') as unknown as number;
 
         // Validate the value
         let validatedValue = parsedValue;
@@ -35,16 +34,20 @@ const FloatParm: React.FC<FloatParmProps> = ({template, onChange}) => {
                 validatedValue = template.max;
             }
         }
-
+0
         // Update the state and notify parent
-        const updatedValues = [...values];
-        updatedValues[index] = validatedValue;
-        setValues(updatedValues);
+        setValues((prev)=>{
+            prev[index] = validatedValue;
+            return prev;
+        });
+
 
         //and notify listeners
+        const updatedValues = [...values];
+        updatedValues[index] = validatedValue;
         const ret:{[key:string]: number[]} = {}
         ret[template.name] = updatedValues
-        onChange(ret); // Notify parent about the change
+        onChange?.(ret); // Notify parent about the change
     };
 
     return (
@@ -55,9 +58,10 @@ const FloatParm: React.FC<FloatParmProps> = ({template, onChange}) => {
                     <div key={template.name + index} className="field">
                         <input
                             type="number"
-                            value={value}
+                            value={value || 0}
                             step="any"
-                            onChange={(e) => handleChange(index, e.target.value)}
+                            parm-index={index}
+                            onChange={handleChange}
                             min={template.min}
                             max={template.max}
                             

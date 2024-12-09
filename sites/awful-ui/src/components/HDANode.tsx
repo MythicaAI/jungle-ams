@@ -51,7 +51,6 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
 
     const handleParmChange = (formData: dictionary) => {
       setInputData({...inputData, ...formData});
-      return formData;
     };
 
     const updateInterface = useCallback(() => {
