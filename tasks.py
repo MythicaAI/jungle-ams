@@ -4,8 +4,8 @@ import re
 import subprocess
 from datetime import datetime, timezone
 from functools import wraps
-from pathlib import Path
 from os import PathLike
+from pathlib import Path
 
 from invoke import task
 
@@ -129,16 +129,17 @@ IMAGE_SETS = {
 }
 
 LOCAL_MOUNT_POINTS = {
-    'blockstore': 'testing/mnt/blockstore',
+    'objstore': 'testing/mnt/objstore',
     'pgdata': 'testing/mnt/pgdata',
-    'static': 'testing/mnt/static'
+    'static': 'testing/mnt/static',
+    'nats': 'testing/mnt/nats',
 }
 
 
 def get_git_tags(prefix):
     """Get git tags matching prefix, sorted by version."""
     result = subprocess.run(['git', 'tag', '-l', prefix, '--sort=-v:refname'],
-                          capture_output=True, text=True)
+                            capture_output=True, text=True)
     return result.stdout.strip().split('\n')
 
 
@@ -150,6 +151,7 @@ def parse_dockerfile_label_name(dockerfile_path: PathLike) -> str:
         if match:
             return match.group(1)
     raise ValueError(f"LABEL name= not found in {dockerfile_path}")
+
 
 def generate_mount_env_file() -> str:
     """Generate an env file with the OS specific mount points as environment variables"""

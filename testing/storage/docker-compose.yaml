@@ -17,10 +17,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/
     healthcheck:
-      test: [ "CMD", "pg_isready --username=test" ]
-      interval: 3s
+      test: pg_isready -U test
+      interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - storage
   minio:
@@ -36,7 +37,7 @@ services:
       - objstore:/objstore
     command: server /objstore --console-address ":9001"
     healthcheck:
-      test: [ "CMD", "mc ping local" ]
+      test: mc ping local --count 2
       interval: 3s
       timeout: 5s
       retries: 5
@@ -64,9 +65,15 @@ services:
       - "6379:6379"
     networks:
       - storage
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
   nats:
     container_name: nats
-    image: nats:latest
+    image: nats:alpine
     command: "--jetstream"
     ports:
       - "4222:4222"  # clients
@@ -76,7 +83,7 @@ services:
     networks:
       - storage
     healthcheck:
-      test: ["CMD", "/bin/sh", "-c", "timeout 1s ./nats-server -sl monitor > /dev/null 2>&1"]
+      test: wget http://localhost:8222/healthz -q -S -O -
       interval: 10s
       timeout: 3s
       retries: 3
