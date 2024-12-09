@@ -12,7 +12,6 @@ import StringParm from './StringParm';
 import ToggleParm from './ToggleParm';
 
 
-
 import { dictionary } from '../../types/Automation';
 export interface ParmFactoryProps {
     parmTemplate: hou.ParmTemplate;
@@ -20,7 +19,6 @@ export interface ParmFactoryProps {
 }
 
 export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, onChange}) => {
-    // Dispatch based on template type or other properties
     
     switch (parmTemplate.type) {
         case hou.parmTemplateType.Folder:

@@ -76,7 +76,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   );
   const { getFile } = useMythicaApi();
 
-  const { flowData, setFlowData, notifyTargets } = useAwfulFlow();   //node data mapped to connections
+  const { NodeResizer, flowData, setFlowData, notifyTargets } = useAwfulFlow();   //node data mapped to connections
   const myFlowData = flowData[node.id];
   const [flowExecutionMessage, setFlowExecutionMessage] = useState<string>('');
 
@@ -315,13 +315,14 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   // Update node save data when it changes
   useEffect(() => {
-    node.data.scriptContent = scriptContent;
     node.data.inputData = inputData;
     if (isScriptNode) {
+      node.data.scriptContent = scriptContent;
       node.data.inputSpec = inputSpec;
       node.data.outputSpec = outputSpec;
     } 
-  }, [node.data, inputData, scriptContent, inputSpec, outputSpec, isScriptNode]);
+    node.data.executionData = myExecutionData;
+  }, [node.data, inputData, scriptContent, inputSpec, outputSpec, isScriptNode, myExecutionData]);
 
 
   const inputPositions = Array.from(Object.keys(inputFileKeys))
@@ -329,85 +330,101 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const outputPositions = Array.from(outputFileKeys)
     .map((_, index, array) => `${(index + 1) * (100 / (array.length + 1))}%`);
 
+  const min = 640;
+  const delta = 10;
 
   return (
-    <div className={`mythica-node worker ${myExecutionData.state}`}>
-      <h3>{automationTask.uri}</h3>
-      <p>State: {myExecutionData.state}</p>
+    <div  style={{  height: '100%', width:'100%', display:'flex', flexDirection:'column' }}>
+      {isScriptNode && <NodeResizer  minHeight={min+delta} minWidth={min+delta} />}
 
-      <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
-      <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output} onFileOutputDetected={handleFileOutputDetected} />
-
-      {/* Render handles for FileParameter inputs */}
-      {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
-        <div
-          key={paramKey}
-          className="file-handle"
-          style={{
-            top: '0px',
-            left: inputPositions[index],
-            transform: 'translateX(-50%)',
-          }}
-        >
-          <Handle
-            type="target"
-            position={Position.Top}
-            id={paramKey}
-            isConnectable
-            style={{ background: '#007bff' }}
-          />
-          <span className='label'>
-            {paramKey}
-            {
-              (inputFileKeys[paramKey] === FileParamType.Array) ? '[ ]' : ''
-            }
-          </span>
+      <div className={`mythica-node worker ${isScriptNode && 'script'} ${myExecutionData.state}`}
+           style={{  flex:'1 1 auto', display: 'flex', flexDirection: 'column', minHeight:min}}>
+        <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
+        <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output} onFileOutputDetected={handleFileOutputDetected} />
+        <div>
+          <h3>{automationTask.uri}</h3>
+          <p>State: {myExecutionData.state}</p>
         </div>
-      ))}
-      <p />
-      {isScriptNode && (
-        <div className="script-editor nodrag">
-          <MonacoEditor
-            width="640px"
-            height="480px"
-            language="python"
-            theme="vs-dark"
-            defaultValue={scriptContent || template}
-            onChange={handleEditorChange}
-            options={{ minimap: { enabled: false } }}
-          />
-          <pre style={{ width: 640, overflow: 'scroll' }}>{flowExecutionMessage}</pre>
-        </div>
-      )}
 
-      {/* Render handles for OutputFiles */}
-      {Array.from(outputFileKeys).map((outputKey, index) => (
-        <div
-          key={outputKey}
-          className="file-handle"
-          style={{
-            bottom: '0px',
-            left: outputPositions[index],
-            transform: 'translateX(-50%)',
-          }}
-        >
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id={outputKey}
-            isConnectable
-            style={{ background: '#007bff' }}
-          />
-          <span className='label'>{outputKey}[ ]</span>
-        </div>
-      ))
-      }
-      <p />
+        {/* Input Handles */}
+        {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
+          <div
+            key={paramKey}
+            className="file-handle"
+            style={{
+              top: '0px',
+              left: inputPositions[index],
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <Handle
+              type="target"
+              position={Position.Top}
+              id={paramKey}
+              isConnectable
+              style={{ background: '#007bff' }}
+            />
+            <span className='label'>
+              {paramKey}
+              {inputFileKeys[paramKey] === FileParamType.Array ? '[ ]' : ''}
+            </span>
+          </div>
+        ))}
 
-      <button onClick={handleRunAutomation} disabled={myExecutionData.state! in [NodeState.Clean, NodeState.Error]}>
-        Run Automation
-      </button>
+        {isScriptNode && (
+          <div className="script-editor nodrag" 
+               style={{ flex:'1 1 0',display:'flex', flexDirection:'column', minHeight:'0' }}>
+            {/* Make the editor container fill the available space */}
+            <div style={{ flex:'1 1 0', height:'100%'}}>
+              <MonacoEditor
+                language="python"
+                theme="vs-dark"
+                defaultValue={scriptContent || template}
+                onChange={handleEditorChange}
+                options={{ 
+                  minimap: { enabled: false },
+                  automaticLayout: true,
+                  // This is important for auto resizing
+                }}
+              />
+            </div>
+          </div>
+        )}
+        {isScriptNode && (
+          <div>
+            <pre style={{ overflow: 'auto' }}>
+              {flowExecutionMessage}
+            </pre>
+          </div>
+        )}
 
+        {/* Output Handles */}
+        {Array.from(outputFileKeys).map((outputKey, index) => (
+          <div
+            key={outputKey}
+            className="file-handle"
+            style={{
+              bottom: '0px',
+              left: outputPositions[index],
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <Handle
+              type="source"
+              position={Position.Bottom}
+              id={outputKey}
+              isConnectable
+              style={{ background: '#007bff' }}
+            />
+            <span className='label'>{outputKey}[ ]</span>
+          </div>
+        ))}
+
+        <button onClick={handleRunAutomation} disabled={myExecutionData.state! in [NodeState.Clean, NodeState.Error]}>
+          Run Automation
+        </button>
+        <div style={{height:'24px'}}/>
+      </div>
     </div>
   );
 };

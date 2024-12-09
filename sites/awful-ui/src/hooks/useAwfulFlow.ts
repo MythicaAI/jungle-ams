@@ -2,10 +2,11 @@
 import  { Dispatch, SetStateAction, useContext } from 'react';
 import { createContext } from 'react';
 import { FlowDataType } from '../types/AwfulFlow';
-import { Node, Edge, Connection, EdgeChange, NodeChange, ReactFlowInstance } from '@xyflow/react';
+import { Node, Edge, Connection, EdgeChange, NodeChange, ReactFlowInstance, ResizeControlProps } from '@xyflow/react';
 import { GetFileResponse } from '../types/MythicaApi';
 
 type AwfulFlowContextType = {
+  NodeResizer: React.FC<ResizeControlProps>;
   nodes: Node[];
   edges: Edge[];
   onEdgesChange: (edges: EdgeChange<Edge>[]) => void;
