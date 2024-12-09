@@ -175,7 +175,7 @@ async def create(
             job_seq = job.inserted_primary_key[0]
 
             span.set_attribute("job.id", job_seq_to_id(job_seq))
-            span.set_attribute("job.started", datetime.now(timezone.utc))
+            span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
 
             event_result = add_job_requested_event(session, job_seq, job_def, request.params.model_dump(),
                                                 profile.profile_seq)
@@ -237,7 +237,7 @@ async def create_result(
 
             job_result = job_result_insert(session, job_seq, request)
             span.set_attribute("job.result", request.result_data)
-            span.set_attribute("job.result.time", datetime.now(timezone.utc))
+            span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
             job_result_seq = job_result.inserted_primary_key[0]
             session.commit()
             return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
@@ -280,6 +280,6 @@ async def set_complete(
                 log.error("Job %s not found or already completed", job_id)
                 raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
 
-            span.set_attribute("job.completed", datetime.now(timezone.utc))
+            span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
             span.set_status(Status(StatusCode.OK))
             session.commit()
