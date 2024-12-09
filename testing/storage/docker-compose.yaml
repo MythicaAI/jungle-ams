@@ -17,10 +17,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/
     healthcheck:
-      test: [ "CMD", "pg_isready --username=test" ]
-      interval: 3s
+      test: [ "CMD-SHELL", "pg_isready -U test" ]
+      interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - storage
   minio:
@@ -36,7 +37,7 @@ services:
       - blockstore:/blockstore
     command: server /blockstore --console-address ":9001"
     healthcheck:
-      test: [ "CMD", "mc ping local" ]
+      test: [ "CMD-SHELL", "mc ping local --count 1" ]
       interval: 3s
       timeout: 5s
       retries: 5
@@ -64,6 +65,12 @@ services:
       - "6379:6379"
     networks:
       - storage
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 volumes:
   pgdata:
     driver: local
