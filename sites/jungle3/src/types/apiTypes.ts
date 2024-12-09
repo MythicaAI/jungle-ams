@@ -88,6 +88,9 @@ export interface AssetVersionContent {
   file_name: string;
   content_hash: string;
   size: number;
+  asset_id?: string;
+  package_id?: string;
+  version?: number[];
 }
 
 export type AssetVersionContentMap = {

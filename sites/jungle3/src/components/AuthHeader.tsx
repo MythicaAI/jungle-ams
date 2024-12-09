@@ -128,7 +128,12 @@ export const AuthHeader = () => {
 
   return (
     <Stack>
-      <Stack direction="row" width="100%" justifyContent="space-between">
+      <Stack
+        direction="row"
+        width="100%"
+        justifyContent="space-between"
+        p="12px 16px 0"
+      >
         <Link to={"/"}>
           <Stack direction="row" gap="10px">
             <Box

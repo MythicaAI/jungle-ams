@@ -5,7 +5,7 @@
     "published": "Published",
     "draft": "Draft",
     "name": "Name",
-    "desc": "Description",
+    "description": "Description",
     "sortingPanel": {
       "options": [
         {
@@ -46,7 +46,8 @@
     "chooseExistingOrg": "Choose an existing org...",
     "filloutDesc": "Fill out a description",
     "version": "Version",
-    "publicView": "Public view"
+    "publicView": "Public view",
+    "deps": "Dependencies"
   },
   "myUploads": {
     "title": "Your uploads",

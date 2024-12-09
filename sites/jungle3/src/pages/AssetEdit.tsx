@@ -11,7 +11,7 @@ import {
   CircularProgress,
 } from "@mui/joy";
 import { useGlobalStore } from "@store/globalStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAssetVersionStore } from "@store/assetVersionStore";
 import {
   extractValidationErrors,
@@ -31,7 +31,11 @@ import {
   AssetEditListControls,
   AssetEditLinks,
 } from "@components/AssetEdit";
-import { useGetAssetByVersion, useUpdateAsset } from "@queries/packages";
+import {
+  useDeleteAsset,
+  useGetAssetByVersion,
+  useUpdateAsset,
+} from "@queries/packages";
 import { useTranslation } from "react-i18next";
 import {
   useAssignTagToAsset,
@@ -39,6 +43,8 @@ import {
   useGetAssetTags,
   useRemoveTagFromAsset,
 } from "@queries/tags";
+import { DeleteModal } from "@components/common/DeleteModal";
+import { AssetEditDeps } from "@components/AssetEdit/AssetEditDeps";
 
 interface AssetEditProps {
   assetId?: string;
@@ -52,8 +58,10 @@ const AssetEdit: React.FC<AssetEditProps> = ({
   assetId: propAssetId = undefined,
   version: propVersion = "0.0.0",
 }) => {
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { orgRoles, isOrgRolesLoading } = useGlobalStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
+  const { mutate: deleteAsset } = useDeleteAsset();
   const {
     asset_id,
     name,
@@ -69,9 +77,11 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     updateVersion,
     links,
     tag,
+    dependencies,
     initialTag,
     customTag,
     isLoading: isAssetVersionLoading,
+    setDeps,
   } = useAssetVersionStore();
   const navigate = useNavigate();
   const {
@@ -88,6 +98,13 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     useCreateAssetTag();
   const { mutate: removeTagFromAsset, isPending: isRemoveTagFromAssetLoading } =
     useRemoveTagFromAsset();
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+  };
+  const handleDeleteCleaup = () => {
+    navigate("/packages");
+  };
 
   // org_id state and initial update to first index
   useEffect(() => {
@@ -138,6 +155,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       tag: r.tags && r.tags.length > 0 ? r.tags[0].tag_id : undefined,
       files: {},
       thumbnails: {},
+      dependencies: [],
       links: [],
     });
 
@@ -157,6 +175,10 @@ const AssetEdit: React.FC<AssetEditProps> = ({
 
         setLinks(formattedLinks);
       }
+      if ("dependencies" in contentMap) {
+        //@ts-ignore
+        setDeps(contentMap["dependencies"]);
+      }
     }
   };
 
@@ -173,19 +195,20 @@ const AssetEdit: React.FC<AssetEditProps> = ({
 
     const formJson: { [key: string]: string | object } = {};
 
-    formJson["contents"] = {
+    const contents: any = {
       files: Object.values(files),
       thumbnails: Object.values(thumbnails),
     };
 
     if (formattedLinks) {
-      formJson["contents"] = {
-        files: Object.values(files),
-        thumbnails: Object.values(thumbnails),
-        links: formattedLinks,
-      };
+      contents.links = formattedLinks;
     }
 
+    if (dependencies) {
+      contents.dependencies = dependencies;
+    }
+
+    formJson["contents"] = contents;
     formJson["description"] = description;
     formJson["name"] = name;
     formJson["org_id"] = org_id;
@@ -335,7 +358,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       sx={{
         maxWidth: 1000,
         mx: "auto", // margin left & right
-        my: 4, // margin top & bottom
+        my: 1.5, // margin top & bottom
         py: 3, // padding top & bottom
         px: 2, // padding left & right
         display: "flex",
@@ -384,6 +407,9 @@ const AssetEdit: React.FC<AssetEditProps> = ({
               <Tab sx={TabStyle} disableIndicator>
                 {t("packageEdit.links")}
               </Tab>
+              <Tab sx={TabStyle} disableIndicator>
+                {t("packageEdit.deps")}
+              </Tab>
             </TabList>
 
             <TabPanel value={0} sx={TabPanelStyle}>
@@ -401,17 +427,69 @@ const AssetEdit: React.FC<AssetEditProps> = ({
             <TabPanel value={3} sx={TabPanelStyle}>
               <AssetEditLinks />
             </TabPanel>
+
+            <TabPanel value={4} sx={TabPanelStyle}>
+              <AssetEditDeps deps={dependencies} />
+            </TabPanel>
           </Tabs>
 
           <Box
             component="div"
             mt="20px"
-            sx={{ display: "flex", justifyContent: "center", width: "100%" }}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              gap: "12px",
+            }}
           >
-            <Button type="submit">Update</Button>
+            <Button
+              type="button"
+              color="danger"
+              onClick={() => {
+                setIsDeleteModalOpen(true);
+              }}
+            >
+              Delete
+            </Button>
+            <Button
+              type="submit"
+              color="neutral"
+              onClick={() => {
+                updateVersion({ published: false });
+              }}
+            >
+              Save draft
+            </Button>
+            <Button
+              type="submit"
+              onClick={() => {
+                updateVersion({ published: true });
+              }}
+            >
+              Publish
+            </Button>
           </Box>
         </Grid>
       </form>
+      <DeleteModal
+        open={isDeleteModalOpen}
+        handleClose={handleCancelDelete}
+        title={
+          name
+            ? `Are you sure you want to delete ${name}?`
+            : "Are you sure you want to delete this asset?"
+        }
+        handleConfirm={() => {
+          deleteAsset(asset_id as string, {
+            onSuccess: () => {
+              setSuccess(`${name} deleted`);
+              handleDeleteCleaup();
+            },
+            onError: (err) => handleError(err),
+          });
+        }}
+      />
     </Sheet>
   );
 };

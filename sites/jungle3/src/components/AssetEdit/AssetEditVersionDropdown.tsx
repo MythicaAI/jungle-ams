@@ -10,8 +10,6 @@ import {
   ListItemButton,
   ListItem,
   ListItemDecorator,
-  Switch,
-  Typography,
   Stack,
 } from "@mui/joy";
 import {
@@ -39,14 +37,12 @@ export type VersionTuple = [number, number, number];
 export const AssetEditVersionDropdown = () => {
   const { version: paramVersion } = useParams();
   const navigate = useNavigate();
-  const { asset_id, version, published, updateVersion } =
-    useAssetVersionStore();
+  const { asset_id, version, updateVersion } = useAssetVersionStore();
   const { addError, addWarning } = useStatusStore();
   const [availableVersions, setAvailableVersions] = useState<
     AssetVersionResponse[]
   >([]);
   const { t } = useTranslation();
-  // const { mutate: deleteAssetVersion } = useDeleteAsset();
 
   // version sanitizing state, should only be populated by the sanitizeVersion() function
   const [sanitizedVersion, setSanitizedVersion] = useState<number[]>([0, 0, 0]);
@@ -199,44 +195,6 @@ export const AssetEditVersionDropdown = () => {
           ""
         )}
       </FormControl>
-      <Stack gap="2px">
-        <FormControl orientation={"horizontal"}>
-          <Typography
-            component="span"
-            level="body-md"
-            sx={{
-              textAlign: "right",
-              alignItems: "center",
-              pr: "5px",
-              width: "auto",
-            }}
-          >
-            {published ? t("common.published") : t("common.draft")}
-          </Typography>
-          <Switch
-            checked={published}
-            onChange={(event) =>
-              updateVersion({ published: event.target.checked })
-            }
-            color={published ? "success" : "neutral"}
-            sx={{ flex: 1 }}
-          />
-          <input type="hidden" name="published" value={published.toString()} />
-        </FormControl>
-        {/* <Button
-          variant="outlined"
-          color="neutral"
-          sx={{ width: "fit-content" }}
-          onClick={() =>
-            deleteAssetVersion({
-              assetId: asset_id,
-              assetVersion: paramVersion as string,
-            })
-          }
-        >
-          <Trash />
-        </Button> */}
-      </Stack>
     </Stack>
   );
 };

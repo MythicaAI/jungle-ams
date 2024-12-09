@@ -1,5 +1,5 @@
 import { DashboardCard } from "@components/DashboardCard";
-import { Card, CircularProgress, Stack, Typography, Grid } from "@mui/joy";
+import { Card, CircularProgress, Stack, Typography, Grid, Box } from "@mui/joy";
 import { useGetOwnedPackages } from "@queries/packages";
 import { useGetPendingUploads } from "@queries/uploads";
 import { useGlobalStore } from "@store/globalStore";
@@ -15,11 +15,15 @@ const Dashboard = () => {
   const { data: uploads, isLoading: isUploadsLoading } = useGetPendingUploads();
   const { t } = useTranslation();
 
+  const uniqueOrgs = [
+    ...new Map(orgRoles.map((org) => [org.org_id, org])).values(),
+  ];
+
   if (!profile || isPackagesLoading || isUploadsLoading)
     return <CircularProgress />;
 
   return (
-    <div>
+    <Box p="0 16px">
       <Card sx={{ mb: "20px" }}>
         <Stack
           direction="row"
@@ -44,7 +48,7 @@ const Dashboard = () => {
         <Grid md={4} xs={6}>
           <DashboardCard
             title={t("common.profileMenu.myOrgs")}
-            textContent={orgRoles?.length ?? "0"}
+            textContent={uniqueOrgs?.length ?? "0"}
             url="/orgs"
           />
         </Grid>
@@ -56,7 +60,7 @@ const Dashboard = () => {
           />
         </Grid>
       </Grid>
-    </div>
+    </Box>
   );
 };
 
