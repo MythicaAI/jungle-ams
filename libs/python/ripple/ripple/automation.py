@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import json
 import os
 import logging
@@ -14,13 +15,20 @@ from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
 from uuid import uuid4
+from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import \
+    TraceContextTextMapPropagator
 
+from opentelemetry.trace import status as opentelemetry_status
 
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
+
+
+tracer = trace.get_tracer(__name__)
 
 def formatException(e):
     return f" {str(e)}\n{traceback.format_exc()}"
@@ -206,40 +214,47 @@ class ResultPublisher:
     #Callback for reporting back. 
     def result(self, item:ProcessStreamItem, complete=False):
 
-        # Poplulate context
-        item.process_guid = str(uuid4())
-        item.job_id = self.request.job_id if self.request.job_id is not None else ""
+        context = trace.get_current_span().get_span_context()
+        with tracer.start_as_current_span("job.result", context=context) as span:
 
-        api_url = get_api_url(self.request.env)
+            # Poplulate context
+            item.process_guid = str(uuid4())
+            item.job_id = self.request.job_id if self.request.job_id is not None else ""
 
-        # Upload any references to local data
-        self._publish_local_data(item, api_url)
+            api_url = get_api_url(self.request.env)
+
+            # Upload any references to local data
+            self._publish_local_data(item, api_url)
 
 
-   
-        JOB_RESULT_ENDPOINT=f"{api_url}/jobs/results/"
-        JOB_COMPLETE_ENDPOINT=f"{api_url}/jobs/complete/"
+    
+            JOB_RESULT_ENDPOINT=f"{api_url}/jobs/results/"
+            JOB_COMPLETE_ENDPOINT=f"{api_url}/jobs/complete/"
 
-        # Publish results
-        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+            # Publish results
+            log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(
-            self.nats.post(
-                "result", 
-                WorkerResponse(work_id=self.request.work_id, payload=item.model_dump()).model_dump()
+            task = asyncio.create_task(
+                self.nats.post(
+                    "result", 
+                    WorkerResponse(work_id=self.request.work_id, payload=item.model_dump()).model_dump()
+                )
             )
-        )
-        
-        task.add_done_callback(_get_error_handler())
-        if self.request.job_id:
-            if complete:
-                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
-            else:
-                data = {
-                    "created_in": "automation-worker",
-                    "result_data": item.model_dump()
-                }
-                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
+            
+            task.add_done_callback(_get_error_handler())
+            if self.request.job_id:
+                span.set_attribute("job.id", self.request.job_id)
+                if complete:
+                    span.set_attribute("job.completed", datetime.now(timezone.utc))
+                    self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
+                else:
+                    data = {
+                        "created_in": "automation-worker",
+                        "result_data": item.model_dump()
+                    }
+                    span.set_attribute("job.result", data)
+                    span.set_attribute("job.result.time", datetime.now(timezone.utc))
+                    self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
@@ -311,16 +326,18 @@ class Worker:
         
         def impl(request: ParameterSet = None, responder: ResultPublisher=None) -> Worker.CatalogResponse:
             ret = {}
-            for path,wk in worker.workers.items():
-                ret.update({
-                    path: {
-                        "input": wk.inputModel.model_json_schema(),
-                        "output": wk.outputModel.model_json_schema(),
-                        "hidden": wk.hidden                   
-                    }
-                })
-                        
-            return Worker.CatalogResponse(workers=ret)
+            context = trace.get_current_span().get_span_context()
+            with tracer.start_as_current_span("job._get_catalog_provider", context=context) as span:
+                for path,wk in worker.workers.items():
+                    ret.update({
+                        path: {
+                            "input": wk.inputModel.model_json_schema(),
+                            "output": wk.outputModel.model_json_schema(),
+                            "hidden": wk.hidden                   
+                        }
+                    })
+                            
+                return Worker.CatalogResponse(workers=ret)
         return impl
 
     class ScriptRequest(ParameterSet):
@@ -331,69 +348,73 @@ class Worker:
     def _get_script_worker(self) -> Callable:
         doer = self
         def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
-            # Prepare the environment to hold the script's namespace
-            script_namespace = {}
-            if not request.request_data:
-                raise ValueError("request_data is required.")
+            context = trace.get_current_span().get_span_context()
+            with tracer.start_as_current_span("job._get_script_worker", context=context) as span:
+                # Prepare the environment to hold the script's namespace
+                script_namespace = {}
+                if not request.request_data:
+                    raise ValueError("request_data is required.")
 
-            # Execute the script directly in the current environment
-            exec(request.script, script_namespace)
+                # Execute the script directly in the current environment
+                exec(request.script, script_namespace)
 
-            # Prepare request model from request_data
-            if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
-                request_model = script_namespace["RequestModel"](**request.request_data.model_dump())
-            else:
-                raise ValueError("RequestModel not found in script.")
+                # Prepare request model from request_data
+                if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
+                    request_model = script_namespace["RequestModel"](**request.request_data.model_dump())
+                else:
+                    raise ValueError("RequestModel not found in script.")
 
-            resolve_params(get_api_url(request.env), doer.tmpdir, request_model)
+                resolve_params(get_api_url(request.env), doer.tmpdir, request_model)
 
-            # Run the automation function
-            if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
-                result = script_namespace["runAutomation"](request_model, responder)
-            else:
-                raise ValueError("runAutomation function not found in script.")
+                # Run the automation function
+                if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
+                    result = script_namespace["runAutomation"](request_model, responder)
+                else:
+                    raise ValueError("runAutomation function not found in script.")
 
-            # Ensure ProcessStreamItem response and return it as payload
-            if isinstance(result, ProcessStreamItem):
-                return result
-            else:
-                raise ValueError("runAutomation did not return a ProcessStreamItem.")
+                # Ensure ProcessStreamItem response and return it as payload
+                if isinstance(result, ProcessStreamItem):
+                    return result
+                else:
+                    raise ValueError("runAutomation did not return a ProcessStreamItem.")
 
         return impl
 
     def _get_script_interface(self) -> Callable:
         def impl(request: Worker.ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem: 
             script_namespace = {}
+            context = trace.get_current_span().get_span_context()
+            with tracer.start_as_current_span("job._get_script_interface", context=context) as span:
 
-            try:
-                exec(request.script, script_namespace)
+                try:
+                    exec(request.script, script_namespace)
 
-                input = None
-                output = None
-                # Prepare request model from request_data
-                if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
-                    input = script_namespace["RequestModel"]
-                else:
-                    raise ValueError("RequestModel not found in script.")
-                
-                if "ResponseModel" in script_namespace and callable(script_namespace["ResponseModel"]):
-                    output = script_namespace["ResponseModel"]
-                else:
-                    output = ProcessStreamItem
-                
+                    input = None
+                    output = None
+                    # Prepare request model from request_data
+                    if "RequestModel" in script_namespace and callable(script_namespace["RequestModel"]):
+                        input = script_namespace["RequestModel"]
+                    else:
+                        raise ValueError("RequestModel not found in script.")
+                    
+                    if "ResponseModel" in script_namespace and callable(script_namespace["ResponseModel"]):
+                        output = script_namespace["ResponseModel"]
+                    else:
+                        output = ProcessStreamItem
+                    
 
-                return Worker.CatalogResponse(
-                    workers={
-                        '/mythica/script': {
-                            'input': input.model_json_schema(),
-                            'output': output.model_json_schema(),
-                            'hidden': True
-                    }
-                })
-            except Exception as e:
-                responder.result(Message(message=f"Script Interface Generation Error: {formatException(e)}"))
+                    return Worker.CatalogResponse(
+                        workers={
+                            '/mythica/script': {
+                                'input': input.model_json_schema(),
+                                'output': output.model_json_schema(),
+                                'hidden': True
+                        }
+                    })
+                except Exception as e:
+                    responder.result(Message(message=f"Script Interface Generation Error: {formatException(e)}"))
 
-            return(Worker.CatalogResponse(workers={}))
+                return(Worker.CatalogResponse(workers={}))
         return impl
     
     def start(self,subject: str, workers:list[dict]) -> None:
@@ -454,42 +475,53 @@ class Worker:
         """
         doer=self
         async def implementation(json_payload):
-            try:
-                payload = WorkerRequest(**json_payload)
-                if len(payload.data) == 1 and 'params' in payload.data:
-                    # If it only contains "params", replace payload.data with its content
-                    payload.data = payload.data['params']
+            with tracer.start_as_current_span("job.status") as span:
+                span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
+                try:
+                    payload = WorkerRequest(**json_payload)
+                    trace_data = {"job_id": payload.job_id, "work_id": payload.work_id}
+                    trace_data.update(payload.data)
+                    span.set_attributes(trace_data)
+                    if len(payload.data) == 1 and 'params' in payload.data:
+                        # If it only contains "params", replace payload.data with its content
+                        payload.data = payload.data['params']
 
-                log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
+                    log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
 
-            except Exception as e:
-                msg=f'Validation error - {json_payload} - {formatException(e)}'
-                log.error(msg)
-                await doer.nats.post("result", Message(message=msg).model_dump())
-                return 
+                except Exception as e:
+                    msg=f'Validation error - {json_payload} - {formatException(e)}'
+                    log.error(msg)
+                    span.set_status(opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg))
+                    await doer.nats.post("result", Message(message=msg).model_dump())
+                    return 
 
-            #Run the worker
-            publisher = None
-            try:
-                publisher = ResultPublisher(payload, self.nats, self.rest)
-                publisher.result(Progress(progress=0))
+                #Run the worker
+                publisher = None
+                try:
+                    carrier = {}
+                    TraceContextTextMapPropagator().inject(carrier)
+                    publisher = ResultPublisher(payload, self.nats, self.rest)
+                    publisher.result(Progress(progress=0))
 
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    doer.tmpdir = tmpdir
-                    worker = doer.workers[payload.path] 
-                    inputs = worker.inputModel(**payload.data)
-                    resolve_params(get_api_url(payload.env), tmpdir, inputs)
-                    ret_data = worker.provider(inputs, publisher)
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        doer.tmpdir = tmpdir
+                        worker = doer.workers[payload.path] 
+                        inputs = worker.inputModel(**payload.data)
+                        resolve_params(get_api_url(payload.env), tmpdir, inputs)
+                        ret_data = worker.provider(inputs, publisher)
 
-                    publisher.result(ret_data)
-                    doer.tmpdir = None
-                publisher.result(Progress(progress=100), complete=True)
+                        publisher.result(ret_data)
+                        doer.tmpdir = None
+                    span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
+                    publisher.result(Progress(progress=100), complete=True)
 
-            except Exception as e:
-                msg=f"Executor error - {log_str} - {formatException(e)}"
-                log.error(msg)
-                if publisher:
-                    publisher.result(Message(message=msg), complete=True)
+                except Exception as e:
+                    msg=f"Executor error - {log_str} - {formatException(e)}"
+                    span.set_status(opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg))
+                    log.error(msg)
+                    if publisher:
+                        publisher.result(Message(message=msg), complete=True)
+                        span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
                 
 
         return implementation

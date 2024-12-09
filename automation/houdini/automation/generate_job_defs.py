@@ -10,6 +10,10 @@ from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, Fil
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
 
+from opentelemetry import trace
+
+
+tracer = trace.get_tracer(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -57,26 +61,28 @@ class GenerateJobDefResponse(ProcessStreamItem):
 
 
 def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
-    hda_file = request.hda_file
+    context = trace.get_current_span().get_span_context()
+    with tracer.start_as_current_span("job.generate_job_defs", context=context) as span:
+        hda_file = request.hda_file
 
-    type_infos = extract_node_type_info(hda_file.file_path)
-    ret = []
-    for index, type_info in enumerate(type_infos):
-        category = type_info['category']
-        if category != 'SOP':
-            continue
+        type_infos = extract_node_type_info(hda_file.file_path)
+        ret = []
+        for index, type_info in enumerate(type_infos):
+            category = type_info['category']
+            if category != 'SOP':
+                continue
 
-        param_spec = compile_interface(json.dumps(type_info, indent=2))
-        set_config_params(param_spec, hda_file.file_id, index)
+            param_spec = compile_interface(json.dumps(type_info, indent=2))
+            set_config_params(param_spec, hda_file.file_id, index)
 
-        res = JobDefinition(
-            job_type='houdini::/mythica/generate_mesh',
-            name=f"Generate {type_info['name']}",
-            description=type_info['description'],
-            parameter_spec=param_spec
-        )
-        ret.append(res)
-        responder.result(res)
-        
-    return GenerateJobDefResponse(job_definitions=ret)
+            res = JobDefinition(
+                job_type='houdini::/mythica/generate_mesh',
+                name=f"Generate {type_info['name']}",
+                description=type_info['description'],
+                parameter_spec=param_spec
+            )
+            ret.append(res)
+            responder.result(res)
+            
+        return GenerateJobDefResponse(job_definitions=ret)
 
