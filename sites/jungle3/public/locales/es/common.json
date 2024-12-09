@@ -46,7 +46,8 @@
     "chooseExistingOrg": "Elige una org existente...",
     "filloutDesc": "Rellena una descripción",
     "version": "Versión",
-    "publicView": "Vista pública"
+    "publicView": "Vista pública",
+    "deps": "Dependencias"
   },
   "myUploads": {
     "title": "Tus subidas",

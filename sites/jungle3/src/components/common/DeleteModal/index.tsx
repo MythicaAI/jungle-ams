@@ -13,19 +13,21 @@ type Props = {
   open: boolean;
   handleConfirm: () => void;
   handleClose?: () => void;
+  title?: string;
 };
 
 export const DeleteModal: React.FC<Props> = ({
   open,
   handleClose,
   handleConfirm,
+  title = "Are you sure you want to delete this item?",
 }) => {
   return (
     <Modal open={open} onClose={handleClose}>
       <ModalDialog>
         <ModalClose />
         <Card>
-          <Typography>Are you sure you want to delete this item?</Typography>
+          <Typography>{title}</Typography>
         </Card>
         <Stack
           direction={"row"}

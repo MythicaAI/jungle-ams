@@ -46,6 +46,10 @@ const ProfileSettings = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const uniqueOrgs = [
+    ...new Map(orgRoles.map((org) => [org.org_id, org])).values(),
+  ];
+
   const handleError = (err: AxiosError) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
@@ -188,7 +192,7 @@ const ProfileSettings = () => {
         </Typography>
         <CardContent>
           <List marker="disc">
-            {orgRoles.map((role) => (
+            {uniqueOrgs.map((role) => (
               <ListItem key={role.org_id} sx={{ textAlign: "start" }}>
                 {role.org_name}
               </ListItem>
