@@ -75,6 +75,12 @@ services:
       - nats:/data
     networks:
       - storage
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "timeout 1s ./nats-server -sl monitor > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 volumes:
   pgdata:
     driver: local
