@@ -36,7 +36,7 @@ const FolderSetParm: React.FC<FolderSetParmProps> = ({ template, onChange}) => {
                     if (folder.name === activeFolder) {
                         return (
                             <div key={index} className={`folder-item active`}>
-                                <FolderParm key={folder.id} onChange={onChange} template={folder} />
+                                <FolderParm onChange={onChange} template={folder} />
                             </div>
                         );
                     }

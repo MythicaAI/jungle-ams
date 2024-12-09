@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ChangeEvent, useState } from 'react';
 import hou from '../../types/Houdini';
 import { dictionary } from '../../types/Automation';
 
@@ -16,14 +16,20 @@ const StringParm: React.FC<StringParmProps> = ({template, onChange}) => {
 
     const [values, setValues] = useState<string[]>(getDefaultValues());
 
-    const handleChange = (index: number, newValue: string) => {
-        // Update the state 
-        const updatedValues = [...values];
-        updatedValues[index] = newValue;
-        setValues(updatedValues);
+    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        const index =  e.target.getAttribute('parm-index') as unknown as number;
+
+        setValues((prev)=>{
+            prev[index] = newValue;
+            return prev;
+        });
+
 
         //and notify listeners
         const ret:{[key:string]: string[]} = {}
+        const updatedValues = [...values];
+        updatedValues[index] = newValue;
         ret[template.name] = updatedValues
         onChange?.(ret); // Notify parent about the change
     };
@@ -37,7 +43,8 @@ const StringParm: React.FC<StringParmProps> = ({template, onChange}) => {
                         <input
                             type="text"
                             value={value}
-                            onChange={(e) => handleChange(index, e.target.value)}
+                            parm-index={index}
+                            onChange={handleChange}
                             placeholder={`Component ${index + 1}`}
                         />
                     </div>  
