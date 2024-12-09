@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
+import { useUpdateNodeInternals } from '@xyflow/react';
 import MonacoEditor from '@monaco-editor/react';
 
 import useAutomation from '../hooks/useAutomation';
@@ -12,6 +12,8 @@ import AutomationOutputs from './AutomationOutputs';
 import { dictionary, ExecutionData, FileParamType } from '../types/Automation';
 import { NodeState } from "../types/AwfulFlow";
 import { JSONSchema } from '../types/JSONSchema';
+import FileInputHandle from './Handles/FileInputHandle';
+import FileOutputHandle from './Handles/FileOutputHandle';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -348,27 +350,13 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
         {/* Input Handles */}
         {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
-          <div
+          <FileInputHandle
             key={paramKey}
-            className="file-handle"
-            style={{
-              top: '0px',
-              left: inputPositions[index],
-              transform: 'translateX(-50%)',
-            }}
-          >
-            <Handle
-              type="target"
-              position={Position.Top}
-              id={paramKey}
-              isConnectable
-              style={{ background: '#007bff' }}
-            />
-            <span className='label'>
-              {paramKey}
-              {inputFileKeys[paramKey] === FileParamType.Array ? '[ ]' : ''}
-            </span>
-          </div>
+            id={paramKey}
+            left={inputPositions[index]}
+            isConnectable
+            style={{ background: '#007bff' }}
+            label={paramKey + (inputFileKeys[paramKey] === FileParamType.Array ? '[ ]' : '')}/>
         ))}
 
         {isScriptNode && (
@@ -400,24 +388,13 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
         {/* Output Handles */}
         {Array.from(outputFileKeys).map((outputKey, index) => (
-          <div
+          <FileOutputHandle
             key={outputKey}
-            className="file-handle"
-            style={{
-              bottom: '0px',
-              left: outputPositions[index],
-              transform: 'translateX(-50%)',
-            }}
-          >
-            <Handle
-              type="source"
-              position={Position.Bottom}
-              id={outputKey}
-              isConnectable
-              style={{ background: '#007bff' }}
-            />
-            <span className='label'>{outputKey}[ ]</span>
-          </div>
+            id={outputKey}
+            left={outputPositions[index]}
+            isConnectable
+            style={{ background: '#007bff' }}
+            label={outputKey + '[ ]'}/>
         ))}
 
         <button onClick={handleRunAutomation} disabled={myExecutionData.state! in [NodeState.Clean, NodeState.Error]}>

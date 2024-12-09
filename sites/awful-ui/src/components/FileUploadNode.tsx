@@ -1,9 +1,9 @@
 // FileUploadNode.tsx
 import React, { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi'; // Import Auth context
 import useAwfulFlow  from '../hooks/useAwfulFlow'; // Import NodeDataContext
+import FileOutputHandle from './Handles/FileOutputHandle';
 
 interface FileUploadNodeProps {
   id: string;
@@ -50,25 +50,12 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
       <input type="file" multiple onChange={handleFileChange} />
       <button onClick={handleFileUpload}>Upload Files</button>
       <p>{uploadStatus}</p>
-
-      <div
-        className="file-handle"
-        style={{
-          bottom: '0px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      >
-        <Handle
-            type="source"
-            position={Position.Bottom}
-            id={UPLOAD_FILES}
-            isConnectable
-            style={{ background: '#555' }}
-        />
-        <span className="label">Uploads[ ]</span>
-      </div>
-
+      <FileOutputHandle
+        id={UPLOAD_FILES}
+        left="50%"
+        isConnectable
+        style={{ background: '#555' }}
+        label="Uploads[ ]"/>
     </div>
   );
 };

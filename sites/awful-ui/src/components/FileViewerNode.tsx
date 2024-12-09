@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
 
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAwfulFlow from '../hooks/useAwfulFlow';
@@ -8,6 +7,8 @@ import USDViewer from './USDViewer';
 import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 
 import CodeViewer from './CodeViewer';
+import FileInputHandle from './Handles/FileInputHandle';
+import FileOutputHandle from './Handles/FileOutputHandle';
 interface FileViewerNodeProps {
   id: string;
   data:{
@@ -187,6 +188,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
         {(
           <select
+            className='nowheel'
             ref={selectFileRef}
             multiple
             style={{ 
@@ -210,23 +212,12 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       </div>
 
       {/* Target handle for accepting incoming file ID connections */}
-      <div
-        className="file-handle"
-        style={{
-          top: '0px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      >
-        <Handle
-          type="target"
-          position={Position.Top}
-          id={INPUT_FILES}
-          isConnectable
-          style={{ background: '#555' }}
-        />
-        <span className="label">Inputs[ ]</span>
-      </div>
+      <FileInputHandle
+        id={INPUT_FILES}
+        left="50%"
+        isConnectable
+        style={{ background: '#555' }}
+        label="Inputs[ ]"/>
 
       {(!downloadInfo || downloadInfo.length === 0) ? (
         <div />
@@ -308,23 +299,12 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       )}
 
       {/* Source handle for passing the file ID downstream */}
-      <div
-        className="file-handle"
-        style={{
-          bottom: '0px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      >
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id={OUTPUT_FILES}
-          isConnectable
-          style={{ background: '#007bff' }}
-        />
-        <span className="label">Outputs[ ]</span>
-      </div>
+      <FileOutputHandle
+        id={OUTPUT_FILES}
+        left="50%"
+        isConnectable
+        style={{ background: '#555' }}
+        label="Outputs[ ]"/>
       <p />
     </div>
   );
