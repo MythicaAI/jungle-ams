@@ -2,7 +2,10 @@ from automation.generate_job_defs import generate_job_defs, GenerateJobDefReques
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
 from automation.run_hda import run_hda, RunHdaRequest, RunHdaResponse
 from ripple.automation import Worker
+from telemetry import init_tracer_provider
 worker = Worker()
+
+init_tracer_provider()
 
 workers = [
     {

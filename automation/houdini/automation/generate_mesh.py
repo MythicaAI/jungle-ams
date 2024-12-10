@@ -9,6 +9,10 @@ from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import OutputFiles
 from pydantic import Field
 
+from opentelemetry import trace
+
+
+tracer = trace.get_tracer(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -177,16 +181,18 @@ class ExportMeshResponse(OutputFiles):
 def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
     log.info(f"Starting generate_mesh: {model}")
 
-    tmp_dir = tempfile.mkdtemp()
-    result_file_path = generate_mesh_impl(
-        model.hda_file.file_path,
-        model.hda_definition_index,
-        model.format,
-        model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
-        tmp_dir
-    )
+    context = trace.get_current_span().get_span_context()
+    with tracer.start_as_current_span("job.generate_mesh", context=context) as span:
+        tmp_dir = tempfile.mkdtemp()
+        result_file_path = generate_mesh_impl(
+            model.hda_file.file_path,
+            model.hda_definition_index,
+            model.format,
+            model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
+            tmp_dir
+        )
 
-    log.info(f"Completed generate_mesh")
-    return ExportMeshResponse(
-        files = {'mesh': [result_file_path]}
-    )
+        log.info(f"Completed generate_mesh")
+        return ExportMeshResponse(
+            files = {'mesh': [result_file_path]}
+        )
