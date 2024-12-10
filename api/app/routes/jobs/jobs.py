@@ -1,33 +1,34 @@
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any
 from uuid import uuid4
 
 import asyncio
+from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
+    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
+from cryptid.location import location
 from fastapi import APIRouter, Depends, HTTPException
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
+from ripple.automation import NatsAdapter, WorkerRequest
+from ripple.models.params import ParameterSet, ParameterSpec
+from ripple.runtime.params import repair_parameters, validate_params
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
 
 from config import app_config
-from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
-    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
-from cryptid.location import location
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
-from opentelemetry import trace
-from opentelemetry.trace.status import Status, StatusCode
-from ripple.automation import NatsAdapter, WorkerRequest
-from ripple.models.params import ParameterSet, ParameterSpec
-from ripple.runtime.params import repair_parameters, validate_params
 from routes.authorization import session_profile
 
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
+
 
 class JobDefinitionRequest(BaseModel):
     job_type: str
@@ -108,14 +109,20 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
         return JobDefinitionModel(job_def_id=job_def_id, **job_def.model_dump())
 
 
-def add_job_requested_event(session: Session, job_seq: int, job_def, params: str,
-                            profile_seq: int):
+def add_job_requested_event(
+        session: Session,
+        job_seq: int,
+        job_def,
+        params: str,
+        profile_seq: int,
+        auth_token: str):
     """Add a new event that triggers job processing"""
     # Create a new pipeline event
     job_id = job_seq_to_id(job_seq)
     job_data = {
         'job_def_id': job_def_seq_to_id(job_def.job_def_seq),
         'job_id': job_id,
+        'auth_token': auth_token,
         'profile_id': profile_seq_to_id(profile_seq),
         'params': params,
         'job_results_endpoint': f'{app_config().api_base_uri}/jobs/{job_id}/results'
@@ -132,14 +139,19 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, params: str
     return event_result
 
 
-def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: ParameterSet):
+def add_job_nats_event(
+        job_seq: int,
+        profile_seq: int,
+        auth_token: str,
+        job_type: str,
+        params: ParameterSet):
     """Add a new job event to the NATS message bus"""
     [subject, path] = job_type.split("::")
 
     event = WorkerRequest(
         work_id=str(uuid4()),
         job_id=job_seq_to_id(job_seq),
-        profile_id=profile_seq_to_id(profile_seq),
+        auth_token=auth_token,
         path=path,
         data=params.model_dump()
     )
@@ -177,12 +189,22 @@ async def create(
             span.set_attribute("job.id", job_seq_to_id(job_seq))
             span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
 
-            event_result = add_job_requested_event(session, job_seq, job_def, request.params.model_dump(),
-                                                profile.profile_seq)
+            event_result = add_job_requested_event(
+                session,
+                job_seq,
+                job_def,
+                request.params.model_dump(),
+                profile.profile_seq,
+                profile.auth_token)
             event_id = event_seq_to_id(event_result.inserted_primary_key[0])
             session.commit()
 
-            add_job_nats_event(job_seq, profile.profile_seq, job_def.job_type, request.params)
+            add_job_nats_event(
+                job_seq,
+                profile.profile_seq,
+                profile.auth_token,
+                job_def.job_type,
+                request.params)
 
             return JobResponse(
                 job_id=job_seq_to_id(job_seq),
@@ -272,9 +294,9 @@ async def set_complete(
         span.set_attribute("job.id", job_id)
         with get_session() as session:
             job_result = session.exec(update(Job)
-                                    .where(Job.job_seq == job_id_to_seq(job_id))
-                                    .where(Job.completed == None)
-                                    .values(completed=sql_now()))
+                                      .where(Job.job_seq == job_id_to_seq(job_id))
+                                      .where(Job.completed == None)
+                                      .values(completed=sql_now()))
             if job_result.rowcount == 0:
                 span.set_status(Status(StatusCode.ERROR, "Job not found or already completed"))
                 log.error("Job %s not found or already completed", job_id)

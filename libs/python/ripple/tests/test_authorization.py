@@ -3,6 +3,7 @@ import pytest
 from cryptid.cryptid import asset_seq_to_id, org_seq_to_id, profile_seq_to_id
 from ripple.auth import roles
 from ripple.auth.authorization import RoleError, Scope, validate_roles
+from ripple.auth.generate_token import generate_token
 from ripple.models.assets import AssetVersionRef
 from ripple.models.sessions import SessionProfile
 
@@ -68,14 +69,28 @@ superuser = {
 def build_session_profile(
         profile_seq: int) -> SessionProfile:
     """Generate a simple test session profile"""
+    profile_id = profile_seq_to_id(profile_seq)
+    email = 'none@none.com'
+    email_validate_state = 2
+    profile_location = 'local-test'
+    environment = 'test'
+    auth_roles = set()
+    token = generate_token(
+        profile_id=profile_id,
+        profile_email=email,
+        profile_email_validate_state=email_validate_state,
+        profile_location=profile_location,
+        environment=environment,
+        roles=list(auth_roles))
     return SessionProfile(
+        auth_token=token,
         profile_seq=profile_seq,
-        profile_id=profile_seq_to_id(profile_seq),
-        email='none@none.com',
-        email_validate_state=2,
-        location='local-test',
-        environment='test',
-        auth_roles=set())
+        profile_id=profile_id,
+        email=email,
+        email_validate_state=email_validate_state,
+        location=profile_location,
+        environment=environment,
+        auth_roles=auth_roles)
 
 
 #
