@@ -342,7 +342,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
         headers=new_headers)
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
     o = munchify(r.json())
-    assert f"not satisfied" in o.detail
+    assert "not satisfied" in o.detail
 
     # create org to for new_profile
     r = client.post(
@@ -429,7 +429,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
         f"{api_base}/assets/{asset_id}", headers=other_headers)
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
     o = munchify(r.json())
-    assert f"not satisfied" in o.detail
+    assert "not satisfied" in o.detail
 
     r = client.delete(
         f"{api_base}/assets/{asset_id}", headers=headers)
