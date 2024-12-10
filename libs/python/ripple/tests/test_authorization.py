@@ -143,7 +143,7 @@ def test_asset_create():
     assert validate_roles(
         role=roles.asset_create,
         auth_roles=new_user,
-        scope=Scope(profile=build_session_profile(new_user_seq)), )
+        scope=Scope(profile=build_session_profile(new_user_seq)))
 
     # validate profile with asset_create can make new assets
     assert validate_roles(

@@ -489,6 +489,7 @@ namespace hou {
         default_value?: number;
         default_basis?: rampBasis;
         show_controls?: boolean;
+        ramp_parm_type?: rampParmType;
         color_type?: colorType;
     }
     export class RampParmTemplate extends ParmTemplate {
@@ -496,7 +497,9 @@ namespace hou {
         name: string = "ramp";
         label: string = "Ramp";
         default_value: number = 2;
+        default_points: Array<{ pos: number; c?: number[]; value?: number; interp: rampBasis }> = [];
         default_basis: rampBasis = rampBasis.Linear;
+        ramp_parm_type: rampParmType = rampParmType.Float;
         show_controls: boolean = true;
         color_type: colorType = colorType.RGB;
 
@@ -504,7 +507,96 @@ namespace hou {
             super();
             Object.assign(this, this.extractConfig(config));
         }   
-    }
+        setTags = (tags:{ [key: string]: string }) => {
+            this.tags = tags;
+            this.default_points = this.fillRampDefaults();
+        }
+        fillRampDefaults = () => {
+            const isColorRamp = this.ramp_parm_type === hou.rampParmType.Color;
+            const valueKey = isColorRamp ? "c" : "value";
+            const rampStr = this.tags[isColorRamp ? 'rampcolordefault' : 'rampfloatdefault'] as string;
+
+    
+            // We look for sequences of:
+            // Npos ( number ) NvalueOrC ( number(s) ) Ninterp ( string )
+            // For color ramps (c), we expect three floats inside the parentheses for 'c'.
+            // For float ramps (value), we expect one float.
+            // (\d+)pos\s*\(\s*([^)]+)\)   -> Captures the index (N) and the position (x)
+            // \1value|c\s*\(\s*([^)]+)\) -> Using a backreference \1 ensures we match the same index for value/c
+            // \1interp\s*\(\s*([^)]+)\)  -> Matches the same index followed by interp
+            //
+            // Using a slightly more flexible approach:
+            const pattern = new RegExp(
+                String.raw`(\d+)pos\s*\(\s*([^)]+)\)\s*\1${valueKey}\s*\(\s*([^)]+)\)\s*\1interp\s*\(\s*([^)]+)\)`,
+                'g'
+            );
+            let match: RegExpExecArray | null;
+            const points = [];
+    
+            while ((match = pattern.exec(rampStr)) !== null) {
+                // match[1]: index (unused except for pattern consistency)
+                // match[2]: pos (x)
+                // match[3]: value or c fields
+                // match[4]: interp
+                const pos = parseFloat(match[2].trim());
+                const interpStr = match[4].trim().toLowerCase();
+        
+                // Convert interpolation string to RampBasis enum or keep as string
+                let interp: hou.rampBasis;
+                switch (interpStr) {
+                    case "bspline":
+                        interp = rampBasis.BSpline;
+                        break;
+                    case "linear":
+                        interp = rampBasis.Linear;
+                        break;
+                    case "constant":
+                        interp = rampBasis.Constant;
+                        break;
+                    case "catmullrom":
+                        interp = rampBasis.CatmullRom;
+                        break;
+                    case "monotonecubic":
+                        interp = rampBasis.MonotoneCubic;
+                        break;
+                    case "bezier":
+                        interp = rampBasis.Bezier;
+                        break;
+                    case "hermite":
+                        interp = rampBasis.Hermite;
+                        break;
+                    default:
+                        interp = rampBasis.Constant;
+                    
+                }
+        
+                if (isColorRamp) {
+                    // For color ramps, we have three floats for 'c'
+                    const colorVals = match[3].trim().split(/\s+/).map(parseFloat);
+                    if (colorVals.length !== 3) {
+                    throw new Error("Color ramp point did not have exactly 3 values");
+                    }
+                    points.push({
+                        pos,
+                        c: [colorVals[0], colorVals[1], colorVals[2]],
+                        interp: interp
+                    });
+                } else {
+                    // For float ramps, we have a single float for 'value'
+                    const val = parseFloat(match[3].trim());
+                    points.push({
+                        pos,
+                        value: val,
+                        interp
+                    });
+                }
+            }
+            return points;
+        }
+      
+      
+    }    
+    
 
     type DataParmTemplateProps = ParmTemplateProps & {
         num_components?: number;
@@ -591,7 +683,6 @@ namespace hou {
 
     export class ParmTemplateGroup {
         parm_templates: ParmTemplate[] = [];
-
 
 
         parmTemplates = () => (this.parm_templates) 
