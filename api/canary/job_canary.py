@@ -30,11 +30,11 @@ def parse_args():
     )
 
     parser.add_argument(
-        "-e", "--api_key",
+        "-k", "--api_key",
         help="API access key",
         required=True
     )
-    
+
     return parser.parse_args()
 
 
