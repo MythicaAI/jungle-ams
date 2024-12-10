@@ -38,7 +38,7 @@ kubectl create secret generic secrets \
 
 kubectl delete secret/canary-secrets -n api-staging
 kubectl create secret generic canary-secrets \
-  --from-literal=MYTHICA_API_KEY=$MYTHICA_API_KEY \
+  --from-literal=MYTHICA_API_KEY=$CANARY_API_KEY \
   --namespace=api-staging
 
 
