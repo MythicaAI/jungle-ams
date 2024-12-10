@@ -32,27 +32,25 @@ class RunHdaResponse(ProcessStreamItem):
     node_types: list[NodeType]
 
 def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
-    context = trace.get_current_span().get_span_context()
-    with tracer.start_as_current_span("job.run_hda", context=context) as span:
-        obj = hou.node('obj')
+    obj = hou.node('obj')
 
-        nodeTypes = []
+    nodeTypes = []
 
-        for hda in request.hdas:    
-            hou.hda.installFile(hda.file_path, force_use_assets=True)
-            # Create a temporary directory
-            tmpdirname = tempfile.mkdtemp()
-            for assetdef in hou.hda.definitionsInFile(hda.file_path):
-                # Get the node type for the asset
-                nodeType = mnet.get_node_type(assetdef.nodeType())
+    for hda in request.hdas:    
+        hou.hda.installFile(hda.file_path, force_use_assets=True)
+        # Create a temporary directory
+        tmpdirname = tempfile.mkdtemp()
+        for assetdef in hou.hda.definitionsInFile(hda.file_path):
+            # Get the node type for the asset
+            nodeType = mnet.get_node_type(assetdef.nodeType())
 
-                # Generate litegraph class in the temp directory
-                nodeType['code'] = mpt.transpiler(nodeType['code'])
-                
-                # Add the file path to the hdadef array
-                nodeTypes.append(nodeType)
+            # Generate litegraph class in the temp directory
+            nodeType['code'] = mpt.transpiler(nodeType['code'])
+            
+            # Add the file path to the hdadef array
+            nodeTypes.append(nodeType)
 
-            # Uninstall the HDA file after processing
-            hou.hda.uninstallFile(hda.file_path)
+        # Uninstall the HDA file after processing
+        hou.hda.uninstallFile(hda.file_path)
 
-        return RunHdaResponse(node_types=nodeTypes) 
+    return RunHdaResponse(node_types=nodeTypes) 

@@ -29,6 +29,13 @@ spec:
           command: ["/bin/bash", "houdini.sh"]
           stdin: true
           tty: true
+          env:
+            - name: NAMESPACE
+              value: api
+            - name: TELEMETRY_ENDPOINT
+              value: http://otel-collector.default:4317
+            - name: TELEMETRY_INSECURE
+              value: "true"
           resources:
             limits:
               cpu: 500m

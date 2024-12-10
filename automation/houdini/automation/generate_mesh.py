@@ -181,18 +181,16 @@ class ExportMeshResponse(OutputFiles):
 def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
     log.info(f"Starting generate_mesh: {model}")
 
-    context = trace.get_current_span().get_span_context()
-    with tracer.start_as_current_span("job.generate_mesh", context=context) as span:
-        tmp_dir = tempfile.mkdtemp()
-        result_file_path = generate_mesh_impl(
-            model.hda_file.file_path,
-            model.hda_definition_index,
-            model.format,
-            model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
-            tmp_dir
-        )
+    tmp_dir = tempfile.mkdtemp()
+    result_file_path = generate_mesh_impl(
+        model.hda_file.file_path,
+        model.hda_definition_index,
+        model.format,
+        model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
+        tmp_dir
+    )
 
-        log.info(f"Completed generate_mesh")
-        return ExportMeshResponse(
-            files = {'mesh': [result_file_path]}
-        )
+    log.info(f"Completed generate_mesh")
+    return ExportMeshResponse(
+        files = {'mesh': [result_file_path]}
+    )

@@ -61,28 +61,27 @@ class GenerateJobDefResponse(ProcessStreamItem):
 
 
 def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
-    context = trace.get_current_span().get_span_context()
-    with tracer.start_as_current_span("job.generate_job_defs", context=context) as span:
-        hda_file = request.hda_file
 
-        type_infos = extract_node_type_info(hda_file.file_path)
-        ret = []
-        for index, type_info in enumerate(type_infos):
-            category = type_info['category']
-            if category != 'SOP':
-                continue
+    hda_file = request.hda_file
 
-            param_spec = compile_interface(json.dumps(type_info, indent=2))
-            set_config_params(param_spec, hda_file.file_id, index)
+    type_infos = extract_node_type_info(hda_file.file_path)
+    ret = []
+    for index, type_info in enumerate(type_infos):
+        category = type_info['category']
+        if category != 'SOP':
+            continue
 
-            res = JobDefinition(
-                job_type='houdini::/mythica/generate_mesh',
-                name=f"Generate {type_info['name']}",
-                description=type_info['description'],
-                parameter_spec=param_spec
-            )
-            ret.append(res)
-            responder.result(res)
+        param_spec = compile_interface(json.dumps(type_info, indent=2))
+        set_config_params(param_spec, hda_file.file_id, index)
+
+        res = JobDefinition(
+            job_type='houdini::/mythica/generate_mesh',
+            name=f"Generate {type_info['name']}",
+            description=type_info['description'],
+            parameter_spec=param_spec
+        )
+        ret.append(res)
+        responder.result(res)
             
         return GenerateJobDefResponse(job_definitions=ret)
 
