@@ -127,7 +127,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       {/* Render handles for FileParameter inputs */}
       <FileInputHandle
         id={INPUT_FILE}
-        left={100/(2+(nodeType.inputs as number)) + '%'}
+        left={100/(2+((nodeType.inputs as number)||0)) + '%'}
         isConnectable
         style={{ background: '#007bff' }}
         label={INPUT_FILE}/>
