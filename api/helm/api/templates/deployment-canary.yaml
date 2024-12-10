@@ -29,6 +29,9 @@ spec:
               memory: "128Mi"
               cpu: "500m"
           env:
+            - name: SERVICE_ENDPOINT
+              value: http://app/v1
+
             - name: MYTHICA_API_KEY
               valueFrom:
                 secretKeyRef:
