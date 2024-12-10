@@ -49,6 +49,7 @@ def decode_token(encoded_jwt: str) -> SessionProfile:
     profile_id = decoded_jwt['profile_id']
     profile_seq = profile_id_to_seq(profile_id)
     return SessionProfile(
+        auth_token=encoded_jwt,
         profile_seq=profile_seq,
         profile_id=profile_id,
         email=decoded_jwt['email'],
