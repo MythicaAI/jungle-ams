@@ -53,15 +53,13 @@ class Scope(BaseModel):
     asset_version: Optional[AssetVersionRef] = None
 
 
-def validate_asset_ownership_scope(
+def check_asset_version_role(
         role: str,
         auth_roles: set[str],
         scope: Optional[Scope] = None) -> bool:
     """Internally validate the roles against the asset ownership logic"""
-
-    # asset_version does not yet exist e.g. asset_create
     if scope.asset_version is None:
-        raise RoleError(f"no asset_version in scope")
+        return False
 
     # The profile is the owner of the asset or author of the version
     if scope.profile and \
@@ -74,16 +72,14 @@ def validate_asset_ownership_scope(
     if scope.asset_version.org_id:
         org_scope_rule = f'org/{role}'
         org_id = scope.asset_version.org_id
-        aliases_for_role = role_to_alias.get(org_scope_rule)
-        if aliases_for_role is None:
-            raise RoleError(f'{role} does not map to any aliases')
+        aliases_for_role = role_to_alias.get(org_scope_rule, [])
         for alias in aliases_for_role:
             test_scoped_role = f'{alias}:{org_id}'
             if test_scoped_role in auth_roles:
                 return True
 
     # Asset scope checks failed
-    raise RoleError(f'{role} role unauthorized for asset {scope.asset_version.asset_id}')
+    return False
 
 
 def validate_roles(
@@ -124,15 +120,13 @@ def validate_roles(
         # e.g. asset-editor:^  matching against asset/asset_edit:ownership
         self_scope_alias = f'{alias}:{self_object_scope}'
         if self_scope_alias in auth_roles:
-            if role.startswith('asset/'):
-                return validate_asset_ownership_scope(role, auth_roles, scope)
+            if role.startswith('asset/') and \
+                    check_asset_version_role(role, auth_roles, scope):
+                return True
             elif role.startswith('profile/'):
                 if scope.profile and \
                         object_id == scope.profile.profile_id:
                     return True
-                raise RoleError(f'{role} profile mismatch')
-            else:
-                raise RoleError(f'{role}, scope matching not available')
 
     # Exit case will always raise
     raise RoleError(f'{role} not satisfied by {auth_roles}"')
