@@ -24,6 +24,7 @@ SERVICE_ACCOUNT_JSON=$(op read op://Infrastructure/front-end-api-staging-sa/serv
 AUTH0_CLIENT_ID=$(op read op://Infrastructure/api-staging-secrets/auth0-client-id)
 AUTH0_CLIENT_SECRET=$(op read op://Infrastructure/api-staging-secrets/auth0-client-secret)
 AUTH0_DOMAIN=$(op read op://Infrastructure/api-staging-secrets/auth0-domain)
+CANARY_API_KEY=$(op read op://Infrastructure/api-staging-secrets/canary-api-key)
 
 kubectl delete secret/secrets -n api-staging
 kubectl create secret generic secrets \
@@ -34,6 +35,13 @@ kubectl create secret generic secrets \
   --from-literal=AUTH0_CLIENT_SECRET=$AUTH0_CLIENT_SECRET \
   --from-literal=AUTH0_DOMAIN=$AUTH0_DOMAIN \
   --namespace=api-staging
+
+kubectl delete secret/canary-secrets -n api-staging
+kubectl create secret generic canary-secrets \
+  --from-literal=MYTHICA_API_KEY=$MYTHICA_API_KEY \
+  --namespace=api-staging
+
+
 kubectl delete secret/front-end-api-staging-sa -n api-staging
 kubectl create secret generic front-end-api-staging-sa \
   --from-literal=service-account.json="$SERVICE_ACCOUNT_JSON" \

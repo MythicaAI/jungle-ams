@@ -26,9 +26,15 @@ def parse_args():
     parser.add_argument(
         "-e", "--endpoint",
         help="API endpoint",
-        required=False
+        required=True
     )
 
+    parser.add_argument(
+        "-e", "--api_key",
+        help="API access key",
+        required=True
+    )
+    
     return parser.parse_args()
 
 
@@ -143,7 +149,7 @@ def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
         time.sleep(1)
 
 
-def run_test(endpoint: str, api_key):
+def run_test(endpoint: str, api_key: str):
     log.info("Starting test")
 
     profile_id = find_or_create_profile(endpoint)
@@ -176,7 +182,7 @@ def main():
 
     while True:
         try:
-            run_test(args.endpoint, os.environ["MYTHICA_API_KEY"])
+            run_test(args.endpoint, args.api_key)
         except Exception as e:
             log.error(f"Test failed: {e}")
         time.sleep(TEST_FREQUENCY_SEC)
