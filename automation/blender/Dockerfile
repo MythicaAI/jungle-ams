@@ -15,6 +15,9 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PATH="/usr/local/bin:$PATH"
 
+# Default for local (docker compose) mode, override in deployment
+ENV NATS_ENDPOINT="nats://nats:4222"
+
 # Install Python 3.11 and dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

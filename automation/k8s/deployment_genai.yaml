@@ -32,6 +32,9 @@ spec:
           command: [/usr/bin/python3.11, workers.py]
           stdin: true
           tty: true
+          env:
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
           resources:
             limits:
               ephemeral-storage: 10Gi
@@ -39,4 +42,5 @@ spec:
             requests:
               ephemeral-storage: 10Gi
               nvidia.com/gpu: "2"
+
       restartPolicy: Always

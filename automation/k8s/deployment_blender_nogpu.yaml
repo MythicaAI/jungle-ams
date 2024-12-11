@@ -29,4 +29,8 @@ spec:
           command: [python3.11, workers.py]
           stdin: true
           tty: true
+          env:
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
+
       restartPolicy: Always
