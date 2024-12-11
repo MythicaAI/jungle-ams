@@ -5,6 +5,7 @@ ARG HOUDINI_VERSION=20.5.370
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Gather python dependencies - do the worker deps here too.
+# this version of python should match the target version in Houdini
 FROM python:3.11-slim AS python-dependency-downloader
 
 LABEL maintainer="pedro@mythica.ai"
@@ -16,13 +17,25 @@ LABEL tier="auto"
 # Copy monorepo dependencies
 COPY --from=libs-python-image /libs/python /libs/python
 
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
+WORKDIR /python-install
 
-# Build the primary image
+COPY pyproject.toml .
+
+# Install updated bootstrapping packages for poetry and pip 
+RUN python -m pip install \
+    --root-user-action=ignore \
+    --upgrade \
+    --no-cache-dir pip poetry
+
+# Install everything into the python site-packages, these
+# will be referenced later to build the houdini site-packages
+RUN poetry config --local virtualenvs.create false
+RUN poetry install
+
+# Build the primary image from upstream hbuild
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
 
-# Install system dependencies
+# Install and update system dependencies
 RUN apt-get update && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,7 +53,8 @@ RUN echo HOUDINI_OCL_DEVICETYPE = CPU >> /root/houdini20.5/houdini.env
 RUN mkdir -p /root/houdini20.5/packages/
 
 RUN mkdir /app
-# Install Labs Plugins
+
+# Install SideFX Labs Houdini Package
 ARG SIDE_FX_LABS_VERSION=20.5.370
 
 RUN mkdir /app/sideFXLabs/
@@ -51,7 +65,7 @@ RUN rm /tmp/sideFXLabs.tar.gz
 RUN cp /app/sideFXLabs/SideFXLabs.json /root/houdini20.5/packages/SideFXLabs.json
 RUN sed -i 's|"$HOUDINI_PACKAGE_PATH/SideFXLabs20.5"|"/app/sideFXLabs"|g' /root/houdini20.5/packages/SideFXLabs.json
 
-# Copy our code over
+# Copy application code over
 COPY . /app
 
 # Install darol plugin 

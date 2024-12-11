@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "houdini-worker"
+version = "0.1.0"
+description = "Worker application for automating Houdini"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+package-mode = false
+repository = "https://github.com/MythicaAI/infra"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "2.9.2"
+ripple = { path = "../../libs/python/ripple", develop = true }
+cryptid = { path = "../../libs/python/cryptid", develop = true }
+opentelemetry-instrumentation = "^0.48b0"
+opentelemetry-instrumentation-fastapi = "^0.48b0"
+opentelemetry-instrumentation-httpx = "^0.48b0"
+opentelemetry-exporter-otlp = "^1.27.0"
+opentelemetry-distro = "^0.48b0"
+opentelemetry-api = "^1.27.0"
+opentelemetry-sdk = "^1.27.0"
+opentelemetry-instrumentation-sqlalchemy = "^0.48b0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

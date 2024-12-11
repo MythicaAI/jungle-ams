@@ -34,7 +34,7 @@ tracer = trace.get_tracer(__name__)
 def formatException(e):
     return f" {str(e)}\n{traceback.format_exc()}"
 
-NATS_URL= 'nats://nats.nats:4222'
+NATS_URL= os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
 
 def get_api_url(env):
     if (env == 'staging'):
@@ -436,11 +436,8 @@ class Worker:
         task = loop.create_task(self.nats.listen(subject, self._get_executor()))
         task.add_done_callback(_get_error_handler())
 
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            log.info("Received exit signal. Shutting down...")
-            loop.stop()
+        # Run loop until canceled or an exception escapes
+        loop.run_forever()
 
     def _load_workers(self,workers):
         """Function to dynamically discover and register workers in a container"""
