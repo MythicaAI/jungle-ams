@@ -154,6 +154,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
   return (
     <div className="mythica-node file-viewer-node">
+      
       <h3>File Viewer</h3>
 
       <div style={{ marginBottom: '10px' }} className='nodrag'>
@@ -161,7 +162,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
           <input 
             onClick={() => setShowFileSelector(!showFileSelector)}
             type="text"
-            value={selectedFileNames.join(', ') || 'Click to Select Files...'}
+            value={(selectedFileNames.length>1 ? 'Multiple Selections' : selectedFileNames.join(', ')) || 'Click to Select Files...'}
             readOnly
             style={{ 
               flex: 1,
