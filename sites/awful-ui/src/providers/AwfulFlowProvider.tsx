@@ -233,12 +233,27 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
 
 
-  const setFlowData = useCallback((nodeId: string, key: string, value: unknown) => {
+  const setFlowData = useCallback((nodeId: string, key: string, value: GetFileResponse[]) => {
     setFlowDataState((prevData) => ({
       ...prevData,
       [nodeId]: { ...prevData[nodeId], [key]: value },
     }));
-  }, []);
+
+    const handleConnections = connections[nodeId]?.[key];
+    if (handleConnections) {
+      handleConnections.forEach(({ targetId, targetHandle }) => {
+        setFlowDataState((prevData) => ({
+          ...prevData,
+          [targetId]: { ...prevData[targetId], [targetHandle]: value },
+        }));
+      });
+    }
+
+  }, [connections]);
+
+  const getFlowData = useCallback((nodeId: string) => {
+    return flowData[nodeId] || {};
+  }, [flowData]);
 
   const addConnection = useCallback((sourceId: string, sourceHandle: string, targetId: string, targetHandle: string) => {
     setConnections((prev) => ({
@@ -252,6 +267,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       },
     }));
   }, []);
+
   const removeConnection = useCallback(
     (sourceId: string, sourceHandle: string, targetId: string, targetHandle: string) => {
       setConnections((prev) => {
@@ -279,19 +295,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     },
     []
   );
-  
-  const notifyTargets = useCallback(
-    (sourceId: string, sourceHandle: string, value: (GetFileResponse | null)[]) => {
-      const handleConnections = connections[sourceId]?.[sourceHandle];
-      if (handleConnections) {
-        handleConnections.forEach(({ targetId, targetHandle }) => {
-          setFlowData(targetId, targetHandle, value);
-        });
-      }
-    },
-    [connections, setFlowData]
-  );
-  
+    
 
   // Handle data passing on connect
   const onConnect = useCallback(
@@ -313,7 +317,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
           return addEdge(
             {
               ...connection,
-              data: { fileIndex: connection.sourceHandle?.split('-')[1] || 0 },
+              data: {},
             },
             eds
           );
@@ -327,13 +331,16 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   
       if (connection.source && connection.target && connection.sourceHandle && connection.targetHandle) {
         addConnection(connection.source, connection.sourceHandle, connection.target, connection.targetHandle);
-        notifyTargets(connection.source, connection.sourceHandle, flowData[connection.source]?.[connection.sourceHandle] as (GetFileResponse|null)[]); // Notify targets with the specific source handle
         if (connectedData) {
-          setFlowData(connection.target, connection.targetHandle, connectedData);
+          setFlowDataState((prevData) => ({
+            ...prevData,
+            [connection.target]: { ...prevData[connection.target], [connection.targetHandle as string]: connectedData },
+          }));
         }
+        
       }
     },
-    [setEdges, flowData, addConnection, notifyTargets, setFlowData]
+    [setEdges, flowData, addConnection]
   );
   
 
@@ -355,11 +362,10 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   return (
     <AwfulFlowContext.Provider value={{
       NodeResizer, 
-      flowData, 
+      getFlowData,
       setFlowData, 
       onConnect, 
       onDisconnect, 
-      notifyTargets, 
       nodes,
       edges, 
       onEdgesChange,

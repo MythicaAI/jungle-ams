@@ -1,7 +1,6 @@
 // NodeDataContext.tsx
 import  { Dispatch, SetStateAction, useContext } from 'react';
 import { createContext } from 'react';
-import { FlowDataType } from '../types/AwfulFlow';
 import { Node, Edge, Connection, EdgeChange, NodeChange, ReactFlowInstance, ResizeControlProps } from '@xyflow/react';
 import { GetFileResponse } from '../types/MythicaApi';
 
@@ -11,12 +10,11 @@ type AwfulFlowContextType = {
   edges: Edge[];
   onEdgesChange: (edges: EdgeChange<Edge>[]) => void;
   onNodesChange: (nodes: NodeChange<Node>[]) => void;
-  flowData: FlowDataType;
-  setFlowData: (nodeId: string, key: string, value: unknown) => void;
+  getFlowData: (nodeId: string) => {[key: string]:GetFileResponse[]};
+  setFlowData: (nodeId: string, key: string, value: GetFileResponse[]) => void;
   setNodeType: Dispatch<SetStateAction<string | null>>;
   onConnect: (connection: Edge | Connection) => void;
   onDisconnect: (connections: Edge[]) => void;
-  notifyTargets: (sourceId: string, sourceHandle: string, value: (GetFileResponse|null)[]) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
   onSave: (filename: string) => void;

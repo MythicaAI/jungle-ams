@@ -13,7 +13,7 @@ const UPLOAD_FILES = 'uploadFiles';
 
 const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
   const { uploadFile } = useMythicaApi(); // Access the authentication key from context
-  const { setFlowData, notifyTargets } = useAwfulFlow();
+  const { setFlowData } = useAwfulFlow();
   const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(null);
   const [uploadStatus, setUploadStatus] = React.useState<string>('');
 
@@ -36,7 +36,6 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
       const response = await uploadFile(formData);
       const files = response.files;
       setFlowData(id, UPLOAD_FILES, files);
-      notifyTargets(id, UPLOAD_FILES, files);
       setUploadStatus('Files uploaded successfully');
     } catch (error) {
       console.error('File upload error:', error);

@@ -1,7 +1,9 @@
+import { GetFileResponse } from "./MythicaApi";
+
 // types/nodeData.ts
 export type FlowDataType = {
   [nodeId: string]: {
-    [key: string]: unknown;
+    [key: string]: GetFileResponse[];
   };
 };
 
