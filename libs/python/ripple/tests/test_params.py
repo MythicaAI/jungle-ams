@@ -368,18 +368,19 @@ def test_param_resolve():
     # File list test
     with tempfile.TemporaryDirectory() as tmp_dir:
         set = ParameterSet(files=[
-            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"),
-            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB")
+            FileParameter(file_id="file_3vJPfGBtqaEsKisjDiivDBf7N2jc"),
+            FileParameter(file_id="file_3EH5RVbKaEHEdK3t2EufqbsM6CE7")
         ])
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
         assert isinstance(set.files, list)
         assert isinstance(set.files[0], FileParameter)
         assert isinstance(set.files[1], FileParameter)
-        assert set.files[0].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
-        assert set.files[1].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.files[0].file_id == "file_3vJPfGBtqaEsKisjDiivDBf7N2jc"
+        assert set.files[1].file_id == "file_3EH5RVbKaEHEdK3t2EufqbsM6CE7"
         assert set.files[0].file_path.startswith('file_') == False
         assert set.files[1].file_path.startswith('file_') == False
         assert os.path.exists(set.files[0].file_path)
         assert os.path.exists(set.files[1].file_path)
+        assert set.files[0].file_path != set.files[1].file_path
     """
