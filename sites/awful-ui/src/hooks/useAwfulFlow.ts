@@ -17,8 +17,10 @@ type AwfulFlowContextType = {
   onDisconnect: (connections: Edge[]) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onSave: (filename: string) => void;
+  onSave: (filename: string, savedFileCallback: (saved:GetFileResponse)=>void) => void;
   onRestore: (filename: string) => void;
+  onDelete: (filename: string) => void;
+  onNew: () => void;
   savedAwfulsById: Record<string, GetFileResponse>;
   savedAwfulsByName: Record<string, GetFileResponse>;
   setRfInstance: Dispatch<SetStateAction<ReactFlowInstance<Node, Edge>>>;
