@@ -129,7 +129,7 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     doc = r.json()
 
     # Download the file
-    file_name = doc['name'].replace('\\', '_').replace('/', '_')
+    file_name = file_id + "_" + doc['name'].replace('\\', '_').replace('/', '_')
     file_path = os.path.join(directory, file_name)
 
     downloaded_bytes = 0
