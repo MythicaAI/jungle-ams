@@ -78,8 +78,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   );
   const { getFile } = useMythicaApi();
 
-  const { NodeResizer, flowData, setFlowData, notifyTargets } = useAwfulFlow();   //node data mapped to connections
-  const myFlowData = flowData[node.id];
+  const { NodeResizer, getFlowData, setFlowData } = useAwfulFlow();   //node data mapped to connections
+  const myFlowData = getFlowData(node.id);
   const [flowExecutionMessage, setFlowExecutionMessage] = useState<string>('');
 
   //Input and Outputs Interface specs in JSONSpec (script Nodes are set later)
@@ -270,8 +270,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             const fileIds = automationOutput.files[fileKey];
             if (Array.isArray(fileIds)) {
               fetchAndResolveFiles(fileIds).then((resolvedFiles) => {
-                setFlowData(node.id, fileKey, resolvedFiles); // Update flowData with resolved files
-                notifyTargets(node.id, fileKey, resolvedFiles); // Notify connections of the change
+                setFlowData(node.id, fileKey, resolvedFiles.filter((file)=>(file!==null))); // Update flowData with resolved files
                 myExecutionData.state = NodeState.Done;
               });
             }
@@ -287,7 +286,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         myExecutionData.state = NodeState.Error;
       }
     },
-    [ myExecutionData, node.id, setFlowData, getFile, notifyTargets, processOutputMessage]
+    [ myExecutionData, node.id, setFlowData, getFile, processOutputMessage]
   );
 
 
@@ -300,7 +299,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
     updateNodeInternals(node.id);
     
-  }, [inputFileKeys, flowData, node.id, setFileInputData, updateNodeInternals, updateFileInputs]);
+  }, [inputFileKeys, myFlowData, node.id, setFileInputData, updateNodeInternals, updateFileInputs]);
 
 
   // Process automation output when execution data changes

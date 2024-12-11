@@ -36,8 +36,8 @@ export interface HDANodeProps {
 const INPUT_FILE = 'HDA';
 
 const HDANode: React.FC<HDANodeProps> = (node) => {
-  const { flowData } = useAwfulFlow();
-  const inputFlowFiles = (flowData[node.id] || {})[INPUT_FILE] as (GetFileResponse | null)[];
+  const { getFlowData } = useAwfulFlow();
+  const inputFlowFiles = (getFlowData(node.id) || {})[INPUT_FILE] as (GetFileResponse | null)[];
 
   const { initAutomation, runAutomation, allAutomations } = useAutomation();
   const automationTask = allAutomations[node.data.automation]
@@ -127,7 +127,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       {/* Render handles for FileParameter inputs */}
       <FileInputHandle
         id={INPUT_FILE}
-        left={100/(2+(nodeType.inputs as number)) + '%'}
+        left={100/(2+((nodeType.inputs as number)||0)) + '%'}
         isConnectable
         style={{ background: '#007bff' }}
         label={INPUT_FILE}/>

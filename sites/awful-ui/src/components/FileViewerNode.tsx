@@ -24,7 +24,7 @@ const OUTPUT_FILES = 'outputFiles';
 const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
   const { getFiles, getDownloadInfo } = useMythicaApi();
-  const { flowData, setFlowData, notifyTargets } = useAwfulFlow();
+  const { getFlowData, setFlowData } = useAwfulFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<Array<GetDownloadInfoResponse | null>>([]);
   const [selectedPane, setSelectedPane] = useState(node.data.selectedPane || 0);
@@ -34,7 +34,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
   const [initialized, setInitialized] = useState(false);
 
-  const inputFlowData = (flowData[node.id] || {})[INPUT_FILES] as (GetFileResponse | null)[];
+  const inputFlowData = (getFlowData(node.id) || {})[INPUT_FILES] as (GetFileResponse | null)[];
 
   const fetchAvailableFiles = useCallback(async () => {
     try {
@@ -56,11 +56,10 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
           dInfos.push(null);
         }
       }
-      setFlowData(node.id, OUTPUT_FILES, files);
-      notifyTargets(node.id, OUTPUT_FILES, files);
+      setFlowData(node.id, OUTPUT_FILES, files.filter((file)=>(file!==null)));
       return dInfos;
     },
-    [getDownloadInfo, setFlowData, notifyTargets, node.id]
+    [getDownloadInfo, setFlowData, node.id]
   );
   
   const toggleFileSelector = () => {
