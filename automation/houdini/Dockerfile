@@ -39,6 +39,9 @@ FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
 RUN apt-get update && apt-get install -y wget \
     && rm -rf /var/lib/apt/lists/*
 
+# Default for local (docker compose) mode, override in deployment
+ENV NATS_ENDPOINT="nats://nats:4222"
+
 # Setup Houdini environment
 ARG SFX_CLIENT_ID
 ARG SFX_CLIENT_SECRET

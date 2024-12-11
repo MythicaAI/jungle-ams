@@ -39,4 +39,8 @@ spec:
             requests:
               ephemeral-storage: 10Gi
               nvidia.com/gpu: "1"
+          env:
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
+
       restartPolicy: Always

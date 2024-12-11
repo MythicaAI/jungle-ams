@@ -39,6 +39,8 @@ spec:
               value: http://otel-collector.default:4317
             - name: TELEMETRY_INSECURE
               value: "true"
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
           resources:
             limits:
               ephemeral-storage: 10Gi
