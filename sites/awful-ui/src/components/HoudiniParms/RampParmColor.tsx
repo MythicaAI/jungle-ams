@@ -13,12 +13,15 @@ interface ColorRampParmProps {
     onChange?: (formData: dictionary) => void;
 }
 
+const pointColor = 'rgb(0,0,0)';
+const selectedColor = 'rgb(255,255,0)';
+
 function getDefaultColorPoints(template: hou.RampParmTemplate): ColorRampPoint[] {
     if (template.default_points && template.default_points.length > 0) {
         const pts =  template.default_points.map(p => ({
             x: p.pos,
             y: p.c ? p.c : [0, 0, 0],
-            interp: p.interp
+            interp: p.interp || hou.rampBasis.Linear
         }));
         return pts;
     }
@@ -74,51 +77,76 @@ const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, onChange }) => 
 
         const sorted = [...points].sort((a, b) => a.x - b.x);
 
-        // Draw gradient segments between points
-        for (let i = 0; i < sorted.length - 1; i++) {
-            const p1 = sorted[i];
-            const p2 = sorted[i + 1];
+        // If there are points
+        if (sorted.length > 0) {
+            const firstPoint = sorted[0];
+            const lastPoint = sorted[sorted.length - 1];
 
-            const x1 = p1.x * innerWidth + margin;
-            const x2 = p2.x * innerWidth + margin;
-
-            const grad = ctx.createLinearGradient(x1, height/2, x2, height/2);
-            const c1 = `rgb(${p1.y[0]*255}, ${p1.y[1]*255}, ${p1.y[2]*255})`;
-            const c2 = `rgb(${p2.y[0]*255}, ${p2.y[1]*255}, ${p2.y[2]*255})`;
-            grad.addColorStop(0, c1);
-            grad.addColorStop(1, c2);
-
-            ctx.fillStyle = grad;
-            ctx.fillRect(x1, margin, x2 - x1, height - margin*2);
-        }
-        
-        // If the last point is not at x=1, continue with its color
-        const lastPoint = sorted[sorted.length - 1];
-        if (lastPoint.x < 1) {
-            const xStart = lastPoint.x * innerWidth + margin;
-            const xEnd = margin + innerWidth; // end of the ramp area
-            ctx.fillStyle = `rgb(${lastPoint.y[0]*255}, ${lastPoint.y[1]*255}, ${lastPoint.y[2]*255})`;
-            ctx.fillRect(xStart, margin, xEnd - xStart, height - margin*2);
-        }
-
-        // Draw points as small squares
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1;
-        sorted.forEach((p, i) => {
-            const x = p.x * innerWidth + margin;
-            const y = height/2;
-            ctx.fillStyle = `rgb(${p.y[0]*255}, ${p.y[1]*255}, ${p.y[2]*255})`;
-            ctx.fillRect(x - 5, y - 5, 10, 10);
-        
-            if (i === selectedIndex) {
-                ctx.strokeStyle = '#6666ff'; // Blue stroke for the selected point
-                ctx.lineWidth = 3;
-            } else {
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 1;
+            // Fill from 0 to first.x with first point's color if first.x > 0
+            if (firstPoint.x > 0) {
+                const xEnd = firstPoint.x * innerWidth + margin;
+                ctx.fillStyle = `rgb(${firstPoint.y[0]*255}, ${firstPoint.y[1]*255}, ${firstPoint.y[2]*255})`;
+                ctx.fillRect(margin, margin, xEnd - margin, height - margin*2);
             }
-            ctx.strokeRect(x - 5, y - 5, 10, 10);
-        });
+
+            // Draw gradient segments between points
+            for (let i = 0; i < sorted.length - 1; i++) {
+                const p1 = sorted[i];
+                const p2 = sorted[i + 1];
+
+                const x1 = p1.x * innerWidth + margin;
+                const x2 = p2.x * innerWidth + margin;
+
+                const grad = ctx.createLinearGradient(x1, height/2, x2, height/2);
+                const c1 = `rgb(${p1.y[0]*255}, ${p1.y[1]*255}, ${p1.y[2]*255})`;
+                const c2 = `rgb(${p2.y[0]*255}, ${p2.y[1]*255}, ${p2.y[2]*255})`;
+                grad.addColorStop(0, c1);
+                grad.addColorStop(1, c2);
+
+                ctx.fillStyle = grad;
+                ctx.fillRect(x1, margin, x2 - x1, height - margin*2);
+            }
+
+            // If the last point is not at x=1, continue with its color
+            if (lastPoint.x < 1) {
+                const xStart = lastPoint.x * innerWidth + margin;
+                const xEnd = margin + innerWidth; // end of the ramp area
+                ctx.fillStyle = `rgb(${lastPoint.y[0]*255}, ${lastPoint.y[1]*255}, ${lastPoint.y[2]*255})`;
+                ctx.fillRect(xStart, margin, xEnd - xStart, height - margin*2);
+            }
+
+            const handleWidth = 10;
+            const handleHeightAbove = 6; // height of the triangular roof portion above the line
+            const handleHeightBelow = 8; // how far below the line the handle extends
+            // total handle height = handleHeightAbove + handleHeightBelow
+            
+            sorted.forEach((p, i) => {
+                const x = p.x * innerWidth + margin;
+                const lineY = height - margin;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, lineY - handleHeightAbove);
+                ctx.lineTo(x - handleWidth/2, lineY);
+                ctx.lineTo(x - handleWidth/2, lineY + handleHeightBelow);
+                ctx.lineTo(x + handleWidth/2, lineY + handleHeightBelow);
+                ctx.lineTo(x + handleWidth/2, lineY);
+                ctx.closePath();
+            
+                ctx.fillStyle = `rgb(${p.y[0]*255}, ${p.y[1]*255}, ${p.y[2]*255})`;
+                ctx.fill();
+            
+                if (i === selectedIndex) {
+                    // Draw a highlight
+                    ctx.strokeStyle = selectedColor; 
+                    ctx.lineWidth = 2;
+                } else {
+                    ctx.strokeStyle = pointColor;
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+            });
+        }
+
     }, [points, selectedIndex]);
 
     useEffect(() => {
@@ -137,51 +165,75 @@ const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, onChange }) => 
         };
     };
 
+    // Inside onMouseDown of ColorRampParm, where we previously did a distance check
     const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const pos = getMousePos(e);
         const {width, height} = canvasSize;
         const margin = 10;
         const innerWidth = width - margin*2;
+        const innerHeight = height - margin*2;
 
-        // Hit test points
-        const hitIndex = points.findIndex(p => {
+        const sorted = [...points].sort((a,b) => a.x - b.x);
+
+        // Define handle shape metrics
+        const handleWidth = 10;
+        const handleHeightAbove = 6;
+        const handleHeightBelow = 8;
+        const lineY = margin + innerHeight; // Base line of the gradient
+
+        // Hit test points by checking if click is inside the bounding box of the handle
+        const hitIndex = sorted.findIndex(p => {
             const x = p.x * innerWidth + margin;
-            const dx = x - pos.x;
-            const dy = (height/2) - pos.y;
-            return Math.sqrt(dx*dx + dy*dy) < 10; 
+
+            // Calculate bounding box of the handle for this point
+            const left = x - handleWidth/2;
+            const right = x + handleWidth/2;
+            const top = lineY - handleHeightAbove;
+            const bottom = lineY + handleHeightBelow;
+
+            return (
+                pos.x >= left &&
+                pos.x <= right &&
+                pos.y >= top &&
+                pos.y <= bottom
+            );
         });
 
         if (hitIndex !== -1) {
             // If right-click and more than two points, remove
             if (e.button === 2 && points.length > 2) {
                 e.preventDefault();
-                const newPoints = [...points];
+                const newPoints = [...points].sort((a,b) => a.x - b.x);
                 newPoints.splice(hitIndex, 1);
                 commitChange(newPoints);
                 setSelectedIndex(null);
             } else {
                 // Left-click select point and start dragging
-                setDraggingIndex(hitIndex);
-                setSelectedIndex(hitIndex);
+                const originalIndex = points.indexOf(sorted[hitIndex]);
+                setDraggingIndex(originalIndex);
+                setSelectedIndex(originalIndex);
             }
             return;
         }
 
-        // Add a new point on left-click empty space
+        // If click not on a point, add a new one if within range
         if (e.button === 0) {
             const nx = (pos.x - margin) / innerWidth;
             if (nx >= 0 && nx <= 1) {
                 // Default new point color is mid gray
-                const newPoint = { x: nx, y: [0.5, 0.5, 0.5] as [number,number,number] };
+                const newPoint = { x: nx, y: [0.5, 0.5, 0.5] as [number,number,number], interp: hou.rampBasis.Linear };
                 const newPoints = [...points, newPoint].sort((a,b) => a.x - b.x);
                 commitChange(newPoints);
 
-                // Select the newly added point
-                const idx = newPoints.findIndex(p => p === newPoint);
+                const idx = newPoints.indexOf(newPoint);
                 setSelectedIndex(idx);
+            } else {
+                // outside range, deselect any selected point
+                setSelectedIndex(null);
             }
         }
     };
+
 
     const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (draggingIndex === null) return;
@@ -194,7 +246,7 @@ const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, onChange }) => 
         nx = Math.max(0, Math.min(1, nx));
 
         const newPoints = [...points];
-        // Keep the same color, just move position
+        // Keep same color, just move position
         newPoints[draggingIndex] = { ...newPoints[draggingIndex], x: nx };
         setPoints(newPoints);
     };
@@ -213,11 +265,26 @@ const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, onChange }) => 
     // Handle color changes for the selected point
     const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (selectedIndex === null) return;
-        const newColor = hexToRgb(e.target.value); // Convert hex to [r,g,b] in [0,1]
+        const newColor = hexToRgb(e.target.value); // Convert hex to [r,g,b]
         const newPoints = [...points];
         newPoints[selectedIndex] = { ...newPoints[selectedIndex], y: newColor };
         commitChange(newPoints);
     };
+
+    // Handle basis changes for the selected point
+    const handleBasisChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (selectedIndex === null) return;
+        const newPoints = [...points];
+        newPoints[selectedIndex] = { ...newPoints[selectedIndex], interp: e.target.value as hou.rampBasis };
+        commitChange(newPoints);
+    };
+
+    const options = ()=> {
+        const opts = [];
+        for (const basis of Object.values(hou.rampBasis)) 
+            opts.push(<option key={basis} value={basis}>{basis}</option>);
+        return opts;
+    }
 
     return (
         <div className="ramp-parm" title={template.help} style={{ userSelect: 'none' }}>
@@ -234,18 +301,20 @@ const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, onChange }) => 
                     onMouseLeave={onMouseUp}
                     onContextMenu={onContextMenu}
                 />
-                {template.show_controls && (
-                    <div className="ramp-controls">
-                        {selectedIndex !== null && (
-                            <div style={{ marginTop: '10px' }}>
-                                <label>Point Color - Index {selectedIndex}:</label>
-                                <input
-                                    type="color"
-                                    value={rgbToHex(points[selectedIndex].y)}
-                                    onChange={handleColorChange}
-                                />
-                            </div>
-                        )}
+                {template.show_controls && selectedIndex !== null && (
+                    <div className="ramp-controls" style={{ marginTop: '10px' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <label>Point Color:</label>
+                            <input
+                                type="color"
+                                value={rgbToHex(points[selectedIndex].y)}
+                                onChange={handleColorChange}
+                            />
+                            <label>Interpolation:</label>
+                            <select value={points[selectedIndex].interp || hou.rampBasis.Linear} onChange={handleBasisChange}>
+                                {options()}
+                            </select>
+                        </div>
                     </div>
                 )}
             </div>

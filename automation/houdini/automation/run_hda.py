@@ -1,11 +1,12 @@
+from automation.generate_mesh import generate_mesh_impl
 import hou
 
 import tempfile
 from typing import Literal
 from ripple.automation import ResultPublisher
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import ProcessStreamItem
+from ripple.models.streaming import ProcessStreamItem, OutputFiles
 from typing import Any
 import mythica.network as mnet
 import mythica.parm_transpiler as mpt
@@ -14,8 +15,6 @@ from opentelemetry import trace
 
 
 tracer = trace.get_tracer(__name__)
-class RunHdaRequest(ParameterSet):
-    hdas: list[FileParameter]
 
 class NodeType(BaseModel):
     root: bool
@@ -26,12 +25,21 @@ class NodeType(BaseModel):
     outputs: int
     code: str
     defaults: dict[str, Any]
+    category: str
+    namespace: str
+    name: str
+    version: str
+    type: str
+    description: str    
 
-class RunHdaResponse(ProcessStreamItem):
+class HdaRequest(ParameterSet):
+    hdas: list[FileParameter]
+
+class HdaResponse(ProcessStreamItem):
     item_type: Literal["resp"] = "resp"
     node_types: list[NodeType]
 
-def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
+def hda(request: HdaRequest, responder: ResultPublisher) -> HdaResponse:
     obj = hou.node('obj')
 
     nodeTypes = []
@@ -53,4 +61,29 @@ def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaRespons
         # Uninstall the HDA file after processing
         hou.hda.uninstallFile(hda.file_path)
 
-    return RunHdaResponse(node_types=nodeTypes) 
+    return HdaResponse(node_types=nodeTypes) 
+
+
+class RunHdaRequest(ParameterSet):
+    hda_file: FileParameter
+
+class RunHdaResponse(OutputFiles):
+    pass
+
+def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
+    
+    tmp_dir = tempfile.mkdtemp()
+    result_file_paths = generate_mesh_impl(
+        request.hda_file.file_path,
+        0,
+        'usdz',
+        request.model_dump(exclude={'hda_file'}),
+        tmp_dir
+    )
+
+    files = {}
+    for index in range(len(result_file_paths)):
+        files[f'output{index}'] = [result_file_paths[index]]
+    return OutputFiles(
+        files = files
+    )
