@@ -55,16 +55,16 @@ def generate_mesh_impl(
     format: str,
     params: dict,
     working_dir: str
-) -> str:
-    log.info("Preparing scene")
+) -> list[str]:
+    log.debug("Preparing scene")
     output_file_name = os.path.basename(hda_path)
 
-    log.info("Clearing scene")
+    log.debug("Clearing scene")
     hou.hipFile.clear(suppress_save_prompt=True)
 
-    log.info("Intalling HDA")
+    log.debug("Intalling HDA")
     hou.hda.installFile(hda_path, force_use_assets=True)
-    log.info("Intalling HDA completed")
+    log.debug("Intalling HDA completed")
 
     # Geometry
     obj = hou.node('obj')
@@ -75,13 +75,13 @@ def generate_mesh_impl(
     asset = geo.createNode(assetdef.nodeTypeName())
 
     # Set parms
-    log.info("Applying parameters")
+    log.debug("Applying parameters")
     apply_params(asset, params)
-    log.info("Creating inputs")
+    log.debug("Creating inputs")
     create_inputs(asset, geo, params)
-    log.info("Setting up scene completed")
+    log.debug("Setting up scene completed")
 
-    log.info("Forcing HDA cook (internal HDA cooks must happen before exporting)")
+    log.debug("Forcing HDA cook (internal HDA cooks must happen before exporting)")
     try:
         asset.cook(force=True)
     except Exception as e:
@@ -93,81 +93,87 @@ def generate_mesh_impl(
         for message in asset.messages():
             log.error(f"Cook Message: {message}")
         raise
-    log.info("HDA cook completed")
+    log.debug("HDA cook completed")
 
     # Export
     out = hou.node('out')
 
     output_file_path = ""
+    outputs:list[str] = []
+        
     if format == 'fbx':
-        output_file_path = os.path.join(working_dir, f"{output_file_name}.fbx")
+        outputs.append(os.path.join(working_dir, f"{output_file_name}_{index}.fbx"))
 
         fbx_node = out.createNode("filmboxfbx","fbx_node")
         fbx_node.parm("sopoutput").set(output_file_path)
         fbx_node.parm("exportkind").set(0)  # Export in binary format
 
-        log.info("Exporting mesh")
+        log.debug("Exporting mesh")
         fbx_node.parm("execute").pressButton()
-        log.info("Exporting mesh completed")
+        log.debug("Exporting mesh completed")
     elif format == 'glb':
         # gltf vs glb export is inferred from the output extension
-        output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
+        outputs.append(os.path.join(working_dir, f"{output_file_name}_{index}.glb"))
 
         gltf_node = out.createNode("gltf","gltf_node")
         gltf_node.parm("file").set(output_file_path)
 
-        log.info("Exporting mesh")
+        log.debug("Exporting mesh")
         gltf_node.parm("execute").pressButton()
-        log.info("Exporting mesh completed")
+        log.debug("Exporting mesh completed")
     elif format == 'usdz':
         # Export to USD
-        output_file_path = os.path.join(working_dir, f"{output_file_name}.usd")
         usd_node = geo.createNode("usdexport","usd_node")
-        usd_node.parm("lopoutput").set(output_file_path)
         usd_node.parm("authortimesamples").set("never")
-        usd_node.setInput(0, asset, 0)
-        log.info("Exporting mesh")
-        usd_node.parm("execute").pressButton()
-        log.info("Exporting mesh completed")
-
-        # Bind material
-        if 'material/type' in params and 'material/source_asset' in params:
-            if params['material/type'] == "Unreal":
-                sublayer_node = stage.createNode("sublayer")
-                sublayer_node.parm("num_files").set(1)
-                sublayer_node.parm("filepath1").set(output_file_path)
-        
-                sourceAssset = params['material/source_asset']
-                attrib_node = stage.createNode("attribwrangle")
-                attrib_node.parm("primpattern").set("%type:Boundable")
-                attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
-                attrib_node.setInput(0, sublayer_node, 0)
-
-                binded_file = os.path.join(working_dir, f"{output_file_name}_with_material.usd")
-                render_node = stage.createNode("usd_rop")
-                render_node.parm("lopoutput").set(binded_file) 
-                render_node.setInput(0, attrib_node, 0)
-                render_node.parm("execute").pressButton()
-
-                output_file_path = binded_file
-
-        # Convert to USDZ format
-        output_zip_file_path = os.path.join(working_dir, f"{output_file_name}.usdz")
+        render_node = stage.createNode("usd_rop")
+        sublayer_node = stage.createNode("sublayer")
+        attrib_node = stage.createNode("attribwrangle")
         usdz_node = out.createNode("usdzip","usdz_node")
-        usdz_node.parm("infile1").set(output_file_path)
-        usdz_node.parm("outfile1").set(output_zip_file_path)
 
-        log.info("Packaging usdz")
-        usdz_node.parm("execute").pressButton()
-        log.info("Packaging usdz completed")
+        for index in range(len(asset.outputNames())):
+            output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
+            usd_node.parm("lopoutput").set(output_file_path)
 
-        output_file_path = output_zip_file_path
+            
+            usd_node.setInput(0, asset, 0)
+            log.debug("Exporting mesh")
+            usd_node.parm("execute").pressButton()
+            log.debug("Exporting mesh completed")
 
-    log.info("Uninstalling HDA")
+            # Bind material
+            if 'material/type' in params and 'material/source_asset' in params:
+                if params['material/type'] == "Unreal":
+                    sublayer_node.parm("num_files").set(1)
+                    sublayer_node.parm("filepath1").set(output_file_path)
+            
+                    sourceAssset = params['material/source_asset']
+                    attrib_node.parm("primpattern").set("%type:Boundable")
+                    attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
+                    attrib_node.setInput(0, sublayer_node, 0)
+
+                    binded_file = os.path.join(working_dir, f"{output_file_name}_{index}_with_material.usd")
+                    render_node.parm("lopoutput").set(binded_file) 
+                    render_node.setInput(0, attrib_node, 0)
+                    render_node.parm("execute").pressButton()
+
+                    output_file_path = binded_file
+
+            # Convert to USDZ format
+            output_zip_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usdz")
+            usdz_node.parm("infile1").set(output_file_path)
+            usdz_node.parm("outfile1").set(output_zip_file_path)
+
+            log.debug("Packaging usdz")
+            usdz_node.parm("execute").pressButton()
+            log.debug("Packaging usdz completed")
+
+            outputs.append(output_zip_file_path)
+
+    log.debug("Uninstalling HDA")
     hou.hda.uninstallFile(hda_path)
-    log.info("Uninstalling HDA completed")
+    log.debug("Uninstalling HDA completed")
     hou.hipFile.clear(suppress_save_prompt=True)
-    return output_file_path
+    return outputs
 
 
 class ExportMeshRequest(ParameterSet):
@@ -182,7 +188,7 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Expor
     log.info(f"Starting generate_mesh: {model}")
 
     tmp_dir = tempfile.mkdtemp()
-    result_file_path = generate_mesh_impl(
+    result_file_paths = generate_mesh_impl(
         model.hda_file.file_path,
         model.hda_definition_index,
         model.format,
@@ -192,5 +198,5 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Expor
 
     log.info(f"Completed generate_mesh")
     return ExportMeshResponse(
-        files = {'mesh': [result_file_path]}
+        files = {'mesh': [result_file_paths[0]]}
     )
