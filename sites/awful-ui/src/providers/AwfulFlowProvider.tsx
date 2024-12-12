@@ -94,10 +94,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const onNew = async () => {
     if (rfInstance) {
-      setNodes([]);
-      setEdges([]);
-      setFlowDataState({});
-      setConnections({});
+      deleteFlowData();
     }
     console.log(`Awful Cleared Successfully`);
   }
@@ -183,10 +180,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }
   
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-  const deleteFlowData = () => {
+  const deleteFlowData = async () => {
+    setNodes([]);
+    setEdges([]);
     setFlowDataState({});
     setConnections({});
   } 
+
   /* Because the Automation node handles are not updated immediately after 
   a refresh event, we need to wait a bit before updating the edges */
   useEffect(() => {
@@ -260,7 +260,20 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     [nodeType, screenToFlowPosition, setNodes]
   );
 
-
+  const onNodesDelete = useCallback((nodesToDelete: Node[]) => {
+    nodesToDelete.forEach((node) => {
+      setFlowDataState((prevData) => {
+        const updatedData = { ...prevData };
+        delete updatedData[node.id];
+        return updatedData;
+      });
+      setConnections((prevConnections) => {
+        const updatedConnections = { ...prevConnections };
+        delete updatedConnections[node.id];
+        return updatedConnections;
+      })
+    }, [setFlowDataState, setConnections]);
+  },[]);
 
   const setFlowData = useCallback((nodeId: string, key: string, value: GetFileResponse[]) => {
     setFlowDataState((prevData) => ({
@@ -399,6 +412,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       edges, 
       onEdgesChange,
       onNodesChange,
+      onNodesDelete,
       setNodeType,
       onDragOver, 
       onDrop, 

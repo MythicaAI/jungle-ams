@@ -4,10 +4,11 @@ import { dictionary } from '../../types/Automation';
 
 interface MenuParmProps {
     template: hou.MenuParmTemplate;
+    data: dictionary;
     onChange: (formData: dictionary) => void; 
 }
 
-const MenuParm: React.FC<MenuParmProps> = ({ template, onChange }) => {
+const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) => {
     const {
         label,
         menu_items = [],
@@ -21,7 +22,7 @@ const MenuParm: React.FC<MenuParmProps> = ({ template, onChange }) => {
 
     // Determine initial selected value
     const getDefaultValue = () => {
-        return menu_items.includes(default_value) ? default_value : (menu_items[0] || "");
+        return data[template.name] || menu_items.includes(default_value) ? default_value : (menu_items[0] || "");
     }
 
     const [selectedValue, setSelectedValue] = useState<string>(getDefaultValue);

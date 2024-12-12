@@ -4,12 +4,13 @@ import { dictionary } from '../../types/Automation';
 
 export interface ToggleParmProps {
     template: hou.ToggleParmTemplate;
+    data: dictionary;
     onChange?: (formData: dictionary) => void; // Callback for value changes
 }
 
-const ToggleParm: React.FC<ToggleParmProps> = ({template, onChange}) => {
+const ToggleParm: React.FC<ToggleParmProps> = ({template, data, onChange}) => {
 
-    const [value, setValue] = useState<boolean>(template.default_value || false);
+    const [value, setValue] = useState<boolean>(data[template.name] as boolean || template.default_value || false);
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.checked;

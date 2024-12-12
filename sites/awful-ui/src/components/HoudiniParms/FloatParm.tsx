@@ -4,12 +4,14 @@ import { dictionary } from '../../types/Automation';
 
 export interface FloatParmProps {
     template: hou.FloatParmTemplate;
+    data: dictionary;
     onChange: (formData: dictionary) => void; // Callback for value changes
 }
 
-const FloatParm: React.FC<FloatParmProps> = ({template, onChange}) => {
+const FloatParm: React.FC<FloatParmProps> = ({template, data, onChange}) => {
     
     const [values, setValues] = useState<number[]>(() =>
+        data[template.name] ||
         template.default_value.length === template.num_components
             ? template.default_value
             : Array<number>(template.num_components).fill(0)
