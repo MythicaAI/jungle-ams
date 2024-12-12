@@ -55,9 +55,8 @@ jobs:
           context: libs/python
           tags: libs-python:${{ github.sha }}
           load: true
-      - name: Save api-app to tar
+      - name: Save libs-python to tar file
         run: |
-          docker save api-app:${{ github.sha }} > /tmp/api-app-${{ github.sha }}.tar
           docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
       - name: Upload libs-python image
         uses: actions/upload-artifact@v4
@@ -128,8 +127,9 @@ jobs:
           push: true
           context: ${{ matrix.image }}
           file: ${{ matrix.image }}/Dockerfile
+          tags: |
+            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            API_APP_IMAGE=api-app:${{ github.sha }}
           load: true
