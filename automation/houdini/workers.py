@@ -16,7 +16,8 @@ from telemetry import init_telemetry
 
 worker = Worker()
 
-init_telemetry()
+if os.environ.get("TELEMETRY_ENABLE", False):
+    init_telemetry()
 
 workers = [
     {
