@@ -19,7 +19,7 @@ function getDefaultPoints(template: hou.RampParmTemplate): ValueRampPoint[] {
         return template.default_points.map(p => ({
             x: p.pos,
             y: p.value || 0,
-            interp: p.interp
+            interp: p.interp || hou.rampBasis.Linear
         }));
     }
     return [
@@ -28,12 +28,19 @@ function getDefaultPoints(template: hou.RampParmTemplate): ValueRampPoint[] {
     ];
 }
 
+const rampColor = 'rgb(0,123,255)';
+const rampShadeColor = 'rgba(0,123,255,0.2)';
+const selectedColor = 'rgb(255,255,0)';
+const rampBackgroundColor = 'rgb(68,68,68)';
+const rampLineColor = 'rgb(102,102,102)';
+
 const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 360, height: 150 };
 
     const [points, setPoints] = useState<ValueRampPoint[]>(() => getDefaultPoints(template));
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 
     const commitChange = useCallback((newPoints: ValueRampPoint[]) => {
         setPoints(newPoints);
@@ -56,50 +63,111 @@ const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => 
         const innerHeight = height - margin * 2;
 
         // Background
-        ctx.fillStyle = "#444";
+        ctx.fillStyle = rampBackgroundColor;
         ctx.fillRect(margin, margin, innerWidth, innerHeight);
-        ctx.strokeStyle = "#666";
+        ctx.strokeStyle = rampLineColor;
         ctx.strokeRect(margin, margin, innerWidth, innerHeight);
 
         const sorted = [...points].sort((a, b) => a.x - b.x);
 
-        // Draw line
-        ctx.beginPath();
-        sorted.forEach((p, i) => {
-            const x = p.x * innerWidth + margin;
-            const y = margin + innerHeight - p.y * innerHeight;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        });
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#007bff';
-        ctx.stroke();
+        if (sorted.length > 0) {
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
 
-        // Fill area
-        ctx.beginPath();
-        ctx.moveTo(margin + sorted[0].x * innerWidth, margin + innerHeight);
-        sorted.forEach((p) => {
-            const x = p.x * innerWidth + margin;
-            const y = margin + innerHeight - p.y * innerHeight;
-            ctx.lineTo(x, y);
-        });
-        ctx.lineTo(margin + sorted[sorted.length - 1].x * innerWidth, margin + innerHeight);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(0,123,255,0.2)';
-        ctx.fill();
+            // Draw line
+            ctx.beginPath();
+            // Start from x=0
+            const startY = margin + innerHeight - first.y * innerHeight;
 
-        // Draw points
-        ctx.beginPath();
-        sorted.forEach((p) => {
-            const x = p.x * innerWidth + margin;
-            const y = margin + innerHeight - p.y * innerHeight;
-            ctx.moveTo(x + 5, y);
-            ctx.arc(x, y, 5, 0, 2 * Math.PI);
-        });
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = '#007bff';
-        ctx.stroke();
-    }, [points]);
+            // Move from x=0
+            ctx.moveTo(margin, startY);
+
+            // If first.x > 0, draw horizontal line to first point
+            if (first.x > 0) {
+                const firstX = first.x * innerWidth + margin;
+                ctx.lineTo(firstX, startY);
+            }
+
+            // Draw through the points
+            sorted.forEach((p) => {
+                const x = p.x * innerWidth + margin;
+                const y = margin + innerHeight - p.y * innerHeight;
+                ctx.lineTo(x, y);
+            });
+
+            // If last.x < 1, continue line horizontally at last.y to x=1
+            if (last.x < 1) {
+                const endY = margin + innerHeight - last.y * innerHeight;
+                const endX = margin + innerWidth;
+                ctx.lineTo(endX, endY);
+            }
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = rampColor;
+            ctx.stroke();
+
+            // Fill area under the curve
+            ctx.beginPath();
+            ctx.moveTo(margin, margin + innerHeight); // bottom-left corner
+
+            // If first.x > 0, fill from 0 to first.x at first.y
+            if (first.x > 0) {
+                ctx.lineTo(margin, startY);
+                const firstActualX = first.x * innerWidth + margin;
+                ctx.lineTo(firstActualX, startY);
+            } else {
+                // Move directly to first point
+                const firstX = first.x * innerWidth + margin;
+                const firstY = margin + innerHeight - first.y * innerHeight;
+                ctx.lineTo(firstX, firstY);
+            }
+
+            sorted.forEach((p) => {
+                const x = p.x * innerWidth + margin;
+                const y = margin + innerHeight - p.y * innerHeight;
+                ctx.lineTo(x, y);
+            });
+
+            // If last.x < 1, fill horizontally to x=1 at last.y
+            if (last.x < 1) {
+                const endY = margin + innerHeight - last.y * innerHeight;
+                const endX = margin + innerWidth;
+                ctx.lineTo(endX, endY);
+                ctx.lineTo(endX, margin + innerHeight);
+            } else {
+                // close at the last point down to the bottom
+                const lastX = last.x * innerWidth + margin;
+                ctx.lineTo(lastX, margin + innerHeight);
+            }
+
+            ctx.closePath();
+            ctx.fillStyle = rampShadeColor;
+            ctx.fill();
+
+            // Draw points
+            sorted.forEach((p) => {
+                const x = p.x * innerWidth + margin;
+                const y = margin + innerHeight - p.y * innerHeight;
+
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = rampColor;
+                ctx.stroke();
+
+                // Highlight selected point if this matches the selected index
+                // Note: we need to find the corresponding original index from sorted
+                const originalIndex = points.indexOf(p);
+                if (selectedIndex !== null && originalIndex === selectedIndex) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = selectedColor;
+                    ctx.stroke();
+                }
+            });
+        }
+    }, [points, selectedIndex]);
 
     useEffect(() => {
         drawRamp();
@@ -124,8 +192,10 @@ const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => 
         const innerWidth = width - margin*2;
         const innerHeight = height - margin*2;
 
+        const sorted = [...points].sort((a,b) => a.x - b.x);
+
         // Check if clicked on a point
-        const hitIndex = points.findIndex(p => {
+        const hitIndex = sorted.findIndex(p => {
             const px = p.x * innerWidth + margin;
             const py = margin + innerHeight - p.y * innerHeight;
             const dx = px - pos.x;
@@ -137,23 +207,37 @@ const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => 
             // If right-click and more than two points, remove
             if (e.button === 2 && points.length > 2) {
                 e.preventDefault();
-                const newPoints = [...points];
+                const newPoints = [...points].sort((a,b) => a.x - b.x);
                 newPoints.splice(hitIndex, 1);
                 commitChange(newPoints);
+                setSelectedIndex(null);
             } else {
-                setDraggingIndex(hitIndex);
+                // Left-click select point and potentially drag
+                const originalIndex = points.indexOf(sorted[hitIndex]);
+                if (e.button === 0) {
+                    // Just a left-click: select the point
+                    setSelectedIndex(originalIndex);
+                    // Also allow dragging
+                    setDraggingIndex(originalIndex);
+                }
             }
             return;
         }
 
-        // Add new point on left click
+        // If clicked not on a point:
+        // Add new point on left click if within range
         if (e.button === 0) {
             const nx = (pos.x - margin) / innerWidth;
             const ny = 1 - ((pos.y - margin) / innerHeight);
             if (nx >= 0 && nx <= 1 && ny >= 0 && ny <= 1) {
-                const newPoint = { x: nx, y: ny };
+                const newPoint: ValueRampPoint = { x: nx, y: ny, interp: hou.rampBasis.Linear };
                 const newPoints = [...points, newPoint].sort((a,b) => a.x - b.x);
                 commitChange(newPoints);
+                const idx = newPoints.indexOf(newPoint);
+                setSelectedIndex(idx);
+            } else {
+                // If clicked outside range, deselect any selected point
+                setSelectedIndex(null);
             }
         }
     };
@@ -173,7 +257,7 @@ const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => 
         ny = Math.max(0, Math.min(1, ny));
 
         const newPoints = [...points];
-        newPoints[draggingIndex] = { x: nx, y: ny };
+        newPoints[draggingIndex] = { ...newPoints[draggingIndex], x: nx, y: ny };
         setPoints(newPoints);
     };
 
@@ -188,6 +272,18 @@ const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => 
         e.preventDefault();
     };
 
+    const handleBasisChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (selectedIndex === null) return;
+        const newPoints = [...points];
+        newPoints[selectedIndex] = { ...newPoints[selectedIndex], interp: e.target.value as hou.rampBasis };
+        commitChange(newPoints);
+    };
+    const options = ()=> {
+        const opts = [];
+        for (const basis of Object.values(hou.rampBasis)) 
+            opts.push(<option key={basis} value={basis}>{basis}</option>);
+        return opts;
+    }
     return (
         <div className="ramp-parm" title={template.help} style={{ userSelect: 'none' }}>
             <label>{template.label}</label>
@@ -203,9 +299,12 @@ const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => 
                     onMouseLeave={onMouseUp}
                     onContextMenu={onContextMenu}
                 />
-                {template.show_controls && (
-                    <div className="ramp-controls">
-                        {/* Add UI elements for interpolation type, etc. */}
+                {template.show_controls && selectedIndex !== null && (
+                    <div className="ramp-controls" style={{ marginTop: '10px' }}>
+                        <label>Interpolation:</label>
+                        <select value={points[selectedIndex].interp || hou.rampBasis.Linear} onChange={handleBasisChange}>
+                            { options() }
+                        </select>
                     </div>
                 )}
             </div>
