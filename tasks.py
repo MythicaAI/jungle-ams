@@ -411,13 +411,18 @@ def image_path_action(c, image, action, **kwargs):
     Execute some docker image action against an image path
     or set of image paths
     """
+    # remove preceding and trailing slashes
+    if image.startswith('/'):
+        image = image[1:]
+    if image.endswith('/'):
+        image = image.rstrip('/')
+
     if image in IMAGE_SETS:
         for image_path in IMAGE_SETS[image]:
             action(c, image_path, **kwargs)
     else:
         if image not in IMAGES:
-            c.help(f'{image} not in {IMAGES.keys()}')
-            return
+            raise ValueError(f'{image} not in {IMAGES.keys()}')
         action(c, image, **kwargs)
 
 
