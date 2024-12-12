@@ -91,59 +91,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Docker BuildX
-        uses: docker/setup-buildx-action@v3
+      - uses: actions/setup-python@v5
+        if: ${{ steps.PR.outputs.number != null }}
         with:
-          driver: docker
+          python-version: '3.12'
 
-      - name: Google Auth
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          token_format: 'access_token'
-          project_id: ${{ env.PROJECT_ID }}
-          service_account: ${{ env.SERVICE_ACCOUNT }}
-          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-
-      - name: Download libs-python base image
-        uses: actions/download-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp
-
-      - name: Load images
+      - name: Install base python dependencies
         run: |
-          docker load --input /tmp/libs-python-${{ github.sha }}.tar
+          python -m pip install --upgrade pip poetry flake8
+          python -m pip install -r local_requirements.txt 
 
-      - name: Generate tag
-        id: generate_tag
+      - name: Lint with flake8
+        working-directory: ${{ matrix.image }}
         run: |
-          github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
-      - name: Generate PR image tag
-        id: generate_pr_tag
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Test build ${{ matrix.image }}
         run: |
-          # PR number with 'pr-' prefix
-          PR_TAG="pr-${{ github.event.pull_request.number }}"
-
-          # Short SHA of the commit
-          SHORT_SHA=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
-
-          # Combined tag
-          FULL_TAG="${PR_TAG}-${SHORT_SHA}"
-
-          # Set output for use in later steps
-          echo "image_tag=${FULL_TAG}" >> $GITHUB_OUTPUT
-
-      - name: Build ${{ matrix.image }}
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          context: ${{ matrix.image }}
-          file: ${{ matrix.image }}/Dockerfile
-          tags: |
-            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_pr_tag.outputs.image_tag }}
-          build-args: |
-            NODE_ENV=${{ env.NODE_ENV }}
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-          load: true
+          inv docker-build --image ${{ matrix.image }}
+           
