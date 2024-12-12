@@ -119,16 +119,30 @@ jobs:
         id: generate_tag
         run: |
           github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+      - name: Generate PR image tag
+        id: generate_pr_tag
+        run: |
+          # PR number with 'pr-' prefix
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+
+          # Short SHA of the commit
+          SHORT_SHA=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
+
+          # Combined tag
+          FULL_TAG="${PR_TAG}-${SHORT_SHA}"
+
+          # Set output for use in later steps
+          echo "image_tag=${FULL_TAG}" >> $GITHUB_OUTPUT
 
       - name: Build ${{ matrix.image }}
         id: build
-        uses: docker/build-action@v6
+        uses: docker/build-push-action@v6
         with:
           push: true
           context: ${{ matrix.image }}
           file: ${{ matrix.image }}/Dockerfile
           tags: |
-            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_pr_tag.outputs.image_tag }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
