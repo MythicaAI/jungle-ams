@@ -34,7 +34,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
   const [initialized, setInitialized] = useState(false);
 
-  const inputFlowData = (getFlowData(node.id) || {})[INPUT_FILES] as (GetFileResponse | null)[];
+  const inputFlowData = getFlowData(node.id)[INPUT_FILES] as GetFileResponse[];
 
   const fetchAvailableFiles = useCallback(async () => {
     try {

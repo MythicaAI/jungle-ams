@@ -8,6 +8,7 @@ from ripple.automation import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import OutputFiles
 from pydantic import Field
+from mythica.network import RampBasis
 
 from opentelemetry import trace
 
@@ -18,13 +19,47 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
 
+rampkeys = {"interp", "x", "y"}
+
+def is_ramp_param(param):
+    if isinstance(param, list) and all(isinstance(p, dict) for p in param):
+        if all(rampkeys.issubset(p.keys()) for p in param):
+            return True
+    return False
 
 def apply_params(asset, params: dict):
     for k, v in params.items():
-        parm = asset.parmTuple(k)
-        if parm:
-            val = [v] if not (isinstance(v, tuple) or isinstance(v, list)) else v
-            parm.set(val)
+        if k == 'nonce':
+            continue
+        
+        if is_ramp_param(v):
+            basis = []
+            keys = []
+            values = []
+
+            # Transpose the dicts into arrays
+            for point in v:
+                try:
+                    basis.append(RampBasis[point["interp"]].value)
+                    keys.append(float(point["x"]))
+                    if isinstance(point["y"], float, int):
+                        values.append(float(point["y"]))
+                    else:
+                        values.append(hou.Vector3(point["y"]))
+                except KeyError as e:
+                    raise ValueError(f"Invalid key in ramp parameter: {e}") from e
+                except Exception as e:
+                    raise ValueError(f"Unexpected error processing ramp parameter: {e}") from e
+            
+            # Create and set the ramp
+            ramp = hou.Ramp(basis, keys, values)
+            asset.parm(k).set(ramp)
+        else:
+            parm = asset.parmTuple(k)
+            if parm:
+                val = [v] if not isinstance(v, (tuple, list)) else v
+                parm.set(val)
+
 
 
 def create_inputs(asset, geo, params: dict):

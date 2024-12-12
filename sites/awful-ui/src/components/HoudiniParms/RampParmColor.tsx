@@ -10,13 +10,17 @@ interface ColorRampPoint {
 
 interface ColorRampParmProps {
     template: hou.RampParmTemplate;
+    data: dictionary;
     onChange?: (formData: dictionary) => void;
 }
 
 const pointColor = 'rgb(0,0,0)';
 const selectedColor = 'rgb(255,255,0)';
 
-function getDefaultColorPoints(template: hou.RampParmTemplate): ColorRampPoint[] {
+function getDefaultColorPoints(template: hou.RampParmTemplate,data:dictionary): ColorRampPoint[] {
+    if (data[template.name]) {
+        return data[template.name] as ColorRampPoint[];
+    }
     if (template.default_points && template.default_points.length > 0) {
         const pts =  template.default_points.map(p => ({
             x: p.pos,
@@ -48,11 +52,11 @@ function hexToRgb(hex: string): number[] {
     return [r, g, b];
 }
 
-const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, onChange }) => {
+const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 360, height: 50 };
 
-    const [points, setPoints] = useState<ColorRampPoint[]>(() => getDefaultColorPoints(template));
+    const [points, setPoints] = useState<ColorRampPoint[]>(() => getDefaultColorPoints(template,data));
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 

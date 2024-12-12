@@ -4,12 +4,14 @@ import { dictionary } from '../../types/Automation';
 
 export interface IntParmProps {
     template: hou.IntParmTemplate;
+    data: dictionary;
     onChange: (formData: dictionary) => void; // Callback for value changes
 }
 
-const IntParm: React.FC<IntParmProps> = ({template, onChange}) => {
+const IntParm: React.FC<IntParmProps> = ({template, data, onChange}) => {
     const getDefaultValues = () => {
-        return template.default_value.length === template.num_components
+        return data[template.name] ||
+            template.default_value.length === template.num_components
             ? template.default_value
             : Array<number>(template.num_components).fill(0);
     }

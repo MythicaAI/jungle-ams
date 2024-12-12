@@ -22,6 +22,7 @@ const AwfulUI: React.FC = () => {
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const { 
     onConnect, onDisconnect,
+    onNodesDelete,
     onNodesChange, 
     onDrop, 
     onDragOver, 
@@ -51,6 +52,7 @@ const AwfulUI: React.FC = () => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodesDelete={onNodesDelete}
           onEdgesDelete={onDisconnect}
           onDrop={onDrop}
           onDragOver={onDragOver}

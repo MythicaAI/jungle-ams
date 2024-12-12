@@ -78,7 +78,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
   const [nodeType, setNodeType] = useState<dictionary>({});
 
   //Input (form) data from ParmGroup component
-  const [inputData, setInputData] = useState<dictionary>({nonce: 'nonce'});
+  const [inputData, setInputData] = useState<dictionary>(node.data.inputData || {nonce: 'nonce'});
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
 
@@ -127,14 +127,14 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
   );
   
 
-  const processOutputMessage= useCallback((execData: ExecutionData)  => {
-    const automationOutput = execData.output;
+  const processOutputMessage= useCallback(()  => {
+    const automationOutput = myExecutionData.output;
     if (automationOutput && automationOutput.message) {
       setFlowExecutionMessage(automationOutput.message as string);
     } else {
       setFlowExecutionMessage('');
     } 
-  },[]);
+  },[myExecutionData]);
 
   const processAutomationOutput = useCallback(
     async () => {
@@ -172,7 +172,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
 
       try {
         updateFlowData();
-        processOutputMessage(myExecutionData);
+        processOutputMessage();
       } catch (error) {
         console.error('Error parsing worker output', error);
         myExecutionData.state = NodeState.Error;
@@ -282,8 +282,10 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
   ));
   return (
     <div className={`mythica-node worker`}>
-      <h3>{nodeType['description'] as string}</h3>
-
+      <h3 style={{marginBottom:'2px'}}>{nodeType['description'] as string}</h3>
+      <label>{nodeType['type'] as string}</label>
+      <label>Interface: {myExecutionData.state} </label>
+      <label>Automation: {myExecutionData.state} </label>
       {/* Render handles for FileParameter inputs */}
       <FileInputHandle
         id={INPUT_FILE}
@@ -296,7 +298,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       <p />
 
       {parmTemplateGroup ?
-        <ParmGroup onChange={handleParmChange} group={parmTemplateGroup} />
+        <ParmGroup data={inputData} onChange={handleParmChange} group={parmTemplateGroup} />
         : <></>
       }
       {outputs}

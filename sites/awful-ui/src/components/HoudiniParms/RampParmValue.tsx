@@ -10,11 +10,16 @@ interface ValueRampPoint {
 
 interface ValueRampParmProps {
     template: hou.RampParmTemplate;
+    data: dictionary;
     onChange?: (formData: dictionary) => void;
 }
 
 // Default to a simple 2-point ramp if none provided
-function getDefaultPoints(template: hou.RampParmTemplate): ValueRampPoint[] {
+function getDefaultPoints(template: hou.RampParmTemplate, data: dictionary): ValueRampPoint[] {
+    if (data[template.name]) {
+        return data[template.name] as ValueRampPoint[];
+    }
+
     if (template.default_points && template.default_points.length > 0) {
         return template.default_points.map(p => ({
             x: p.pos,
@@ -34,11 +39,11 @@ const selectedColor = 'rgb(255,255,0)';
 const rampBackgroundColor = 'rgb(68,68,68)';
 const rampLineColor = 'rgb(102,102,102)';
 
-const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, onChange }) => {
+const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 360, height: 150 };
 
-    const [points, setPoints] = useState<ValueRampPoint[]>(() => getDefaultPoints(template));
+    const [points, setPoints] = useState<ValueRampPoint[]>(() => getDefaultPoints(template,data));
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 

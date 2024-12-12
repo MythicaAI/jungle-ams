@@ -5,10 +5,11 @@ import { dictionary } from '../../types/Automation';
 
 export interface FolderParmProps {
     template: hou.FolderParmTemplate;
+    data: dictionary;
     onChange: (formData: dictionary) => void; // Callback for value changes
 }
 
-const FolderParm: React.FC<FolderParmProps> = ({template, onChange}) => {
+const FolderParm: React.FC<FolderParmProps> = ({template, data, onChange}) => {
 
     // Render based on folder_type
     if (template.folder_type === 'Tabs') {
@@ -17,7 +18,7 @@ const FolderParm: React.FC<FolderParmProps> = ({template, onChange}) => {
                 <div className="folder-content">
                     {template.parm_templates.map((parmTemplate, index) => (
                         <div key={template.name + index} className="parm-item">
-                            <ParmFactory parmTemplate={parmTemplate} onChange={onChange} />
+                            <ParmFactory data={data} parmTemplate={parmTemplate} onChange={onChange} />
                         </div>
                     ))}
                 </div>
@@ -30,7 +31,7 @@ const FolderParm: React.FC<FolderParmProps> = ({template, onChange}) => {
                 <div className="folder-content">
                     {template.parm_templates.map((parmTemplate, index) => (
                         <div key={template.name + index} className="parm-item">
-                            <ParmFactory parmTemplate={parmTemplate} onChange={onChange} />
+                            <ParmFactory data={data} parmTemplate={parmTemplate} onChange={onChange} />
                         </div>
                     ))}
                 </div>
@@ -44,7 +45,7 @@ const FolderParm: React.FC<FolderParmProps> = ({template, onChange}) => {
             <div className="folder-content">
                 {template.parm_templates.map((parmTemplate, index) => (
                     <div key={template.name + index} className="parm-item">
-                        <ParmFactory parmTemplate={parmTemplate} onChange={onChange} />
+                        <ParmFactory data={data} parmTemplate={parmTemplate} onChange={onChange} />
                     </div>
                 ))}
             </div>
