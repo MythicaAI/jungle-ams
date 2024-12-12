@@ -1,13 +1,12 @@
-name: test-build-automation
+name: automation-image-tests
 on:
   pull_request:
     types:
-      - closed
-    branches:
-      - main
+      - opened
+      - synchronize
     paths:
       - 'automation/**'
-      - '.github/workflows/test-build-automation'
+      - '.github/workflows/automation-image-tests.yaml'
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -37,10 +36,6 @@ jobs:
             automation/blender/:
               - 'libs/python/**'
               - 'automation/blender/**'
-            api/gcs-proxy/:
-              - 'libs/python/**'
-              - 'automation/genai/**
-
   build-base:
     runs-on: ubuntu-latest
     needs:
@@ -121,6 +116,11 @@ jobs:
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
 
+      - name: Generate tag
+        id: generate_tag
+        run: |
+          github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+
       - name: Build ${{ matrix.image }}
         id: build
         uses: docker/build-action@v6
@@ -128,8 +128,6 @@ jobs:
           push: true
           context: ${{ matrix.image }}
           file: ${{ matrix.image }}/Dockerfile
-          tags: |
-            ${{ env.AR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
