@@ -505,7 +505,7 @@ description = "Cryptographic, location aware ID conversions"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 base58 = "2.1.1"
@@ -1544,4 +1544,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.10"
-content-hash = "b64c5d4cc00b3f7c2bb0b55fe806eac65108e2de968a596e1537e131303954a3"
+content-hash = "ef84439426e61f9b3d437ed20f4961d38f579d645505861c3f41476176f60eae"

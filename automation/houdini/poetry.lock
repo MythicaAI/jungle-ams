@@ -405,7 +405,7 @@ description = "Cryptographic, location aware ID conversions"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 base58 = "2.1.1"
@@ -1424,12 +1424,12 @@ description = "Library for the popogation of distributed parameterized jobs and 
 optional = false
 python-versions = "<4.0,>=3.10"
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 aiohttp = "3.10.10"
 base58 = "2.1.1"
-cryptid = {path = "../cryptid", develop = true}
+cryptid = {path = "../cryptid"}
 cryptography = "43.0.3"
 nats-py = "^2.9.0"
 pydantic = "2.9.2"
@@ -1695,4 +1695,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c3de6ad0e0432162ce80deca27dbf46891fc71f157cb63960532e04e7551a624"
+content-hash = "fd73abbed0e0387824fafaff062c3f2ed8cdc20d0f1cfcfa37389820cb97e869"
