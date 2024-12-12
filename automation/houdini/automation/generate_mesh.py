@@ -102,7 +102,7 @@ def generate_mesh_impl(
     outputs:list[str] = []
         
     if format == 'fbx':
-        outputs.append(os.path.join(working_dir, f"{output_file_name}_{index}.fbx"))
+        outputs.append(os.path.join(working_dir, f"{output_file_name}.fbx"))
 
         fbx_node = out.createNode("filmboxfbx","fbx_node")
         fbx_node.parm("sopoutput").set(output_file_path)
@@ -113,7 +113,7 @@ def generate_mesh_impl(
         log.debug("Exporting mesh completed")
     elif format == 'glb':
         # gltf vs glb export is inferred from the output extension
-        outputs.append(os.path.join(working_dir, f"{output_file_name}_{index}.glb"))
+        outputs.append(os.path.join(working_dir, f"{output_file_name}.glb"))
 
         gltf_node = out.createNode("gltf","gltf_node")
         gltf_node.parm("file").set(output_file_path)
