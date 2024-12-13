@@ -10,6 +10,7 @@ type AwfulFlowContextType = {
   edges: Edge[];
   onEdgesChange: (edges: EdgeChange<Edge>[]) => void;
   onNodesChange: (nodes: NodeChange<Node>[]) => void;
+  onNodesDelete: (nodes: Node[]) => void;
   getFlowData: (nodeId: string) => {[key: string]:GetFileResponse[]};
   setFlowData: (nodeId: string, key: string, value: GetFileResponse[]) => void;
   setNodeType: Dispatch<SetStateAction<string | null>>;

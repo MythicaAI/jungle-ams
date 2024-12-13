@@ -8,7 +8,8 @@ workers = [
         "path": '/mythica/hello_world',
         "provider": hello_world_api,
         "inputModel": HelloWorldRequest,
-        "outputModel": HelloWorldResponse
+        "outputModel": HelloWorldResponse,
+        "hidden": True
     },
 ]
 

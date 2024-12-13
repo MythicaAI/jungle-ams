@@ -1,7 +1,15 @@
 import { useEffect } from 'react';
 import MonacoEditor, { loader } from '@monaco-editor/react';
 
-const CodeViewer = ({ fileUrl, style, language }: { fileUrl: string, style: React.CSSProperties, language: string }) => {
+const CodeViewer = ({
+  fileUrl,
+  style,
+  language,
+}: {
+  fileUrl: string;
+  style: React.CSSProperties;
+  language: string;
+}) => {
   useEffect(() => {
     loader.init().then((monaco) => {
       const uri = monaco.Uri.parse(fileUrl);
@@ -12,7 +20,7 @@ const CodeViewer = ({ fileUrl, style, language }: { fileUrl: string, style: Reac
           uri // URI for the remote file
         );
       }
-  
+
       // Fetch the file and update the model directly
       fetch(fileUrl)
         .then((response) => {
@@ -41,7 +49,6 @@ const CodeViewer = ({ fileUrl, style, language }: { fileUrl: string, style: Reac
         });
     });
   }, [fileUrl, language]);
-  
 
   return (
     <div style={{ ...style }}>
