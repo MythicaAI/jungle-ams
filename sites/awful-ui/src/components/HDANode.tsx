@@ -19,7 +19,6 @@ type InterfaceExecutionData = ExecutionData & {
       help: string;
       inputs: number;
       outputs: number;
-      defaults: dictionary;
       code: string;
       category: string;
       namespace: string;
