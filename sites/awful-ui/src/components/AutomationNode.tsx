@@ -371,7 +371,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   );
 
   const min = 640;
-  const delta = 10;
+  const delta = 20;
 
   return (
     <div
@@ -383,7 +383,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       }}
     >
       {isScriptNode && (
-        <NodeResizer minHeight={min + delta} minWidth={min + delta} />
+        <NodeResizer minHeight={min + delta} minWidth={min + 2*delta} />
       )}
 
       <div

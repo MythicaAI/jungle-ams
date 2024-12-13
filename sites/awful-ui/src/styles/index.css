@@ -85,7 +85,7 @@ body {
 
 .mythica-node {
   border: 1px solid #666 !important;
-  padding: 5px;
+  padding: 10px 20px 10px 20px;
   border-radius: 5px;
   background: white;
 }
