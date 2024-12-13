@@ -8,8 +8,11 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
 
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
+from ripple.models.contexts import FilePurpose
+from ripple.models.sessions import SessionProfile
 from sqlmodel import and_, select, update
 
 import db.index as db_index
@@ -22,8 +25,6 @@ from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from ripple.models.contexts import FilePurpose
-from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
 from routes.files.files import delete_by_id
@@ -164,7 +165,8 @@ async def store_and_attach_package(
         asset_id: str,
         version_str: str,
         files: list[UploadFile] = File(...),
-        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
+        storage: StorageClient = Depends(storage_client),
+        profile: SessionProfile = Depends(session_profile)) -> UploadResponse:
     """Provide a package upload to a specific asset and version"""
     if not files:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
@@ -186,7 +188,7 @@ async def store_and_attach_package(
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
-        ctx = upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, avr.author_id, file)
+        ctx = await upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, profile, file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
