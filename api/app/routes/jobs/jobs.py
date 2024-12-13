@@ -5,7 +5,6 @@ from http import HTTPStatus
 from typing import Any
 from uuid import uuid4
 
-import asyncio
 from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
 from cryptid.location import location
