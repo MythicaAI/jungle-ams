@@ -131,7 +131,7 @@ def add_job_requested_event(
         session: Session,
         job_seq: int,
         job_def,
-        params: str,
+        params: dict,
         profile_seq: int,
         auth_token: str):
     """Add a new event that triggers job processing"""
@@ -159,7 +159,6 @@ def add_job_requested_event(
 
 async def add_job_nats_event(
         job_seq: int,
-        profile_seq: int,
         auth_token: str,
         job_type: str,
         params: ParameterSet):
@@ -220,7 +219,6 @@ async def create(
 
             await add_job_nats_event(
                 job_seq,
-                profile.profile_seq,
                 profile.auth_token,
                 job_def.job_type,
                 request.params)
