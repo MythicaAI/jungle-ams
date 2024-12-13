@@ -12,8 +12,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
-from ripple.automation import NatsAdapter, WorkerRequest
-from ripple.models.params import ParameterSet, ParameterSpec
+from ripple.automation import NatsAdapter, WorkerRequest, process_guid
+from ripple.models.params import ParameterSet, ParameterSpec, FileParameter
+from ripple.models.sessions import SessionProfile
 from ripple.runtime.params import repair_parameters, validate_params
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
@@ -109,6 +110,23 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
         return JobDefinitionModel(job_def_id=job_def_id, **job_def.model_dump())
 
 
+@router.get('/def_from_file/{file_id}')
+async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_profile)) -> str:
+    parameter_set = ParameterSet(
+        hda_file = FileParameter(file_id=file_id)
+    )
+    work_guid = str(uuid4())
+    event = WorkerRequest(
+        process_guid=process_guid,
+        work_guid=work_guid,
+        path='/mythica/generate_job_defs',
+        data=parameter_set.model_dump(),
+        auth_token=profile.auth_token)
+    nats = NatsAdapter()
+    asyncio.create_task(nats.post("houdini", event.model_dump()))
+    return work_guid
+
+
 def add_job_requested_event(
         session: Session,
         job_seq: int,
@@ -139,7 +157,7 @@ def add_job_requested_event(
     return event_result
 
 
-def add_job_nats_event(
+async def add_job_nats_event(
         job_seq: int,
         profile_seq: int,
         auth_token: str,
@@ -149,7 +167,8 @@ def add_job_nats_event(
     [subject, path] = job_type.split("::")
 
     event = WorkerRequest(
-        work_id=str(uuid4()),
+        process_guid=process_guid,
+        work_guid=str(uuid4()),
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
@@ -157,7 +176,7 @@ def add_job_nats_event(
     )
 
     nats = NatsAdapter()
-    asyncio.create_task(nats.post(subject, event.model_dump()))
+    await nats.post(subject, event.model_dump())
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
@@ -199,7 +218,7 @@ async def create(
             event_id = event_seq_to_id(event_result.inserted_primary_key[0])
             session.commit()
 
-            add_job_nats_event(
+            await add_job_nats_event(
                 job_seq,
                 profile.profile_seq,
                 profile.auth_token,
@@ -305,3 +324,4 @@ async def set_complete(
             span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
             span.set_status(Status(StatusCode.OK))
             session.commit()
+

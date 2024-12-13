@@ -38,6 +38,10 @@ spec:
               value: "true"
             - name: NATS_ENDPOINT
               value: nats://nats.nats:4222
+            - name: MYTHICA_ENVIRONMENT
+              value: production
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
           resources:
             limits:
               cpu: 500m

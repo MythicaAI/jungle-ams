@@ -31,7 +31,7 @@ RUN python -m pip install \
 # Install everything into the python site-packages, these
 # will be referenced later to build the houdini site-packages
 RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main --no-root
+RUN poetry install --only main,infra --no-root --no-cache
 
 # Build the primary image from upstream hbuild
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
@@ -42,6 +42,8 @@ RUN apt-get update && apt-get install -y wget systemd \
 
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"
+ENV MYTHICA_ENVIRONMENT=dev
+ENV MYTHICA_LOCATION=localhost
 
 # Make sure that hython is in the path
 ENV PATH=/opt/houdini/build/bin:$PATH

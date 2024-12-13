@@ -1,15 +1,22 @@
 from http import HTTPStatus
 
+import asyncio
+from uuid import uuid4
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import and_, select, update
 
+from config import app_config
 from cryptid.cryptid import file_id_to_seq, profile_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from ripple.automation import NatsAdapter, WorkerRequest
 from ripple.models.contexts import FilePurpose
+from ripple.models.params import ParameterSet, FileParameter
+from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile, session_profile_id
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
 router = APIRouter(prefix="/files", tags=["files"])
@@ -78,3 +85,4 @@ async def delete_by_id(file_id, profile_id: str = Depends(session_profile_id)):
             session.commit()
         except IntegrityError as e:
             raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
+
