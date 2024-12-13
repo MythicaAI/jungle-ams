@@ -17,7 +17,7 @@ body {
 
 .sidebar {
   border-left: 1px solid #1a192b;
-  background: cadetblue;
+  background:#b6d3f0;
 }
 
 .dndflow {
@@ -38,10 +38,10 @@ body {
 
 .dndflow .dndnode {
   height: 20px;
-  padding: 8px;
+  padding: 5px;
   border: 1px solid #b6d3f0;
-  border-radius: 6px;
-  margin-bottom: 10px;
+  border-radius: 5px;
+  margin-bottom: 5px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -84,14 +84,14 @@ body {
 }
 
 .mythica-node {
-  border: 1px solid #666;
+  border: 1px solid #666 !important;
   padding: 5px;
   border-radius: 5px;
   background: white;
 }
 
 .mythica-node.selected {
-  border: 1px solid #0b6bcb;
+  box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.5);
 }
 
 .mythica-node.script {
