@@ -55,7 +55,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             workers.map(async (worker) => {
                 try {
                     const response = await axios.post(BASE_URL, {
-                        work_id: "",  // Generate or retrieve unique work_id if needed
+                        work_guid: "",  // Generate or retrieve unique work_guid if needed
                         channel: worker,
                         path: "/mythica/workers",
                         env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
@@ -130,7 +130,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (inputData.script) inputData.env = env
             // Send request to the backend
             const response = await axios.post(BASE_URL, {
-                work_id: nodeId,
+                work_guid: nodeId,
                 channel: worker,
                 env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
                 path: path,

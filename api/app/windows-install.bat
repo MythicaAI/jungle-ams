@@ -6,7 +6,7 @@ del /s /q .venv
 echo Creating new virtual env for hpython based on the version installed in Houdini
 %PYTHON_EXE% -m venv .venv
 poetry env use .venv\Scripts\python.exe
-poetry install --with dev --no-root --all-extras --no-cache --sync
+poetry install --only main --no-root --all-extras --no-cache
 
 : .venv\Scripts\activate.bat
 

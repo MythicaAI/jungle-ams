@@ -11,6 +11,11 @@ import warnings
 
 from pydantic import BaseModel, model_validator
 from typing import Callable, Type, Optional, Dict, Any, Literal
+
+import cryptid.location
+
+from ripple.auth.generate_token import decode_token
+from ripple.config import ripple_config
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem, OutputFiles, Progress, Message, JobDefinition
 from ripple.runtime.params import resolve_params
@@ -31,22 +36,21 @@ log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
 
-def formatException(e):
+process_guid = str(uuid4())
+
+def format_exception(e):
     return f" {str(e)}\n{traceback.format_exc()}"
 
 NATS_URL= os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
 
-def get_api_url(env):
-    if (env == 'staging'):
-        return 'https://api-staging.mythica.gg/v1'
-    else:
-        return 'https://api.mythica.ai/v1'
 
 class NatsAdapter():
     def __init__(self, nats_url=NATS_URL) -> None:
         self.nats_url = nats_url
         self.listeners = {}
         self.nc = None  # Single NATS client connection
+        self.env = os.getenv('MYTHICA_ENVIRONMENT', 'debug')
+        self.location = cryptid.location.location()
 
     async def _connect(self):
         """Establish a connection to NATS."""
@@ -64,21 +68,39 @@ class NatsAdapter():
             self.nc = None
             log.info("Disconnected from NATS")
 
-    async def post(self, subject: str, data: dict) -> None:
-        """Post data to NATS on subject. """
-        await self._connect()                
+    def _scoped_subject(self, subject: str) -> str:
+        """Return a subject that is scoped to the environment and location"""
+        return f"{subject}.{self.env}.{self.location}"
+
+    def _scoped_subject_to(self, subject: str, entity: str) -> str:
+        """Return a subject that is scoped to a scoped entity"""
+        return f"{subject}.{self.env}.{self.location}.{entity}"
+
+    async def _internal_post(self, subject: str, data: dict) -> None:
+        await self._connect()
         try:
-            log.debug(f"Sending to NATS: {subject} - {data}" )
             await self.nc.publish(subject, json.dumps(data).encode())
-            log.debug(f"Sent to NATS")
+            log.info(f"Posted: {subject} - {data}")
         except Exception as e:
-            log.error(f"Sending to NATS failed: {subject} - {data} - {formatException(e)}")
+            log.error(f"Sending to NATS failed: {subject} - {data} - {format_exception(e)}")
         finally:
             if not self.listeners:
                 await self._disconnect()
 
+    async def post(self, subject: str, data: dict) -> None:
+        """Post data to NATS on subject. """
+        await self._internal_post(self._scoped_subject(subject), data)
+
+    async def post_to(self, subject: str, entity: str, data: dict) -> None:
+        await self._internal_post(self._scoped_subject_to(subject, entity), data)
 
     async def listen(self, subject: str, callback: callable):
+        await self._internal_listen(self._scoped_subject(subject), callback)
+
+    async def listen_as(self, subject: str, entity: str, callback: callable):
+        await self._internal_listen(self._scoped_subject_to(subject, entity), callback)
+
+    async def _internal_listen(self, subject: str, callback: callable):
         if subject in self.listeners:
             log.warning(f"NATS listener already active for subject {subject}")
             return
@@ -92,18 +114,17 @@ class NatsAdapter():
                 log.info(f"Received message on {subject}: {payload}")
                 await callback(payload)
             except Exception as e:
-                log.error(f"Error processing message on {subject}: {formatException(e)}")
+                log.error(f"Error processing message on {subject}: {format_exception(e)}")
 
         try:
-        
             # Wait for the response with a timeout (customize as necessary)
             log.debug("Setting up NATS response listener")
-            listener = await self.nc.subscribe(subject,queue="worker", cb=message_handler)
+            listener = await self.nc.subscribe(subject, queue="worker", cb=message_handler)
             self.listeners[subject] = listener
-            log.info("NATS response listener set up")
+            log.info(f"NATS subscribed to {subject}")
 
         except Exception as e:
-            log.error(f"Error setting up listener for subject {subject}: {formatException(e)}")
+            log.error(f"Error setting up listener for subject {subject}: {format_exception(e)}")
             raise e
 
     async def unlisten(self, subject: str):
@@ -139,12 +160,12 @@ class RestAdapter():
             log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
             return None
 
-    def post(self, endpoint: str,  data: str, token: str) -> Optional[str]:
+    def post(self, endpoint: str, json_data: Any, token: str) -> Optional[str]:
         """Post data to an endpoint synchronously. """
-        log.debug(f"Sending to Endpoint: {endpoint} - {data}" )
+        log.debug(f"posting[{endpoint}]: {json_data}" )
         response = requests.post(
             endpoint, 
-            json=data, 
+            json=json_data,
             headers={
                 "Content-Type": "application/json",
                 "Authorization": "Bearer %s" % token
@@ -154,7 +175,7 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
+            log.error(f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}")
             return None
 
     def post_file(self, endpoint: str, file_data: list, token: str) -> Optional[str]:
@@ -179,76 +200,72 @@ class WorkerModel(BaseModel):
     outputModel: Type[ProcessStreamItem]
     hidden: bool = False
 
+
 class WorkerRequest(BaseModel):
-    """Contract for requests for work"""
-    work_id: str
+    """
+    Contract for requests for work, results will be published back to
+    result subject of the process guid.
+    """
+    process_guid: str
+    work_guid: str
     job_id: Optional[str] = None
-    profile_id: Optional[str] = None
     auth_token: Optional[str] = None
-    env: Literal['staging','production'] = 'production'
     path: str
     data: Dict
 
-    @model_validator(mode='after')
-    def warn_deprecated_fields(self):
-        if self.profile_id is not None:
-            warnings.warn(
-                "'profile_id' is deprecated and will be removed in the future. Use auth_token instead.",
-                DeprecationWarning
-            )
-        return self
-class WorkerResponse(BaseModel):
-    work_id: str
-    payload: dict
-
 
 class ResultPublisher:
+    """"
+    Object that encapsulates streaming results back for a work request
+    """
     request: WorkerRequest
     nats: NatsAdapter
     rest: RestAdapter
     
-    def __init__(self, request: WorkerRequest, nats: NatsAdapter, rest: RestAdapter) -> None:
+    def __init__(self, request: WorkerRequest, nats_adapter: NatsAdapter, rest: RestAdapter) -> None:
         self.request = request
-        self.nats = nats
+        self.profile = decode_token(request.auth_token)
+        self.nats = nats_adapter
         self.rest = rest
+        self.api_url = ripple_config().api_base_uri
         
     #Callback for reporting back. 
-    def result(self, item:ProcessStreamItem, complete=False):
-
-        # Poplulate context
-        item.process_guid = str(uuid4())
-        item.job_id = self.request.job_id if self.request.job_id is not None else ""
-
-        api_url = get_api_url(self.request.env)
+    def result(self, item: ProcessStreamItem, complete: bool=False):
+        item.process_guid = process_guid
+        item.correlation = self.request.work_guid
+        item.job_id = self.request.job_id or ""
 
         # Upload any references to local data
-        self._publish_local_data(item, api_url)
+        self._publish_local_data(item, self.api_url)
 
-
-
-        JOB_RESULT_ENDPOINT=f"{api_url}/jobs/results/"
-        JOB_COMPLETE_ENDPOINT=f"{api_url}/jobs/complete/"
+        job_result_endpoint=f"{self.api_url}/jobs/results"
+        job_complete_endpoint=f"{self.api_url}/jobs/complete"
 
         # Publish results
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
 
         task = asyncio.create_task(
-            self.nats.post(
-                "result", 
-                WorkerResponse(work_id=self.request.work_id, payload=item.model_dump()).model_dump()
-            )
-        )
+            self.nats.post_to(
+                "result",
+                self.request.process_guid,
+                item.model_dump()))
         
         task.add_done_callback(_get_error_handler())
         if self.request.job_id:
             if complete:
-                self.rest.post(f"{JOB_COMPLETE_ENDPOINT}/{self.request.job_id}", "", self.request.auth_token)
+                self.rest.post(
+                    f"{job_complete_endpoint}/{self.request.job_id}",
+                    json_data={},
+                    token=self.request.auth_token)
             else:
                 data = {
                     "created_in": "automation-worker",
                     "result_data": item.model_dump()
                 }
-                self.rest.post(f"{JOB_RESULT_ENDPOINT}/{self.request.job_id}", data, self.request.auth_token)
+                self.rest.post(
+                    f"{job_result_endpoint}/{self.request.job_id}",
+                    json_data=data,
+                    token=self.request.auth_token)
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
@@ -257,14 +274,13 @@ class ResultPublisher:
             if not os.path.exists(file_path):
                 return None
 
-            file_id = None
             try:
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
                     response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token)
                     file_id = response['files'][0]['file_id'] if response else None
-                return file_id
+                    return file_id
             finally:
                 os.remove(file_path)
 
@@ -280,13 +296,6 @@ class ResultPublisher:
 
         #TODO: Report errors
         if isinstance(item, OutputFiles):
-            
-            if self.request.auth_token is None and self.request.profile_id is not None:
-                url = f"{api_url}/sessions/direct/{self.request.profile_id}"
-                response = self.rest.get(url)
-                self.request.auth_token = response['token'] if response else None
-                warnings.warn("Using deprecated 'profile_id' to get auth token. Use 'auth_token' instead.", DeprecationWarning)
-
             for key, files in item.files.items():
                 for index, file in enumerate(files):
                     file_id = upload_file(file)
@@ -294,7 +303,7 @@ class ResultPublisher:
 
         elif isinstance(item, JobDefinition):
             job_def_id = upload_job_def(item)
-            if job_def_id != None:
+            if job_def_id is not None:
                 item.job_def_id = job_def_id
 
 
@@ -302,7 +311,7 @@ def _get_error_handler():
     def handler(task):
         e = task.exception()
         if e:
-            log.error(f"Error publishing result: {formatException(e)}")
+            log.error(f"Error publishing result: {format_exception(e)}")
     return handler
 
 class Worker:
@@ -354,7 +363,8 @@ class Worker:
             else:
                 raise ValueError("RequestModel not found in script.")
 
-            resolve_params(get_api_url(request.env), doer.tmpdir, request_model)
+            api_url = ripple_config().api_base_uri
+            resolve_params(api_url, doer.tmpdir, request_model)
 
             # Run the automation function
             if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
@@ -400,12 +410,12 @@ class Worker:
                     }
                 })
             except Exception as e:
-                responder.result(Message(message=f"Script Interface Generation Error: {formatException(e)}"))
+                responder.result(Message(message=f"Script Interface Generation Error: {format_exception(e)}"))
 
             return(Worker.CatalogResponse(workers={}))
         return impl
     
-    def start(self,subject: str, workers:list[dict]) -> None:
+    def start(self, subject: str, workers: list[dict]) -> None:
         path='/mythica/workers'
         workers.append({
             'path':path,
@@ -449,7 +459,7 @@ class Worker:
                 log.debug(f"Registered worker for '{model.path}'")
             log.debug(f'End Registering workers')
         except Exception as e:
-            log.error(f'Failed to register workers: {formatException(e)}')
+            log.error(f'Failed to register workers: {format_exception(e)}')
 
     def _get_executor(self):
         """
@@ -464,20 +474,18 @@ class Worker:
                 ret_data = None
                 span.set_attribute("worker.started", datetime.now(timezone.utc).isoformat())
                 try:
-                    payload = WorkerRequest(**json_payload)
-                    trace_data = {"work_id": payload.work_id,
-                                  "job_id": payload.job_id if payload.job_id else "",
-                                  "profile_id": payload.profile_id if payload.profile_id else "",
-                                  "env": payload.env}
+                    work_request = WorkerRequest(**json_payload)
+                    trace_data = {"work_guid": work_request.work_guid,
+                                  "job_id": work_request.job_id if work_request.job_id else "" }
                     span.set_attributes(trace_data)
-                    if len(payload.data) == 1 and 'params' in payload.data:
+                    if len(work_request.data) == 1 and 'params' in work_request.data:
                         # If it only contains "params", replace payload.data with its content
-                        payload.data = payload.data['params']
+                        work_request.data = work_request.data['params']
 
-                    log_str = f"work_id:{payload.work_id}, work:{payload.path}, job_id: {payload.job_id}, data: {payload.data}"
+                    log_str = f"work_guid: {work_request.work_guid}, work:{work_request.path}, job_id: {work_request.job_id}, data: {work_request.data}"
 
                 except Exception as e:
-                    msg=f'Validation error - {json_payload} - {formatException(e)}'
+                    msg=f'Validation error - {json_payload} - {format_exception(e)}'
                     log.error(msg)
                     span.set_status(opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg))
                     await doer.nats.post("result", Message(message=msg).model_dump())
@@ -488,14 +496,15 @@ class Worker:
                 try:
                     carrier = {}
                     TraceContextTextMapPropagator().inject(carrier)
-                    publisher = ResultPublisher(payload, self.nats, self.rest)
+                    publisher = ResultPublisher(work_request, self.nats, self.rest)
                     publisher.result(Progress(progress=0))
 
                     with tempfile.TemporaryDirectory() as tmpdir:
                         doer.tmpdir = tmpdir
-                        worker = doer.workers[payload.path] 
-                        inputs = worker.inputModel(**payload.data)
-                        resolve_params(get_api_url(payload.env), tmpdir, inputs)
+                        worker = doer.workers[work_request.path]
+                        inputs = worker.inputModel(**work_request.data)
+                        api_url = ripple_config().api_base_uri
+                        resolve_params(api_url, tmpdir, inputs)
                         with tracer.start_as_current_span("job.execution") as job_span:
                             job_span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
                             ret_data: StreamItemUnion = worker.provider(inputs, publisher)
@@ -506,7 +515,7 @@ class Worker:
                     publisher.result(Progress(progress=100), complete=True)
                     telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.OK)
                 except Exception as e:
-                    msg=f"Executor error - {log_str} - {formatException(e)}"
+                    msg=f"Executor error - {log_str} - {format_exception(e)}"
                     telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg)
                     log.error(msg)
                     span.record_exception(e)
@@ -517,7 +526,7 @@ class Worker:
                     if ret_data and ret_data.job_id:
                         span.set_attribute("job_id", ret_data.job_id)
                     span.set_status(telemetry_status)
-                    log.info("Job finished %s", payload.work_id)
+                    log.info("Job finished %s", work_request.work_guid)
 
         return implementation
 

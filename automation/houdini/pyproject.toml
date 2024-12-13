@@ -11,14 +11,19 @@ repository = "https://github.com/MythicaAI/infra"
 python = "^3.11"
 pydantic = "2.9.2"
 pydantic-core = "2.23.4"
-ripple = { path = "../../libs/python/ripple" }
-cryptid = { path = "../../libs/python/cryptid" }
+pydantic-settings = "^2.3.0"
 opentelemetry-instrumentation = "^0.48b0"
 opentelemetry-exporter-otlp = "^1.27.0"
 opentelemetry-distro = "^0.48b0"
 opentelemetry-api = "^1.27.0"
 opentelemetry-sdk = "^1.27.0"
 
+# use this group to install without dev redirects
+[tool.poetry.group.infra.dependencies]
+ripple = { path = "../../libs/python/ripple" }
+cryptid = { path = "../../libs/python/cryptid" }
+
+# use thie group to install the local dev dependencies
 [tool.poetry.group.dev.dependencies]
 ripple = { path = "../../libs/python/ripple", develop = true }
 cryptid = { path = "../../libs/python/cryptid", develop = true }

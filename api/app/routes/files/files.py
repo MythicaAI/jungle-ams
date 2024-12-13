@@ -78,3 +78,4 @@ async def delete_by_id(file_id, profile_id: str = Depends(session_profile_id)):
             session.commit()
         except IntegrityError as e:
             raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
+

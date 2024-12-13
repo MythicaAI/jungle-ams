@@ -1,24 +1,24 @@
-import asyncio
+import sys
 import logging
 from typing import Tuple
 
 from sqlmodel import insert
 from uuid import uuid4
 
-from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
+from cryptid.cryptid import event_seq_to_id, file_seq_to_id
 from cryptid.location import location
 from context import RequestContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
-from ripple.automation import NatsAdapter, WorkerRequest
+from ripple.automation import NatsAdapter, WorkerRequest, process_guid
 from ripple.models.params import FileParameter, ParameterSet
 
 
 log = logging.getLogger(__name__)
 
 
-def update(ctx: RequestContext) -> Tuple[str, str]:
+async def update(ctx: RequestContext) -> Tuple[str, str]:
     """Update the database index for the upload"""
     with get_session() as session:
         content_type = f"application/{ctx.extension}"
@@ -29,7 +29,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         # create a new upload
         file_content_result = session.exec(insert(FileContent).values(
             {'name': ctx.filename,
-             'owner_seq': profile_id_to_seq(ctx.profile_id),
+             'owner_seq': ctx.profile.profile_seq,
              'locators': locators,
              'purpose': ctx.purpose,
              'content_hash': ctx.content_hash,
@@ -41,7 +41,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         # Create a new pipeline event
         job_data = {
             'file_id': file_id,
-            'profile_id': ctx.profile_id,
+            'profile_id': ctx.profile.profile_id,
             'locators': locators,
             'content_type': content_type,
             'content_hash': ctx.content_hash,
@@ -52,7 +52,7 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         event_result = session.exec(insert(Event).values(
             event_type=f"file_uploaded:{ctx.extension}",
             job_data=job_data,
-            owner_seq=profile_id_to_seq(ctx.profile_id),
+            owner_seq=ctx.profile.profile_seq,
             created_in=loc,
             affinity=loc))
         session.commit()
@@ -60,18 +60,27 @@ def update(ctx: RequestContext) -> Tuple[str, str]:
         event_id = event_seq_to_id(event_seq)
 
         # Create a new NATS event
-        if ctx.extension in ('hda', 'hdalc'):
+        if should_post_to_nats(ctx):
             parameter_set = ParameterSet(
                 hda_file = FileParameter(file_id=file_id)
             )
 
             event = WorkerRequest(
-                work_id=str(uuid4()),
+                process_guid=process_guid,
+                work_guid=str(uuid4()),
+                auth_token=ctx.profile.auth_token,
                 path='/mythica/generate_job_defs',
                 data=parameter_set.model_dump()
             )
 
             nats = NatsAdapter()
-            asyncio.create_task(nats.post("houdini", event.model_dump()))
+            await nats.post("houdini", event.model_dump())
 
     return file_id, event_id
+
+def should_post_to_nats(ctx: RequestContext) -> bool:
+    if not ctx.extension in ('hda', 'hdalc'):
+        return False
+    if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+        return False
+    return True
