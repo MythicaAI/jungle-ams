@@ -17,7 +17,7 @@ from assets.repo import convert_version_input, process_join_results, select_asse
 from config import app_config
 from content.validate_filename import validate_filename
 from context import RequestContext
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_seq_to_id
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
 from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent

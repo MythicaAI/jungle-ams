@@ -1,3 +1,4 @@
+import sys
 import logging
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -77,6 +78,11 @@ class JobResultResponse(BaseModel):
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
+def disable_nats(context_str):
+    if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+        log.info(f"skipping post to NATS in test {context_str}")
+        return True
+    return False
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
@@ -112,6 +118,10 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
 
 @router.get('/def_from_file/{file_id}')
 async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_profile)) -> str:
+    """Convert a file to a job definition"""
+    if disable_nats(f"def_from_file: {file_id}"):
+        return ""
+
     parameter_set = ParameterSet(
         hda_file = FileParameter(file_id=file_id)
     )
@@ -123,7 +133,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         data=parameter_set.model_dump(),
         auth_token=profile.auth_token)
     nats = NatsAdapter()
-    asyncio.create_task(nats.post("houdini", event.model_dump()))
+    await nats.post("houdini", event.model_dump())
     return work_guid
 
 
@@ -163,6 +173,9 @@ async def add_job_nats_event(
         job_type: str,
         params: ParameterSet):
     """Add a new job event to the NATS message bus"""
+    if disable_nats(job_type):
+        return
+
     [subject, path] = job_type.split("::")
 
     event = WorkerRequest(
