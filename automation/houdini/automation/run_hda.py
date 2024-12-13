@@ -24,7 +24,6 @@ class NodeType(BaseModel):
     inputs: int
     outputs: int
     code: str
-    defaults: dict[str, Any]
     category: str
     namespace: str
     name: str
@@ -54,7 +53,7 @@ def hda(request: HdaRequest, responder: ResultPublisher) -> HdaResponse:
 
             # Generate litegraph class in the temp directory
             nodeType['code'] = mpt.transpiler(nodeType['code'])
-            
+            del(nodeType['defaults'])
             # Add the file path to the hdadef array
             nodeTypes.append(nodeType)
 

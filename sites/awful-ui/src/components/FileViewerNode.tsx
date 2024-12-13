@@ -3,14 +3,15 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAwfulFlow from '../hooks/useAwfulFlow';
 
-import USDViewer from './USDViewer';
+import USDViewer from './viewers/USDViewer';
 import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 
-import CodeViewer from './CodeViewer';
-import FileInputHandle from './Handles/FileInputHandle';
-import FileOutputHandle from './Handles/FileOutputHandle';
+import CodeViewer from './viewers/CodeViewer';
+import FileInputHandle from './handles/FileInputHandle';
+import FileOutputHandle from './handles/FileOutputHandle';
 interface FileViewerNodeProps {
   id: string;
+  selected?: boolean;
   data:{
     selectedPane: number;
     selectedFileIds: string[]; 
@@ -153,7 +154,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const viewerStyle = { height: viewerHeight, width: viewerWidth }
 
   return (
-    <div className="mythica-node file-viewer-node">
+    <div className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}>
       
       <h3>File Viewer</h3>
 

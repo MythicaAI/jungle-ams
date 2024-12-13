@@ -5,10 +5,10 @@ import useAutomation from "../hooks/useAutomation";
 import useAwfulFlow from "../hooks/useAwfulFlow";
 import { GetFileResponse } from "../types/MythicaApi";
 import { NodeState } from "../types/AwfulFlow";
-import ParmGroup from "./HoudiniParms/ParmGroup";
+import ParmGroup from "./houdiniParms/ParmGroup"; 
 import { dictionary, ExecutionData } from "../types/Automation";
-import FileInputHandle from "./Handles/FileInputHandle";
-import FileOutputHandle from "./Handles/FileOutputHandle";
+import FileInputHandle from "./handles/FileInputHandle";
+import FileOutputHandle from "./handles/FileOutputHandle";
 import useMythicaApi from "../hooks/useMythicaApi";
 
 type InterfaceExecutionData = ExecutionData & {
@@ -19,7 +19,6 @@ type InterfaceExecutionData = ExecutionData & {
       help: string;
       inputs: number;
       outputs: number;
-      defaults: dictionary;
       code: string;
       category: string;
       namespace: string;
@@ -42,6 +41,7 @@ export type AutomationExecutionData = ExecutionData & {
 
 export interface HDANodeProps {
   id: string;
+  selected?: boolean;
   data: {
     automation: string;
     interfaceData: InterfaceExecutionData;
@@ -281,7 +281,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       label={`Output ${i}`}/>
   ));
   return (
-    <div className={`mythica-node worker`}>
+    <div className={`mythica-node worker ${node.selected && 'selected'}`}>
       <h3 style={{marginBottom:'2px'}}>{nodeType['description'] as string}</h3>
       <label>{nodeType['type'] as string}</label>
       <label>Interface: {myExecutionData.state} </label>

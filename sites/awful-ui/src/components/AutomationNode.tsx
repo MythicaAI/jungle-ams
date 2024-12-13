@@ -6,14 +6,14 @@ import useAutomation from '../hooks/useAutomation';
 import useAwfulFlow from '../hooks/useAwfulFlow';
 import useMythicaApi from '../hooks/useMythicaApi';
 
-import AutomationInputs from './AutomationInputs';
-import AutomationOutputs from './AutomationOutputs';
+import AutomationInputs from './handles/AutomationInputs';
+import AutomationOutputs from './handles/AutomationOutputs';
 
 import { dictionary, ExecutionData, FileParamType } from '../types/Automation';
 import { NodeState } from "../types/AwfulFlow";
 import { JSONSchema } from '../types/JSONSchema';
-import FileInputHandle from './Handles/FileInputHandle';
-import FileOutputHandle from './Handles/FileOutputHandle';
+import FileInputHandle from './handles/FileInputHandle';
+import FileOutputHandle from './handles/FileOutputHandle';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -34,6 +34,7 @@ type InterfaceExecutionData = ExecutionData & {
 
 export interface AutomationNodeProps {
   id: string;
+  selected?: boolean;
   data: {
     automation: string;
     inputData: dictionary;
@@ -338,7 +339,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     <div  style={{  height: '100%', width:'100%', display:'flex', flexDirection:'column' }}>
       {isScriptNode && <NodeResizer  minHeight={min+delta} minWidth={min+delta} />}
 
-      <div className={`mythica-node worker ${isScriptNode && 'script'} ${myExecutionData.state}`}
+      <div className={`mythica-node worker ${isScriptNode && 'script'} ${myExecutionData.state} ${node.selected && 'selected'}`}
            style={{  flex:'1 1 auto', display: 'flex', flexDirection: 'column', minHeight:min}}>
         <AutomationInputs inputSchema={inputSpec} onChange={setInputData} onFileParameterDetected={handleFileParameterDetected} />
         <AutomationOutputs outputSchema={outputSpec} outputData={myExecutionData.output} onFileOutputDetected={handleFileOutputDetected} />

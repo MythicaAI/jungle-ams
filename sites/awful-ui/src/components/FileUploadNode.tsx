@@ -3,15 +3,16 @@ import React, { memo } from 'react';
 
 import useMythicaApi from '../hooks/useMythicaApi'; // Import Auth context
 import useAwfulFlow  from '../hooks/useAwfulFlow'; // Import NodeDataContext
-import FileOutputHandle from './Handles/FileOutputHandle';
+import FileOutputHandle from './handles/FileOutputHandle';
 
 interface FileUploadNodeProps {
   id: string;
+  selected?: boolean;
 }
 
 const UPLOAD_FILES = 'uploadFiles';
 
-const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
+const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
   const { uploadFile } = useMythicaApi(); // Access the authentication key from context
   const { setFlowData } = useAwfulFlow();
   const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(null);
@@ -35,7 +36,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
     try {
       const response = await uploadFile(formData);
       const files = response.files;
-      setFlowData(id, UPLOAD_FILES, files);
+      setFlowData(node.id, UPLOAD_FILES, files);
       setUploadStatus('Files uploaded successfully');
     } catch (error) {
       console.error('File upload error:', error);
@@ -44,7 +45,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
   };
 
   return (
-    <div className="mythica-node file-upload-node">
+    <div className={`mythica-node file-upload-node ${node.selected && 'selected'}`}>
       <h3>File Upload</h3>
       <input type="file" multiple onChange={handleFileChange} />
       <button onClick={handleFileUpload}>Upload Files</button>
