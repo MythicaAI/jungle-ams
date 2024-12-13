@@ -14,7 +14,7 @@ import { NodeState } from '../types/AwfulFlow';
 import { JSONSchema } from '../types/JSONSchema';
 import FileInputHandle from './handles/FileInputHandle';
 import FileOutputHandle from './handles/FileOutputHandle';
-import { Button, Card, Typography } from '@mui/joy';
+import { Button,  Typography } from '@mui/joy';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -386,8 +386,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         <NodeResizer minHeight={min + delta} minWidth={min + delta} />
       )}
 
-      <Card
-        className={`mythica-node worker ${isScriptNode && 'script'} ${
+      <div
+        className={`mythica-node ${isScriptNode && 'script'} ${
           myExecutionData.state
         } ${node.selected && 'selected'}`}
         style={{
@@ -481,7 +481,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           Run Automation
         </Button>
         <div style={{ height: '24px' }} />
-      </Card>
+      </div>
     </div>
   );
 };
