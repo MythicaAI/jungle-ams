@@ -3,6 +3,17 @@ import useMythicaApi from '../hooks/useMythicaApi';
 import useAutomation from '../hooks/useAutomation';
 import useAwfulFlow from '../hooks/useAwfulFlow';
 import { GetFileResponse } from '../types/MythicaApi';
+import {
+  Box,
+  Button,
+  FormLabel,
+  Input,
+  Option,
+  Select,
+  Stack,
+  Typography,
+} from '@mui/joy';
+import { GripVertical } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
@@ -11,8 +22,11 @@ const Sidebar: React.FC = () => {
   const automationContext = useAutomation();
   const { apiKey, setApiKey } = useMythicaApi();
 
-  const { savedAwfulsById, savedAwfulsByName, onRestore, onSave } = useAwfulFlow(); // Import AwfulFlow methods
-  const [selectedFile, setSelectedFile] = useState<GetFileResponse | null>(null);
+  const { savedAwfulsById, savedAwfulsByName, onRestore, onSave } =
+    useAwfulFlow(); // Import AwfulFlow methods
+  const [selectedFile, setSelectedFile] = useState<GetFileResponse | null>(
+    null
+  );
   const [filenameInput, setFilenameInput] = useState<string>('');
 
   // Update when the Selected File changes
@@ -21,7 +35,7 @@ const Sidebar: React.FC = () => {
     if (filenameInput) {
       const file_exist = savedAwfulsByName[filenameInput];
       if (file_exist) {
-        const select = selectFileRef.current
+        const select = selectFileRef.current;
         if (select) {
           select.value = file_exist.file_id;
           setSelectedFile(file_exist);
@@ -29,16 +43,6 @@ const Sidebar: React.FC = () => {
       }
     }
   }, [filenameInput, savedAwfulsByName]);
-
-  const handleSelectionChange = async () => {
-    const file_id = selectFileRef.current?.value
-    if (file_id) {
-      setFilenameInput(savedAwfulsById[file_id].file_name);
-    } else {
-      setFilenameInput('');
-    }
-  }
-
 
   const handleLoadFile = async () => {
     if (selectedFile) {
@@ -72,70 +76,86 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className="sidebar">
-      <label htmlFor="apiKey">Api Key:</label>
-      <input
-        type="text"
+      <FormLabel htmlFor="apiKey">Api Key:</FormLabel>
+      <Input
+        type="password"
         id="apiKey"
         placeholder="Enter API Key"
         value={apiKey}
         onChange={(e) => setApiKey(e.target.value)}
+        sx={{ mb: '12px' }}
       />
 
-      <div key="Saved Workflows">
-        <h3>Saved Workflows</h3>
-        {(
-          <select
-            ref={selectFileRef}
-            size={6}
-            style={{ 
-              width: '100%',
-              marginTop: '8px',
-              padding: '5px',
-              height: '200px',
-            }}           
-            onChange={handleSelectionChange}
-          >
-            {Object.entries(savedAwfulsById).map(([ , file]) => (
-              <option key={file.file_name + file.file_id} value={file.file_id}>
+      <Stack gap="8px" key="Saved Workflows">
+        <Typography fontSize={18} level="h4">
+          Saved Workflows
+        </Typography>
+
+        {/*@ts-ignore*/}
+        <Select
+          ref={selectFileRef}
+          placeholder="Select Workflow"
+          value={selectedFile?.file_id}
+          onChange={(_, newValue) => {
+            //@ts-ignore
+            setSelectedFile(newValue);
+            //@ts-ignore
+            setFilenameInput(savedAwfulsById[newValue].file_name);
+          }}
+        >
+          {Object.entries(savedAwfulsById)
+            .map(([, file]) => (
+              <Option key={file.file_name + file.file_id} value={file.file_id}>
                 {file.file_name || file.file_id}
-              </option>
-            )).sort((a, b) => (a?.key || -1) < (b?.key || 1) ? -1 : 1)}
-          </select>
-        )}
+              </Option>
+            ))
+            .sort((a, b) => ((a?.key || -1) < (b?.key || 1) ? -1 : 1))}
+        </Select>
+        <Button
+          onClick={handleLoadFile}
+          disabled={!selectedFile}
+          sx={{ width: 'fit-content' }}
+        >
+          Load
+        </Button>
+
+        <Typography fontSize={18} level="h4">
+          Save current workflow
+        </Typography>
         <div>
-          <input
+          <Input
             type="text"
             placeholder="Enter filename"
             value={filenameInput}
             onChange={(e) => setFilenameInput(e.target.value)}
-          />         
+          />
         </div>
-        <div>
-          <button onClick={handleLoadFile} disabled={!selectedFile}>
-            Load
-          </button>
-          <button onClick={handleSaveFile}>
+        <Stack direction="row" gap="8px">
+          <Button onClick={handleSaveFile}>
             {selectedFile ? 'Save' : 'Save As...'}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
       <div key="Files">
         <h3>Files</h3>
 
-        <div
+        <Box
           className="dndnode"
           onDragStart={(event) => onDragStart(event, 'fileUpload')}
           draggable
+          sx={{ p: '4px' }}
         >
-          File Upload
-        </div>
-        <div
+          <Typography fontSize={14}>File Upload</Typography>
+          <GripVertical />
+        </Box>
+        <Box
           className="dndnode"
           onDragStart={(event) => onDragStart(event, 'fileViewer')}
           draggable
         >
-          File Viewer
-        </div>
+          <Typography fontSize={14}>File Viewer</Typography>
+          <GripVertical />
+        </Box>
       </div>
 
       {automationContext?.workers.map((worker) => (
@@ -150,7 +170,8 @@ const Sidebar: React.FC = () => {
                 onDragStart={(event) => onDragStart(event, automation.uri)}
                 draggable
               >
-                {automation.path}
+                <Typography fontSize={14}>{automation.path}</Typography>
+                <GripVertical />
               </div>
             );
           })}
