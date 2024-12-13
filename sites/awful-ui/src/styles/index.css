@@ -78,8 +78,8 @@ body {
 
   .dndflow aside {
     width: 20%;
-    max-width: 250px;
-    min-width: 230px;
+    max-width: 290px;
+    min-width: 260px;
   }
 }
 
@@ -88,6 +88,10 @@ body {
   padding: 5px;
   border-radius: 5px;
   background: white;
+}
+
+.mythica-node.selected {
+  border: 1px solid #0b6bcb;
 }
 
 .mythica-node.script {

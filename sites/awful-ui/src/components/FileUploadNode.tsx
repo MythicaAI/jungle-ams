@@ -3,16 +3,17 @@ import React, { memo } from 'react';
 
 import useMythicaApi from '../hooks/useMythicaApi'; // Import Auth context
 import useAwfulFlow from '../hooks/useAwfulFlow'; // Import NodeDataContext
-import FileOutputHandle from './Handles/FileOutputHandle';
+import FileOutputHandle from './handles/FileOutputHandle';
 import { Box, Button, Card, List, ListItem, Typography } from '@mui/joy';
 
 interface FileUploadNodeProps {
   id: string;
+  selected?: boolean;
 }
 
 const UPLOAD_FILES = 'uploadFiles';
 
-const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
+const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
   const { uploadFile } = useMythicaApi(); // Access the authentication key from context
   const { setFlowData } = useAwfulFlow();
   const [selectedFiles, setSelectedFiles] = React.useState<FileList | null>(
@@ -38,7 +39,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
     try {
       const response = await uploadFile(formData);
       const files = response.files;
-      setFlowData(id, UPLOAD_FILES, files);
+      setFlowData(node.id, UPLOAD_FILES, files);
       setUploadStatus('Files uploaded successfully');
     } catch (error) {
       console.error('File upload error:', error);
@@ -47,7 +48,10 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = ({ id }) => {
   };
 
   return (
-    <Card className="mythica-node file-upload-node" sx={{ minWidth: '300px' }}>
+    <Card
+      className={`mythica-node file-upload-node ${node.selected && 'selected'}`}
+      sx={{ minWidth: '300px' }}
+    >
       <Typography level="h4">File Upload</Typography>
       <Button
         variant="outlined"

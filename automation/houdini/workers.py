@@ -1,32 +1,51 @@
+
+
+
+import os
+import sys
+print(f"cwd: {os.getcwd()}")
+print(f"python path: {sys.path}")
+
+
 from automation.generate_job_defs import generate_job_defs, GenerateJobDefRequest, GenerateJobDefResponse
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
-from automation.run_hda import run_hda, RunHdaRequest, RunHdaResponse
+from automation.run_hda import hda, HdaRequest, HdaResponse, run_hda, RunHdaRequest, RunHdaResponse
 from ripple.automation import Worker
 from telemetry import init_telemetry
 
 
 worker = Worker()
 
-init_telemetry()
+if os.environ.get("TELEMETRY_ENABLE", False):
+    init_telemetry()
 
 workers = [
     {
         "path": '/mythica/generate_job_defs',
         "provider": generate_job_defs,
         "inputModel": GenerateJobDefRequest,
-        "outputModel": GenerateJobDefResponse
+        "outputModel": GenerateJobDefResponse,
+        "hidden": True
     },
     {
         "path": '/mythica/generate_mesh',
         "provider": generate_mesh,
         "inputModel": ExportMeshRequest,
-        "outputModel": ExportMeshResponse
+        "outputModel": ExportMeshResponse,
+        "hidden": True
     },
     {
         "path": '/mythica/hda',
+        "provider": hda,
+        "inputModel": HdaRequest,
+        "outputModel": HdaResponse
+    },
+    {
+        "path": '/mythica/run_hda',
         "provider": run_hda,
         "inputModel": RunHdaRequest,
-        "outputModel": RunHdaResponse
+        "outputModel": RunHdaResponse,
+        "hidden": True
     }
 
 ]
@@ -47,6 +66,7 @@ def force_limited_commercial_mode():
     
     assert hou.licenseCategory() == hou.licenseCategoryType.Indie
     print('License set to limited commercial mode')
+
 
 def main():
     #force_limited_commercial_mode()

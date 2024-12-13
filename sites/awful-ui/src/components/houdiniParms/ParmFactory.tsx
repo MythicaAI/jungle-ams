@@ -15,32 +15,33 @@ import ToggleParm from './ToggleParm';
 import { dictionary } from '../../types/Automation';
 export interface ParmFactoryProps {
     parmTemplate: hou.ParmTemplate;
+    data: dictionary;
     onChange: (formData: dictionary) => void; // Callback for value changes
 }
 
-export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, onChange}) => {
+export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onChange}) => {
     
     switch (parmTemplate.type) {
         case hou.parmTemplateType.Folder:
-            return <FolderParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.FolderParmTemplate} />;
+            return <FolderParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FolderParmTemplate} />;
         case hou.parmTemplateType.FolderSet:
-            return <FolderSetParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.FolderSetParmTemplate} />;
+            return <FolderSetParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FolderSetParmTemplate} />;
         case hou.parmTemplateType.String:
-            return <StringParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.StringParmTemplate} />;        
+            return <StringParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.StringParmTemplate} />;        
         case hou.parmTemplateType.Float:
-            return <FloatParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.FloatParmTemplate} />;        
+            return <FloatParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FloatParmTemplate} />;        
         case hou.parmTemplateType.Int:
-            return <IntParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.IntParmTemplate} />;        
+            return <IntParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.IntParmTemplate} />;        
         case hou.parmTemplateType.Toggle:
-            return <ToggleParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.ToggleParmTemplate} />;        
+            return <ToggleParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.ToggleParmTemplate} />;        
         case hou.parmTemplateType.Separator:
             return <SeparatorParm key={parmTemplate.id} template={parmTemplate as hou.SeparatorParmTemplate} />;
         case hou.parmTemplateType.Label:
             return <LabelParm key={parmTemplate.id} template={parmTemplate as hou.LabelParmTemplate} />;
         case hou.parmTemplateType.Menu:
-            return <MenuParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.MenuParmTemplate} />;
+            return <MenuParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.MenuParmTemplate} />;
         case hou.parmTemplateType.Ramp:
-            return <RampParm key={parmTemplate.id} onChange={onChange} template={parmTemplate as hou.RampParmTemplate} />;        
+            return <RampParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.RampParmTemplate} />;        
         default:
             return <div key={parmTemplate.id} >Not Implemented: {parmTemplate.type}</div>
     }

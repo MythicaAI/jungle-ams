@@ -22,12 +22,24 @@ const Sidebar: React.FC = () => {
   const automationContext = useAutomation();
   const { apiKey, setApiKey } = useMythicaApi();
 
-  const { savedAwfulsById, savedAwfulsByName, onRestore, onSave } =
-    useAwfulFlow(); // Import AwfulFlow methods
+  const {
+    savedAwfulsById,
+    savedAwfulsByName,
+    onRestore,
+    onSave,
+    onNew,
+    onDelete,
+  } = useAwfulFlow(); // Import AwfulFlow methods
   const [selectedFile, setSelectedFile] = useState<GetFileResponse | null>(
     null
   );
+  const [loadedFile, setLoadedFile] = useState<GetFileResponse | null>(null);
   const [filenameInput, setFilenameInput] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  const confirmAction = (message: string): boolean => {
+    return window.confirm(message);
+  };
 
   // Update when the Selected File changes
 
@@ -45,27 +57,116 @@ const Sidebar: React.FC = () => {
   }, [filenameInput, savedAwfulsByName]);
 
   const handleLoadFile = async () => {
-    if (selectedFile) {
-      try {
-        await onRestore(selectedFile.file_name);
-        console.log(`File ${selectedFile} loaded successfully`);
-      } catch (error) {
-        console.error(`Failed to load file ${selectedFile}:`, error);
-      }
+    if (!selectedFile) {
+      alert('No file selected to load.');
+      return;
+    }
+
+    if (
+      loadedFile &&
+      !confirmAction(`This will overwrite current changes. Are you sure?`)
+    )
+      return;
+
+    setIsProcessing(true);
+
+    try {
+      await onRestore(selectedFile.file_name);
+      setLoadedFile(selectedFile);
+      console.log(`File "${filenameInput}" loaded successfully.`);
+    } catch (error) {
+      console.error(`Failed to load file "${selectedFile.file_name}":`, error);
+      alert(
+        `Failed to load file "${selectedFile.file_name}". Check the console for details.`
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleSaveFile = async () => {
     const filename = filenameInput.trim();
+
     if (!filename) {
       alert('Please enter a valid filename.');
       return;
     }
+
+    if (
+      selectedFile &&
+      selectedFile.file_name === filenameInput &&
+      (!loadedFile || loadedFile.file_name !== selectedFile.file_name) &&
+      !confirmAction(
+        `This action will overwrite ${selectedFile.file_name}. Are you sure you want to continue"?`
+      )
+    )
+      return;
+
+    setIsProcessing(true);
+
     try {
-      await onSave(filename);
-      console.log(`File ${filename} saved successfully`);
+      await onSave(filename, async (saved) => setLoadedFile(saved));
+      setLoadedFile(savedAwfulsByName[filename]);
+      console.log(`File "${filename}" saved successfully.`);
     } catch (error) {
-      console.error(`Failed to save file ${filename}:`, error);
+      console.error(`Failed to save file "${filename}":`, error);
+      alert(
+        `Failed to save file "${filename}". Check the console for details.`
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteFile = async () => {
+    if (!selectedFile) return;
+    if (
+      !confirmAction(
+        `This will permanently delete ${selectedFile.file_name}. Are you sure you want to continue"?`
+      )
+    )
+      return;
+
+    setIsProcessing(true);
+
+    try {
+      await onDelete(selectedFile.file_name);
+      setSelectedFile(null);
+      setFilenameInput('');
+      console.log(`File "${selectedFile.file_name}" saved successfully.`);
+    } catch (error) {
+      console.error(`Failed to save file "${selectedFile.file_name}":`, error);
+      alert(
+        `Failed to save file "${selectedFile.file_name}". Check the console for details.`
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleNewFile = async () => {
+    const confirmNew = confirmAction(
+      'Are you sure you want to create a new file? Unsaved changes will be lost.'
+    );
+
+    if (!confirmNew) return;
+
+    setIsProcessing(true);
+
+    try {
+      await onNew();
+      setLoadedFile(null);
+      setFilenameInput('');
+      setSelectedFile(null);
+      if (selectFileRef.current) {
+        selectFileRef.current.selectedIndex = -1;
+      }
+      console.log('New file created successfully.');
+    } catch (error) {
+      console.error('Failed to create a new file:', error);
+      alert('Failed to create a new file. Check the console for details.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -100,7 +201,7 @@ const Sidebar: React.FC = () => {
             //@ts-ignore
             setSelectedFile(newValue);
             //@ts-ignore
-            setFilenameInput(savedAwfulsById[newValue].file_name);
+            setFilenameInput(savedAwfulsById[newValue]?.file_name);
           }}
         >
           {Object.entries(savedAwfulsById)
@@ -131,8 +232,22 @@ const Sidebar: React.FC = () => {
           />
         </div>
         <Stack direction="row" gap="8px">
+          <Button
+            variant="soft"
+            onClick={handleNewFile}
+            disabled={isProcessing}
+          >
+            New
+          </Button>
           <Button onClick={handleSaveFile}>
             {selectedFile ? 'Save' : 'Save As...'}
+          </Button>
+          <Button
+            onClick={handleDeleteFile}
+            disabled={!selectedFile || isProcessing}
+            color="danger"
+          >
+            Delete
           </Button>
         </Stack>
       </Stack>

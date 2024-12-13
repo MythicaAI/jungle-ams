@@ -6,15 +6,16 @@ import ColorRampParm from './RampParmColor';
 
 interface RampParmProps {
     template: hou.RampParmTemplate;
+    data: dictionary;
     onChange?: (formData: dictionary) => void;
 }
 
-const RampParm: React.FC<RampParmProps> = ({ template, onChange }) => {
+const RampParm: React.FC<RampParmProps> = ({ template, data, onChange }) => {
     // Decide based on template.ramp_parm_type
     if (template.ramp_parm_type === hou.rampParmType.Color) {
-        return <ColorRampParm template={template} onChange={onChange} />;
+        return <ColorRampParm data={data} template={template} onChange={onChange} />;
     } else {
-        return <ValueRampParm template={template} onChange={onChange} />;
+        return <ValueRampParm data={data} template={template} onChange={onChange} />;
     }
 };
 

@@ -5,10 +5,11 @@ import { dictionary } from '../../types/Automation';
 
 export interface FolderSetParmProps {
     template: hou.FolderSetParmTemplate;
+    data: dictionary;
     onChange: (formData: dictionary) => void; // Callback for value changes
 }
 
-const FolderSetParm: React.FC<FolderSetParmProps> = ({ template, onChange}) => {
+const FolderSetParm: React.FC<FolderSetParmProps> = ({ template, data, onChange}) => {
     const [activeFolder, setActiveFolder] = useState<string | null>(template.parm_templates[0].name);
 
     const handleFolderActivation = (folderName: string) => {
@@ -36,7 +37,7 @@ const FolderSetParm: React.FC<FolderSetParmProps> = ({ template, onChange}) => {
                     if (folder.name === activeFolder) {
                         return (
                             <div key={index} className={`folder-item active`}>
-                                <FolderParm onChange={onChange} template={folder} />
+                                <FolderParm data={data} onChange={onChange} template={folder} />
                             </div>
                         );
                     }

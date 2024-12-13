@@ -4,12 +4,14 @@ import { dictionary } from '../../types/Automation';
 
 export interface StringParmProps {
     template: hou.StringParmTemplate;
+    data: dictionary;
     onChange?: (formData: dictionary) => void; // Callback for value changes
 }
 
-const StringParm: React.FC<StringParmProps> = ({template, onChange}) => {
+const StringParm: React.FC<StringParmProps> = ({template, data, onChange}) => {
     const getDefaultValues = () => {
-        return template.default_value.length === template.num_components
+        return data[template.name] ||
+            template.default_value.length === template.num_components
             ? template.default_value
             : Array<string>(template.num_components).fill("");
     }

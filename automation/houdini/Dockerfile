@@ -5,6 +5,7 @@ ARG HOUDINI_VERSION=20.5.370
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Gather python dependencies - do the worker deps here too.
+# this version of python should match the target version in Houdini
 FROM python:3.11-slim AS python-dependency-downloader
 
 LABEL maintainer="pedro@mythica.ai"
@@ -16,32 +17,47 @@ LABEL tier="auto"
 # Copy monorepo dependencies
 COPY --from=libs-python-image /libs/python /libs/python
 
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade --no-cache-dir -r /tmp/requirements.txt
+WORKDIR /python-install
 
-# Build the primary image
+COPY pyproject.toml .
+COPY poetry.lock .
+
+# Install updated bootstrapping packages for poetry and pip 
+RUN python -m pip install \
+    --root-user-action=ignore \
+    --upgrade \
+    --no-cache-dir pip poetry
+
+# Install everything into the python site-packages, these
+# will be referenced later to build the houdini site-packages
+RUN poetry config --local virtualenvs.create false
+RUN poetry install --only main --no-root
+
+# Build the primary image from upstream hbuild
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y wget \
+# Install and update system dependencies
+RUN apt-get update && apt-get install -y wget systemd \
     && rm -rf /var/lib/apt/lists/*
 
+# Default for local (docker compose) mode, override in deployment
+ENV NATS_ENDPOINT="nats://nats:4222"
+
+# Make sure that hython is in the path
+ENV PATH=/opt/houdini/build/bin:$PATH
+
 # Setup Houdini environment
-ARG SFX_CLIENT_ID
-ARG SFX_CLIENT_SECRET
+ENV SFX_CLIENT_ID=""
+ENV SFX_CLIENT_SECRET=""
 
-RUN echo "ClientID=${SFX_CLIENT_ID}" >  /root/houdini20.5/hserver.ini
-RUN echo "ClientSecret=${SFX_CLIENT_SECRET}" >>  /root/houdini20.5/hserver.ini
 
-RUN echo HOUDINI_ERRORLOG_LEVEL = 0 >> /root/houdini20.5/houdini.env
-RUN echo HOUDINI_ERRORLOG_FILENAME = /output/log.txt >> /root/houdini20.5/houdini.env
-RUN echo HOUDINI_OCL_DEVICETYPE = CPU >> /root/houdini20.5/houdini.env
 
 RUN mkdir -p /root/houdini20.5/packages/
 
 RUN mkdir /app
-# Install Labs Plugins
-ARG SIDE_FX_LABS_VERSION=20.5.370
+
+# Install SideFX Labs Houdini Package
+ENV SIDE_FX_LABS_VERSION=20.5.370
 
 RUN mkdir /app/sideFXLabs/
 RUN wget https://github.com/sideeffects/SideFXLabs/archive/refs/tags/${SIDE_FX_LABS_VERSION}.tar.gz -O /tmp/sideFXLabs.tar.gz
@@ -51,10 +67,11 @@ RUN rm /tmp/sideFXLabs.tar.gz
 RUN cp /app/sideFXLabs/SideFXLabs.json /root/houdini20.5/packages/SideFXLabs.json
 RUN sed -i 's|"$HOUDINI_PACKAGE_PATH/SideFXLabs20.5"|"/app/sideFXLabs"|g' /root/houdini20.5/packages/SideFXLabs.json
 
-# Copy our code over
+# Copy application code over
 COPY . /app
 
 # Install darol plugin 
+COPY --from=python-dependency-downloader /libs/python /libs/python
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages
 RUN cp /app/darol-plugin/darol.json /root/houdini20.5/packages/darol.json
 RUN sed -i 's|"/path/to/darol/repoclone/houdini-package"|"/app/darol-plugin"|g' /root/houdini20.5/packages/darol.json

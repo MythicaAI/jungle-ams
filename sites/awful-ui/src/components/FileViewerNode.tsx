@@ -3,15 +3,16 @@ import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAwfulFlow from '../hooks/useAwfulFlow';
 
-import USDViewer from './USDViewer';
+import USDViewer from './viewers/USDViewer';
 import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 
-import CodeViewer from './CodeViewer';
-import FileInputHandle from './Handles/FileInputHandle';
-import FileOutputHandle from './Handles/FileOutputHandle';
+import CodeViewer from './viewers/CodeViewer';
+import FileInputHandle from './handles/FileInputHandle';
+import FileOutputHandle from './handles/FileOutputHandle';
 import { Card, Option, Select, Typography } from '@mui/joy';
 interface FileViewerNodeProps {
   id: string;
+  selected?: boolean;
   data: {
     selectedPane: number;
     selectedFileIds: string[];
@@ -40,9 +41,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
   const [initialized, setInitialized] = useState(false);
 
-  const inputFlowData = (getFlowData(node.id) || {})[
-    INPUT_FILES
-  ] as (GetFileResponse | null)[];
+  const inputFlowData = getFlowData(node.id)[INPUT_FILES] as GetFileResponse[];
 
   const fetchAvailableFiles = useCallback(async () => {
     try {
@@ -146,7 +145,9 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const viewerStyle = { height: viewerHeight, width: viewerWidth };
 
   return (
-    <Card className="mythica-node file-viewer-node">
+    <Card
+      className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
+    >
       <Typography level="h4">File Viewer</Typography>
 
       <div style={{ marginBottom: '10px' }} className="nodrag">

@@ -63,25 +63,27 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const fetchFiles = useCallback(
     async () => {
-      if (!authToken) return;
-      try {  
-        // Filter files with the .awful extension
-        const files = (await getFiles())
-          .filter(file => file.file_name.endsWith('.awful'))
-          .map(file => {
-            file.file_name = file.file_name.replace(/\.awful$/,'')
-            return file;
-          });
-        
-        const filesByIdMap = {} as Record<string,GetFileResponse>
-        files.forEach((file) => filesByIdMap[file.file_id] = file);
-        setSavedAwfulsById(filesByIdMap);
-        const filesByNameMap = {} as Record<string,GetFileResponse>
-        files.forEach((file) => filesByNameMap[file.file_name] = file);
-        setSavedAwfulsByName(filesByNameMap);
-      } catch (error) {
-        console.error('Failed to fetch saved files:', error);
+      const filesByIdMap = {} as Record<string,GetFileResponse>
+      const filesByNameMap = {} as Record<string,GetFileResponse>
+      if (authToken) {
+        try {  
+          // Filter files with the .awful extension
+          const files = (await getFiles())
+            .filter(file => file.file_name.endsWith('.awful'))
+            .map(file => {
+              file.file_name = file.file_name.replace(/\.awful$/,'')
+              return file;
+            });
+          
+          files.forEach((file) => filesByIdMap[file.file_id] = file);
+          setSavedAwfulsById(filesByIdMap);
+          files.forEach((file) => filesByNameMap[file.file_name] = file);
+          setSavedAwfulsByName(filesByNameMap);
+        } catch (error) {
+          console.error('Failed to fetch saved files:', error);
+        }
       }
+      return {filesByIdMap, filesByNameMap};
     }
   , [getFiles, setSavedAwfulsById, setSavedAwfulsByName, authToken]);
 
@@ -90,10 +92,32 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     fetchFiles();
   }, [authToken, fetchFiles]);
 
+  const onNew = async () => {
+    if (rfInstance) {
+      deleteFlowData();
+    }
+    console.log(`Awful Cleared Successfully`);
+  }
 
+  const onDelete = async (filename: string) => {
+    try {
+      const files = await getFiles();
+      const file = files.find((f) => f.file_name === `${filename}.awful`);
+      if (!file) {
+        console.error(`File ${filename}.awful not found`);
+        return;
+      }
+
+      await deleteFile(file.file_id);
+      await fetchFiles();
+      console.log(`File ${filename}.awful deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete file ${filename}.awful:`, error);
+    }
+  }
 
   // Save the current flow to the API
-  const onSave = async (filename: string | null) => {
+  const onSave = async (filename: string | null, savedFile: (saved: GetFileResponse)=>void) => {
     if (rfInstance) {
       const flow = rfInstance.toObject();
       const mythicaFlow = {
@@ -114,12 +138,14 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
           await deleteFile(file.file_id);
         }
         await uploadFile(formData);
-        await fetchFiles();
+        const {filesByNameMap} = await fetchFiles();
+        savedFile(filesByNameMap[filename as string]);
         console.log(`File ${filename}.awful saved successfully`);
       } catch (error) {
         console.error(`Failed to save file ${filename}.awful:`, error);
       }
     }
+
   };
 
   // Restore a specific file from the API
@@ -154,10 +180,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }
   
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-  const deleteFlowData = () => {
+  const deleteFlowData = async () => {
+    setNodes([]);
+    setEdges([]);
     setFlowDataState({});
     setConnections({});
   } 
+
   /* Because the Automation node handles are not updated immediately after 
   a refresh event, we need to wait a bit before updating the edges */
   useEffect(() => {
@@ -231,7 +260,20 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     [nodeType, screenToFlowPosition, setNodes]
   );
 
-
+  const onNodesDelete = useCallback((nodesToDelete: Node[]) => {
+    nodesToDelete.forEach((node) => {
+      setFlowDataState((prevData) => {
+        const updatedData = { ...prevData };
+        delete updatedData[node.id];
+        return updatedData;
+      });
+      setConnections((prevConnections) => {
+        const updatedConnections = { ...prevConnections };
+        delete updatedConnections[node.id];
+        return updatedConnections;
+      })
+    }, [setFlowDataState, setConnections]);
+  },[]);
 
   const setFlowData = useCallback((nodeId: string, key: string, value: GetFileResponse[]) => {
     setFlowDataState((prevData) => ({
@@ -370,11 +412,14 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       edges, 
       onEdgesChange,
       onNodesChange,
+      onNodesDelete,
       setNodeType,
       onDragOver, 
       onDrop, 
       onSave,
       onRestore,
+      onDelete,
+      onNew,
       savedAwfulsById,
       savedAwfulsByName,
       setRfInstance: setRfInstance as React.Dispatch<React.SetStateAction<ReactFlowInstance<Node, Edge>>>
