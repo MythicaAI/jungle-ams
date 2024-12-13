@@ -24,13 +24,15 @@ workers = [
         "path": '/mythica/generate_job_defs',
         "provider": generate_job_defs,
         "inputModel": GenerateJobDefRequest,
-        "outputModel": GenerateJobDefResponse
+        "outputModel": GenerateJobDefResponse,
+        "hidden": True
     },
     {
         "path": '/mythica/generate_mesh',
         "provider": generate_mesh,
         "inputModel": ExportMeshRequest,
-        "outputModel": ExportMeshResponse
+        "outputModel": ExportMeshResponse,
+        "hidden": True
     },
     {
         "path": '/mythica/hda',
