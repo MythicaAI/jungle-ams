@@ -235,6 +235,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                               style={viewerStyle}
                             />
                           ) : fileInfo.content_type === 'application/json' ||
+                            fileInfo.content_type === 'application/awpy' || 
                             fileInfo.content_type === 'application/awful' ? (
                             <CodeViewer
                               style={viewerStyle}
