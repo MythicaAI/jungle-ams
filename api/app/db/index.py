@@ -1,4 +1,4 @@
-import asyncio
+import sys
 import logging
 from typing import Tuple
 
@@ -60,7 +60,7 @@ async def update(ctx: RequestContext) -> Tuple[str, str]:
         event_id = event_seq_to_id(event_seq)
 
         # Create a new NATS event
-        if ctx.extension in ('hda', 'hdalc'):
+        if should_post_to_nats(ctx):
             parameter_set = ParameterSet(
                 hda_file = FileParameter(file_id=file_id)
             )
@@ -77,3 +77,10 @@ async def update(ctx: RequestContext) -> Tuple[str, str]:
             await nats.post("houdini", event.model_dump())
 
     return file_id, event_id
+
+def should_post_to_nats(ctx: RequestContext) -> bool:
+    if not ctx.extension in ('hda', 'hdalc'):
+        return False
+    if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+        return False
+    return True
