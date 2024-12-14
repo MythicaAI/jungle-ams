@@ -35,6 +35,8 @@ async def nats_submit(channel, path, data, work_guid, auth_token):
     Submit work to NATS
     """
     return_data = None
+    nats_client = None
+    response = None
     try:
         log.info("Starting NATS connection")
         nats_client = await nats.connect(servers=[NATS_SERVER])
@@ -70,7 +72,13 @@ async def nats_submit(channel, path, data, work_guid, auth_token):
                 log.info(f"Received Result in NATS {msg}")
                 if data['correlation'] == work_guid:
                     log.info(f"Message matched {work_guid}. Processing")
-                    return data
+                    datatype = "result"
+                    if 'item_type' in data:
+                        datatype = data['item_type']
+                        
+                    if datatype != "progress":
+                        return_data = data
+                        break
                 else:
                     log.info("Message ignored")
         except Exception as e:
