@@ -203,7 +203,8 @@ def stop_docker_compose(c, docker_compose_path):
     """Shutdown a docker compose instance"""
     env_file_path = generate_mount_env_file()
     with c.cd(docker_compose_path):
-        c.run(f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
+        c.run(
+            f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
 
 
 def build_image(c, image_path: PathLike):
@@ -238,7 +239,8 @@ def build_image(c, image_path: PathLike):
 
 def deploy_image(c, image_path, target):
     """Deploy a docker image"""
-    dockerfile_path = Path(image_path) / 'Dockerfile'
+    working_directory = Path(BASE_DIR) / image_path
+    dockerfile_path = working_directory / 'Dockerfile'
     image_name = parse_dockerfile_label_name(dockerfile_path)
     commit_hash = get_commit_hash()
     if target == "gcs":
