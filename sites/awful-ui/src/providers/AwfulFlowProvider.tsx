@@ -6,6 +6,7 @@ import { useReactFlow, useNodesState, Node, Connection, Edge, addEdge, useEdgesS
 import { v4 as uuidv4 } from 'uuid';
 import useMythicaApi from '../hooks/useMythicaApi';
 import { GetFileResponse } from '../types/MythicaApi';
+import useAutomation from '../hooks/useAutomation';
 
 
 const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -21,7 +22,9 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const {uploadFile, getFiles, getDownloadInfo, deleteFile, authToken} = useMythicaApi();
   const [savedAwfulsById, setSavedAwfulsById] = useState<Record<string, GetFileResponse>>({});
   const [savedAwfulsByName, setSavedAwfulsByName] = useState<Record<string, GetFileResponse>>({});
-  
+
+  const {savedAutomationsById} = useAutomation();
+
   const [refreshEdgeData, setRefreshEdgeData] = useState<Edge[]>([]);
   
   const getId = () => `awful_node_${uuidv4()}`;
@@ -61,37 +64,11 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     );
   }
 
-  const fetchFiles = useCallback(
-    async () => {
-      const filesByIdMap = {} as Record<string,GetFileResponse>
-      const filesByNameMap = {} as Record<string,GetFileResponse>
-      if (authToken) {
-        try {  
-          // Filter files with the .awful extension
-          const files = (await getFiles())
-            .filter(file => file.file_name.endsWith('.awful'))
-            .map(file => {
-              file.file_name = file.file_name.replace(/\.awful$/,'')
-              return file;
-            });
-          
-          files.forEach((file) => filesByIdMap[file.file_id] = file);
-          setSavedAwfulsById(filesByIdMap);
-          files.forEach((file) => filesByNameMap[file.file_name] = file);
-          setSavedAwfulsByName(filesByNameMap);
-        } catch (error) {
-          console.error('Failed to fetch saved files:', error);
-        }
-      }
-      return {filesByIdMap, filesByNameMap};
-    }
-  , [getFiles, setSavedAwfulsById, setSavedAwfulsByName, authToken]);
 
-  // Fetch saved files when the component loads
-  useEffect(() => {
-    fetchFiles();
-  }, [authToken, fetchFiles]);
 
+  /***************************************************************************
+   * Awful Save Handling
+   **************************************************************************/  
   const onNew = async () => {
     if (rfInstance) {
       deleteFlowData();
@@ -109,7 +86,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       }
 
       await deleteFile(file.file_id);
-      await fetchFiles();
+      await fetchAwfuls();
       console.log(`File ${filename}.awful deleted successfully`);
     } catch (error) {
       console.error(`Failed to delete file ${filename}.awful:`, error);
@@ -138,7 +115,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
           await deleteFile(file.file_id);
         }
         await uploadFile(formData);
-        const {filesByNameMap} = await fetchFiles();
+        const {filesByNameMap} = await fetchAwfuls();
         savedFile(filesByNameMap[filename as string]);
         console.log(`File ${filename}.awful saved successfully`);
       } catch (error) {
@@ -178,7 +155,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       console.error(`Failed to restore file ${filename}.awful:`, error);
     }
   }
-  
+
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   const deleteFlowData = async () => {
     setNodes([]);
@@ -186,6 +163,39 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setFlowDataState({});
     setConnections({});
   } 
+  
+
+  const fetchAwfuls = useCallback(
+    async () => {
+      const filesByIdMap = {} as Record<string,GetFileResponse>
+      const filesByNameMap = {} as Record<string,GetFileResponse>
+      if (authToken) {
+        try {  
+          // Filter files with the .awful extension
+          const files = (await getFiles())
+            .filter(file => file.file_name.endsWith('.awful'))
+            .map(file => {
+              file.file_name = file.file_name.replace(/\.awful$/,'')
+              return file;
+            });
+          
+          files.forEach((file) => filesByIdMap[file.file_id] = file);
+          setSavedAwfulsById(filesByIdMap);
+          files.forEach((file) => filesByNameMap[file.file_name] = file);
+          setSavedAwfulsByName(filesByNameMap);
+        } catch (error) {
+          console.error('Failed to fetch saved files:', error);
+        }
+      }
+      return {filesByIdMap, filesByNameMap};
+    }
+  , [getFiles, setSavedAwfulsById, setSavedAwfulsByName, authToken]);
+
+  // Fetch saved files when the component loads
+  useEffect(() => {
+    fetchAwfuls();
+  }, [authToken, fetchAwfuls]);
+  
 
   /* Because the Automation node handles are not updated immediately after 
   a refresh event, we need to wait a bit before updating the edges */
@@ -197,12 +207,19 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       });
     }
   }, [refreshEdgeData, setEdges]);
+  /***************************************************************************
+   * End Awful Save Handling
+   **************************************************************************/  
 
+
+
+  /***************************************************************************
+   * Node Creation/Sidebar Drag Handling
+   **************************************************************************/  
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     doDragOver(event);
   };
-
-
+  
   const doDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -224,7 +241,15 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
           
       let newNode: Node;
-      switch (nodeType) {
+      const nt = nodeType.split('?')[0];
+      const saved = nodeType.split('?')[1] || null;
+      const savedAuto = saved ? savedAutomationsById[saved] || null : null;
+
+      if (saved && !savedAuto) { 
+        console.error(`Saved automation ${saved} not found`);
+        return;
+      }
+      switch (nt) {
         case 'fileViewer':
         case 'fileUpload':
           newNode = {
@@ -244,6 +269,18 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             },
           };
           break;
+        case 'saved':
+          if (!savedAuto) break;
+          newNode = {
+            id: getId(),
+            type: 'worker',
+            position,
+            data: {
+              automation: `${savedAuto.worker}://mythica/script`,
+              saveData: savedAuto,
+            },
+          };
+          break;
         default:
           // Handle other types (e.g., generic worker)
           newNode = {
@@ -257,24 +294,16 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       }
       setNodes((nds) => nds.concat(newNode));
     },
-    [nodeType, screenToFlowPosition, setNodes]
+    [nodeType, savedAutomationsById, screenToFlowPosition, setNodes]
   );
+  /***************************************************************************
+   * Node Creation/Sidebar Drag Handling
+   **************************************************************************/  
 
-  const onNodesDelete = useCallback((nodesToDelete: Node[]) => {
-    nodesToDelete.forEach((node) => {
-      setFlowDataState((prevData) => {
-        const updatedData = { ...prevData };
-        delete updatedData[node.id];
-        return updatedData;
-      });
-      setConnections((prevConnections) => {
-        const updatedConnections = { ...prevConnections };
-        delete updatedConnections[node.id];
-        return updatedConnections;
-      })
-    }, [setFlowDataState, setConnections]);
-  },[]);
 
+  /***************************************************************************
+   * Connection, Edge and FlowData (output/input file) handling 
+   **************************************************************************/  
   const setFlowData = useCallback((nodeId: string, key: string, value: GetFileResponse[]) => {
     setFlowDataState((prevData) => ({
       ...prevData,
@@ -400,6 +429,24 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     },
     [setEdges, removeConnection]
   );
+
+  const onNodesDelete = useCallback((nodesToDelete: Node[]) => {
+    nodesToDelete.forEach((node) => {
+      setFlowDataState((prevData) => {
+        const updatedData = { ...prevData };
+        delete updatedData[node.id];
+        return updatedData;
+      });
+      setConnections((prevConnections) => {
+        const updatedConnections = { ...prevConnections };
+        delete updatedConnections[node.id];
+        return updatedConnections;
+      })
+    }, [setFlowDataState, setConnections]);
+  },[]);
+  /***************************************************************************
+   * Connection, Edge and FlowData (output/input file) handling 
+   **************************************************************************/  
 
   return (
     <AwfulFlowContext.Provider value={{

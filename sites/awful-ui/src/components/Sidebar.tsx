@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/joy';
 import { GripVertical } from 'lucide-react';
+import { AutomationSave } from '../types/Automation';
 
 const Sidebar: React.FC = () => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
@@ -30,6 +31,7 @@ const Sidebar: React.FC = () => {
     onNew,
     onDelete,
   } = useAwfulFlow(); // Import AwfulFlow methods
+
   const [selectedFile, setSelectedFile] = useState<GetFileResponse | null>(
     null
   );
@@ -143,6 +145,7 @@ const Sidebar: React.FC = () => {
       setIsProcessing(false);
     }
   };
+
 
   const handleNewFile = async () => {
     const confirmNew = confirmAction(
@@ -277,7 +280,7 @@ const Sidebar: React.FC = () => {
         <div key={worker}>
           <h3>{worker}</h3>
           {automationContext?.automations[worker]?.map((automation) => {
-            if (automation.spec.hidden) return null;
+            if (automation.spec.hidden || automation.path.endsWith('/mythica/script')) return null;
             return (
               <div
                 key={automation.path}
@@ -290,6 +293,37 @@ const Sidebar: React.FC = () => {
               </div>
             );
           })}
+          {automationContext.savedAutomationsByWorker[worker]?.map((automation:AutomationSave) => {
+            return (
+              <div
+                key={automation.id}
+                className="dndnode custom"
+                onDragStart={(event) => onDragStart(event, `saved?${automation.id}`)}
+                draggable
+                style={{display:'flex', flexDirection:'row'}}
+              >
+                <Typography fontSize={14} style={{flex:'1 1 auto'}}>
+                  {automation.name} 
+                </Typography>
+                <button 
+                    onClick={()=>automationContext.deleteAutomation(automation)}
+                    style={{ float:'right', color:'red', background:'none', border:'1px solid black', cursor:'pointer'}}
+                  >
+                  x
+                </button>
+                <GripVertical />
+              </div>
+            );
+          })}
+          <div
+            key={`${worker}-new`}
+            className="dndnode new"
+            onDragStart={(event) => onDragStart(event, `${worker}://mythica/script`)}
+            draggable
+          >
+            <Typography fontSize={14}>Create New Automation...</Typography>
+            <GripVertical />
+          </div>          
         </div>
       ))}
     </aside>

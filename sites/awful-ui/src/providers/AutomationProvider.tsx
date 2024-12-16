@@ -5,6 +5,9 @@ import { NodeState } from "../types/AwfulFlow";
 import useMythicaApi from '../hooks/useMythicaApi'; // Import AuthContext to access apiKey
 import { dictionary, WorkerAutomations, ExecutionData, AutomationTask, AutomationSpec } from '../types/Automation';
 import { AutomationContext } from '../hooks/useAutomation';
+import { AutomationSave } from '../types/Automation';
+import { v4 as uuidv4 } from 'uuid';
+import { JSONSchema } from '../types/JSONSchema';
 
 // Static worker list and endpoint
 const WORKERS: string[] = import.meta.env.VITE_AWFUL_WORKERS.split(','); //'genai'
@@ -12,11 +15,116 @@ const BASE_URL: string = import.meta.env.VITE_AWFUL_REST_URL;
 
 const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [workers] = useState(WORKERS);
-    const { authToken } = useMythicaApi(); 
+    const { authToken, getFiles, getDownloadInfo, uploadFile, deleteFile } = useMythicaApi(); 
     const [loaded,  setLoaded] = useState(false);
     const [workerAutomations, setAutomations] = useState<WorkerAutomations>({});
 
+    const [savedAutomationsById, setSavedAutomationsById] = useState<{[id:string]: AutomationSave}>({});
+    const [savedAutomationsByWorker, setSavedAutomationsByWorker] = useState<{[worker:string]: AutomationSave[]}>({});
+  
     
+
+  /***************************************************************************
+   * Script Automation Save Handling
+   **************************************************************************/  
+  const newAutomation = (worker: string, name: string, script: string, inputSpec:JSONSchema, outputSpec:JSONSchema) => {
+
+    const saved = savedAutomationsByWorker[worker]?.find((a) => a.name === name) as AutomationSave
+    if (saved) 
+      return saved 
+
+    return {
+      id: uuidv4(),
+      uri: `saved://${worker}/${name}`,
+      worker: worker,
+      name: name,
+      script: script,
+      inputSpec: inputSpec,
+      outputSpec: outputSpec,
+    } as AutomationSave
+  }
+
+  // Save the current automation to the API
+  const saveAutomation = async (automation: AutomationSave, savedAutomation: (saved: AutomationSave)=>void) => {
+
+      try {
+        if (automation.file) {
+          await deleteFile(automation.file.file_id);
+          delete automation.file;
+        }
+
+        const blob = new Blob([JSON.stringify(automation)], { type: 'application/json' });
+        const formData = new FormData();
+        formData.append('files', blob, `${automation.name}.awpy`);
+        await uploadFile(formData);
+        const {  autosById }= await fetchAutomations();
+        const save = autosById[automation.id]
+        savedAutomation(save);
+      } catch (error) {
+        console.error(`Failed to save automation ${automation.id}`, error);
+      }
+
+  };
+  const deleteAutomation = async (automation: AutomationSave) => {
+    try {
+      if (!automation.file) {
+        console.warn(`Automation ${automation.id} had no saves`);
+        return;
+      }
+
+      await deleteFile(automation.file.file_id);
+      await fetchAutomations();
+      console.log(`Automaiton ${automation.id} deleted successfully`);
+    } catch (error) {
+      console.error(`Failed to delete file ${automation.id}.awful:`, error);
+    }
+  }
+
+  const fetchAutomations = useCallback(
+    async () => {
+      const autosByWorker = {} as {[worker:string]: AutomationSave[]}
+      const autosById = {} as {[id:string]: AutomationSave}
+
+      if (authToken) {
+        try {  
+          // Filter files with the .awful extension
+          const files = (await getFiles())
+            .filter(file => file.file_name.endsWith('.awpy'))
+            .map(file => {
+              file.file_name = file.file_name.replace(/\.awpy$/,'')
+              return file;
+            });
+          
+          for (const file of files)  {
+            const fileData = await getDownloadInfo(file.file_id);
+            const response = await fetch(fileData.url); // Fetch the file content from the URL
+            const automation = (await response.json()); // Assuming the file content is JSON
+            automation.file = file;
+            if (!autosByWorker[automation.worker])
+                autosByWorker[automation.worker] = [];
+            autosByWorker[automation.worker].push(automation);
+            autosById[automation.id] = automation;
+          }
+              
+          setSavedAutomationsByWorker(autosByWorker)
+          setSavedAutomationsById(autosById)
+        } catch (error) {
+          console.error('Failed to fetch saved files:', error);
+        }
+      }
+      return {autosByWorker, autosById};
+    }
+  , [authToken, getFiles, getDownloadInfo]);
+
+  // Fetch saved automations when the component loads
+  useEffect(() => {
+    fetchAutomations();
+  }, [authToken,  fetchAutomations]);
+  /***************************************************************************
+   * End Script Automation Save Handling
+   **************************************************************************/  
+
+
     /**
      * Parse a workerSpec into a list of AutomationTasks. Worker specs are raw responses 
      * from the /mythica/workers endpoint in the automation service.They follow the structure:
@@ -49,41 +157,33 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const loadAutomations = useCallback(async () => {
         if (!authToken) return; // Ensure profileId is available
     
-        const loadedAutomations: WorkerAutomations = {};
+        workers.map(async (worker) => {
+            try {
+                axios.post(BASE_URL, {
+                    work_guid: "",  // Generate or retrieve unique work_id if needed
+                    channel: worker,
+                    path: "/mythica/workers",
+                    env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
+                    auth_token: authToken,  // Use dynamic profile_id
+                    data: {},
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }).then((response) => {
+                    const workerDef =  parseAutomation(worker, response.data.result?.workers);
+                    setAutomations((prev)=>({...prev, [worker]: workerDef}));
+                    console.debug(`Loaded automations for worker: ${worker}`, workerDef);
+                });
     
-        await Promise.all(
-            workers.map(async (worker) => {
-                try {
-                    const response = await axios.post(BASE_URL, {
-                        work_guid: "",  // Generate or retrieve unique work_guid if needed
-                        channel: worker,
-                        path: "/mythica/workers",
-                        env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
-                        auth_token: authToken,  // Use dynamic profile_id
-                        data: {},
-                    }, {
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    });
-        
-                    const workerSpec = response.data.result?.workers;
-
-                    const workerDef =  parseAutomation(worker, workerSpec);
-
-                    loadedAutomations[worker] = workerDef || [];
-                    console.debug(`Loaded automations for worker: ${worker}`, loadedAutomations[worker]);
-
-                } catch (error) {
-                    console.warn(`Failed to load automations for worker: ${worker}`, error);
-                    // Continue without this worker
-                }
                 
-            })
-        );
-    
-        console.debug('Final structure of loadedAutomations:', loadedAutomations);
-        setAutomations(loadedAutomations);
+            } catch (error) {
+                console.warn(`Failed to load automations for worker: ${worker}`, error);
+                // Continue without this worker
+            }
+            
+        })
+        
     },[parseAutomation, authToken, workers]);
 
     const allAutomations = useMemo(() => {
@@ -107,6 +207,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             output: {}
         }
     }
+
     /**
      * Execute an automation. 
      * 
@@ -116,7 +217,6 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
      * @param inputData 
      * @returns 
      */
-
     const runAutomation = useCallback(async (worker: string, nodeId: string, path: string, inputData: dictionary, responseCallback: React.Dispatch<React.SetStateAction<ExecutionData>>) => {
         if (!authToken) return;
 
@@ -156,6 +256,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     }, [authToken]);
 
+
     useEffect(() => {
         if (!loaded && authToken) {
             try {
@@ -175,7 +276,13 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             loadAutomations,
             initAutomation,
             runAutomation, 
-            parseAutomation }}>
+            parseAutomation,
+            newAutomation,
+            savedAutomationsByWorker,
+            savedAutomationsById,
+            saveAutomation,
+            deleteAutomation,
+        }}>
             {children}
         </AutomationContext.Provider>
     );

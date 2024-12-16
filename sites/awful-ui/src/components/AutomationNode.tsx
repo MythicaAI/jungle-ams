@@ -9,7 +9,7 @@ import useMythicaApi from '../hooks/useMythicaApi';
 import AutomationInputs from './handles/AutomationInputs';
 import AutomationOutputs from './handles/AutomationOutputs';
 
-import { dictionary, ExecutionData, FileParamType } from '../types/Automation';
+import { AutomationSave, dictionary, ExecutionData, FileParamType } from '../types/Automation';
 import { NodeState } from '../types/AwfulFlow';
 import { JSONSchema } from '../types/JSONSchema';
 import FileInputHandle from './handles/FileInputHandle';
@@ -39,9 +39,7 @@ export interface AutomationNodeProps {
   data: {
     automation: string;
     inputData: dictionary;
-    scriptContent: string;
-    inputSpec: JSONSchema;
-    outputSpec: JSONSchema;
+    saveData: AutomationSave;
     executionData: ExecutionData;
   };
 }
@@ -68,7 +66,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const { initAutomation, runAutomation, parseAutomation, allAutomations } =
+  const { initAutomation, runAutomation, parseAutomation, allAutomations, newAutomation, saveAutomation } =
     useAutomation(); //provides automation related services.
   const automationTask = allAutomations[node.data.automation];
   const isScriptNode = automationTask.path === scriptPath;
@@ -89,12 +87,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const [inputSpec, setInputSpec] = useState(
     !isScriptNode
       ? automationTask.spec.input
-      : node.data.inputSpec || { title: 'Empty', type: 'string' }
+      : node.data.saveData?.inputSpec || { title: 'Empty', type: 'string' }
   );
   const [outputSpec, setOutputSpec] = useState(
     !isScriptNode
       ? automationTask.spec.output
-      : node.data.outputSpec || { title: 'Empty', type: 'string' }
+      : node.data.saveData?.outputSpec || { title: 'Empty', type: 'string' }
   );
 
   //Input File parameters detected by AutomationInputs and type (array or scalar)
@@ -109,12 +107,27 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
 
+  const [saveName, setSaveName] = useState<string>(
+    node.data.saveData?.name
+  );
   const [scriptContent, setScriptContent] = useState<string>(
-    node.data.scriptContent
+    node.data.saveData?.script
   ); // State to store Monaco editor content
 
   const timeout = 2000;
   const typingTimeout = useRef(timeout);
+
+  const handleSaveAutomation = useCallback(() => {    
+    if (!node.data.saveData.name || node.data.saveData.name === '') {
+      console.error('Name is required');
+      return;
+    }
+
+    saveAutomation(node.data.saveData, (saved: AutomationSave) => {
+      node.data.saveData = saved;
+
+    });
+  }, [saveAutomation, node.data]);
 
   // Handler for FileParameter inputs detected by AutomationInputs
   const handleFileParameterDetected = useCallback(
@@ -346,20 +359,34 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   useEffect(() => {
     node.data.inputData = { ...inputData, ...fileInputData };
     if (isScriptNode) {
-      node.data.scriptContent = scriptContent;
-      node.data.inputSpec = inputSpec;
-      node.data.outputSpec = outputSpec;
+      if (node.data.saveData) {
+        node.data.saveData.script =  scriptContent;
+        node.data.saveData.name = saveName;
+        node.data.saveData.inputSpec = inputSpec;
+        node.data.saveData.outputSpec = outputSpec;
+      } else {
+        node.data.saveData = newAutomation(
+          automationTask.worker, 
+          saveName, 
+          scriptContent,
+          inputSpec,
+          outputSpec          
+        );
+      }
     }
     node.data.executionData = myExecutionData;
   }, [
     node.data,
     inputData,
     fileInputData,
+    saveName,
     scriptContent,
     inputSpec,
     outputSpec,
     isScriptNode,
     myExecutionData,
+    automationTask.worker,
+    newAutomation,
   ]);
 
   const inputPositions = Array.from(Object.keys(inputFileKeys)).map(
@@ -428,6 +455,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           />
         ))}
 
+        {isScriptNode && (
+          <div>
+            <input type="text" defaultValue={saveName} onChange={(e)=>setSaveName(e.target.value)}/>
+            <button onClick={handleSaveAutomation}>Save</button>
+          </div>
+        )}
         {isScriptNode && (
           <div
             className="script-editor nodrag"
