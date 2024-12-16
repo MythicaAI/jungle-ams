@@ -15,10 +15,6 @@ on:
       - 'sites/awful-ui/**'
       - '.github/workflows/sites-awful-ui-code-quality.yaml'
 
-defaults:
-  run:
-    working-directory: sites/awful-ui
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -45,6 +41,6 @@ jobs:
           driver: docker
       - uses: docker/build-push-action@v5
         with:
-          context: .
+          context: sites/awful-ui
           tags: test
 
