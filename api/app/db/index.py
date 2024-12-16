@@ -70,10 +70,10 @@ async def update(ctx: RequestContext) -> Tuple[str, str]:
                 work_guid=str(uuid4()),
                 auth_token=ctx.profile.auth_token,
                 path='/mythica/generate_job_defs',
-                data=parameter_set.model_dump()
-            )
+                data=parameter_set.model_dump())
 
             nats = NatsAdapter()
+            log.info("Sent NATS houdini task. Request: %s", event.model_dump())
             await nats.post("houdini", event.model_dump())
 
     return file_id, event_id
