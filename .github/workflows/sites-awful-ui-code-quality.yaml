@@ -45,6 +45,6 @@ jobs:
           driver: docker
       - uses: docker/build-push-action@v5
         with:
-          context: sites/awful-ui
+          context: .
           tags: test
 
