@@ -483,7 +483,7 @@ def create_version(session: Session,
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
 
-    asset_instance, asset_version_instance = avr_results[0]
+    asset_instance, _ = avr_results[0]
     scope = Scope(profile=profile,
                   asset_version=AssetVersionRef.create(
                       asset_seq=asset_instance.asset_seq,
