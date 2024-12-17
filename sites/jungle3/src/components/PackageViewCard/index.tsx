@@ -78,19 +78,19 @@ export const PackageViewCard: React.FC<Props> = ({ av, sxStyles }) => {
 
               height: showVersion ? "78px" : "61px",
               transition: "max-height 0.3 ease",
-              ...(!av.author_name &&
+              ...(!av.owner_name &&
                 !showVersion && { display: "flex", alignItems: "center" }),
             }}
           >
             {av.name}
 
-            {(av.author_name || showVersion) && (
+            {(av.owner_name || showVersion) && (
               <Stack direction="row" justifyContent="space-between">
                 <Typography
                   fontSize={12}
                   sx={{ display: "block", color: "#b1b1b1" }}
                 >
-                  {av.author_name}
+                  {av.owner_name}
                 </Typography>
 
                 {showVersion && (
