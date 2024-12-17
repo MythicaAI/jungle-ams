@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import tempfile
+from pathlib import Path, PurePosixPath
 from typing import Optional
 
 import git
@@ -13,12 +14,17 @@ from munch import munchify
 from packaging import version
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
-from models import PackageModel, ProcessedPackageModel
+from models import PackageFile, PackageModel, ProcessedPackageModel
 
 tempdir = tempfile.TemporaryDirectory()
 
 DEFAULT_STARTING_VERSION = [1, 0, 0]
 ZERO_VERSION = [0, 0, 0]
+
+
+def as_posix_path(path: str) -> PurePosixPath:
+    """Convert string paths to explicitly posix paths for package relative paths"""
+    return PurePosixPath(Path(path).as_posix())
 
 
 def get_github_user_project_name(ref_url: str) -> tuple[str, str]:
@@ -84,39 +90,54 @@ def get_default_branch(repo):
         raise ValueError("Cannot determine the default branch.")
 
 
-def collect_doc_package_paths(package: ProcessedPackageModel, default_license: str) -> list[str]:
+def collect_doc_package_paths(package: ProcessedPackageModel, default_license: str) \
+        -> list[PackageFile]:
     """Get list of local package contents that represent core documentation"""
     # Verify the repo has a license file
-    license_files = [file
-                     for file in os.listdir(package.root_disk_path)
-                     if file.lower().startswith('license')]
+    license_files = [PackageFile(
+        disk_path=Path(package.root_disk_path / file),
+        package_path=as_posix_path(file))
+        for file in os.listdir(package.root_disk_path)
+        if file.lower().startswith('license')]
 
     if len(license_files) == 0 and default_license != None:
-        license_files.append(default_license)
+        # add a package relative license with the default name or use
+        # it as a path in the current working directory
+        assert os.path.exists(default_license)
+        abs_path = os.path.abspath(default_license)
+        package_path = os.path.split(default_license)[-1]
+        license_files.append(PackageFile(
+            disk_path=Path(abs_path),
+            package_path=as_posix_path(package_path)))
 
     if len(license_files) == 0:
         raise ValueError(f"Failed to find license file in repo: {package.repo}")
 
     # Find some documentation, sort readme by shortest name
     # to prioritize e.g. README.md over README-building.md
-    readme_files = sorted([file
-                           for file in os.listdir(package.root_disk_path)
-                           if file.lower().startswith('readme')],
-                          key=lambda n: len(n))
+    readme_files = sorted([PackageFile(
+        disk_path=Path(package.root_disk_path / file),
+        package_path=as_posix_path(file))
+        for file in os.listdir(package.root_disk_path)
+        if file.lower().startswith('readme')],
+        key=lambda package_file: len(str(package_file.package_path)))
     return [license_files[0], *readme_files[0:]]
 
 
-def collect_images_paths(package: ProcessedPackageModel) -> list[str]:
+def collect_images_paths(package: ProcessedPackageModel) -> list[PackageFile]:
     """Collect all image package paths"""
     extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
-    contents = []
+    contents: list[PackageFile] = list()
     for root, dirs, files in os.walk(package.root_disk_path):
         for file in files:
             name, ext = os.path.splitext(file)
             if ext in extensions:
-                disk_path = os.path.join(root, file)
-                package_path = os.path.relpath(disk_path, package.root_disk_path)
-                contents.append(package_path)
+                disk_path = Path(os.path.join(root, file))
+                package_path = as_posix_path(os.path.relpath(disk_path, package.root_disk_path))
+                contents.append(
+                    PackageFile(
+                        disk_path=disk_path,
+                        package_path=package_path))
     return contents
 
 
@@ -161,11 +182,15 @@ class PackageUploader(object):
     """Processes git repos into packages"""
 
     def __init__(self):
+        self.license = None
         self.package_list_file = None
         self.endpoint = ''
-        self.token = ''
+        self.mythica_api_key = None
+        self.auth_token = None
         self.repo_base_dir = ''
         self.github_api_token = None
+        self.tag = None
+        self.tag_id = None
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -179,6 +204,12 @@ class PackageUploader(object):
         parser.add_argument(
             "-b", "--repo-base",
             help="Base directory for repo",
+            default=None,
+            required=False
+        )
+        parser.add_argument(
+            "-M", "--mythica-api-key",
+            help="Mythica API key",
             default=None,
             required=False
         )
@@ -200,27 +231,37 @@ class PackageUploader(object):
             default=None,
             required=False
         )
+        parser.add_argument(
+            '-t', '--tag',
+            help='Default tag to use when importing the package',
+            default=None,
+            required=False
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
         self.github_api_token = args.github_api_token
+        self.mythica_api_key = args.mythica_api_key
         self.package_list_file = args.package_list
         self.license = args.license
+        self.tag = args.tag
+        self.tag_id = None
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
             os.makedirs(self.repo_base_dir)
 
-    def start_session(self, profile_id):
+    def start_session(self):
         """Create a session for the current profile"""
-        url = f"{self.endpoint}/v1/sessions/direct/{profile_id}"
+        assert self.mythica_api_key is not None
+        url = f"{self.endpoint}/v1/sessions/keys/{self.mythica_api_key}"
         response = requests.get(url)
         if response.status_code != 200:
             print(f"Failed to start session: {response.status_code}")
             raise SystemExit
 
         o = munchify(response.json())
-        return o.token
+        self.auth_token = o.token
 
     def process_package(self, const_package: PackageModel):
         """Main entry point for each package definition being processed"""
@@ -243,10 +284,10 @@ class PackageUploader(object):
             user_description = f"imported from {package.commit_ref}"
         else:
             if os.path.isabs(package.repo):
-                package.root_disk_path = package.repo
+                package.root_disk_path = Path(package.repo)
             else:
-                package.root_disk_path = os.path.abspath(
-                    os.path.join(os.path.dirname(self.package_list_file), package.repo))
+                package.root_disk_path = Path(os.path.abspath(
+                    os.path.join(os.path.dirname(self.package_list_file), package.repo)))
 
             # TODO: Read Perforce revision number
             package.commit_ref = "unknown"
@@ -263,8 +304,6 @@ class PackageUploader(object):
 
         profile = self.find_or_create_profile(user, user_description)
         package.profile_id = profile.profile_id
-
-        self.token = self.start_session(profile.profile_id)
 
         # First try to resolve the version from the repo link
         package.asset_id, package.latest_version = self.find_versions_for_repo(package)
@@ -295,6 +334,11 @@ class PackageUploader(object):
             print(f"Creating {package.name} {DEFAULT_STARTING_VERSION}")
 
         self.create_version(package, asset_contents)
+
+        if self.tag:
+            if not self.tag_id:
+                self.tag_id = self.find_or_create_tag(self.tag)
+            self.tag_asset(package.asset_id, self.tag_id)
 
     def find_or_create_org(self, org_name: str):
         """Find or create an organization object"""
@@ -327,6 +371,30 @@ class PackageUploader(object):
         response.raise_for_status()
         return munchify(response.json())
 
+    def find_or_create_tag(self, tag_name: str):
+        """Find or create a tag ID"""
+        r = requests.get(f"{self.endpoint}/v1/tags/types/asset")
+        r.raise_for_status()
+        for tag_obj in r.json():
+            if tag_obj["name"] == tag_name:
+                return tag_obj["tag_id"]
+
+        # create tag
+        r = requests.post(f"{self.endpoint}/v1/tags",
+                          json={"name": tag_name},
+                          headers=self.auth_header())
+        r.raise_for_status()
+        return r.json()["tag_id"]
+
+    def tag_asset(self, asset_id, tag_id):
+        """Add a specific tag to an asset"""
+        r = requests.post(f"{self.endpoint}/v1/tags/assets/",
+                          json={
+                              "type_id": asset_id,
+                              "tag_id": tag_id},
+                          headers=self.auth_header())
+        r.raise_for_status()
+
     def find_versions_for_repo(self, package: PackageModel) -> tuple[str, list[int]]:
         """Find or create version objects for the repo URL"""
         response = requests.get(f"{self.endpoint}/v1/assets/committed_at?ref={package.repo}")
@@ -344,13 +412,15 @@ class PackageUploader(object):
     def auth_header(self) -> dict[str, str]:
         """Return the authorization token header"""
         return {
-            "Authorization": f"Bearer {self.token}"
+            "Authorization": f"Bearer {self.auth_token}"
         }
 
     def create_asset(self, package: PackageModel):
         """Create the asset root object"""
         asset_json = {}
-        response = requests.post(f"{self.endpoint}/v1/assets", headers=self.auth_header(), json=asset_json)
+        response = requests.post(f"{self.endpoint}/v1/assets/?as_profile_id={package.profile_id}",
+                                 headers=self.auth_header(),
+                                 json=asset_json)
         if response.status_code != 201:
             print(f"Failed to create asset for {package.name}")
             print(f"Request Error: {response.status_code} {response.content}")
@@ -382,7 +452,7 @@ class PackageUploader(object):
 
     def update_local_repo(self, package: PackageModel):
         """Clone or refresh the local repo"""
-        package.root_disk_path = os.path.abspath(os.path.join(str(self.repo_base_dir), package.name))
+        package.root_disk_path = Path(os.path.abspath(os.path.join(str(self.repo_base_dir), package.name)))
         if os.path.exists(package.root_disk_path):
             print(f"Pulling repo {package.repo} in {package.root_disk_path}")
             repo = git.Repo(package.root_disk_path)
@@ -409,51 +479,58 @@ class PackageUploader(object):
 
     def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list]:
         """Gather all files to be included in the package"""
-        files_paths = []
-        thumbnail_paths = []
+        files: list[PackageFile] = list()
+        thumbnails: list[PackageFile] = list()
 
-        files_paths.extend(collect_doc_package_paths(package, self.license))
-        thumbnail_paths.extend(collect_images_paths(package))
+        # Get the readme documents and license
+        files.extend(collect_doc_package_paths(package, self.license))
+
+        # add all images
+        thumbnails.extend(collect_images_paths(package))
+
+        # add scanned files in path
         scan_path = os.path.join(package.root_disk_path, package.directory)
-        for root, dirs, files in os.walk(scan_path):
-            for file in files:
-                disk_path = os.path.join(root, file)
-                package_path = os.path.relpath(disk_path, package.root_disk_path)
-                files_paths.append(package_path)
+        for root, dirs, file_listing in os.walk(scan_path):
+            for file in file_listing:
+                abs_path = Path(os.path.abspath(Path(root) / file))
+                package_path = as_posix_path(os.path.relpath(abs_path, package.root_disk_path))
+                files.append(
+                    PackageFile(
+                        disk_path=abs_path,
+                        package_path=package_path))
 
+        # Perform the file uploads
         file_contents = []
-
-        # Upload all files
-        for package_path in files_paths:
+        for package_file in files:
             file_contents.append(
-                self.upload_package_path(package, package_path))
+                self.upload_package_file(package, package_file))
+
         thumbnail_contents = []
-        for package_path in thumbnail_paths:
+        for package_file in thumbnails:
             thumbnail_contents.append(
-                self.upload_package_path(package, package_path))
+                self.upload_package_file(package, package_file))
 
         return {
             'files': file_contents,
             'thumbnails': thumbnail_contents
         }
 
-    def upload_package_path(self,
+    def upload_package_file(self,
                             package: ProcessedPackageModel,
-                            file_package_path: str) -> dict:
-        """Upload a file from a package path, return it's asset contents"""
-        filepath = os.path.normpath(os.path.join(package.root_disk_path, file_package_path))
-        print(f"Uploading file: {filepath}")
+                            package_file: PackageFile) -> dict:
+        """Upload a file from a package path, return its asset contents"""
+        print(f"Uploading file: {package_file.disk_path} as {package_file.package_path}")
 
-        with open(filepath, 'rb') as f:
+        with open(package_file.disk_path, 'rb') as f:
             upload_url = f"{self.endpoint}/v1/upload/store"
             m = MultipartEncoder(
-                fields={'files': (file_package_path, f, 'application/octet-stream')}
+                fields={'files': (str(package_file.package_path), f, 'application/octet-stream')}
             )
             headers = {
                 **self.auth_header(),
                 "Content-Type": m.content_type,
             }
-            response = requests.post(upload_url, headers=headers, data=m)
+            response = requests.post(upload_url, headers=headers, data=m, timeout=3)
             response.raise_for_status()
 
             o = munchify(response.json())
@@ -476,7 +553,8 @@ class PackageUploader(object):
             'published': True
         }
         version_str = '.'.join(map(str, package.latest_version))
-        assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
+        assets_url = (f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
+                      f"?as_profile_id={package.profile_id}")
         response = requests.post(assets_url, headers=self.auth_header(), json=asset_ver_json)
         response.raise_for_status()
 
@@ -487,6 +565,9 @@ def main():
     """Entrypoint"""
     uploader = PackageUploader()
     uploader.parse_args()
+
+    # start the authenticated session
+    uploader.start_session()
 
     # load the package list
     spec = importlib.util.spec_from_file_location('package_list', uploader.package_list_file)

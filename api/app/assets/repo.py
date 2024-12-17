@@ -442,7 +442,7 @@ def resolve_contents_as_json(
     return contents
 
 
-def create_root(session: Session, r: AssetCreateRequest, profile_seq: int) -> AssetCreateResult:
+def create_root(session: Session, r: AssetCreateRequest, owner_seq: int) -> AssetCreateResult:
     """
     Create the root asset that is the stable ID for all asset versions
     """
@@ -457,22 +457,22 @@ def create_root(session: Session, r: AssetCreateRequest, profile_seq: int) -> As
             raise HTTPException(HTTPStatus.NOT_FOUND, f"org {r.org_id} not found")
 
     asset_result = session.exec(insert(Asset).values(
-        org_seq=org_seq, owner_seq=profile_seq))
+        org_seq=org_seq, owner_seq=owner_seq))
     asset_seq = asset_result.inserted_primary_key[0]
     session.commit()
     return AssetCreateResult(
         asset_id=asset_seq_to_id(asset_seq),
         org_id=r.org_id,
-        owner_id=profile_seq_to_id(profile_seq))
+        owner_id=profile_seq_to_id(owner_seq))
 
 
 def create_version(session: Session,
                    asset_id: str,
                    version_str: str,
                    r: AssetCreateVersionRequest,
-                   profile: SessionProfile) -> tuple[CreateOrUpdate, AssetVersionResult]:
-    profile_seq = profile.profile_seq
-
+                   profile: SessionProfile,
+                   owner_seq: int,
+                   author_seq: int) -> tuple[CreateOrUpdate, AssetVersionResult]:
     version_id = convert_version_input(version_str)
     if version_id == ZERO_VERSION:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed")
@@ -489,10 +489,9 @@ def create_version(session: Session,
                       asset_seq=asset_instance.asset_seq,
                       owner_seq=asset_instance.owner_seq,
                       org_seq=asset_instance.org_seq))
-
+    # version is ZERO if there is only a root asset
     if avr.version == ZERO_VERSION:
         create_or_update = CreateOrUpdate.CREATE
-
         validate_dict = dict(
             role=roles.asset_create,
             object_id=asset_id,
@@ -506,8 +505,10 @@ def create_version(session: Session,
             auth_roles=profile.auth_roles,
             scope=scope)
 
+    # Validate the asset operation against the issuing profile
     validate_roles(**validate_dict)
 
+    # Extract all values from the request
     values = r.model_dump(exclude_unset=True)
 
     # resolve and process contents if they are set in the request they
@@ -517,7 +518,7 @@ def create_version(session: Session,
     if contents is not None:
         values['contents'] = resolve_contents_as_json(session, r.contents)
 
-    # if the org_id is specified issue an update against the root asset
+    # org change: if the org_id is specified update the property of the root asset
     org_id = values.pop('org_id', None)
     if org_id:
         org_seq = org_id_to_seq(org_id)
@@ -526,7 +527,7 @@ def create_version(session: Session,
             org_seq=org_seq)
         .where(Asset.deleted == None).where(
             Asset.asset_seq == asset_seq).where(
-            Asset.owner_seq == profile_seq))
+            Asset.owner_seq == owner_seq))
         if update_result.rowcount != 1:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
 
