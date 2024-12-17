@@ -88,7 +88,7 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
             <Input
               type="text"
               defaultValue={
-                (inputData[key] as string) ||
+                (inputData?.[key] as string | null) ||
                 (typeof fieldSchema.default === 'string'
                   ? fieldSchema.default
                   : '')
@@ -153,7 +153,7 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
             <Input
               type="text"
               defaultValue={
-                (inputData[key] as string) ||
+                (inputData?.[key] as string | null) ||
                 (typeof fieldSchema.default === 'string'
                   ? fieldSchema.default
                   : '')
