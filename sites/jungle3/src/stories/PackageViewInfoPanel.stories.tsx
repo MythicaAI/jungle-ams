@@ -32,7 +32,7 @@ const mockAssetVersionResponse: AssetVersionResponse = {
   package_id: "pkg1",
   org_name: "Organization",
   name: "Package1",
-  author_name: "Storybook",
+  owner_name: "Storybook",
   commit_ref:
     "git@github.com:storybook/test-storybook.git/7e9b50f2f9d405b14969edd5b124fb62711b344b",
   description: "This is a sample description for the storybook package.",
