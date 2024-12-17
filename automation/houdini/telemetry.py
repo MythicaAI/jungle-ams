@@ -55,7 +55,7 @@ def init_telemetry():
     )
     logger_provider.add_log_record_processor(SimpleLogRecordProcessor(exporter))
 
-    otel_log_handler = LoggingHandler(level=logging.INFO)
+    otel_log_handler = LoggingHandler(level=logging.DEBUG)
     logger = logging.getLogger()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger.addHandler(otel_log_handler)

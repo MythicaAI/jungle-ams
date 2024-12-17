@@ -27,6 +27,8 @@ aiohttp = "3.10.10"
 nats-py = "^2.9.0"
 cryptid = { path = "../cryptid" }
 pyjwt = { version = "2.9.0",  extras = ["crypto"] }
+fastapi = "^0.115.6"
+uvicorn = "^0.34.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.2"

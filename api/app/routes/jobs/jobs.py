@@ -185,17 +185,17 @@ async def add_job_nats_event(
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
-        data=params.model_dump()
-    )
+        data=params.model_dump())
 
     nats = NatsAdapter()
+    log.info("Sent NATS %s task. Request: %s", str(subject), event.model_dump())
     await nats.post(subject, event.model_dump())
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
         request: JobRequest,
-        profile: Profile = Depends(session_profile)) -> JobResponse:
+        profile: SessionProfile = Depends(session_profile)) -> JobResponse:
     """Request a job from an existing definition"""
     with tracer.start_as_current_span("job.status") as span:
         with get_session() as session:
