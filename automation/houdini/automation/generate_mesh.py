@@ -42,7 +42,7 @@ def apply_params(asset, params: dict):
                 try:
                     basis.append(RampBasis[point["interp"]].value)
                     keys.append(float(point["x"]))
-                    if isinstance(point["y"], float, int):
+                    if isinstance(point["y"], (float, int)):
                         values.append(float(point["y"]))
                     else:
                         values.append(hou.Vector3(point["y"]))

@@ -428,6 +428,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         <AutomationInputs
           inputSchema={inputSpec}
           onChange={setInputData}
+          inputData={inputData}
           onFileParameterDetected={handleFileParameterDetected}
         />
         <AutomationOutputs

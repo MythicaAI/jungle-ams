@@ -6,12 +6,14 @@ import { Input } from '@mui/joy';
 interface AutomationInputProps {
   inputSchema: JSONSchema | undefined;
   onChange: (formData: dictionary) => void;
+  inputData: dictionary;
   onFileParameterDetected: (fileParams: Record<string, FileParamType>) => void;
 }
 
 const AutomationInputs: React.FC<AutomationInputProps> = ({
   inputSchema: schema,
   onChange,
+  inputData,
   onFileParameterDetected,
 }) => {
   const [formData, setFormData] = useState<dictionary>({});
@@ -27,7 +29,11 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
 
   const handleChange = (key: string, value: unknown) => {
     const updatedData = { ...formData, [key]: value };
-    setFormData(updatedData);
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value
+    }));
+
     onChange(updatedData); // Trigger parent component's onChange
   };
 
@@ -82,9 +88,10 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
             <Input
               type="text"
               defaultValue={
-                typeof fieldSchema.default === 'string'
+                (inputData[key] as string) ||
+                (typeof fieldSchema.default === 'string'
                   ? fieldSchema.default
-                  : ''
+                  : '')
               }
               onChange={(e) => handleChange(key, e.target.value)}
             />
@@ -146,9 +153,10 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
             <Input
               type="text"
               defaultValue={
-                typeof fieldSchema.default === 'string'
+                (inputData[key] as string) ||
+                (typeof fieldSchema.default === 'string'
                   ? fieldSchema.default
-                  : ''
+                  : '')
               }
               onChange={(e) => handleChange(key, e.target.value)}
             />
