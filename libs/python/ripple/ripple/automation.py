@@ -528,11 +528,13 @@ class Worker:
             try:
 
                 with tempfile.TemporaryDirectory() as tmpdir:
+                    self.tmpdir = tmpdir
                     api_url = ripple_config().api_base_uri
                     resolve_params(api_url, tmpdir, input_data)
                     publisher = SlimPublisher()
                     result = worker.provider(input_data, publisher)
                     publisher.result(result)
+                    self.tmpdir = None
                     
             except Exception as e:
                 log.error(f"Worker execution failed: {format_exception(e)}")
