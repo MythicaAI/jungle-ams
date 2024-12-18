@@ -18,13 +18,7 @@ import {
   Stack,
   Typography,
 } from '@mui/joy';
-import {
-  GripVertical,
-  LucideSquareX,
-  LucideTrash,
-  LucideTrash2,
-  LucideX,
-} from 'lucide-react';
+import { GripVertical, LucideTrash2 } from 'lucide-react';
 import { AutomationSave } from '../types/Automation';
 import { TabValues } from '../enums';
 
