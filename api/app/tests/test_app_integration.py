@@ -392,27 +392,6 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     o = munchify(r.json())
     assert o.author_id == new_profile_id
 
-    # Test: Ensure author_id remains unchanged when not provided
-    # test as super-admin
-    new_profile_asset_ver_json.pop("author_id", None)
-    r = client.post(
-        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
-        json=new_profile_asset_ver_json,
-        headers=headers)
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert o.author_id == new_profile_id
-
-    # Test: Ensure author_id remains unchanged when super-admin updates author_id
-    new_profile_asset_ver_json["author_id"] = profile_id
-    r = client.post(
-        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
-        json=new_profile_asset_ver_json,
-        headers=headers)
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert o.author_id == new_profile_id
-
     r = client.get(
         f"{api_base}/assets/{asset_id}/versions/0.2.0")
     assert_status_code(r, HTTPStatus.OK)

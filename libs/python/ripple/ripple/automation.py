@@ -4,10 +4,13 @@ import os
 import logging
 import traceback
 import asyncio
+import uuid
 import nats
 import requests
 import tempfile
-import warnings
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
 
 from pydantic import BaseModel, model_validator
 from typing import Callable, Type, Optional, Dict, Any, Literal
@@ -415,7 +418,7 @@ class Worker:
             return(Worker.CatalogResponse(workers={}))
         return impl
     
-    def start(self, subject: str, workers: list[dict]) -> None:
+    def _inject_local_workers(self, workers: list[dict]) -> None:
         path='/mythica/workers'
         workers.append({
             'path':path,
@@ -442,12 +445,112 @@ class Worker:
 
         self._load_workers(workers)
 
+    def start(self, subject: str, workers: list[dict]) -> None:
+        self._inject_local_workers(workers)
+
         loop = asyncio.get_event_loop()        
         task = loop.create_task(self.nats.listen(subject, self._get_executor()))
         task.add_done_callback(_get_error_handler())
 
         # Run loop until canceled or an exception escapes
         loop.run_forever()
+
+
+    def start_web(self, workers: list[dict]):
+        self._inject_local_workers(workers)
+        """
+        Start a FastAPI app dynamically based on the workers list.
+        """
+        app = FastAPI(title=f"Automation API", description="Mythica Automation API")
+
+        @app.options("/")
+        async def preflight():
+            """
+            Handles CORS preflight requests.
+            """
+            headers = {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Max-Age": "3600",
+            }
+            return JSONResponse(content=None, status_code=204, headers=headers)
+        
+        @app.post("/")
+        async def automation_request(request: Request):
+            """
+            Handles automation requests and dispatches to appropriate worker functions.
+            """
+            # Set CORS headers
+            headers = {"Access-Control-Allow-Origin": "*"}
+
+            # Parse request data
+            request_data = await request.json()
+            request_data['process_guid'] = process_guid
+            wreq = WorkerRequest(**request_data)
+            
+            
+            # Find the appropriate worker by path
+            worker = self.workers[wreq.path]
+
+            if not worker:
+                return JSONResponse(
+                    content={"work_guid": wreq.work_guid, "result": {"error": f"No worker found for path '{wreq.path}'"}},
+                    status_code=404,
+                    headers=headers,
+                )
+
+            # Convert request data to the input model
+            input_model_class = worker.inputModel
+            try:
+                input_data = input_model_class(**wreq.data)  # Validate and parse the input
+            except Exception as e:
+                log.error(f"Worker execution failed: {format_exception(e)}")
+                return JSONResponse(
+                    content={"work_guid": wreq.work_guid, "result": {"error": f"Invalid input data: {format_exception(e)}"}},
+                    status_code=422,
+                    headers=headers,
+                )
+            class SlimPublisher(ResultPublisher):
+                
+                def __init__(myself) -> None:
+                    myself.rest = self.rest
+                    myself.request = wreq
+                def result(myself, item: ProcessStreamItem, complete: bool=False):
+                    item.process_guid = process_guid
+                    item.correlation = myself.request.work_guid
+                    item.job_id = ""
+
+                    # Upload any references to local data
+                    myself._publish_local_data(item, ripple_config().api_base_uri)            
+
+            # Execute the worker's provider function
+            try:
+
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    self.tmpdir = tmpdir
+                    api_url = ripple_config().api_base_uri
+                    resolve_params(api_url, tmpdir, input_data)
+                    publisher = SlimPublisher()
+                    result = worker.provider(input_data, publisher)
+                    publisher.result(result)
+                    self.tmpdir = None
+                    
+            except Exception as e:
+                log.error(f"Worker execution failed: {format_exception(e)}")
+                return JSONResponse(
+                    content={"work_guid": wreq.work_guid, "result": {"error": f"Worker execution failed: {format_exception(e)}"}},
+                    status_code=500,
+                    headers=headers,
+                )
+
+            # Return result
+            return JSONResponse(
+                content={"work_guid": wreq.work_guid, "result": result.dict()},
+                status_code=200,
+                headers=headers,
+            )
+        return app
 
     def _load_workers(self,workers):
         """Function to dynamically discover and register workers in a container"""

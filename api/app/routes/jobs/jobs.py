@@ -1,10 +1,10 @@
-import sys
 import logging
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any
 from uuid import uuid4
 
+import sys
 from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
     job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
 from cryptid.location import location
@@ -13,7 +13,7 @@ from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
 from ripple.automation import NatsAdapter, WorkerRequest, process_guid
-from ripple.models.params import ParameterSet, ParameterSpec, FileParameter
+from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile
 from ripple.runtime.params import repair_parameters, validate_params
 from sqlalchemy.sql.functions import now as sql_now
@@ -77,11 +77,13 @@ class JobResultResponse(BaseModel):
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
+
 def disable_nats(context_str):
     if "pytest" in sys.argv[0] or "pytest" in sys.modules:
-        log.info(f"skipping post to NATS in test {context_str}")
+        log.info("skipping post to NATS in test: %s", context_str)
         return True
     return False
+
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
@@ -122,7 +124,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         return ""
 
     parameter_set = ParameterSet(
-        hda_file = FileParameter(file_id=file_id)
+        hda_file=FileParameter(file_id=file_id)
     )
     work_guid = str(uuid4())
     event = WorkerRequest(
@@ -183,17 +185,17 @@ async def add_job_nats_event(
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
-        data=params.model_dump()
-    )
+        data=params.model_dump())
 
     nats = NatsAdapter()
+    log.info("Sent NATS %s task. Request: %s", str(subject), event.model_dump())
     await nats.post(subject, event.model_dump())
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
         request: JobRequest,
-        profile: Profile = Depends(session_profile)) -> JobResponse:
+        profile: SessionProfile = Depends(session_profile)) -> JobResponse:
     """Request a job from an existing definition"""
     with tracer.start_as_current_span("job.status") as span:
         with get_session() as session:
@@ -334,4 +336,3 @@ async def set_complete(
             span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
             span.set_status(Status(StatusCode.OK))
             session.commit()
-

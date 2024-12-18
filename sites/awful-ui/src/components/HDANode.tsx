@@ -254,7 +254,8 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       // Only update if `prev` is not equal to `ifx`
       return JSON.stringify(prev) !== JSON.stringify(ifx) ? ifx : prev;
     });
-  }, [myFlowData]);
+    myInterfaceData.state = NodeState.Executed
+  }, [myFlowData, myInterfaceData]);
 
   useEffect(() => {
     if (myInterfaceData.state === NodeState.Executed) {

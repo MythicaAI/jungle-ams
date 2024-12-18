@@ -207,7 +207,7 @@ const Packages = () => {
                 </Chip>
               ))}
               <Typography level="body-sm" color="neutral">
-                by {latestVersion.author_name}{" "}
+                by {latestVersion.owner_name}{" "}
                 {latestVersion.org_name
                   ? "[" + latestVersion.org_name + "]"
                   : ""}

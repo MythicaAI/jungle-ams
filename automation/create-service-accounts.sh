@@ -17,8 +17,9 @@ kubectl -n $NAMESPACE create serviceaccount $KSA_NAME
 #
 gcloud iam service-accounts add-iam-policy-binding \
        --role roles/iam.workloadIdentityUser \
-       --member "serviceAccount:${PROJECT_ID}.svc.id.goog[automation/automation]" \
-       ${SERVICE_ACCOUNT}
+       --member "serviceAccount:${PROJECT_ID}.svc.id.goog[${NAMESPACE}/${KSA_NAME}]" \
+       ${SERVICE_ACCOUNT} \
+       --project=${PROJECT_ID}
 
 kubectl annotate serviceaccount --namespace $NAMESPACE $KSA_NAME \
         iam.gke.io/gcp-service-account=${SERVICE_ACCOUNT}

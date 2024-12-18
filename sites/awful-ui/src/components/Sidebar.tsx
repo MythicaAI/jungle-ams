@@ -18,7 +18,14 @@ import {
   Stack,
   Typography,
 } from '@mui/joy';
-import { GripVertical } from 'lucide-react';
+import {
+  GripVertical,
+  LucideSquareX,
+  LucideTrash,
+  LucideTrash2,
+  LucideX,
+} from 'lucide-react';
+import { AutomationSave } from '../types/Automation';
 import { TabValues } from '../enums';
 
 type Props = {
@@ -40,6 +47,7 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
     onNew,
     onDelete,
   } = useAwfulFlow(); // Import AwfulFlow methods
+
   const [selectedFile, setSelectedFile] = useState<GetFileResponse | null>(
     null
   );
@@ -332,7 +340,11 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
                 </AccordionSummary>
                 <AccordionDetails>
                   {automationContext?.automations[worker]?.map((automation) => {
-                    if (automation.spec.hidden) return null;
+                    if (
+                      automation.spec.hidden ||
+                      automation.path.endsWith('/mythica/script')
+                    )
+                      return null;
                     return (
                       <div
                         key={automation.path}
@@ -349,6 +361,43 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
                   })}
                 </AccordionDetails>
               </Accordion>
+              {automationContext.savedAutomationsByWorker[worker]?.map(
+                (automation: AutomationSave) => {
+                  return (
+                    <div
+                      key={automation.id}
+                      className="dndnode custom"
+                      onDragStart={(event) =>
+                        onDragStart(event, `saved?${automation.id}`)
+                      }
+                      draggable
+                      style={{ display: 'flex', flexDirection: 'row' }}
+                    >
+                      <Typography fontSize={14} style={{ flex: '1 1 auto' }}>
+                        {automation.name}
+                      </Typography>
+                      <LucideTrash2
+                        onClick={() =>
+                          automationContext.deleteAutomation(automation)
+                        }
+                        style={{ marginRight: '4px', cursor: 'pointer' }}
+                      />
+                      <GripVertical />
+                    </div>
+                  );
+                }
+              )}
+              <div
+                key={`${worker}-new`}
+                className="dndnode new"
+                onDragStart={(event) =>
+                  onDragStart(event, `${worker}://mythica/script`)
+                }
+                draggable
+              >
+                <Typography fontSize={14}>Create New Automation...</Typography>
+                <GripVertical />
+              </div>
             </div>
           ))}
         </AccordionGroup>
