@@ -9,12 +9,17 @@ import useMythicaApi from '../hooks/useMythicaApi';
 import AutomationInputs from './handles/AutomationInputs';
 import AutomationOutputs from './handles/AutomationOutputs';
 
-import { AutomationSave, dictionary, ExecutionData, FileParamType } from '../types/Automation';
+import {
+  AutomationSave,
+  dictionary,
+  ExecutionData,
+  FileParamType,
+} from '../types/Automation';
 import { NodeState } from '../types/AwfulFlow';
 import { JSONSchema } from '../types/JSONSchema';
 import FileInputHandle from './handles/FileInputHandle';
 import FileOutputHandle from './handles/FileOutputHandle';
-import { Button,  Typography } from '@mui/joy';
+import { Button, Input, Stack, Typography } from '@mui/joy';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -66,8 +71,14 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const { initAutomation, runAutomation, parseAutomation, allAutomations, newAutomation, saveAutomation } =
-    useAutomation(); //provides automation related services.
+  const {
+    initAutomation,
+    runAutomation,
+    parseAutomation,
+    allAutomations,
+    newAutomation,
+    saveAutomation,
+  } = useAutomation(); //provides automation related services.
   const automationTask = allAutomations[node.data.automation];
   const isScriptNode = automationTask.path === scriptPath;
 
@@ -107,9 +118,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
 
-  const [saveName, setSaveName] = useState<string>(
-    node.data.saveData?.name
-  );
+  const [saveName, setSaveName] = useState<string>(node.data.saveData?.name);
   const [scriptContent, setScriptContent] = useState<string>(
     node.data.saveData?.script
   ); // State to store Monaco editor content
@@ -117,7 +126,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const timeout = 2000;
   const typingTimeout = useRef(timeout);
 
-  const handleSaveAutomation = useCallback(() => {    
+  const handleSaveAutomation = useCallback(() => {
     if (!node.data.saveData.name || node.data.saveData.name === '') {
       console.error('Name is required');
       return;
@@ -125,7 +134,6 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
 
     saveAutomation(node.data.saveData, (saved: AutomationSave) => {
       node.data.saveData = saved;
-
     });
   }, [saveAutomation, node.data]);
 
@@ -360,17 +368,17 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     node.data.inputData = { ...inputData, ...fileInputData };
     if (isScriptNode) {
       if (node.data.saveData) {
-        node.data.saveData.script =  scriptContent;
+        node.data.saveData.script = scriptContent;
         node.data.saveData.name = saveName;
         node.data.saveData.inputSpec = inputSpec;
         node.data.saveData.outputSpec = outputSpec;
       } else {
         node.data.saveData = newAutomation(
-          automationTask.worker, 
-          saveName, 
+          automationTask.worker,
+          saveName,
           scriptContent,
           inputSpec,
-          outputSpec          
+          outputSpec
         );
       }
     }
@@ -410,7 +418,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       }}
     >
       {isScriptNode && (
-        <NodeResizer minHeight={min + delta} minWidth={min + 2*delta} />
+        <NodeResizer minHeight={min + delta} minWidth={min + 2 * delta} />
       )}
 
       <div
@@ -457,10 +465,15 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         ))}
 
         {isScriptNode && (
-          <div>
-            <input type="text" defaultValue={saveName} onChange={(e)=>setSaveName(e.target.value)}/>
-            <button onClick={handleSaveAutomation}>Save</button>
-          </div>
+          <Stack direction="row" gap="8px" mb="8px">
+            <Input
+              type="text"
+              defaultValue={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              sx={{ width: 'calc(100%)' }}
+            />
+            <Button onClick={handleSaveAutomation}>Save</Button>
+          </Stack>
         )}
         {isScriptNode && (
           <div

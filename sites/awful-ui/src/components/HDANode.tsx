@@ -9,7 +9,7 @@ import ParmGroup from './houdiniParms/ParmGroup';
 import { dictionary, ExecutionData } from '../types/Automation';
 import FileInputHandle from './handles/FileInputHandle';
 import FileOutputHandle from './handles/FileOutputHandle';
-import { Card } from '@mui/joy';
+import { Button, Card } from '@mui/joy';
 import useMythicaApi from '../hooks/useMythicaApi';
 
 type InterfaceExecutionData = ExecutionData & {
@@ -332,7 +332,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
         <pre style={{ overflow: 'auto', maxWidth: '640px' }}>
           {flowExecutionMessage}
         </pre>
-        <button
+        <Button
           onClick={runHda}
           style={{ width: '100%' }}
           disabled={
@@ -342,7 +342,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
           {myExecutionData.state === NodeState.Running
             ? 'Running...'
             : ' Run HDA'}
-        </button>
+        </Button>
       </div>
 
       <div style={{ height: '24px' }} />
