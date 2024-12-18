@@ -123,7 +123,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
         const files = myFlowData[fileParam];
 
         // Take the first file_id and create a single-entry array
-        const firstFile = files[0];
+        const firstFile = files ? files[0] : null;
         const fileDict = firstFile ? { file_id: firstFile.file_id } : {};
 
         setFileInputData((prev) => ({
