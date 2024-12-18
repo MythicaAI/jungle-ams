@@ -1,11 +1,6 @@
 // MythicaFlow.tsx
-import React, { useRef, useMemo } from 'react';
-import {
-  ReactFlow,
-  MiniMap,
-  Controls,
-  Background,
-} from '@xyflow/react';
+import { FC, useRef, useMemo, useState } from 'react';
+import { ReactFlow, MiniMap, Controls, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import useAwfulFlow from './hooks/useAwfulFlow';
@@ -15,23 +10,26 @@ import AutomationNode from './components/AutomationNode';
 import FileUploadNode from './components/FileUploadNode';
 import FileViewerNode from './components/FileViewerNode';
 import HDANode from './components/HDANode';
-
+import { Stack } from '@mui/joy';
+import { Header } from './components/Header';
+import { TabValues } from './enums';
 
 // Main Awful UI component
-const AwfulUI: React.FC = () => {
+const AwfulUI: FC = () => {
+  const [tab, setTab] = useState<string>(TabValues.EDIT);
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
-  const { 
-    onConnect, onDisconnect,
+  const {
+    onConnect,
+    onDisconnect,
     onNodesDelete,
-    onNodesChange, 
-    onDrop, 
-    onDragOver, 
-    nodes, 
-    edges, 
+    onNodesChange,
+    onDrop,
+    onDragOver,
+    nodes,
+    edges,
     onEdgesChange,
-    setRfInstance
+    setRfInstance,
   } = useAwfulFlow();
-
 
   const nodeTypes = useMemo(
     () => ({
@@ -44,32 +42,36 @@ const AwfulUI: React.FC = () => {
   );
 
   return (
-    <div className="dndflow">
-      <div className="reactflow-wrapper" ref={reactFlowWrapper}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodesDelete={onNodesDelete}
-          onEdgesDelete={onDisconnect}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onInit={setRfInstance}
-          nodeTypes={nodeTypes}
-          deleteKeyCode="Delete"
-          fitView
-          minZoom={0.1}
-          maxZoom={1}
-        >
-          <MiniMap zoomable pannable />
-          <Controls />
-          <Background />
-        </ReactFlow>
+    <Stack>
+      <Header tab={tab} setTab={setTab} />
+      <div className="dndflow" data-joy-color-scheme="dark">
+        <div className="reactflow-wrapper" ref={reactFlowWrapper}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodesDelete={onNodesDelete}
+            onEdgesDelete={onDisconnect}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            onInit={setRfInstance}
+            nodeTypes={nodeTypes}
+            deleteKeyCode="Delete"
+            fitView
+            minZoom={0.1}
+            maxZoom={1}
+            colorMode="dark"
+          >
+            <MiniMap zoomable pannable />
+            <Controls />
+            <Background />
+          </ReactFlow>
+        </div>
+        <Sidebar tab={tab} />
       </div>
-      <Sidebar />
-    </div>
+    </Stack>
   );
 };
 

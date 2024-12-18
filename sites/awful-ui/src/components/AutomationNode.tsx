@@ -14,7 +14,7 @@ import { NodeState } from '../types/AwfulFlow';
 import { JSONSchema } from '../types/JSONSchema';
 import FileInputHandle from './handles/FileInputHandle';
 import FileOutputHandle from './handles/FileOutputHandle';
-import { Button,  Typography } from '@mui/joy';
+import { Button, Typography } from '@mui/joy';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -383,7 +383,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       }}
     >
       {isScriptNode && (
-        <NodeResizer minHeight={min + delta} minWidth={min + 2*delta} />
+        <NodeResizer minHeight={min + delta} minWidth={min + 2 * delta} />
       )}
 
       <div
