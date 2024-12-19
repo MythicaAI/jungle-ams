@@ -4,7 +4,7 @@ import logging
 import mythica.network as mnet
 import requests
 
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem

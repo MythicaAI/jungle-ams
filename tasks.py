@@ -97,6 +97,9 @@ IMAGES = {
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
     },
+    'automation/imagemagick': {
+        'requires': ['libs/python'],
+    }
 }
 
 SITE_DATA = {

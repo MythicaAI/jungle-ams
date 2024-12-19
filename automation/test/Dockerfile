@@ -30,6 +30,6 @@ RUN python -m pip install \
     --no-cache-dir pip poetry
 
 RUN poetry config --local virtualenvs.create false
-RUN poetry install
+RUN poetry install --only main,infra --no-root --no-cache
 
 ENTRYPOINT ["/usr/local/bin/python", "workers.py"]
