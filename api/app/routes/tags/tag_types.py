@@ -78,7 +78,7 @@ async def create_tag_for_type(
         try:
             session.exec(insert(type_model).values(**insert_dict))
             session.commit()
-        except IntegrityError as ex:
+        except IntegrityError:
             session.rollback()
             log.info("tag assignment already exists: %s -> %s",
                      create.tag_id,

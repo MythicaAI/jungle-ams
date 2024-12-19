@@ -1,8 +1,6 @@
 import logging
 from http import HTTPStatus
-from pathlib import PureWindowsPath
 from typing import Optional
-from urllib.parse import quote
 
 from fastapi import HTTPException
 from pydantic import BaseModel
