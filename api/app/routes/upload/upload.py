@@ -88,10 +88,17 @@ async def upload_internal(
         shutil.copyfileobj(upload_file.file, f)
     log.info('%s saved to %s', filename, ctx.local_filepath)
 
+    page_size = 64 * 1024
+    file_size = 0
+    sha1 = hashlib.sha1()
     with open(ctx.local_filepath, "rb") as f:
-        content = f.read()
-        ctx.content_hash = hashlib.sha1(content).hexdigest()
-        ctx.file_size = len(content)
+        chunk: bytes
+        while chunk := f.read(page_size):
+            sha1.update(chunk)
+            file_size += len(chunk)
+
+    ctx.content_hash = sha1.hexdigest()
+    ctx.file_size = file_size
 
     log.info("file: %s, size: %s, hash: %s",
              ctx.local_filepath,

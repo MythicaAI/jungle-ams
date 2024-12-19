@@ -1,6 +1,8 @@
 import logging
 from http import HTTPStatus
+from pathlib import PureWindowsPath
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -40,7 +42,14 @@ def translate_gcs(storage, object_spec) -> str:
 
 def translate_test(storage: LocalFileStorageClient, object_spec: str) -> str:
     """LocalStorage download link creator"""
-    return storage.download_link(*object_spec.split(":"))
+    parts = object_spec.split(":")
+    bucket_name = parts[0]
+    if len(parts[1:]) > 1:
+        path_replace = parts[2].replace('\\', '/')
+        object_name = f"/lfs/{parts[1]}/{path_replace}"  # Windows file names may have colons in local test
+    else:
+        object_name = parts[1]
+    return storage.download_link(bucket_name, object_name)
 
 
 storage_types = {

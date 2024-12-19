@@ -1,9 +1,12 @@
 """Bulk import package uploader, consumes a package list and uploads them to the package index API"""
 import argparse
+import hashlib
 import importlib.util
 import json
+import logging
 import os
 import tempfile
+from http import HTTPStatus
 from pathlib import Path, PurePosixPath
 from typing import Optional
 
@@ -14,12 +17,19 @@ from munch import munchify
 from packaging import version
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
+from connection_pool import ConnectionPool
+from log_config import log_config
 from models import PackageFile, PackageModel, ProcessedPackageModel
+from perforce import parse_perforce_change, run_p4_command
 
 tempdir = tempfile.TemporaryDirectory()
 
 DEFAULT_STARTING_VERSION = [1, 0, 0]
 ZERO_VERSION = [0, 0, 0]
+
+log_config(log_level="DEBUG")
+
+log = logging.getLogger(__name__)
 
 
 def as_posix_path(path: str) -> PurePosixPath:
@@ -47,14 +57,14 @@ def get_repo_versions(repo):
             version.parse(str(tag))
             version_tags.append(tag)
         except version.InvalidVersion:
-            print(f"Invalid version: {tag}")
+            log.error("Invalid version: %s", tag)
 
     # Sort version tags
     sorted_versions = sorted(version_tags, key=lambda t: version.parse(str(t)), reverse=True)
 
     # Print the sorted releases
     for tag in sorted_versions:
-        print(f"Release: {tag}, Date: {tag.commit.committed_datetime}")
+        log.info("Release: %s, Date: %s", tag, tag.commit.committed_datetime)
     return sorted_versions[0:]
 
 
@@ -67,7 +77,7 @@ def get_github_latest_release(api_token, package) -> Optional[GitRelease]:
         if releases.totalCount == 0:
             return None
         latest_release = releases.reversed.get_page(0)[0]
-        print("latest github release", latest_release)
+        log.info("latest github release %s", latest_release)
         return latest_release
 
 
@@ -90,6 +100,32 @@ def get_default_branch(repo):
         raise ValueError("Cannot determine the default branch.")
 
 
+def get_p4_change_list(path: Path) -> int:
+    """
+    Get the latest Perforce changelist number for a path.
+
+    Args:
+        path (str): Path to check. Defaults to current directory.
+
+    Returns:
+        int: Changelist number, or -1 if there's an error
+    """
+
+    cmd = ["p4", "changes", "-m", "1", f"{path}..."]
+    result = run_p4_command(cmd, p4_env=os.environ.copy())
+    if result.success:
+        log.info("p4 command success %s", result.stdout)
+        info = parse_perforce_change(result.stdout)
+        log.info("perforce cl#: %s, by: %s, '%s'",
+                 info["change_number"],
+                 info["username"],
+                 info["description"])
+        return int(info["change_number"])
+    else:
+        log.error(result.long_error_description())
+        raise ValueError(result.short_error_description())
+
+
 def collect_doc_package_paths(package: ProcessedPackageModel, default_license: str) \
         -> list[PackageFile]:
     """Get list of local package contents that represent core documentation"""
@@ -100,7 +136,7 @@ def collect_doc_package_paths(package: ProcessedPackageModel, default_license: s
         for file in os.listdir(package.root_disk_path)
         if file.lower().startswith('license')]
 
-    if len(license_files) == 0 and default_license != None:
+    if len(license_files) == 0 and default_license:
         # add a package relative license with the default name or use
         # it as a path in the current working directory
         assert os.path.exists(default_license)
@@ -151,14 +187,14 @@ def any_upstream_changes(package: ProcessedPackageModel,
                         for asset_version_content in latest_version_contents}
     # validate the file count matches
     if len(latest_version_contents) != len(new_asset_contents):
-        print(("Changed due to file count mismatch:"
-               f"{len(latest_version_contents)} != {len(new_asset_contents)}"))
+        log.info("Changed due to file count mismatch: %s != %s",
+                 len(latest_version_contents), len(new_asset_contents))
         return True
     # validate all content hashes exist in existing asset version content
     for new_content in new_asset_contents:
         new_content_hash = new_content['content_hash']
         if new_content_hash not in contents_by_hash:
-            print(f"Content hash missing or changed {new_content_hash}")
+            log.info("Content hash missing or changed %s", new_content_hash)
             return True
     return False
 
@@ -181,7 +217,7 @@ def get_description_from_readme(package: ProcessedPackageModel):
 class PackageUploader(object):
     """Processes git repos into packages"""
 
-    def __init__(self):
+    def __init__(self, conn_pool: ConnectionPool):
         self.license = None
         self.package_list_file = None
         self.endpoint = ''
@@ -191,6 +227,7 @@ class PackageUploader(object):
         self.github_api_token = None
         self.tag = None
         self.tag_id = None
+        self.conn_pool = conn_pool
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -254,14 +291,20 @@ class PackageUploader(object):
     def start_session(self):
         """Create a session for the current profile"""
         assert self.mythica_api_key is not None
-        url = f"{self.endpoint}/v1/sessions/keys/{self.mythica_api_key}"
-        response = requests.get(url)
+
+        url = f"{self.endpoint}/v1/sessions/key/{self.mythica_api_key}"
+        response = self.conn_pool.get(url)
         if response.status_code != 200:
-            print(f"Failed to start session: {response.status_code}")
+            log.error("Failed to start session: %s", response.status_code)
             raise SystemExit
 
         o = munchify(response.json())
         self.auth_token = o.token
+        log.info("started session for profile: \"%s\" <%s> (%s), validated: %s",
+                 o.profile.name,
+                 o.profile.email,
+                 o.profile.profile_id,
+                 o.profile.validate_state)
 
     def process_package(self, const_package: PackageModel):
         """Main entry point for each package definition being processed"""
@@ -271,11 +314,7 @@ class PackageUploader(object):
         if package.name == "":
             package.name = os.path.basename(package.repo)
 
-        print(f"=====================================")
-        print(f"Processing package: {package.name}")
-
-        user = None
-        user_description = None
+        log.info("Processing package: %s", package.name)
 
         if package.repo.startswith("git"):
             self.update_local_repo(package)
@@ -283,14 +322,14 @@ class PackageUploader(object):
             user, project = get_github_user_project_name(package.repo)
             user_description = f"imported from {package.commit_ref}"
         else:
+            # build the root disk path
             if os.path.isabs(package.repo):
                 package.root_disk_path = Path(package.repo)
             else:
                 package.root_disk_path = Path(os.path.abspath(
                     os.path.join(os.path.dirname(self.package_list_file), package.repo)))
 
-            # TODO: Read Perforce revision number
-            package.commit_ref = "unknown"
+            package.commit_ref = f"#{get_p4_change_list(package.root_disk_path)}"
             package.repo = "MythicaPerforce::" + package.name
 
             user = "Mythica"
@@ -306,57 +345,63 @@ class PackageUploader(object):
         package.profile_id = profile.profile_id
 
         # First try to resolve the version from the repo link
-        package.asset_id, package.latest_version = self.find_versions_for_repo(package)
-        if package.asset_id is None or package.asset_id == "":
+        package.asset_id, package.latest_version = self.find_latest_repo_version(package)
+        if not package.asset_id:
             package.asset_id = self.create_asset(package)
             package.latest_version = ZERO_VERSION
 
         asset_contents = self.gather_contents(package)
         if len(asset_contents['files']) == 0:
-            print(f"Failed to find any files in directory {package.directory} for package {package.name}")
+            log.error("Failed to find any files in directory %s for package %s",
+                      package.directory, package.name)
             return
 
         if self.latest_version_exists(package):
             if package.latest_github_version and package.latest_github_version != package.latest_version:
                 package.latest_version = package.latest_github_version
-                print(f"Updating {package.name} to latest github release: {package.latest_github_version}")
+                log.info("Updating %s to latest github release: %s",
+                         package.name, package.latest_github_version)
             elif any_upstream_changes(package, 'files', asset_contents['files']):
                 bump_package_version(package)
-                print(f"File change detected, bumped {package.name} version to {package.latest_version}")
+                log.info("File change detected, bumped %s version to %s",
+                         package.name, package.latest_version)
             elif any_upstream_changes(package, 'thumbnails', asset_contents['thumbnails']):
                 bump_package_version(package)
-                print(f"Thumbnail change detected, bumped {package.name} version to {package.latest_version}")
+                log.info("Thumbnail change detected, bumped %s version to %s",
+                         package.name, package.latest_version)
             else:
-                print(f"Skipping {package.name}, latest version available")
+                log.info("Skipping %s, latest version available: %s",
+                         package.name, package.latest_version)
                 return
         else:
             package.latest_version = DEFAULT_STARTING_VERSION
-            print(f"Creating {package.name} {DEFAULT_STARTING_VERSION}")
+            log.info("Creating package: %s, version: %s",
+                     package.name, DEFAULT_STARTING_VERSION)
 
         self.create_version(package, asset_contents)
 
         if self.tag:
             if not self.tag_id:
                 self.tag_id = self.find_or_create_tag(self.tag)
-            self.tag_asset(package.asset_id, self.tag_id)
+            self.tag_asset(package, self.tag_id)
 
     def find_or_create_org(self, org_name: str):
         """Find or create an organization object"""
-        response = requests.get(f"{self.endpoint}/v1/orgs/named/{org_name}?exact=true")
+        response = self.conn_pool.get(f"{self.endpoint}/v1/orgs/named/{org_name}?exact=true")
         response.raise_for_status()
         orgs = response.json()
         if len(orgs) == 1:
             return munchify(orgs[0])
         org_json = {"name": org_name}
-        response = requests.post(f"{self.endpoint}/v1/orgs",
-                                 headers=self.auth_header(),
-                                 json=org_json)
+        response = self.conn_pool.post(f"{self.endpoint}/v1/orgs",
+                                       headers=self.auth_header(),
+                                       json=org_json)
         response.raise_for_status()
         return munchify(response.json())
 
     def find_or_create_profile(self, user: str, description: str):
         """Find or create a profile object implementation"""
-        response = requests.get(f"{self.endpoint}/v1/profiles/named/{user}?exact=true")
+        response = self.conn_pool.get(f"{self.endpoint}/v1/profiles/named/{user}?exact=true")
         response.raise_for_status()
         profiles = response.json()
         if len(profiles) == 1:
@@ -367,45 +412,45 @@ class PackageUploader(object):
             "email": "donotreply+importer@mythica.ai",
             "description": description,
         }
-        response = requests.post(f"{self.endpoint}/v1/profiles", json=profile_json)
+        response = self.conn_pool.post(f"{self.endpoint}/v1/profiles", json=profile_json)
         response.raise_for_status()
         return munchify(response.json())
 
     def find_or_create_tag(self, tag_name: str):
         """Find or create a tag ID"""
-        r = requests.get(f"{self.endpoint}/v1/tags/types/asset")
+        r = self.conn_pool.get(f"{self.endpoint}/v1/tags/types/asset")
         r.raise_for_status()
         for tag_obj in r.json():
             if tag_obj["name"] == tag_name:
                 return tag_obj["tag_id"]
 
-        # create tag
-        r = requests.post(f"{self.endpoint}/v1/tags",
-                          json={"name": tag_name},
-                          headers=self.auth_header())
+        # create tag as admin
+        r = self.conn_pool.post(f"{self.endpoint}/v1/tags/",
+                                json={"name": tag_name},
+                                headers=self.auth_header())
         r.raise_for_status()
         return r.json()["tag_id"]
 
-    def tag_asset(self, asset_id, tag_id):
-        """Add a specific tag to an asset"""
-        r = requests.post(f"{self.endpoint}/v1/tags/assets/",
-                          json={
-                              "type_id": asset_id,
-                              "tag_id": tag_id},
-                          headers=self.auth_header())
+    def tag_asset(self, package: ProcessedPackageModel, tag_id):
+        """Add a specific tag to an asset as the asset package owner"""
+        r = self.conn_pool.post(f"{self.endpoint}/v1/tags/types/asset/",
+                                json={
+                                    "type_id": package.asset_id,
+                                    "tag_id": tag_id},
+                                headers=self.auth_header_with_impersonation(package.profile_id))
         r.raise_for_status()
 
-    def find_versions_for_repo(self, package: PackageModel) -> tuple[str, list[int]]:
-        """Find or create version objects for the repo URL"""
-        response = requests.get(f"{self.endpoint}/v1/assets/committed_at?ref={package.repo}")
+    def find_latest_repo_version(self, package: PackageModel) -> tuple[str, list[int]]:
+        """Find the latest ID, version the package repo, returns empty asset_id if none"""
+        response = self.conn_pool.get(f"{self.endpoint}/v1/assets/committed_at?ref={package.repo}")
         response.raise_for_status()
 
         versions = munchify(response.json())
         sorted_versions = sorted(versions, key=lambda k: k['version'], reverse=True)
         if len(sorted_versions) == 0:
             return '', ZERO_VERSION
-        print(f"Found {len(sorted_versions)} versions for {package.name}")
-        print(f"Using latest version: {sorted_versions[0]['version']}")
+        log.info("Found %s verisons for %s", len(sorted_versions), package.name)
+        log.info("Using latest version: %s", sorted_versions[0]['version'])
         latest_version = sorted_versions[0]
         return latest_version.asset_id, latest_version.version
 
@@ -415,20 +460,29 @@ class PackageUploader(object):
             "Authorization": f"Bearer {self.auth_token}"
         }
 
+    def auth_header_with_impersonation(self, profile_id: str) -> dict[str, str]:
+        """Return the authorization token header"""
+        return {
+            "Authorization": f"Bearer {self.auth_token}",
+            "Impersonate-Profile-Id": profile_id
+        }
+
     def create_asset(self, package: PackageModel):
         """Create the asset root object"""
         asset_json = {}
-        response = requests.post(f"{self.endpoint}/v1/assets/?as_profile_id={package.profile_id}",
-                                 headers=self.auth_header(),
-                                 json=asset_json)
+        response = self.conn_pool.post(f"{self.endpoint}/v1/assets/",
+                                       headers=self.auth_header_with_impersonation(package.profile_id),
+                                       json=asset_json)
+        # If creation fails we raise an error to stop processing, there is likely something wrong
+        # in the underlying configuration or permissions
         if response.status_code != 201:
-            print(f"Failed to create asset for {package.name}")
-            print(f"Request Error: {response.status_code} {response.content}")
-            return ""
+            log.error("Request Error: [%s] %s", response.status_code, response.content)
+            log.error("Failed to create asset for: %s", package.name)
+            raise ValueError(f"Failed to create new asset, {response.status_code}, {response.content}")
 
         o = munchify(response.json())
         asset_id = o.asset_id
-        print(f"Created assetId {asset_id} for asset {package.name}")
+        log.info("Created assetId: %s for package: %s", asset_id, package.name)
         return asset_id
 
     def latest_version_exists(self, package: PackageModel) -> bool:
@@ -438,15 +492,16 @@ class PackageUploader(object):
             return False
 
         version_str = '.'.join(map(str, package.latest_version))
-        response = requests.get(f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}")
+        response = self.conn_pool.get(f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}")
         if response.status_code != 200:
-            print(f"Version {version_str} not found for {package.name} ({package.asset_id})")
+            log.error("Version %s not found for %s (%s)",
+                      version_str, package.name, package.asset_id)
             return False
 
         o = munchify(response.json())
         package.latest_version_contents = o.contents
         if o.version == package.latest_version:
-            print(f"Skipping package {package.name} already uploaded.")
+            log.info("Skipping package %s already uploaded.", package.name)
             return True
         return False
 
@@ -454,12 +509,13 @@ class PackageUploader(object):
         """Clone or refresh the local repo"""
         package.root_disk_path = Path(os.path.abspath(os.path.join(str(self.repo_base_dir), package.name)))
         if os.path.exists(package.root_disk_path):
-            print(f"Pulling repo {package.repo} in {package.root_disk_path}")
+            log.info("Pulling repo %s in %s", package.repo, package.root_disk_path)
             repo = git.Repo(package.root_disk_path)
             repo.git.checkout(get_default_branch(repo))
             repo.git.pull()
         else:
-            print(f"Cloning repo: {package.repo} into {package.root_disk_path}")
+            log.info("Cloning repo: %s into %s",
+                     package.repo, package.root_disk_path)
             repo = git.Repo.clone_from(package.repo, package.root_disk_path)
 
         package.commit_ref = repo.head.commit.hexsha
@@ -503,23 +559,53 @@ class PackageUploader(object):
         file_contents = []
         for package_file in files:
             file_contents.append(
-                self.upload_package_file(package, package_file))
+                self.maybe_upload_package_file(package, package_file))
 
         thumbnail_contents = []
         for package_file in thumbnails:
             thumbnail_contents.append(
-                self.upload_package_file(package, package_file))
+                self.maybe_upload_package_file(package, package_file))
 
         return {
             'files': file_contents,
             'thumbnails': thumbnail_contents
         }
 
-    def upload_package_file(self,
-                            package: ProcessedPackageModel,
-                            package_file: PackageFile) -> dict:
+    def maybe_upload_package_file(self,
+                                  package: ProcessedPackageModel,
+                                  package_file: PackageFile) -> dict:
         """Upload a file from a package path, return its asset contents"""
-        print(f"Uploading file: {package_file.disk_path} as {package_file.package_path}")
+        page_size = 64 * 1024
+        sha1 = hashlib.sha1()
+        with open(package_file.disk_path, "rb") as file:
+            while content := file.read(page_size):
+                sha1.update(content)
+        existing_digest = sha1.hexdigest()
+
+        # find an existing file if it exists that is owned by this user
+        response = self.conn_pool.get(f"{self.endpoint}/files/by_content/{existing_digest}",
+                                      headers=self.auth_header_with_impersonation(package.profile_id))
+
+        # return the file_id if the content digest already exists
+        if response.status_code == HTTPStatus.OK:
+            o = munchify(response.json())
+            log.info("Found existing file '%s': file_id: %s, sha1: %s",
+                     o.file_name, o.file_id, existing_digest)
+            return {
+                'file_id': o.file_id,
+                'file_name': o.file_name,
+                'content_hash': o.content_hash,
+                'size': o.size
+            }
+
+        # raise on unexpected result
+        if response.status_code != HTTPStatus.NOT_FOUND:
+            response.raise_for_status()
+
+        log.info("Uploading file: %s as %s, sha1: %s",
+                 package_file.disk_path,
+                 package_file.package_path,
+                 existing_digest)
 
         with open(package_file.disk_path, 'rb') as f:
             upload_url = f"{self.endpoint}/v1/upload/store"
@@ -527,21 +613,34 @@ class PackageUploader(object):
                 fields={'files': (str(package_file.package_path), f, 'application/octet-stream')}
             )
             headers = {
-                **self.auth_header(),
+                **self.auth_header_with_impersonation(package.profile_id),
                 "Content-Type": m.content_type,
             }
-            response = requests.post(upload_url, headers=headers, data=m, timeout=3)
+            response = self.conn_pool.post(
+                upload_url,
+                headers=headers,
+                data=m,
+                timeout=3)
             response.raise_for_status()
 
             o = munchify(response.json())
+
+            # validate that we're doing digest checks correctly
+            file_info = o.files[0]
+            assert file_info.content_hash == existing_digest
+            log.info("Uploaded: %s with size: %s, sha1: %s, file_id: %s",
+                     file_info.file_name,
+                     file_info.size,
+                     file_info.content_hash,
+                     file_info.file_id)
             return {
-                'file_id': o.files[0].file_id,
-                'file_name': o.files[0].file_name,
-                'content_hash': o.files[0].content_hash,
-                'size': o.files[0].size
+                'file_id': file_info.file_id,
+                'file_name': file_info.file_name,
+                'content_hash': file_info.content_hash,
+                'size': file_info.size
             }
 
-    def create_version(self, package: PackageModel, asset_contents: dict[str, list]) -> dict:
+    def create_version(self, package: PackageModel, asset_contents: dict[str, list]):
         """Create new asset version"""
         asset_ver_json = {
             'asset_id': package.asset_id,
@@ -553,17 +652,24 @@ class PackageUploader(object):
             'published': True
         }
         version_str = '.'.join(map(str, package.latest_version))
-        assets_url = (f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
-                      f"?as_profile_id={package.profile_id}")
-        response = requests.post(assets_url, headers=self.auth_header(), json=asset_ver_json)
+        assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
+        response = self.conn_pool.post(assets_url,
+                                       json=asset_ver_json,
+                                       headers=self.auth_header_with_impersonation(package.profile_id))
         response.raise_for_status()
 
-        print(f"Successfully uploaded package: {package.name}")
+        log.info("Successfully uploaded package: %s", package.name)
 
 
 def main():
     """Entrypoint"""
-    uploader = PackageUploader()
+    with ConnectionPool() as conn_pool:
+        start_uploads(conn_pool)
+
+
+def start_uploads(conn_pool: ConnectionPool):
+    """Using the package uploader and connection pool create assets on the backend API"""
+    uploader = PackageUploader(conn_pool)
     uploader.parse_args()
 
     # start the authenticated session
@@ -578,8 +684,8 @@ def main():
         try:
             uploader.process_package(PackageModel(**package))
         except requests.exceptions.HTTPError as e:
-            print(e)
-            print(json.dumps(e.response.json()))
+            log.exception("uploader failed")
+            log.error("response: %s", json.dumps(e.response.json(), indent=2))
             raise
 
 

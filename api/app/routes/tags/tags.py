@@ -44,13 +44,9 @@ async def create(
                 )
             )
             session.commit()
-        except IntegrityError as ex:
+        except IntegrityError:
             session.rollback()
-            log.error("create_tag error: %s", str(ex))
-            raise HTTPException(
-                HTTPStatus.CONFLICT,
-                detail="The tag with the provided name already exists.",
-            ) from ex
+            log.info("tag exists: %s", create_req.name)
 
         result = session.exec(select(Tag).where(Tag.name == create_req.name)).one_or_none()
         if result is None:

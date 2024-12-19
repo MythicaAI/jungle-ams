@@ -4,7 +4,7 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header
 
 from cryptid.cryptid import profile_id_to_seq
 from ripple.models.sessions import SessionProfile
@@ -77,14 +77,14 @@ async def by_id(asset_id: str) -> list[repo.AssetVersionResult]:
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(r: repo.AssetCreateRequest,
-                 as_profile_id: Optional[str],
-                 profile: SessionProfile = Depends(session_profile)
-                 ) -> repo.AssetCreateResult:
+                 profile: SessionProfile = Depends(session_profile),
+                 impersonate_profile_id: Optional[str] = Header(None, include_in_schema=False)) \
+        -> repo.AssetCreateResult:
     """Create a new asset for storing revisions or other assets"""
     with get_session() as session:
-        if as_profile_id:
+        if impersonate_profile_id:
             validate_roles(role=roles.profile_impersonate, auth_roles=profile.auth_roles)
-            owner_seq = profile_id_to_seq(as_profile_id)
+            owner_seq = profile_id_to_seq(impersonate_profile_id)
         else:
             owner_seq = profile.profile_seq
         return repo.create_root(session, r, owner_seq)
@@ -94,15 +94,15 @@ async def create(r: repo.AssetCreateRequest,
 async def create_version(asset_id: str,
                          version_str: str,
                          req: repo.AssetCreateVersionRequest,
-                         as_profile_id: Optional[str],
                          response: Response,
+                         impersonate_profile_id: Optional[str] = Header(None, include_in_schema=False),
                          profile: SessionProfile = Depends(session_profile)) \
         -> repo.AssetVersionResult:
     """Create or update a single asset version"""
     with get_session() as session:
-        if as_profile_id:
+        if impersonate_profile_id:
             validate_roles(role=roles.profile_impersonate, auth_roles=profile.auth_roles)
-            owner_seq = author_seq = profile_id_to_seq(as_profile_id)
+            owner_seq = author_seq = profile_id_to_seq(impersonate_profile_id)
         else:
             owner_seq = author_seq = profile.profile_seq
         create_or_update, version_result = repo.create_version(session,

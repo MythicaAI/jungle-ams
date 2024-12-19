@@ -1,0 +1,82 @@
+name: p4-commit-hook
+on:
+  repository_dispatch:
+    types: [p4-commit]
+
+  # Optional: Also run manually from GitHub UI
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force full sync'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  P4PORT: ${{ secrets.P4PORT }}
+  P4USER: ${{ secrets.P4USER }}
+  P4PASSWD: ${{ secrets.P4PASSWD }}
+  P4CLIENT: github-action-workspace
+  P4_CACHE_DIR: .p4-cache
+
+jobs:
+  sync-and-process:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Install Perforce
+        run: |
+          wget -q https://ftp.perforce.com/perforce/r23.2/bin.linux26x86_64/p4 -O /usr/local/bin/p4
+          chmod +x /usr/local/bin/p4
+
+      - name: Create P4 Client
+        run: |
+          cat > client_spec.txt << EOL
+          Client: $P4CLIENT
+          Owner: $P4USER
+          Root: ${{ github.workspace }}/$P4_CACHE_DIR
+          Options: noallwrite noclobber nocompress unlocked nomodtime rmdir
+          LineEnd: local
+          Stream: //depot/main
+          Type: writeable
+          EOL
+                    
+          # Create the client
+          p4 -u $P4USER -P $P4PASSWD client -i < client_spec.txt
+
+      - name: Restore P4 Cache
+        uses: actions/cache@v3
+        id: cache
+        with:
+          path: ${{ env.P4_CACHE_DIR }}
+          key: p4-cache-${{ github.sha }}
+          restore-keys: |
+            p4-cache-
+
+      - name: Sync P4
+        run: |
+          mkdir -p $P4_CACHE_DIR
+          
+          if [[ "${{ github.event.inputs.force_sync }}" == "true" ]] || [[ ! -d "$P4_CACHE_DIR/.p4" ]]; then
+            echo "Performing full sync..."
+            p4 -u $P4USER -P $P4PASSWD sync -f
+          else
+            echo "Performing incremental sync..."
+            p4 -u $P4USER -P $P4PASSWD sync
+          fi
+
+      # Add your custom operations here
+      - name: Process Changes
+        run: |
+          # Example: Get latest changelist
+          LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
+          echo "Latest changelist: $LATEST_CL"
+          
+          # Add your processing logic here
+          # e.g., analyze files, run tests, etc.
+
+      - name: Update Cache
+        if: always()
+        run: |
+          # Clean up any temporary files before caching
+          find $P4_CACHE_DIR -type f -name "*.tmp" -delete

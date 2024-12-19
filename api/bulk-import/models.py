@@ -27,9 +27,8 @@ class ProcessedPackageModel(PackageModel):
     asset_id: str = ''  # asset_id matching package name
     profile_id: str = ''  # profile_id for the GitHub username
     org_id: str = ''  # org_id for the GitHub username
-    latest_version: List[int] = Field(default_factory=list)  # latest matching package version
-    latest_github_version: List[int] = Field(
-        default_factory=lambda: [0, 0, 0])  # populated with the newest GitHub release version
+    latest_version: List[int] | None = None  # latest matching package version
+    latest_github_version: List[int] | None = None  # populated with the newest GitHub release version
     commit_ref: str = ''  # commit reference for the imported assets
     root_disk_path: Path | None = None  # absolute path on disk to root of GitHub repo
     latest_version_contents: Dict[str, dict] = Field(default_factory=dict)  # latest contents from API version query

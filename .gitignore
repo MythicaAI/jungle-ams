@@ -58,5 +58,4 @@ __pycache__
 
 *.local
 
-testing/mnt/os_mount_paths.env
-testing/mnt/houdini_secrets.env
+testing/mnt/*.env

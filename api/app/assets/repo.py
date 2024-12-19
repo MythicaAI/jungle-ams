@@ -448,7 +448,7 @@ def create_root(session: Session, r: AssetCreateRequest, owner_seq: int) -> Asse
     """
     org_seq = None
 
-    # If the user passes a collection ID ensure that it exists
+    # If the user passes an organization ID ensure that it exists
     if r.org_id is not None:
         org_seq = org_id_to_seq(r.org_id)
         col_result = session.exec(select(Org).where(
@@ -532,7 +532,7 @@ def create_version(session: Session,
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
 
     # Track author for update auditing
-    values['author_seq'] = profile_seq
+    values['author_seq'] = author_seq
 
     # Create the revision, fails if the revision already exists
     # this could be optimized more using upsert but this will likely hold
