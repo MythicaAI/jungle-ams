@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
-from ripple.automation.utils import AutomationRequest
+from ripple.automation.models import AutomationRequest
 from ripple.config import ripple_config
 from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem
 

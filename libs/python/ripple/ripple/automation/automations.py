@@ -1,13 +1,12 @@
+from ripple.automation.models import AutomationModel, AutomationsResponse
 from ripple.automation.publishers import ResultPublisher
-from ripple.automation.utils import AutomationsResponse, format_exception, AutomationModel
+from ripple.automation.utils import format_exception
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import Message, ProcessStreamItem
-from typing import Any, Callable, Dict, Literal, Type
+from typing import Callable, Literal
 
 from ripple.config import ripple_config
 from ripple.runtime.params import resolve_params
-
-
 
 class ScriptRequest(ParameterSet):
         script: str
@@ -89,18 +88,19 @@ def _get_script_interface() -> Callable:
     
 def get_default_automations() -> list[AutomationModel]:
     automations: list[AutomationModel] = []
-    automations.append({
-        'path':'/mythica/script',
-        'provider': _run_script_automation(),
-        'inputModel': ScriptRequest,
-        'outputModel': ProcessStreamItem
-    })
-    automations.append({
-        'path':'/mythica/script/interface',
-        'provider': _get_script_interface(),
-        'inputModel': ScriptRequest,
-        'outputModel': AutomationsResponse,
-        'hidden': True
-    })
+    automations.append(AutomationModel(
+        path ='/mythica/script',
+        provider = _run_script_automation(),
+        inputModel = ScriptRequest,
+        outputModel = ProcessStreamItem,
+        hidden =True
+    ))
+    automations.append(AutomationModel(
+        path ='/mythica/script/interface',
+        provider = _get_script_interface(),
+        inputModel = ScriptRequest,
+        outputModel = AutomationsResponse,
+        hidden = True
+    ))
 
     return automations

@@ -13,7 +13,7 @@ from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
 from ripple.automation.adapters import NatsAdapter
-from ripple.automation.utils import AutomationRequest
+from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile

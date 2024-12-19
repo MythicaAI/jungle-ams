@@ -12,7 +12,7 @@ from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
 from ripple.automation.adapters import NatsAdapter
-from ripple.automation.utils import AutomationRequest
+from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
 

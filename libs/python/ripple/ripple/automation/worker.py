@@ -6,8 +6,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 
+from ripple.automation.models import AutomationModel, AutomationRequest, AutomationsResponse
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
-from ripple.automation.utils import AutomationsResponse, format_exception, error_handler, AutomationModel, AutomationRequest
+from ripple.automation.utils import format_exception, error_handler
 from ripple.models.streaming import Message, Progress, StreamItemUnion
 
 from ripple.automation.adapters import NatsAdapter, RestAdapter
@@ -46,20 +47,20 @@ class Worker:
         self.nats = NatsAdapter()
         self.rest = RestAdapter()
 
-        catalog_provider = {
-            'path':'/mythica/automations',
-            'provider': self._get_catalog_provider(),
-            'inputModel': ParameterSet,
-            'outputModel': AutomationsResponse,
-            'hidden': True
-        } 
+        catalog_provider = AutomationModel(
+            path ='/mythica/automations',
+            provider = self._get_catalog_provider(),
+            inputModel = ParameterSet,
+            outputModel = AutomationsResponse,
+            hidden = True
+        ) 
 
         autos = get_default_automations()
         autos.append(catalog_provider)
         self._load_automations(autos)
 
 
-    def _get_catalog_provider(self) -> Callable:
+    def _get_catalog_provider(self) -> Callable[[ParameterSet, ResultPublisher], AutomationsResponse]:
         doer=self
         def impl(request: ParameterSet = None, responder: ResultPublisher=None) -> AutomationsResponse:
             ret = {}
