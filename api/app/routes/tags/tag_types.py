@@ -11,7 +11,7 @@ from cryptid.cryptid import (
     tag_id_to_seq,
     tag_seq_to_id,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, Response
 from sqlalchemy import func
 from sqlmodel import col, delete, insert, select
 
@@ -40,6 +40,7 @@ router = APIRouter(prefix='/types', tags=['tags'])
 async def create_tag_for_type(
         tag_type: TagType,
         create: TagTypeRequest,
+        response: Response,
         impersonate_profile_id: Optional[str] = Header(None, include_in_schema=False),
         profile: Profile = Depends(session_profile),
 ):
@@ -48,14 +49,13 @@ async def create_tag_for_type(
     else:
         owner_seq = profile.profile_seq
 
-    values = create.model_dump()
     type_model = get_model_type(tag_type)
     model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
     model_type_seq_col = get_model_type_seq_col(tag_type)
 
-    tag_seq = tag_id_to_seq(values["tag_id"])
-    type_seq = type_id_to_seq(values["type_id"])
+    tag_seq = tag_id_to_seq(create.tag_id)
+    type_seq = type_id_to_seq(create.type_id)
 
     insert_dict = {
         "tag_seq": tag_seq,
@@ -72,7 +72,7 @@ async def create_tag_for_type(
         if not model_exists:
             raise HTTPException(
                 HTTPStatus.FORBIDDEN,
-                detail=f"You are not authorized to create tag for this {tag_type}:{values['type_id']}.",
+                detail=f"You are not authorized to create tag for this {tag_type}:{create.type_id}.",
             )
 
         try:
@@ -80,13 +80,12 @@ async def create_tag_for_type(
             session.commit()
         except IntegrityError as ex:
             session.rollback()
-            log.error("create_tag error: %s", str(ex))
-            raise HTTPException(
-                HTTPStatus.CONFLICT,
-                detail=f'This tag: {values["tag_id"]} has already been assigned on {str(tag_type)}: {values["type_id"]}.',
-            ) from ex
+            log.info("tag assignment already exists: %s -> %s",
+                     create.tag_id,
+                     create.type_id)
+            response.status_code = HTTPStatus.OK
 
-    return {"tag_id": values["tag_id"], "type_id": values["type_id"]}
+    return {"tag_id": create.tag_id, "type_id": create.type_id}
 
 
 @router.get('/{tag_type}')

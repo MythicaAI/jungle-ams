@@ -8,7 +8,7 @@ from cryptid.cryptid import (
     profile_seq_to_id,
     tag_seq_to_id,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from ripple.auth import roles
 from ripple.auth.authorization import validate_roles
 from ripple.models.sessions import SessionProfile
@@ -30,6 +30,7 @@ router.include_router(tag_types_router)
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
         create_req: TagRequest,
+        response: Response,
         profile: SessionProfile = Depends(session_profile)
 ) -> TagResponse:
     """Create a tag"""
@@ -47,6 +48,7 @@ async def create(
         except IntegrityError:
             session.rollback()
             log.info("tag exists: %s", create_req.name)
+            response.status_code = HTTPStatus.OK
 
         result = session.exec(select(Tag).where(Tag.name == create_req.name)).one_or_none()
         if result is None:
