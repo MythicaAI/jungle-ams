@@ -12,7 +12,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
-from ripple.automation import NatsAdapter, WorkerRequest, process_guid
+from ripple.automation.adapters import NatsAdapter
+from ripple.automation.utils import AutomationRequest
+from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile
 from ripple.runtime.params import repair_parameters, validate_params
@@ -127,7 +129,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         hda_file=FileParameter(file_id=file_id)
     )
     work_guid = str(uuid4())
-    event = WorkerRequest(
+    event = AutomationRequest(
         process_guid=process_guid,
         work_guid=work_guid,
         path='/mythica/generate_job_defs',
@@ -179,7 +181,7 @@ async def add_job_nats_event(
 
     [subject, path] = job_type.split("::")
 
-    event = WorkerRequest(
+    event = AutomationRequest(
         process_guid=process_guid,
         work_guid=str(uuid4()),
         job_id=job_seq_to_id(job_seq),

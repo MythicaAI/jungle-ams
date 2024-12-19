@@ -10,7 +10,9 @@ print(f"python path: {sys.path}")
 from automation.generate_job_defs import generate_job_defs, GenerateJobDefRequest, GenerateJobDefResponse
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
 from automation.run_hda import hda, HdaRequest, HdaResponse, run_hda, RunHdaRequest, RunHdaResponse
-from ripple.automation import Worker
+from ripple.automation.worker import Worker
+
+
 from telemetry import init_telemetry
 
 
@@ -19,7 +21,7 @@ worker = Worker()
 if os.environ.get("TELEMETRY_ENABLE", False):
     init_telemetry()
 
-workers = [
+automations = [
     {
         "path": '/mythica/generate_job_defs',
         "provider": generate_job_defs,
@@ -70,14 +72,14 @@ def force_limited_commercial_mode():
 
 def main():
     #force_limited_commercial_mode()
-    worker.start('houdini',workers)
+    worker.start('houdini',automations)
 
 def fastapi_entry_point():
     """
     Alternate entry point for starting the FastAPI app.
     """
     import uvicorn
-    app = worker.start_web(workers)
+    app = worker.start_web(automations)
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
