@@ -1,16 +1,16 @@
 import React, { memo, useCallback, useEffect, useState } from 'react';
-import hou from '../types/Houdini';
+import hou from '../../types/Houdini';
 
-import useAutomation from '../hooks/useAutomation';
-import useAwfulFlow from '../hooks/useAwfulFlow';
-import { GetFileResponse } from '../types/MythicaApi';
-import { NodeState } from '../types/AwfulFlow';
+import useAutomation from '../../hooks/useAutomation';
+import useAwfulFlow from '../../hooks/useAwfulFlow';
+import { GetFileResponse } from '../../types/MythicaApi';
+import { NodeState } from '../../types/AwfulFlow';
 import ParmGroup from './houdiniParms/ParmGroup';
-import { dictionary, ExecutionData } from '../types/Automation';
-import FileInputHandle from './handles/FileInputHandle';
-import FileOutputHandle from './handles/FileOutputHandle';
+import { dictionary, ExecutionData } from '../../types/Automation';
+import FileInputHandle from '../handles/FileInputHandle';
+import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Card } from '@mui/joy';
-import useMythicaApi from '../hooks/useMythicaApi';
+import useMythicaApi from '../../hooks/useMythicaApi';
 
 type InterfaceExecutionData = ExecutionData & {
   output: {

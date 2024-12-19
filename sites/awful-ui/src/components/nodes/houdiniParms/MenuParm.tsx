@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import hou from '../../types/Houdini';
-import { dictionary } from '../../types/Automation';
+import hou from '../../../types/Houdini';
+import { dictionary } from '../../../types/Automation';
 
 interface MenuParmProps {
     template: hou.MenuParmTemplate;

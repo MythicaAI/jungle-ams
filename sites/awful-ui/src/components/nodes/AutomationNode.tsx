@@ -2,23 +2,23 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useUpdateNodeInternals } from '@xyflow/react';
 import MonacoEditor from '@monaco-editor/react';
 
-import useAutomation from '../hooks/useAutomation';
-import useAwfulFlow from '../hooks/useAwfulFlow';
-import useMythicaApi from '../hooks/useMythicaApi';
+import useAutomation from '../../hooks/useAutomation';
+import useAwfulFlow from '../../hooks/useAwfulFlow';
+import useMythicaApi from '../../hooks/useMythicaApi';
 
-import AutomationInputs from './handles/AutomationInputs';
-import AutomationOutputs from './handles/AutomationOutputs';
+import AutomationInputs from './automationParms/AutomationInputs';
+import AutomationOutputs from './automationParms/AutomationOutputs';
 
 import {
   AutomationSave,
   dictionary,
   ExecutionData,
   FileParamType,
-} from '../types/Automation';
-import { NodeState } from '../types/AwfulFlow';
-import { JSONSchema } from '../types/JSONSchema';
-import FileInputHandle from './handles/FileInputHandle';
-import FileOutputHandle from './handles/FileOutputHandle';
+} from '../../types/Automation';
+import { NodeState } from '../../types/AwfulFlow';
+import { JSONSchema } from '../../types/JSONSchema';
+import FileInputHandle from '../handles/FileInputHandle';
+import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Input, Stack, Typography } from '@mui/joy';
 
 export type AutomationExecutionData = ExecutionData & {

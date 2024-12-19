@@ -1,5 +1,5 @@
 import React from 'react';
-import hou from '../../types/Houdini';
+import hou from '../../../types/Houdini';
 
 export interface SeparatorParmProps {
     template: hou.SeparatorParmTemplate;

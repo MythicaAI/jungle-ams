@@ -13,6 +13,7 @@ export const NavLinks: React.FC<Props> = ({ tab, setTab }) => {
         <Link
           //@ts-ignore
           color={'text.primary'}
+          key={tabObj.value}
           onClick={() => setTab(tabObj.value)}
           sx={{
             color: tabObj.value === tab ? '#007E63' : 'auto',
