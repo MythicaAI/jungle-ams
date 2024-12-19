@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+  memo,
+} from 'react';
 
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAwfulFlow from '../hooks/useAwfulFlow';
@@ -9,7 +16,7 @@ import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from './handles/FileInputHandle';
 import FileOutputHandle from './handles/FileOutputHandle';
-import { Card, Option, Select, Typography } from '@mui/joy';
+import { Card, Option, Select, Tabs, Typography } from '@mui/joy';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -25,8 +32,10 @@ const OUTPUT_FILES = 'outputFiles';
 
 const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewerWidth, setViewerWidth] = useState<number | undefined>();
   const { getFiles, getDownloadInfo } = useMythicaApi();
-  const { getFlowData, setFlowData } = useAwfulFlow();
+  const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
@@ -138,16 +147,46 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     }
   }, [inputFlowData, setDownloadInfo, getDownloads]);
 
+  useLayoutEffect(() => {
+    const handleResize = (entries: ResizeObserverEntry[]) => {
+      for (const entry of entries) {
+        myFunction(entry.contentRect);
+      }
+    };
+
+    const myFunction = (contentRect: DOMRectReadOnly) => {
+      setViewerWidth(contentRect.width);
+    };
+
+    const observer = new ResizeObserver(handleResize);
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
+      }
+    };
+  }, []);
+
   const columnWidth = 200;
-  const viewerWidth = 640;
   const viewerHeight = 480;
   const columnStyle = { width: columnWidth };
-  const viewerStyle = { height: viewerHeight, width: viewerWidth };
+  const viewerStyle = {
+    height: viewerHeight,
+    width: viewerWidth,
+    maxWidth: 700,
+  };
 
   return (
     <Card
       className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
+      sx={{ minWidth: 400, height: '100%' }}
+      ref={containerRef}
     >
+      <NodeResizer minHeight={100} minWidth={300} />
       <Typography level="h4">File Viewer</Typography>
 
       <div style={{ marginBottom: '10px' }} className="nodrag">
@@ -163,7 +202,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
           style={{
             marginTop: '8px',
             padding: '5px',
-            width: '400px',
+            width: '100%',
           }}
           defaultValue={selectedFileIds}
         >
@@ -186,16 +225,20 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         label="Inputs[ ]"
       />
 
-      {!downloadInfo || downloadInfo.length === 0 ? (
-        <div />
-      ) : (
+      {!downloadInfo || downloadInfo.length === 0 ? null : (
         <div className="nodrag nowheel folder-container">
           <div
-            style={{ display: 'flex', flexDirection: 'row', height: '100%' }}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              width: '100%',
+              height: '100%',
+            }}
           >
             {/* Tab Navigation */}
-            <div
+            <Tabs
               className="folder-tabs vertical"
+              sx={{ minWidth: 200 }}
               style={{ ...columnStyle, overflow: 'clip' }}
             >
               {downloadInfo.map((fileInfo, index) => (
@@ -209,10 +252,10 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                   {fileInfo?.name || 'Error!'}
                 </div>
               ))}
-            </div>
+            </Tabs>
 
             {/* Pane Content */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', width: '90%' }}>
               {downloadInfo.map(
                 (fileInfo, index) => (
                   <div
