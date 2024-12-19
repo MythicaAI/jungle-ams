@@ -1,9 +1,9 @@
 from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
-from ripple.automation import Worker
+from ripple.automation.worker import Worker
 
 worker = Worker()
 
-workers = [
+automations = [
     {
         "path": '/mythica/hello_world',
         "provider": hello_world_api,
@@ -14,7 +14,7 @@ workers = [
 ]
 
 def main():
-    worker.start('blender',workers)        
+    worker.start('blender',automations)        
 
 if __name__ == "__main__":
     main()

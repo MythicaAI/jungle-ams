@@ -11,7 +11,9 @@ from context import RequestContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
-from ripple.automation import NatsAdapter, WorkerRequest, process_guid
+from ripple.automation.adapters import NatsAdapter
+from ripple.automation.utils import AutomationRequest
+from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
 
 
@@ -65,7 +67,7 @@ async def update(ctx: RequestContext) -> Tuple[str, str]:
                 hda_file = FileParameter(file_id=file_id)
             )
 
-            event = WorkerRequest(
+            event = AutomationRequest(
                 process_guid=process_guid,
                 work_guid=str(uuid4()),
                 auth_token=ctx.profile.auth_token,
