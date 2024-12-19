@@ -41,5 +41,4 @@ COPY docker-entrypoint.sh .
 WORKDIR /dist/awful-ui
 COPY --from=build /build/dist .
 RUN mv index.html index.html.template
-CMD [ "cp", "-R", "/dist/awful-ui", "/dist-publish/awful-ui" ]
 ENTRYPOINT ["/docker-entrypoint.sh"]

@@ -18,11 +18,20 @@ services:
       VITE_AUTH0_CLIENT_ID: 4CZhQWoNm1WH8l8042LeF38qHrUTR2ax
       VITE_AUTH0_AUDIENCE: http://localhost:15555/v1
       VITE_AUTH0_REDIRECT_URL: http://localhost:8080
+  awful:
+    container_name: awful
+    image: mythica-awful-ui-build:latest
+    volumes:
+      - dist:/dist
+    environment:
+      PUBLISH_PATH: /dist/awful
+      
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
     depends_on:
       - jungle3
+      - awful
       - app
       - otel-collector
     ports:
