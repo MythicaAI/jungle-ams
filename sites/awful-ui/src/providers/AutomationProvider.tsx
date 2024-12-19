@@ -162,7 +162,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 axios.post(BASE_URL, {
                     work_guid: "",  // Generate or retrieve unique work_id if needed
                     channel: worker,
-                    path: "/mythica/workers",
+                    path: "/mythica/automations",
                     env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
                     auth_token: authToken,  // Use dynamic profile_id
                     data: {},
@@ -171,7 +171,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         'Content-Type': 'application/json',
                     },
                 }).then((response) => {
-                    const workerDef =  parseAutomation(worker, response.data.result?.workers);
+                    const workerDef =  parseAutomation(worker, response.data.result?.automations);
                     setAutomations((prev)=>({...prev, [worker]: workerDef}));
                     console.debug(`Loaded automations for worker: ${worker}`, workerDef);
                 });

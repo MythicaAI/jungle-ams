@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from ripple.models.streaming import Progress, OutputFiles
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 
 from typing import List
