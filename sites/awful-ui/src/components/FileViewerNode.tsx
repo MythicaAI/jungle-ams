@@ -16,7 +16,7 @@ import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
 import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from './handles/FileInputHandle';
 import FileOutputHandle from './handles/FileOutputHandle';
-import { Card, Option, Select, Tabs, Typography } from '@mui/joy';
+import { Card, Checkbox, Option, Select, Tabs, Typography } from '@mui/joy';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -207,11 +207,17 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
           defaultValue={selectedFileIds}
         >
           {apiFiles
-            .map((file) => (
-              <Option key={file.file_name + file.file_id} value={file.file_id}>
-                {file.file_name || file.file_id}
-              </Option>
-            ))
+            .map((file) => {
+              return (
+                <Option
+                  key={file.file_name + file.file_id}
+                  value={file.file_id}
+                >
+                  <Checkbox checked={selectedFileIds.includes(file.file_id)} />
+                  {file.file_name || file.file_id}
+                </Option>
+              );
+            })
             .sort((a, b) => ((a?.key || -1) < (b?.key || 1) ? -1 : 1))}
         </Select>
       </div>
@@ -278,7 +284,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                               style={viewerStyle}
                             />
                           ) : fileInfo.content_type === 'application/json' ||
-                            fileInfo.content_type === 'application/awpy' || 
+                            fileInfo.content_type === 'application/awpy' ||
                             fileInfo.content_type === 'application/awful' ? (
                             <CodeViewer
                               style={viewerStyle}

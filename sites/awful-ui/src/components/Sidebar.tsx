@@ -1,4 +1,4 @@
-import React, { DragEvent, useEffect, useRef, useState } from 'react';
+import React, { DragEvent, useRef, useState } from 'react';
 import useMythicaApi from '../hooks/useMythicaApi';
 import useAutomation from '../hooks/useAutomation';
 import useAwfulFlow from '../hooks/useAwfulFlow';
@@ -29,18 +29,11 @@ type Props = {
 const Sidebar: React.FC<Props> = ({ tab }) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
 
-  const { setNodeType } = useAwfulFlow();
   const automationContext = useAutomation();
   const { apiKey, setApiKey } = useMythicaApi();
 
-  const {
-    savedAwfulsById,
-    savedAwfulsByName,
-    onRestore,
-    onSave,
-    onNew,
-    onDelete,
-  } = useAwfulFlow(); // Import AwfulFlow methods
+  const { savedAwfulsById, onRestore, onSave, onNew, onDelete, setNodeType } =
+    useAwfulFlow(); // Import AwfulFlow methods
 
   const [selectedFile, setSelectedFile] = useState<GetFileResponse | null>(
     null
@@ -52,21 +45,6 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
   const confirmAction = (message: string): boolean => {
     return window.confirm(message);
   };
-
-  // Update when the Selected File changes
-
-  useEffect(() => {
-    if (filenameInput) {
-      const file_exist = savedAwfulsByName[filenameInput];
-      if (file_exist) {
-        const select = selectFileRef.current;
-        if (select) {
-          select.value = file_exist.file_id;
-          setSelectedFile(file_exist);
-        }
-      }
-    }
-  }, [filenameInput, savedAwfulsByName]);
 
   const handleLoadFile = async () => {
     if (!selectedFile) {
@@ -84,6 +62,7 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
 
     try {
       await onRestore(selectedFile.file_name);
+      setFilenameInput(selectedFile.file_name);
       setLoadedFile(selectedFile);
       console.log(`File "${filenameInput}" loaded successfully.`);
     } catch (error) {
@@ -117,8 +96,11 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
     setIsProcessing(true);
 
     try {
-      await onSave(filename, async (saved) => setLoadedFile(saved));
-      setLoadedFile(savedAwfulsByName[filename]);
+      await onSave(filename, async (saved) => {
+        setLoadedFile(saved);
+        setSelectedFile(saved);
+      });
+
       console.log(`File "${filename}" saved successfully.`);
     } catch (error) {
       console.error(`Failed to save file "${filename}":`, error);
@@ -223,9 +205,7 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
             value={selectedFile?.file_id}
             onChange={(_, newValue) => {
               //@ts-ignore
-              setSelectedFile(newValue);
-              //@ts-ignore
-              setFilenameInput(savedAwfulsById[newValue]?.file_name);
+              setSelectedFile(savedAwfulsById[newValue]);
             }}
           >
             {Object.entries(savedAwfulsById)
