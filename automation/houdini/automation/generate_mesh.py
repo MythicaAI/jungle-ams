@@ -4,7 +4,7 @@ import os
 import re
 import tempfile
 
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import OutputFiles
 from pydantic import Field

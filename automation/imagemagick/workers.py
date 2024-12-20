@@ -1,10 +1,10 @@
 from  automation.crop_image import crop_image, CropImageRequest, CropImageResponse
 from  automation.clip_video import clip_video, ClipVideoRequest, ClipVideoResponse
-from ripple.automation import Worker
+from ripple.automation.worker import Worker
 
 worker = Worker()
 
-workers = [
+automations = [
     {
         "path": '/mythica/crop_image',
         "provider": crop_image,
@@ -22,7 +22,7 @@ workers = [
 
 
 def main():
-    worker.start('imagemagick',workers)
+    worker.start('imagemagick',automations)
 
 if __name__ == "__main__":
     main()

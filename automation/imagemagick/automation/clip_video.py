@@ -1,11 +1,11 @@
 from ripple.models.streaming import Message
 from ripple.models.params import ParameterSet
-from ripple.models.streaming import Message
+from ripple.models.streaming import OutputFiles
 
 class ClipVideoRequest(ParameterSet):
     message: str #Base64 encoded byte string
 
-class ClipVideoResponse(Message):
+class ClipVideoResponse(OutputFiles):
     pass
 
 def clip_video(request: ClipVideoRequest, result_callback) -> ClipVideoResponse:

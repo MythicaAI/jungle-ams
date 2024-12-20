@@ -1,5 +1,5 @@
 from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
-from ripple.automation import Worker
+from ripple.automation.worker import Worker
 
 worker = Worker()
 
@@ -11,8 +11,6 @@ workers = [
         "outputModel": HelloWorldResponse
     },
 ]
-
-
 
 def main():
     worker.start('test',workers)        
