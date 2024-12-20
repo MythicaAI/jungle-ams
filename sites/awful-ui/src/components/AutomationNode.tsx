@@ -31,7 +31,7 @@ export type AutomationExecutionData = ExecutionData & {
 };
 type InterfaceExecutionData = ExecutionData & {
   output: {
-    workers?: {
+    automations?: {
       [key: string]: { input?: JSONSchema; output?: JSONSchema };
     };
     [key: string]: unknown;
@@ -51,7 +51,7 @@ export interface AutomationNodeProps {
 
 const template = `
 from pydantic import BaseModel, Field
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import ProcessStreamItem, OutputFiles
     
@@ -254,8 +254,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     const generateAutomationInterface = () => {
       const automationOutput = (myInterfaceData as InterfaceExecutionData)
         .output;
-      if (automationOutput.workers) {
-        const thisAutomation = automationOutput.workers?.[scriptPath] || {};
+      if (automationOutput.automations) {
+        const thisAutomation = automationOutput.automations?.[scriptPath] || {};
         const automationTask = parseAutomation(node.id, {
           internal: {
             hidden: false,

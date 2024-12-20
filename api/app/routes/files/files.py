@@ -50,9 +50,10 @@ async def by_content(
             .where(FileContent.owner_seq == owner_seq)
             .where(FileContent.content_hash == content_hash)
             .where(FileContent.deleted == None))).first()
-        if file is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"SHA1 {content_hash} not found")
-        return enrich_file(session, file, profile)
+        if file:
+            return enrich_file(session, file, profile)
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
 
 
 @router.get("/by_purpose/{file_purpose}")
