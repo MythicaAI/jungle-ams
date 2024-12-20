@@ -250,7 +250,7 @@ class Worker:
 
             # Return result
             return JSONResponse(
-                content={"work_guid": auto_request.work_guid, "result": result.dict()},
+                content={"work_guid": auto_request.work_guid, "result": result.model_dump()},
                 status_code=200,
                 headers=headers,
             )
