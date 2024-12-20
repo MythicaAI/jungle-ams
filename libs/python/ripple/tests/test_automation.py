@@ -1,3 +1,4 @@
+from asyncio import AbstractEventLoop, Task
 from jwt import DecodeError
 from pydantic import ValidationError
 import pytest
@@ -156,6 +157,69 @@ def test_start_web(worker):
         app = worker.start_web(get_test_worker_spec())
         mock_load.assert_called_once()
         assert isinstance(app, FastAPI)
+
+
+
+
+
+@pytest.mark.asyncio
+async def test_worker_catalog(worker):
+    catalog_provider = worker.automations['/mythica/automations']
+    result = catalog_provider.provider(None, None)
+    assert isinstance(result, AutomationsResponse)
+    assert '/mythica/automations' in result.automations
+
+@pytest.mark.asyncio
+async def test_worker_load_automations(worker):
+    test_automation = AutomationModel(
+        path='/test/path',
+        provider=lambda x,y: None,
+        inputModel=ParameterSet,
+        outputModel=ProcessStreamItem
+    )
+    worker._load_automations([test_automation])
+    assert '/test/path' in worker.automations
+
+@pytest.mark.asyncio
+async def test_worker_executor_error(worker):
+    executor = worker._get_executor()
+    await executor({"invalid": "payload"})
+    with pytest.raises(Exception) as exc_info:
+    
+        assert len(exc_info.value.errors()) == 4
+        error_fields = [e["loc"][0] for e in exc_info.value.errors()]
+        assert set(error_fields) == {"process_guid", "work_guid", "path", "data"}
+
+
+@pytest.mark.asyncio
+async def test_worker_web_executor(worker, test_token):
+    app = worker._get_web_executor()
+    client = TestClient(app)
+    
+    response = client.post("/",
+        json={
+            "work_guid": "test-work",
+            "path": "/mythica/automations",
+            "data": {},
+            "auth_token": test_token
+        }
+    )
+    assert response.status_code == 200
+
+@pytest.mark.asyncio
+async def test_worker_web_executor_error(worker,test_token):
+    app = worker._get_web_executor()
+    client = TestClient(app)
+    
+    with pytest.raises(KeyError):
+        response = client.post("/",
+            json={
+                "work_guid": "test-work",
+                "path": "/invalid/path",
+                "data": {},
+                "auth_token": test_token
+            }
+        )
 
 
 
