@@ -336,10 +336,10 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
                 </AccordionDetails>
               </Accordion>
               {automationContext.savedAutomationsByWorker[worker]?.map(
-                (automation: AutomationSave) => {
+                (automation: AutomationSave,index:number) => {
                   return (
                     <div
-                      key={automation.id}
+                      key={automation.id + '_' + index}
                       className="dndnode custom"
                       onDragStart={(event) =>
                         onDragStart(event, `saved?${automation.id}`)

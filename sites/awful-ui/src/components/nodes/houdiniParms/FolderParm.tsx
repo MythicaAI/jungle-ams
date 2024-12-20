@@ -1,7 +1,7 @@
 import React from 'react';
-import hou from '../../types/Houdini';
+import hou from '../../../types/Houdini';
 import { ParmFactory } from './ParmFactory'; // Reuse the view controller for nested templates
-import { dictionary } from '../../types/Automation';
+import { dictionary } from '../../../types/Automation';
 
 export interface FolderParmProps {
     template: hou.FolderParmTemplate;

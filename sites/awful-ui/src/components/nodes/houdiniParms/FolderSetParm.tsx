@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import hou from '../../types/Houdini';
+import hou from '../../../types/Houdini';
 import FolderParm from './FolderParm';
-import { dictionary } from '../../types/Automation';
+import { dictionary } from '../../../types/Automation';
 
 export interface FolderSetParmProps {
     template: hou.FolderSetParmTemplate;
