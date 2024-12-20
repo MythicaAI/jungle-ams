@@ -36,6 +36,9 @@ jobs:
             automation/blender/:
               - 'libs/python/**'
               - 'automation/blender/**'
+            automation/imagemagick/:
+              - 'libs/python/**'
+              - 'automation/imagemagick/**'
 
   build:
     runs-on: ubuntu-latest
