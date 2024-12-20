@@ -1,7 +1,7 @@
 import hou
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from typing import Literal
 
 class HelloWorldRequest(ParameterSet):

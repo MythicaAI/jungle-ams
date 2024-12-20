@@ -2,7 +2,7 @@ from tempfile import NamedTemporaryFile
 
 from ripple.models.streaming import Message
 from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
-from ripple.models.streaming import Message
+from ripple.models.streaming import OutputFiles
 from wand.image import Image
 from pydantic import Field
 
@@ -13,7 +13,7 @@ class CropImageRequest(ParameterSet):
     crop_w: IntParameterSpec
     crop_y: IntParameterSpec
 
-class CropImageResponse(Message):
+class CropImageResponse(OutputFiles):
     files: dict[str, list[str]] = Field(default={"mesh": []})
 
 def crop_image(infile, outfile, x, y, w, h):

@@ -73,7 +73,7 @@ COPY --from=libs-python-image /libs/python /libs/python
 
 # Install the poetry dependencies into the local python site-packages
 RUN poetry config --local virtualenvs.create false
-RUN poetry install
+RUN poetry install --only main,infra --no-root --no-cache
 
 # Command to run the worker
 CMD ["python3", "workers.py"]
