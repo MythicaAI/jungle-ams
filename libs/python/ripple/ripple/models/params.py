@@ -7,7 +7,7 @@ from uuid import uuid4
 class ParameterSpecModel(BaseModel):
     param_type: str
     label: str
-    category_label: str = None
+    category_label: Optional[str] = None
     constant: bool = False
 
 
