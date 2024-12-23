@@ -1,5 +1,5 @@
 import React from 'react';
-import hou from '../../types/Houdini';
+import hou from '../../../types/Houdini';
 
 interface LabelParmProps {
     template: hou.LabelParmTemplate;

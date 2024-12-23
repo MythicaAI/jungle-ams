@@ -3,7 +3,7 @@ import hou
 
 import tempfile
 from typing import Literal
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from pydantic import BaseModel, Field
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import ProcessStreamItem, OutputFiles

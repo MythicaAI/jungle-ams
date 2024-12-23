@@ -1,9 +1,9 @@
 // FileUploadNode.tsx
 import React, { memo } from 'react';
 
-import useMythicaApi from '../hooks/useMythicaApi'; // Import Auth context
-import useAwfulFlow from '../hooks/useAwfulFlow'; // Import NodeDataContext
-import FileOutputHandle from './handles/FileOutputHandle';
+import useMythicaApi from '../../hooks/useMythicaApi'; // Import Auth context
+import useAwfulFlow from '../../hooks/useAwfulFlow'; // Import NodeDataContext
+import FileOutputHandle from '../handles/FileOutputHandle';
 import { Box, Button, Card, List, ListItem, Typography } from '@mui/joy';
 
 interface FileUploadNodeProps {

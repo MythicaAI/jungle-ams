@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from diffusers import StableDiffusion3Pipeline
 from ripple.models.streaming import Progress, OutputFiles
 from ripple.models.params import ParameterSet
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 
 import torch
 import io

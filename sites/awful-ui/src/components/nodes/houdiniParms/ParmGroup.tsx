@@ -1,7 +1,7 @@
 import React from 'react';
-import hou from '../../types/Houdini';
+import hou from '../../../types/Houdini';
 import { ParmFactory } from './ParmFactory';
-import { dictionary } from '../../types/Automation';
+import { dictionary } from '../../../types/Automation';
 export interface ParmGroupProps {
     group: hou.ParmTemplateGroup;
     data: dictionary; 

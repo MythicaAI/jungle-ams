@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "test-worker"
+name = "imagemagick-worker"
 version = "0.1.0"
-description = "Worker application for testing automation"
-authors = ["Your Name <you@example.com>"]
+description = "Worker application for image automations"
+authors = ["Jacob Repp <jacobrepp@gmail.com>"]
 readme = "README.md"
 package-mode = false
 repository = "https://github.com/MythicaAI/infra"
@@ -15,6 +15,7 @@ opentelemetry-exporter-otlp = "^1.27.0"
 opentelemetry-distro = "^0.48b0"
 opentelemetry-api = "^1.27.0"
 opentelemetry-sdk = "^1.27.0"
+wand = "^0.6.13"
 
 # use this group to install without dev redirects
 [tool.poetry.group.infra.dependencies]

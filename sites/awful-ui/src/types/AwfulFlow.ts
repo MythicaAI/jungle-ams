@@ -1,3 +1,4 @@
+import { Edge } from "@xyflow/react";
 import { GetFileResponse } from "./MythicaApi";
 
 // types/nodeData.ts
@@ -7,14 +8,9 @@ export type FlowDataType = {
   };
 };
 
-export type Connection = {
-  targetId: string;
-  targetHandle: string;
-};
-
-export type ConnectionMap = {
+export type EdgeMap = {
   [sourceId: string]: {
-    [sourceHandle: string]: Connection[];
+    [sourceHandle: string]: Edge[];
   };
 };
 

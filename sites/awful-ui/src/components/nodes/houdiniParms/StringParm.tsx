@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useState } from 'react';
-import hou from '../../types/Houdini';
-import { dictionary } from '../../types/Automation';
+import hou from '../../../types/Houdini';
+import { dictionary } from '../../../types/Automation';
 
 export interface StringParmProps {
     template: hou.StringParmTemplate;

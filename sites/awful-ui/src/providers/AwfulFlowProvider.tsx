@@ -1,6 +1,6 @@
 // providers/NodeDataProvider.tsx
 import React, { useState, useCallback, useEffect } from 'react';
-import type { FlowDataType, ConnectionMap } from '../types/AwfulFlow';
+import type { FlowDataType, EdgeMap } from '../types/AwfulFlow';
 import { AwfulFlowContext } from '../hooks/useAwfulFlow';
 import {
   useReactFlow,
@@ -23,7 +23,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [flowData, setFlowDataState] = useState<FlowDataType>({});
-  const [connections, setConnections] = useState<ConnectionMap>({});
+  const [edgeMap, setEdgeMap] = useState<EdgeMap>({});
   const [nodeType, setNodeType] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -118,7 +118,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       const flow = rfInstance.toObject();
       const mythicaFlow = {
         flowData: flowData,
-        connections: connections,
       };
       const saveState = {
         flow: flow,
@@ -165,8 +164,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       setNodes(savedState.flow.nodes);
       setFlowDataState(savedState.mythicaFlow.flowData || {});
 
-      setConnections(savedState.mythicaFlow.connections || {});
-
       setRefreshEdgeData(savedState.flow.edges);
       setViewport({ x, y, zoom });
       console.log(`File ${filename}.awful restored successfully`);
@@ -181,7 +178,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     setNodes([]);
     setEdges([]);
     setFlowDataState({});
-    setConnections({});
   };
 
   const fetchAwfuls = useCallback(async () => {
@@ -314,7 +310,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
    **************************************************************************/
 
   /***************************************************************************
-   * Connection, Edge and FlowData (output/input file) handling
+   * Edge and FlowData (output/input file) handling
    **************************************************************************/
   const setFlowData = useCallback(
     (nodeId: string, key: string, value: GetFileResponse[]) => {
@@ -323,17 +319,20 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
         [nodeId]: { ...prevData[nodeId], [key]: value },
       }));
 
-      const handleConnections = connections[nodeId]?.[key];
-      if (handleConnections) {
-        handleConnections.forEach(({ targetId, targetHandle }) => {
+      const handleEdges = edgeMap[nodeId]?.[key];
+      if (handleEdges) {
+        handleEdges.forEach((edge: Edge) => {
           setFlowDataState((prevData) => ({
             ...prevData,
-            [targetId]: { ...prevData[targetId], [targetHandle]: value },
+            [edge.target]: {
+              ...prevData[edge.target],
+              [edge.targetHandle as string]: value,
+            },
           }));
         });
       }
     },
-    [connections]
+    [edgeMap]
   );
 
   const getFlowData = useCallback(
@@ -343,71 +342,17 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     [flowData]
   );
 
-  const addConnection = useCallback(
-    (
-      sourceId: string,
-      sourceHandle: string,
-      targetId: string,
-      targetHandle: string
-    ) => {
-      setConnections((prev) => ({
-        ...prev,
-        [sourceId]: {
-          ...(prev[sourceId] || {}),
-          [sourceHandle]: [
-            ...(prev[sourceId]?.[sourceHandle] || []),
-            { targetId, targetHandle },
-          ],
-        },
-      }));
-    },
-    []
-  );
-
-  const removeConnection = useCallback(
-    (
-      sourceId: string,
-      sourceHandle: string,
-      targetId: string,
-      targetHandle: string
-    ) => {
-      setConnections((prev) => {
-        const updatedSourceHandle = prev[sourceId]?.[sourceHandle]?.filter(
-          (conn) =>
-            conn.targetId !== targetId || conn.targetHandle !== targetHandle
-        );
-
-        // Update connections for sourceHandle or remove it if empty
-        const updatedSource = {
-          ...prev[sourceId],
-          [sourceHandle]: updatedSourceHandle?.length
-            ? updatedSourceHandle
-            : undefined,
-        };
-
-        // Remove the sourceId if it has no valid handles left
-        const updatedConnections = {
-          ...prev,
-          [sourceId]: Object.keys(updatedSource).length
-            ? updatedSource
-            : undefined,
-        };
-
-        // Clean up undefined keys
-        return Object.fromEntries(
-          Object.entries(updatedConnections).filter(
-            ([, value]) => value !== undefined
-          )
-        ) as ConnectionMap;
-      });
-    },
-    []
-  );
-
   // Handle data passing on connect
   const onConnect = useCallback(
     (connection: Edge | Connection) => {
       if (!connection.sourceHandle || !connection.targetHandle) return;
+
+      const edgeData =
+        flowData[connection.source]?.[connection.sourceHandle] || [];
+      const newEdge = {
+        ...connection,
+        type: 'fileEdge',
+      };
 
       setEdges((eds) => {
         // Check if the edge already exists
@@ -421,46 +366,41 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (!edgeExists) {
           // Add the new edge if it doesn't already exist
-          return addEdge(
-            {
-              ...connection,
-              data: {},
-            },
-            eds
-          );
+          return addEdge(newEdge, eds);
         }
 
         // Return the original edges if the edge already exists
         return eds;
       });
 
-      const connectedData =
-        flowData[connection.source]?.[connection.sourceHandle];
+      setEdgeMap((prevEdgeMap) => {
+        if (!prevEdgeMap[connection.source])
+          prevEdgeMap[connection.source] = {};
+        return {
+          ...prevEdgeMap,
+          [connection.source]: {
+            ...prevEdgeMap[connection.source],
+            [connection.sourceHandle as string]: [
+              ...(prevEdgeMap[connection.source][
+                connection.sourceHandle as string
+              ] || []),
+              newEdge as Edge,
+            ],
+          },
+        };
+      });
 
-      if (
-        connection.source &&
-        connection.target &&
-        connection.sourceHandle &&
-        connection.targetHandle
-      ) {
-        addConnection(
-          connection.source,
-          connection.sourceHandle,
-          connection.target,
-          connection.targetHandle
-        );
-        if (connectedData) {
-          setFlowDataState((prevData) => ({
-            ...prevData,
-            [connection.target]: {
-              ...prevData[connection.target],
-              [connection.targetHandle as string]: connectedData,
-            },
-          }));
-        }
+      if (edgeData.length > 0) {
+        setFlowDataState((prevData) => ({
+          ...prevData,
+          [connection.target]: {
+            ...prevData[connection.target],
+            [connection.targetHandle as string]: edgeData,
+          },
+        }));
       }
     },
-    [setEdges, flowData, addConnection]
+    [setEdges, flowData]
   );
 
   // Handle disconnection by removing stored connection
@@ -471,16 +411,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       edgesToRemove.forEach((edge) => {
         if (edge.sourceHandle && edge.targetHandle) {
-          removeConnection(
-            edge.source,
-            edge.sourceHandle,
-            edge.target,
-            edge.targetHandle
-          );
+          edgeMap[edge.source][edge.sourceHandle] = edgeMap[edge.source][
+            edge.sourceHandle
+          ].filter((e) => e.id !== edge.id);
         }
       });
     },
-    [setEdges, removeConnection]
+    [setEdges, edgeMap]
   );
 
   const onNodesDelete = useCallback((nodesToDelete: Node[]) => {
@@ -491,13 +428,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
           delete updatedData[node.id];
           return updatedData;
         });
-        setConnections((prevConnections) => {
-          const updatedConnections = { ...prevConnections };
-          delete updatedConnections[node.id];
-          return updatedConnections;
+        setEdgeMap((prevEdges) => {
+          const updatedEdges = { ...prevEdges };
+          delete updatedEdges[node.id];
+          return updatedEdges;
         });
       },
-      [setFlowDataState, setConnections]
+      [setFlowDataState, setEdgeMap]
     );
   }, []);
   /***************************************************************************

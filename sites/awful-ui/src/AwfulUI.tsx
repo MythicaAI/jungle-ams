@@ -12,13 +12,14 @@ import '@xyflow/react/dist/style.css';
 import useAwfulFlow from './hooks/useAwfulFlow';
 
 import Sidebar from './components/Sidebar';
-import AutomationNode from './components/AutomationNode';
-import FileUploadNode from './components/FileUploadNode';
-import FileViewerNode from './components/FileViewerNode';
-import HDANode from './components/HDANode';
+import AutomationNode from './components/nodes/AutomationNode';
+import FileUploadNode from './components/nodes/FileUploadNode';
+import FileViewerNode from './components/nodes/FileViewerNode';
+import HDANode from './components/nodes/HDANode';
 import { Stack } from '@mui/joy';
 import { Header } from './components/Header';
 import { TabValues } from './enums';
+import { FileEdge } from './components/edges/FileEdge';
 
 const storageKey = 'awful-ui-layout';
 
@@ -73,6 +74,12 @@ const AwfulUI: FC = () => {
     }),
     []
   );
+  const edgeTypes = useMemo(
+    () => ({
+      fileEdge: FileEdge,
+    }),
+    []
+  );
 
   return (
     <Stack>
@@ -91,6 +98,7 @@ const AwfulUI: FC = () => {
             onDragOver={onDragOver}
             onInit={setRfInstance}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             deleteKeyCode="Delete"
             fitView
             minZoom={0.1}

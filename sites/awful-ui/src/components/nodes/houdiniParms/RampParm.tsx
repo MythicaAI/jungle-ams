@@ -1,6 +1,6 @@
 import React from 'react';
-import hou from '../../types/Houdini';
-import { dictionary } from '../../types/Automation';
+import hou from '../../../types/Houdini';
+import { dictionary } from '../../../types/Automation';
 import ValueRampParm from './RampParmValue';
 import ColorRampParm from './RampParmColor';
 

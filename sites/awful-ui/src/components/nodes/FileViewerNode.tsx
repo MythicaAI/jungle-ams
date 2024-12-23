@@ -7,15 +7,18 @@ import React, {
   memo,
 } from 'react';
 
-import useMythicaApi from '../hooks/useMythicaApi';
-import useAwfulFlow from '../hooks/useAwfulFlow';
+import useMythicaApi from '../../hooks/useMythicaApi';
+import useAwfulFlow from '../../hooks/useAwfulFlow';
 
 import USDViewer from './viewers/USDViewer';
-import { GetDownloadInfoResponse, GetFileResponse } from '../types/MythicaApi';
+import {
+  GetDownloadInfoResponse,
+  GetFileResponse,
+} from '../../types/MythicaApi';
 
 import CodeViewer from './viewers/CodeViewer';
-import FileInputHandle from './handles/FileInputHandle';
-import FileOutputHandle from './handles/FileOutputHandle';
+import FileInputHandle from '../handles/FileInputHandle';
+import FileOutputHandle from '../handles/FileOutputHandle';
 import { Card, Checkbox, Option, Select, Tabs, Typography } from '@mui/joy';
 interface FileViewerNodeProps {
   id: string;
@@ -182,8 +185,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     width: viewerWidth,
     maxWidth: 700,
   };
-
-  useEffect(() => {});
 
   useEffect(() => {
     if (

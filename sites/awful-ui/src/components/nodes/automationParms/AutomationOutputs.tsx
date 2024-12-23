@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { JSONSchema, JSONSchemaProperty } from '../../types/JSONSchema';
+import { JSONSchema, JSONSchemaProperty } from '../../../types/JSONSchema';
 
 export type ResultData = {
     [key: string]: unknown;

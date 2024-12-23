@@ -187,7 +187,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
             {
               work_guid: '', // Generate or retrieve unique work_id if needed
               channel: worker,
-              path: '/mythica/workers',
+              path: '/mythica/automations',
               env:
                 import.meta.env.MODE === 'staging' ? 'staging' : 'production',
               auth_token: authToken, // Use dynamic profile_id
@@ -202,7 +202,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
           .then((response) => {
             const workerDef = parseAutomation(
               worker,
-              response.data.result?.workers
+              response.data.result?.automations
             );
             setAutomations((prev) => ({ ...prev, [worker]: workerDef }));
             console.debug(

@@ -1,5 +1,5 @@
 import React from 'react';
-import hou from '../../types/Houdini';
+import hou from '../../../types/Houdini';
 import FloatParm from './FloatParm';
 import FolderParm from './FolderParm';
 import FolderSetParm from './FolderSetParm';
@@ -12,7 +12,7 @@ import StringParm from './StringParm';
 import ToggleParm from './ToggleParm';
 
 
-import { dictionary } from '../../types/Automation';
+import { dictionary } from '../../../types/Automation';
 export interface ParmFactoryProps {
     parmTemplate: hou.ParmTemplate;
     data: dictionary;
