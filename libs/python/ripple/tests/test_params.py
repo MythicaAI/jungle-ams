@@ -258,6 +258,31 @@ def test_param_compile():
     compiled = compile_interface(data)
     assert len(compiled.params) == 0
 
+    # Category test
+    data = """
+    {
+        "defaults": {
+            "category_toggle": {
+                "type": "Toggle",
+                "label": "Test Toggle 1",
+                "folder": "folder_name",
+                "folder_label": "Folder Name",
+                "default": true
+            },
+            "no_category_toggle": {
+                "type": "Toggle",
+                "label": "Test Toggle 2",
+                "default": true
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 2
+    assert compiled.params['category_toggle'].category_label == "Folder Name"
+    assert compiled.params['no_category_toggle'].category_label is None
+
 
 def test_param_validate():
     # Minimal test
