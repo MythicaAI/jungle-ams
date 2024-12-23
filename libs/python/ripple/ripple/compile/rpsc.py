@@ -61,6 +61,9 @@ def compile_interface(interface_data: str) -> ParameterSpec:
         else:
             continue
 
+        if 'folder_label' in value:
+            param.category_label = value['folder_label']
+
         params[name] = param
 
     return ParameterSpec(params=params)
