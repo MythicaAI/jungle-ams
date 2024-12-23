@@ -34,12 +34,13 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewerWidth, setViewerWidth] = useState<number | undefined>();
-  const { getFiles, getDownloadInfo } = useMythicaApi();
+  const { getFiles, getDownloadInfo, authToken } = useMythicaApi();
   const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
   >([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [selectedPane, setSelectedPane] = useState(node.data.selectedPane || 0);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>(
     node.data.selectedFileIds || []
@@ -53,13 +54,14 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const inputFlowData = getFlowData(node.id)[INPUT_FILES] as GetFileResponse[];
 
   const fetchAvailableFiles = useCallback(async () => {
+    if (!authToken) return;
     try {
       const files = await getFiles();
       setApiFiles(files);
     } catch (error) {
       console.error('Error fetching available files:', error);
     }
-  }, [getFiles]);
+  }, [getFiles, authToken]);
 
   const getDownloads = useCallback(
     async (
@@ -119,7 +121,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       setInitialized(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authToken]);
 
   // Update node save data
   useEffect(() => {
@@ -179,6 +181,22 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     width: viewerWidth,
     maxWidth: 700,
   };
+
+  useEffect(() => {});
+
+  useEffect(() => {
+    if (
+      selectedFileIds.length > 0 &&
+      downloadInfo.length === 0 &&
+      apiFiles.length > 0 &&
+      selectFileRef &&
+      !isInitialized
+    ) {
+      handleFileSelection(selectedFileIds);
+      setIsInitialized(true);
+      setSelectedPane(0);
+    }
+  }, [apiFiles, selectedFileIds, selectFileRef, downloadInfo]);
 
   return (
     <Card
