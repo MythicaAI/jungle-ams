@@ -40,7 +40,8 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
   >([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isRestoredFromLocalStorage, setIsRestoredFromLocalStorage] =
+    useState(false);
   const [selectedPane, setSelectedPane] = useState(node.data.selectedPane || 0);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>(
     node.data.selectedFileIds || []
@@ -190,10 +191,10 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       downloadInfo.length === 0 &&
       apiFiles.length > 0 &&
       selectFileRef &&
-      !isInitialized
+      !isRestoredFromLocalStorage
     ) {
       handleFileSelection(selectedFileIds);
-      setIsInitialized(true);
+      setIsRestoredFromLocalStorage(true);
       setSelectedPane(0);
     }
   }, [apiFiles, selectedFileIds, selectFileRef, downloadInfo]);
