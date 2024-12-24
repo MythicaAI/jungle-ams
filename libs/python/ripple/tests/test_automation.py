@@ -457,6 +457,7 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest):
     mock_rest.post.assert_called_once_with(
         f"{publisher.api_url}/jobs/complete/test-job",
         json_data={},
+        headers={},
         token=publisher.request.auth_token
     )
 
