@@ -1,6 +1,12 @@
 // MythicaFlow.tsx
-import { FC, useRef, useMemo, useState } from 'react';
-import { ReactFlow, MiniMap, Controls, Background } from '@xyflow/react';
+import { FC, useRef, useMemo, useState, useEffect } from 'react';
+import {
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  useReactFlow,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import useAwfulFlow from './hooks/useAwfulFlow';
@@ -14,6 +20,8 @@ import { Stack } from '@mui/joy';
 import { Header } from './components/Header';
 import { TabValues } from './enums';
 import { FileEdge } from './components/edges/FileEdge';
+
+const storageKey = 'awful-ui-layout';
 
 // Main Awful UI component
 const AwfulUI: FC = () => {
@@ -29,8 +37,33 @@ const AwfulUI: FC = () => {
     nodes,
     edges,
     onEdgesChange,
+    rfInstance,
     setRfInstance,
+    setEdges,
+    setNodes,
   } = useAwfulFlow();
+  const { setViewport } = useReactFlow();
+
+  useEffect(() => {
+    if (rfInstance) {
+      const flow = rfInstance.toObject();
+      localStorage.setItem(storageKey, JSON.stringify(flow));
+    }
+  }, [rfInstance?.toObject()]);
+
+  useEffect(() => {
+    const storageData = localStorage.getItem(storageKey);
+    if (!storageData) return;
+
+    const flow = JSON.parse(storageData);
+
+    if (flow) {
+      const { x = 0, y = 0, zoom = 1 } = flow.viewport;
+      setNodes(flow.nodes || []);
+      setEdges(flow.edges || []);
+      setViewport({ x, y, zoom });
+    }
+  }, []);
 
   const nodeTypes = useMemo(
     () => ({
