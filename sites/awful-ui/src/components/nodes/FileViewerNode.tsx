@@ -98,13 +98,13 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         if (file) filesById.set(file.file_id, file);
       });
 
-      const selectedFiles: any[] = [];
+      const selectedFiles: GetFileResponse[] = [];
 
       if (options && options.length > 0) {
         options.forEach((option) => {
           const file = filesById.get(option);
 
-          file && selectedFiles.push(file);
+          if (file) selectedFiles.push(file);
         });
       }
 
@@ -124,8 +124,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     fetchAvailableFiles().then(() => {
       setInitialized(true);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authToken]);
+  }, [authToken, fetchAvailableFiles, setInitialized]);
 
   // Update node save data
   useEffect(() => {
@@ -210,7 +209,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <Typography level="h4">File Viewer</Typography>
 
       <div style={{ marginBottom: '10px' }} className="nodrag">
-        {/*@ts-expect-error*/}
+        {/*@ts-expect-error - ignore*/}
         <Select
           className="nowheel"
           ref={selectFileRef}

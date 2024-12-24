@@ -198,14 +198,13 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
             Saved Workflows
           </Typography>
 
-          {/*@ts-ignore*/}
+          {/*@ts-expect-error - ignore*/}
           <Select
             ref={selectFileRef}
             placeholder="Select Workflow"
             value={selectedFile?.file_id}
             onChange={(_, newValue) => {
-              //@ts-ignore
-              setSelectedFile(savedAwfulsById[newValue]);
+              setSelectedFile(newValue?savedAwfulsById[newValue]:null);
             }}
           >
             {Object.entries(savedAwfulsById)

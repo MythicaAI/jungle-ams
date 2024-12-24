@@ -1,5 +1,5 @@
 // MythicaFlow.tsx
-import { FC, useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -24,7 +24,7 @@ import { FileEdge } from './components/edges/FileEdge';
 const storageKey = 'awful-ui-layout';
 
 // Main Awful UI component
-const AwfulUI: FC = () => {
+const AwfulUI: React.FC = () => {
   const [tab, setTab] = useState<string>(TabValues.EDIT);
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const {
