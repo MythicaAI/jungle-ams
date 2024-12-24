@@ -5,22 +5,24 @@ import sys
 import traceback
 
 from opentelemetry._logs import set_logger_provider
-from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
-    OTLPLogExporter,
-)
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+from opentelemetry.context import get_current
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogExporter, SimpleLogRecordProcessor
+from opentelemetry.sdk._logs.export import (
+    BatchLogRecordProcessor,
+    ConsoleLogExporter,
+    SimpleLogRecordProcessor,
+)
 from opentelemetry import metrics
+from opentelemetry.propagate import inject
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import (
-    BatchSpanProcessor,
-)
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.trace import set_tracer_provider
 
@@ -53,7 +55,7 @@ class CustomJSONFormatter(logging.Formatter):
                 k: v
                 for k, v in record.__dict__.items()
                 if k
-                   not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+                not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
             }
         )
 
@@ -68,9 +70,7 @@ def get_telemetry_resource() -> Resource:
             ResourceAttributes.SERVICE_NAME: "app",
             ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv("NAMESPACE", "api-dev"),
             ResourceAttributes.SERVICE_NAMESPACE: os.getenv("NAMESPACE", "api-dev"),
-            ResourceAttributes.DEPLOYMENT_ENVIRONMENT: os.getenv(
-                "NAMESPACE", "local"
-            ),
+            ResourceAttributes.DEPLOYMENT_ENVIRONMENT: os.getenv("NAMESPACE", "local"),
         }
     )
 
@@ -112,13 +112,11 @@ def configure_logging():
             insecure=app_config().telemetry_insecure,
             headers=headers,
         )
-        reader = PeriodicExportingMetricReader(
-            metric_exporter
-        )
+        reader = PeriodicExportingMetricReader(metric_exporter)
         meterProvider = MeterProvider(metric_readers=[reader], resource=resource)
         metrics.set_meter_provider(meterProvider)
 
-        tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
+        tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
 
         #
         # OpenTelemetry Logging Exporter
@@ -141,9 +139,17 @@ def configure_logging():
         logger_provider = LoggerProvider(resource=resource)
         set_logger_provider(logger_provider)
 
-        logger_provider.add_log_record_processor(SimpleLogRecordProcessor(ConsoleLogExporter()))
+        logger_provider.add_log_record_processor(
+            SimpleLogRecordProcessor(ConsoleLogExporter())
+        )
 
         otel_log_handler = LoggingHandler(level=logging.INFO)
         logger.addHandler(otel_log_handler)
 
         otel_log_handler.setFormatter(CustomJSONFormatter())
+
+
+def get_telemetry_context() -> dict:
+    trace_context = {}
+    inject(trace_context, get_current())
+    return trace_context

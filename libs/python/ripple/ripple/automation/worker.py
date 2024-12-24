@@ -116,10 +116,18 @@ class Worker:
         doer=self
         async def implementation(json_payload):
             with tracer.start_as_current_span("worker.execution") as span:
+                span_with_context = None
                 ret_data = None
                 span.set_attribute("worker.started", datetime.now(timezone.utc).isoformat())
                 try:
                     auto_request = AutomationRequest(**json_payload)
+
+                    # Set up context
+                    context = TraceContextTextMapPropagator().extract(carrier=auto_request.context)
+                    trace.set_span_in_context(span, context)
+                    span_with_context = tracer.start_span("span_with_context", context=context)
+                    log.info("span_with_context: %s", span_with_context)
+
                     trace_data = {"work_guid": auto_request.work_guid,
                                   "job_id": auto_request.job_id if auto_request.job_id else "" }
                     span.set_attributes(trace_data)
@@ -139,9 +147,6 @@ class Worker:
                 #Run the worker
                 publisher = None
                 try:
-                    carrier = {}
-                    TraceContextTextMapPropagator().inject(carrier)
-
                     with tempfile.TemporaryDirectory() as tmpdir:
                         publisher = ResultPublisher(auto_request, self.nats, self.rest, tmpdir)
                         publisher.result(Progress(progress=0))
@@ -149,8 +154,8 @@ class Worker:
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
                         api_url = ripple_config().api_base_uri
-                        resolve_params(api_url, tmpdir, inputs)
-                        with tracer.start_as_current_span("job.execution") as job_span:
+                        resolve_params(api_url, tmpdir, inputs, headers=auto_request.context)
+                        with tracer.start_as_current_span("job.execution", context=context) as job_span:
                             job_span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
                             ret_data: StreamItemUnion = worker.provider(inputs, publisher)
                             job_span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
@@ -171,6 +176,8 @@ class Worker:
                         span.set_attribute("job_id", ret_data.job_id)
                     span.set_status(telemetry_status)
                     log.info("Job finished %s", auto_request.work_guid)
+                    if span_with_context:
+                        span_with_context.end()
 
         return implementation
 

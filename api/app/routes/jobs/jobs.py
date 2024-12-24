@@ -27,6 +27,7 @@ from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
 from routes.authorization import session_profile
+from telemetry_config import get_telemetry_context
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +135,9 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         work_guid=work_guid,
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
-        auth_token=profile.auth_token)
+        auth_token=profile.auth_token,
+        context=get_telemetry_context(),
+    )
     nats = NatsAdapter()
     await nats.post("houdini", event.model_dump())
     return work_guid
@@ -187,7 +190,9 @@ async def add_job_nats_event(
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
-        data=params.model_dump())
+        data=params.model_dump(),
+        context=get_telemetry_context(),
+    )
 
     nats = NatsAdapter()
     log.info("Sent NATS %s task. Request: %s", str(subject), event.model_dump())

@@ -40,8 +40,9 @@ receivers:
 
 processors:
   batch:
-    timeout: 10s
-    send_batch_size: 1000
+    timeout: 200ms
+    send_batch_size: 512
+    send_batch_max_size: 1024
 
   memory_limiter:
     check_interval: 1s
@@ -63,6 +64,14 @@ exporters:
   debug:
     verbosity: detailed
 
+  otlp:
+    endpoint: ingest.us.signoz.cloud:443
+    tls:
+      insecure: false
+    timeout: 10s
+    headers:
+      "signoz-access-token": doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG
+
   # Add optional exporters for logs (example with console output)
   file:
     path: /var/log/export/otel-log.json
@@ -72,12 +81,15 @@ service:
     metrics:
       receivers: [ otlp, nginx ]
       processors: [ memory_limiter, batch ]
-      exporters: [ prometheus, debug ]
-
+      exporters: [ prometheus, debug, otlp]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
     logs:
-      receivers: [ filelog ]
+      receivers: [ filelog, otlp ]
       processors: [ resource, batch ]
-      exporters: [ debug, file ]
+      exporters: [ debug, file, otlp ]
 
   telemetry:
     logs:
