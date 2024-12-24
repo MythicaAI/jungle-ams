@@ -154,7 +154,7 @@ def get_node_type(node_type, include_code = True):
     # sort out ramp parms. 
     for parmtemp in node_type.parmTemplates():
         if _isValueParm(parmtemp) and not parmtemp.isHidden():
-            defaults = _get_parm_defaults(parmtemp)
+            defaults = _get_parm_defaults(parmtemp, node_type.parmTemplateGroup())
             if defaults is not None:
                 nt["defaults"][parmtemp.name()] = defaults
 
@@ -491,11 +491,19 @@ def _get_node_type_strings(nt):
 def sanitize_utf8(s):
     return s.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
 
-def _get_parm_defaults(parmtemp):
+def _get_parm_defaults(parmtemp, parmtempgroup):
     _parm = {
         "type":parmtemp.type().name(),
         "label":sanitize_utf8(parmtemp.label()),
     }
+
+    try:
+        containing_folder = parmtempgroup.containingFolder(parmtemp.name())
+        _parm["folder"] = containing_folder.name()
+        _parm["folder_label"] = containing_folder.label()
+    except:
+        pass
+
     if hasattr(parmtemp, "minValue"):
         _parm["min"] = parmtemp.minValue()
     if hasattr(parmtemp, "maxValue"):
@@ -512,7 +520,7 @@ def _get_parm_defaults(parmtemp):
     if isinstance(parmtemp, hou.RampParmTemplate):
         x = {}
         for parmtt in parmtemp.parmTemplates():
-            x[parmtt.name()] = _get_parm_defaults(parmtt)
+            x[parmtt.name()] = _get_parm_defaults(parmtt, parmtempgroup)
         default = x
     elif isinstance(parmtemp, hou.DataParmTemplate): 
         default = parmtemp.defaultExpression()
