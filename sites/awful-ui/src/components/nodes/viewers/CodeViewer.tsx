@@ -1,3 +1,4 @@
+import React from 'react';
 import { useEffect } from 'react';
 import MonacoEditor, { loader } from '@monaco-editor/react';
 
