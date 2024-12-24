@@ -33,7 +33,7 @@ jobs:
           cache-dependency-path: sites/awful-ui/pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install
-      - run: pnpm eslint src
+      - run: pnpm run lint
 
   build:
     runs-on: ubuntu-latest
