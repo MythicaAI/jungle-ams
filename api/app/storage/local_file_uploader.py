@@ -22,7 +22,7 @@ class LocalFileStorageClient(StorageClient):
 
     def upload(self, ctx: RequestContext, bucket_type: BucketType) -> str:
         with tracer.start_as_current_span("file.upload") as span:
-            span.set_attribute("file.id", ctx.file_id)
+            span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             file_id = ctx.content_hash + '.' + ctx.extension
             file_path = self.base_path / f"{ctx.content_hash}.{ctx.extension}"
             file_path.parent.mkdir(parents=True, exist_ok=True)
