@@ -258,6 +258,31 @@ def test_param_compile():
     compiled = compile_interface(data)
     assert len(compiled.params) == 0
 
+    # Category test
+    data = """
+    {
+        "defaults": {
+            "category_toggle": {
+                "type": "Toggle",
+                "label": "Test Toggle 1",
+                "folder": "folder_name",
+                "folder_label": "Folder Name",
+                "default": true
+            },
+            "no_category_toggle": {
+                "type": "Toggle",
+                "label": "Test Toggle 2",
+                "default": true
+            }
+        },
+        "inputLabels": []
+    }
+    """
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 2
+    assert compiled.params['category_toggle'].category_label == "Folder Name"
+    assert compiled.params['no_category_toggle'].category_label is None
+
 
 def test_param_validate():
     # Minimal test
@@ -368,18 +393,19 @@ def test_param_resolve():
     # File list test
     with tempfile.TemporaryDirectory() as tmp_dir:
         set = ParameterSet(files=[
-            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"),
-            FileParameter(file_id="file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB")
+            FileParameter(file_id="file_3vJPfGBtqaEsKisjDiivDBf7N2jc"),
+            FileParameter(file_id="file_3EH5RVbKaEHEdK3t2EufqbsM6CE7")
         ])
         success = resolve_params(endpoint, tmp_dir, set)
         assert success
         assert isinstance(set.files, list)
         assert isinstance(set.files[0], FileParameter)
         assert isinstance(set.files[1], FileParameter)
-        assert set.files[0].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
-        assert set.files[1].file_id == "file_3qH7tzKgQFqXiPqJnW7cuR6WwbFB"
+        assert set.files[0].file_id == "file_3vJPfGBtqaEsKisjDiivDBf7N2jc"
+        assert set.files[1].file_id == "file_3EH5RVbKaEHEdK3t2EufqbsM6CE7"
         assert set.files[0].file_path.startswith('file_') == False
         assert set.files[1].file_path.startswith('file_') == False
         assert os.path.exists(set.files[0].file_path)
         assert os.path.exists(set.files[1].file_path)
+        assert set.files[0].file_path != set.files[1].file_path
     """

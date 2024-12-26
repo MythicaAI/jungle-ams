@@ -39,4 +39,12 @@ spec:
             requests:
               ephemeral-storage: 10Gi
               nvidia.com/gpu: "1"
+          env:
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
+            - name: MYTHICA_ENVIRONMENT
+              value: production
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
+
       restartPolicy: Always

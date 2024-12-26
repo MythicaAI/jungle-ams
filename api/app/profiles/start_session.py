@@ -5,15 +5,15 @@ the profile and generates a session start response.
 import logging
 from http import HTTPStatus
 
+from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from fastapi import HTTPException
+from ripple.auth import roles
+from ripple.auth.generate_token import generate_token
 from sqlalchemy.sql.functions import func, now as sql_now
 from sqlmodel import Session, asc, col, delete, insert, select, update
 
-import auth.roles
 from auth.data import resolve_org_roles
-from auth.generate_token import generate_token
 from config import app_config
-from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
@@ -60,13 +60,13 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
                                        .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
                                        .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
                                        ).all()
-    roles = set()
+    auth_roles = set()
     for r in profile_org_results:
         _, r_org, r_org_ref = r
         if r_org is None:
             break
         org_id = org_seq_to_id(r_org.org_seq)
-        roles.add(f'{r_org_ref.role}:{org_id}')
+        auth_roles.add(f'{r_org_ref.role}:{org_id}')
 
     profile = profile_org_results[0][0]
 
@@ -76,11 +76,12 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     if profile.email in privileged_emails \
             and profile.email_validate_state == \
             ValidateEmailState.db_value(ValidateEmailState.validated):
-        roles.update(auth.roles.privileged_roles)
+        auth_roles.update(roles.privileged_roles)
     else:
-        roles.update((
-            f'{auth.roles.alias_asset_editor}:{auth.roles.self_object_scope}',
-            f'{auth.roles.alias_profile_editor}:{auth.roles.self_object_scope}'))
+        auth_roles.update((
+            f'{roles.alias_asset_editor}:{roles.self_object_scope}',
+            f'{roles.alias_profile_editor}:{roles.self_object_scope}',
+            f'{roles.alias_core_create}'))
 
     token = generate_token(
         profile_seq_to_id(profile.profile_seq),
@@ -88,7 +89,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
         profile.email_validate_state,
         profile.location,
         app_config().mythica_environment,
-        list(roles))
+        list(auth_roles))
 
     # Convert db profile to profile response
     profile_response = profile_to_profile_response(
@@ -105,12 +106,12 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     session.commit()
 
     # resolve all roles across all orgs this profile exists in
-    roles = resolve_org_roles(session, profile.profile_seq)
+    auth_roles = resolve_org_roles(session, profile.profile_seq)
 
     result = SessionStartResponse(
         token=token,
         profile=profile_response,
-        roles=list(roles))
+        roles=list(auth_roles))
 
     return result
 

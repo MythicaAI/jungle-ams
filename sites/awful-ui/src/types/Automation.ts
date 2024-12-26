@@ -1,5 +1,10 @@
 import { JSONSchema } from './JSONSchema';
 import { NodeState } from "./AwfulFlow";
+import { GetFileResponse } from './MythicaApi';
+
+export type ScriptAutomationTask = AutomationTask & {
+    script: string
+}
 
 export type AutomationTask = {
     uri: string;
@@ -7,6 +12,17 @@ export type AutomationTask = {
     path: string;
     spec: AutomationSpec;
 };
+
+export type AutomationSave = {
+    id: string;
+    uri: string;
+    worker: string;
+    script: string;
+    inputSpec: JSONSchema;
+    outputSpec: JSONSchema;
+    name: string;
+    file?: GetFileResponse;
+}
 
 export type AutomationSpec = {
     hidden: boolean;

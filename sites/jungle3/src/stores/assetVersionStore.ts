@@ -11,6 +11,15 @@ type Tag = {
   tag_name: string;
 };
 
+export type Dependency = {
+  asset_id: string;
+  content_hash: string;
+  file_name: string;
+  package_id: string;
+  size: number;
+  version: number[];
+};
+
 interface AssetVersion {
   asset_id: string;
   org_id: string;
@@ -26,6 +35,7 @@ interface AssetVersion {
   updated: string;
   files: AssetVersionContentMap;
   thumbnails: AssetVersionContentMap;
+  dependencies: Dependency[];
   links: Link[];
   initialTag: Tag;
   tag: string;
@@ -40,6 +50,7 @@ interface AssetVersion {
   removeThumbnail: (file_id: string) => AssetVersionContentMap;
   removeThumbnails: () => AssetVersionContentMap;
   setLinks: (links: Link[]) => Link[];
+  setDeps: (deps: Dependency[]) => Dependency[];
   setInitialTag: (tag: Tag) => Tag;
   setTag: (tag: string) => string;
   setCustomTag: (tag: string) => string;
@@ -137,6 +148,10 @@ export const useAssetVersionStore = create<AssetVersion>((set, get) => ({
   setLinks: (data: Link[]) => {
     set(() => ({ links: data }));
     return get().links;
+  },
+  setDeps: (data: Dependency[]) => {
+    set(() => ({ dependencies: data }));
+    return get().dependencies;
   },
   setInitialTag: (value: Tag) => {
     set(() => ({ initialTag: value }));

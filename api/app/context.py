@@ -1,7 +1,11 @@
 """Definitions for request context caching for data that flows from
 an HTTP request through the application request path"""
 from datetime import timezone, datetime
+from typing import Optional
+
 from ripple.models.contexts import FilePurpose
+from ripple.models.sessions import SessionProfile
+
 
 class RequestContext:
     """The context is built up during the request and used to satisfy
@@ -12,7 +16,7 @@ class RequestContext:
         self.event_id: str | None = None
         self.filename: str = ''
         self.local_filepath: str = ''
-        self.profile_id: str = ''
+        self.profile: Optional[SessionProfile] = None
         self.timestamp: datetime = datetime.now(timezone.utc)
         self.file_size: int = 0
         self.content_hash: str = ''

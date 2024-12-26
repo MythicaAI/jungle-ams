@@ -4,8 +4,8 @@ import re
 import subprocess
 from datetime import datetime, timezone
 from functools import wraps
-from pathlib import Path
 from os import PathLike
+from pathlib import Path
 
 from invoke import task
 
@@ -97,6 +97,9 @@ IMAGES = {
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
     },
+    'automation/imagemagick': {
+        'requires': ['libs/python'],
+    }
 }
 
 SITE_DATA = {
@@ -129,16 +132,17 @@ IMAGE_SETS = {
 }
 
 LOCAL_MOUNT_POINTS = {
-    'blockstore': 'testing/mnt/blockstore',
+    'objstore': 'testing/mnt/objstore',
     'pgdata': 'testing/mnt/pgdata',
-    'static': 'testing/mnt/static'
+    'static': 'testing/mnt/static',
+    'nats': 'testing/mnt/nats',
 }
 
 
 def get_git_tags(prefix):
     """Get git tags matching prefix, sorted by version."""
     result = subprocess.run(['git', 'tag', '-l', prefix, '--sort=-v:refname'],
-                          capture_output=True, text=True)
+                            capture_output=True, text=True)
     return result.stdout.strip().split('\n')
 
 
@@ -150,6 +154,7 @@ def parse_dockerfile_label_name(dockerfile_path: PathLike) -> str:
         if match:
             return match.group(1)
     raise ValueError(f"LABEL name= not found in {dockerfile_path}")
+
 
 def generate_mount_env_file() -> str:
     """Generate an env file with the OS specific mount points as environment variables"""
@@ -201,7 +206,8 @@ def stop_docker_compose(c, docker_compose_path):
     """Shutdown a docker compose instance"""
     env_file_path = generate_mount_env_file()
     with c.cd(docker_compose_path):
-        c.run(f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
+        c.run(
+            f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
 
 
 def build_image(c, image_path: PathLike):
@@ -236,7 +242,8 @@ def build_image(c, image_path: PathLike):
 
 def deploy_image(c, image_path, target):
     """Deploy a docker image"""
-    dockerfile_path = Path(image_path) / 'Dockerfile'
+    working_directory = Path(BASE_DIR) / image_path
+    dockerfile_path = working_directory / 'Dockerfile'
     image_name = parse_dockerfile_label_name(dockerfile_path)
     commit_hash = get_commit_hash()
     if target == "gcs":
@@ -409,13 +416,18 @@ def image_path_action(c, image, action, **kwargs):
     Execute some docker image action against an image path
     or set of image paths
     """
+    # remove preceding and trailing slashes
+    if image.startswith('/'):
+        image = image[1:]
+    if image.endswith('/'):
+        image = image.rstrip('/')
+
     if image in IMAGE_SETS:
         for image_path in IMAGE_SETS[image]:
             action(c, image_path, **kwargs)
     else:
         if image not in IMAGES:
-            c.help(f'{image} not in {IMAGES.keys()}')
-            return
+            raise ValueError(f'{image} not in {IMAGES.keys()}')
         action(c, image, **kwargs)
 
 

@@ -72,7 +72,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           <Typography fontSize={12} color="neutral">
             created by
           </Typography>
-          <Typography level={"h4"}>{av.author_name}</Typography>
+          <Typography level={"h4"}>{av.owner_name}</Typography>
         </Stack>
       </Card>
 

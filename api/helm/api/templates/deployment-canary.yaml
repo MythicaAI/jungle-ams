@@ -28,4 +28,14 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "500m"
+          env:
+            - name: SERVICE_ENDPOINT
+              value: http://app/v1
+
+            - name: MYTHICA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: canary-secrets
+                  key: MYTHICA_API_KEY
+
       restartPolicy: Always

@@ -32,6 +32,19 @@ spec:
           command: ["/bin/bash", "houdini.sh"]
           stdin: true
           tty: true
+          env:
+            - name: NAMESPACE
+              value: api
+            - name: TELEMETRY_ENDPOINT
+              value: http://otel-collector.default:4317
+            - name: TELEMETRY_INSECURE
+              value: "true"
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
+            - name: MYTHICA_ENVIRONMENT
+              value: production
+            - name: MYTHICA_LOCATION
+              value: "gke-us-central1"
           resources:
             limits:
               ephemeral-storage: 10Gi

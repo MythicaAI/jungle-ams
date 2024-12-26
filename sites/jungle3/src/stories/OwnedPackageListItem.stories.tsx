@@ -116,7 +116,7 @@ const OwnedPackageListItem: React.FC<{
               </Chip>
             ))}
             <Typography level="body-sm" color="neutral">
-              by {latestVersion.author_name}
+              by {latestVersion.owner_name}
             </Typography>
           </ListItemContent>
         </Stack>
@@ -173,7 +173,7 @@ const mockVersionList: AssetVersionResponse[] = [
     package_id: "pkg1",
     org_name: "Storybook",
     name: "Test package",
-    author_name: "Storybook",
+    owner_name: "Storybook",
     commit_ref: "git@github.com:storybook/storybook.git/commit/123456789123123",
     description: "A description of storybook component.",
     version: [1, 0, 0],
@@ -221,7 +221,7 @@ export const MultipleVersions: Story = {
         package_id: "pkg2",
         org_name: "Storybook",
         name: "Test package 2",
-        author_name: "Storybook",
+        owner_name: "Storybook",
         commit_ref: "git@github.com:storybook/dall-e/commit/abcdef12123123123",
         description: "A description of storybook component",
         version: [2, 0, 0],

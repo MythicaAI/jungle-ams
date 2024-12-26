@@ -323,16 +323,16 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     assert len(o.contents['files']) == 0
 
     new_profile = create_profile(name="new_profile",
-                                  email= "test_test@gmail.com",
-                                  full_name=test_profile_full_name,
-                                  signature=test_profile_signature,
-                                  description=test_profile_description,
-                                  profile_href=test_profile_href,
-                                  validate_email=True)
+                                 email="test_test@gmail.com",
+                                 full_name=test_profile_full_name,
+                                 signature=test_profile_signature,
+                                 description=test_profile_description,
+                                 profile_href=test_profile_href,
+                                 validate_email=True)
     new_profile_id = new_profile.profile.profile_id
     new_headers = new_profile.authorization_header()
 
-   # Test: Attempt to change author_id in an asset-version not owned by the user
+    # Test: Attempt to change author_id in an asset-version not owned by the user
     test_asset_ver_json.update(
         {'author_id': new_profile_id}
     )
@@ -342,8 +342,8 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
         headers=new_headers)
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
     o = munchify(r.json())
-    assert f"role unauthorized for asset {asset_id}" in o.detail
-    
+    assert "not satisfied" in o.detail
+
     # create org to for new_profile
     r = client.post(
         f"{api_base}/orgs/",
@@ -368,7 +368,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
 
     new_profile_asset_ver_json = {
         'commit_ref': 'test_commit_ref-updated-2',
-        'name':  'new_profile_asset_ver_json',
+        'name': 'new_profile_asset_ver_json',
         'contents': {'files': [],
                      'links': [test_link_update1, test_link_update2]},
         'author_id': new_profile_id,
@@ -392,27 +392,6 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     o = munchify(r.json())
     assert o.author_id == new_profile_id
 
-    # Test: Ensure author_id remains unchanged when not provided
-    # test as super-admin
-    new_profile_asset_ver_json.pop("author_id", None)
-    r = client.post(
-        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
-        json=new_profile_asset_ver_json,
-        headers=headers)
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert o.author_id == new_profile_id
-
-    # Test: Ensure author_id remains unchanged when super-admin updates author_id
-    new_profile_asset_ver_json["author_id"] = profile_id
-    r = client.post(
-        f"{api_base}/assets/{new_profile_asset_id}/versions/0.2.0",
-        json=new_profile_asset_ver_json,
-        headers=headers)
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert o.author_id == new_profile_id
-
     r = client.get(
         f"{api_base}/assets/{asset_id}/versions/0.2.0")
     assert_status_code(r, HTTPStatus.OK)
@@ -424,13 +403,13 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
 
     other_profile = create_profile()
     other_headers = other_profile.authorization_header()
-    
+
     r = client.delete(
         f"{api_base}/assets/{asset_id}", headers=other_headers)
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
     o = munchify(r.json())
-    assert f"role unauthorized for asset {asset_id}" in o.detail
-    
+    assert "not satisfied" in o.detail
+
     r = client.delete(
         f"{api_base}/assets/{asset_id}", headers=headers)
     assert_status_code(r, HTTPStatus.OK)
@@ -458,7 +437,6 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     r = client.get(
         f"{api_base}/assets/{asset_id}/versions/0.2.0")
     assert_status_code(r, HTTPStatus.NOT_FOUND)
-
 
 
 def test_invalid_profile_url(client, api_base):

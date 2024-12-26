@@ -1,33 +1,37 @@
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any
 from uuid import uuid4
 
-import asyncio
+import sys
+from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
+    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
+from cryptid.location import location
 from fastapi import APIRouter, Depends, HTTPException
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
+from ripple.automation.adapters import NatsAdapter
+from ripple.automation.models import AutomationRequest
+from ripple.automation.worker import process_guid
+from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
+from ripple.models.sessions import SessionProfile
+from ripple.runtime.params import repair_parameters, validate_params
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, insert, select, text, update
 
 from config import app_config
-from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
-    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
-from cryptid.location import location
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
-from opentelemetry import trace
-from opentelemetry.trace.status import Status, StatusCode
-from ripple.automation import NatsAdapter, WorkerRequest
-from ripple.models.params import ParameterSet, ParameterSpec
-from ripple.runtime.params import repair_parameters, validate_params
 from routes.authorization import session_profile
 
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
+
 
 class JobDefinitionRequest(BaseModel):
     job_type: str
@@ -76,6 +80,13 @@ class JobResultResponse(BaseModel):
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
+def disable_nats(context_str):
+    if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+        log.info("skipping post to NATS in test: %s", context_str)
+        return True
+    return False
+
+
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
         request: JobDefinitionRequest) -> JobDefinitionResponse:
@@ -108,14 +119,41 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
         return JobDefinitionModel(job_def_id=job_def_id, **job_def.model_dump())
 
 
-def add_job_requested_event(session: Session, job_seq: int, job_def, params: str,
-                            profile_seq: int):
+@router.get('/def_from_file/{file_id}')
+async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_profile)) -> str:
+    """Convert a file to a job definition"""
+    if disable_nats(f"def_from_file: {file_id}"):
+        return ""
+
+    parameter_set = ParameterSet(
+        hda_file=FileParameter(file_id=file_id)
+    )
+    work_guid = str(uuid4())
+    event = AutomationRequest(
+        process_guid=process_guid,
+        work_guid=work_guid,
+        path='/mythica/generate_job_defs',
+        data=parameter_set.model_dump(),
+        auth_token=profile.auth_token)
+    nats = NatsAdapter()
+    await nats.post("houdini", event.model_dump())
+    return work_guid
+
+
+def add_job_requested_event(
+        session: Session,
+        job_seq: int,
+        job_def,
+        params: dict,
+        profile_seq: int,
+        auth_token: str):
     """Add a new event that triggers job processing"""
     # Create a new pipeline event
     job_id = job_seq_to_id(job_seq)
     job_data = {
         'job_def_id': job_def_seq_to_id(job_def.job_def_seq),
         'job_id': job_id,
+        'auth_token': auth_token,
         'profile_id': profile_seq_to_id(profile_seq),
         'params': params,
         'job_results_endpoint': f'{app_config().api_base_uri}/jobs/{job_id}/results'
@@ -132,26 +170,34 @@ def add_job_requested_event(session: Session, job_seq: int, job_def, params: str
     return event_result
 
 
-def add_job_nats_event(job_seq: int, profile_seq: int, job_type: str, params: ParameterSet):
+async def add_job_nats_event(
+        job_seq: int,
+        auth_token: str,
+        job_type: str,
+        params: ParameterSet):
     """Add a new job event to the NATS message bus"""
+    if disable_nats(job_type):
+        return
+
     [subject, path] = job_type.split("::")
 
-    event = WorkerRequest(
-        work_id=str(uuid4()),
+    event = AutomationRequest(
+        process_guid=process_guid,
+        work_guid=str(uuid4()),
         job_id=job_seq_to_id(job_seq),
-        profile_id=profile_seq_to_id(profile_seq),
+        auth_token=auth_token,
         path=path,
-        data=params.model_dump()
-    )
+        data=params.model_dump())
 
     nats = NatsAdapter()
-    asyncio.create_task(nats.post(subject, event.model_dump()))
+    log.info("Sent NATS %s task. Request: %s", str(subject), event.model_dump())
+    await nats.post(subject, event.model_dump())
 
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
         request: JobRequest,
-        profile: Profile = Depends(session_profile)) -> JobResponse:
+        profile: SessionProfile = Depends(session_profile)) -> JobResponse:
     """Request a job from an existing definition"""
     with tracer.start_as_current_span("job.status") as span:
         with get_session() as session:
@@ -175,14 +221,23 @@ async def create(
             job_seq = job.inserted_primary_key[0]
 
             span.set_attribute("job.id", job_seq_to_id(job_seq))
-            span.set_attribute("job.started", datetime.now(timezone.utc))
+            span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
 
-            event_result = add_job_requested_event(session, job_seq, job_def, request.params.model_dump(),
-                                                profile.profile_seq)
+            event_result = add_job_requested_event(
+                session,
+                job_seq,
+                job_def,
+                request.params.model_dump(),
+                profile.profile_seq,
+                profile.auth_token)
             event_id = event_seq_to_id(event_result.inserted_primary_key[0])
             session.commit()
 
-            add_job_nats_event(job_seq, profile.profile_seq, job_def.job_type, request.params)
+            await add_job_nats_event(
+                job_seq,
+                profile.auth_token,
+                job_def.job_type,
+                request.params)
 
             return JobResponse(
                 job_id=job_seq_to_id(job_seq),
@@ -237,7 +292,7 @@ async def create_result(
 
             job_result = job_result_insert(session, job_seq, request)
             span.set_attribute("job.result", request.result_data)
-            span.set_attribute("job.result.time", datetime.now(timezone.utc))
+            span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
             job_result_seq = job_result.inserted_primary_key[0]
             session.commit()
             return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
@@ -272,14 +327,14 @@ async def set_complete(
         span.set_attribute("job.id", job_id)
         with get_session() as session:
             job_result = session.exec(update(Job)
-                                    .where(Job.job_seq == job_id_to_seq(job_id))
-                                    .where(Job.completed == None)
-                                    .values(completed=sql_now()))
+                                      .where(Job.job_seq == job_id_to_seq(job_id))
+                                      .where(Job.completed == None)
+                                      .values(completed=sql_now()))
             if job_result.rowcount == 0:
                 span.set_status(Status(StatusCode.ERROR, "Job not found or already completed"))
                 log.error("Job %s not found or already completed", job_id)
                 raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
 
-            span.set_attribute("job.completed", datetime.now(timezone.utc))
+            span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
             span.set_status(Status(StatusCode.OK))
             session.commit()

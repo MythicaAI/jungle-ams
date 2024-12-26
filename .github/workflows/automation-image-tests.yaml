@@ -1,0 +1,85 @@
+name: automation-image-tests
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    paths:
+      - 'automation/**'
+      - '.github/workflows/automation-image-tests.yaml'
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
+
+    outputs:
+      images: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # setup all the filters to match Dockerfile locations
+          filters: |
+            automation/test/:
+              - 'libs/python/**'
+              - '.github/workflows/test-build-automation.yaml' # always build at least one image if the workflow changes
+            automation/houdini/:
+              - 'libs/python/**'
+              - 'automation/houdini/**'
+            automation/blender/:
+              - 'libs/python/**'
+              - 'automation/blender/**'
+            automation/imagemagick/:
+              - 'libs/python/**'
+              - 'automation/imagemagick/**'
+
+  build:
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+    permissions:
+      repository-projects: read
+      pull-requests: write
+      id-token: write
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.changes.outputs.images) }}
+
+    env:
+      IMAGE_NAME: "${{ matrix.image }}"
+      NODE_ENV: "staging"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install base python dependencies
+        run: |
+          python -m pip install --upgrade pip poetry flake8
+          python -m pip install -r local_requirements.txt 
+
+      - name: Lint with flake8
+        working-directory: ${{ matrix.image }}
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Test build ${{ matrix.image }}
+        run: |
+          inv docker-build --image ${{ matrix.image }}

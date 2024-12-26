@@ -1,0 +1,163 @@
+* {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+}
+
+.sidebar {
+  border-left: 1px solid #1a192b;
+  background: #24292e;
+}
+
+.dndflow {
+  flex-direction: column;
+  display: flex;
+  flex-grow: 1;
+  height: calc(100% - 92px);
+}
+
+.dndflow aside {
+  font-size: 12px;
+}
+
+.dndflow aside .description {
+  margin-bottom: 10px;
+}
+
+.dndflow .dndnode {
+  height: 20px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
+  background: #454c52;
+}
+
+.dndflow .dndnode:hover {
+  opacity: 0.8;
+}
+
+.dndflow .dndnode.input {
+  border-color: #0041d0;
+}
+
+.dndflow .dndnode.output {
+  border-color: #ff0072;
+}
+
+.dndflow .reactflow-wrapper {
+  flex-grow: 1;
+  width: 100%;
+  height: calc(100vh - 92px); /* Fills the full viewport height */
+}
+
+.dndflow .selectall {
+  margin-top: 10px;
+}
+
+@media screen and (min-width: 768px) {
+  .dndflow {
+    flex-direction: row;
+  }
+
+  .dndflow aside {
+    width: 20%;
+    max-width: 290px;
+    min-width: 290px;
+  }
+}
+
+.mythica-node {
+  border: 1px solid #666 !important;
+  padding: 10px 20px 10px 20px;
+  border-radius: 8px;
+  background: #0b0d0e;
+}
+
+.mythica-node.selected {
+  /* box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.5); */
+  border: 1px solid #007e63 !important;
+}
+
+.mythica-node.script {
+  min-width: 640px;
+  min-height: 640px;
+}
+
+.file-handle {
+  position: absolute;
+  text-align: center;
+}
+
+.file-handle .label {
+  font-size: 0.8em;
+  display: block;
+  padding: 5px;
+}
+
+.folder-container {
+  border: 1px solid #32383e;
+  border-radius: 4px;
+  font-family: sans-serif;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Container for the tab buttons */
+.folder-tabs {
+  display: flex;
+}
+
+/* Each tab */
+.folder-tab {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #fff;
+  user-select: none;
+  border-right: 1px solid #32383e;
+  border-bottom: 1px solid #32383e;
+  transition: background-color 0.2s ease;
+  overflow: clip;
+}
+
+/* Hover state */
+.folder-tab:hover {
+  opacity: 0.8;
+}
+
+/* Active tab styling */
+.folder-tab.active {
+  background-color: #367c64;
+  color: #fff;
+  font-weight: 500;
+}
+
+.folder-tabs.vertical {
+  display: flex !important;
+  flex-direction: column !important;
+}
+.folder-tabs.vertical .folder-tab {
+  border-right: 1px solid #32383e !important;
+}
+
+/* Content area */
+.folder-content {
+  padding: 5px;
+}

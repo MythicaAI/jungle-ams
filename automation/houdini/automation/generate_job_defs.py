@@ -4,12 +4,16 @@ import logging
 import mythica.network as mnet
 import requests
 
-from ripple.automation import ResultPublisher
+from ripple.automation.publishers import ResultPublisher
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
 
+from opentelemetry import trace
+
+
+tracer = trace.get_tracer(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -57,6 +61,7 @@ class GenerateJobDefResponse(ProcessStreamItem):
 
 
 def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
+
     hda_file = request.hda_file
 
     type_infos = extract_node_type_info(hda_file.file_path)
@@ -77,6 +82,6 @@ def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher
         )
         ret.append(res)
         responder.result(res)
-        
-    return GenerateJobDefResponse(job_definitions=ret)
+            
+        return GenerateJobDefResponse(job_definitions=ret)
 

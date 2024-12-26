@@ -43,7 +43,10 @@ async def by_content(
             select(FileContent)
             .where(FileContent.content_hash == content_hash)
             .where(FileContent.deleted == None))).first()
-        return enrich_file(session, file, profile)
+        if file:
+            return enrich_file(session, file, profile)
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
 
 
 @router.get("/by_purpose/{file_purpose}")
@@ -78,3 +81,4 @@ async def delete_by_id(file_id, profile_id: str = Depends(session_profile_id)):
             session.commit()
         except IntegrityError as e:
             raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
+

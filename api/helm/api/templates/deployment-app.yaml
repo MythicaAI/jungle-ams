@@ -65,6 +65,8 @@ spec:
               value: {{ .Values.auth0.clientId }}
             - name: AUTH0_AUDIENCE
               value: {{ .Values.auth0.audience }}
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
           ports:
             - containerPort: 5555
               name: http-api

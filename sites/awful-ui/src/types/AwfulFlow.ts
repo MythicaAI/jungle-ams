@@ -1,18 +1,16 @@
+import { Edge } from "@xyflow/react";
+import { GetFileResponse } from "./MythicaApi";
+
 // types/nodeData.ts
 export type FlowDataType = {
   [nodeId: string]: {
-    [key: string]: unknown;
+    [key: string]: GetFileResponse[];
   };
 };
 
-export type Connection = {
-  targetId: string;
-  targetHandle: string;
-};
-
-export type ConnectionMap = {
+export type EdgeMap = {
   [sourceId: string]: {
-    [sourceHandle: string]: Connection[];
+    [sourceHandle: string]: Edge[];
   };
 };
 

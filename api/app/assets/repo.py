@@ -8,22 +8,23 @@ from http import HTTPStatus
 from typing import Any, Dict, Iterable, Optional, Union
 
 import sqlalchemy
-from fastapi import HTTPException
-from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, col, desc, insert, or_, select, update
-
-import auth.roles
-from auth.authorization import Scope, validate_roles
-from auth.generate_token import SessionProfile
-from content.locate_content import locate_content_by_seq
-from content.resolve_download_info import resolve_download_info
-from content.validate_filename import validate_filename
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
     org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
 from cryptid.location import location
+from fastapi import HTTPException
+from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
+from ripple.auth import roles
+from ripple.auth.authorization import Scope, validate_roles
+from ripple.models.assets import AssetVersionRef
+from ripple.models.sessions import SessionProfile
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import Session, col, desc, insert, or_, select, update
+
+from content.locate_content import locate_content_by_seq
+from content.resolve_download_info import resolve_download_info
+from content.validate_filename import validate_filename
 from db.schema.assets import Asset, AssetTag, AssetVersion
 from db.schema.events import Event
 from db.schema.media import FileContent
@@ -103,7 +104,6 @@ AssetContentDocument = dict[str, list[str]]
 
 class AssetCreateVersionRequest(BaseModel):
     """Create a new version of an asset with its contents"""
-    author_id: Optional[str] = None
     org_id: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
@@ -483,22 +483,25 @@ def create_version(session: Session,
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
 
-    asset_instance, asset_version_instance = avr_results[0]
+    asset_instance, _ = avr_results[0]
+    scope = Scope(profile=profile,
+                  asset_version=AssetVersionRef.create(
+                      asset_seq=asset_instance.asset_seq,
+                      owner_seq=asset_instance.owner_seq,
+                      org_seq=asset_instance.org_seq))
 
     if avr.version == ZERO_VERSION:
         create_or_update = CreateOrUpdate.CREATE
-        scope = Scope(profile=profile, asset=asset_instance, asset_version=None)
+
         validate_dict = dict(
-            role=auth.roles.asset_create,
+            role=roles.asset_create,
             object_id=asset_id,
             auth_roles=profile.auth_roles,
-            scope=scope,
-            only_asset=True)
+            scope=scope)
     else:
         create_or_update = CreateOrUpdate.UPDATE
-        scope = Scope(profile=profile, asset=asset_instance, asset_version=asset_version_instance)
         validate_dict = dict(
-            role=auth.roles.asset_update,
+            role=roles.asset_update,
             object_id=asset_id,
             auth_roles=profile.auth_roles,
             scope=scope)
@@ -527,16 +530,8 @@ def create_version(session: Session,
         if update_result.rowcount != 1:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
 
-    # Only author of an asset can change the asset's author
-    if create_or_update == CreateOrUpdate.UPDATE:
-        if (
-                r.author_id
-                and scope.asset_version.author_seq == scope.profile.profile_seq
-        ):
-            values['author_seq'] = profile_id_to_seq(r.author_id)
-    else:
-        values['author_seq'] = profile_seq
-    values.pop('author_id', None)
+    # Track author for update auditing
+    values['author_seq'] = profile_seq
 
     # Create the revision, fails if the revision already exists
     # this could be optimized more using upsert but this will likely hold
@@ -632,15 +627,18 @@ def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionP
             HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found"
         ) from ex
 
-    scope = Scope(profile=profile, asset=asset)
+    scope = Scope(profile=profile,
+                  asset_version=AssetVersionRef.create(
+                      asset_seq=asset_seq,
+                      owner_seq=asset.owner_seq,
+                      author_seq=asset.owner_seq,
+                      org_seq=asset.org_seq, ))
 
     validate_roles(
-        role=auth.roles.asset_delete,
+        role=roles.asset_delete,
         object_id=asset_id,
         auth_roles=profile.auth_roles,
-        scope=scope,
-        only_asset=True,
-    )
+        scope=scope)
 
     stmt = (
         update(Asset)

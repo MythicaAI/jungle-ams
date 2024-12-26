@@ -1,24 +1,30 @@
 // App.tsx
 import React from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
+import { CssVarsProvider } from '@mui/joy';
 
 import AutomationProvider from './providers/AutomationProvider';
 import MythicaApiProvider from './providers/MythicaApiProvider';
 import AwfulFlowProvider from './providers/AwfulFlowProvider';
+
 import AwfulUI from './AwfulUI';
+import { useTheme } from './styles/theme';
 
-import './index.css';
-
-const App: React.FC = () => (
-  <ReactFlowProvider>
-    <MythicaApiProvider>
-      <AutomationProvider>
-        <AwfulFlowProvider>
-          <AwfulUI />
-        </AwfulFlowProvider>
-      </AutomationProvider>
-    </MythicaApiProvider>
-  </ReactFlowProvider>
-);
+const App: React.FC = () => {
+  const { theme } = useTheme();
+  return (
+    <CssVarsProvider theme={theme} defaultMode="dark">
+      <ReactFlowProvider>
+        <MythicaApiProvider>
+          <AutomationProvider>
+            <AwfulFlowProvider>
+              <AwfulUI />
+            </AwfulFlowProvider>
+          </AutomationProvider>
+        </MythicaApiProvider>
+      </ReactFlowProvider>
+    </CssVarsProvider>
+  );
+};
 
 export default App;

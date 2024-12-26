@@ -4,9 +4,9 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from ripple.models.sessions import SessionProfile
 
 import assets.repo as repo
-from auth.generate_token import SessionProfile
 from db.connection import get_session
 from routes.authorization import session_profile
 from routes.storage_client import storage_client

@@ -15,11 +15,11 @@ def test_file_create_delete(create_profile, uploader):
     files = [make_random_content("png") for _ in range(10)]
     uploader(test_profile.profile.profile_id, auth_headers, files)
 
-def test_file_purpose(client, api_base, create_profile):
+def test_file_ops(client, api_base, create_profile):
     test_profile = create_profile()
     auth_headers = test_profile.authorization_header()
     files = [make_random_content("png")]
-        
+
     storage_uri='/upload/store'
     file_data = list(map(
         lambda x: ('files', (x.file_name, x.contents, x.content_type)),
@@ -43,8 +43,20 @@ def test_file_purpose(client, api_base, create_profile):
     o2 = munchify(r2.json())
     assert len(o2) == len(o.files) 
 
-    r3 = client.delete(
+    r3 = client.get(
+        f"{api_base}/files/by_content/xxxxxxxx",
+        headers=auth_headers)
+    
+    assert_status_code(r3, HTTPStatus.NOT_FOUND)
+
+    r4 = client.get(
+        f"{api_base}/files/by_content/{o.files[0].content_hash}",
+        headers=auth_headers)
+    
+    assert_status_code(r4, HTTPStatus.OK)
+
+    r5 = client.delete(
         f"{api_base}/files/{o.files[0].file_id}",
         headers=auth_headers)    
 
-    assert_status_code(r3, HTTPStatus.OK)
+    assert_status_code(r5, HTTPStatus.OK)

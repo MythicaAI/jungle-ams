@@ -4,15 +4,11 @@ import hashlib
 from http import HTTPStatus
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
 from config import app_config
-from main import app
-from tests.shared_test import FileContentTestObj, assert_status_code
-from tests.fixtures.create_profile import create_profile
 from tests.fixtures.app import use_local_storage_fixture
+from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
-
+from tests.shared_test import FileContentTestObj, assert_status_code
 
 test_profile_name = "test-profile"
 test_profile_description = "test-description"
@@ -31,11 +27,11 @@ test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
 def test_download(
-    api_base,
-    client,
-    use_local_storage_fixture,
-    create_profile,
-    request_to_upload_files,
+        api_base,
+        client,
+        use_local_storage_fixture,
+        create_profile,
+        request_to_upload_files,
 ):
     assert use_local_storage_fixture.use_local_storage is True
     test_profile = create_profile(
@@ -91,12 +87,11 @@ def test_download(
         local_storage_path = app_config().local_storage_path
         assert parsed_location.startswith(local_storage_path)
 
-        file_path = parsed_location
-        full_file_path = Path(local_storage_path) / file_path
+        file_path = Path(parsed_location)
 
-        assert full_file_path.exists(), f"File does not exist at {full_file_path}"
+        assert file_path.exists(), f"File does not exist at {file_path}"
 
-        with open(full_file_path, "rb") as f:
+        with open(file_path, "rb") as f:
             file_contents = f.read()
         assert file_contents == test_file_contents
 

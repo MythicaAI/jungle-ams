@@ -17,7 +17,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-ENV SERVICE_ENDPOINT=https://api.mythica.ai/v1
+ENV SERVICE_ENDPOINT=http://app/v1
+
+ENV MYTHICA_API_KEY=""
 
 # Entrypoint to bootstrap the published content
 ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
