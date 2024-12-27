@@ -50,7 +50,7 @@ class Client(StorageClient):
         transparent object migrations.
         """
         with tracer.start_as_current_span("file.upload") as span:
-            span.set_attribute("file.id", ctx.file_id)
+            span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             ctx.bucket_name = _create_bucket(self.minio, bucket_type)
 
             ctx.object_name = ctx.content_hash + '.' + ctx.extension
