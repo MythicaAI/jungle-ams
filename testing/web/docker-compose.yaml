@@ -45,6 +45,7 @@ services:
       MINIO_ENDPOINT: minio:9000
       LOCAL_STORAGE_PATH: /tmp/local_storage
       REDIS_HOST: redis
+      MYTHICA_ENVIRONMENT: debug
     ports:
       - "15555:5555"
     networks:
@@ -56,6 +57,8 @@ services:
     container_name: otel-sidecar
     image: otel/opentelemetry-collector-contrib:latest
     command: [ "--config=/etc/otel-collector-config.yaml" ]
+    environment:
+      - SIGNOZ_ACCESS_TOKEN=${SIGNOZ_ACCESS_TOKEN} # It should be in testing/.env file in this folder
 
     # Map both the logs for processing and the external config
     volumes:

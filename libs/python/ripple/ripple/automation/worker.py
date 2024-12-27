@@ -122,10 +122,10 @@ class Worker:
                 try:
                     auto_request = AutomationRequest(**json_payload)
 
-                    # Set up context
-                    context = TraceContextTextMapPropagator().extract(carrier=auto_request.context)
-                    trace.set_span_in_context(span, context)
-                    span_with_context = tracer.start_span("span_with_context", context=context)
+                    # Set up telemetry_context
+                    telemetry_context = TraceContextTextMapPropagator().extract(carrier=auto_request.telemetry_context)
+                    trace.set_span_in_context(span, telemetry_context)
+                    span_with_context = tracer.start_span("span_with_context", context=telemetry_context)
                     log.info("span_with_context: %s", span_with_context)
 
                     trace_data = {"work_guid": auto_request.work_guid,
@@ -154,8 +154,8 @@ class Worker:
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
                         api_url = ripple_config().api_base_uri
-                        resolve_params(api_url, tmpdir, inputs, headers=auto_request.context)
-                        with tracer.start_as_current_span("job.execution", context=context) as job_span:
+                        resolve_params(api_url, tmpdir, inputs, headers=auto_request.telemetry_context)
+                        with tracer.start_as_current_span("job.execution", context=telemetry_context) as job_span:
                             job_span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
                             ret_data: StreamItemUnion = worker.provider(inputs, publisher)
                             job_span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())

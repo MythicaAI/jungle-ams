@@ -74,7 +74,7 @@ async def update(ctx: RequestContext) -> Tuple[str, str]:
                 auth_token=ctx.profile.auth_token,
                 path='/mythica/generate_job_defs',
                 data=parameter_set.model_dump(),
-                context=get_telemetry_context(),
+                telemetry_context=get_telemetry_context(),
             )
 
             nats = NatsAdapter()

@@ -65,13 +65,13 @@ class ResultPublisher:
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     json_data={},
                     token=self.request.auth_token,
-                    headers=self.request.context,
+                    headers=self.request.telemetry_context,
                 )
                 log.info(
                     "ResultPublisher-nats-post: url-%s; token-%s; headers-%s",
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     self.request.auth_token,
-                    self.request.context,
+                    self.request.telemetry_context,
                 )
             else:
                 data = {
@@ -82,13 +82,13 @@ class ResultPublisher:
                     f"{job_result_endpoint}/{self.request.job_id}",
                     json_data=data,
                     token=self.request.auth_token,
-                    headers=self.request.context,
+                    headers=self.request.telemetry_context,
                 )
                 log.info(
                     "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     self.request.auth_token,
-                    self.request.context,
+                    self.request.telemetry_context,
                     data,
                 )
 
@@ -104,7 +104,7 @@ class ResultPublisher:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
                     response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
-                        headers=self.request.context
+                        headers=self.request.telemetry_context
                     )
                     file_id = response['files'][0]['file_id'] if response else None
                     return file_id
@@ -119,7 +119,7 @@ class ResultPublisher:
                 'params_schema': job_def.parameter_spec.model_dump()
             }
             response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
-                headers=self.request.context
+                headers=self.request.telemetry_context
             )
             return response['job_def_id'] if response else None
 

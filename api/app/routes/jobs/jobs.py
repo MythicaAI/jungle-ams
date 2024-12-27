@@ -136,7 +136,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
         auth_token=profile.auth_token,
-        context=get_telemetry_context(),
+        telemetry_context=get_telemetry_context(),
     )
     nats = NatsAdapter()
     await nats.post("houdini", event.model_dump())
@@ -191,7 +191,7 @@ async def add_job_nats_event(
         auth_token=auth_token,
         path=path,
         data=params.model_dump(),
-        context=get_telemetry_context(),
+        telemetry_context=get_telemetry_context(),
     )
 
     nats = NatsAdapter()
