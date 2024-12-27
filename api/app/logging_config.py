@@ -22,7 +22,7 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.trace import set_tracer_provider
 
@@ -105,6 +105,7 @@ def configure_logging():
             insecure=app_config().telemetry_insecure,
             headers=headers,
         )
+        tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
 
         #
         # OpenTelemetry Metrics configuration
@@ -119,10 +120,6 @@ def configure_logging():
         )
         meterProvider = MeterProvider(metric_readers=[reader], resource=resource)
         metrics.set_meter_provider(meterProvider)
-
-        tracer_provider.add_span_processor(BatchSpanProcessor(span_exporter))
-
-        set_tracer_provider(tracer_provider)
 
         #
         # OpenTelemetry Logging Exporter
