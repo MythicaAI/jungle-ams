@@ -80,7 +80,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     saveAutomation,
   } = useAutomation(); //provides automation related services.
   const automationTask = allAutomations[node.data.automation];
-  const isScriptNode = automationTask.path === scriptPath;
+  const isScriptNode = automationTask?.path === scriptPath;
 
   const [myExecutionData, setMyExecutionData] = useState<ExecutionData>(
     node.data.executionData || initAutomation(automationTask)
@@ -97,12 +97,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   //Input and Outputs Interface specs in JSONSpec (script Nodes are set later)
   const [inputSpec, setInputSpec] = useState(
     !isScriptNode
-      ? automationTask.spec.input
+      ? automationTask?.spec.input
       : node.data.saveData?.inputSpec || { title: 'Empty', type: 'string' }
   );
   const [outputSpec, setOutputSpec] = useState(
     !isScriptNode
-      ? automationTask.spec.output
+      ? automationTask?.spec.output
       : node.data.saveData?.outputSpec || { title: 'Empty', type: 'string' }
   );
 
@@ -159,9 +159,9 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const handleRunAutomation = () => {
     if (isScriptNode) {
       runAutomation(
-        automationTask.worker,
+        automationTask?.worker,
         node.id,
-        automationTask.path,
+        automationTask?.path,
         {
           script: scriptContent,
           request_data: { ...inputData, ...fileInputData },
@@ -170,9 +170,9 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       );
     } else {
       runAutomation(
-        automationTask.worker,
+        automationTask?.worker,
         node.id,
-        automationTask.path,
+        automationTask?.path,
         { ...inputData, ...fileInputData },
         setMyExecutionData
       );
@@ -188,7 +188,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
       setScriptContent(value || '');
       typingTimeout.current = setTimeout(() => {
         runAutomation(
-          automationTask.worker,
+          automationTask?.worker,
           node.id,
           scriptInterfacePath,
           { script: value || '' },
@@ -196,7 +196,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         );
       }, timeout); // Adjust delay as needed
     },
-    [runAutomation, automationTask.worker, node.id, scriptInterfacePath]
+    [runAutomation, automationTask?.worker, node.id, scriptInterfacePath]
   );
 
   /**
@@ -263,8 +263,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             output: thisAutomation.output as JSONSchema,
           },
         });
-        setInputSpec(automationTask[0].spec.input);
-        setOutputSpec(automationTask[0].spec.output);
+        setInputSpec(automationTask[0]?.spec.input);
+        setOutputSpec(automationTask[0]?.spec.output);
         myInterfaceData.state = NodeState.Clean;
       }
     };
@@ -374,7 +374,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         node.data.saveData.outputSpec = outputSpec;
       } else {
         node.data.saveData = newAutomation(
-          automationTask.worker,
+          automationTask?.worker,
           saveName,
           scriptContent,
           inputSpec,
@@ -393,7 +393,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     outputSpec,
     isScriptNode,
     myExecutionData,
-    automationTask.worker,
+    automationTask?.worker,
     newAutomation,
   ]);
 
@@ -445,7 +445,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           onFileOutputDetected={handleFileOutputDetected}
         />
         <div>
-          <Typography level="h4">{automationTask.uri}</Typography>
+          <Typography level="h4">{automationTask?.uri}</Typography>
           <p>State: {myExecutionData.state}</p>
         </div>
 

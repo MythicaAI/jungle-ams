@@ -11,7 +11,10 @@ import useMythicaApi from '../../hooks/useMythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
 
 import USDViewer from './viewers/USDViewer';
-import { GetDownloadInfoResponse, GetFileResponse } from '../../types/MythicaApi';
+import {
+  GetDownloadInfoResponse,
+  GetFileResponse,
+} from '../../types/MythicaApi';
 
 import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from '../handles/FileInputHandle';
@@ -34,12 +37,14 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewerWidth, setViewerWidth] = useState<number | undefined>();
-  const { getFiles, getDownloadInfo } = useMythicaApi();
+  const { getFiles, getDownloadInfo, authToken } = useMythicaApi();
   const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
   >([]);
+  const [isRestoredFromLocalStorage, setIsRestoredFromLocalStorage] =
+    useState(false);
   const [selectedPane, setSelectedPane] = useState(node.data.selectedPane || 0);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>(
     node.data.selectedFileIds || []
@@ -53,13 +58,14 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const inputFlowData = getFlowData(node.id)[INPUT_FILES] as GetFileResponse[];
 
   const fetchAvailableFiles = useCallback(async () => {
+    if (!authToken) return;
     try {
       const files = await getFiles();
       setApiFiles(files);
     } catch (error) {
       console.error('Error fetching available files:', error);
     }
-  }, [getFiles]);
+  }, [getFiles, authToken]);
 
   const getDownloads = useCallback(
     async (
@@ -92,13 +98,13 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         if (file) filesById.set(file.file_id, file);
       });
 
-      const selectedFiles: any[] = [];
+      const selectedFiles: GetFileResponse[] = [];
 
       if (options && options.length > 0) {
         options.forEach((option) => {
           const file = filesById.get(option);
 
-          file && selectedFiles.push(file);
+          if (file) selectedFiles.push(file);
         });
       }
 
@@ -118,8 +124,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     fetchAvailableFiles().then(() => {
       setInitialized(true);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authToken, fetchAvailableFiles, setInitialized]);
 
   // Update node save data
   useEffect(() => {
@@ -160,14 +165,13 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
     const observer = new ResizeObserver(handleResize);
 
-    const currentContainer = containerRef.current;
-    if (currentContainer) {
-      observer.observe(currentContainer);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
     }
 
     return () => {
-      if (currentContainer) {
-        observer.unobserve(currentContainer);
+      if (containerRef.current) {
+        observer.unobserve(containerRef.current);
       }
     };
   }, []);
@@ -181,6 +185,20 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     maxWidth: 700,
   };
 
+  useEffect(() => {
+    if (
+      selectedFileIds.length > 0 &&
+      downloadInfo.length === 0 &&
+      apiFiles.length > 0 &&
+      selectFileRef &&
+      !isRestoredFromLocalStorage
+    ) {
+      handleFileSelection(selectedFileIds);
+      setIsRestoredFromLocalStorage(true);
+      setSelectedPane(0);
+    }
+  }, [apiFiles, selectedFileIds, selectFileRef, downloadInfo]);
+
   return (
     <Card
       className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
@@ -191,7 +209,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <Typography level="h4">File Viewer</Typography>
 
       <div style={{ marginBottom: '10px' }} className="nodrag">
-        {/*@ts-expect-error*/}
+        {/*@ts-expect-error - ignore*/}
         <Select
           className="nowheel"
           ref={selectFileRef}

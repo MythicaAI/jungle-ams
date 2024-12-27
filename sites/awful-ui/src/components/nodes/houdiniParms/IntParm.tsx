@@ -63,6 +63,7 @@ const IntParm: React.FC<IntParmProps> = ({template, data, onChange}) => {
                             type="number"
                             value={value}
                             step="1"
+                            // eslint-disable-next-line react/no-unknown-property
                             parm-index={index}
                             onChange={handleChange}
                             min={template.min}

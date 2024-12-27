@@ -296,7 +296,8 @@ async def create_result(
                 raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
 
             job_result = job_result_insert(session, job_seq, request)
-            span.set_attribute("job.result", request.result_data)
+            if request.result_data:
+                span.set_attributes(request.result_data)
             span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
             job_result_seq = job_result.inserted_primary_key[0]
             session.commit()

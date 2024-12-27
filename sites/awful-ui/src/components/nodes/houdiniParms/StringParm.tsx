@@ -45,6 +45,7 @@ const StringParm: React.FC<StringParmProps> = ({template, data, onChange}) => {
                         <input
                             type="text"
                             value={value}
+                            // eslint-disable-next-line react/no-unknown-property
                             parm-index={index}
                             onChange={handleChange}
                             placeholder={`Component ${index + 1}`}

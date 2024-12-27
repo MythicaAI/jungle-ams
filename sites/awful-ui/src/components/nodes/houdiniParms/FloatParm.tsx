@@ -36,7 +36,7 @@ const FloatParm: React.FC<FloatParmProps> = ({template, data, onChange}) => {
                 validatedValue = template.max;
             }
         }
-0
+
         // Update the state and notify parent
         setValues((prev)=>{
             prev[index] = validatedValue;
@@ -62,6 +62,7 @@ const FloatParm: React.FC<FloatParmProps> = ({template, data, onChange}) => {
                             type="number"
                             value={value || 0}
                             step="any"
+                            // eslint-disable-next-line react/no-unknown-property
                             parm-index={index}
                             onChange={handleChange}
                             min={template.min}

@@ -42,7 +42,7 @@ class Client(StorageClient):
     def upload(self, ctx: RequestContext, bucket_type: BucketType):
         """Upload the object in the request context to the bucket"""
         with tracer.start_as_current_span("file.upload") as span:
-            span.set_attribute("file.id", ctx.file_id)
+            span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
             bucket = self.gcs.bucket(ctx.bucket_name)
             object_name = ctx.content_hash + '.' + ctx.extension
