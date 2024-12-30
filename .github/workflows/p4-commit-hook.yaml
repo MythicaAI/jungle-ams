@@ -17,8 +17,8 @@ on:
         default: false
 
 env:
-  P4PORT: ${{ secrets.P4PORT }}
-  P4USER: ${{ secrets.P4USER }}
+  P4PORT: ssl:p4.garden.mythica.ai
+  P4USER: mythica
   P4PASSWD: ${{ secrets.P4PASSWD }}
   P4TRUST: ${{ secrets.P4TRUST }}
   P4CLIENT: github-action-workspace
@@ -51,10 +51,10 @@ jobs:
       - name: P4 Login
         run: |
           # Create a script to feed the password to p4 login
-          echo "$P4PASSWD" | p4 -u "$P4USER" -p "$P4PORT" login
+          echo ${{ secrets.P4PASSWD }} | p4 login
           
           # Verify login was successful
-          p4 -u "$P4USER" -p "$P4PORT" login -s || {
+          p4 login -s "$P4USER" || {
             echo "P4 login failed"
             exit 1
           }
