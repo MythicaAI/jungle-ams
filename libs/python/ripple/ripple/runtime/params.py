@@ -121,10 +121,10 @@ def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
     return True
 
 
-def download_file(endpoint: str, directory: str, file_id: str) -> str:
+def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> str:
     # Get the URL to download the file
     url = f"{endpoint}/download/info/{file_id}"
-    r = requests.get(url)
+    r = requests.get(url, headers=headers)
     assert r.status_code == HTTPStatus.OK
     doc = r.json()
 
@@ -134,7 +134,7 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
 
     downloaded_bytes = 0
     with open(file_path, "w+b") as f:
-        download_req = requests.get(doc['url'], stream=True)
+        download_req = requests.get(doc['url'], stream=True, headers=headers)
         for chunk in download_req.iter_content(chunk_size=1024):
             if chunk:
                 downloaded_bytes += len(chunk)
@@ -143,7 +143,7 @@ def download_file(endpoint: str, directory: str, file_id: str) -> str:
     return file_path
 
 
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> ParameterSet:
+def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, headers={}) -> ParameterSet:
     def resolve(field,value):
         # For list-like, check each value
         if isinstance(value, (list, tuple, set, frozenset)):
@@ -151,11 +151,11 @@ def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet) -> Par
                 resolve(field, item)
         # For Dicts, check if they are FileParams. Otherwise check each item        
         elif isinstance(value, FileParameter):
-            value.file_path = download_file(endpoint, directory, value.file_id)
+            value.file_path = download_file(endpoint, directory, value.file_id, headers)
         elif isinstance(value, dict):
             try:
                 FileParameter(**value)
-                value['file_path'] = download_file(endpoint, directory, value['file_id'])
+                value['file_path'] = download_file(endpoint, directory, value['file_id'], headers)
             except Exception:
                 for key, item in value.items():
                     resolve(f"{field}:{key}", item)

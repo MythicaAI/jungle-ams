@@ -116,15 +116,16 @@ class NatsAdapter():
 
 
 class RestAdapter():
-    
-    def get(self, endpoint: str, data: dict={}, token: str = None) -> Optional[str]:
+
+    def get(self, endpoint: str, data: dict={}, token: str = None, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Get data from an endpoint."""
         log.debug(f"Getting from Endpoint: {endpoint} - {data}" )
+        headers.update({
+            "Authorization": "Bearer %s" % token
+        })
         response = requests.get(
             endpoint,
-            headers={
-                "Authorization": "Bearer %s" % token
-            }
+            headers=headers,
         )
         if response.status_code in [200,201]:
             log.debug(f"Endpoint Response: {response.status_code}")
@@ -133,16 +134,17 @@ class RestAdapter():
             log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
             return None
 
-    def post(self, endpoint: str, json_data: Any, token: str) -> Optional[str]:
+    def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Post data to an endpoint synchronously. """
-        log.debug(f"posting[{endpoint}]: {json_data}" )
+        log.debug(f"posting[{endpoint}]: {json_data}; {headers=}" )
+        headers.update({
+            "Content-Type": "application/json",
+            "Authorization": "Bearer %s" % token
+        })
         response = requests.post(
             endpoint, 
             json=json_data,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": "Bearer %s" % token
-            }
+            headers=headers,
         )
         if response.status_code in [200,201]:
             log.debug(f"Endpoint Response: {response.status_code}")
@@ -151,13 +153,14 @@ class RestAdapter():
             log.error(f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}")
             return None
 
-    def post_file(self, endpoint: str, file_data: list, token: str) -> Optional[str]:
+    def post_file(self, endpoint: str, file_data: list, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Post file to an endpoint."""
         log.debug(f"Sending file to Endpoint: {endpoint} - {file_data}" )
+        headers.update({"Authorization": "Bearer %s" % token})
         response = requests.post(
             endpoint, 
             files=file_data, 
-            headers={"Authorization": "Bearer %s" % token}
+            headers=headers,
         )
         if response.status_code in [200,201]:
             log.debug(f"Endpoint Response: {response.status_code}")
