@@ -66,7 +66,7 @@ jobs:
           Root: ${{ github.workspace }}/$P4_CACHE_DIR
           Options: noallwrite noclobber nocompress unlocked nomodtime rmdir
           LineEnd: local
-          Stream: //depot/main
+          Stream: //mythica/main
           Type: writeable
           EOL
           
