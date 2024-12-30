@@ -41,6 +41,7 @@ const AwfulUI: React.FC = () => {
     setRfInstance,
     setEdges,
     setNodes,
+    onNew,
   } = useAwfulFlow();
   const { setViewport } = useReactFlow();
 
@@ -54,16 +55,21 @@ const AwfulUI: React.FC = () => {
   useEffect(() => {
     const storageData = localStorage.getItem(storageKey);
     if (!storageData) return;
+    try {
 
-    const flow = JSON.parse(storageData);
+      const flow = JSON.parse(storageData);
 
-    if (flow) {
-      const { x = 0, y = 0, zoom = 1 } = flow.viewport;
-      setNodes(flow.nodes || []);
-      setEdges(flow.edges || []);
-      setViewport({ x, y, zoom });
+      if (flow) {
+        const { x = 0, y = 0, zoom = 1 } = flow.viewport;
+        setNodes(flow.nodes || []);
+        setEdges(flow.edges || []);
+        setViewport({ x, y, zoom });
+      }
+    } catch (e) {
+      console.error('Error loading flow from local storage:', e);
+      onNew();
     }
-  }, []);
+    }, []);
 
   const nodeTypes = useMemo(
     () => ({
@@ -104,6 +110,7 @@ const AwfulUI: React.FC = () => {
             minZoom={0.1}
             maxZoom={1}
             colorMode="dark"
+            proOptions={{hideAttribution:true}}
           >
             <MiniMap zoomable pannable />
             <Controls />

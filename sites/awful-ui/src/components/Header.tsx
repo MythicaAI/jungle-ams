@@ -12,7 +12,7 @@ export const Header: React.FC<Props> = (header: Props) => {
   return (
     <Stack
       direction="row"
-      p="30px 20px"
+      p="15px 20px"
       justifyContent="space-between"
       sx={{
         background: '#24292E',
