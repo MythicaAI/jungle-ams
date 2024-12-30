@@ -1,6 +1,6 @@
 from http import HTTPStatus
-
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import and_, select, update
@@ -36,11 +36,18 @@ async def by_id(
 @router.get("/by_content/{content_hash}")
 async def by_content(
         content_hash: str,
+        impersonate_profile_id: Optional[str] = Header(None, include_in_schema=False),
         profile: Profile = Depends(session_profile)) -> FileUploadResponse:
     """Query a file by its content hash"""
+    if impersonate_profile_id:
+        owner_seq = profile_id_to_seq(impersonate_profile_id)
+    else:
+        owner_seq = profile.profile_seq
+
     with get_session() as session:
         file = session.exec((
             select(FileContent)
+            .where(FileContent.owner_seq == owner_seq)
             .where(FileContent.content_hash == content_hash)
             .where(FileContent.deleted == None))).first()
         if file:

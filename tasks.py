@@ -71,6 +71,7 @@ IMAGES = {
         'requires': ['api/app', 'libs/python'],
     },
     'api/canary': {},
+    'api/bulk-import': {},
     'sites/jungle3': {
         'buildargs': {
             'NODE_ENV': NODE_ENV,
