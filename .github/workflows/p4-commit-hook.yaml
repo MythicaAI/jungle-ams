@@ -17,7 +17,7 @@ on:
         default: false
 
 env:
-  P4PORT: ssl:p4.garden.mythica.ai
+  P4PORT: ssl:p4.garden.mythica.ai:1666
   P4USER: mythica
   P4PASSWD: ${{ secrets.P4PASSWD }}
   P4TRUST: ${{ secrets.P4TRUST }}
