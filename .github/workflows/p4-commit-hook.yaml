@@ -46,6 +46,7 @@ jobs:
             echo "P4TRUST not yet, setup fingerprint of server"
             exit 1
           fi
+          p4 -p $P4PORT trust -y
 
       - name: Create P4 Client
         run: |
