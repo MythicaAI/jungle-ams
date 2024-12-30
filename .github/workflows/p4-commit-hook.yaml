@@ -5,7 +5,7 @@ on:
 
   push:
     paths:
-      - '.github/workflows/p4-commit-hook.yml'
+      - '.github/workflows/p4-commit-hook.yaml'
 
   # Optional: Also run manually from GitHub UI
   workflow_dispatch:
