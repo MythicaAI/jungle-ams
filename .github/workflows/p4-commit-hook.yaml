@@ -61,7 +61,7 @@ jobs:
           EOL
           
           # Create the client
-          p4 -u $P4USER -P $P4PASSWD client -i < client_spec.txt
+          p4 client -i < client_spec.txt
 
       - name: Restore P4 Cache
         uses: actions/cache@v3
