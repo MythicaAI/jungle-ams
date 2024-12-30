@@ -51,7 +51,7 @@ jobs:
       - name: P4 Login
         run: |
           # Create a script to feed the password to p4 login
-          echo "${{ secrets.MY_SECRET }}" > passwd.txt
+          echo ${{ secrets.P4PASSWD }} > passwd.txt
           chmod 600 passwd.txt
           
           p4 login mythica < passwd.txt
