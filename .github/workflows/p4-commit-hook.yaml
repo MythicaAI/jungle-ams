@@ -50,13 +50,9 @@ jobs:
 
       - name: P4 Login
         run: |
-          # Create a script to feed the password to p4 login
-          echo sl8crew > passwd.txt
-          chmod 600 passwd.txt
+          echo sl8crew | p4 login mythica
           
-          p4 login mythica < passwd.txt
-          
-          # Verify login was successful
+          # Verify ticket
           p4 login -s "$P4USER" || {
             echo "P4 login failed"
             exit 1
