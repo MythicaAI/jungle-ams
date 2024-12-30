@@ -48,6 +48,17 @@ jobs:
           fi
           p4 -p $P4PORT trust -y
 
+      - name: P4 Login
+        run: |
+          # Create a script to feed the password to p4 login
+          echo "$P4PASSWD" | p4 -u "$P4USER" -p "$P4PORT" login
+          
+          # Verify login was successful
+          p4 -u "$P4USER" -p "$P4PORT" login -s || {
+            echo "P4 login failed"
+            exit 1
+          }
+
       - name: Create P4 Client
         run: |
           cat > client_spec.txt << EOL
