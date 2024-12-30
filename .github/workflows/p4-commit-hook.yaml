@@ -51,7 +51,7 @@ jobs:
       - name: P4 Login
         run: |
           # Create a script to feed the password to p4 login
-          echo ${{ secrets.P4PASSWD }} | p4 login -u mythica
+          echo ${{ secrets.P4PASSWD }} | p4 login mythica
           
           # Verify login was successful
           p4 login -s "$P4USER" || {
