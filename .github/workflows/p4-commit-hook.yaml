@@ -50,10 +50,10 @@ jobs:
 
       - name: P4 Login
         run: |
-          echo sl8crew | p4 login mythica
+          echo ${{ secrets.P4PASSWD }} | p4 login
           
           # Verify ticket
-          p4 login -s "$P4USER" || {
+          p4 login -s || {
             echo "P4 login failed"
             exit 1
           }
