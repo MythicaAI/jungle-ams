@@ -20,6 +20,7 @@ env:
   P4PORT: ${{ secrets.P4PORT }}
   P4USER: ${{ secrets.P4USER }}
   P4PASSWD: ${{ secrets.P4PASSWD }}
+  P4TRUSt: ${{ secrets.P4TRUST }}
   P4CLIENT: github-action-workspace
   P4_CACHE_DIR: .p4-cache
 
