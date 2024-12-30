@@ -11,15 +11,18 @@ import useMythicaApi from '../../hooks/useMythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
 
 import USDViewer from './viewers/USDViewer';
+import CodeViewer from './viewers/CodeViewer';
+import FileInputHandle from '../handles/FileInputHandle';
+import FileOutputHandle from '../handles/FileOutputHandle';
+
+import { Card, Typography, Tabs } from '@mui/joy';
 import {
   GetDownloadInfoResponse,
   GetFileResponse,
 } from '../../types/MythicaApi';
 
-import CodeViewer from './viewers/CodeViewer';
-import FileInputHandle from '../handles/FileInputHandle';
-import FileOutputHandle from '../handles/FileOutputHandle';
-import { Card, Checkbox, Option, Select, Tabs, Typography } from '@mui/joy';
+import FilePickerModal from '../utils/FilePickerModal'; // <-- The new component
+
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -34,11 +37,11 @@ const INPUT_FILES = 'inputFiles';
 const OUTPUT_FILES = 'outputFiles';
 
 const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
-  const selectFileRef = useRef<HTMLSelectElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewerWidth, setViewerWidth] = useState<number | undefined>();
   const { getFiles, getDownloadInfo, authToken } = useMythicaApi();
   const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
+
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
@@ -52,11 +55,16 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const [selectedFileNames, setSelectedFileNames] = useState<string[]>(
     node.data.selectedFileNames || []
   );
-
   const [initialized, setInitialized] = useState(false);
+
+  // New state to control whether our FilePickerModal is open
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const inputFlowData = getFlowData(node.id)[INPUT_FILES] as GetFileResponse[];
 
+  /**
+   * Fetch available files
+   */
   const fetchAvailableFiles = useCallback(async () => {
     if (!authToken) return;
     try {
@@ -67,10 +75,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     }
   }, [getFiles, authToken]);
 
+  /**
+   * Retrieve the download info for a list of files
+   */
   const getDownloads = useCallback(
-    async (
-      files: Array<GetFileResponse | null>
-    ): Promise<Array<GetDownloadInfoResponse | null>> => {
+    async (files: Array<GetFileResponse | null>) => {
       const dInfos: Array<GetDownloadInfoResponse | null> = [];
       for (const file of files) {
         try {
@@ -90,58 +99,59 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     [getDownloadInfo, setFlowData, node.id]
   );
 
+  /**
+   * Called when the user finalizes their file selection in the modal.
+   * Maps the IDs -> real files -> updates node state & flow data.
+   */
   const handleFileSelection = useCallback(
-    (options: string[]) => {
-      if (!selectFileRef) return;
+    (newSelectedFileIds: string[]) => {
+      // Make a quick map of ID -> file
       const filesById = new Map<string, GetFileResponse>();
-      apiFiles.forEach((file) => {
-        if (file) filesById.set(file.file_id, file);
-      });
+      apiFiles.forEach((file) => filesById.set(file.file_id, file));
 
       const selectedFiles: GetFileResponse[] = [];
-
-      if (options && options.length > 0) {
-        options.forEach((option) => {
-          const file = filesById.get(option);
-
+      if (newSelectedFileIds && newSelectedFileIds.length > 0) {
+        newSelectedFileIds.forEach((fid) => {
+          const file = filesById.get(fid);
           if (file) selectedFiles.push(file);
         });
       }
 
-      const selectedNames = selectedFiles.map((file) => file.file_name);
-      const selectedIds = selectedFiles.map((file) => file.file_id);
+      const selectedNames = selectedFiles.map((f) => f.file_name);
+      const selectedIds = selectedFiles.map((f) => f.file_id);
 
       setSelectedFileIds(selectedIds);
       setSelectedFileNames(selectedNames);
 
+      // Provide them to the flow
       setFlowData(node.id, INPUT_FILES, selectedFiles);
-      //updateNodeInternals(node.id);
+
+      // Close the modal (if open)
+      setIsPickerOpen(false);
     },
     [apiFiles, setFlowData, node.id]
   );
 
+  // On mount, fetch files
   useEffect(() => {
-    fetchAvailableFiles().then(() => {
-      setInitialized(true);
-    });
-  }, [authToken, fetchAvailableFiles, setInitialized]);
+    fetchAvailableFiles().then(() => setInitialized(true));
+  }, [fetchAvailableFiles]);
 
-  // Update node save data
+  // Keep node.data in sync
   useEffect(() => {
     if (initialized) {
       node.data.selectedPane = selectedPane;
       node.data.selectedFileIds = selectedFileIds;
       node.data.selectedFileNames = selectedFileNames;
     }
-  }, [selectedPane, selectedFileIds, selectedFileNames, node, initialized]);
+  }, [initialized, selectedPane, selectedFileIds, selectedFileNames, node]);
 
-  //get download info for selected files whenever inputFlowData changes
+  // If the inputFlowData changes, update our selection & get the download info
   useEffect(() => {
     if (inputFlowData && inputFlowData.length > 0) {
       const selectedFiles = inputFlowData.filter(
         (file) => file !== null
       ) as GetFileResponse[];
-
       const selectedNames = selectedFiles.map((file) => file.file_name);
       const selectedIds = selectedFiles.map((file) => file.file_id);
 
@@ -150,31 +160,42 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
       getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
     }
-  }, [inputFlowData, setDownloadInfo, getDownloads]);
+  }, [inputFlowData, getDownloads]);
 
+  // Watch for container resize
   useLayoutEffect(() => {
     const handleResize = (entries: ResizeObserverEntry[]) => {
       for (const entry of entries) {
-        myFunction(entry.contentRect);
+        setViewerWidth(entry.contentRect.width);
       }
-    };
-
-    const myFunction = (contentRect: DOMRectReadOnly) => {
-      setViewerWidth(contentRect.width);
     };
 
     const observer = new ResizeObserver(handleResize);
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
+    if (containerRef.current) observer.observe(containerRef.current);
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
+      if (containerRef.current) observer.unobserve(containerRef.current);
     };
   }, []);
+
+  // On first render, if we already have file IDs but no downloadInfo, restore them
+  useEffect(() => {
+    if (
+      selectedFileIds.length > 0 &&
+      downloadInfo.length === 0 &&
+      apiFiles.length > 0 &&
+      !isRestoredFromLocalStorage
+    ) {
+      handleFileSelection(selectedFileIds);
+      setIsRestoredFromLocalStorage(true);
+      setSelectedPane(0);
+    }
+  }, [
+    apiFiles,
+    selectedFileIds,
+    downloadInfo,
+    isRestoredFromLocalStorage,
+    handleFileSelection,
+  ]);
 
   const columnWidth = 200;
   const viewerHeight = 480;
@@ -185,19 +206,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
     maxWidth: 700,
   };
 
-  useEffect(() => {
-    if (
-      selectedFileIds.length > 0 &&
-      downloadInfo.length === 0 &&
-      apiFiles.length > 0 &&
-      selectFileRef &&
-      !isRestoredFromLocalStorage
-    ) {
-      handleFileSelection(selectedFileIds);
-      setIsRestoredFromLocalStorage(true);
-      setSelectedPane(0);
-    }
-  }, [apiFiles, selectedFileIds, selectFileRef, downloadInfo]);
 
   return (
     <Card
@@ -208,40 +216,22 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <NodeResizer minHeight={100} minWidth={300} />
       <Typography level="h4">File Viewer</Typography>
 
+      {/* The "Select Files" button now opens our new FilePickerModal */}
       <div style={{ marginBottom: '10px' }} className="nodrag">
-        {/*@ts-expect-error - ignore*/}
-        <Select
-          className="nowheel"
-          ref={selectFileRef}
-          multiple
-          onChange={(_, newValue) => {
-            handleFileSelection(newValue);
-          }}
-          placeholder="Select..."
-          style={{
-            marginTop: '8px',
-            padding: '5px',
-            width: '100%',
-          }}
-          defaultValue={selectedFileIds}
-        >
-          {apiFiles
-            .map((file) => {
-              return (
-                <Option
-                  key={file.file_name + file.file_id}
-                  value={file.file_id}
-                >
-                  <Checkbox checked={selectedFileIds.includes(file.file_id)} />
-                  {file.file_name || file.file_id}
-                </Option>
-              );
-            })
-            .sort((a, b) => ((a?.key || -1) < (b?.key || 1) ? -1 : 1))}
-        </Select>
+        <button onClick={() => setIsPickerOpen(true)}>Select Files</button>
       </div>
 
-      {/* Target handle for accepting incoming file ID connections */}
+      {/* Our new FilePickerModal for searching / selecting multiple files */}
+      <FilePickerModal
+        open={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSave={(newSelectedFileIds: string[]) => handleFileSelection(newSelectedFileIds)}
+        initialSelectedFileIds={selectedFileIds}
+        files={apiFiles}
+        label="Choose Your Files"
+      />
+
+      {/* Input handle */}
       <FileInputHandle
         id={INPUT_FILES}
         left="50%"
@@ -250,7 +240,8 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         label="Inputs[ ]"
       />
 
-      {!downloadInfo || downloadInfo.length === 0 ? null : (
+      {/* If we have download info, render the tab/pane viewer */}
+      {downloadInfo && downloadInfo.length > 0 && (
         <div className="nodrag nowheel folder-container">
           <div
             style={{
@@ -281,76 +272,71 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
             {/* Pane Content */}
             <div style={{ position: 'relative', width: '90%' }}>
-              {downloadInfo.map(
-                (fileInfo, index) => (
-                  <div
-                    className="folder-content"
-                    key={index}
-                    style={{
-                      position:
-                        index === selectedPane ? 'relative' : 'absolute',
-                      visibility: index === selectedPane ? 'visible' : 'hidden',
-                      display: 'block', // Ensure the content is visible and takes up space
-                    }}
-                  >
-                    <div style={{}}>
-                      {fileInfo ? (
-                        <>
-                          {fileInfo.content_type.startsWith('image/') ? (
-                            <img
-                              src={fileInfo.url}
-                              alt={fileInfo.name}
-                              style={viewerStyle}
-                            />
-                          ) : fileInfo.content_type === 'application/json' ||
-                            fileInfo.content_type === 'application/awpy' ||
-                            fileInfo.content_type === 'application/awful' ? (
-                            <CodeViewer
-                              style={viewerStyle}
-                              language="json"
-                              fileUrl={fileInfo.url}
-                            />
-                          ) : fileInfo.content_type === 'application/awjs' ? (
-                            <CodeViewer
-                              style={viewerStyle}
-                              language="javascript"
-                              fileUrl={fileInfo.url}
-                            />
-                          ) : fileInfo.content_type === 'application/usd' ||
-                            fileInfo.content_type === 'application/usdz' ? (
-                            <USDViewer
-                              src={fileInfo.url}
-                              alt={fileInfo.name}
-                              style={viewerStyle}
-                            />
-                          ) : (
-                            <div style={{ height: '100px' }}>
-                              <p>
-                                Unsupported file type: {fileInfo.content_type}
-                              </p>
-                              <a
-                                href={fileInfo.url}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Download
-                              </a>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <p>Error loading file</p>
-                      )}
-                    </div>
+              {downloadInfo.map((fileInfo, index) => (
+                <div
+                  className="folder-content"
+                  key={index}
+                  style={{
+                    position: index === selectedPane ? 'relative' : 'absolute',
+                    visibility: index === selectedPane ? 'visible' : 'hidden',
+                    display: 'block',
+                  }}
+                >
+                  <div>
+                    {fileInfo ? (
+                      <>
+                        {fileInfo.content_type.startsWith('image/') ? (
+                          <img
+                            src={fileInfo.url}
+                            alt={fileInfo.name}
+                            style={viewerStyle}
+                          />
+                        ) : fileInfo.content_type === 'application/json' ||
+                          fileInfo.content_type === 'application/awpy' ||
+                          fileInfo.content_type === 'application/awful' ? (
+                          <CodeViewer
+                            style={viewerStyle}
+                            language="json"
+                            fileUrl={fileInfo.url}
+                          />
+                        ) : fileInfo.content_type === 'application/awjs' ? (
+                          <CodeViewer
+                            style={viewerStyle}
+                            language="javascript"
+                            fileUrl={fileInfo.url}
+                          />
+                        ) : fileInfo.content_type === 'application/usd' ||
+                          fileInfo.content_type === 'application/usdz' ? (
+                          <USDViewer
+                            src={fileInfo.url}
+                            alt={fileInfo.name}
+                            style={viewerStyle}
+                          />
+                        ) : (
+                          <div style={{ height: '100px' }}>
+                            <p>Unsupported file type: {fileInfo.content_type}</p>
+                            <a
+                              href={fileInfo.url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p>Error loading file</p>
+                    )}
                   </div>
-                ) // Only render the selected pane
-              )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* Source handle for passing the file ID downstream */}
+      {/* Output handle */}
       <FileOutputHandle
         id={OUTPUT_FILES}
         left="50%"
@@ -358,7 +344,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         style={{ background: '#555' }}
         label="Outputs[ ]"
       />
-      <p />
     </Card>
   );
 };
