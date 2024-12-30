@@ -36,6 +36,16 @@ jobs:
           wget -q https://ftp.perforce.com/perforce/r23.2/bin.linux26x86_64/p4 -O /usr/local/bin/p4
           chmod +x /usr/local/bin/p4
 
+      - name: Setup P4 Trust
+        run: |
+          mkdir -p ~/.p4
+          
+          # If you have P4TRUST secret set
+          if [ -z "$P4TRUST" ]; then
+            echo "P4TRUST not yet, setup fingerprint of server"
+            exit 1
+          fi
+
       - name: Create P4 Client
         run: |
           cat > client_spec.txt << EOL
