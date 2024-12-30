@@ -1,7 +1,11 @@
 name: p4-commit-hook
 on:
   repository_dispatch:
-    types: [p4-commit]
+    types: [ p4-commit ]
+
+  push:
+    paths:
+      - '.github/workflows/p4-commit-hook.yml'
 
   # Optional: Also run manually from GitHub UI
   workflow_dispatch:
@@ -24,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout github
+        uses: actions/checkout@v4
+
       - name: Install Perforce
         run: |
           wget -q https://ftp.perforce.com/perforce/r23.2/bin.linux26x86_64/p4 -O /usr/local/bin/p4
@@ -40,7 +47,7 @@ jobs:
           Stream: //depot/main
           Type: writeable
           EOL
-                    
+          
           # Create the client
           p4 -u $P4USER -P $P4PASSWD client -i < client_spec.txt
 
@@ -72,8 +79,14 @@ jobs:
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
           echo "Latest changelist: $LATEST_CL"
           
-          # Add your processing logic here
-          # e.g., analyze files, run tests, etc.
+          if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event.inputs.force_sync }}" == "true" ]] || [[ ! -d "$P4_CACHE_DIR/.p4" ]]; then
+            PUSH=1
+          fi
+          echo $PUSH
+          
+          # bulk import HDA packages
+          tree .
+
 
       - name: Update Cache
         if: always()
