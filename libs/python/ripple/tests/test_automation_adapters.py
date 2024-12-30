@@ -75,7 +75,7 @@ def test_rest_get(mock_requests):
     assert result == {"data": "test"}
     mock_get.assert_called_with(
         "http://test",
-        headers={"Authorization": "Bearer test-token"}
+        headers={"traceparent": None, "Authorization": "Bearer test-token"}
     )
 
 def test_rest_post(mock_requests):
@@ -94,6 +94,7 @@ def test_rest_post(mock_requests):
         "http://test",
         json={"data": "test"},
         headers={
+            "traceparent": None,
             "Content-Type": "application/json",
             "Authorization": "Bearer test-token"
         }
@@ -114,7 +115,7 @@ def test_rest_post_file(mock_requests):
     mock_post.assert_called_with(
         "http://test",
         files=[("file", "content")],
-        headers={"Authorization": "Bearer test-token"}
+        headers={"traceparent": None, "Authorization": "Bearer test-token"}
     )
 
 def test_rest_error_handling(mock_requests):

@@ -16,7 +16,7 @@ from cache.connection import cache_connection_lifespan, get_redis
 from config import app_config
 from db.connection import db_connection_lifespan, get_session
 from exceptions import register_exceptions
-from logging_config import configure_logging
+from telemetry_config import configure_logging
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources

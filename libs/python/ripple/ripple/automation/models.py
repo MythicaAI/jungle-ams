@@ -30,3 +30,4 @@ class AutomationRequest(BaseModel):
     auth_token: Optional[str] = None
     path: str
     data: Dict
+    telemetry_context: Optional[Dict] = {}

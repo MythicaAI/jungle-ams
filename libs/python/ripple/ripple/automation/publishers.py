@@ -64,7 +64,15 @@ class ResultPublisher:
                 self.rest.post(
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     json_data={},
-                    token=self.request.auth_token)
+                    token=self.request.auth_token,
+                    headers=self.request.telemetry_context,
+                )
+                log.info(
+                    "ResultPublisher-nats-post: url-%s; token-%s; headers-%s",
+                    f"{job_complete_endpoint}/{self.request.job_id}",
+                    self.request.auth_token,
+                    self.request.telemetry_context,
+                )
             else:
                 data = {
                     "created_in": "automation-worker",
@@ -73,7 +81,16 @@ class ResultPublisher:
                 self.rest.post(
                     f"{job_result_endpoint}/{self.request.job_id}",
                     json_data=data,
-                    token=self.request.auth_token)
+                    token=self.request.auth_token,
+                    headers=self.request.telemetry_context,
+                )
+                log.info(
+                    "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
+                    f"{job_complete_endpoint}/{self.request.job_id}",
+                    self.request.auth_token,
+                    self.request.telemetry_context,
+                    data,
+                )
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
@@ -86,7 +103,9 @@ class ResultPublisher:
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token)
+                    response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
+                        headers=self.request.telemetry_context
+                    )
                     file_id = response['files'][0]['file_id'] if response else None
                     return file_id
             finally:
@@ -99,7 +118,9 @@ class ResultPublisher:
                 'description': job_def.description,
                 'params_schema': job_def.parameter_spec.model_dump()
             }
-            response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token)
+            response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
+                headers=self.request.telemetry_context
+            )
             return response['job_def_id'] if response else None
 
         #TODO: Report errors
