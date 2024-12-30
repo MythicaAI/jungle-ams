@@ -76,8 +76,16 @@ IMAGES = {
             'NODE_ENV': NODE_ENV,
         }
     },
-    'sites/editor': {},
-    'sites/awful-ui': {},
+    'sites/editor': {
+        'buildargs': {
+            'NODE_ENV': NODE_ENV,
+        }
+    },
+    'sites/awful-ui': {
+        'buildargs': {
+            'NODE_ENV': NODE_ENV,
+        }
+    },
     'testing/storage/minio-config': {},
     'automation/test': {
         'requires': ['libs/python'],
@@ -105,6 +113,7 @@ IMAGES = {
 
 SITE_DATA = {
     'sites/jungle3',
+    'sites/awful-ui',
     'sites/editor',
 }
 

@@ -24,6 +24,7 @@ COPY . .
 
 # Build the application
 ARG NODE_ENV=production
+
 # Specify the output directory is /app/dist
 RUN pnpm run build -m "${NODE_ENV}"
 
@@ -32,14 +33,13 @@ RUN pnpm run build -m "${NODE_ENV}"
 # structure, to support mounting multiple site builds give each dist
 # folder the name of the mounted site
 FROM alpine:latest
+
 # Install envsubst for runtime environment substitution
 RUN apk add gettext
 
-WORKDIR /
-COPY docker-entrypoint.sh .
 
 WORKDIR /dist/awful-ui
+COPY docker-entrypoint.sh .
 COPY --from=build /build/dist .
 RUN mv index.html index.html.template
-CMD [ "cp", "-R", "/dist/awful-ui", "/dist-publish/awful-ui" ]
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/dist/awful-ui/docker-entrypoint.sh"]
