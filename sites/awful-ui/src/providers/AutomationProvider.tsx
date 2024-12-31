@@ -234,7 +234,6 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
       worker: task?.worker,
       path: task?.path,
       state: NodeState.Clean,
-      input: {},
       output: {},
     };
   };

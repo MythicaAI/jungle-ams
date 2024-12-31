@@ -55,14 +55,14 @@ const FilePickerModal: React.FC<FilePickerModalProps> = ({
     }
   }, [open, selectedFileIds]);
 
-  // Memo: sort files by file_name, then optionally reorder selected to top if this is the initial render
+  // Memo: sort files by file_name, then reorder selected to top 
   const sortedFiles = useMemo(() => {
     // 1) Sort by file_name
     const sorted = [...files].sort((a, b) =>
       a.file_name.localeCompare(b.file_name)
     );
 
-    // 2) If it's the first render, reorder so that selected files appear first
+    // 2) show selected files on top
     if (selectedFileIds.length > 0) {
       sorted.sort((a, b) => {
         const aSelected = selectedFileIds.includes(a.file_id);
@@ -110,7 +110,6 @@ const FilePickerModal: React.FC<FilePickerModalProps> = ({
     <Modal open={open} onClose={onClose}>
       <ModalDialog
         aria-labelledby="file-picker-modal"
-        aria-describedby="file-picker-modal-description"
         size="lg"
         sx={{ width: 800, height: 500 }}
       >
