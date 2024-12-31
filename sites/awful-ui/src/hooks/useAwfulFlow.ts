@@ -29,8 +29,10 @@ type AwfulFlowContextType = {
   onSave: (
     filename: string,
     savedFileCallback: (saved: GetFileResponse) => void
-  ) => void;
-  onRestore: (filename: string) => void;
+  ) => Promise<void>;
+  onRestore: (filename: string) => Promise<void>;
+  onSaveSession: () => Promise<void>;
+  onRestoreSession: () => Promise<void>;
   onDelete: (filename: string) => void;
   onNew: () => void;
   savedAwfulsById: Record<string, GetFileResponse>;

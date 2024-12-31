@@ -42,7 +42,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     Record<string, GetFileResponse>
   >({});
 
-  const { savedAutomationsById } = useAutomation();
+  const { savedAutomationsById, allAutomations} = useAutomation();
 
   const [refreshEdgeData, setRefreshEdgeData] = useState<Edge[]>([]);
 
@@ -81,6 +81,56 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       </NodeResizeControl>
     );
   };
+
+  /***************************************************************************
+   * Session Save Handling
+   **************************************************************************/
+  // Save the current flow to the API
+  const storageKey = 'awful-ui-layout';
+
+  const onSaveSession = async () => {
+    if (rfInstance && !refreshEdgeData.length) {
+      const flow = rfInstance.toObject();
+      const mythicaFlow = {
+        flowData: flowData,
+      };
+      const saveState = {
+        flow: flow,
+        mythicaFlow: mythicaFlow,
+      };
+      localStorage.setItem(storageKey, JSON.stringify(saveState));
+    }
+  };
+
+  // Restore a specific file from the API
+  const onRestoreSession = async () => {
+    try {
+
+      const savedState = JSON.parse(localStorage.getItem(storageKey) || "");
+      if (!savedState) return;
+
+      const { x = 0, y = 0, zoom = 1 } = savedState.flow.viewport || {};
+
+      setNodes(savedState.flow.nodes);
+      setFlowDataState(savedState.mythicaFlow.flowData || {});
+      await setViewport({ x, y, zoom });
+      setRefreshEdgeData(savedState.flow.edges);
+  
+    } catch (e) {
+      console.error('Error loading flow from local storage:', e);
+      onNew();
+    }
+  };
+
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isLoaded && Object.keys(allAutomations).length > 0) {
+      onRestoreSession().then(() => setIsLoaded(true));
+    } else if (isLoaded && rfInstance) {
+      onSaveSession();
+    }
+  }, [rfInstance?.toObject()]);
 
   /***************************************************************************
    * Awful Save Handling
@@ -459,6 +509,8 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
         onDrop,
         onSave,
         onRestore,
+        onSaveSession,
+        onRestoreSession,
         onDelete,
         setNodes,
         setEdges,

@@ -42,7 +42,6 @@ export type ExecutionData = {
     worker: string;
     path: string;
     state: NodeState;
-    input: dictionary | null;
     output: dictionary | null;
 };
 

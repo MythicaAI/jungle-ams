@@ -285,7 +285,17 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                   <div>
                     {fileInfo ? (
                       <>
-                        {fileInfo.content_type.startsWith('image/') ? (
+                        {([
+                          'jpeg',
+                          'jpg',
+                          'png',
+                          'gif',
+                          'webp',
+                          'svg',
+                          'svg+xml',
+                          'bmp',
+                          'avif',
+                        ].includes(fileInfo.content_type.split('/')[1])) ? (
                           <img
                             src={fileInfo.url}
                             alt={fileInfo.name}
