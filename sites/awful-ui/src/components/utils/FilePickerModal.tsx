@@ -1,5 +1,5 @@
 // FilePickerModal.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Modal,
   ModalDialog,
@@ -15,61 +15,95 @@ import {
 } from '@mui/joy';
 import { GetFileResponse } from '../../types/MythicaApi';
 
-export interface FileItem {
-  id: string;
-  name: string;
-}
-
 interface FilePickerModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (selectedIds: string[]) => void;
   files: GetFileResponse[];
-  initialSelectedFileIds?: string[];
+  selectedFileIds?: string[];
   label?: string;
   searchPlaceholder?: string;
 }
 
 /**
- * A reusable file picker in a modal, with search box + multiple selection (via checkboxes).
+ * A reusable file picker in a modal, with:
+ *  1) Sort by file name
+ *  2) show selected files on top
+ *  3) Clear button to remove all selections
  */
 const FilePickerModal: React.FC<FilePickerModalProps> = ({
   open,
   onClose,
   onSave,
   files,
-  initialSelectedFileIds = [],
+  selectedFileIds = [],
   label = 'Select Files',
   searchPlaceholder = 'Filter files...',
 }) => {
   // Local state for which files are currently checked.
-  const [selectedFileIds, setSelectedFileIds] = useState<string[]>(
-    initialSelectedFileIds
-  );
+  const [prvSelectedFileIds, setPrvSelectedFileIds] = useState<string[]>([]);
+  const [resort, setResort] = useState(false);
   // Local state for the search box text.
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter the files to those that match the search term (case-insensitive).
+  // Whenever the modal opens, reset local state from the prop
+  useEffect(() => {
+    if (open) {
+      setPrvSelectedFileIds(selectedFileIds);
+      setSearchTerm('');
+      setResort(!resort);
+    }
+  }, [open, selectedFileIds]);
+
+  // Memo: sort files by file_name, then optionally reorder selected to top if this is the initial render
+  const sortedFiles = useMemo(() => {
+    // 1) Sort by file_name
+    const sorted = [...files].sort((a, b) =>
+      a.file_name.localeCompare(b.file_name)
+    );
+
+    // 2) If it's the first render, reorder so that selected files appear first
+    if (selectedFileIds.length > 0) {
+      sorted.sort((a, b) => {
+        const aSelected = selectedFileIds.includes(a.file_id);
+        const bSelected = selectedFileIds.includes(b.file_id);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return 0;
+      });
+    }
+
+    return sorted;
+  }, [files, resort]);
+
+  // Filter the sorted files by the search term (case-insensitive).
   const filteredFiles = useMemo(() => {
     const lowerSearch = searchTerm.toLowerCase().trim();
-    if (!lowerSearch) return files;
-    return files.filter((f) => f.file_name.toLowerCase().includes(lowerSearch));
-  }, [files, searchTerm]);
+    if (!lowerSearch) return sortedFiles;
+    return sortedFiles.filter((f) =>
+      f.file_name.toLowerCase().includes(lowerSearch)
+    );
+  }, [sortedFiles, searchTerm]);
 
   // Toggle a file’s selection
   const handleToggleFile = (fileId: string) => {
     let newSelected: string[];
-    if (selectedFileIds.includes(fileId)) {
-      newSelected = selectedFileIds.filter((id) => id !== fileId);
+    if (prvSelectedFileIds.includes(fileId)) {
+      newSelected = prvSelectedFileIds.filter((id) => id !== fileId);
     } else {
-      newSelected = [...selectedFileIds, fileId];
+      newSelected = [...prvSelectedFileIds, fileId];
     }
-    setSelectedFileIds(newSelected);
+    setPrvSelectedFileIds(newSelected);
   };
 
-  // When user clicks "Save", pass the selected IDs up, then close the modal
+  // When user clicks "Save", pass the selected IDs up, then close
   const handleSave = () => {
-    onSave(selectedFileIds);
+    onSave(prvSelectedFileIds);
+  };
+
+  // Clear all selections
+  const handleClearAll = () => {
+    setPrvSelectedFileIds([]);
   };
 
   return (
@@ -103,7 +137,7 @@ const FilePickerModal: React.FC<FilePickerModalProps> = ({
         >
           <List size="sm">
             {filteredFiles.map((file) => {
-              const isChecked = selectedFileIds.includes(file.file_id);
+              const isChecked = prvSelectedFileIds.includes(file.file_id);
               return (
                 <ListItem key={file.file_id}>
                   <ListItemButton
@@ -137,6 +171,9 @@ const FilePickerModal: React.FC<FilePickerModalProps> = ({
 
         {/* Footer Buttons */}
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Button variant="plain" color="neutral" onClick={handleClearAll}>
+            Clear
+          </Button>
           <Button variant="plain" onClick={onClose}>
             Cancel
           </Button>

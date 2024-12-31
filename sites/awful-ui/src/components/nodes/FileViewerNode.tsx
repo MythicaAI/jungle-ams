@@ -148,7 +148,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
   // If the inputFlowData changes, update our selection & get the download info
   useEffect(() => {
-    if (inputFlowData && inputFlowData.length > 0) {
+    if (inputFlowData) {
       const selectedFiles = inputFlowData.filter(
         (file) => file !== null
       ) as GetFileResponse[];
@@ -226,7 +226,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         open={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
         onSave={(newSelectedFileIds: string[]) => handleFileSelection(newSelectedFileIds)}
-        initialSelectedFileIds={selectedFileIds}
+        selectedFileIds={selectedFileIds}
         files={apiFiles}
         label="Choose Your Files"
       />
