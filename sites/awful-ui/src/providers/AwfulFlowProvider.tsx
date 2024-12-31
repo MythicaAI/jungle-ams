@@ -270,6 +270,16 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     if (refreshEdgeData.length > 0) {
       sleep(2000).then(() => {
         setEdges(refreshEdgeData);
+        const edgeMapData:EdgeMap = {};
+          
+        refreshEdgeData.forEach((edge) => {
+          if (!edgeMapData[edge.source]) 
+            edgeMapData[edge.source] = {};
+          if (!edgeMapData[edge.source][edge.sourceHandle as string])
+            edgeMapData[edge.source][edge.sourceHandle as string] = [];
+          edgeMapData[edge.source][edge.sourceHandle as string].push(edge); 
+        });
+        setEdgeMap(edgeMapData);
         setRefreshEdgeData([]);
       });
     }
