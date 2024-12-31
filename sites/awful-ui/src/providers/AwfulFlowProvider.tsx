@@ -85,9 +85,9 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   /***************************************************************************
    * Session Save Handling
    **************************************************************************/
-  // Save the current flow to the API
   const storageKey = 'awful-ui-layout';
 
+  // Save the current flow to local storage
   const onSaveSession = async () => {
     if (rfInstance && !refreshEdgeData.length) {
       const flow = rfInstance.toObject();
@@ -102,7 +102,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Restore a specific file from the API
+  // Restore from local storage
   const onRestoreSession = async () => {
     try {
 
@@ -123,7 +123,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const [isLoaded, setIsLoaded] = useState(false);
-
+  // if first load of the app, load from session. 
   useEffect(() => {
     if (!isLoaded && Object.keys(allAutomations).length > 0) {
       onRestoreSession().then(() => setIsLoaded(true));
@@ -131,6 +131,11 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       onSaveSession();
     }
   }, [rfInstance?.toObject()]);
+  /***************************************************************************
+   * End Session Save Handling
+   **************************************************************************/
+
+
 
   /***************************************************************************
    * Awful Save Handling
