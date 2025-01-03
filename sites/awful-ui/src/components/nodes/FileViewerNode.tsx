@@ -301,8 +301,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                             style={{    
                               height: '100%',
                               width: '100%',
-                              minHeight: '480px', 
-                              minWidth: '640px',
                             }}
                             language="json"
                             fileUrl={fileInfo.url}
@@ -312,8 +310,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                           style={{    
                             height: '100%',
                             width: '100%',
-                            minHeight: '480px', 
-                            minWidth: '640px',
                           }}
                           language="javascript"
                             fileUrl={fileInfo.url}
