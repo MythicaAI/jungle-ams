@@ -91,8 +91,8 @@ jobs:
             p4 -u $P4USER -P $P4PASSWD sync
           fi
 
-      # Add your custom operations here
-      - name: Process Changes
+      - name: Bulk Import HDA Changes
+        working-directory: api/bulk-import
         run: |
           # Example: Get latest changelist
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
@@ -104,11 +104,6 @@ jobs:
           echo $PUSH
           
           # bulk import HDA packages
-          tree .
+          poetry install
+          poetry run upload_packages.py -l ${P4_CACHE_DIR}/Houdini/Automation/package_list.py -e https://api-staging.mythica.gg
 
-
-      - name: Update Cache
-        if: always()
-        run: |
-          # Clean up any temporary files before caching
-          find $P4_CACHE_DIR -type f -name "*.tmp" -delete
