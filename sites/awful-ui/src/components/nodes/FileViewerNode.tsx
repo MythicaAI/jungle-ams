@@ -2,10 +2,11 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useLayoutEffect,
   useCallback,
   memo,
 } from 'react';
+
+import Split from 'react-split';
 
 import useMythicaApi from '../../hooks/useMythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
@@ -38,7 +39,6 @@ const OUTPUT_FILES = 'outputFiles';
 
 const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [viewerWidth, setViewerWidth] = useState<number | undefined>();
   const { getFiles, getDownloadInfo, authToken } = useMythicaApi();
   const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
 
@@ -163,19 +163,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   }, [inputFlowData, getDownloads]);
 
   // Watch for container resize
-  useLayoutEffect(() => {
-    const handleResize = (entries: ResizeObserverEntry[]) => {
-      for (const entry of entries) {
-        setViewerWidth(entry.contentRect.width);
-      }
-    };
-
-    const observer = new ResizeObserver(handleResize);
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => {
-      if (containerRef.current) observer.unobserve(containerRef.current);
-    };
-  }, []);
 
   // On first render, if we already have file IDs but no downloadInfo, restore them
   useEffect(() => {
@@ -198,21 +185,25 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   ]);
 
   const columnWidth = 200;
-  const viewerHeight = 480;
+  //const viewerHeight = 480;
   const columnStyle = { width: columnWidth };
-  const viewerStyle = {
-    height: viewerHeight,
-    width: viewerWidth,
-    maxWidth: 700,
-  };
-
+  
 
   return (
     <Card
       className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
-      sx={{ minWidth: 400, height: '100%' }}
+      sx={{ minWidth: 400, height: '100%', display: 'flex', minHeight: 300, flexDirection: 'column' }}
       ref={containerRef}
     >
+      {/* Input handle */}
+      <FileInputHandle
+        id={INPUT_FILES}
+        left="50%"
+        isConnectable
+        style={{ background: '#555' }}
+        label="Inputs[ ]"
+      />
+
       <NodeResizer minHeight={100} minWidth={300} />
       <Typography level="h4">File Viewer</Typography>
 
@@ -231,30 +222,24 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         label="Choose Your Files"
       />
 
-      {/* Input handle */}
-      <FileInputHandle
-        id={INPUT_FILES}
-        left="50%"
-        isConnectable
-        style={{ background: '#555' }}
-        label="Inputs[ ]"
-      />
-
       {/* If we have download info, render the tab/pane viewer */}
       {downloadInfo && downloadInfo.length > 0 && (
-        <div className="nodrag nowheel folder-container">
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              width: '100%',
-              height: '100%',
-            }}
+        <div 
+          className="nodrag nowheel folder-container"
+          style={{flex: '1 1 0', height: '100%' }}
+          >
+          <Split
+            sizes={[20, 80]}
+            minSize={[0,100]}
+            expandToMin={false}
+            gutterSize={5}
+            gutterAlign="center"
+            direction="horizontal"
+            style={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%' }}  
           >
             {/* Tab Navigation */}
             <Tabs
               className="folder-tabs vertical"
-              sx={{ minWidth: 200 }}
               style={{ ...columnStyle, overflow: 'clip' }}
             >
               {downloadInfo.map((fileInfo, index) => (
@@ -264,6 +249,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                   className={`folder-tab ${
                     selectedPane === index ? 'active' : ''
                   }`}
+                  style={{ 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis', 
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   {fileInfo?.name || 'Error!'}
                 </div>
@@ -271,7 +261,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
             </Tabs>
 
             {/* Pane Content */}
-            <div style={{ position: 'relative', width: '90%' }}>
+            <div style={{ position: 'relative', width: '90%', height: '100%' }}>
               {downloadInfo.map((fileInfo, index) => (
                 <div
                   className="folder-content"
@@ -280,9 +270,9 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                     position: index === selectedPane ? 'relative' : 'absolute',
                     visibility: index === selectedPane ? 'visible' : 'hidden',
                     display: 'block',
+                    height: '100%' 
                   }}
                 >
-                  <div>
                     {fileInfo ? (
                       <>
                         {([
@@ -299,20 +289,29 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                           <img
                             src={fileInfo.url}
                             alt={fileInfo.name}
-                            style={viewerStyle}
+                            style={{    
+                              height: '100%',
+                              width: '100%',
+                            }}
                           />
                         ) : fileInfo.content_type === 'application/json' ||
                           fileInfo.content_type === 'application/awpy' ||
                           fileInfo.content_type === 'application/awful' ? (
                           <CodeViewer
-                            style={viewerStyle}
+                            style={{    
+                              height: '100%',
+                              width: '100%',
+                            }}
                             language="json"
                             fileUrl={fileInfo.url}
                           />
                         ) : fileInfo.content_type === 'application/awjs' ? (
                           <CodeViewer
-                            style={viewerStyle}
-                            language="javascript"
+                          style={{    
+                            height: '100%',
+                            width: '100%',
+                          }}
+                          language="javascript"
                             fileUrl={fileInfo.url}
                           />
                         ) : fileInfo.content_type === 'application/usd' ||
@@ -320,7 +319,12 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                           <USDViewer
                             src={fileInfo.url}
                             alt={fileInfo.name}
-                            style={viewerStyle}
+                            style={{    
+                              height: '100vh',
+                              width: '100vh',
+                              minHeight: '480px', 
+                              minWidth: '640px',
+                            }}
                           />
                         ) : (
                           <div style={{ height: '100px' }}>
@@ -338,13 +342,13 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                     ) : (
                       <p>Error loading file</p>
                     )}
-                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          </Split>
         </div>
       )}
+      <div style={{ height: '24px' }} />
 
       {/* Output handle */}
       <FileOutputHandle
