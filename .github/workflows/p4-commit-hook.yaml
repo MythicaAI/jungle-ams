@@ -26,16 +26,11 @@ env:
 
 jobs:
   sync-and-process:
-    runs-on: ubuntu-latest
+    runs-on: p4-automation
     
     steps:
       - name: Checkout github
         uses: actions/checkout@v4
-
-      - name: Install Perforce
-        run: |
-          wget -q https://ftp.perforce.com/perforce/r23.2/bin.linux26x86_64/p4 -O /usr/local/bin/p4
-          chmod +x /usr/local/bin/p4
 
       - name: Setup P4 Trust
         run: |
