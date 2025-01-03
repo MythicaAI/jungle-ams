@@ -67,6 +67,8 @@ jobs:
           Options: noallwrite noclobber nocompress unlocked nomodtime rmdir
           LineEnd: local
           Stream: //mythica/main
+          View:
+            //mythica/main/Houdini/... //$P4CLIENT/Houdini/...
           Type: writeable
           EOL
           
