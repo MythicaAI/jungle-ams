@@ -83,12 +83,21 @@ jobs:
         run: |
           mkdir -p $P4_CACHE_DIR
           
-          if [[ "${{ github.event.inputs.force_sync }}" == "true" ]] || [[ ! -d "$P4_CACHE_DIR/.p4" ]]; then
+          if [[ "${{ github.event.inputs.force_sync }}" == "true" ]] then;
+            FULL_SYNC=1
+            echo "Job param, triggering full sync"
+          fi
+          if [[ ! -d "$P4_CACHE_DIR/Houdini" ]]; then
+            FULL_SYNC=1
+            echo "Missing cache dir, triggering full sync"
+          fi
+          
+          if [[ "$FULL_SYNC" == 1 ]] then;
             echo "Performing full sync..."
-            p4 -u $P4USER -P $P4PASSWD sync -f
+            p4 sync -f
           else
             echo "Performing incremental sync..."
-            p4 -u $P4USER -P $P4PASSWD sync
+            p4 sync
           fi
 
       - name: Bulk Import HDA Changes
@@ -106,5 +115,8 @@ jobs:
           # bulk import HDA packages
           poetry install
           poetry env info
-          poetry run python3.11 upload_packages.py -l ${P4_CACHE_DIR}/Houdini/Automation/package_list.py -e https://api-staging.mythica.gg
+          poetry run python3.11 upload_packages.py \
+            --package-list ${P4_CACHE_DIR}/Houdini/Automation/package_list.py \
+            --endpoint https://api-staging.mythica.gg \
+            --mythica-api-key key_SFiaBmaXKTNSCBpDdZSH 
 
