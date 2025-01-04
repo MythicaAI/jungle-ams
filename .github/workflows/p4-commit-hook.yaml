@@ -81,19 +81,18 @@ jobs:
 
       - name: Sync P4
         run: |
-          mkdir -p $P4_CACHE_DIR
-          
-          if [[ "${{ github.event.inputs.force_sync }}" == "true" ]] then;
+          if [[ "${{ github.event.inputs.force_sync }}" == "true" ]]; then
             FULL_SYNC=1
             echo "Job param, triggering full sync"
           fi
-          if [[ ! -d "$P4_CACHE_DIR/Houdini" ]]; then
+          if [[ ! -d "$P4_CACHE_DIR" ]]; then
             FULL_SYNC=1
             echo "Missing cache dir, triggering full sync"
           fi
           
-          if [[ "$FULL_SYNC" == 1 ]] then;
+          if [[ "$FULL_SYNC" == 1 ]]; then
             echo "Performing full sync..."
+            mkdir -p $P4_CACHE_DIR
             p4 sync -f
           else
             echo "Performing incremental sync..."
