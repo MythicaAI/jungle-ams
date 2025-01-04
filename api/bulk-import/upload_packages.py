@@ -12,12 +12,12 @@ from typing import Optional
 
 import git
 import requests
-from github import GitRelease, Github
 from munch import munchify
 from packaging import version
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from connection_pool import ConnectionPool
+from github import GitRelease, Github
 from log_config import log_config
 from models import PackageFile, PackageModel, ProcessedPackageModel
 from perforce import parse_perforce_change, run_p4_command
@@ -676,6 +676,7 @@ def start_uploads(conn_pool: ConnectionPool):
     uploader.start_session()
 
     # load the package list
+    log.info("loading package list from %s", uploader.package_list_file)
     spec = importlib.util.spec_from_file_location('package_list', uploader.package_list_file)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

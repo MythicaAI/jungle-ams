@@ -22,7 +22,7 @@ env:
   P4PASSWD: ${{ secrets.P4PASSWD }}
   P4TRUST: ${{ secrets.P4TRUST }}
   P4CLIENT: github-action-workspace
-  P4_CACHE_DIR: .p4-cache
+  P4_CACHE_DIR: ${{ github.workspace }}/.p4-cache
 
 jobs:
   sync-and-process:
