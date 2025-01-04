@@ -105,5 +105,6 @@ jobs:
           
           # bulk import HDA packages
           poetry install
+          poetry env info
           poetry run upload_packages.py -l ${P4_CACHE_DIR}/Houdini/Automation/package_list.py -e https://api-staging.mythica.gg
 
