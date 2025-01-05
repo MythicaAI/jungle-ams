@@ -107,5 +107,6 @@ jobs:
             --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
             --endpoint https://api-staging.mythica.gg \
             --mythica-api-key key_SFiaBmaXKTNSCBpDdZSH \
-            --license MPLv2.txt
+            --license MPLv2.txt \
+            --tag Official
 
