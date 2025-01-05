@@ -97,6 +97,7 @@ jobs:
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
           echo "Latest changelist: $LATEST_CL"
           
+          # re-instate trust
           p4 -p $P4PORT trust -y
           
           # bulk import HDA packages
