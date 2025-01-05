@@ -688,6 +688,10 @@ def start_uploads(conn_pool: ConnectionPool):
             log.exception("uploader failed")
             log.error("response: %s", json.dumps(e.response.json(), indent=2))
             raise
+        except json.decoder.JSONDecodeError as e:
+            log.exception("protocol error")
+            log.error("doc: %s", e.doc)
+            raise
 
 
 if __name__ == "__main__":

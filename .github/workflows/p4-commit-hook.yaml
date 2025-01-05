@@ -100,7 +100,7 @@ jobs:
           p4 -p $P4PORT trust -y
           
           # bulk import HDA packages
-          poetry install
+          poetry install --no-root
           poetry env info
           poetry run python3.11 upload_packages.py \
             --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
