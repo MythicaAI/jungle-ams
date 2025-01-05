@@ -583,7 +583,7 @@ class PackageUploader(object):
         existing_digest = sha1.hexdigest()
 
         # find an existing file if it exists that is owned by this user
-        response = self.conn_pool.get(f"{self.endpoint}/files/by_content/{existing_digest}",
+        response = self.conn_pool.get(f"{self.endpoint}/v1/files/by_content/{existing_digest}",
                                       headers=self.auth_header_with_impersonation(package.profile_id))
 
         # return the file_id if the content digest already exists
