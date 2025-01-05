@@ -101,7 +101,7 @@ jobs:
           poetry install
           poetry env info
           poetry run python3.11 upload_packages.py \
-            --package-list ${P4_CACHE_DIR}/Houdini/Automation/package_list.py \
+            --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
             --endpoint https://api-staging.mythica.gg \
             --mythica-api-key key_SFiaBmaXKTNSCBpDdZSH 
 
