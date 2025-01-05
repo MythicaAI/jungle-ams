@@ -22,12 +22,12 @@ env:
   P4PASSWD: ${{ secrets.P4PASSWD }}
   P4TRUST: ${{ secrets.P4TRUST }}
   P4CLIENT: github-action-workspace
-  P4_CACHE_DIR: ${{ github.workspace }}/.p4-cache
+  P4_WORKSPACE: /mnt/p4/mythica
 
 jobs:
   sync-and-process:
     runs-on: p4-automation
-    
+    concurrency: p4-automation  # only one job at a time accessing the perforce client
     steps:
       - name: Checkout github
         uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
           cat > client_spec.txt << EOL
           Client: $P4CLIENT
           Owner: $P4USER
-          Root: ${{ github.workspace }}/$P4_CACHE_DIR
+          Root: $P4_WORKSPACE
           Options: noallwrite noclobber nocompress unlocked nomodtime rmdir
           LineEnd: local
           Stream: //mythica/main
@@ -70,29 +70,20 @@ jobs:
           # Create the client
           p4 client -i < client_spec.txt
 
-      - name: Restore P4 Cache
-        uses: actions/cache@v3
-        id: cache
-        with:
-          path: ${{ env.P4_CACHE_DIR }}
-          key: p4-cache-${{ github.sha }}
-          restore-keys: |
-            p4-cache-
-
       - name: Sync P4
         run: |
           if [[ "${{ github.event.inputs.force_sync }}" == "true" ]]; then
             FULL_SYNC=1
             echo "Job param, triggering full sync"
           fi
-          if [[ ! -d "$P4_CACHE_DIR" ]]; then
+          if [[ ! -d "$P4_WORKSPACE" ]]; then
             FULL_SYNC=1
-            echo "Missing cache dir, triggering full sync"
+            echo "Missing P4 workspace, triggering full sync"
           fi
           
           if [[ "$FULL_SYNC" == 1 ]]; then
             echo "Performing full sync..."
-            mkdir -p $P4_CACHE_DIR
+            mkdir -p $P4_WORKSPACE
             p4 sync -f
           else
             echo "Performing incremental sync..."
@@ -105,11 +96,6 @@ jobs:
           # Example: Get latest changelist
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
           echo "Latest changelist: $LATEST_CL"
-          
-          if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event.inputs.force_sync }}" == "true" ]] || [[ ! -d "$P4_CACHE_DIR/.p4" ]]; then
-            PUSH=1
-          fi
-          echo $PUSH
           
           # bulk import HDA packages
           poetry install
