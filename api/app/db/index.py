@@ -15,6 +15,7 @@ from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
+from telemetry_config import get_telemetry_context
 
 
 log = logging.getLogger(__name__)
@@ -72,7 +73,9 @@ async def update(ctx: RequestContext) -> Tuple[str, str]:
                 work_guid=str(uuid4()),
                 auth_token=ctx.profile.auth_token,
                 path='/mythica/generate_job_defs',
-                data=parameter_set.model_dump())
+                data=parameter_set.model_dump(),
+                telemetry_context=get_telemetry_context(),
+            )
 
             nats = NatsAdapter()
             log.info("Sent NATS houdini task. Request: %s", event.model_dump())

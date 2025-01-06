@@ -18,11 +18,20 @@ services:
       VITE_AUTH0_CLIENT_ID: 4CZhQWoNm1WH8l8042LeF38qHrUTR2ax
       VITE_AUTH0_AUDIENCE: http://localhost:15555/v1
       VITE_AUTH0_REDIRECT_URL: http://localhost:8080
+  awful:
+    container_name: awful
+    image: mythica-awful-ui-build:latest
+    volumes:
+      - dist:/dist
+    environment:
+      PUBLISH_PATH: /dist/awful
+      
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
     depends_on:
       - jungle3
+      - awful
       - app
       - otel-collector
     ports:
@@ -45,6 +54,7 @@ services:
       MINIO_ENDPOINT: minio:9000
       LOCAL_STORAGE_PATH: /tmp/local_storage
       REDIS_HOST: redis
+      MYTHICA_ENVIRONMENT: debug
     ports:
       - "15555:5555"
     networks:
@@ -56,6 +66,8 @@ services:
     container_name: otel-sidecar
     image: otel/opentelemetry-collector-contrib:latest
     command: [ "--config=/etc/otel-collector-config.yaml" ]
+    environment:
+      - SIGNOZ_ACCESS_TOKEN=${SIGNOZ_ACCESS_TOKEN} # It should be in testing/.env file in this folder
 
     # Map both the logs for processing and the external config
     volumes:

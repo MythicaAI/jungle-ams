@@ -37,9 +37,9 @@ data:
 
     processors:
         batch:
-          timeout: 200ms
-          send_batch_size: 512
-          send_batch_max_size: 1024
+          timeout: 5s
+          send_batch_size: 1024
+          send_batch_max_size: 8192
 
     service:
       pipelines:

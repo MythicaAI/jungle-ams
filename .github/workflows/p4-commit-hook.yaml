@@ -1,0 +1,112 @@
+name: p4-commit-hook
+on:
+  repository_dispatch:
+    types: [ p4-commit ]
+
+  push:
+    paths:
+      - '.github/workflows/p4-commit-hook.yaml'
+
+  # Optional: Also run manually from GitHub UI
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force full sync'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  P4PORT: ssl:p4.garden.mythica.ai:1666
+  P4USER: mythica
+  P4PASSWD: ${{ secrets.P4PASSWD }}
+  P4TRUST: ${{ secrets.P4TRUST }}
+  P4CLIENT: github-action-workspace
+  P4_WORKSPACE: /mnt/p4/mythica
+
+jobs:
+  sync-and-process:
+    runs-on: p4-automation
+    concurrency: p4-automation  # only one job at a time accessing the perforce client
+    steps:
+      - name: Checkout github
+        uses: actions/checkout@v4
+
+      - name: Setup P4 Trust
+        run: |
+          mkdir -p ~/.p4
+          
+          # If you have P4TRUST secret set
+          if [ -z "$P4TRUST" ]; then
+            echo "P4TRUST not yet, setup fingerprint of server"
+            exit 1
+          fi
+          p4 -p $P4PORT trust -y
+
+      - name: P4 Login
+        run: |
+          echo ${{ secrets.P4PASSWD }} | p4 login
+          
+          # Verify ticket
+          p4 login -s || {
+            echo "P4 login failed"
+            exit 1
+          }
+
+      - name: Create P4 Client
+        run: |
+          cat > client_spec.txt << EOL
+          Client: $P4CLIENT
+          Owner: $P4USER
+          Root: $P4_WORKSPACE
+          Options: noallwrite noclobber nocompress unlocked nomodtime rmdir
+          LineEnd: local
+          Stream: //mythica/main
+          View:
+            //mythica/main/Houdini/... //$P4CLIENT/Houdini/...
+          Type: writeable
+          EOL
+          
+          # Create the client
+          p4 client -i < client_spec.txt
+
+      - name: Sync P4
+        run: |
+          if [[ "${{ github.event.inputs.force_sync }}" == "true" ]]; then
+            FULL_SYNC=1
+            echo "Job param, triggering full sync"
+          fi
+          if [[ ! -d "$P4_WORKSPACE" ]]; then
+            FULL_SYNC=1
+            echo "Missing P4 workspace, triggering full sync"
+          fi
+          
+          if [[ "$FULL_SYNC" == 1 ]]; then
+            echo "Performing full sync..."
+            mkdir -p $P4_WORKSPACE
+            p4 sync -f
+          else
+            echo "Performing incremental sync..."
+            p4 sync
+          fi
+
+      - name: Bulk Import HDA Changes
+        working-directory: api/bulk-import
+        run: |
+          # Example: Get latest changelist
+          LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
+          echo "Latest changelist: $LATEST_CL"
+          
+          # re-instate trust
+          p4 -p $P4PORT trust -y
+          
+          # bulk import HDA packages
+          poetry install --no-root
+          poetry env info
+          poetry run python3.11 upload_packages.py \
+            --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
+            --endpoint https://api-staging.mythica.gg \
+            --mythica-api-key key_SFiaBmaXKTNSCBpDdZSH \
+            --license MPLv2.txt \
+            --tag Official
+

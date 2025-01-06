@@ -8,14 +8,26 @@ import logging
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.metrics import get_meter_provider
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 
 logger = logging.getLogger(__name__)
 
-span = trace.get_current_span()
+tracer = trace.get_tracer(__name__)
 meter = get_meter_provider().get_meter(__name__)
 counter = meter.create_counter("request-count")
 histogram = meter.create_histogram("request-latency")
+gauge_histogram = meter.create_gauge("request-gauge-latency")
+
+
+def propagate_context(func):
+    def wrapper(*args, **kwargs):
+        request: Request = args[1]
+        context = TraceContextTextMapPropagator().extract(carrier=dict(request.headers))
+        with tracer.start_as_current_span("request", context=context):
+            result = func(*args, **kwargs)
+        return result
+    return wrapper
 
 
 class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
@@ -23,9 +35,10 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
     A middleware that catches the app's exceptions,
     logs it, and re-raises exceptions.
     """
-
+    @propagate_context
     async def dispatch(self, request: Request, call_next):
         start_time = time.time()
+        span = trace.get_current_span()
 
         body = await request.body()
         headers = dict(request.headers)
@@ -81,7 +94,8 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
         finally:
             # Log the request duration
             duration = time.time() - start_time
-            histogram.record(duration, log_params)
             log_params.update({"duration": duration})
+            histogram.record(duration, log_params)
+            gauge_histogram.set(duration, log_params)
             logger.info("Request completed", extra=log_params)
             counter.add(1, {"name": str(request.url), **log_params, "duration": duration})

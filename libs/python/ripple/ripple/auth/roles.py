@@ -63,9 +63,15 @@ asset__edit_roles = {
 #
 profile_update = 'profile/update'
 profile_delete = 'profile/delete'
-profile__all_roles = {
+profile_impersonate = 'profile/impersonate'
+profile__owner_roles = {
     profile_update,
     profile_delete,
+}
+profile__admin_roles = {
+    profile_update,
+    profile_delete,
+    profile_impersonate,
 }
 
 #
@@ -102,7 +108,8 @@ alias_org_admin = "org-admin"
 alias_org_mod = "org-mod"
 alias_org_member = "org-member"
 alias_asset_editor = "asset-editor"
-alias_profile_editor = 'profile-editor'
+alias_profile_owner = 'profile-owner'
+alias_profile_admin = 'profile-admin'
 alias_tag_author = "tag-author"
 alias_core_create = "core-create"
 
@@ -120,7 +127,8 @@ role_aliases: dict = {
     alias_org_mod: org__mod_roles,
     alias_org_member: org__member_roles,
     alias_asset_editor: asset__all_roles,
-    alias_profile_editor: profile__all_roles,
+    alias_profile_owner: profile__owner_roles,
+    alias_profile_admin: profile__admin_roles,
     alias_core_create: core__create_roles,
 }
 
@@ -135,8 +143,8 @@ org_role_aliases = {
 privileged_roles = {
     alias_tag_author,
     alias_asset_editor,
-    alias_profile_editor,
-    alias_org_admin
+    alias_profile_admin,
+    alias_org_admin,
 }
 
 """Build reverse map to get aliases from roles"""

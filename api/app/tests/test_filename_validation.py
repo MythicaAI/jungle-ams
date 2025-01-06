@@ -3,6 +3,7 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 import os
+import sys
 
 import pytest
 from pydantic import ValidationError
@@ -169,10 +170,8 @@ def test_invalid_patterns(validator, invalid_pattern):
 
 
 def test_path_length(validator):
-    # Create a filename that would exceed system max path length
-    system_max = os.pathconf('/', 'PC_PATH_MAX')
-    long_filename = "a" * system_max + ".txt"
-
+    system_max = 4096  # derived from alpine python os.pathconf('/', 'PC_PATH_MAX')
+    long_filename = ("a" * system_max) + ".txt"
     with pytest.raises(ValidationError) as exc:
         validator(long_filename)
     assert "at most" in str(exc.value)

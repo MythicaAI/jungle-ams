@@ -84,12 +84,17 @@ def test_download(
         assert "Location" in download_response.headers
         parsed_location = download_response.headers["Location"]
         print(f"Download parsed_location: {parsed_location}")
-        local_storage_path = app_config().local_storage_path
-        assert parsed_location.startswith(local_storage_path)
 
-        file_path = Path(parsed_location)
+        if parsed_location.startswith("/lfs/"):
+            parts = parsed_location[len("/lfs/"):].split('/')
+            drive = parts[0]
+            windows_file_path = '\\'.join(parts[1:])
+            file_path = Path(f"{drive}:{windows_file_path}")
+        else:
+            file_path = Path(parsed_location)
 
         assert file_path.exists(), f"File does not exist at {file_path}"
+
 
         with open(file_path, "rb") as f:
             file_contents = f.read()

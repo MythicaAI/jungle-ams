@@ -1,3 +1,4 @@
+import React from 'react';
 import { BaseEdge, getBezierPath, type EdgeProps } from '@xyflow/react';
 import { GetFileResponse } from '../../types/MythicaApi';
 
@@ -7,7 +8,7 @@ type FileEdgeProps = EdgeProps & {
     };
 };
 
-export function FileEdge(edge: FileEdgeProps) {
+export const FileEdge: React.FC<FileEdgeProps> = (edge: FileEdgeProps) => {
     const [edgePath] = getBezierPath({
         sourceX: edge.sourceX,
         sourceY: edge.sourceY,

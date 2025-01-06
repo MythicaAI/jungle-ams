@@ -301,19 +301,24 @@ def test_tag_asset_operations(api_base, client, create_profile):
     )
     assert_status_code(r, HTTPStatus.OK)
 
-    # Test create the already created tag_type
+    # Test create the already created tag_type, ensure it returns the original tag
+    # but the status is OK and not CREATED (idempotent)
     new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
     r = client.post(
         f"{api_base}/tags/types/asset",
         json={'tag_id': new_tag_id, "type_id": asset_id},
         headers=headers,
     )
-    assert_status_code(r, HTTPStatus.CONFLICT)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert o.tag_id == new_tag_id
+    assert o.type_id == asset_id
 
-    # Test create the already created tag
+    # Test create the already created tag, ensure it comes back with OK and original tag data
     new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]
     r = client.post(f"{api_base}/tags", json={'name': filter_tag_name}, headers=headers)
-    assert_status_code(r, HTTPStatus.CONFLICT)
+    assert_status_code(r, HTTPStatus.OK)
+    assert r.json()["name"] == filter_tag_name
 
     for tag__type_ids in created_tag__type_ids:
         new_tag_id, _, asset_id = tag__type_ids

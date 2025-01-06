@@ -241,7 +241,8 @@ def valid_automation_request_data():
         "work_guid": "123e4567-e89b-12d3-a456-426614174001",
         "job_id": "test_job",
         "path": "/test/path",
-        "data": {"test": "data"}
+        "data": {"test": "data"},
+        "telemetry_context": {"test": "test"},
     }
 
 # ---- AutomationsResponse Tests ----
@@ -296,6 +297,7 @@ class TestAutomationRequest:
         assert request.job_id == request_data["job_id"]
         assert request.auth_token == test_token
         assert request.path == request_data["path"]
+        assert request.telemetry_context == request_data["telemetry_context"]
 
     def test_minimal_request(self, valid_automation_request_data):
         minimal_data = {
@@ -353,7 +355,8 @@ def test_request(test_token):
         path="/test/path",
         auth_token=test_token,
         data={"test": "data"},
-        job_id="test-job-id"
+        job_id="test-job-id",
+        telemetry_context={"test": "test"},
     )
 
 @pytest.fixture
@@ -447,7 +450,9 @@ async def test_result_publisher_with_job_id(publisher, mock_nats, mock_rest):
     mock_rest.post.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_result_publisher_complete(publisher, mock_nats, mock_rest):
+async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_automation_request_data):
+    invalid_data = valid_automation_request_data.copy()
+
     test_item = ProcessStreamItem(item_type="test")
     publisher.request.job_id = "test-job"
     
@@ -457,6 +462,7 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest):
     mock_rest.post.assert_called_once_with(
         f"{publisher.api_url}/jobs/complete/test-job",
         json_data={},
+        headers=invalid_data["telemetry_context"],
         token=publisher.request.auth_token
     )
 

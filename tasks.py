@@ -1,4 +1,5 @@
 # This file is intended for invoke, see README.md for install setup instructions
+from dotenv import dotenv_values
 import os
 import re
 import subprocess
@@ -70,13 +71,22 @@ IMAGES = {
         'requires': ['api/app', 'libs/python'],
     },
     'api/canary': {},
+    'api/bulk-import': {},
     'sites/jungle3': {
         'buildargs': {
             'NODE_ENV': NODE_ENV,
         }
     },
-    'sites/editor': {},
-    'sites/awful-ui': {},
+    'sites/editor': {
+        'buildargs': {
+            'NODE_ENV': NODE_ENV,
+        }
+    },
+    'sites/awful-ui': {
+        'buildargs': {
+            'NODE_ENV': NODE_ENV,
+        }
+    },
     'testing/storage/minio-config': {},
     'automation/test': {
         'requires': ['libs/python'],
@@ -104,6 +114,7 @@ IMAGES = {
 
 SITE_DATA = {
     'sites/jungle3',
+    'sites/awful-ui',
     'sites/editor',
 }
 
@@ -159,6 +170,11 @@ def parse_dockerfile_label_name(dockerfile_path: PathLike) -> str:
 def generate_mount_env_file() -> str:
     """Generate an env file with the OS specific mount points as environment variables"""
     env_file_path = os.path.join(TESTING_MNT_DIR, 'os_mount_paths.env')
+
+    # Load local .env variables if the file exists
+    local_env_path = os.path.join(BASE_DIR, 'testing/.env')
+    local_env = dotenv_values(local_env_path) if os.path.exists(local_env_path) else {}
+    
     with open(env_file_path, "w+") as f:
         for name, mnt_point in LOCAL_MOUNT_POINTS.items():
             abs_path = os.path.join(BASE_DIR, mnt_point)
@@ -166,6 +182,9 @@ def generate_mount_env_file() -> str:
             abs_path = os.path.normpath(abs_path)
             # Write env var in KEY=value format
             f.write(f"{name.upper()}_PATH={abs_path}\n")
+        # Write variables from .env file
+        for key, value in local_env.items():
+            f.write(f"{key}={value}\n")
     return os.path.normpath(env_file_path)
 
 

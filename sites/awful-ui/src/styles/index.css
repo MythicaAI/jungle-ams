@@ -28,7 +28,7 @@ body {
   flex-direction: column;
   display: flex;
   flex-grow: 1;
-  height: calc(100% - 92px);
+  height: calc(100% - 62px);
 }
 
 .dndflow aside {
@@ -64,7 +64,7 @@ body {
 .dndflow .reactflow-wrapper {
   flex-grow: 1;
   width: 100%;
-  height: calc(100vh - 92px); /* Fills the full viewport height */
+  height: calc(100vh - 62px); /* Fills the full viewport height */
 }
 
 .dndflow .selectall {
@@ -160,4 +160,16 @@ body {
 /* Content area */
 .folder-content {
   padding: 5px;
+}
+
+/* Draggable Pane gutter */
+.gutter {
+  background-color: #eee;
+  background-repeat: no-repeat;
+  background-position: 50%;
+}
+
+.gutter.gutter-horizontal {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+  cursor: col-resize;
 }

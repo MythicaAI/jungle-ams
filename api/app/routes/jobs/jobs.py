@@ -27,6 +27,7 @@ from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
 from routes.authorization import session_profile
+from telemetry_config import get_telemetry_context
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +135,9 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         work_guid=work_guid,
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
-        auth_token=profile.auth_token)
+        auth_token=profile.auth_token,
+        telemetry_context=get_telemetry_context(),
+    )
     nats = NatsAdapter()
     await nats.post("houdini", event.model_dump())
     return work_guid
@@ -187,7 +190,9 @@ async def add_job_nats_event(
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
-        data=params.model_dump())
+        data=params.model_dump(),
+        telemetry_context=get_telemetry_context(),
+    )
 
     nats = NatsAdapter()
     log.info("Sent NATS %s task. Request: %s", str(subject), event.model_dump())
@@ -291,7 +296,8 @@ async def create_result(
                 raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
 
             job_result = job_result_insert(session, job_seq, request)
-            span.set_attribute("job.result", request.result_data)
+            if request.result_data:
+                span.set_attributes(request.result_data)
             span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
             job_result_seq = job_result.inserted_primary_key[0]
             session.commit()

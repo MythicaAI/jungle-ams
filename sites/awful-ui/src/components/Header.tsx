@@ -1,3 +1,4 @@
+import React from 'react';
 import { Box, Stack } from '@mui/joy';
 import Logo from '../assets/img/mythica-logo.png';
 import { NavLinks } from './NavLinks';
@@ -7,11 +8,11 @@ type Props = {
   setTab: (value: string) => void;
 };
 
-export const Header: React.FC<Props> = ({ tab, setTab }) => {
+export const Header: React.FC<Props> = (header: Props) => {
   return (
     <Stack
       direction="row"
-      p="30px 20px"
+      p="15px 20px"
       justifyContent="space-between"
       sx={{
         background: '#24292E',
@@ -20,7 +21,7 @@ export const Header: React.FC<Props> = ({ tab, setTab }) => {
       }}
     >
       <Box component="img" height="32px" src={Logo} />
-      <NavLinks tab={tab} setTab={setTab} />
+      <NavLinks tab={header.tab} setTab={header.setTab} />
     </Stack>
   );
 };

@@ -230,7 +230,7 @@ namespace hou {
     default_expression: string[] = [];
     default_expression_language: scriptLanguage[] = [];
 
-    runtime_data: { [key: string]: any } = {};
+    runtime_data: { [key: string]: unknown } = {};
 
     extractConfig = (config: ParmTemplateProps) => {
       const {
@@ -250,22 +250,20 @@ namespace hou {
         default_expression_language,
         ...superConfig
       } = config;
-      name && (this.name = name);
-      label && (this.label = label);
-      is_hidden && (this.is_hidden = is_hidden);
-      is_label_hidden && (this.is_label_hidden = is_label_hidden);
-      conditionals && (this.conditionals = conditionals);
-      help && (this.help = help);
-      join_with_next && (this.join_with_next = join_with_next);
-      script_callback && (this.script_callback = script_callback);
-      script_callback_language &&
-        (this.script_callback_language = script_callback_language);
-      tab_conditionals && (this.tab_conditionals = tab_conditionals);
-      tags && (this.tags = tags);
-      disable_when && (this.disable_when = disable_when);
-      default_expression && (this.default_expression = default_expression);
-      default_expression_language &&
-        (this.default_expression_language = default_expression_language);
+      if (name) this.name = name;
+      if (label) this.label = label;
+      if (is_hidden) this.is_hidden = is_hidden;
+      if (is_label_hidden) this.is_label_hidden = is_label_hidden;
+      if (conditionals) this.conditionals = conditionals;
+      if (help) this.help = help;
+      if (join_with_next) this.join_with_next = join_with_next;
+      if (script_callback) this.script_callback = script_callback;
+      if (script_callback_language) this.script_callback_language = script_callback_language;
+      if (tab_conditionals) this.tab_conditionals = tab_conditionals;
+      if (tags) this.tags = tags;
+      if (disable_when) this.disable_when = disable_when;
+      if (default_expression) this.default_expression = default_expression;
+      if (default_expression_language) this.default_expression_language = default_expression_language;
 
       return superConfig;
     };
@@ -306,7 +304,7 @@ namespace hou {
     };
 
     //"link our component"
-    setRuntimeData = (data: { [key: string]: any }) => {
+    setRuntimeData = (data: { [key: string]: unknown }) => {
       this.runtime_data = data;
     };
   }

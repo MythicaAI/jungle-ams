@@ -1,4 +1,5 @@
 import os
+import posixpath
 import re
 import unicodedata
 from typing import Annotated
@@ -50,7 +51,7 @@ class FileInfo(BaseModel):
     @field_validator('filename')
     @classmethod
     def validate_filename(cls, value: str) -> str:
-        # Normalize unicode characters to prevent homograph attacks
+        # Normalize Unicode characters to prevent homograph attacks
         normalized = unicodedata.normalize('NFKC', value)
         if normalized != value:
             raise ValueError(
@@ -63,8 +64,8 @@ class FileInfo(BaseModel):
                 'Filename contains null bytes',
             )
 
-        # Collapse directories
-        value = os.path.relpath(value)
+        # Collapse directories parent references of posix paths
+        value = posixpath.relpath(value)
 
         if value.startswith('.'):
             raise ValueError(
