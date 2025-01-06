@@ -20,7 +20,7 @@ env:
   P4PORT: ssl:p4.garden.mythica.ai:1666
   P4USER: mythica
   P4PASSWD: ${{ secrets.P4PASSWD }}
-  P4TRUST: ${{ secrets.P4TRUST }}
+  P4TRUST: /home/ec2-user/.p4trust
   P4CLIENT: github-action-workspace
   P4_WORKSPACE: /mnt/p4/mythica
 
@@ -31,6 +31,12 @@ jobs:
     steps:
       - name: Checkout github
         uses: actions/checkout@v4
+
+      - name: System diag
+        run: |
+          # these should be already installed on the system
+          which python3.11
+          which poetry
 
       - name: Setup P4 Trust
         run: |
@@ -96,9 +102,6 @@ jobs:
           # Example: Get latest changelist
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
           echo "Latest changelist: $LATEST_CL"
-          
-          # re-instate trust
-          p4 -p $P4PORT trust -y
           
           # bulk import HDA packages
           poetry install --no-root
