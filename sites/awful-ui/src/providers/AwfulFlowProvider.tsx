@@ -13,6 +13,9 @@ import {
   ReactFlowInstance,
   NodeResizeControl,
   ResizeControlProps,
+  getIncomers,
+  getOutgoers,
+  getConnectedEdges,
 } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import useMythicaApi from '../hooks/useMythicaApi';
@@ -42,7 +45,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     Record<string, GetFileResponse>
   >({});
 
-  const { savedAutomationsById, allAutomations} = useAutomation();
+  const { savedAutomationsById, allAutomations } = useAutomation();
 
   const [refreshEdgeData, setRefreshEdgeData] = useState<Edge[]>([]);
 
@@ -105,8 +108,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   // Restore from local storage
   const onRestoreSession = async () => {
     try {
-
-      const savedState = JSON.parse(localStorage.getItem(storageKey) || "");
+      const savedState = JSON.parse(localStorage.getItem(storageKey) || '');
       if (!savedState) return;
 
       const { x = 0, y = 0, zoom = 1 } = savedState.flow.viewport || {};
@@ -115,7 +117,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       setFlowDataState(savedState.mythicaFlow.flowData || {});
       await setViewport({ x, y, zoom });
       setRefreshEdgeData(savedState.flow.edges);
-  
     } catch (e) {
       console.error('Error loading flow from local storage:', e);
       onNew();
@@ -123,7 +124,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const [isLoaded, setIsLoaded] = useState(false);
-  // if first load of the app, load from session. 
+  // if first load of the app, load from session.
   useEffect(() => {
     if (!isLoaded && Object.keys(allAutomations).length > 0) {
       onRestoreSession().then(() => setIsLoaded(true));
@@ -134,8 +135,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   /***************************************************************************
    * End Session Save Handling
    **************************************************************************/
-
-
 
   /***************************************************************************
    * Awful Save Handling
@@ -270,14 +269,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     if (refreshEdgeData.length > 0) {
       sleep(2000).then(() => {
         setEdges(refreshEdgeData);
-        const edgeMapData:EdgeMap = {};
-          
+        const edgeMapData: EdgeMap = {};
+
         refreshEdgeData.forEach((edge) => {
-          if (!edgeMapData[edge.source]) 
-            edgeMapData[edge.source] = {};
+          if (!edgeMapData[edge.source]) edgeMapData[edge.source] = {};
           if (!edgeMapData[edge.source][edge.sourceHandle as string])
             edgeMapData[edge.source][edge.sourceHandle as string] = [];
-          edgeMapData[edge.source][edge.sourceHandle as string].push(edge); 
+          edgeMapData[edge.source][edge.sourceHandle as string].push(edge);
         });
         setEdgeMap(edgeMapData);
         setRefreshEdgeData([]);
@@ -370,6 +368,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [nodeType, savedAutomationsById, screenToFlowPosition, setNodes]
   );
+
   /***************************************************************************
    * Node Creation/Sidebar Drag Handling
    **************************************************************************/
@@ -502,6 +501,36 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       [setFlowDataState, setEdgeMap]
     );
   }, []);
+
+  // manual node deletion
+
+  const onManualNodesDelete = useCallback(
+    (deleted: Node[]) => {
+      setEdges(
+        deleted.reduce((acc, node) => {
+          const incomers = getIncomers(node, nodes, edges);
+          const outgoers = getOutgoers(node, nodes, edges);
+          const connectedEdges = getConnectedEdges([node], edges);
+
+          const remainingEdges = acc.filter(
+            (edge) => !connectedEdges.includes(edge)
+          );
+
+          const createdEdges = incomers.flatMap(({ id: source }) =>
+            outgoers.map(({ id: target }) => ({
+              id: `${source}->${target}`,
+              source,
+              target,
+            }))
+          );
+
+          return [...remainingEdges, ...createdEdges];
+        }, edges)
+      );
+    },
+    [nodes, edges]
+  );
+
   /***************************************************************************
    * Connection, Edge and FlowData (output/input file) handling
    **************************************************************************/
@@ -532,6 +561,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
         onNew,
         savedAwfulsById,
         savedAwfulsByName,
+        onManualNodesDelete,
         rfInstance,
         setRfInstance: setRfInstance as React.Dispatch<
           React.SetStateAction<ReactFlowInstance<Node, Edge>>

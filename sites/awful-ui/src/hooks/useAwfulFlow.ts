@@ -34,6 +34,7 @@ type AwfulFlowContextType = {
   onSaveSession: () => Promise<void>;
   onRestoreSession: () => Promise<void>;
   onDelete: (filename: string) => void;
+  onManualNodesDelete: (deleted: Node[]) => void;
   onNew: () => void;
   savedAwfulsById: Record<string, GetFileResponse>;
   savedAwfulsByName: Record<string, GetFileResponse>;

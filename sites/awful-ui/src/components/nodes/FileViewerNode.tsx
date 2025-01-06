@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  memo,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 
 import Split from 'react-split';
 
@@ -24,6 +18,8 @@ import {
 
 import FilePickerModal from '../utils/FilePickerModal'; // <-- The new component
 
+import { useReactFlow } from '@xyflow/react';
+import { NodeDeleteButton } from '../NodeDeleteButton';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -41,7 +37,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { getFiles, getDownloadInfo, authToken } = useMythicaApi();
   const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
-
+  const { deleteElements } = useReactFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
@@ -187,14 +183,24 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const columnWidth = 200;
   //const viewerHeight = 480;
   const columnStyle = { width: columnWidth };
-  
 
   return (
     <Card
       className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
-      sx={{ minWidth: 400, height: '100%', display: 'flex', minHeight: 300, flexDirection: 'column' }}
+      sx={{
+        minWidth: 400,
+        height: '100%',
+        display: 'flex',
+        minHeight: 300,
+        flexDirection: 'column',
+      }}
       ref={containerRef}
     >
+      <NodeDeleteButton
+        onDelete={() => {
+          deleteElements({ nodes: [node] });
+        }}
+      />
       {/* Input handle */}
       <FileInputHandle
         id={INPUT_FILES}
@@ -216,7 +222,9 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <FilePickerModal
         open={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
-        onSave={(newSelectedFileIds: string[]) => handleFileSelection(newSelectedFileIds)}
+        onSave={(newSelectedFileIds: string[]) =>
+          handleFileSelection(newSelectedFileIds)
+        }
         selectedFileIds={selectedFileIds}
         files={apiFiles}
         label="Choose Your Files"
@@ -224,18 +232,23 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
       {/* If we have download info, render the tab/pane viewer */}
       {downloadInfo && downloadInfo.length > 0 && (
-        <div 
+        <div
           className="nodrag nowheel folder-container"
-          style={{flex: '1 1 0', height: '100%' }}
-          >
+          style={{ flex: '1 1 0', height: '100%' }}
+        >
           <Split
             sizes={[20, 80]}
-            minSize={[0,100]}
+            minSize={[0, 100]}
             expandToMin={false}
             gutterSize={5}
             gutterAlign="center"
             direction="horizontal"
-            style={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%' }}  
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              height: '100%',
+              width: '100%',
+            }}
           >
             {/* Tab Navigation */}
             <Tabs
@@ -249,9 +262,9 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                   className={`folder-tab ${
                     selectedPane === index ? 'active' : ''
                   }`}
-                  style={{ 
-                    overflow: 'hidden', 
-                    textOverflow: 'ellipsis', 
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -270,78 +283,78 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                     position: index === selectedPane ? 'relative' : 'absolute',
                     visibility: index === selectedPane ? 'visible' : 'hidden',
                     display: 'block',
-                    height: '100%' 
+                    height: '100%',
                   }}
                 >
-                    {fileInfo ? (
-                      <>
-                        {([
-                          'jpeg',
-                          'jpg',
-                          'png',
-                          'gif',
-                          'webp',
-                          'svg',
-                          'svg+xml',
-                          'bmp',
-                          'avif',
-                        ].includes(fileInfo.content_type.split('/')[1])) ? (
-                          <img
-                            src={fileInfo.url}
-                            alt={fileInfo.name}
-                            style={{    
-                              height: '100%',
-                              width: '100%',
-                            }}
-                          />
-                        ) : fileInfo.content_type === 'application/json' ||
-                          fileInfo.content_type === 'application/awpy' ||
-                          fileInfo.content_type === 'application/awful' ? (
-                          <CodeViewer
-                            style={{    
-                              height: '100%',
-                              width: '100%',
-                            }}
-                            language="json"
-                            fileUrl={fileInfo.url}
-                          />
-                        ) : fileInfo.content_type === 'application/awjs' ? (
-                          <CodeViewer
-                          style={{    
+                  {fileInfo ? (
+                    <>
+                      {[
+                        'jpeg',
+                        'jpg',
+                        'png',
+                        'gif',
+                        'webp',
+                        'svg',
+                        'svg+xml',
+                        'bmp',
+                        'avif',
+                      ].includes(fileInfo.content_type.split('/')[1]) ? (
+                        <img
+                          src={fileInfo.url}
+                          alt={fileInfo.name}
+                          style={{
+                            height: '100%',
+                            width: '100%',
+                          }}
+                        />
+                      ) : fileInfo.content_type === 'application/json' ||
+                        fileInfo.content_type === 'application/awpy' ||
+                        fileInfo.content_type === 'application/awful' ? (
+                        <CodeViewer
+                          style={{
+                            height: '100%',
+                            width: '100%',
+                          }}
+                          language="json"
+                          fileUrl={fileInfo.url}
+                        />
+                      ) : fileInfo.content_type === 'application/awjs' ? (
+                        <CodeViewer
+                          style={{
                             height: '100%',
                             width: '100%',
                           }}
                           language="javascript"
-                            fileUrl={fileInfo.url}
-                          />
-                        ) : fileInfo.content_type === 'application/usd' ||
-                          fileInfo.content_type === 'application/usdz' ? (
-                          <USDViewer
-                            src={fileInfo.url}
-                            alt={fileInfo.name}
-                            style={{    
-                              height: '100vh',
-                              width: '100vh',
-                              minHeight: '480px', 
-                              minWidth: '640px',
-                            }}
-                          />
-                        ) : (
-                          <div style={{ height: '100px' }}>
-                            <p>Unsupported file type: {fileInfo.content_type}</p>
-                            <a
-                              href={fileInfo.url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Download
-                            </a>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <p>Error loading file</p>
-                    )}
+                          fileUrl={fileInfo.url}
+                        />
+                      ) : fileInfo.content_type === 'application/usd' ||
+                        fileInfo.content_type === 'application/usdz' ? (
+                        <USDViewer
+                          src={fileInfo.url}
+                          alt={fileInfo.name}
+                          style={{
+                            height: '100vh',
+                            width: '100vh',
+                            minHeight: '480px',
+                            minWidth: '640px',
+                          }}
+                        />
+                      ) : (
+                        <div style={{ height: '100px' }}>
+                          <p>Unsupported file type: {fileInfo.content_type}</p>
+                          <a
+                            href={fileInfo.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Download
+                          </a>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p>Error loading file</p>
+                  )}
                 </div>
               ))}
             </div>

@@ -332,45 +332,50 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
                       </div>
                     );
                   })}
+                  {automationContext.savedAutomationsByWorker[worker]?.map(
+                    (automation: AutomationSave, index: number) => {
+                      return (
+                        <div
+                          key={automation.id + '_' + index}
+                          className="dndnode custom"
+                          onDragStart={(event) =>
+                            onDragStart(event, `saved?${automation.id}`)
+                          }
+                          draggable
+                          style={{ display: 'flex', flexDirection: 'row' }}
+                        >
+                          <Typography
+                            fontSize={14}
+                            style={{ flex: '1 1 auto' }}
+                          >
+                            {automation.name}
+                          </Typography>
+                          <LucideTrash2
+                            onClick={() =>
+                              automationContext.deleteAutomation(automation)
+                            }
+                            style={{ marginRight: '4px', cursor: 'pointer' }}
+                          />
+                          <GripVertical />
+                        </div>
+                      );
+                    }
+                  )}
+                  <div
+                    key={`${worker}-new`}
+                    className="dndnode new"
+                    onDragStart={(event) =>
+                      onDragStart(event, `${worker}://mythica/script`)
+                    }
+                    draggable
+                  >
+                    <Typography fontSize={14}>
+                      Create New Automation...
+                    </Typography>
+                    <GripVertical />
+                  </div>
                 </AccordionDetails>
               </Accordion>
-              {automationContext.savedAutomationsByWorker[worker]?.map(
-                (automation: AutomationSave,index:number) => {
-                  return (
-                    <div
-                      key={automation.id + '_' + index}
-                      className="dndnode custom"
-                      onDragStart={(event) =>
-                        onDragStart(event, `saved?${automation.id}`)
-                      }
-                      draggable
-                      style={{ display: 'flex', flexDirection: 'row' }}
-                    >
-                      <Typography fontSize={14} style={{ flex: '1 1 auto' }}>
-                        {automation.name}
-                      </Typography>
-                      <LucideTrash2
-                        onClick={() =>
-                          automationContext.deleteAutomation(automation)
-                        }
-                        style={{ marginRight: '4px', cursor: 'pointer' }}
-                      />
-                      <GripVertical />
-                    </div>
-                  );
-                }
-              )}
-              <div
-                key={`${worker}-new`}
-                className="dndnode new"
-                onDragStart={(event) =>
-                  onDragStart(event, `${worker}://mythica/script`)
-                }
-                draggable
-              >
-                <Typography fontSize={14}>Create New Automation...</Typography>
-                <GripVertical />
-              </div>
             </div>
           ))}
         </AccordionGroup>

@@ -1,11 +1,6 @@
 // MythicaFlow.tsx
 import React, { useRef, useMemo, useState } from 'react';
-import {
-  ReactFlow,
-  MiniMap,
-  Controls,
-  Background,
-} from '@xyflow/react';
+import { ReactFlow, MiniMap, Controls, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import useAwfulFlow from './hooks/useAwfulFlow';
@@ -20,7 +15,6 @@ import { Header } from './components/Header';
 import { TabValues } from './enums';
 import { FileEdge } from './components/edges/FileEdge';
 
-
 // Main Awful UI component
 const AwfulUI: React.FC = () => {
   const [tab, setTab] = useState<string>(TabValues.EDIT);
@@ -28,7 +22,7 @@ const AwfulUI: React.FC = () => {
   const {
     onConnect,
     onDisconnect,
-    onNodesDelete,
+    onManualNodesDelete,
     onNodesChange,
     onDrop,
     onDragOver,
@@ -37,7 +31,6 @@ const AwfulUI: React.FC = () => {
     onEdgesChange,
     setRfInstance,
   } = useAwfulFlow();
-
 
   const nodeTypes = useMemo(
     () => ({
@@ -66,7 +59,7 @@ const AwfulUI: React.FC = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodesDelete={onNodesDelete}
+            onNodesDelete={onManualNodesDelete}
             onEdgesDelete={onDisconnect}
             onDrop={onDrop}
             onDragOver={onDragOver}
@@ -78,7 +71,7 @@ const AwfulUI: React.FC = () => {
             minZoom={0.1}
             maxZoom={1}
             colorMode="dark"
-            proOptions={{hideAttribution:true}}
+            proOptions={{ hideAttribution: true }}
           >
             <MiniMap zoomable pannable />
             <Controls />
