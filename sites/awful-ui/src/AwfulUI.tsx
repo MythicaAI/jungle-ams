@@ -30,7 +30,7 @@ const AwfulUI: FC = () => {
   const {
     onConnect,
     onDisconnect,
-    onNodesDelete,
+    onManualNodesDelete,
     onNodesChange,
     onDrop,
     onDragOver,
@@ -92,7 +92,7 @@ const AwfulUI: FC = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodesDelete={onNodesDelete}
+            onNodesDelete={onManualNodesDelete}
             onEdgesDelete={onDisconnect}
             onDrop={onDrop}
             onDragOver={onDragOver}

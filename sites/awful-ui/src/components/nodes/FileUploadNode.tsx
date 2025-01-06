@@ -5,6 +5,8 @@ import useMythicaApi from '../../hooks/useMythicaApi'; // Import Auth context
 import useAwfulFlow from '../../hooks/useAwfulFlow'; // Import NodeDataContext
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Box, Button, Card, List, ListItem, Typography } from '@mui/joy';
+import { NodeDeleteButton } from '../NodeDeleteButton';
+import { useReactFlow } from '@xyflow/react';
 
 interface FileUploadNodeProps {
   id: string;
@@ -20,6 +22,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
     null
   );
   const [uploadStatus, setUploadStatus] = React.useState<string>('');
+  const { deleteElements } = useReactFlow();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -52,6 +55,11 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
       className={`mythica-node file-upload-node ${node.selected && 'selected'}`}
       sx={{ minWidth: '300px' }}
     >
+      <NodeDeleteButton
+        onDelete={() => {
+          deleteElements({ nodes: [node] });
+        }}
+      />
       <Typography level="h4">File Upload</Typography>
       <Button
         variant="outlined"

@@ -11,6 +11,8 @@ import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Card } from '@mui/joy';
 import useMythicaApi from '../../hooks/useMythicaApi';
+import { NodeDeleteButton } from '../NodeDeleteButton';
+import { useReactFlow } from '@xyflow/react';
 
 type InterfaceExecutionData = ExecutionData & {
   output: {
@@ -62,6 +64,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
   const [executionFlowData, setExecutionFlowData] = useState<{
     [key: string]: GetFileResponse[];
   }>({});
+  const { deleteElements } = useReactFlow();
 
   const { getFlowData, setFlowData } = useAwfulFlow();
 
@@ -211,15 +214,15 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
   const updateHdaDef = useCallback(() => {
     if (interfaceFlowData && interfaceFlowData.length > 0)
       runAutomation(
-        automationTask.worker,
+        automationTask?.worker,
         node.id,
-        automationTask.path,
+        automationTask?.path,
         { hdas: [interfaceFlowData[0]] },
         setMyInterfaceData
       );
   }, [
-    automationTask.worker,
-    automationTask.path,
+    automationTask?.worker,
+    automationTask?.path,
     interfaceFlowData,
     node.id,
     runAutomation,
@@ -254,7 +257,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       // Only update if `prev` is not equal to `ifx`
       return JSON.stringify(prev) !== JSON.stringify(ifx) ? ifx : prev;
     });
-    myInterfaceData.state = NodeState.Executed
+    myInterfaceData.state = NodeState.Executed;
   }, [myFlowData, myInterfaceData]);
 
   useEffect(() => {
@@ -300,6 +303,11 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
   ));
   return (
     <Card className={`mythica-node worker ${node.selected && 'selected'}`}>
+      <NodeDeleteButton
+        onDelete={() => {
+          deleteElements({ nodes: [node] });
+        }}
+      />
       <h3 style={{ marginBottom: '2px' }}>
         {nodeType['description'] as string}
       </h3>

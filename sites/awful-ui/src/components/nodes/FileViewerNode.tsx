@@ -20,6 +20,8 @@ import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Card, Checkbox, Option, Select, Tabs, Typography } from '@mui/joy';
+import { useReactFlow } from '@xyflow/react';
+import { NodeDeleteButton } from '../NodeDeleteButton';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -39,6 +41,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const [viewerWidth, setViewerWidth] = useState<number | undefined>();
   const { getFiles, getDownloadInfo, authToken } = useMythicaApi();
   const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
+  const { deleteElements } = useReactFlow();
   const [apiFiles, setApiFiles] = useState<GetFileResponse[]>([]);
   const [downloadInfo, setDownloadInfo] = useState<
     Array<GetDownloadInfoResponse | null>
@@ -206,6 +209,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       sx={{ minWidth: 400, height: '100%' }}
       ref={containerRef}
     >
+      <NodeDeleteButton
+        onDelete={() => {
+          deleteElements({ nodes: [node] });
+        }}
+      />
       <NodeResizer minHeight={100} minWidth={300} />
       <Typography level="h4">File Viewer</Typography>
 

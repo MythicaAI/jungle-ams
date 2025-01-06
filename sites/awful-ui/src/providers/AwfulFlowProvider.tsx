@@ -13,6 +13,9 @@ import {
   ReactFlowInstance,
   NodeResizeControl,
   ResizeControlProps,
+  getIncomers,
+  getOutgoers,
+  getConnectedEdges,
 } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
 import useMythicaApi from '../hooks/useMythicaApi';
@@ -305,6 +308,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [nodeType, savedAutomationsById, screenToFlowPosition, setNodes]
   );
+
   /***************************************************************************
    * Node Creation/Sidebar Drag Handling
    **************************************************************************/
@@ -437,6 +441,36 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       [setFlowDataState, setEdgeMap]
     );
   }, []);
+
+  // manual node deletion
+
+  const onManualNodesDelete = useCallback(
+    (deleted: Node[]) => {
+      setEdges(
+        deleted.reduce((acc, node) => {
+          const incomers = getIncomers(node, nodes, edges);
+          const outgoers = getOutgoers(node, nodes, edges);
+          const connectedEdges = getConnectedEdges([node], edges);
+
+          const remainingEdges = acc.filter(
+            (edge) => !connectedEdges.includes(edge)
+          );
+
+          const createdEdges = incomers.flatMap(({ id: source }) =>
+            outgoers.map(({ id: target }) => ({
+              id: `${source}->${target}`,
+              source,
+              target,
+            }))
+          );
+
+          return [...remainingEdges, ...createdEdges];
+        }, edges)
+      );
+    },
+    [nodes, edges]
+  );
+
   /***************************************************************************
    * Connection, Edge and FlowData (output/input file) handling
    **************************************************************************/
@@ -466,6 +500,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
         savedAwfulsById,
         savedAwfulsByName,
         rfInstance,
+        onManualNodesDelete,
         setRfInstance: setRfInstance as React.Dispatch<
           React.SetStateAction<ReactFlowInstance<Node, Edge>>
         >,

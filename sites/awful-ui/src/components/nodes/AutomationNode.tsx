@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useUpdateNodeInternals } from '@xyflow/react';
+import { useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import MonacoEditor from '@monaco-editor/react';
 
 import useAutomation from '../../hooks/useAutomation';
@@ -20,6 +20,7 @@ import { JSONSchema } from '../../types/JSONSchema';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Input, Stack, Typography } from '@mui/joy';
+import { NodeDeleteButton } from '../NodeDeleteButton';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -70,6 +71,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const scriptInterfacePath = import.meta.env.VITE_AWFUL_SCRIPT_INTERFACE_PATH;
 
   const updateNodeInternals = useUpdateNodeInternals();
+  const { deleteElements } = useReactFlow();
 
   const {
     initAutomation,
@@ -433,6 +435,11 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           minWidth: isScriptNode ? '640px' : 'auto',
         }}
       >
+        <NodeDeleteButton
+          onDelete={() => {
+            deleteElements({ nodes: [node] });
+          }}
+        />
         <AutomationInputs
           inputSchema={inputSpec}
           onChange={setInputData}
