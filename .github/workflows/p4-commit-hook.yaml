@@ -38,15 +38,8 @@ jobs:
           which python3.11
           which poetry
 
-      - name: Setup P4 Trust
+      - name: Ensure P4 trust
         run: |
-          mkdir -p ~/.p4
-          
-          # If you have P4TRUST secret set
-          if [ -z "$P4TRUST" ]; then
-            echo "P4TRUST not yet, setup fingerprint of server"
-            exit 1
-          fi
           p4 -p $P4PORT trust -y
 
       - name: P4 Login
