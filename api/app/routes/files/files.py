@@ -1,18 +1,15 @@
 from http import HTTPStatus
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import and_, select, update
 
-from cryptid.cryptid import file_id_to_seq, profile_id_to_seq
+from cryptid.cryptid import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from ripple.auth import roles
-from ripple.auth.authorization import validate_roles
 from ripple.models.contexts import FilePurpose
-from routes.authorization import session_profile, session_profile_id
+from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
 router = APIRouter(prefix="/files", tags=["files"])
 

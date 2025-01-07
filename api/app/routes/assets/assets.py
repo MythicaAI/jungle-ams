@@ -2,14 +2,10 @@
 
 import logging
 from http import HTTPStatus
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Header
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from cryptid.cryptid import profile_id_to_seq
 from ripple.models.sessions import SessionProfile
-from ripple.auth.authorization import validate_roles
-from ripple.auth import roles
 
 import assets.repo as repo
 from db.connection import get_session

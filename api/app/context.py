@@ -1,7 +1,6 @@
 """Definitions for request context caching for data that flows from
 an HTTP request through the application request path"""
 from datetime import timezone, datetime
-from typing import List
 from pydantic import BaseModel, Field
 
 from ripple.models.contexts import FilePurpose
@@ -23,7 +22,7 @@ class UploadContext(BaseModel):
     file_size: int = 0
     content_hash: str = ''
     extension: str = ''
-    locators: List = Field(default_factory=list)
+    locators: list = Field(default_factory=list)
     purpose: FilePurpose = FilePurpose.UNDEFINED
     bucket_name: str = ''
     object_name: str = ''

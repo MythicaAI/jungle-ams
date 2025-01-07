@@ -6,15 +6,13 @@ import shutil
 import string
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Annotated, Optional
+from typing import Annotated
 
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, profile_id_to_seq
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Header
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from ripple.models.contexts import FilePurpose
 from ripple.models.sessions import SessionProfile
-from ripple.auth import roles
-from ripple.auth.authorization import validate_roles
 from sqlmodel import and_, select, update
 
 import db.index as db_index

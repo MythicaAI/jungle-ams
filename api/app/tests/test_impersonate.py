@@ -1,11 +1,13 @@
 """
 Test APIs that support impersonation
 """
+
+# pylint: disable=redefined-outer-name, unused-import
+
 from http import HTTPStatus
 
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.fixtures.create_asset import create_asset
 from tests.shared_test import assert_status_code, make_random_content, random_str
 from munch import munchify
 

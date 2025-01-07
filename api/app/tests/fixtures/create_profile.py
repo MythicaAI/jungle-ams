@@ -1,4 +1,3 @@
-import asyncio
 from http import HTTPStatus
 
 import pytest
@@ -6,7 +5,7 @@ from munch import munchify
 
 from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
-from profiles.responses import ProfileResponse, SessionStartResponse
+from profiles.responses import ProfileResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 from profiles.start_session import start_session
 

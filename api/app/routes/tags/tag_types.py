@@ -7,11 +7,11 @@ from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from cryptid.cryptid import (
-    profile_id_to_seq, profile_seq_to_id,
+    profile_seq_to_id,
     tag_id_to_seq,
     tag_seq_to_id,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, Header, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func
 from sqlmodel import col, delete, insert, select
 
