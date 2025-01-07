@@ -9,6 +9,8 @@ from cryptid.cryptid import file_id_to_seq, profile_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from ripple.auth import roles
+from ripple.auth.authorization import validate_roles
 from ripple.models.contexts import FilePurpose
 from routes.authorization import session_profile, session_profile_id
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
@@ -36,18 +38,12 @@ async def by_id(
 @router.get("/by_content/{content_hash}")
 async def by_content(
         content_hash: str,
-        impersonate_profile_id: Optional[str] = Header(None, include_in_schema=False),
         profile: Profile = Depends(session_profile)) -> FileUploadResponse:
     """Query a file by its content hash"""
-    if impersonate_profile_id:
-        owner_seq = profile_id_to_seq(impersonate_profile_id)
-    else:
-        owner_seq = profile.profile_seq
-
     with get_session() as session:
         file = session.exec((
             select(FileContent)
-            .where(FileContent.owner_seq == owner_seq)
+            .where(FileContent.owner_seq == profile.profile_seq)
             .where(FileContent.content_hash == content_hash)
             .where(FileContent.deleted == None))).first()
         if file:
@@ -71,9 +67,10 @@ async def by_purpose(
 
 
 @router.delete('/{file_id}')
-async def delete_by_id(file_id, profile_id: str = Depends(session_profile_id)):
+async def delete_by_id(
+        file_id,
+        profile: str = Depends(session_profile)):
     """Delete a file by its ID"""
-    profile_seq = profile_id_to_seq(profile_id)
     with get_session(echo=True) as session:
         try:
             file_seq = file_id_to_seq(file_id)
@@ -81,7 +78,7 @@ async def delete_by_id(file_id, profile_id: str = Depends(session_profile_id)):
                 (update(FileContent)
                  .values(deleted=sql_now(), )
                  .where(and_(FileContent.file_seq == file_seq,
-                             FileContent.owner_seq == profile_seq))))
+                             FileContent.owner_seq == profile.profile_seq))))
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.NOT_FOUND,
                                     detail="file not found, or not owned")

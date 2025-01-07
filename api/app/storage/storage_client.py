@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from context import RequestContext
+from context import UploadContext
 from storage.bucket_types import BucketType
 from opentelemetry import trace
 from opentelemetry.metrics import get_meter_provider
@@ -10,10 +10,10 @@ class StorageClient:
     def validate(self):
         raise NotImplementedError
 
-    def upload(self, ctx: RequestContext, bucket_type: BucketType):
+    def upload(self, ctx: UploadContext, bucket_type: BucketType):
         raise NotImplementedError
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
+    def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType):
         raise NotImplementedError
 
     def download_link(self, bucket_name: str, object_name: str):

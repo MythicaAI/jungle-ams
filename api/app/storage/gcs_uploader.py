@@ -5,7 +5,7 @@ import logging
 from cryptid.location import location
 from google.cloud import storage
 
-from context import RequestContext
+from context import UploadContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
 
@@ -39,7 +39,7 @@ class Client(StorageClient):
     def validate(self):
         return
 
-    def upload(self, ctx: RequestContext, bucket_type: BucketType):
+    def upload(self, ctx: UploadContext, bucket_type: BucketType):
         """Upload the object in the request context to the bucket"""
         with tracer.start_as_current_span("file.upload") as span:
             span.set_attribute("file.id", ctx.file_id if ctx.file_id else "")
@@ -57,7 +57,7 @@ class Client(StorageClient):
                 object_name)
         upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": object_name})
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
+    def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType):
         """Streaming not currently implemented for GCS"""
         raise NotImplementedError
 

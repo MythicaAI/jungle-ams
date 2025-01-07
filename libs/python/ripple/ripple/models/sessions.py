@@ -15,6 +15,7 @@ class SessionProfile(BaseModel):
     location: str
     environment: str
     auth_roles: set[str]
+    impersonated: bool
 
 
 class OrgRef(BaseModel):

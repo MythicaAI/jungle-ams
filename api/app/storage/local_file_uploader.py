@@ -5,7 +5,7 @@ from pathlib import Path
 import shutil
 
 from config import app_config
-from context import RequestContext
+from context import UploadContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
 
@@ -20,7 +20,7 @@ class LocalFileStorageClient(StorageClient):
     def validate(self):
         return self.base_path.exists() and self.base_path.is_dir()
 
-    def upload(self, ctx: RequestContext, bucket_type: BucketType) -> str:
+    def upload(self, ctx: UploadContext, bucket_type: BucketType) -> str:
         with tracer.start_as_current_span("file.upload") as span:
             span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             file_id = ctx.content_hash + '.' + ctx.extension
@@ -48,7 +48,7 @@ class LocalFileStorageClient(StorageClient):
             upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": file_id})
             return file_id
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType) -> str:
+    def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType) -> str:
         file_id = ctx.content_hash + '.' + ctx.extension
         file_path = self.base_path / file_id
         with open(file_path, 'wb') as f:
