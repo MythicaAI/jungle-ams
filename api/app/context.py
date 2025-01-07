@@ -1,5 +1,8 @@
 """Definitions for request context caching for data that flows from
 an HTTP request through the application request path"""
+
+# pylint: disable=no-member
+
 from datetime import timezone, datetime
 from pydantic import BaseModel, Field
 
