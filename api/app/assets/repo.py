@@ -25,11 +25,10 @@ from sqlmodel import Session, col, desc, insert, or_, select, update
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
 from content.validate_filename import validate_filename
-from db.schema.assets import Asset, AssetTag, AssetVersion
+from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
-from db.schema.tags import Tag
 from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
 from tags.tag_models import TagType
@@ -193,7 +192,7 @@ def resolve_org_name(session: Session, org_seq: int) -> str:
 
 def process_join_results(
         session: Session,
-        join_results: list[tuple[Asset, AssetVersion, AssetTag, Tag]]) \
+        join_results: Iterable[tuple[Asset, AssetVersion]]) \
         -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
 
@@ -404,7 +403,7 @@ def resolve_asset_dependency(session, dep: AssetDependency) -> dict:
     if asset_id is None or version is None or len(version) != 3:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f'asset_id and version required on {str(dep)}')
-    avr_results = select_asset_version(session, asset_id, version)
+    avr_results = select_asset_version(session, asset_id, tuple(version))
     avr = process_join_results(session, avr_results)[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,

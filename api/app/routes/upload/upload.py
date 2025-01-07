@@ -19,7 +19,7 @@ import db.index as db_index
 from assets.repo import convert_version_input, process_join_results, select_asset_version
 from config import app_config
 from content.validate_filename import validate_filename
-from context import RequestContext
+from context import UploadContext
 from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
@@ -64,12 +64,11 @@ async def upload_internal(
         storage: StorageClient,
         bucket_mappings: dict[BucketType, set],
         profile: SessionProfile,
-        upload_file: UploadFile) -> RequestContext:
+        owner_id: str,
+        upload_file: UploadFile) -> UploadContext:
     """Handle internal file upload with a provided storage backend"""
     cfg = app_config()
-    ctx = RequestContext()
-    ctx.purpose = FilePurpose.API_UPLOAD
-    ctx.profile = profile
+    ctx = UploadContext(purpose=FilePurpose.API_UPLOAD, profile=profile, owner_id=owner_id)
 
     filename = upload_file.filename
     validate_filename(filename)
@@ -149,12 +148,13 @@ async def store_files(
             storage,
             USER_BUCKET_MAPPINGS,
             profile,
+            profile.profile_id,
             file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
             file_id=ctx.file_id,
-            owner_id=ctx.profile.profile_id,
+            owner_id=profile.profile_id,
             file_name=file.filename,
             event_ids=[ctx.event_id],
             size=file.size,
@@ -194,7 +194,12 @@ async def store_and_attach_package(
         if avr is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
-        ctx = await upload_internal(storage, PACKAGE_BUCKET_MAPPINGS, profile, file)
+        ctx = await upload_internal(
+            storage,
+            PACKAGE_BUCKET_MAPPINGS,
+            profile,
+            profile.profile_id,
+            file)
 
         # create a response file object for the upload
         response_files.append(FileUploadResponse(
@@ -229,8 +234,7 @@ async def store_and_attach_package(
 
 @router.get('/pending')
 async def pending(
-        profile: Annotated[Profile, Depends(session_profile)]
-) -> list[FileUploadResponse]:
+        profile: Annotated[Profile, Depends(session_profile)]) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for
     the current profile"""
     with (get_session() as session):

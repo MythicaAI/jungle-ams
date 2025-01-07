@@ -3,9 +3,11 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from profiles.responses import ProfileResponse, SessionStartResponse
+from cryptid.cryptid import profile_id_to_seq
+from db.connection import get_session
+from profiles.responses import ProfileResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
-
+from profiles.start_session import start_session
 
 @pytest.fixture
 def create_profile(client, api_base: str, email="test@test.com"):
@@ -18,7 +20,8 @@ def create_profile(client, api_base: str, email="test@test.com"):
             signature: str = 32 * 'X',
             description: str = "Test description",
             profile_href: str = "https://nothing.com/",
-            validate_email=False,
+            validate_email: bool = False,
+            impersonate_profile_id: str = None
     ) -> ProfileTestObj:
         r = client.post(f"{api_base}/profiles/",
                         json={
@@ -43,20 +46,23 @@ def create_profile(client, api_base: str, email="test@test.com"):
         assert profile.name == name
         assert profile.profile_id == profile_id
 
-        def start_session() -> str:
-            r = client.get(f"{api_base}/sessions/direct/{profile_id}")
-            assert_status_code(r, HTTPStatus.OK)
-            session_response = SessionStartResponse(**r.json())
-            assert session_response.profile.profile_id == profile_id
-            assert len(session_response.token) > 0
-            auth_token = session_response.token
-            return auth_token
+        def start_test_session(session_profile_id: str, as_profile_id=None) -> str:
+            with get_session() as db_session:
+                session_start_response = start_session(
+                    db_session,
+                    profile_id_to_seq(session_profile_id),
+                    location='test-case',
+                    impersonate_profile_id=as_profile_id)
+                auth_token = session_start_response.token
+                return auth_token
 
+        # start the default session
         test_profile = ProfileTestObj(
             profile=profile,
-            auth_token=start_session(),
+            auth_token=start_test_session(profile.profile_id),
         )
 
+        # optionally validate the email
         if validate_email:
             # validate email to add role tag-author
             headers = test_profile.authorization_header()
@@ -75,8 +81,8 @@ def create_profile(client, api_base: str, email="test@test.com"):
             assert o.owner_id == profile.profile_id
             assert o.state == 'validated'
 
-            # start a new session with the new token
-            test_profile.auth_token = start_session()
+            # re-start the profile session with the newly validated email
+            test_profile.auth_token = start_test_session(profile.profile_id, impersonate_profile_id)
 
         return test_profile
 

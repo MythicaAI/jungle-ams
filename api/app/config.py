@@ -49,7 +49,6 @@ class AppConfig(BaseSettings):
     telemetry_token: str = 'doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG'
 
     mythica_org_name: str = "Mythica"
-    mythica_environment: str = "debug"
 
     app_image_version: str = "unknown"
 

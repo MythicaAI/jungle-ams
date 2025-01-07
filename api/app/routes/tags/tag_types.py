@@ -7,11 +7,11 @@ from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from cryptid.cryptid import (
-    profile_id_to_seq, profile_seq_to_id,
+    profile_seq_to_id,
     tag_id_to_seq,
     tag_seq_to_id,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, Header, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func
 from sqlmodel import col, delete, insert, select
 
@@ -41,14 +41,7 @@ async def create_tag_for_type(
         tag_type: TagType,
         create: TagTypeRequest,
         response: Response,
-        impersonate_profile_id: Optional[str] = Header(None, include_in_schema=False),
-        profile: Profile = Depends(session_profile),
-):
-    if impersonate_profile_id:
-        owner_seq = profile_id_to_seq(impersonate_profile_id)
-    else:
-        owner_seq = profile.profile_seq
-
+        profile: Profile = Depends(session_profile)):
     type_model = get_model_type(tag_type)
     model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
@@ -65,7 +58,7 @@ async def create_tag_for_type(
     with get_session() as session:
         model_exists = session.exec(
             select(model_of_type_model)
-            .where(model_of_type_model.owner_seq == owner_seq)
+            .where(model_of_type_model.owner_seq == profile.profile_seq)
             .where(model_type_seq_col == type_seq)
         ).first()
 

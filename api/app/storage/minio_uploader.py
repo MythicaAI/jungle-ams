@@ -6,7 +6,7 @@ from minio import Minio
 from minio.error import S3Error
 
 from config import app_config
-from context import RequestContext
+from context import UploadContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
 
@@ -43,7 +43,7 @@ class Client(StorageClient):
         for b in self.minio.list_buckets():
             log.info("validate: %s bucket available", b)
 
-    def upload(self, ctx: RequestContext, bucket_type: BucketType):
+    def upload(self, ctx: UploadContext, bucket_type: BucketType):
         """
         Upload contents to minio bucket storage backend. This could be S3 or
         any S3 compatible backend including GCS or a minio gateway for
@@ -67,7 +67,7 @@ class Client(StorageClient):
                 raise exc
         upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": ctx.object_name})
 
-    def upload_stream(self, ctx: RequestContext, stream: BytesIO, bucket_type: BucketType):
+    def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType):
         """Upload object via the streaming API"""
         ctx.bucket_name = _create_bucket(self.minio, bucket_type)
 
