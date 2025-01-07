@@ -103,12 +103,12 @@ def disable_nats(context_str):
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
         request: JobDefinitionRequest,
-        session_profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
+        profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
     """Create a new job definition"""
     with get_session() as session:
         request_model = request.model_dump()
-        if session_profile:
-            request_model["owner_seq"] = session_profile.profile_seq
+        if profile:
+            request_model["owner_seq"] = profile.profile_seq
         job_def = JobDefinition(**request_model)
         session.add(job_def)
         session.commit()
@@ -400,21 +400,20 @@ async def delete_canary_jobs_def(profile: SessionProfile = Depends(session_profi
         try:
             session.exec(
                 update(Job)
-                .where(col(Job.job_def_seq).in_(job_def_seqs_delete))
+                .where(col(Job.job_def_seq).in_(job_def_seqs_delete))  # pylint: disable=no-member
                 .values(job_def_seq=None)
             )
             session.exec(
                 sql_delete(JobDefinition)
-                .where(col(JobDefinition.job_def_seq).in_(job_def_seqs_delete))
+                .where(col(JobDefinition.job_def_seq).in_(job_def_seqs_delete))  # pylint: disable=no-member
             )
             session.commit()
             log.info("Deleted JobDefinitions, ids:%s", job_def_seqs_delete)
-        except Exception as e:
-            session.rollback()
+        except Exception as ex:
             raise HTTPException(
                 HTTPStatus.INTERNAL_SERVER_ERROR, 
-                detail=f"Failed to delete JobDefinition entries: {str(e)}"
-            )
+                detail=f"Failed to delete JobDefinition entries: {str(ex)}"
+            ) from ex
     return {
         "message": f"Successfully deleted JobDefinition for profile:{profile.profile_id} and nullified references in Jobs"
     }
