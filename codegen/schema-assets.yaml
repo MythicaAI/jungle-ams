@@ -84,3 +84,28 @@ tables:
         type: BIGINT
         primary_key: true
         foreign_key: tags.tag_seq
+
+  # Link table that provides a link from an asset version to a job
+  # definition in that asset_version defined by an invokable file
+  - name: AssetVersionJobDef
+    table_name: asset_version_job_defs
+    columns:
+      - name: asset_seq
+        type: BIGINT
+        primary_key: true
+      - name: major
+        type: INTEGER
+        primary_key: true
+      - name: minor
+        type: INTEGER
+        primary_key: true
+      - name: patch
+        type: INTEGER
+        primary_key: true
+      - name: job_def_seq
+        type: BIGINT
+        primary_key: true
+        foreign_key: job_defs.job_def_seq
+      - name: src_file_seq
+        type: BIGINT
+        foreign_key: files.file_seq

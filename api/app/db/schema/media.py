@@ -62,3 +62,23 @@ class FileTag(SQLModel, table=True):
 
     type_seq: int = Field(sa_column=Column('type_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+
+# sequences for table file_job_defs
+
+class FileJobDef(SQLModel, table=True):
+    """
+    Types for storing and referencing rich media (images, etc)
+    """
+    __tablename__ = "file_job_defs"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    src_file_seq: int = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})

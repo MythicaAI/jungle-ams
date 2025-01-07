@@ -5,7 +5,9 @@ from datetime import datetime
 from enum import Enum
 from functools import partial
 from http import HTTPStatus
-from typing import Any, Dict, Iterable, Optional, Union
+
+from sqlalchemy import Row, RowMapping
+from typing import Any, Dict, Iterable, Optional, Sequence, Union
 
 import sqlalchemy
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
@@ -514,7 +516,7 @@ def create_version(session: Session,
     # resolve and process contents if they are set in the request they
     # for any files they will be resolved to real files (or a file not found error will occur)
     # and converted to json for serialization into storage
-    contents = values.get('contents')
+    contents = values.pop('contents')
     if contents is not None:
         values['contents'] = resolve_contents_as_json(session, r.contents)
 
@@ -659,9 +661,10 @@ def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionP
 
     session.commit()
 
+SelectResult = Sequence[Row[Any] | RowMapping | Any]
 
 def top(session: Session):
-    results = session.exec(
+    results: SelectResult = session.exec(
         select(Asset, AssetVersion, FileContent)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
         .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
@@ -670,28 +673,38 @@ def top(session: Session):
         .where(Asset.deleted == None, AssetVersion.deleted == None)
     ).all()
 
-    def avf_to_top(asset, ver, downloads, sorted_versions):
-        asset_id = asset_seq_to_id(asset.asset_seq)
-        return AssetTopResult(
-            asset_id=asset_id,
-            org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
-            org_name=resolve_org_name(session, asset.org_seq),
-            owner_id=profile_seq_to_id(asset.owner_seq),
-            owner_name=resolve_profile_name(session, asset.owner_seq),
-            package_id=file_seq_to_id(ver.package_seq),
-            author_id=profile_seq_to_id(ver.author_seq),
-            author_name=resolve_profile_name(session, ver.author_seq),
-            name=ver.name,
-            description=ver.description,
-            published=ver.published,
-            version=(ver.major, ver.minor, ver.patch),
-            commit_ref=ver.commit_ref,
-            created=ver.created,
-            contents=asset_contents_json_to_model(asset_id, ver.contents),
-            versions=sorted_versions,
-            downloads=downloads,
-            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq))
+    reduced = reduce(results)
+    sort_results = sorted(reduced.values(), key=lambda x: x.downloads, reverse=True)
+    return sort_results
 
+
+def avf_to_top(session, asset, ver, downloads, sorted_versions) -> AssetTopResult:
+    """
+    asset, version, file to top result aggregate
+    """
+    asset_id = asset_seq_to_id(asset.asset_seq)
+    return AssetTopResult(
+        asset_id=asset_id,
+        org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
+        org_name=resolve_org_name(session, asset.org_seq),
+        owner_id=profile_seq_to_id(asset.owner_seq),
+        owner_name=resolve_profile_name(session, asset.owner_seq),
+        package_id=file_seq_to_id(ver.package_seq) if ver.package_seq else None,
+        author_id=profile_seq_to_id(ver.author_seq),
+        author_name=resolve_profile_name(session, ver.author_seq),
+        name=ver.name,
+        description=ver.description,
+        published=ver.published,
+        version=[ver.major, ver.minor, ver.patch],
+        commit_ref=ver.commit_ref,
+        created=ver.created,
+        contents=asset_contents_json_to_model(asset_id, ver.contents),
+        versions=sorted_versions,
+        downloads=downloads,
+        tags=resolve_type_tags(session, TagType.asset, asset.asset_seq))
+
+
+def reduce(session, results: SelectResult) -> dict[int, AssetTopResult]:
     reduced = {}
     for result in results:
         asset, ver, file = result
@@ -700,22 +713,55 @@ def top(session: Session):
         atr = reduced.get(asset.asset_seq, None)
         version_id = [ver.major, ver.minor, ver.patch]
         if atr is None:
-            reduced[asset.asset_seq] = avf_to_top(
-                asset, ver, file.downloads, [])
+            reduced[asset.asset_seq] = avf_to_top(session, asset, ver, file.downloads, [])
         else:
             versions = atr.versions
             versions.append(version_id)
             atr.versions = sorted(atr.versions, reverse=True)[0:4]
             atr.downloads += file.downloads
             if version_id > atr.version:
-                reduced[asset.asset_seq] = avf_to_top(
-                    asset, ver, atr.downloads, atr.versions)
+                reduced[asset.asset_seq] = avf_to_top(session, asset, ver, atr.downloads, atr.versions)
+    return reduced
 
-    sort_results = sorted(reduced.values(), key=lambda x: x.downloads, reverse=True)
-    return sort_results
+
+def latest_version(session: Session, asset_seq: int) -> Optional[AssetVersionResult]:
+    """
+    Get the latest asset version for the specific root asset sequence
+    """
+    results = session.exec(
+        select(Asset, AssetVersion, FileContent)
+        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
+        .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
+        .where(Asset.asset_seq == asset_seq)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
+    ).all()
+    if not results:
+        return None
+
+    results = process_join_results(session, results)
+    sorted_results = sorted(results, key=lambda x: (x.major, x.minor, x.patch), reverse=True)
+    return sorted_results[0]
+
+def version(session: Session, asset_seq: int, major: int, minor: int, patch: int) -> Optional[AssetVersionResult]:
+    """
+    Query a specific asset version
+    """
+    results = session.exec(
+        select(Asset, AssetVersion, FileContent)
+        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
+        .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
+        .where(Asset.asset_seq == asset_seq)
+        .where(AssetVersion.major == major)
+        .where(AssetVersion.minor == minor)
+        .where(AssetVersion.patch == patch)
+    ).all()
+    if not results:
+        return None
 
 
 def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResult]:
+    """Return versions owned by the specified profile"""
     results = session.exec(
         select(Asset, AssetVersion)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
@@ -726,13 +772,15 @@ def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResul
 
 
 def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResult]:
+    """Return all assets with the same name"""
     return process_join_results(session, session.exec(
         asset_join_select.where(
             Asset.asset_seq == AssetVersion.asset_seq,
             AssetVersion.name == asset_name)).all())
 
 
-def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
+def versions_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
+    """Return a list of versions for the specified asset"""
     results = session.exec(select(Asset, AssetVersion).outerjoin(
         AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
     .where(Asset.deleted == None, AssetVersion.deleted == None).where(

@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Any, Optional
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
@@ -44,7 +44,7 @@ class ResultPublisher:
         item.job_id = self.request.job_id or ""
 
         # Upload any references to local data
-        self._publish_local_data(item, self.api_url)
+        self._publish_local_data(item)
 
         job_result_endpoint=f"{self.api_url}/jobs/results"
         job_complete_endpoint=f"{self.api_url}/jobs/complete"
@@ -92,36 +92,8 @@ class ResultPublisher:
                     data,
                 )
 
-    def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
+    def _publish_local_data(self, item: ProcessStreamItem) -> None:
 
-
-        def upload_file(file_path: str) -> Optional[str]:
-            if not os.path.exists(file_path):
-                return None
-
-            try:
-                with open(file_path, 'rb') as file:
-                    file_name = os.path.basename(file_path)
-                    file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
-                        headers=self.request.telemetry_context
-                    )
-                    file_id = response['files'][0]['file_id'] if response else None
-                    return file_id
-            finally:
-                os.remove(file_path)
-
-        def upload_job_def(job_def: JobDefinition) -> Optional[str]:
-            definition = {
-                'job_type': job_def.job_type,
-                'name': job_def.name,
-                'description': job_def.description,
-                'params_schema': job_def.parameter_spec.model_dump()
-            }
-            response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
-                headers=self.request.telemetry_context
-            )
-            return response['job_def_id'] if response else None
 
         #TODO: Report errors
         if isinstance(item, OutputFiles):
@@ -130,11 +102,36 @@ class ResultPublisher:
                     file_id = upload_file(file)
                     files[index] = file_id
 
-        elif isinstance(item, JobDefinition):
-            job_def_id = upload_job_def(item)
-            if job_def_id is not None:
-                item.job_def_id = job_def_id
 
+
+
+    def upload_file(self, file_path: str) -> Optional[str]:
+        """Upload a local file path.
+
+        Return a file_id or None if upload fails
+        """
+        if not os.path.exists(file_path):
+            return None
+
+        try:
+            with open(file_path, 'rb') as file:
+                file_name = os.path.basename(file_path)
+                file_data = [('files', (file_name, file, 'application/octet-stream'))]
+                response = self.rest.post_file(f"{self.api_url}/upload/store",
+                                               file_data,
+                                               self.request.auth_token,
+                                               headers=self.request.telemetry_context)
+                file_id = response['files'][0]['file_id'] if response else None
+                return file_id
+        finally:
+            os.remove(file_path)
+
+    def post_api(self, path: str, json_data: dict[Any, Any]):
+        return self.rest.post(
+            f"{self.api_url}{path}",
+            json_data=json_data,
+            token=self.request.auth_token,
+            headers=self.request.telemetry_context)
 
 class SlimPublisher(ResultPublisher):
 

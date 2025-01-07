@@ -64,7 +64,6 @@ class AssetVersion(SQLModel, table=True):
     author_seq: int = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
-    deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
 # sequences for table asset_tags
 
@@ -83,3 +82,25 @@ class AssetTag(SQLModel, table=True):
 
     type_seq: int = Field(sa_column=Column('type_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+
+# sequences for table asset_version_job_defs
+
+class AssetVersionJobDef(SQLModel, table=True):
+    """
+    Metadata to store relationships and descriptions of assets
+    """
+    __tablename__ = "asset_version_job_defs"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
+    minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
+    patch: int = Field(sa_column=Column('patch',Integer,primary_key=True,nullable=False))
+    job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    src_file_seq: int | None = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
