@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@mui/joy';
 import { GripVertical, LucideTrash2 } from 'lucide-react';
-import { AutomationSave } from '../types/Automation';
+import { AutomationScript } from '../types/Automation';
 import { TabValues } from '../enums';
 
 type Props = {
@@ -333,7 +333,7 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
                     );
                   })}
                   {automationContext.savedAutomationsByWorker[worker]?.map(
-                    (automation: AutomationSave, index: number) => {
+                    (automation: AutomationScript, index: number) => {
                       return (
                         <div
                           key={automation.id + '_' + index}

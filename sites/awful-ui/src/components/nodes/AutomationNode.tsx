@@ -10,7 +10,7 @@ import AutomationInputs from './automationParms/AutomationInputs';
 import AutomationOutputs from './automationParms/AutomationOutputs';
 
 import {
-  AutomationSave,
+  AutomationScript,
   dictionary,
   ExecutionData,
   FileParamType,
@@ -45,7 +45,7 @@ export interface AutomationNodeProps {
   data: {
     automation: string;
     inputData: dictionary;
-    saveData: AutomationSave;
+    script: AutomationScript;
     executionData: ExecutionData;
   };
 }
@@ -100,12 +100,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const [inputSpec, setInputSpec] = useState(
     !isScriptNode
       ? automationTask?.spec.input
-      : node.data.saveData?.inputSpec || { title: 'Empty', type: 'string' }
+      : { title: 'Empty', type: 'string' }
   );
   const [outputSpec, setOutputSpec] = useState(
     !isScriptNode
       ? automationTask?.spec.output
-      : node.data.saveData?.outputSpec || { title: 'Empty', type: 'string' }
+      : { title: 'Empty', type: 'string' }
   );
 
   //Input File parameters detected by AutomationInputs and type (array or scalar)
@@ -120,22 +120,22 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
 
-  const [saveName, setSaveName] = useState<string>(node.data.saveData?.name);
+  const [saveName, setSaveName] = useState<string>(node.data.script?.name);
   const [scriptContent, setScriptContent] = useState<string>(
-    node.data.saveData?.script
+    node.data.script?.script || template
   ); // State to store Monaco editor content
-
+  
   const timeout = 2000;
   const typingTimeout = useRef(timeout);
 
   const handleSaveAutomation = useCallback(() => {
-    if (!node.data.saveData.name || node.data.saveData.name === '') {
+    if (!node.data.script.name || node.data.script.name === '') {
       console.error('Name is required');
       return;
     }
 
-    saveAutomation(node.data.saveData, (saved: AutomationSave) => {
-      node.data.saveData = saved;
+    saveAutomation(node.data.script, (saved: AutomationScript) => {
+      node.data.script = saved;
     });
   }, [saveAutomation, node.data]);
 
@@ -184,23 +184,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   // Handler for Monaco editor changes
   const handleEditorChange = useCallback(
     (value: string | undefined) => {
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current);
-      }
       setScriptContent(value || '');
-      typingTimeout.current = setTimeout(() => {
-        runAutomation(
-          automationTask?.worker,
-          node.id,
-          scriptInterfacePath,
-          { script: value || '' },
-          setMyInterfaceData
-        );
-      }, timeout); // Adjust delay as needed
     },
-    [runAutomation, automationTask?.worker, node.id, scriptInterfacePath]
+    [setScriptContent]
   );
 
+  
   /**
    * Update fileInputs with the resolved file_id values
    * when the flowData changes.
@@ -338,6 +327,21 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     }
   }, [myExecutionData, node.id, setFlowData, getFile, processOutputMessage]);
 
+  useEffect(() => {
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
+      typingTimeout.current = setTimeout(() => {
+        runAutomation(
+          automationTask?.worker,
+          node.id,
+          scriptInterfacePath,
+          { script: scriptContent},
+          setMyInterfaceData
+        );
+      }, timeout); // Adjust delay as needed
+  }, [scriptContent, runAutomation, automationTask?.worker, node.id]);;
+  
   // Update fileInputs when flowData changes or when the fileparams change
   useEffect(() => {
     if (inputFileKeys) updateFileInputs();
@@ -369,18 +373,14 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   useEffect(() => {
     node.data.inputData = { ...inputData, ...fileInputData };
     if (isScriptNode) {
-      if (node.data.saveData) {
-        node.data.saveData.script = scriptContent;
-        node.data.saveData.name = saveName;
-        node.data.saveData.inputSpec = inputSpec;
-        node.data.saveData.outputSpec = outputSpec;
+      if (node.data.script) {
+        node.data.script.script = scriptContent;
+        node.data.script.name = saveName;
       } else {
-        node.data.saveData = newAutomation(
+        node.data.script = newAutomation(
           automationTask?.worker,
           saveName,
-          scriptContent,
-          inputSpec,
-          outputSpec
+          scriptContent
         );
       }
     }
@@ -497,7 +497,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
               <MonacoEditor
                 language="python"
                 theme="vs-dark"
-                defaultValue={scriptContent || template}
+                defaultValue={scriptContent}
                 onChange={handleEditorChange}
                 options={{
                   minimap: { enabled: false },

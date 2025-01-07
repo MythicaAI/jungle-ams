@@ -13,13 +13,11 @@ export type AutomationTask = {
     spec: AutomationSpec;
 };
 
-export type AutomationSave = {
+export type AutomationScript = {
     id: string;
     uri: string;
     worker: string;
     script: string;
-    inputSpec: JSONSchema;
-    outputSpec: JSONSchema;
     name: string;
     file?: GetFileResponse;
 }
