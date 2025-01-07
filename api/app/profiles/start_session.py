@@ -14,11 +14,11 @@ from sqlalchemy.sql.functions import func, now as sql_now
 from sqlmodel import Session, asc, col, delete, insert, select, update
 
 from auth.data import resolve_org_roles
-from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
+from ripple.config import ripple_config
 from ripple.models.sessions import SessionProfile
 from validate_email.responses import ValidateEmailState
 
@@ -108,7 +108,7 @@ def start_session(
         profile.email,
         profile.email_validate_state,
         profile.location,
-        app_config().mythica_environment,
+        ripple_config().mythica_environment,
         list(auth_roles))
 
     # Add a new session

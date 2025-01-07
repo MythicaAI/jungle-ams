@@ -2,7 +2,6 @@
 Generate a token from profile session data, retrieve the SessionProfile
 object from a JWT token
 """
-from config import app_config
 from ripple.config import ripple_config
 from ripple.models.sessions import SessionProfile
 
@@ -57,6 +56,6 @@ def decode_token(encoded_jwt: str) -> SessionProfile:
         email=decoded_jwt['email'],
         email_validate_state=int(decoded_jwt.get('email_vs', 0)),
         location=decoded_jwt.get('location', 'none'),
-        environment=decoded_jwt.get('env', app_config().mythica_environment),
+        environment=decoded_jwt.get('env', ripple_config().mythica_environment),
         auth_roles=decoded_jwt['roles'],
         impersonated=False)
