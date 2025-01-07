@@ -49,6 +49,7 @@ tables:
       - name: locators
         type: JSON
         description: Array of content locators
+
   # Cross table relation between file and tags
   - name: FileTag
     table_name: file_tags
@@ -61,3 +62,23 @@ tables:
         type: BIGINT
         primary_key: true
         foreign_key: tags.tag_seq
+
+  # Link table allow reversing a file to a job definition
+  - name: FileJobDef
+    table_name: file_job_defs
+    columns:
+      - name: src_file_seq
+        type: BIGINT
+        primary_key: true
+        foreign_key: files.file_seq
+      - name: job_def_seq
+        type: BIGINT
+        primary_key: true
+        nullable: true
+        foreign_key: files.file_seq
+      - name: created
+        type: TIMESTAMP
+        auto_create: true
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true

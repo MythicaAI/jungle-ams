@@ -134,7 +134,7 @@ class RestAdapter():
             log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
             return None
 
-    def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
+    def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None}) -> Optional[dict[str, Any]]:
         """Post data to an endpoint synchronously. """
         log.debug(f"posting[{endpoint}]: {json_data}; {headers=}" )
         headers.update({

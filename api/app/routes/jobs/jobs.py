@@ -1,8 +1,10 @@
+from urllib.error import HTTPError
+
 import logging
 import sys
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from config import app_config
@@ -15,6 +17,12 @@ from cryptid.cryptid import (
     job_seq_to_id,
     profile_seq_to_id,
 )
+import sys
+
+from assets import repo
+from assets.repo import AssetVersionResult
+from cryptid.cryptid import asset_id_to_seq, event_seq_to_id, file_id_to_seq, job_def_id_to_seq, job_def_seq_to_id, \
+    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
 from cryptid.location import location
 from db.connection import get_session
 from db.schema.events import Event
@@ -24,6 +32,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
+
+from db.schema.media import FileJobDef
 from ripple.auth import roles
 from ripple.auth.authorization import Scope, validate_roles
 from ripple.automation.adapters import NatsAdapter
@@ -50,10 +60,15 @@ class JobDefinitionRequest(BaseModel):
     name: str
     description: str
     params_schema: ParameterSpec
+    src_file_id: Optional[str]
 
 
 class JobDefinitionResponse(BaseModel):
     job_def_id: str
+    job_type: str
+    description: str
+    params_schema: ParameterSpec
+    src_file_id: Optional[str]
 
 
 class JobDefinitionModel(JobDefinitionRequest):
@@ -106,14 +121,37 @@ async def define_new(
         profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
     """Create a new job definition"""
     with get_session() as session:
-        request_model = request.model_dump()
+        values = request.model_dump()
+
+        # convert the optional src_file_id to foreign key sequence
+        src_file_id = values.pop('src_file_id')
+        if src_file_id is not None:
+            src_file_seq = file_id_to_seq(src_file_id)
+            values['src_file_seq'] = src_file_seq
+
+        # store the calling profile as the owner
         if profile:
-            request_model["owner_seq"] = profile.profile_seq
-        job_def = JobDefinition(**request_model)
-        session.add(job_def)
+            values["owner_seq"] = profile.profile_seq
+
+        # insert the job definition
+        result = session.exec(insert(JobDefinition).values(**values))
         session.commit()
-        session.refresh(job_def)
-        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
+        job_def_seq = result.inserted_primary_key[0]
+
+        # insert the link from the file to the generated job definition
+        file_job_def = FileJobDef(
+          src_file_seq=src_file_seq,
+          job_def_seq=int(job_def_seq))
+        session.exec(insert(FileJobDef).values(**file_job_def.model_dump()))
+        session.commit()
+
+        # read back the job definition
+        result = session.exec(select(JobDefinition).where(
+            JobDefinition.job_def_seq == int(job_def_seq))).one_or_none()
+
+        return JobDefinitionResponse(
+            job_def_id=job_def_seq_to_id(job_def_seq),
+            **result)
 
 
 @router.get('/definitions')
@@ -126,6 +164,38 @@ async def list_definitions() -> list[JobDefinitionModel]:
             owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
             for job_def in job_defs
         ]
+
+def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[JobDefinitionModel]:
+    results = []
+    for file_info in avr.contest['files']:
+        file_seq = file_id_to_seq(file_info.file_id)
+        job_def = session.exec(select(FileJobDef).where(FileJobDef.src_file_seq == file_seq)).one_or_none()
+        if job_def:
+            results.append(
+                JobDefinitionModel(
+                    job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+                    **job_def.model_dump()))
+    return results
+
+
+@router.get('/definitions/by_asset/{asset_id}')
+async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
+    with get_session() as session:
+        asset_seq = asset_id_to_seq(asset_id)
+        latest_version = repo.lastest_version(session, asset_seq)
+        if latest_version is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
+        return resolve_job_definitions(session, latest_version)
+
+
+@router.get('/definitions/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
+async def by_asset_version(asset_id: str, major: int, minor: int, patch: int) -> list[JobDefinitionModel]:
+    with get_session() as session:
+        asset_seq = asset_id_to_seq(asset_id)
+        asset_version = repo.version(session, asset_seq, major, minor, patch)
+        if asset_version is None:
+            raise HTTPError(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
+        return resolve_job_definitions(session, asset_version)
 
 
 @router.get('/definitions/{job_def_id}')
@@ -411,7 +481,7 @@ async def delete_canary_jobs_def(profile: SessionProfile = Depends(session_profi
             log.info("Deleted JobDefinitions, ids:%s", job_def_seqs_delete)
         except Exception as ex:
             raise HTTPException(
-                HTTPStatus.INTERNAL_SERVER_ERROR, 
+                HTTPStatus.INTERNAL_SERVER_ERROR,
                 detail=f"Failed to delete JobDefinition entries: {str(ex)}"
             ) from ex
     return {

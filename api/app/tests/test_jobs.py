@@ -1,4 +1,4 @@
-"""Topology tests"""
+"""Test suite for the job system: job definitions and jobs"""
 
 # pylint: disable=redefined-outer-name, unused-import
 
@@ -12,14 +12,23 @@ from fastapi.testclient import TestClient
 from munch import munchify
 from sqlmodel import select
 from tests.fixtures.create_profile import create_profile
+from tests.fixtures.create_asset import create_asset
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
-def test_create_update(client, api_base, create_profile):
+def test_create_update(client, api_base, create_profile, create_asset, uploader):
     test_profile: ProfileTestObj = create_profile()
     test_profile2 = create_profile()
     headers = test_profile.authorization_header()
     headers2 = test_profile2.authorization_header()
+    hda_file_id = None
+
+    # create an asset (it should already have an HDA and use that as the fictional src_file_id)
+    asset = create_asset(test_profile, uploader)
+    for file_obj in asset.contents['files']:
+       if file_obj.name.endswith('hda') :
+           hda_file_id = file_obj.file_id
+    assert hda_file_id is not None
 
     # Create a job definition
     r = client.post(f'{api_base}/jobs/definitions',
@@ -49,7 +58,8 @@ def test_create_update(client, api_base, create_profile):
                                     'max': 10.0
                                 }
                             }
-                        }
+                        },
+                        'src_file_id': hda_file_id
                     },
                     headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
@@ -68,6 +78,23 @@ def test_create_update(client, api_base, create_profile):
     definition = r.json()
     assert definition['job_def_id'] == job_def_id
     assert definition['owner_id'] == test_profile.profile.profile_id
+
+    # Get job definition by asset
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset.asset_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 1)
+    job_def = munchify(r.json()[0])
+    assert job_def.src_file_id == hda_file_id
+
+    # Get job definition by asset version
+    major, minor, patch = asset.version.split('.')
+    r = client.get(
+        f'{api_base}/jobs/definitions/by_asset/{asset.asset_id}/versions/{major}/{minor}/{patch}',
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 1)
+    job_def = munchify(r.json()[0])
+    assert job_def.src_file_id == hda_file_id
 
     # Get invalid job definitions
     r = client.get(f'{api_base}/jobs/definitions/jobdef_3ZUcvpXisvZeAjWWyHzFpuJdSSKr', headers=headers)
@@ -219,7 +246,7 @@ def test_delete_canary(client: TestClient, api_base, create_profile):
                         },
                         headers=headers)
         return r
-    
+
     r = crete_job_def(headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
@@ -230,7 +257,7 @@ def test_delete_canary(client: TestClient, api_base, create_profile):
     assert_status_code(r, HTTPStatus.OK)
     definitions = r.json()
     assert any([definition['job_def_id'] == job_def_id for definition in definitions])
-    
+
     # Create a job
     r = client.post(f'{api_base}/jobs',
                     json={
@@ -253,7 +280,7 @@ def test_delete_canary(client: TestClient, api_base, create_profile):
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
         assert job is not None
         assert job.job_def_seq is not None
-    
+
     r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=headers2)
     o = munchify(r.json())
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
@@ -262,7 +289,7 @@ def test_delete_canary(client: TestClient, api_base, create_profile):
     r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=headers)
     o = munchify(r.json())
     assert_status_code(r, HTTPStatus.OK)
-    
+
     # find the job and check job_def_seq is set to null
     with get_session() as session:
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
@@ -273,7 +300,7 @@ def test_delete_canary(client: TestClient, api_base, create_profile):
     assert_status_code(r, HTTPStatus.OK)
     definitions = r.json()
     assert all([definition['job_def_id'] != job_def_id for definition in definitions])
-    
+
     # Test delete job_def by an admin
     r = crete_job_def(headers)
     assert_status_code(r, HTTPStatus.CREATED)

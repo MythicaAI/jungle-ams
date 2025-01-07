@@ -390,8 +390,8 @@ def job_definition_item():
             "type": "object",
             "properties": {},
             "params": {}  # Adding required params field
-        }
-    )
+        },
+        src_file_id="")
 
 def test_publisher_init(publisher, test_request, mock_profile):
     assert publisher.request == test_request

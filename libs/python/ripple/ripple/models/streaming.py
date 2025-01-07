@@ -65,6 +65,7 @@ class JobDefinition(ProcessStreamItem):
     name: str
     description: str
     parameter_spec: ParameterSpec
+    src_file_id: str = ""
     owner_id: Optional[str] = None
 
 

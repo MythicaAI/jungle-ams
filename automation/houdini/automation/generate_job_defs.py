@@ -8,7 +8,7 @@ from ripple.automation.publishers import ResultPublisher
 from ripple.compile.rpsc import compile_interface
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
-from typing import Literal
+from typing import Literal, Optional
 
 from opentelemetry import trace
 
@@ -60,28 +60,39 @@ class GenerateJobDefResponse(ProcessStreamItem):
 
 
 
-def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
+def generate_job_defs(request: GenerateJobDefRequest, publisher: ResultPublisher) -> GenerateJobDefResponse:
 
     hda_file = request.hda_file
 
     type_infos = extract_node_type_info(hda_file.file_path)
-    ret = []
+    job_def_results = []
+    sop_count = 0
     for index, type_info in enumerate(type_infos):
         category = type_info['category']
         if category != 'SOP':
             continue
 
+        sop_count += 1
         param_spec = compile_interface(json.dumps(type_info, indent=2))
+
+        # set the base parameters based on the param spec and HDA+index
         set_config_params(param_spec, hda_file.file_id, index)
 
-        res = JobDefinition(
+        # create the job definition object for the API
+        job_def = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
             name=f"Generate {type_info['name']}",
             description=type_info['description'],
-            parameter_spec=param_spec
-        )
-        ret.append(res)
-        responder.result(res)
-            
-        return GenerateJobDefResponse(job_definitions=ret)
+            parameter_spec=param_spec,
+            src_file_id=hda_file.file_id)
+        json_data = job_def.model_dump()
+        response = publisher.post_api("/jobs/definitions", json_data=json_data)
+        job_def_id = response.get('job_def_id', None)
+        log.info("generated job_def_id: %s", job_def_id)
 
+        job_def_results.append(job_def)
+        publisher.result(job_def)
+        return GenerateJobDefResponse(job_definitions=job_def_results)
+
+    if sop_count == 0:
+        log.warning("no SOP nopes found, only SOPS are currently supported for generate_mesh")
