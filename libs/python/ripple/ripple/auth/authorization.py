@@ -20,13 +20,13 @@ Profiles can have roles or have aliases that provide roles with special bindings
 
 """
 
-from http import HTTPStatus
 from typing import Optional
 
 from pydantic import BaseModel
 from ripple.auth.roles import role_to_alias, self_object_scope
 from ripple.models.assets import AssetVersionRef
 from ripple.models.sessions import OrgRef, SessionProfile
+from ripple.models.streaming import JobDefinition
 
 # TODO: move to admin interface
 privileged_emails = {
@@ -51,6 +51,7 @@ class Scope(BaseModel):
     profile: Optional[SessionProfile] = None
     org: Optional[OrgRef] = None
     asset_version: Optional[AssetVersionRef] = None
+    job_def: Optional[JobDefinition] = None
 
 
 def check_asset_version_role(
@@ -82,12 +83,31 @@ def check_asset_version_role(
     return False
 
 
+def check_job_def_role(
+        scope: Optional[Scope] = None, **kwargs) -> bool:
+    """Internally validate the roles against the job_def ownership logic"""
+    if scope.job_def is None:
+        return False
+
+    if kwargs.get("is_canary", False) and scope.job_def.owner_id is None:
+        return True
+
+    # The profile is the owner of the job_def
+    if scope.profile and \
+            (scope.job_def.owner_id == scope.profile.profile_id):
+        return True
+    # job_def scope checks failed
+    return False
+
+
 def validate_roles(
         *,
         role: str,
         auth_roles: set[str],
         object_id: Optional[str] = None,
-        scope: Optional[Scope] = None) -> bool:
+        scope: Optional[Scope] = None,
+        **kwargs,
+    ) -> bool:
     """
     Validate that the required role is satisfied by the given role set.
     """
@@ -127,6 +147,9 @@ def validate_roles(
                 if scope.profile and \
                         object_id == scope.profile.profile_id:
                     return True
+            elif role.startswith('job_def/') and \
+                    check_job_def_role(scope, **kwargs):
+                return True
 
     # Exit case will always raise
     raise RoleError(f'{role} not satisfied by {auth_roles}"')

@@ -63,6 +63,7 @@ superuser = {
     roles.alias_org_admin,
     roles.alias_asset_editor,
     roles.alias_core_create,
+    roles.alias_job_def_all,
 }
 
 

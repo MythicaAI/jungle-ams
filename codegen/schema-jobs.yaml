@@ -21,6 +21,10 @@ tables:
       - name: params_schema
         description: Schema used to configure an instance of this job
         type: JSON
+      - name: owner_seq
+        description: Profile that created this job-def
+        type: BIGINT
+        foreign_key: profiles.profile_seq
   - name: Job
     table_name: jobs
     columns:

@@ -35,6 +35,7 @@ class JobDefinition(SQLModel, table=True):
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
     params_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
 
 # sequences for table jobs
 

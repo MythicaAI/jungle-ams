@@ -1,32 +1,43 @@
 import logging
+import sys
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any
 from uuid import uuid4
 
-import sys
-from cryptid.cryptid import event_seq_to_id, job_def_id_to_seq, job_def_seq_to_id, \
-    job_id_to_seq, job_result_seq_to_id, job_seq_to_id, profile_seq_to_id
+from config import app_config
+from cryptid.cryptid import (
+    event_seq_to_id,
+    job_def_id_to_seq,
+    job_def_seq_to_id,
+    job_id_to_seq,
+    job_result_seq_to_id,
+    job_seq_to_id,
+    profile_seq_to_id,
+)
 from cryptid.location import location
+from db.connection import get_session
+from db.schema.events import Event
+from db.schema.jobs import Job, JobDefinition, JobResult
+from db.schema.profiles import Profile
 from fastapi import APIRouter, Depends, HTTPException
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
 from pydantic import BaseModel
+from ripple.auth import roles
+from ripple.auth.authorization import Scope, validate_roles
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile
+from ripple.models.streaming import JobDefinition as JobDefinitionRef
 from ripple.runtime.params import repair_parameters, validate_params
+from routes.authorization import maybe_session_profile, session_profile
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, insert, select, text, update
-
-from config import app_config
-from db.connection import get_session
-from db.schema.events import Event
-from db.schema.jobs import Job, JobDefinition, JobResult
-from db.schema.profiles import Profile
-from routes.authorization import session_profile
+from sqlmodel import Session, col
+from sqlmodel import delete as sql_delete
+from sqlmodel import insert, select, text, update
 from telemetry_config import get_telemetry_context
 
 log = logging.getLogger(__name__)
@@ -47,6 +58,7 @@ class JobDefinitionResponse(BaseModel):
 
 class JobDefinitionModel(JobDefinitionRequest):
     job_def_id: str
+    owner_id: str | None = None
 
 
 class JobRequest(BaseModel):
@@ -90,10 +102,14 @@ def disable_nats(context_str):
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
-        request: JobDefinitionRequest) -> JobDefinitionResponse:
+        request: JobDefinitionRequest,
+        session_profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
     """Create a new job definition"""
     with get_session() as session:
-        job_def = JobDefinition(**request.model_dump())
+        request_model = request.model_dump()
+        if session_profile:
+            request_model["owner_seq"] = session_profile.profile_seq
+        job_def = JobDefinition(**request_model)
         session.add(job_def)
         session.commit()
         session.refresh(job_def)
@@ -105,8 +121,11 @@ async def list_definitions() -> list[JobDefinitionModel]:
     """List existing job definitions"""
     with get_session() as session:
         job_defs = session.exec(select(JobDefinition)).all()
-        return [JobDefinitionModel(job_def_id=job_def_seq_to_id(job_def.job_def_seq), **job_def.model_dump())
-                for job_def in job_defs]
+        return [JobDefinitionModel(
+            job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+            owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
+            for job_def in job_defs
+        ]
 
 
 @router.get('/definitions/{job_def_id}')
@@ -117,7 +136,7 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
             JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id))).one_or_none()
         if job_def is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
-        return JobDefinitionModel(job_def_id=job_def_id, **job_def.model_dump())
+        return JobDefinitionModel(job_def_id=job_def_id, owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
 
 
 @router.get('/def_from_file/{file_id}')
@@ -254,6 +273,7 @@ def job_result_insert(session: Session, job_seq: int, request: JobResultRequest)
     """Generate the job result insert with fallback for databases without sequences
     support on composite primary keys"""
     from db.connection import engine
+
     # fallback for composite primary key auto increment in SQLite
     # see the db connection code for the definition of this fallback
     requires_app_sequences = {'sqlite'}
@@ -344,3 +364,57 @@ async def set_complete(
             span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
             span.set_status(Status(StatusCode.OK))
             session.commit()
+
+
+@router.delete('/definitions/delete_canary_jobs_def')
+async def delete_canary_jobs_def(profile: SessionProfile = Depends(session_profile)):
+    """Delete profile's job_defs"""
+
+    with get_session() as session:
+        job_defs_to_delete: list[JobDefinition] = session.exec(
+            select(JobDefinition)
+            .where(JobDefinition.job_type == "houdini::/mythica/generate_mesh")
+            .where(JobDefinition.name == "Generate test_scale_input")
+            .where(JobDefinition.description == "test_scale_input")
+        ).all()
+
+        if not job_defs_to_delete:
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail="No matching JobDefinition entries found")
+
+        job_def_seqs_delete = []
+        for job_def in job_defs_to_delete:
+            scope = Scope(
+                profile=profile,
+                job_def=JobDefinitionRef(
+                    job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+                    job_type=job_def.job_type,
+                    name=job_def.name,
+                    description=job_def.description,
+                    parameter_spec=job_def.params_schema,
+                    owner_id=profile_seq_to_id(job_def.owner_seq),
+                )
+            )
+            validate_roles(role=roles.job_def_all, auth_roles=profile.auth_roles, scope=scope, is_canary=True)
+            job_def_seqs_delete.append(job_def.job_def_seq)
+
+        try:
+            session.exec(
+                update(Job)
+                .where(col(Job.job_def_seq).in_(job_def_seqs_delete))
+                .values(job_def_seq=None)
+            )
+            session.exec(
+                sql_delete(JobDefinition)
+                .where(col(JobDefinition.job_def_seq).in_(job_def_seqs_delete))
+            )
+            session.commit()
+            log.info("Deleted JobDefinitions, ids:%s", job_def_seqs_delete)
+        except Exception as e:
+            session.rollback()
+            raise HTTPException(
+                HTTPStatus.INTERNAL_SERVER_ERROR, 
+                detail=f"Failed to delete JobDefinition entries: {str(e)}"
+            )
+    return {
+        "message": f"Successfully deleted JobDefinition for profile:{profile.profile_id} and nullified references in Jobs"
+    }

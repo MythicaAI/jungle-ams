@@ -81,6 +81,7 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
         auth_roles.update((
             f'{roles.alias_asset_editor}:{roles.self_object_scope}',
             f'{roles.alias_profile_owner}:{roles.self_object_scope}',
+            f'{roles.alias_job_def_all}:{roles.self_object_scope}',
             f'{roles.alias_core_create}'))
 
     token = generate_token(
