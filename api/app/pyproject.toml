@@ -1,24 +1,29 @@
-[tool.poetry]
+[project]
 name = "mythica-app"
 version = "1.0.0"
 description = "FastAPI service to provide asset services."
-authors = ["Jacob Repp <jacobrepp@gmail.com>"]
+authors = [{ name = "Jacob Repp", email = "jacobrepp@gmail.com" }]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/MythicaAI/infra/api/app"
 repository = "https://github.com/MythicaAI/infra"
 keywords = ["game assets", "file management", "sqlite", "cache", "graph", "games"]
+dynamic = [ "dependencies" ]
+requires-python = "<4.0,>=3.10"
+
+[tool.poetry]
+# These are still Poetry-specific settings
 package-mode = false
 
+
 [tool.poetry.dependencies]
-python = "<4.0,>=3.10"
 minio = "^7.2.5"
 sqlalchemy = "2.0.36"
 asyncpg = "0.30.0"
 psycopg2-binary = "^2.9.9"
 google-auth = "^2.29.0"
 google-cloud-storage = {extras = ["tracing"], version = "^2.19.0"}
-fastapi = { version = "0.115.4", extras = ["standard"] }
+fastapi = { version = "0.115.6", extras = ["standard"] }
 pydantic-settings = "^2.3.0"
 python-multipart = "0.0.17"
 jinja2 = "^3.1.4"
@@ -47,7 +52,7 @@ opentelemetry-distro = "^0.48b0"
 opentelemetry-api = "^1.27.0"
 opentelemetry-sdk = "^1.27.0"
 opentelemetry-instrumentation-sqlalchemy = "^0.48b0"
-uvicorn = "^0.32.0"
+uvicorn = "^0.34.0"
 pydantic = "2.9.2"
 email-validator = "2.2.0"
 opentelemetry-exporter-gcp-trace = "1.7.0"
@@ -56,7 +61,7 @@ opentelemetry-exporter-cloud-trace = "0.10b1"
 google-cloud-trace = ">=0.13b0"
 googleapis-common-protos = "^1.66.0"
 
-[tool.poetry.extras]
+[project.optional-dependencies]
 pgsql = ["psycopg2-binary"]
 sqlalchemy = ["asyncio"]
 authlib = []
@@ -74,7 +79,7 @@ pytest-asyncio = "^0.24.0"
 httpx-ws = "^0.6.0"
 
 # Add development dependencies here
-[tool.poetry.scripts]
+[project.scripts]
 start = "main:start"
 
 [build-system]
