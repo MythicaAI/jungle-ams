@@ -2,6 +2,10 @@
   color-scheme: dark;
 }
 
+.react-flow__edge-path {
+  stroke: #007e63;
+}
+
 html,
 body {
   margin: 0;
@@ -20,12 +24,11 @@ body {
 }
 
 .sidebar {
-  border-left: 1px solid #1a192b;
   background: #24292e;
 }
 
 .dndflow {
-  flex-direction: column;
+  flex-direction: row;
   display: flex;
   flex-grow: 1;
   height: calc(100% - 62px);
@@ -33,6 +36,9 @@ body {
 
 .dndflow aside {
   font-size: 12px;
+  width: 20%;
+  max-width: 290px;
+  min-width: 290px;
 }
 
 .dndflow aside .description {
@@ -69,18 +75,6 @@ body {
 
 .dndflow .selectall {
   margin-top: 10px;
-}
-
-@media screen and (min-width: 768px) {
-  .dndflow {
-    flex-direction: row;
-  }
-
-  .dndflow aside {
-    width: 20%;
-    max-width: 290px;
-    min-width: 290px;
-  }
 }
 
 .mythica-node {

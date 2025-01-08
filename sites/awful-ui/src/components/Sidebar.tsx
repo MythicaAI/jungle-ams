@@ -18,9 +18,15 @@ import {
   Stack,
   Typography,
 } from '@mui/joy';
-import { GripVertical, LucideTrash2 } from 'lucide-react';
+import {
+  GripVertical,
+  LucidePanelLeftClose,
+  LucidePanelRightClose,
+  LucideTrash2,
+} from 'lucide-react';
 import { AutomationSave } from '../types/Automation';
 import { TabValues } from '../enums';
+import { motion } from 'motion/react';
 
 type Props = {
   tab: string;
@@ -28,6 +34,7 @@ type Props = {
 
 const Sidebar: React.FC<Props> = ({ tab }) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
+  const [isOpened, setIsOpened] = useState(true);
 
   const automationContext = useAutomation();
   const { apiKey, setApiKey } = useMythicaApi();
@@ -169,218 +176,266 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  return (
-    <aside className="sidebar">
-      {tab === TabValues.API_KEY && (
-        <Stack p="8px 12px">
-          <FormLabel htmlFor="apiKey" sx={{ fontSize: 18, mb: '8px' }}>
-            Api Key:
-          </FormLabel>
-          <Input
-            type="password"
-            id="apiKey"
-            placeholder="Enter API Key"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            sx={{
-              mb: '12px',
-              '&:focus-within': {
-                borderColor: 'yellow', // Change this to your desired color
-              },
-            }}
-          />
-        </Stack>
-      )}
-
-      {tab === TabValues.WORKFLOWS && (
-        <Stack gap="8px" key="Saved Workflows" p="8px 12px">
-          <Typography fontSize={18} level="h4">
-            Saved Workflows
-          </Typography>
-
-          {/*@ts-expect-error - ignore*/}
-          <Select
-            ref={selectFileRef}
-            placeholder="Select Workflow"
-            value={selectedFile?.file_id}
-            onChange={(_, newValue) => {
-              setSelectedFile(newValue?savedAwfulsById[newValue]:null);
-            }}
-          >
-            {Object.entries(savedAwfulsById)
-              .map(([, file]) => (
-                <Option
-                  key={file.file_name + file.file_id}
-                  value={file.file_id}
-                >
-                  {file.file_name || file.file_id}
-                </Option>
-              ))
-              .sort((a, b) => ((a?.key || -1) < (b?.key || 1) ? -1 : 1))}
-          </Select>
-          <Button
-            onClick={handleLoadFile}
-            disabled={!selectedFile}
-            sx={{ width: 'fit-content' }}
-          >
-            Load
-          </Button>
-
-          <Typography fontSize={18} level="h4">
-            Save current workflow
-          </Typography>
-          <div>
-            <Input
-              type="text"
-              placeholder="Enter filename"
-              value={filenameInput}
-              onChange={(e) => setFilenameInput(e.target.value)}
-            />
-          </div>
-          <Stack direction="row" gap="8px">
-            <Button
-              variant="soft"
-              onClick={handleNewFile}
-              disabled={isProcessing}
-            >
-              New
-            </Button>
-            <Button onClick={handleSaveFile}>
-              {selectedFile ? 'Save' : 'Save As...'}
-            </Button>
-            <Button
-              onClick={handleDeleteFile}
-              disabled={!selectedFile || isProcessing}
-              color="danger"
-            >
-              Delete
-            </Button>
-          </Stack>
-        </Stack>
-      )}
-      {tab == TabValues.EDIT && (
-        <AccordionGroup
-          sx={(theme) => ({
-            maxWidth: 400,
-            borderRadius: 'lg',
-            [`& .${accordionDetailsClasses.content}`]: {
-              boxShadow: `inset 0 1px ${theme.vars.palette.divider}`,
-              padding: '0',
+  return isOpened ? (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      style={{ background: '#24292e' }}
+    >
+      <Box component="aside" className="sidebar">
+        <Stack
+          direction="row"
+          padding="6px 12px 4px"
+          justifyContent="space-between"
+          gap="6px"
+          sx={{
+            borderBottom: '1px solid #383d44',
+            cursor: 'pointer',
+            display: 'none',
+            alignItems: 'center',
+            ':hover': { backgroundColor: '#171a1c' },
+            '@media (max-width: 1000px)': {
+              display: 'flex',
             },
-          })}
+          }}
+          onClick={() => setIsOpened(false)}
         >
-          <div key="Files">
-            <Accordion defaultExpanded>
-              <AccordionSummary>
-                <Typography fontSize={18} level="h4">
-                  Files
-                </Typography>
-              </AccordionSummary>
+          <Typography fontSize={18} level="h4">
+            Hide Menu
+          </Typography>
+          <LucidePanelRightClose strokeWidth={1.7} color="#9fa6ad" />
+        </Stack>
+        {tab === TabValues.API_KEY && (
+          <Stack p="8px 12px">
+            <FormLabel htmlFor="apiKey" sx={{ fontSize: 18, mb: '8px' }}>
+              Api Key:
+            </FormLabel>
+            <Input
+              type="password"
+              id="apiKey"
+              placeholder="Enter API Key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              sx={{
+                mb: '12px',
+                '&:focus-within': {
+                  borderColor: 'yellow', // Change this to your desired color
+                },
+              }}
+            />
+          </Stack>
+        )}
 
-              <AccordionDetails sx={{ padding: 0 }}>
-                <Box
-                  className="dndnode"
-                  onDragStart={(event) => onDragStart(event, 'fileUpload')}
-                  draggable
-                  sx={{ p: '4px' }}
-                >
-                  <Typography fontSize={14}>File Upload</Typography>
-                  <GripVertical />
-                </Box>
-                <Box
-                  className="dndnode"
-                  onDragStart={(event) => onDragStart(event, 'fileViewer')}
-                  draggable
-                >
-                  <Typography fontSize={14}>File Viewer</Typography>
-                  <GripVertical />
-                </Box>
-              </AccordionDetails>
-            </Accordion>
-          </div>
+        {tab === TabValues.WORKFLOWS && (
+          <Stack gap="8px" key="Saved Workflows" p="8px 12px">
+            <Typography fontSize={18} level="h4">
+              Saved Workflows
+            </Typography>
 
-          {automationContext?.workers.map((worker) => (
-            <div key={worker}>
-              <Accordion>
-                <AccordionSummary>
-                  <Typography
-                    fontSize={18}
-                    level="h4"
-                    sx={{ textTransform: 'capitalize' }}
+            {/*@ts-expect-error - ignore*/}
+            <Select
+              ref={selectFileRef}
+              placeholder="Select Workflow"
+              value={selectedFile?.file_id}
+              onChange={(_, newValue) => {
+                setSelectedFile(newValue ? savedAwfulsById[newValue] : null);
+              }}
+            >
+              {Object.entries(savedAwfulsById)
+                .map(([, file]) => (
+                  <Option
+                    key={file.file_name + file.file_id}
+                    value={file.file_id}
                   >
-                    {worker}
+                    {file.file_name || file.file_id}
+                  </Option>
+                ))
+                .sort((a, b) => ((a?.key || -1) < (b?.key || 1) ? -1 : 1))}
+            </Select>
+            <Button
+              onClick={handleLoadFile}
+              disabled={!selectedFile}
+              sx={{ width: 'fit-content' }}
+            >
+              Load
+            </Button>
+
+            <Typography fontSize={18} level="h4">
+              Save current workflow
+            </Typography>
+            <div>
+              <Input
+                type="text"
+                placeholder="Enter filename"
+                value={filenameInput}
+                onChange={(e) => setFilenameInput(e.target.value)}
+              />
+            </div>
+            <Stack direction="row" gap="8px">
+              <Button
+                variant="soft"
+                onClick={handleNewFile}
+                disabled={isProcessing}
+              >
+                New
+              </Button>
+              <Button onClick={handleSaveFile}>
+                {selectedFile ? 'Save' : 'Save As...'}
+              </Button>
+              <Button
+                onClick={handleDeleteFile}
+                disabled={!selectedFile || isProcessing}
+                color="danger"
+              >
+                Delete
+              </Button>
+            </Stack>
+          </Stack>
+        )}
+        {tab == TabValues.EDIT && (
+          <AccordionGroup
+            sx={(theme) => ({
+              maxWidth: 400,
+              borderRadius: 'lg',
+              [`& .${accordionDetailsClasses.content}`]: {
+                boxShadow: `inset 0 1px ${theme.vars.palette.divider}`,
+                padding: '0',
+              },
+            })}
+          >
+            <div key="Files">
+              <Accordion defaultExpanded>
+                <AccordionSummary>
+                  <Typography fontSize={18} level="h4">
+                    Files
                   </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
-                  {automationContext?.automations[worker]?.map((automation) => {
-                    if (
-                      automation.spec.hidden ||
-                      automation.path.endsWith('/mythica/script')
-                    )
-                      return null;
-                    return (
-                      <div
-                        key={automation.path}
-                        className="dndnode"
-                        onDragStart={(event) =>
-                          onDragStart(event, automation.uri)
-                        }
-                        draggable
-                      >
-                        <Typography fontSize={14}>{automation.path}</Typography>
-                        <GripVertical />
-                      </div>
-                    );
-                  })}
-                  {automationContext.savedAutomationsByWorker[worker]?.map(
-                    (automation: AutomationSave, index: number) => {
-                      return (
-                        <div
-                          key={automation.id + '_' + index}
-                          className="dndnode custom"
-                          onDragStart={(event) =>
-                            onDragStart(event, `saved?${automation.id}`)
-                          }
-                          draggable
-                          style={{ display: 'flex', flexDirection: 'row' }}
-                        >
-                          <Typography
-                            fontSize={14}
-                            style={{ flex: '1 1 auto' }}
-                          >
-                            {automation.name}
-                          </Typography>
-                          <LucideTrash2
-                            onClick={() =>
-                              automationContext.deleteAutomation(automation)
-                            }
-                            style={{ marginRight: '4px', cursor: 'pointer' }}
-                          />
-                          <GripVertical />
-                        </div>
-                      );
-                    }
-                  )}
-                  <div
-                    key={`${worker}-new`}
-                    className="dndnode new"
-                    onDragStart={(event) =>
-                      onDragStart(event, `${worker}://mythica/script`)
-                    }
+
+                <AccordionDetails sx={{ padding: 0 }}>
+                  <Box
+                    className="dndnode"
+                    onDragStart={(event) => onDragStart(event, 'fileUpload')}
+                    draggable
+                    sx={{ p: '4px' }}
+                  >
+                    <Typography fontSize={14}>File Upload</Typography>
+                    <GripVertical />
+                  </Box>
+                  <Box
+                    className="dndnode"
+                    onDragStart={(event) => onDragStart(event, 'fileViewer')}
                     draggable
                   >
-                    <Typography fontSize={14}>
-                      Create New Automation...
-                    </Typography>
+                    <Typography fontSize={14}>File Viewer</Typography>
                     <GripVertical />
-                  </div>
+                  </Box>
                 </AccordionDetails>
               </Accordion>
             </div>
-          ))}
-        </AccordionGroup>
-      )}
-    </aside>
+
+            {automationContext?.workers.map((worker) => (
+              <div key={worker}>
+                <Accordion>
+                  <AccordionSummary>
+                    <Typography
+                      fontSize={18}
+                      level="h4"
+                      sx={{ textTransform: 'capitalize' }}
+                    >
+                      {worker}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    {automationContext?.automations[worker]?.map(
+                      (automation) => {
+                        if (
+                          automation.spec.hidden ||
+                          automation.path.endsWith('/mythica/script')
+                        )
+                          return null;
+                        return (
+                          <div
+                            key={automation.path}
+                            className="dndnode"
+                            onDragStart={(event) =>
+                              onDragStart(event, automation.uri)
+                            }
+                            draggable
+                          >
+                            <Typography fontSize={14}>
+                              {automation.path}
+                            </Typography>
+                            <GripVertical />
+                          </div>
+                        );
+                      }
+                    )}
+                    {automationContext.savedAutomationsByWorker[worker]?.map(
+                      (automation: AutomationSave, index: number) => {
+                        return (
+                          <div
+                            key={automation.id + '_' + index}
+                            className="dndnode custom"
+                            onDragStart={(event) =>
+                              onDragStart(event, `saved?${automation.id}`)
+                            }
+                            draggable
+                            style={{ display: 'flex', flexDirection: 'row' }}
+                          >
+                            <Typography
+                              fontSize={14}
+                              style={{ flex: '1 1 auto' }}
+                            >
+                              {automation.name}
+                            </Typography>
+                            <LucideTrash2
+                              onClick={() =>
+                                automationContext.deleteAutomation(automation)
+                              }
+                              style={{ marginRight: '4px', cursor: 'pointer' }}
+                            />
+                            <GripVertical />
+                          </div>
+                        );
+                      }
+                    )}
+                    <div
+                      key={`${worker}-new`}
+                      className="dndnode new"
+                      onDragStart={(event) =>
+                        onDragStart(event, `${worker}://mythica/script`)
+                      }
+                      draggable
+                    >
+                      <Typography fontSize={14}>
+                        Create New Automation...
+                      </Typography>
+                      <GripVertical />
+                    </div>
+                  </AccordionDetails>
+                </Accordion>
+              </div>
+            ))}
+          </AccordionGroup>
+        )}
+      </Box>
+    </motion.div>
+  ) : (
+    <Box
+      sx={{
+        position: 'absolute',
+        right: '12px',
+        top: '70px',
+        ':hover': { opacity: '0.8', cursor: 'pointer' },
+      }}
+      onClick={() => {
+        setIsOpened(true);
+      }}
+    >
+      <LucidePanelLeftClose strokeWidth={1.7} color="#9fa6ad" />
+    </Box>
   );
 };
 
