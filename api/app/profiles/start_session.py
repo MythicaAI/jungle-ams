@@ -92,6 +92,7 @@ def start_session(
         auth_roles.update((
             f'{roles.alias_asset_editor}:{roles.self_object_scope}',
             f'{roles.alias_profile_owner}:{roles.self_object_scope}',
+            f'{roles.alias_job_def_all}:{roles.self_object_scope}',
             f'{roles.alias_core_create}'))
 
     # after role validation, it is possible to take on the identity of another profile

@@ -163,6 +163,13 @@ def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
         time.sleep(1)
 
 
+def delete_job_defs(endpoint: str, headers: str) -> str:
+    url = f"{endpoint}/jobs/definitions/delete_canary_jobs_def"
+    response = requests.delete(url, headers=headers, timeout=10)
+    response.raise_for_status()
+    log.info(f"Job defs successfully deleted")
+
+
 def run_test(endpoint: str, api_key: str):
     log.info("Starting test")
 
@@ -189,6 +196,7 @@ def run_test(endpoint: str, api_key: str):
     log.info(f"Received job result file: {result_file_id}")
 
     log.info("Job completed successfully")
+    delete_job_defs(endpoint, headers)
 
 
 def main():
