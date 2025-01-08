@@ -69,6 +69,8 @@ tables:
         type: BIGINT
       - name: contents
         type: JSON
+      - name: deleted
+        type: TIMESTAMP
 
   # Cross table relation between asset and tags
   - name: AssetTag

@@ -63,6 +63,7 @@ superuser = {
     roles.alias_org_admin,
     roles.alias_asset_editor,
     roles.alias_core_create,
+    roles.alias_job_def_all,
 }
 
 
@@ -90,7 +91,8 @@ def build_session_profile(
         email_validate_state=email_validate_state,
         location=profile_location,
         environment=environment,
-        auth_roles=auth_roles)
+        auth_roles=auth_roles,
+        impersonated=False)
 
 
 #

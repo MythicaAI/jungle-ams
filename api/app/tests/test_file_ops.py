@@ -46,13 +46,13 @@ def test_file_ops(client, api_base, create_profile):
     r3 = client.get(
         f"{api_base}/files/by_content/xxxxxxxx",
         headers=auth_headers)
-    
+
     assert_status_code(r3, HTTPStatus.NOT_FOUND)
 
     r4 = client.get(
         f"{api_base}/files/by_content/{o.files[0].content_hash}",
         headers=auth_headers)
-    
+
     assert_status_code(r4, HTTPStatus.OK)
 
     r5 = client.delete(

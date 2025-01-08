@@ -288,12 +288,17 @@ class PackageUploader(object):
         if not os.path.exists(self.repo_base_dir):
             os.makedirs(self.repo_base_dir)
 
-    def start_session(self):
+    def start_session(self, as_profile_id=None):
         """Create a session for the current profile"""
         assert self.mythica_api_key is not None
 
+        if as_profile_id:
+            headers = {"Impersonate-Profile-Id": as_profile_id}
+        else:
+            headers = {}
+
         url = f"{self.endpoint}/v1/sessions/key/{self.mythica_api_key}"
-        response = self.conn_pool.get(url)
+        response = self.conn_pool.get(url, headers=headers)
         if response.status_code != 200:
             log.error("Failed to start session: %s", response.status_code)
             raise SystemExit
@@ -343,6 +348,10 @@ class PackageUploader(object):
 
         profile = self.find_or_create_profile(user, user_description)
         package.profile_id = profile.profile_id
+
+        # start a new session as the package profile_id to impersonate actions on behalf
+        # of the provided profile
+        self.start_session(package.profile_id)
 
         # First try to resolve the version from the repo link
         package.asset_id, package.latest_version = self.find_latest_repo_version(package)
@@ -437,7 +446,7 @@ class PackageUploader(object):
                                 json={
                                     "type_id": package.asset_id,
                                     "tag_id": tag_id},
-                                headers=self.auth_header_with_impersonation(package.profile_id))
+                                headers=self.auth_header())
         r.raise_for_status()
 
     def find_latest_repo_version(self, package: PackageModel) -> tuple[str, list[int]]:
@@ -460,18 +469,11 @@ class PackageUploader(object):
             "Authorization": f"Bearer {self.auth_token}"
         }
 
-    def auth_header_with_impersonation(self, profile_id: str) -> dict[str, str]:
-        """Return the authorization token header"""
-        return {
-            "Authorization": f"Bearer {self.auth_token}",
-            "Impersonate-Profile-Id": profile_id
-        }
-
     def create_asset(self, package: PackageModel):
         """Create the asset root object"""
         asset_json = {}
         response = self.conn_pool.post(f"{self.endpoint}/v1/assets/",
-                                       headers=self.auth_header_with_impersonation(package.profile_id),
+                                       headers=self.auth_header(),
                                        json=asset_json)
         # If creation fails we raise an error to stop processing, there is likely something wrong
         # in the underlying configuration or permissions
@@ -584,7 +586,7 @@ class PackageUploader(object):
 
         # find an existing file if it exists that is owned by this user
         response = self.conn_pool.get(f"{self.endpoint}/v1/files/by_content/{existing_digest}",
-                                      headers=self.auth_header_with_impersonation(package.profile_id))
+                                      headers=self.auth_header())
 
         # return the file_id if the content digest already exists
         if response.status_code == HTTPStatus.OK:
@@ -613,7 +615,7 @@ class PackageUploader(object):
                 fields={'files': (str(package_file.package_path), f, 'application/octet-stream')}
             )
             headers = {
-                **self.auth_header_with_impersonation(package.profile_id),
+                **self.auth_header(),
                 "Content-Type": m.content_type,
             }
             response = self.conn_pool.post(
@@ -655,7 +657,7 @@ class PackageUploader(object):
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = self.conn_pool.post(assets_url,
                                        json=asset_ver_json,
-                                       headers=self.auth_header_with_impersonation(package.profile_id))
+                                       headers=self.auth_header())
         response.raise_for_status()
 
         log.info("Successfully uploaded package: %s", package.name)

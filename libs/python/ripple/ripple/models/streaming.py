@@ -65,6 +65,7 @@ class JobDefinition(ProcessStreamItem):
     name: str
     description: str
     parameter_spec: ParameterSpec
+    owner_id: Optional[str] = None
 
 
 class Event(StreamItem):

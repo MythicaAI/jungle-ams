@@ -4,18 +4,19 @@
 
 from http import HTTPStatus
 
-from munch import munchify
-from sqlmodel import select
-
-from cryptid.cryptid import event_id_to_seq
+from cryptid.cryptid import event_id_to_seq, job_id_to_seq
 from db.connection import get_session
 from db.schema.events import Event
+from db.schema.jobs import Job
+from fastapi.testclient import TestClient
+from munch import munchify
+from sqlmodel import select
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code
+from tests.shared_test import ProfileTestObj, assert_status_code
 
 
 def test_create_update(client, api_base, create_profile):
-    test_profile = create_profile()
+    test_profile: ProfileTestObj = create_profile()
     test_profile2 = create_profile()
     headers = test_profile.authorization_header()
     headers2 = test_profile2.authorization_header()
@@ -66,6 +67,7 @@ def test_create_update(client, api_base, create_profile):
     assert_status_code(r, HTTPStatus.OK)
     definition = r.json()
     assert definition['job_def_id'] == job_def_id
+    assert definition['owner_id'] == test_profile.profile.profile_id
 
     # Get invalid job definitions
     r = client.get(f'{api_base}/jobs/definitions/jobdef_3ZUcvpXisvZeAjWWyHzFpuJdSSKr', headers=headers)
@@ -172,3 +174,113 @@ def test_create_update(client, api_base, create_profile):
     # Get the result data from another profile
     r = client.get(f'{api_base}/jobs/results/{job_id}', headers=headers2)
     assert_status_code(r, HTTPStatus.FORBIDDEN)
+
+
+
+def test_delete_canary(client: TestClient, api_base, create_profile):
+    test_profile: ProfileTestObj = create_profile()
+    headers = test_profile.authorization_header()
+    test_profile2: ProfileTestObj = create_profile(email="test2.test@email.com")
+    headers2 = test_profile2.authorization_header()
+    privileged_profile: ProfileTestObj = create_profile(email="test@mythica.ai", validate_email=True)
+    privileged_headers = privileged_profile.authorization_header()
+
+
+    def crete_job_def(headers):
+        # Create a job definition
+        r = client.post(f'{api_base}/jobs/definitions',
+                        json={
+                            'job_type': 'houdini::/mythica/generate_mesh',
+                            'name': 'Generate test_scale_input',
+                            'description': 'test_scale_input',
+                            'params_schema': {
+                                'params': {
+                                    'hda_file': {
+                                        'param_type': 'file',
+                                        'label': 'HDA File',
+                                        'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                                        'constant': True
+                                    },
+                                    'hda_definition_index': {
+                                        'param_type': 'int',
+                                        'label': 'HDA Definition Index',
+                                        'default': 0,
+                                        'constant': True
+                                    },
+                                    'size': {
+                                        'param_type': 'float',
+                                        'label': 'Segment Size',
+                                        'default': 0.0,
+                                        'min': 0.0,
+                                        'max': 10.0
+                                    }
+                                }
+                            }
+                        },
+                        headers=headers)
+        return r
+    
+    r = crete_job_def(headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    job_def_id = o.job_def_id
+
+    # Get job definition from list
+    r = client.get(f'{api_base}/jobs/definitions', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definitions = r.json()
+    assert any([definition['job_def_id'] == job_def_id for definition in definitions])
+    
+    # Create a job
+    r = client.post(f'{api_base}/jobs',
+                    json={
+                        'job_def_id': job_def_id,
+                        'params': {
+                            'size': 5.0
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    assert 'job_def_id' in o
+    assert 'job_id' in o
+    assert 'event_id' in o
+    job_def_id = o.job_def_id
+    job_seq = job_id_to_seq(o.job_id)
+
+    # find the job
+    with get_session() as session:
+        job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
+        assert job is not None
+        assert job.job_def_seq is not None
+    
+    r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=headers2)
+    o = munchify(r.json())
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
+
+    # Test unauthorized delete jobs
+    r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=headers)
+    o = munchify(r.json())
+    assert_status_code(r, HTTPStatus.OK)
+    
+    # find the job and check job_def_seq is set to null
+    with get_session() as session:
+        job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
+        assert job is not None
+        assert job.job_def_seq is None
+
+    r = client.get(f'{api_base}/jobs/definitions', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definitions = r.json()
+    assert all([definition['job_def_id'] != job_def_id for definition in definitions])
+    
+    # Test delete job_def by an admin
+    r = crete_job_def(headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=privileged_headers)
+    o = munchify(r.json())
+    assert_status_code(r, HTTPStatus.OK)
+    r = client.get(f'{api_base}/jobs/definitions', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definitions = r.json()
+    assert all([definition['job_def_id'] != job_def_id for definition in definitions])

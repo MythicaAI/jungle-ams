@@ -349,7 +349,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
             position,
             data: {
               automation: `${savedAuto.worker}://mythica/script`,
-              saveData: savedAuto,
+              script: savedAuto,
             },
           };
           break;

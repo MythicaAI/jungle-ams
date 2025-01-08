@@ -96,6 +96,13 @@ core__create_roles = {
     asset_create,
 }
 
+
+#
+# `JobDef` roles
+#
+job_def_all = 'job_def/all'
+job_def__all_roles = {job_def_all,}
+
 # Bind all roles
 all_roles = {
     *org__all_roles,
@@ -112,6 +119,7 @@ alias_profile_owner = 'profile-owner'
 alias_profile_admin = 'profile-admin'
 alias_tag_author = "tag-author"
 alias_core_create = "core-create"
+alias_job_def_all = "job-def-all"
 
 # marker used in the scope match of a role to indicate that it must match
 # the current input scope, e.g. asset_edit must match the owner, author or org
@@ -130,6 +138,7 @@ role_aliases: dict = {
     alias_profile_owner: profile__owner_roles,
     alias_profile_admin: profile__admin_roles,
     alias_core_create: core__create_roles,
+    alias_job_def_all: job_def__all_roles,
 }
 
 """Allowed list of org role aliases"""
@@ -145,6 +154,7 @@ privileged_roles = {
     alias_asset_editor,
     alias_profile_admin,
     alias_org_admin,
+    alias_job_def_all,
 }
 
 """Build reverse map to get aliases from roles"""

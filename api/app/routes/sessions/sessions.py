@@ -4,7 +4,7 @@ from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from pydantic import BaseModel
 from sqlmodel import col, delete as sql_delete, select, update
 
@@ -63,7 +63,9 @@ async def direct(request: Request, profile_id: str) -> SessionStartResponse:
 
 
 @router.get('/key/{api_key}')
-async def key(request: Request, api_key: str) -> SessionStartResponse:
+async def key(request: Request,
+              api_key: str,
+              impersonate_profile_id: str = Header(None, include_in_schema=False)) -> SessionStartResponse:
     """Start a new session by providing an API key"""
     client_ip = get_client_ip(request)
     with get_session() as session:
@@ -78,8 +80,9 @@ async def key(request: Request, api_key: str) -> SessionStartResponse:
             session.commit()
             raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} expired")
 
-        # start the session using the key
-        return start_session(session, key_result.owner_seq, client_ip)
+        # start the session using the key, key based authentication allows impersonation for privileged accounts
+        # this use case is for automation that needs to act on behalf of other profiles
+        return start_session(session, key_result.owner_seq, client_ip, impersonate_profile_id)
 
 
 @router.post('/auth0-spa')

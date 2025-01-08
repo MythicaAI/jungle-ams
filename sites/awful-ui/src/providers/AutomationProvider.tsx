@@ -11,9 +11,8 @@ import {
   AutomationSpec,
 } from '../types/Automation';
 import { AutomationContext } from '../hooks/useAutomation';
-import { AutomationSave } from '../types/Automation';
+import { AutomationScript } from '../types/Automation';
 import { v4 as uuidv4 } from 'uuid';
-import { JSONSchema } from '../types/JSONSchema';
 
 // Static worker list and endpoint
 const WORKERS: string[] = import.meta.env.VITE_AWFUL_WORKERS.split(','); //'genai'
@@ -29,48 +28,48 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [workerAutomations, setAutomations] = useState<WorkerAutomations>({});
 
   const [savedAutomationsById, setSavedAutomationsById] = useState<{
-    [id: string]: AutomationSave;
+    [id: string]: AutomationScript;
   }>({});
   const [savedAutomationsByWorker, setSavedAutomationsByWorker] = useState<{
-    [worker: string]: AutomationSave[];
+    [worker: string]: AutomationScript[];
   }>({});
 
   /***************************************************************************
    * Script Automation Save Handling
    **************************************************************************/
+  const getUri = (worker: string, name: string) =>  
+    `saved://${worker}/${name?.toLowerCase().replace(/\s+/g, '_')}`;
+
   const newAutomation = (
     worker: string,
     name: string,
-    script: string,
-    inputSpec: JSONSchema,
-    outputSpec: JSONSchema
+    script: string
   ) => {
     const saved = savedAutomationsByWorker[worker]?.find(
       (a) => a.name === name
-    ) as AutomationSave;
+    ) as AutomationScript;
     if (saved) return saved;
 
     return {
       id: uuidv4(),
-      uri: `saved://${worker}/${name}`,
+      uri: getUri(worker, name),
       worker: worker,
       name: name,
-      script: script,
-      inputSpec: inputSpec,
-      outputSpec: outputSpec,
-    } as AutomationSave;
+      script: script
+    } as AutomationScript;
   };
 
   // Save the current automation to the API
   const saveAutomation = async (
-    automation: AutomationSave,
-    savedAutomation: (saved: AutomationSave) => void
+    automation: AutomationScript,
+    savedAutomation: (saved: AutomationScript) => void
   ) => {
     try {
       if (automation.file) {
         await deleteFile(automation.file.file_id);
         delete automation.file;
       }
+      automation.uri = getUri(automation.worker, automation.name);
 
       const blob = new Blob([JSON.stringify(automation)], {
         type: 'application/json',
@@ -85,7 +84,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error(`Failed to save automation ${automation.id}`, error);
     }
   };
-  const deleteAutomation = async (automation: AutomationSave) => {
+  const deleteAutomation = async (automation: AutomationScript) => {
     try {
       if (!automation.file) {
         console.warn(`Automation ${automation.id} had no saves`);
@@ -101,8 +100,8 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const fetchAutomations = useCallback(async () => {
-    const autosByWorker = {} as { [worker: string]: AutomationSave[] };
-    const autosById = {} as { [id: string]: AutomationSave };
+    const autosByWorker = {} as { [worker: string]: AutomationScript[] };
+    const autosById = {} as { [id: string]: AutomationScript };
 
     if (authToken) {
       try {

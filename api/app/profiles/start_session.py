@@ -5,19 +5,21 @@ the profile and generates a session start response.
 import logging
 from http import HTTPStatus
 
-from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
+from cryptid.cryptid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from fastapi import HTTPException
 from ripple.auth import roles
+from ripple.auth.authorization import validate_roles
 from ripple.auth.generate_token import generate_token
 from sqlalchemy.sql.functions import func, now as sql_now
 from sqlmodel import Session, asc, col, delete, insert, select, update
 
 from auth.data import resolve_org_roles
-from config import app_config
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
+from ripple.config import ripple_config
+from ripple.models.sessions import SessionProfile
 from validate_email.responses import ValidateEmailState
 
 log = logging.getLogger(__name__)
@@ -33,15 +35,22 @@ privileged_emails = {
 }
 
 
-def start_session(session: Session, profile_seq: int, location: str) -> SessionStartResponse:
+def start_session(
+        session: Session,
+        profile_seq: int,
+        location: str,
+        impersonate_profile_id: str = None) -> SessionStartResponse:
     """Given a database session start a new session"""
+
+    #
+    # Update profile, login count and location
+    #
     result = session.exec(update(Profile).values(
         login_count=func.coalesce(Profile.login_count, 0) + 1,
         active=True,
         location=location).where(Profile.profile_seq == profile_seq))
     if result.rowcount == 0:
-        raise HTTPException(HTTPStatus.NOT_FOUND,
-                            detail='profile not found')
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail='profile not found')
     session.commit()
 
     #
@@ -60,6 +69,8 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
                                        .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
                                        .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
                                        ).all()
+
+    # Convert org roles into auth role declarations for ripple
     auth_roles = set()
     for r in profile_org_results:
         _, r_org, r_org_ref = r
@@ -81,26 +92,31 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
         auth_roles.update((
             f'{roles.alias_asset_editor}:{roles.self_object_scope}',
             f'{roles.alias_profile_owner}:{roles.self_object_scope}',
+            f'{roles.alias_job_def_all}:{roles.self_object_scope}',
             f'{roles.alias_core_create}'))
+
+    # after role validation, it is possible to take on the identity of another profile
+    # if you have this role, this is a super-use privilege and should be audited
+    if impersonate_profile_id:
+        validate_roles(role=roles.profile_impersonate, auth_roles=auth_roles)
+        profile = impersonated_profile(
+            session=session,
+            auth_profile=profile,
+            profile_id=impersonate_profile_id)
 
     token = generate_token(
         profile_seq_to_id(profile.profile_seq),
         profile.email,
         profile.email_validate_state,
         profile.location,
-        app_config().mythica_environment,
+        ripple_config().mythica_environment,
         list(auth_roles))
-
-    # Convert db profile to profile response
-    profile_response = profile_to_profile_response(
-        profile, ProfileResponse
-    )
 
     # Add a new session
     profile_session = ProfileSession(profile_seq=profile_seq,
                                      refreshed=sql_now(),
                                      location=location,
-                                     authenticated=False,
+                                     authenticated=True,
                                      auth_token=token)
     session.add(profile_session)
     session.commit()
@@ -108,12 +124,44 @@ def start_session(session: Session, profile_seq: int, location: str) -> SessionS
     # resolve all roles across all orgs this profile exists in
     auth_roles = resolve_org_roles(session, profile.profile_seq)
 
+
+
+
+    # Convert db profile to profile response
+    profile_response = profile_to_profile_response(
+        profile, ProfileResponse
+    )
+
     result = SessionStartResponse(
         token=token,
         profile=profile_response,
         roles=list(auth_roles))
 
     return result
+
+
+def impersonated_profile(
+        session: Session,
+        auth_profile: Profile,
+        profile_id: str) -> SessionProfile:
+    """
+    Return an impersonated profile and log the access
+    """
+    profile_seq = profile_id_to_seq(profile_id)
+    db_profile = session.exec(select(Profile)
+                              .where(Profile.profile_seq == profile_seq)
+                              ).one_or_none()
+    if db_profile is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="No profile to impersonate")
+
+    log.info("profile: (%s) %s #%s, impersonating (%s) %s #%s",
+                auth_profile.email,
+                profile_seq_to_id(auth_profile.profile_seq),
+                profile_seq,
+                db_profile.email,
+                profile_id,
+                profile_id_to_seq(profile_id))
+    return db_profile
 
 
 async def start_session_with_token_validator(token: str, validator: AuthTokenValidator) -> SessionStartResponse:
