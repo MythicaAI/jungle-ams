@@ -286,7 +286,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       id={`input${i}`}
       left={(i + 2) * (100 / (2 + (nodeType.inputs as number))) + '%'}
       isConnectable
-      style={{ background: '#007bff' }}
+      style={{ background: '#555555' }}
       label={`Input ${i}`}
     />
   ));
@@ -297,7 +297,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
       id={`output${i}`}
       left={(i + 1) * (100 / (1 + (nodeType.outputs as number))) + '%'}
       isConnectable
-      style={{ background: '#007bff' }}
+      style={{ background: '#555555' }}
       label={`Output ${i}`}
     />
   ));
@@ -319,7 +319,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
         id={INPUT_FILE}
         left={100 / (2 + ((nodeType.inputs as number) || 0)) + '%'}
         isConnectable
-        style={{ background: '#007bff' }}
+        style={{ background: '#555555' }}
         label={INPUT_FILE}
       />
 

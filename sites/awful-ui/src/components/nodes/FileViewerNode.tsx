@@ -10,7 +10,7 @@ import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 
-import { Card, Typography, Tabs } from '@mui/joy';
+import { Card, Typography, Tabs, Box, Button } from '@mui/joy';
 import {
   GetDownloadInfoResponse,
   GetFileResponse,
@@ -214,9 +214,11 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <Typography level="h4">File Viewer</Typography>
 
       {/* The "Select Files" button now opens our new FilePickerModal */}
-      <div style={{ marginBottom: '10px' }} className="nodrag">
-        <button onClick={() => setIsPickerOpen(true)}>Select Files</button>
-      </div>
+      <Box mb="10px" className="nodrag">
+        <Button variant="outlined" onClick={() => setIsPickerOpen(true)}>
+          Select Files
+        </Button>
+      </Box>
 
       {/* Our new FilePickerModal for searching / selecting multiple files */}
       <FilePickerModal
