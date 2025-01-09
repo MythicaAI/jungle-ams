@@ -55,6 +55,7 @@ opentelemetry-propagator-gcp = "1.7.0"
 opentelemetry-exporter-cloud-trace = "0.10b1"
 google-cloud-trace = ">=0.13b0"
 googleapis-common-protos = "^1.66.0"
+opentelemetry-resourcedetector-gcp = "1.7.0a0"
 
 [tool.poetry.extras]
 pgsql = ["psycopg2-binary"]
