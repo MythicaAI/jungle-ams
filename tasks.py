@@ -229,7 +229,7 @@ def stop_docker_compose(c, docker_compose_path):
             f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
 
 
-def build_image(c, image_path: PathLike):
+def build_image(c, image_path: PathLike, no_cache: bool = False):
     """Build a docker image"""
 
     working_directory = Path(BASE_DIR) / image_path
@@ -253,6 +253,7 @@ def build_image(c, image_path: PathLike):
         c.run(
             (f"docker buildx build --platform={IMAGE_PLATFORM}"
              f" {buildarg_str} -f {dockerfile_path}"
+             f'{" --no-cache" if no_cache else ""}'
              f"  -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
         c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
@@ -452,9 +453,9 @@ def image_path_action(c, image, action, **kwargs):
 
 @task(help={'image': f'Image path to build: {IMAGES.keys()}'})
 @timed
-def docker_build(c, image='all'):
+def docker_build(c, image='all', no_cache: bool = False):
     """Build a docker image by sub path or set name"""
-    image_path_action(c, image, build_image)
+    image_path_action(c, image, build_image, no_cache=no_cache)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})

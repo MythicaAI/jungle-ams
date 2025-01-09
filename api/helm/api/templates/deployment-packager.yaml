@@ -36,8 +36,12 @@ spec:
                   key: SQL_ASYNC_URL
             - name: PACKAGER_ENDPOINT
               value: "http://app.{{ .Values.namespace }}:80"
-            - name: MYTHICA_LOCATION
-              value: "gke-us-central1"
+            - name: APP_VERSION
+              value: {{ include "api.imageVersion" (list . "mythica-packager") }}
+            - name: MYTHICA_LOCATION  # basically cluster but can be "on-prem"
+              value: "gke-main-us-central1"
+            - name: K8S_CLUSTER_NAME
+              value: "gke-main-us-central1"
           volumeMounts:
             - name: ephemeral-packaged-content
               mountPath: /tmp

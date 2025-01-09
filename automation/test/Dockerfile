@@ -33,6 +33,8 @@ RUN poetry config --local virtualenvs.create false
 RUN poetry install --only main,infra --no-root --no-cache
 ENV TELEMETRY_ENABLE=True
 ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-test"
+ENV K8S_CLUSTER_NAME=localhost
 ENV API_BASE_URI=http://app:5555/v1
 
 ENTRYPOINT ["python", "workers.py"]

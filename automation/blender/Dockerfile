@@ -17,6 +17,8 @@ ENV PATH="/usr/local/bin:$PATH"
 
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-blender"
+ENV K8S_CLUSTER_NAME=localhost
 
 # Install Python 3.11 and dependencies
 RUN apt-get update && \

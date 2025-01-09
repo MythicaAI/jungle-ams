@@ -20,6 +20,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PATH="/usr/local/bin:$PATH"
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-genai"
+ENV K8S_CLUSTER_NAME=localhost
 
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"

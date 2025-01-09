@@ -61,6 +61,8 @@ ENV CRYPTID_LOCATION="localhost"
 ENV API_BASE_URI=http://app/v1
 ENV TELEMETRY_ENABLE=True
 ENV TELEMETRY_ENDPOINT=collector:4317
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-imagemagick"
+ENV K8S_CLUSTER_NAME=localhost
 
 # Setup python bootstrap environment
 RUN python -m pip install \

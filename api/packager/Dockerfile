@@ -21,6 +21,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=packager"
+ENV K8S_CLUSTER_NAME=localhost
 
 # Connect to the postgres on the storage network (must have storage network
 # attached or available, replace this URL to address a different database

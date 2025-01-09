@@ -10,7 +10,7 @@ LABEL tier="web"
 # code layer, if not done as root the poetry scripts are not
 # installed into /usr/local/bin
 RUN pip install --upgrade pip
-RUN pip install poetry
+RUN pip install poetry==1.8.5
 
 # Copy libraries to the /libs/python folder for consistent
 # referencing by other project in the infra monorepo
