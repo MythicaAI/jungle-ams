@@ -13,21 +13,11 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.semconv.resource import ResourceAttributes
 from opentelemetry.trace import set_tracer_provider
+from ripple.config import get_telemetry_resource
 
 
 def init_telemetry():
-    resource = Resource.create(
-        {
-            ResourceAttributes.SERVICE_NAME: "houdini-test",
-            ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv(
-                "NAMESPACE", "automation-dev"
-            ),
-            ResourceAttributes.SERVICE_NAMESPACE: os.getenv(
-                "NAMESPACE", "automation-dev"
-            ),
-            ResourceAttributes.DEPLOYMENT_ENVIRONMENT: os.getenv("NAMESPACE", "local"),
-        }
-    )
+    resource = get_telemetry_resource()
     endpoint = os.getenv("TELEMETRY_ENDPOINT", "http://otel-collector.default:4317")
     insecure = os.getenv("TELEMETRY_INSECURE", "true") == "true"
 

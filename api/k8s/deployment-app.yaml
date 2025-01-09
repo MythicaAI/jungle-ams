@@ -39,8 +39,12 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_URL
-            - name: MYTHICA_LOCATION
-              value: "gke-us-central1"
+            - name: APP_VERSION
+              value: "latest"
+            - name: MYTHICA_LOCATION  # basically cluster but can be "on-prem"
+              value: "gke-main-us-central1"
+            - name: K8S_CLUSTER_NAME
+              value: "gke-main-us-central1"
             - name: GCS_SERVICE_ENABLE
               value: "true"
             - name: GOOGLE_APPLICATION_CREDENTIALS

@@ -44,17 +44,6 @@ processors:
     send_batch_size: 512
     send_batch_max_size: 1024
 
-  memory_limiter:
-    check_interval: 1s
-    limit_mib: 1000
-    spike_limit_mib: 200
-
-  # Add attributes to logs
-  resource:
-    attributes:
-      - key: service.name
-        value: nginx
-        action: upsert
 
 exporters:
   prometheus:
@@ -70,7 +59,7 @@ exporters:
       insecure: false
     timeout: 10s
     headers:
-      "signoz-access-token": doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG
+      "signoz-access-token": ${SIGNOZ_ACCESS_TOKEN}
 
   # Add optional exporters for logs (example with console output)
   file:
@@ -88,7 +77,7 @@ service:
       exporters: [otlp]
     logs:
       receivers: [ filelog, otlp ]
-      processors: [ resource, batch ]
+      processors: [ batch ]
       exporters: [ debug, file, otlp ]
 
   telemetry:

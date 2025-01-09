@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y wget systemd \
 ENV NATS_ENDPOINT="nats://nats:4222"
 ENV MYTHICA_ENVIRONMENT=dev
 ENV MYTHICA_LOCATION=localhost
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-houdini"
+ENV K8S_CLUSTER_NAME=localhost
 
 # Make sure that hython is in the path
 ENV PATH=/opt/houdini/build/bin:$PATH

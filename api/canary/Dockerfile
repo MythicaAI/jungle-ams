@@ -13,6 +13,7 @@ COPY . .
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV OTEL_RESOURCE_ATTRIBUTES="service.name=canary"
 
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
