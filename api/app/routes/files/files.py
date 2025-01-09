@@ -1,16 +1,18 @@
 from http import HTTPStatus
+
+from cryptid.cryptid import file_id_to_seq
 from fastapi import APIRouter, Depends, HTTPException
+from ripple.models.contexts import FilePurpose
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import and_, select, update
 
-from cryptid.cryptid import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
-from ripple.models.contexts import FilePurpose
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
+
 router = APIRouter(prefix="/files", tags=["files"])
 
 
@@ -58,7 +60,7 @@ async def by_purpose(
         files = session.exec((
             select(FileContent)
             .where(FileContent.owner_seq == profile.profile_seq)
-            .where(FileContent.purpose == file_purpose)
+            .where(FileContent.purpose == str(file_purpose))
             .where(FileContent.deleted == None))).all()
         return enrich_files(session, files, profile)
 
@@ -82,4 +84,3 @@ async def delete_by_id(
             session.commit()
         except IntegrityError as e:
             raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
-

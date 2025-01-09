@@ -1,10 +1,8 @@
-import sys
 import logging
 from typing import Tuple
-
-from sqlmodel import insert
 from uuid import uuid4
 
+import sys
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from cryptid.location import location
 from context import UploadContext
@@ -15,8 +13,12 @@ from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
-from telemetry_config import get_telemetry_context
+from sqlmodel import insert
 
+from db.connection import get_session
+from db.schema.events import Event
+from db.schema.media import FileContent
+from telemetry_config import get_telemetry_context
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ async def update(ctx: UploadContext) -> Tuple[str, str]:
             {'name': ctx.filename,
              'owner_seq': profile_id_to_seq(ctx.owner_id),
              'locators': locators,
-             'purpose': ctx.purpose,
+             'purpose': str(ctx.purpose),
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
              'content_type': content_type}))
@@ -65,7 +67,7 @@ async def update(ctx: UploadContext) -> Tuple[str, str]:
         # Create a new NATS event
         if should_post_to_nats(ctx):
             parameter_set = ParameterSet(
-                hda_file = FileParameter(file_id=file_id)
+                hda_file=FileParameter(file_id=file_id)
             )
 
             event = AutomationRequest(

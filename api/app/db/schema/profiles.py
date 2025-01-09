@@ -168,3 +168,26 @@ class ProfileLocatorOID(SQLModel, table=True):
 
     sub: str = Field(primary_key=True,nullable=False)
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+
+# sequences for table profile_assets
+
+class ProfileAsset(SQLModel, table=True):
+    """
+    Profile link to an asset for creating access lists
+    """
+    __tablename__ = "profile_assets"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
+    minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
+    patch: int = Field(sa_column=Column('patch',Integer,primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    category: str = Field(default=None)

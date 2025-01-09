@@ -39,11 +39,11 @@ class AppConfig(BaseSettings):
     enable_db: bool = True
     db_timezone: str = 'UTC'
     sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
-    
+
     redis_host: str = 'localhost'
     redis_port: int = 6379
     redis_db: int = 0
-    telemetry_enable: bool = True
+    telemetry_enable: bool = False
     telemetry_insecure: bool = False
     telemetry_endpoint: str = "https://ingest.us.signoz.com:443"
     telemetry_token: str = 'doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG'
