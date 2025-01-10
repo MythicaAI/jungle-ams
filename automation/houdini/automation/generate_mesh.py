@@ -171,10 +171,10 @@ def generate_mesh_impl(
             output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
             usd_node.parm("lopoutput").set(output_file_path)
             outputs.append(output_file_path)
+
             log.debug("Exporting USD %s", output_file_path)
 
             usd_node.setInput(0, asset, 0)
-            log.debug("Exporting mesh")
             usd_node.parm("execute").pressButton()
             log.debug("Exporting mesh completed")
 
