@@ -145,7 +145,7 @@ export function useCopyPaste<
   return { cut, copy, paste, bufferedNodes, bufferedEdges };
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line
 function useShortcut(keyCode: KeyCode, callback: Function): void {
   const [didRun, setDidRun] = useState(false);
   const shouldRun = useKeyPress(keyCode);
