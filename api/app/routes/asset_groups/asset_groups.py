@@ -1,11 +1,15 @@
-import string
+"""
+    This API module defines the /assets/g grouping API for consolidating
+    groups of assets under a profile
+"""
 from http import HTTPStatus
-from typing import Optional
 
+import re
 from cryptid.cryptid import asset_id_to_seq
 from fastapi import APIRouter, Depends, HTTPException
 from ripple.models.sessions import SessionProfile
 from sqlmodel import Session, delete, insert, select
+from typing import Optional
 
 from assets import repo
 from assets.repo import AssetVersionResult, convert_version_input
@@ -18,6 +22,9 @@ from routes.authorization import session_profile
 router = APIRouter(prefix="/assets/g", tags=["assets", "groups"])
 
 MAX_CATEGORY_LEN = 63
+
+# Regex for URL-safe characters
+URL_SAFE_REGEX = re.compile(r"^[a-zA-Z0-9\-_\.]+$")
 
 
 def filter_profile_assets(results):
@@ -48,11 +55,16 @@ def filter_profile_assets(results):
 
 def validate_category(category: str) -> None:
     if len(category) > MAX_CATEGORY_LEN:
-        raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            f"category strings must be {MAX_CATEGORY_LEN} or less characters")
-    if not all(c in string.printable for c in category):
-        raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            "category strings must be URL safe")
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST,
+            f"category must be {MAX_CATEGORY_LEN} characters or fewer."
+        )
+
+    if not URL_SAFE_REGEX.match(category):
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST,
+            "category contains invalid characters - only URL-safe characters (alphanumeric, '-', '_', '.') are allowed."
+        )
 
 
 def select_filtered_g_assets(session: Session, profile: SessionProfile, category: Optional[str]) -> list[

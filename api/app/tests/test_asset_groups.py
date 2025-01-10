@@ -1,11 +1,13 @@
 """Tests for grouping of assets under profiles"""
 
 # pylint: disable=redefined-outer-name, unused-import
-
 from http import HTTPStatus
 
+import pytest
+from fastapi import HTTPException
 from munch import munchify
 
+from routes.asset_groups.asset_groups import MAX_CATEGORY_LEN, validate_category
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
@@ -94,3 +96,34 @@ def test_asset_groups(client, api_base, create_profile, create_asset_versions, u
     assert_status_code(r, HTTPStatus.OK)
     assert (len(r.json()) == 1)
     assert not any([x['asset_id'] == asset_versions[0].asset_id for x in r.json()])
+
+
+@pytest.mark.parametrize(
+    "category,expected_exception",
+    [
+        # Valid cases
+        ("valid-category", None),
+        ("valid_category", None),
+        ("valid.category", None),
+        ("Valid123", None),
+        ("a" * MAX_CATEGORY_LEN, None),  # Edge case: max length
+
+        # Invalid cases
+        ("", HTTPException),  # Empty string
+        ("a" * (MAX_CATEGORY_LEN + 1), HTTPException),  # Exceeds max length
+        ("invalid category", HTTPException),  # Space character
+        ("invalid/category", HTTPException),  # Slash character
+        ("invalid@category", HTTPException),  # Special character
+        ("invalid|category", HTTPException),  # Pipe character
+        ("\ncategory", HTTPException),  # Newline character
+        ("\tcategory", HTTPException),  # Tab character
+        ("cätégory", HTTPException),  # Non-ASCII characters
+    ],
+)
+def test_validate_category(category, expected_exception):
+    if expected_exception:
+        with pytest.raises(expected_exception):
+            validate_category(category)
+    else:
+        # Should not raise any exception for valid inputs
+        validate_category(category)
