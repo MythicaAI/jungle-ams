@@ -8,8 +8,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: "houdini"
@@ -30,6 +30,8 @@ spec:
           stdin: true
           tty: true
           env:
+            - name: API_BASE_URI
+              value: http://app.api/v1
             - name: NAMESPACE
               value: api
             - name: TELEMETRY_ENDPOINT
@@ -40,14 +42,9 @@ spec:
               value: nats://nats.nats:4222
             - name: MYTHICA_ENVIRONMENT
               value: production
-<<<<<<< Updated upstream
-            - name: MYTHICA_LOCATION  # basically cluster but can be "on-prem"
-              value: "gke-main-us-central1"
             - name: K8S_CLUSTER_NAME
               value: "gke-main-us-central1"
             - name: APP_VERSION
-              value: "latest"
-=======
             - name: MYTHICA_LOCATION
               value: "gke-us-central1"
             - name: SFX_CLIENT_ID
@@ -60,14 +57,13 @@ spec:
                 secretKeyRef:
                   key: SFX_CLIENT_SECRET
                   name: houdini-secrets
->>>>>>> Stashed changes
           resources:
             limits:
-              cpu: 500m
-              ephemeral-storage: 1Gi
-              memory: 6Gi
+              cpu: 2000m
+              ephemeral-storage: 8Gi
+              memory: 64Gi
             requests:
-              cpu: 500m
-              ephemeral-storage: 1Gi
-              memory: 6Gi
+              cpu: 2000m
+              ephemeral-storage: 8Gi
+              memory: 64Gi
       restartPolicy: Always
