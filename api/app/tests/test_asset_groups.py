@@ -19,7 +19,7 @@ def test_asset_groups(client, api_base, create_profile, create_asset_versions, u
     asset_versions = create_asset_versions(
         test_profile,
         uploader,
-        version_ids=['0.9.9', '1.0.0'])
+        version_ids=['1.0.0', '0.9.9'])
     specific_versions = create_asset_versions(
         test_profile,
         uploader,
