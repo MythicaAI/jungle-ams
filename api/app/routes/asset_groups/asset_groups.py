@@ -52,7 +52,7 @@ def validate_category(category: str) -> None:
                             f"category strings must be {MAX_CATEGORY_LEN} or less characters")
     if not all(c in string.printable for c in category):
         raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            f"category strings must be URL safe")
+                            "category strings must be URL safe")
 
 
 def select_filtered_g_assets(session: Session, profile: SessionProfile, category: Optional[str]) -> list[

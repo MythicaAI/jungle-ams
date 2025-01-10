@@ -5,16 +5,13 @@ from uuid import uuid4
 import sys
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from cryptid.location import location
-from context import UploadContext
-from db.connection import get_session
-from db.schema.events import Event
-from db.schema.media import FileContent
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
 from sqlmodel import insert
 
+from context import UploadContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
