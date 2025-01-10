@@ -1,17 +1,15 @@
-import hou
 import logging
 import os
 import re
 import tempfile
 
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import OutputFiles
-from pydantic import Field
+import hou
 from mythica.network import RampBasis
-
 from opentelemetry import trace
-
+from pydantic import Field
+from ripple.automation.publishers import ResultPublisher
+from ripple.models.params import FileParameter, ParameterSet
+from ripple.models.streaming import OutputFiles
 
 tracer = trace.get_tracer(__name__)
 logging.basicConfig(
@@ -21,17 +19,19 @@ log = logging.getLogger(__name__)
 
 rampkeys = {"interp", "x", "y"}
 
+
 def is_ramp_param(param):
     if isinstance(param, list) and all(isinstance(p, dict) for p in param):
         if all(rampkeys.issubset(p.keys()) for p in param):
             return True
     return False
 
+
 def apply_params(asset, params: dict):
     for k, v in params.items():
         if k == 'nonce':
             continue
-        
+
         if is_ramp_param(v):
             basis = []
             keys = []
@@ -50,7 +50,7 @@ def apply_params(asset, params: dict):
                     raise ValueError(f"Invalid key in ramp parameter: {e}") from e
                 except Exception as e:
                     raise ValueError(f"Unexpected error processing ramp parameter: {e}") from e
-            
+
             # Create and set the ramp
             ramp = hou.Ramp(basis, keys, values)
             asset.parm(k).set(ramp)
@@ -59,7 +59,6 @@ def apply_params(asset, params: dict):
             if parm:
                 val = [v] if not isinstance(v, (tuple, list)) else v
                 parm.set(val)
-
 
 
 def create_inputs(asset, geo, params: dict):
@@ -84,12 +83,13 @@ def create_inputs(asset, geo, params: dict):
 
         asset.setInput(input_index, input_node, 0)
 
+
 def generate_mesh_impl(
-    hda_path: str,
-    hda_definition_index: int,
-    format: str,
-    params: dict,
-    working_dir: str
+        hda_path: str,
+        hda_definition_index: int,
+        format: str,
+        params: dict,
+        working_dir: str
 ) -> list[str]:
     log.debug("Preparing scene")
     output_file_name = os.path.basename(hda_path)
@@ -103,7 +103,7 @@ def generate_mesh_impl(
 
     # Geometry
     obj = hou.node('obj')
-    geo = obj.createNode('geo','geometry')
+    geo = obj.createNode('geo', 'geometry')
     stage = hou.node('stage')
 
     assetdef = hou.hda.definitionsInFile(hda_path)[hda_definition_index]
@@ -134,44 +134,47 @@ def generate_mesh_impl(
     out = hou.node('out')
 
     output_file_path = ""
-    outputs:list[str] = []
-        
-    if format == 'fbx':
-        outputs.append(os.path.join(working_dir, f"{output_file_name}.fbx"))
+    outputs: list[str] = []
 
-        fbx_node = out.createNode("filmboxfbx","fbx_node")
+    if format == 'fbx':
+        output_file_path = os.path.join(working_dir, f"{output_file_name}.fbx")
+        outputs.append(output_file_path)
+
+        fbx_node = out.createNode("filmboxfbx", "fbx_node")
         fbx_node.parm("sopoutput").set(output_file_path)
         fbx_node.parm("exportkind").set(0)  # Export in binary format
 
-        log.debug("Exporting mesh")
+        log.debug("Exporting FBX %s", output_file_path)
         fbx_node.parm("execute").pressButton()
         log.debug("Exporting mesh completed")
     elif format == 'glb':
         # gltf vs glb export is inferred from the output extension
-        outputs.append(os.path.join(working_dir, f"{output_file_name}.glb"))
+        output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
+        outputs.append(output_file_path)
 
-        gltf_node = out.createNode("gltf","gltf_node")
+        gltf_node = out.createNode("gltf", "gltf_node")
         gltf_node.parm("file").set(output_file_path)
 
-        log.debug("Exporting mesh")
+        log.debug("Exporting GLB %s", output_file_path)
         gltf_node.parm("execute").pressButton()
         log.debug("Exporting mesh completed")
     elif format == 'usdz':
         # Export to USD
-        usd_node = geo.createNode("usdexport","usd_node")
+        usd_node = geo.createNode("usdexport", "usd_node")
         usd_node.parm("authortimesamples").set("never")
         render_node = stage.createNode("usd_rop")
         sublayer_node = stage.createNode("sublayer")
         attrib_node = stage.createNode("attribwrangle")
-        usdz_node = out.createNode("usdzip","usdz_node")
+        usdz_node = out.createNode("usdzip", "usdz_node")
 
         for index in range(len(asset.outputNames())):
             output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
             usd_node.parm("lopoutput").set(output_file_path)
+            outputs.append(output_file_path)
 
-            
+            log.debug("Exporting USD %s", output_file_path)
+
             usd_node.setInput(0, asset, 0)
-            log.debug("Exporting mesh")
             usd_node.parm("execute").pressButton()
             log.debug("Exporting mesh completed")
 
@@ -180,14 +183,14 @@ def generate_mesh_impl(
                 if params['material/type'] == "Unreal":
                     sublayer_node.parm("num_files").set(1)
                     sublayer_node.parm("filepath1").set(output_file_path)
-            
+
                     sourceAssset = params['material/source_asset']
                     attrib_node.parm("primpattern").set("%type:Boundable")
                     attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
                     attrib_node.setInput(0, sublayer_node, 0)
 
                     binded_file = os.path.join(working_dir, f"{output_file_name}_{index}_with_material.usd")
-                    render_node.parm("lopoutput").set(binded_file) 
+                    render_node.parm("lopoutput").set(binded_file)
                     render_node.setInput(0, attrib_node, 0)
                     render_node.parm("execute").pressButton()
 
@@ -216,8 +219,10 @@ class ExportMeshRequest(ParameterSet):
     hda_definition_index: int
     format: str
 
+
 class ExportMeshResponse(OutputFiles):
     files: dict[str, list[str]] = Field(default={"mesh": []})
+
 
 def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
     log.info(f"Starting generate_mesh: {model}")
@@ -233,5 +238,5 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Expor
 
     log.info(f"Completed generate_mesh")
     return ExportMeshResponse(
-        files = {'mesh': [result_file_paths[0]]}
+        files={'mesh': [result_file_paths[0]]}
     )
