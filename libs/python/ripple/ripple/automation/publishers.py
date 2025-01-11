@@ -93,16 +93,12 @@ class ResultPublisher:
                 )
 
     def _publish_local_data(self, item: ProcessStreamItem) -> None:
-
-
         #TODO: Report errors
         if isinstance(item, OutputFiles):
             for key, files in item.files.items():
                 for index, file in enumerate(files):
-                    file_id = upload_file(file)
+                    file_id = self.upload_file(file)
                     files[index] = file_id
-
-
 
 
     def upload_file(self, file_path: str) -> Optional[str]:
