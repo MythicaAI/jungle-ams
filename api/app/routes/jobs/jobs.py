@@ -1,22 +1,12 @@
 from urllib.error import HTTPError
 
 import logging
-import sys
 from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Any, Optional
 from uuid import uuid4
 
 from config import app_config
-from cryptid.cryptid import (
-    event_seq_to_id,
-    job_def_id_to_seq,
-    job_def_seq_to_id,
-    job_id_to_seq,
-    job_result_seq_to_id,
-    job_seq_to_id,
-    profile_seq_to_id,
-)
 import sys
 
 from assets import repo
@@ -166,6 +156,9 @@ async def list_definitions() -> list[JobDefinitionModel]:
         ]
 
 def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[JobDefinitionModel]:
+    """
+    Convert the file references in the asset
+    """
     results = []
     for file_info in avr.contest['files']:
         file_seq = file_id_to_seq(file_info.file_id)
@@ -182,7 +175,7 @@ def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[J
 async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
     with get_session() as session:
         asset_seq = asset_id_to_seq(asset_id)
-        latest_version = repo.lastest_version(session, asset_seq)
+        latest_version = repo.latest_version(session, asset_seq)
         if latest_version is None:
             raise HTTPError(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
         return resolve_job_definitions(session, latest_version)
@@ -209,9 +202,9 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
         return JobDefinitionModel(job_def_id=job_def_id, owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
 
 
-@router.get('/def_from_file/{file_id}')
+@router.get('/definitions/generate/{file_id}')
 async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_profile)) -> str:
-    """Convert a file to a job definition"""
+    """Use an uploaded file to create a job definition"""
     if disable_nats(f"def_from_file: {file_id}"):
         return ""
 
