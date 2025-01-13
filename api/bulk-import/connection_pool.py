@@ -18,7 +18,7 @@ class ConnectionPool:
             pool_maxsize=10,
             max_retries=3,
             backoff_factor=0.3,
-            timeout=(3.05, 27),  # (connect, read) timeouts
+            timeout=(10, 27),  # (connect, read) timeouts
     ):
         self.session = requests.Session()
 
