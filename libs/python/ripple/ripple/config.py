@@ -88,7 +88,7 @@ def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, heade
         insecure=telemetry_insecure,
         headers=headers,
     )
-    reader = PeriodicExportingMetricReader(metric_exporter)
+    reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=500)
     meterProvider = MeterProvider(metric_readers=[reader], resource=resource)
     metrics.set_meter_provider(meterProvider)
 
