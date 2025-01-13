@@ -93,13 +93,11 @@ class ResultPublisher:
                 )
 
     def _publish_local_data(self, item: ProcessStreamItem) -> None:
-
-
         #TODO: Report errors
         if isinstance(item, OutputFiles):
             for key, files in item.files.items():
                 for index, file in enumerate(files):
-                    file_id = upload_file(file)
+                    file_id = self.upload_file(file)
                     files[index] = file_id
 
 
@@ -134,17 +132,11 @@ class ResultPublisher:
             headers=self.request.telemetry_context)
 
 class SlimPublisher(ResultPublisher):
-
-    def __init__(myself, request: AutomationRequest, rest: RestAdapter, directory: str) -> None:
-        myself.rest = rest
-        myself.directory = directory
-        myself.request = request
-
-    def result(myself, item: ProcessStreamItem, complete: bool=False):
-        item.process_guid = myself.request.process_guid
-        item.correlation = myself.request.work_guid
+    def result(self, item: ProcessStreamItem, complete: bool=False):
+        item.process_guid = self.request.process_guid
+        item.correlation = self.request.work_guid
         item.job_id = ""
 
         # Upload any references to local data
-        myself._publish_local_data(item, ripple_config().api_base_uri)
+        self._publish_local_data(item)
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")

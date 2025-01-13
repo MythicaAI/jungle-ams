@@ -470,7 +470,7 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
 async def test_publish_files(publisher, mock_rest, output_files_item):
     mock_rest.post_file.return_value = {"files": [{"file_id": "test-file-id"}]}
     
-    publisher._publish_local_data(output_files_item, publisher.api_url)
+    publisher._publish_local_data(output_files_item)
     
     mock_rest.post_file.assert_called_once()
     assert output_files_item.files["test_key"][0] == "test-file-id"
@@ -479,20 +479,28 @@ async def test_publish_files(publisher, mock_rest, output_files_item):
 async def test_publish_job_definition(publisher, mock_rest, job_definition_item):
     mock_rest.post.return_value = {"job_def_id": "test-job-def-id"}
     
-    publisher._publish_local_data(job_definition_item, publisher.api_url)
+    publisher._publish_local_data(job_definition_item)
     
     mock_rest.post.assert_called_once()
     assert job_definition_item.job_def_id == "test-job-def-id"
 
-def test_slim_publisher_init(test_request, mock_rest, tmp_path):
-    slim_publisher = SlimPublisher(test_request, mock_rest, str(tmp_path))
+def test_slim_publisher_init(test_request, mock_rest, mock_nats, tmp_path):
+    slim_publisher = SlimPublisher(
+        request=test_request,
+        nats_adapter=mock_nats,
+        rest=mock_rest,
+        directory=str(tmp_path))
     assert slim_publisher.request == test_request
     assert slim_publisher.rest == mock_rest
     assert slim_publisher.directory == str(tmp_path)
 
 @pytest.mark.asyncio
 async def test_slim_publisher_result(test_request, mock_rest, tmp_path):
-    slim_publisher = SlimPublisher(test_request, mock_rest, str(tmp_path))
+    slim_publisher = SlimPublisher(
+        request=test_request,
+        nats_adapter=mock_nats,
+        rest=mock_rest,
+        directory=str(tmp_path))
     test_item = ProcessStreamItem(item_type="test")
     
     slim_publisher.result(test_item)
@@ -510,7 +518,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
         files={"test_key": [non_existent_file]}
     )
     
-    publisher._publish_local_data(output_files, publisher.api_url)
+    publisher._publish_local_data(output_files)
     
     mock_rest.post_file.assert_not_called()
     assert output_files.files["test_key"][0] is None
@@ -524,7 +532,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
         files={"test_key": [non_existent_file]}
     )
     
-    publisher._publish_local_data(output_files, publisher.api_url)
+    publisher._publish_local_data(output_files)
     mock_rest.post_file.assert_not_called()
     assert output_files.files["test_key"][0] is None
 
