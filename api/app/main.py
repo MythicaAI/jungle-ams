@@ -1,9 +1,9 @@
 """Main entrypoint for FastAPI app creation"""
 import importlib
 import logging
-import sys
 from contextlib import asynccontextmanager
 
+import sys
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,11 +16,11 @@ from cache.connection import cache_connection_lifespan, get_redis
 from config import app_config
 from db.connection import db_connection_lifespan, get_session
 from exceptions import register_exceptions
-from telemetry_config import configure_logging
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources
 from routes.type_adapters import register_adapters
+from telemetry_config import configure_logging
 
 # This must run before the app is created to override the default
 #  logging configuration
@@ -87,6 +87,7 @@ route_names = [
     'files',
     'jobs',
     'assets',
+    'asset_groups',
     'orgs',
     'topos',
     'sessions',

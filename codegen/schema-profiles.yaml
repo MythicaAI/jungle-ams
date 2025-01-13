@@ -142,3 +142,30 @@ tables:
       - name: owner_seq
         type: BIGINT
         foreign_key: profiles.profile_seq
+
+  - name: ProfileAsset
+    description: Profile link to an asset for creating access lists
+    table_name: profile_assets
+    columns:
+      - name: profile_seq
+        type: BIGINT
+        primary_key: true
+      - name: asset_seq
+        type: BIGINT
+        primary_key: true
+      - name: major
+        type: INTEGER
+        primary_key: true
+      - name: minor
+        type: INTEGER
+        primary_key: true
+      - name: patch
+        type: INTEGER
+        primary_key: true
+      - name: created
+        type: TIMESTAMP
+        nullable: true
+        auto_create: true
+      - name: category
+        type: TEXT
+        nullable: false

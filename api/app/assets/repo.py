@@ -198,7 +198,8 @@ def process_join_results(
 
     results = list()
     for join_result in join_results:
-        asset, ver = join_result
+        asset = join_result[0]
+        ver = join_result[1]
         if ver is None:
             # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})

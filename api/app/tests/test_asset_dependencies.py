@@ -4,7 +4,7 @@
 from http import HTTPStatus
 
 from assets.repo import AssetDependency, AssetDependencyResult
-from tests.fixtures.create_asset import create_asset
+from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code, make_random_content
@@ -21,10 +21,12 @@ def dependencies_uri(api_base, asset):
             f"{version_id_as_str(asset.version)}/dependencies")
 
 
-def test_asset_dependencies(client, api_base, create_profile, create_asset, uploader):
+def test_asset_dependencies(client, api_base, create_profile, create_asset_versions, uploader):
     test_profile = create_profile()
 
-    base_asset = create_asset(test_profile, uploader)
+    versions = create_asset_versions(test_profile, uploader)
+    assert len(versions) == 1
+    base_asset = versions[0]
     assert base_asset is not None
     assert base_asset.author_id == test_profile.profile.profile_id
     assert base_asset.contents
@@ -36,17 +38,17 @@ def test_asset_dependencies(client, api_base, create_profile, create_asset, uplo
     assert len(base_asset.contents['files']) > 0
 
     # create an asset that depends on base_asset
-    dependent_asset = create_asset(
+    dependent_asset = create_asset_versions(
         test_profile,
         uploader,
-        dependencies=[(base_asset.asset_id, base_asset.version)])
+        dependencies=[(base_asset.asset_id, base_asset.version)])[0]
     assert dependent_asset is not None
 
     # create a control asset that is not dependent
-    control_asset = create_asset(
+    control_asset = create_asset_versions(
         test_profile,
         uploader
-    )
+    )[0]
 
     # query control
     r = client.get(
@@ -80,7 +82,7 @@ def test_asset_dependencies(client, api_base, create_profile, create_asset, uplo
     other_profile = create_profile()
 
     # initially this asset has no dependencies
-    versioned_asset = create_asset(other_profile, uploader, attach_package=False)
+    versioned_asset = create_asset_versions(other_profile, uploader, attach_package=False)[0]
 
     # query dependencies
     r = client.get(

@@ -13,7 +13,7 @@ from pydantic import ConfigDict
 from typing import Any, Dict
 from datetime import datetime
 from uuid import UUID, uuid4
-from ripple.models.contexts import FilePurpose
+
 
 # sequences for table files
 
@@ -36,7 +36,7 @@ class FileContent(SQLModel, table=True):
     updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     size: int | None = Field(sa_column=Column('size',Integer,default=0))
-    purpose: FilePurpose | None = Field(default=FilePurpose.UNDEFINED)
+    purpose: str | None = Field(default=None)
     content_type: str | None = Field(default=None)
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     cache_ttl: int | None = Field(sa_column=Column('cache_ttl',Integer,default=0))
