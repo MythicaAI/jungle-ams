@@ -10,4 +10,5 @@ echo "Renewed domains: $RENEWED_DOMAINS"
 kubectl create secret tls $TLS_NAME \
   --cert=<(echo "$TLS_CERT") \
   --key=<(echo "$TLS_KEY") \
-  --namespace $TLS_NAMESPACE
+  --namespace $TLS_NAMESPACE \
+  --dry-run=client -o yaml | kubectl apply -f -
