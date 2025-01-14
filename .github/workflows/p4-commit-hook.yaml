@@ -1,6 +1,10 @@
 name: p4-commit-hook
 
 on:
+  # Run on external web hook
+  repository_dispatch:
+    types: [ p4-commit ]
+
   # Run when this file itself changes
   push:
     paths:
