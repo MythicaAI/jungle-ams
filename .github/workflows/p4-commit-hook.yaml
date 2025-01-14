@@ -7,7 +7,7 @@ on:
       - '.github/workflows/p4-commit-hook.yaml'
       - 'api/bulk-import/**'
 
-  workflow_call:
+  workflow_dispatch:
     inputs:
       force_sync:
         description: 'Force full sync'
