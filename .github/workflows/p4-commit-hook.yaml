@@ -1,16 +1,12 @@
 name: p4-commit-hook
-on:
-  # Run on external web hook
-  repository_dispatch:
-    types: [ p4-commit ]
 
+on:
   # Run when this file itself changes
   push:
     paths:
       - '.github/workflows/p4-commit-hook.yaml'
       - 'api/bulk-import/**'
 
-  # Optional: Also run manually from GitHub UI
   workflow_dispatch:
     inputs:
       force_sync:
@@ -18,7 +14,12 @@ on:
         required: false
         type: boolean
         default: false
-      changelist: 0
+      changelist:
+        description: 'Perforce changelist ID'
+        required: false
+        type: integer
+        default: 0
+
 
 env:
   P4PORT: ssl:p4.garden.mythica.ai:1666
