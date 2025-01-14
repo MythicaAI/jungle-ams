@@ -1,6 +1,11 @@
 name: p4-commit-hook
 
-on: [ ]
+on:
+  # Run when this file itself changes
+  push:
+    paths:
+      - '.github/workflows/p4-commit-hook.yaml'
+      - 'api/bulk-import/**'
 
 env:
   P4PORT: ssl:p4.garden.mythica.ai:1666
