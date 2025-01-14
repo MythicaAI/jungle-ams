@@ -1,10 +1,6 @@
 name: p4-commit-hook
 
 on:
-  # Run on external web hook
-  repository_dispatch:
-    types: [ p4-commit ]
-
   # Run when this file itself changes
   push:
     paths:
@@ -12,7 +8,7 @@ on:
       - 'api/bulk-import/**'
 
   # Optional: Also run manually from GitHub UI
-  workflow_dispatch:
+  workflow_call:
     inputs:
       force_sync:
         description: 'Force full sync'
