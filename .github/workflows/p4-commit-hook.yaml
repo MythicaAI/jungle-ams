@@ -18,6 +18,7 @@ on:
         required: false
         type: boolean
         default: false
+      changelist: 0
 
 env:
   P4PORT: ssl:p4.garden.mythica.ai:1666
