@@ -3,6 +3,8 @@ import logging
 from cryptid.cryptid import IdError, SequenceError
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
 from pydantic import ValidationError
 from ripple.auth.authorization import RoleError
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
@@ -42,13 +44,8 @@ async def role_error(_: Request, exc: RoleError):
     )
 
 
-from opentelemetry import trace
-from opentelemetry.trace.status import Status, StatusCode
-
-span = trace.get_current_span()
-
-
 async def other_errors(_: Request, exc: Exception):
+    span = trace.get_current_span()
     span.record_exception(exc)
     span.set_status(Status(StatusCode.ERROR, "Unexpected Exception occurred"))
 
