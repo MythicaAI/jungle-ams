@@ -698,11 +698,14 @@ class PackageUploader(object):
         print(f" - commit_ref: {package.commit_ref}", file=self.markdown)
         print(f" - profile: {package.profile_name} {package.profile_id}", file=self.markdown)
         print(f" - org: {package.org_name} {package.org_id}", file=self.markdown)
+        print(f" - tags: {package.tags}", file=self.markdown)
         print(file=self.markdown)
 
         print("#### Files", file=self.markdown)
         print(file=self.markdown)
         print("| category | file | file_id | content_hash |", file=self.markdown)
+        print("| -------- | ---- | ------- | ------------ |", file=self.markdown)
+        
         for category, l in package.asset_contents.items():
             for file_ref in l:
                 print(f"| {category} | {file_ref.file_name} | {file_ref.file_id} | {file_ref.content_hash} |",
