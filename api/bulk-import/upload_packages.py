@@ -1,25 +1,26 @@
 """Bulk import package uploader, consumes a package list and uploads them to the package index API"""
+from http import HTTPStatus
+
 import argparse
+import git
 import hashlib
 import importlib.util
 import json
 import logging
 import os
-import tempfile
-from http import HTTPStatus
-from pathlib import Path, PurePosixPath
-from typing import Optional
-
-import git
 import requests
+import tempfile
 from munch import munchify
 from packaging import version
+from pathlib import Path, PurePosixPath
+from pydantic import BaseModel
 from requests_toolbelt.multipart.encoder import MultipartEncoder
+from typing import Optional
 
 from connection_pool import ConnectionPool
 from github import GitRelease, Github
 from log_config import log_config
-from models import PackageFile, PackageModel, ProcessedPackageModel
+from models import FileRef, OrgResponse, PackageFile, PackageModel, ProcessedPackageModel
 from perforce import parse_perforce_change, run_p4_command
 
 tempdir = tempfile.TemporaryDirectory()
@@ -30,6 +31,11 @@ ZERO_VERSION = [0, 0, 0]
 log_config(log_level="DEBUG")
 
 log = logging.getLogger(__name__)
+
+
+class Stats(BaseModel):
+    uploaded: int = 0
+    skipped: int = 0
 
 
 def as_posix_path(path: str) -> PurePosixPath:
@@ -178,23 +184,27 @@ def collect_images_paths(package: ProcessedPackageModel) -> list[PackageFile]:
 
 
 def any_upstream_changes(package: ProcessedPackageModel,
-                         key: str,
-                         new_asset_contents: list[dict]) -> bool:
+                         category: str) -> bool:
     """Detect any changes in the GitHub upstream by doing a count and hash check"""
     # first index the latest version contents
-    latest_version_contents = package.latest_version_contents.get(key, [])
+    asset_contents = package.asset_contents[category]
+    latest_version_contents = package.latest_version_contents.get(category, [])
+
+    # use the content hash as the key to validate
     contents_by_hash = {asset_version_content.content_hash: asset_version_content
                         for asset_version_content in latest_version_contents}
     # validate the file count matches
-    if len(latest_version_contents) != len(new_asset_contents):
+    if len(latest_version_contents) != len(asset_contents):
         log.info("Changed due to file count mismatch: %s != %s",
-                 len(latest_version_contents), len(new_asset_contents))
+                 len(latest_version_contents), len(asset_contents))
         return True
+
     # validate all content hashes exist in existing asset version content
-    for new_content in new_asset_contents:
-        new_content_hash = new_content['content_hash']
+    for new_content in asset_contents:
+        new_content_hash = new_content.content_hash
         if new_content_hash not in contents_by_hash:
-            log.info("Content hash missing or changed %s", new_content_hash)
+            log.info("Content hash missing or changed %s, %s",
+                     new_content.file_name, new_content_hash)
             return True
     return False
 
@@ -228,6 +238,8 @@ class PackageUploader(object):
         self.tag = None
         self.tag_id = None
         self.conn_pool = conn_pool
+        self.markdown = None
+        self.stats = Stats()
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -274,6 +286,12 @@ class PackageUploader(object):
             default=None,
             required=False
         )
+        parser.add_argument(
+            '--markdown',
+            help='File to write GitHub flavored markdown',
+            default=None,
+            required=False
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
@@ -283,6 +301,9 @@ class PackageUploader(object):
         self.license = args.license
         self.tag = args.tag
         self.tag_id = None
+        self.markdown = open(args.markdown, "w+t") or None
+        if self.markdown:
+            self.start_md()
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -348,6 +369,7 @@ class PackageUploader(object):
 
         profile = self.find_or_create_profile(user, user_description)
         package.profile_id = profile.profile_id
+        package.profile_name = profile.name
 
         # start a new session as the package profile_id to impersonate actions on behalf
         # of the provided profile
@@ -359,8 +381,8 @@ class PackageUploader(object):
             package.asset_id = self.create_asset(package)
             package.latest_version = ZERO_VERSION
 
-        asset_contents = self.gather_contents(package)
-        if len(asset_contents['files']) == 0:
+        package.asset_contents = self.gather_contents(package)
+        if len(package.asset_contents['files']) == 0:
             log.error("Failed to find any files in directory %s for package %s",
                       package.directory, package.name)
             return
@@ -370,43 +392,45 @@ class PackageUploader(object):
                 package.latest_version = package.latest_github_version
                 log.info("Updating %s to latest github release: %s",
                          package.name, package.latest_github_version)
-            elif any_upstream_changes(package, 'files', asset_contents['files']):
+            elif any_upstream_changes(package, 'files'):
                 bump_package_version(package)
                 log.info("File change detected, bumped %s version to %s",
                          package.name, package.latest_version)
-            elif any_upstream_changes(package, 'thumbnails', asset_contents['thumbnails']):
+            elif any_upstream_changes(package, 'thumbnails'):
                 bump_package_version(package)
                 log.info("Thumbnail change detected, bumped %s version to %s",
                          package.name, package.latest_version)
             else:
                 log.info("Skipping %s, latest version available: %s",
                          package.name, package.latest_version)
+                self.emit_md(package, "skipped, no changes detected")
+                self.stats.skipped += 1
                 return
         else:
             package.latest_version = DEFAULT_STARTING_VERSION
             log.info("Creating package: %s, version: %s",
                      package.name, DEFAULT_STARTING_VERSION)
 
-        self.create_version(package, asset_contents)
+        self.create_version(package, package.asset_contents)
 
         if self.tag:
             if not self.tag_id:
                 self.tag_id = self.find_or_create_tag(self.tag)
             self.tag_asset(package, self.tag_id)
 
-    def find_or_create_org(self, org_name: str):
+    def find_or_create_org(self, org_name: str) -> OrgResponse:
         """Find or create an organization object"""
         response = self.conn_pool.get(f"{self.endpoint}/v1/orgs/named/{org_name}?exact=true")
         response.raise_for_status()
         orgs = response.json()
         if len(orgs) == 1:
-            return munchify(orgs[0])
+            return OrgResponse(**orgs[0])
         org_json = {"name": org_name}
         response = self.conn_pool.post(f"{self.endpoint}/v1/orgs",
                                        headers=self.auth_header(),
                                        json=org_json)
         response.raise_for_status()
-        return munchify(response.json())
+        return OrgResponse(**response.json())
 
     def find_or_create_profile(self, user: str, description: str):
         """Find or create a profile object implementation"""
@@ -535,7 +559,7 @@ class PackageUploader(object):
         else:
             package.latest_version = ZERO_VERSION
 
-    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list]:
+    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list[PackageFile]]:
         """Gather all files to be included in the package"""
         files: list[PackageFile] = list()
         thumbnails: list[PackageFile] = list()
@@ -575,7 +599,7 @@ class PackageUploader(object):
 
     def maybe_upload_package_file(self,
                                   package: ProcessedPackageModel,
-                                  package_file: PackageFile) -> dict:
+                                  package_file: PackageFile) -> FileRef:
         """Upload a file from a package path, return its asset contents"""
         page_size = 64 * 1024
         sha1 = hashlib.sha1()
@@ -593,12 +617,12 @@ class PackageUploader(object):
             o = munchify(response.json())
             log.info("Found existing file '%s': file_id: %s, sha1: %s",
                      o.file_name, o.file_id, existing_digest)
-            return {
-                'file_id': o.file_id,
-                'file_name': o.file_name,
-                'content_hash': o.content_hash,
-                'size': o.size
-            }
+            return FileRef(
+                file_id=o.file_id,
+                file_name=o.file_name,
+                content_hash=o.content_hash,
+                size=o.size,
+                already=True)
 
         # raise on unexpected result
         if response.status_code != HTTPStatus.NOT_FOUND:
@@ -635,14 +659,13 @@ class PackageUploader(object):
                      file_info.size,
                      file_info.content_hash,
                      file_info.file_id)
-            return {
-                'file_id': file_info.file_id,
-                'file_name': file_info.file_name,
-                'content_hash': file_info.content_hash,
-                'size': file_info.size
-            }
+            return FileRef(
+                file_id=file_info.file_id,
+                file_name=file_info.file_name,
+                content_hash=file_info.content_hash,
+                size=file_info.size)
 
-    def create_version(self, package: PackageModel, asset_contents: dict[str, list]):
+    def create_version(self, package: ProcessedPackageModel, asset_contents: dict[str, list]):
         """Create new asset version"""
         asset_ver_json = {
             'asset_id': package.asset_id,
@@ -661,6 +684,46 @@ class PackageUploader(object):
         response.raise_for_status()
 
         log.info("Successfully uploaded package: %s", package.name)
+
+        self.emit_md(package, "uploaded as %s-%s", package.name, package.latest_version)
+        self.status.uploaded += 1
+
+    def emit_md(self, package: ProcessedPackageModel, package_status: str):
+        if self.markdown is None:
+            return
+        print(f"### {package.name}", file=self.markdown)
+        print(file=self.markdown)
+        print(f" - version: {package.latest_version}", file=self.markdown)
+        print(f" - status: {package_status}", file=self.markdown)
+        print(f" - commit_ref: {package.commit_ref}", file=self.markdown)
+        print(f" - profile: {package.profile_name} {package.profile_id}", file=self.markdown)
+        print(f" - org: {package.org_name} {package.org_id}", file=self.markdown)
+        print(file=self.markdown)
+
+        print("#### Files", file=self.markdown)
+        print(file=self.markdown)
+        print("| category | file | file_id | content_hash |", file=self.markdown)
+        print("| -------- | ---- | ------- | ------------ |", file=self.markdown)
+
+        for category, l in package.asset_contents.items():
+            for file_ref in l:
+                print(f"| {category} | {file_ref.file_name} | {file_ref.file_id} | {file_ref.content_hash} |",
+                      file=self.markdown)
+        print(file=self.markdown)
+
+    def start_md(self):
+        if self.markdown is None:
+            return
+        print("## Bulk Import Results", file=self.markdown)
+        print(file=self.markdown)
+
+    def end_md(self):
+        if self.markdown is None:
+            return
+        print("## Bulk Import Finished", file=self.markdown)
+        print("", file=self.markdown)
+        print(f"  - {self.stats.uploaded} uploaded", file=self.markdown)
+        print(f"  - {self.stats.uploaded} skipped", file=self.markdown)
 
 
 def main():
@@ -694,6 +757,7 @@ def start_uploads(conn_pool: ConnectionPool):
             log.exception("protocol error")
             log.error("doc: %s", e.doc)
             raise
+    uploader.end_md()
 
 
 if __name__ == "__main__":
