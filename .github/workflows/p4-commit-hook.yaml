@@ -111,4 +111,5 @@ jobs:
             --license MPLv2.txt \
             --tag Official \
             --markdown results.md
+          cat results.md
           cat results.md >> $GITHUB_STEP_SUMMARY
