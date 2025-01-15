@@ -1,6 +1,6 @@
 // MythicaFlow.tsx
 import React, { useRef, useMemo, useState } from 'react';
-import { ReactFlow, MiniMap, Controls, Background, Panel } from '@xyflow/react';
+import { ReactFlow, MiniMap, Controls, Background } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import useAwfulFlow from './hooks/useAwfulFlow';
@@ -10,17 +10,21 @@ import AutomationNode from './components/nodes/AutomationNode';
 import FileUploadNode from './components/nodes/FileUploadNode';
 import FileViewerNode from './components/nodes/FileViewerNode';
 import HDANode from './components/nodes/HDANode';
-import { Button, Stack } from '@mui/joy';
+import { Stack } from '@mui/joy';
 import { Header } from './components/Header';
 import { TabValues } from './enums';
 import { FileEdge } from './components/edges/FileEdge';
 import useCopyPaste from './hooks/useCopyPaste';
+import { useUndoRedoContext } from './providers/UndoRedoProvider';
+import { UndoRedoPanel } from './components/UndoRedoPanel';
+import { CopyPastePanel } from './components/CopyPastePanel';
 
 // Main Awful UI component
 const AwfulUI: React.FC = () => {
   const [tab, setTab] = useState<string>(TabValues.EDIT);
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const { cut, copy, paste, bufferedNodes } = useCopyPaste();
+  const { undo, redo, canUndo, canRedo } = useUndoRedoContext();
   const {
     onConnect,
     onDisconnect,
@@ -75,37 +79,24 @@ const AwfulUI: React.FC = () => {
             minZoom={0.1}
             maxZoom={1}
             colorMode="dark"
-            proOptions={{ hideAttribution: true }}
+            proOptions={{ account: 'paid-pro', hideAttribution: true }}
           >
             <MiniMap zoomable pannable />
             <Controls />
             <Background />
-            <Panel position="top-left">
-              <Button
-                onClick={() => cut()}
-                disabled={!canCopy}
-                color="danger"
-                sx={{ mr: '6px', py: '5px', minHeight: 'auto' }}
-              >
-                Cut
-              </Button>
-              <Button
-                onClick={() => copy()}
-                disabled={!canCopy}
-                color="primary"
-                sx={{ mr: '6px', py: '4px', minHeight: 'auto' }}
-              >
-                Copy
-              </Button>
-              <Button
-                onClick={() => paste({ x: 0, y: 0 })}
-                disabled={!canPaste}
-                color="neutral"
-                sx={{ py: '4px', minHeight: 'auto' }}
-              >
-                Paste
-              </Button>
-            </Panel>
+            <CopyPastePanel
+              cut={cut}
+              paste={paste}
+              copy={copy}
+              canCopy={canCopy}
+              canPaste={canPaste}
+            />
+            <UndoRedoPanel
+              canRedo={canRedo}
+              canUndo={canUndo}
+              redo={redo}
+              undo={undo}
+            />
           </ReactFlow>
         </div>
         <Sidebar tab={tab} />

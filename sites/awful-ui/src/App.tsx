@@ -9,6 +9,7 @@ import AwfulFlowProvider from './providers/AwfulFlowProvider';
 
 import AwfulUI from './AwfulUI';
 import { useTheme } from './styles/theme';
+import { UndoRedoProvider } from './providers/UndoRedoProvider';
 
 const App: React.FC = () => {
   const { theme } = useTheme();
@@ -17,9 +18,11 @@ const App: React.FC = () => {
       <ReactFlowProvider>
         <MythicaApiProvider>
           <AutomationProvider>
-            <AwfulFlowProvider>
-              <AwfulUI />
-            </AwfulFlowProvider>
+            <UndoRedoProvider>
+              <AwfulFlowProvider>
+                <AwfulUI />
+              </AwfulFlowProvider>
+            </UndoRedoProvider>
           </AutomationProvider>
         </MythicaApiProvider>
       </ReactFlowProvider>
