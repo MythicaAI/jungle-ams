@@ -366,7 +366,6 @@ class PackageUploader(object):
         profile = self.find_or_create_profile(user, user_description)
         package.profile_id = profile.profile_id
         package.profile_name = profile.name
-        package.profile_email = profile.email
 
         # start a new session as the package profile_id to impersonate actions on behalf
         # of the provided profile
@@ -693,7 +692,7 @@ class PackageUploader(object):
         print(f" - version: {package.latest_version}", file=self.markdown)
         print(f" - status: {package_status}", file=self.markdown)
         print(f" - commit_ref: {package.commit_ref}", file=self.markdown)
-        print(f" - profile: {package.profile_email} <{package.profile_name}> {package.profile_id}", file=self.markdown)
+        print(f" - profile: {package.profile_name} {package.profile_id}", file=self.markdown)
         print(f" - org: {package.org_name} {package.org_id}", file=self.markdown)
         print(file=self.markdown)
 
