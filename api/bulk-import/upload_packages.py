@@ -184,23 +184,27 @@ def collect_images_paths(package: ProcessedPackageModel) -> list[PackageFile]:
 
 
 def any_upstream_changes(package: ProcessedPackageModel,
-                         key: str,
-                         new_asset_contents: list[dict]) -> bool:
+                         category: str) -> bool:
     """Detect any changes in the GitHub upstream by doing a count and hash check"""
     # first index the latest version contents
-    latest_version_contents = package.latest_version_contents.get(key, [])
+    asset_contents = package.asset_contents[category]
+    latest_version_contents = package.latest_version_contents.get(category, [])
+
+    # use the content hash as the key to validate
     contents_by_hash = {asset_version_content.content_hash: asset_version_content
                         for asset_version_content in latest_version_contents}
     # validate the file count matches
-    if len(latest_version_contents) != len(new_asset_contents):
+    if len(latest_version_contents) != len(asset_contents):
         log.info("Changed due to file count mismatch: %s != %s",
-                 len(latest_version_contents), len(new_asset_contents))
+                 len(latest_version_contents), len(asset_contents))
         return True
+
     # validate all content hashes exist in existing asset version content
-    for new_content in new_asset_contents:
-        new_content_hash = new_content['content_hash']
+    for new_content in asset_contents:
+        new_content_hash = new_content.content_hash
         if new_content_hash not in contents_by_hash:
-            log.info("Content hash missing or changed %s", new_content_hash)
+            log.info("Content hash missing or changed %s, %s",
+                     new_content.file_name, new_content_hash)
             return True
     return False
 
@@ -388,11 +392,11 @@ class PackageUploader(object):
                 package.latest_version = package.latest_github_version
                 log.info("Updating %s to latest github release: %s",
                          package.name, package.latest_github_version)
-            elif any_upstream_changes(package, 'files', package.asset_contents['files']):
+            elif any_upstream_changes(package, 'files'):
                 bump_package_version(package)
                 log.info("File change detected, bumped %s version to %s",
                          package.name, package.latest_version)
-            elif any_upstream_changes(package, 'thumbnails', package.asset_contents['thumbnails']):
+            elif any_upstream_changes(package, 'thumbnails'):
                 bump_package_version(package)
                 log.info("Thumbnail change detected, bumped %s version to %s",
                          package.name, package.latest_version)
