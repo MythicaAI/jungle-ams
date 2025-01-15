@@ -88,6 +88,23 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+  tailscale:
+    network_mode: host  # Only this works for docker-compose with specified networks
+    container_name: tailscale
+    hostname: test-tailscale
+    image: tailscale/tailscale:latest
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY} # It should be in testing/.env file in this folder
+      - TS_EXTRA_ARGS=--reset
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=true
+    volumes:
+      - ${PWD}/tailscale/state:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    restart: unless-stopped
 volumes:
   pgdata:
     driver: local
