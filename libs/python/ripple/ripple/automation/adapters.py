@@ -120,6 +120,7 @@ class RestAdapter():
     def get(self, endpoint: str, data: dict={}, token: str = None, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Get data from an endpoint."""
         log.debug(f"Getting from Endpoint: {endpoint} - {data}" )
+        headers = headers.copy()
         headers.update({
             "Authorization": "Bearer %s" % token
         })
@@ -137,6 +138,7 @@ class RestAdapter():
     def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Post data to an endpoint synchronously. """
         log.debug(f"posting[{endpoint}]: {json_data}; {headers=}" )
+        headers = headers.copy()
         headers.update({
             "Content-Type": "application/json",
             "Authorization": "Bearer %s" % token
@@ -156,6 +158,7 @@ class RestAdapter():
     def post_file(self, endpoint: str, file_data: list, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Post file to an endpoint."""
         log.debug(f"Sending file to Endpoint: {endpoint} - {file_data}" )
+        headers = headers.copy()
         headers.update({"Authorization": "Bearer %s" % token})
         response = requests.post(
             endpoint, 
