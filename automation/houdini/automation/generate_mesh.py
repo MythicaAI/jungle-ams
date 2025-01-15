@@ -170,7 +170,6 @@ def generate_mesh_impl(
         for index in range(len(asset.outputNames())):
             output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
             usd_node.parm("lopoutput").set(output_file_path)
-            outputs.append(output_file_path)
 
             log.debug("Exporting USD %s", output_file_path)
 
