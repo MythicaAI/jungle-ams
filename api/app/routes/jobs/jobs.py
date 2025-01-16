@@ -12,6 +12,7 @@ from cryptid.cryptid import (
     asset_id_to_seq,
     event_seq_to_id,
     file_id_to_seq,
+    file_seq_to_id,
     job_def_id_to_seq,
     job_def_seq_to_id,
     job_id_to_seq,
@@ -171,12 +172,24 @@ def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[J
     if not results:
         return []
 
-    return [JobDefinitionModel(
-        job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-        owner_id=profile_seq_to_id(job_def.owner_seq), 
-        **job_def.model_dump())
-        for _, job_def in results
-    ]
+    job_defs = []
+    for entry_point, job_def in results:
+        source = AssetVersionEntryPointReference(
+            asset_id=avr.asset_id,
+            major=avr.version[0],
+            minor=avr.version[1],
+            patch=avr.version[2],
+            file_id=file_seq_to_id(entry_point.src_file_seq),
+            entry_point=entry_point.entry_point
+        )
+        job_defs.append(JobDefinitionModel(
+            job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+            owner_id=profile_seq_to_id(job_def.owner_seq), 
+            source=source,
+            **job_def.model_dump()
+        ))
+
+    return job_defs
 
 
 @router.get('/definitions/by_asset/{asset_id}')

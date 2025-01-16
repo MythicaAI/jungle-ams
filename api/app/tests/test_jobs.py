@@ -256,6 +256,8 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert(len(r.json()) == 1)
     job_def = munchify(r.json()[0])
     assert job_def.job_def_id == new_job_def_id
+    assert job_def.source.asset_id == asset_id
+    assert job_def.source.major == 2
 
     # Get old job definition
     r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{old_version.version[0]}/{old_version.version[1]}/{old_version.version[2]}')
@@ -263,6 +265,8 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert(len(r.json()) == 1)
     job_def = munchify(r.json()[0])
     assert job_def.job_def_id == old_job_def_id
+    assert job_def.source.asset_id == asset_id
+    assert job_def.source.major == 1
 
 
 def test_delete_canary(client: TestClient, api_base, create_profile):
