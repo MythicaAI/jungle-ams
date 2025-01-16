@@ -727,7 +727,7 @@ def latest_version(session: Session, asset_seq: int) -> Optional[AssetVersionRes
         return None
 
     results = process_join_results(session, results)
-    sorted_results = sorted(results, key=lambda x: (x.major, x.minor, x.patch), reverse=True)
+    sorted_results = sorted(results, key=lambda x: x.version, reverse=True)
     return sorted_results[0]
 
 

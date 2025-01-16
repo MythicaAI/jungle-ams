@@ -161,7 +161,8 @@ async def list_definitions() -> list[JobDefinitionModel]:
 
 def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[JobDefinitionModel]:
     results = session.exec(
-        select(AssetVersionEntryPoint)
+        select(AssetVersionEntryPoint, JobDefinition)
+        .outerjoin(JobDefinition, AssetVersionEntryPoint.job_def_seq == JobDefinition.job_def_seq)
         .where(AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id))
         .where(AssetVersionEntryPoint.major == avr.version[0])
         .where(AssetVersionEntryPoint.minor == avr.version[1])
@@ -170,14 +171,19 @@ def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[J
     if not results:
         return []
 
-    return [JobDefinitionModel(job_def_seq=result.job_def_seq) for result in results]
+    return [JobDefinitionModel(
+        job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+        owner_id=profile_seq_to_id(job_def.owner_seq), 
+        **job_def.model_dump())
+        for _, job_def in results
+    ]
 
 
 @router.get('/definitions/by_asset/{asset_id}')
 async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
     with get_session() as session:
         asset_seq = asset_id_to_seq(asset_id)
-        latest_version = repo.lastest_version(session, asset_seq)
+        latest_version = repo.latest_version(session, asset_seq)
         if latest_version is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
         return resolve_job_definitions(session, latest_version)
