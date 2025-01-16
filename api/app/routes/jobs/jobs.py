@@ -5,8 +5,11 @@ from http import HTTPStatus
 from typing import Any
 from uuid import uuid4
 
+from assets import repo
+from assets.repo import AssetVersionResult
 from config import app_config
 from cryptid.cryptid import (
+    asset_id_to_seq,
     event_seq_to_id,
     job_def_id_to_seq,
     job_def_seq_to_id,
@@ -17,6 +20,7 @@ from cryptid.cryptid import (
 )
 from cryptid.location import location
 from db.connection import get_session
+from db.schema.assets import AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
@@ -126,6 +130,40 @@ async def list_definitions() -> list[JobDefinitionModel]:
             owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
             for job_def in job_defs
         ]
+
+
+def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[JobDefinitionModel]:
+    results = session.exec(
+        select(AssetVersionEntryPoint)
+        .where(AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id))
+        .where(AssetVersionEntryPoint.major == avr.version[0])
+        .where(AssetVersionEntryPoint.minor == avr.version[1])
+        .where(AssetVersionEntryPoint.patch == avr.version[2])
+    ).all()
+    if not results:
+        return []
+
+    return [JobDefinitionModel(job_def_seq=result.job_def_seq) for result in results]
+
+
+@router.get('/definitions/by_asset/{asset_id}')
+async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
+    with get_session() as session:
+        asset_seq = asset_id_to_seq(asset_id)
+        latest_version = repo.lastest_version(session, asset_seq)
+        if latest_version is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
+        return resolve_job_definitions(session, latest_version)
+
+
+@router.get('/definitions/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
+async def by_asset_version(asset_id: str, major: int, minor: int, patch: int) -> list[JobDefinitionModel]:
+    with get_session() as session:
+        asset_seq = asset_id_to_seq(asset_id)
+        asset_version = repo.version(session, asset_seq, major, minor, patch)
+        if asset_version is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
+        return resolve_job_definitions(session, asset_version)
 
 
 @router.get('/definitions/{job_def_id}')

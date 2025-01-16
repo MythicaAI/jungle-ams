@@ -715,7 +715,42 @@ def top(session: Session):
     return sort_results
 
 
+def latest_version(session: Session, asset_seq: int) -> Optional[AssetVersionResult]:
+    """Get the latest asset version for the specific root asset sequence"""
+    results = session.exec(
+        select(Asset, AssetVersion)
+        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
+        .where(Asset.asset_seq == asset_seq)
+    ).all()
+    if not results:
+        return None
+
+    results = process_join_results(session, results)
+    sorted_results = sorted(results, key=lambda x: (x.major, x.minor, x.patch), reverse=True)
+    return sorted_results[0]
+
+
+def version(session: Session, asset_seq: int, major: int, minor: int, patch: int) -> Optional[AssetVersionResult]:
+    """Query a specific asset version"""
+    results = session.exec(
+        select(Asset, AssetVersion)
+        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
+        .where(Asset.deleted == None, AssetVersion.deleted == None)
+        .where(Asset.asset_seq == asset_seq)
+        .where(AssetVersion.major == major)
+        .where(AssetVersion.minor == minor)
+        .where(AssetVersion.patch == patch)
+    ).all()
+    if not results:
+        return None
+
+    results = process_join_results(session, results)
+    return results[0]
+
+
 def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResult]:
+    """Return versions owned by the specified profile"""
     results = session.exec(
         select(Asset, AssetVersion)
         .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
@@ -726,6 +761,7 @@ def owned_versions(session: Session, profile_seq: int) -> list[AssetVersionResul
 
 
 def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResult]:
+    """Return all assets with the same name"""
     return process_join_results(session, session.exec(
         asset_join_select.where(
             Asset.asset_seq == AssetVersion.asset_seq,
@@ -733,6 +769,7 @@ def versions_by_name(session: Session, asset_name: str) -> list[AssetVersionResu
 
 
 def version_by_asset_id(session: Session, asset_id: str) -> list[AssetVersionResult]:
+    """Return a list of versions for the specified asset"""
     results = session.exec(select(Asset, AssetVersion).outerjoin(
         AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
     .where(Asset.deleted == None, AssetVersion.deleted == None).where(
