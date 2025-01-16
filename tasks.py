@@ -1,5 +1,4 @@
 # This file is intended for invoke, see README.md for install setup instructions
-from dotenv import dotenv_values
 import os
 import re
 import subprocess
@@ -8,6 +7,7 @@ from functools import wraps
 from os import PathLike
 from pathlib import Path
 
+from dotenv import dotenv_values
 from invoke import task
 
 COMMIT_HASH = ''
@@ -174,7 +174,7 @@ def generate_mount_env_file() -> str:
     # Load local .env variables if the file exists
     local_env_path = os.path.join(BASE_DIR, 'testing/.env')
     local_env = dotenv_values(local_env_path) if os.path.exists(local_env_path) else {}
-    
+
     with open(env_file_path, "w+") as f:
         for name, mnt_point in LOCAL_MOUNT_POINTS.items():
             abs_path = os.path.join(BASE_DIR, mnt_point)
@@ -390,18 +390,18 @@ def storage_nuke(c):
 
 
 @task
-def cleanup_web_dist(c):
+def cleanup_web_shared_publish_volume(c):
     """Remove the dist volume used by the docker compose web service"""
-    c.run('docker volume rm web_dist', pty=PTY_SUPPORTED)
+    c.run('docker volume rm web_site-shared-publish', pty=PTY_SUPPORTED)
 
 
 @task
 def web_start(c):
     """Start web tier components"""
-    start_docker_compose(c, TESTING_WEB_DIR, cleanup_web_dist)
+    start_docker_compose(c, TESTING_WEB_DIR, cleanup_web_shared_publish_volume)
 
 
-@task(post=[cleanup_web_dist])
+@task(post=[cleanup_web_shared_publish_volume])
 def web_stop(c):
     """Stop web tier components"""
     stop_docker_compose(c, TESTING_WEB_DIR)
@@ -422,10 +422,10 @@ def auto_stop(c):
 @task
 def observe_start(c):
     """Start observability tier components"""
-    start_docker_compose(c, TESTING_OBSERVE_DIR, cleanup_web_dist)
+    start_docker_compose(c, TESTING_OBSERVE_DIR, cleanup_web_shared_publish_volume)
 
 
-@task(post=[cleanup_web_dist])
+@task(post=[cleanup_web_shared_publish_volume])
 def observe_stop(c):
     """Stop observability tier components"""
     stop_docker_compose(c, TESTING_OBSERVE_DIR)
