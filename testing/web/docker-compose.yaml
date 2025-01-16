@@ -9,23 +9,24 @@ services:
     container_name: jungle3
     image: mythica-jungle3-build:latest
     volumes:
-      - dist:/dist
+      - site-shared-publish:/mnt/publish
     environment:
-      PUBLISH_PATH: /dist/jungle3
+      PUBLISH_PATH: /mnt/publish/jungle3
       VITE_API_BASE_URL: http://localhost:15555/v1
       VITE_IMAGES_BASE_URL: http://localhost:8080/images
       VITE_AUTH0_DOMAIN: dev-dtvqj0iuc5rnb6x2.us.auth0.com
       VITE_AUTH0_CLIENT_ID: 4CZhQWoNm1WH8l8042LeF38qHrUTR2ax
       VITE_AUTH0_AUDIENCE: http://localhost:15555/v1
       VITE_AUTH0_REDIRECT_URL: http://localhost:8080
+
   awful:
     container_name: awful
     image: mythica-awful-ui-build:latest
     volumes:
-      - dist:/dist
+      - site-shared-publish:/mnt/publish
     environment:
-      PUBLISH_PATH: /dist/awful
-      
+      PUBLISH_PATH: /mnt/publish/awful
+
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
@@ -37,7 +38,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - dist:/dist
+      - site-shared-publish:/mnt/publish
     logging:
       driver: "json-file"
       options:
@@ -83,7 +84,7 @@ services:
       - web
       - observe
 volumes:
-  dist: # volume reference to share node build contents
+  site-shared-publish: # volume reference to share node build contents
 networks:
   storage:
     driver: bridge
