@@ -2,7 +2,7 @@ import logging
 import sys
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from assets import repo
@@ -11,6 +11,7 @@ from config import app_config
 from cryptid.cryptid import (
     asset_id_to_seq,
     event_seq_to_id,
+    file_id_to_seq,
     job_def_id_to_seq,
     job_def_seq_to_id,
     job_id_to_seq,
@@ -48,12 +49,21 @@ log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
 
+class AssetVersionEntryPointReference(BaseModel):
+    asset_id: str
+    major: int
+    minor: int
+    patch: int
+    file_id: str
+    entry_point: str
+
 
 class JobDefinitionRequest(BaseModel):
     job_type: str
     name: str
     description: str
     params_schema: ParameterSpec
+    source: Optional[AssetVersionEntryPointReference]
 
 
 class JobDefinitionResponse(BaseModel):
@@ -110,6 +120,7 @@ async def define_new(
         profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
     """Create a new job definition"""
     with get_session() as session:
+        # Create the job definition
         request_model = request.model_dump()
         if profile:
             request_model["owner_seq"] = profile.profile_seq
@@ -117,7 +128,23 @@ async def define_new(
         session.add(job_def)
         session.commit()
         session.refresh(job_def)
-        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
+        job_def_seq = job_def.job_def_seq
+
+        # Create the asset version link
+        if request.source:
+            asset_version_entry_point = AssetVersionEntryPoint(
+                asset_seq=asset_id_to_seq(request.source.asset_id),
+                major=request.source.major,
+                minor=request.source.minor,
+                patch=request.source.patch,
+                src_file_seq=file_id_to_seq(request.source.file_id),
+                entry_point=request.source.entry_point,
+                job_def_seq=job_def_seq
+            )
+            session.add(asset_version_entry_point)
+            session.commit()
+
+        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
 
 
 @router.get('/definitions')
