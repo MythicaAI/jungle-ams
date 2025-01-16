@@ -63,7 +63,7 @@ class JobDefinitionRequest(BaseModel):
     name: str
     description: str
     params_schema: ParameterSpec
-    source: Optional[AssetVersionEntryPointReference]
+    source: Optional[AssetVersionEntryPointReference] = None
 
 
 class JobDefinitionResponse(BaseModel):

@@ -1,4 +1,4 @@
-"""Topology tests"""
+"""Test suite for the job system: job definitions and jobs"""
 
 # pylint: disable=redefined-outer-name, unused-import
 
@@ -11,7 +11,9 @@ from db.schema.jobs import Job
 from fastapi.testclient import TestClient
 from munch import munchify
 from sqlmodel import select
+from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
+from tests.fixtures.uploader import uploader
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
@@ -175,6 +177,36 @@ def test_create_update(client, api_base, create_profile):
     r = client.get(f'{api_base}/jobs/results/{job_id}', headers=headers2)
     assert_status_code(r, HTTPStatus.FORBIDDEN)
 
+
+def test_asset_link(client, api_base, create_profile, create_asset_versions, uploader):
+    test_profile: ProfileTestObj = create_profile()
+    test_profile2 = create_profile()
+    headers = test_profile.authorization_header()
+    headers2 = test_profile2.authorization_header()
+
+    # create an asset with a dummy hda file
+    versions = create_asset_versions(test_profile, uploader)
+    assert len(versions) == 1
+    asset = versions[0]
+    
+    hda_file_id = None
+    for file_obj in asset.contents['files']:
+       if file_obj.file_name.endswith('hda'):
+           hda_file_id = file_obj.file_id
+    assert hda_file_id is not None
+
+    # Create a job definition
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus',
+                        'description': 'Generates a cactus mesh',
+                        'params_schema': {
+                            'params': {}
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
 
 
 def test_delete_canary(client: TestClient, api_base, create_profile):
