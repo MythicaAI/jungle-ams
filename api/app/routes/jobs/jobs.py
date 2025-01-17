@@ -206,7 +206,7 @@ async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
 async def by_asset_version(asset_id: str, major: int, minor: int, patch: int) -> list[JobDefinitionModel]:
     with get_session() as session:
         asset_seq = asset_id_to_seq(asset_id)
-        asset_version = repo.version(session, asset_seq, major, minor, patch)
+        asset_version = repo.get_version(session, asset_seq, major, minor, patch)
         if asset_version is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
         return resolve_job_definitions(session, asset_version)

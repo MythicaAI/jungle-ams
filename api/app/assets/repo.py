@@ -731,7 +731,7 @@ def latest_version(session: Session, asset_seq: int) -> Optional[AssetVersionRes
     return sorted_results[0]
 
 
-def version(session: Session, asset_seq: int, major: int, minor: int, patch: int) -> Optional[AssetVersionResult]:
+def get_version(session: Session, asset_seq: int, major: int, minor: int, patch: int) -> Optional[AssetVersionResult]:
     """Query a specific asset version"""
     results = session.exec(
         select(Asset, AssetVersion)
