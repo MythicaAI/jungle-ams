@@ -1,15 +1,16 @@
 from http import HTTPStatus
 
-from cryptid.cryptid import file_id_to_seq
 from fastapi import APIRouter, Depends, HTTPException
-from ripple.models.contexts import FilePurpose
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import and_, select, update
 
+from cryptid.cryptid import file_id_to_seq
 from db.connection import get_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from ripple.models.contexts import FilePurpose
+from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
 
@@ -68,7 +69,7 @@ async def by_purpose(
 @router.delete('/{file_id}')
 async def delete_by_id(
         file_id,
-        profile: str = Depends(session_profile)):
+        profile: SessionProfile = Depends(session_profile)):
     """Delete a file by its ID"""
     with get_session(echo=True) as session:
         try:
