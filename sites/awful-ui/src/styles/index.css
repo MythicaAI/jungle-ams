@@ -4,6 +4,7 @@
 
 .react-flow__edge-path {
   stroke: #007e63;
+  stroke-width: 3px;
 }
 
 html,
@@ -51,8 +52,15 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: grab;
   background: #454c52;
+}
+
+.react-flow__node.draggable {
+  cursor: auto;
+}
+
+.react-flow__node.draggable .drag-panel {
+  cursor: grab;
 }
 
 .dndflow .dndnode:hover {
@@ -166,4 +174,14 @@ body {
 .gutter.gutter-horizontal {
   background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
   cursor: col-resize;
+}
+
+.react-flow__handle-bottom {
+  width: 12px;
+  height: 12px;
+}
+
+.react-flow__handle-top {
+  width: 12px;
+  height: 12px;
 }

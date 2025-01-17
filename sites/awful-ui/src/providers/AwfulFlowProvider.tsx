@@ -329,6 +329,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
             type: nodeType,
             position,
             data: {},
+            dragHandle: '.drag-panel',
           };
           break;
         case 'houdini://mythica/hda':
@@ -339,6 +340,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
             data: {
               automation: nodeType,
             },
+            dragHandle: '.drag-panel',
           };
           break;
         case 'saved':
@@ -351,6 +353,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
               automation: `${savedAuto.worker}://mythica/script`,
               script: savedAuto,
             },
+            dragHandle: '.drag-panel',
           };
           break;
         default:
@@ -362,6 +365,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
             data: {
               automation: nodeType,
             },
+            dragHandle: '.drag-panel',
           };
       }
       setNodes((nds) => nds.concat(newNode));
