@@ -172,7 +172,7 @@ async def create_zip_from_asset(
         zip_filename = output_path / f"{asset_id}-{version_str}.zip"
         log.info("creating package %s", zip_filename)
         log.info("version data: %s", v.model_dump())
-        contents = map(lambda c: resolve_contents(endpoint, c), get_file_contents(v))
+        contents = list(map(lambda c: resolve_contents(endpoint, c), get_file_contents(v)))
         with zipfile.ZipFile(zip_filename, 'w') as zip_file:
             for content in contents:
                 url = AnyHttpUrl(content.url)
