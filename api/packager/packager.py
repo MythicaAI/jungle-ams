@@ -13,6 +13,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
 import requests
 from pydantic import AnyHttpUrl
@@ -20,8 +21,13 @@ from pythonjsonlogger import jsonlogger
 
 from assets.repo import AssetFileReference, AssetVersionResult
 from events.events import EventsSession
+from ripple.automation.adapters import NatsAdapter
+from ripple.automation.models import AutomationRequest
+from ripple.automation.worker import process_guid
+from ripple.models.params import FileParameter, ParameterSet
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
+from telemetry_config import get_telemetry_context
 
 log = logging.getLogger(__name__)
 
@@ -124,6 +130,30 @@ def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> 
     return result['token']
 
 
+def is_houdini_file(content: DownloadInfoResponse) -> bool:
+    extension = content.name.rpartition(".")[-1].lower()
+    return extension in ('hda', 'hdalc')
+
+
+async def generate_houdini_job_defs(content: DownloadInfoResponse) -> bool:
+    parameter_set = ParameterSet(
+        hda_file=FileParameter(file_id=content.file_id)
+    )
+
+    event = AutomationRequest(
+        process_guid=process_guid,
+        work_guid=str(uuid4()),
+        auth_token="xxxxxx",
+        path='/mythica/generate_job_defs',
+        data=parameter_set.model_dump(),
+        telemetry_context=get_telemetry_context(),
+    )
+
+    nats = NatsAdapter()
+    log.info("Sent NATS houdini task. Request: %s", event.model_dump())
+    await nats.post("houdini", event.model_dump())
+
+
 async def create_zip_from_asset(
         output_path: Path,
         endpoint: str,
@@ -141,9 +171,9 @@ async def create_zip_from_asset(
         version_str = '.'.join(map(str, v.version))
         zip_filename = output_path / f"{asset_id}-{version_str}.zip"
         log.info("creating package %s", zip_filename)
+        log.info("version data: %s", v.model_dump())
+        contents = map(lambda c: resolve_contents(endpoint, c), get_file_contents(v))
         with zipfile.ZipFile(zip_filename, 'w') as zip_file:
-            log.info("version data: %s", v.model_dump())
-            contents = map(lambda c: resolve_contents(endpoint, c), get_file_contents(v))
             for content in contents:
                 url = AnyHttpUrl(content.url)
                 response = requests.get(url, stream=True)
@@ -155,6 +185,11 @@ async def create_zip_from_asset(
             zip_file.writestr("manifest.json", manifest.encode("utf-8"))
 
         await upload_package(endpoint, headers, asset_id, version_str, zip_filename)
+
+        # Trigger job_def generation for package contents
+        for content in contents:
+            if is_houdini_file(content):
+                await generate_houdini_job_defs(content)
 
 
 async def upload_package(
