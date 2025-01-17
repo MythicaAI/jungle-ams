@@ -4,11 +4,10 @@ from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from pydantic import BaseModel
 from sqlmodel import col, delete as sql_delete, select, update
 
-from cryptid.cryptid import profile_id_to_seq
 from db.connection import TZ, get_session
 from db.schema.profiles import Profile, ProfileKey, ProfileSession
 from profiles.auth0_validator import Auth0Validator
@@ -47,19 +46,9 @@ async def get_auth_validator() -> Auth0Validator:
 
 
 @router.get('/direct/{profile_id}')
-async def direct(request: Request, profile_id: str) -> SessionStartResponse:
+async def direct(_r: Request, _profile_id: str) -> SessionStartResponse:
     """Start a session directly for a profile"""
-    client_ip = get_client_ip(request)
-    with get_session() as session:
-        if '@' in profile_id:
-            profile = session.exec(select(Profile).where(Profile.email == profile_id)).first()
-            if profile is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND, f"profile with email {profile_id} not found")
-            profile_seq = profile.profile_seq
-        else:
-            profile_seq = profile_id_to_seq(profile_id)
-
-        return start_session(session, profile_seq, client_ip)
+    raise ValueError("Deprecated")
 
 
 @router.get('/key/{api_key}')
@@ -72,7 +61,7 @@ async def key(request: Request,
         # pylint: disable=no-member
         key_result = session.exec(select(ProfileKey).where(ProfileKey.key == api_key)).one_or_none()
         if key_result is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"profile key {api_key} not found or invalid")
+            raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} not found or invalid")
 
         # test for key expiration and remove expired key
         if key_result.expires.replace(tzinfo=TZ).astimezone(timezone.utc) <= datetime.now(timezone.utc):
