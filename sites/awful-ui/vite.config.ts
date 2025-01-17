@@ -44,9 +44,10 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
     },
+    port: 5174,
     proxy: {
       '/mythica-api': {
-        target: 'https://api.mythica.ai/v1',
+        target: 'http://localhost:15555/v1',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/mythica-api/, ''),
       },

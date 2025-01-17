@@ -129,7 +129,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const typingTimeout = useRef(timeout);
 
   const handleSaveAutomation = useCallback(() => {
-    if (!node.data.script.name || node.data.script.name === '') {
+    if (!node.data.script?.name || node.data.script.name === '') {
       console.error('Name is required');
       return;
     }
@@ -510,7 +510,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         )}
         {isScriptNode && (
           <div>
-            <pre style={{ overflow: 'auto' }}>{flowExecutionMessage}</pre>
+            <pre style={{ overflow: 'auto', maxHeight: '400px', width: '100%' }}>{flowExecutionMessage}</pre>
           </div>
         )}
 

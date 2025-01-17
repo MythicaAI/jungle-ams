@@ -69,6 +69,10 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
         await deleteFile(automation.file.file_id);
         delete automation.file;
       }
+    } catch (error) {
+      console.warn(`Could not delete previous automation. file ${automation.id}.awful not found`, error);
+    }
+    try {
       automation.uri = getUri(automation.worker, automation.name);
 
       const blob = new Blob([JSON.stringify(automation)], {
@@ -92,11 +96,12 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await deleteFile(automation.file.file_id);
-      await fetchAutomations();
       console.log(`Automaiton ${automation.id} deleted successfully`);
     } catch (error) {
       console.error(`Failed to delete file ${automation.id}.awful:`, error);
     }
+    await fetchAutomations();
+
   };
 
   const fetchAutomations = useCallback(async () => {
