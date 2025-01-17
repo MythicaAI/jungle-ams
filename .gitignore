@@ -59,3 +59,4 @@ __pycache__
 *.local
 
 testing/mnt/*.env
+testing/mnt/.env
