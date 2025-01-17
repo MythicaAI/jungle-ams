@@ -2,12 +2,17 @@ import logging
 import sys
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
+from assets import repo
+from assets.repo import AssetVersionResult
 from config import app_config
 from cryptid.cryptid import (
+    asset_id_to_seq,
     event_seq_to_id,
+    file_id_to_seq,
+    file_seq_to_id,
     job_def_id_to_seq,
     job_def_seq_to_id,
     job_id_to_seq,
@@ -17,6 +22,7 @@ from cryptid.cryptid import (
 )
 from cryptid.location import location
 from db.connection import get_session
+from db.schema.assets import AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
@@ -44,12 +50,21 @@ log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
 
+class AssetVersionEntryPointReference(BaseModel):
+    asset_id: str
+    major: int
+    minor: int
+    patch: int
+    file_id: str
+    entry_point: str
+
 
 class JobDefinitionRequest(BaseModel):
     job_type: str
     name: str
     description: str
     params_schema: ParameterSpec
+    source: Optional[AssetVersionEntryPointReference] = None
 
 
 class JobDefinitionResponse(BaseModel):
@@ -106,6 +121,7 @@ async def define_new(
         profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
     """Create a new job definition"""
     with get_session() as session:
+        # Create the job definition
         request_model = request.model_dump()
         if profile:
             request_model["owner_seq"] = profile.profile_seq
@@ -113,7 +129,23 @@ async def define_new(
         session.add(job_def)
         session.commit()
         session.refresh(job_def)
-        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
+        job_def_seq = job_def.job_def_seq
+
+        # Create the asset version link
+        if request.source:
+            asset_version_entry_point = AssetVersionEntryPoint(
+                asset_seq=asset_id_to_seq(request.source.asset_id),
+                major=request.source.major,
+                minor=request.source.minor,
+                patch=request.source.patch,
+                src_file_seq=file_id_to_seq(request.source.file_id),
+                entry_point=request.source.entry_point,
+                job_def_seq=job_def_seq
+            )
+            session.add(asset_version_entry_point)
+            session.commit()
+
+        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
 
 
 @router.get('/definitions')
@@ -126,6 +158,58 @@ async def list_definitions() -> list[JobDefinitionModel]:
             owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
             for job_def in job_defs
         ]
+
+
+def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[JobDefinitionModel]:
+    results = session.exec(
+        select(AssetVersionEntryPoint, JobDefinition)
+        .outerjoin(JobDefinition, AssetVersionEntryPoint.job_def_seq == JobDefinition.job_def_seq)
+        .where(AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id))
+        .where(AssetVersionEntryPoint.major == avr.version[0])
+        .where(AssetVersionEntryPoint.minor == avr.version[1])
+        .where(AssetVersionEntryPoint.patch == avr.version[2])
+    ).all()
+    if not results:
+        return []
+
+    job_defs = []
+    for entry_point, job_def in results:
+        source = AssetVersionEntryPointReference(
+            asset_id=avr.asset_id,
+            major=avr.version[0],
+            minor=avr.version[1],
+            patch=avr.version[2],
+            file_id=file_seq_to_id(entry_point.src_file_seq),
+            entry_point=entry_point.entry_point
+        )
+        job_defs.append(JobDefinitionModel(
+            job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+            owner_id=profile_seq_to_id(job_def.owner_seq), 
+            source=source,
+            **job_def.model_dump()
+        ))
+
+    return job_defs
+
+
+@router.get('/definitions/by_asset/{asset_id}')
+async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
+    with get_session() as session:
+        asset_seq = asset_id_to_seq(asset_id)
+        latest_version = repo.latest_version(session, asset_seq)
+        if latest_version is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
+        return resolve_job_definitions(session, latest_version)
+
+
+@router.get('/definitions/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
+async def by_asset_version(asset_id: str, major: int, minor: int, patch: int) -> list[JobDefinitionModel]:
+    with get_session() as session:
+        asset_seq = asset_id_to_seq(asset_id)
+        asset_version = repo.get_version(session, asset_seq, major, minor, patch)
+        if asset_version is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
+        return resolve_job_definitions(session, asset_version)
 
 
 @router.get('/definitions/{job_def_id}')

@@ -1,17 +1,19 @@
-"""Topology tests"""
+"""Test suite for the job system: job definitions and jobs"""
 
 # pylint: disable=redefined-outer-name, unused-import
 
 from http import HTTPStatus
 
-from cryptid.cryptid import event_id_to_seq, job_id_to_seq
+from cryptid.cryptid import asset_seq_to_id, event_id_to_seq, job_id_to_seq
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.jobs import Job
 from fastapi.testclient import TestClient
 from munch import munchify
 from sqlmodel import select
+from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
+from tests.fixtures.uploader import uploader
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
@@ -175,6 +177,112 @@ def test_create_update(client, api_base, create_profile):
     r = client.get(f'{api_base}/jobs/results/{job_id}', headers=headers2)
     assert_status_code(r, HTTPStatus.FORBIDDEN)
 
+
+def find_hda_file(version):
+    for file_obj in version.contents['files']:
+        if file_obj.file_name.endswith('hda'):
+            return file_obj.file_id
+    return None
+
+
+def test_asset_link(client, api_base, create_profile, create_asset_versions, uploader):
+    test_profile: ProfileTestObj = create_profile()
+    headers = test_profile.authorization_header()
+
+    # create test assets and hda files
+    versions = create_asset_versions(
+        test_profile,
+        uploader,
+        version_ids=['1.0.0', '2.0.0'])
+    assert len(versions) == 2
+    old_version = versions[0]
+    new_version = versions[1]
+    assert old_version.version[0] < new_version.version[0]
+
+    old_hda_file_id = find_hda_file(old_version)
+    new_hda_file_id = find_hda_file(new_version)
+    assert old_hda_file_id is not None
+    assert new_hda_file_id is not None
+
+    # Verify no job definitions exist
+    asset_id = old_version.asset_id
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 0)
+
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{old_version.version[0]}/{old_version.version[1]}/{old_version.version[2]}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 0)
+
+    # Create a job definition for each asset version
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus',
+                        'description': 'Generates a cactus mesh',
+                        'params_schema': {
+                            'params': {}
+                        },
+                        'source': {
+                            'asset_id': asset_id,
+                            'major': old_version.version[0],
+                            'minor': old_version.version[1],
+                            'patch': old_version.version[2],
+                            'file_id': old_hda_file_id,
+                            'entry_point': 'cactus'
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    old_job_def_id = o.job_def_id
+
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus',
+                        'description': 'Generates a cactus mesh',
+                        'params_schema': {
+                            'params': {}
+                        },
+                        'source': {
+                            'asset_id': asset_id,
+                            'major': new_version.version[0],
+                            'minor': new_version.version[1],
+                            'patch': new_version.version[2],
+                            'file_id': new_hda_file_id,
+                            'entry_point': 'cactus'
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    new_job_def_id = o.job_def_id
+
+    # Get latest job definition
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 1)
+    job_def = munchify(r.json()[0])
+    assert job_def.job_def_id == new_job_def_id
+    assert job_def.source.asset_id == asset_id
+    assert job_def.source.major == 2
+
+    # Get old job definition
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{old_version.version[0]}/{old_version.version[1]}/{old_version.version[2]}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 1)
+    job_def = munchify(r.json()[0])
+    assert job_def.job_def_id == old_job_def_id
+    assert job_def.source.asset_id == asset_id
+    assert job_def.source.major == 1
+
+    # Test bad asset id
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_seq_to_id(99999)}')
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
+
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_seq_to_id(99999)}/versions/1/0/0')
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
 
 
 def test_delete_canary(client: TestClient, api_base, create_profile):
