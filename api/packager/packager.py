@@ -6,13 +6,13 @@ or worker mode when connected to an events table.
 """
 
 import argparse
+import asyncio
 import logging
 import os
 import tempfile
 import zipfile
 from pathlib import Path
 
-import asyncio
 import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
@@ -105,9 +105,10 @@ def resolve_contents(endpoint, file: AssetFileReference) -> DownloadInfoResponse
     return dl_info
 
 
-def start_session(endpoint: str, api_key: str) -> str:
+def start_session(endpoint: str, api_key: str, as_profile_id: str) -> str:
+    headers = {"Impersonate-Profile-Id": as_profile_id}
     url = f"{endpoint}/v1/sessions/key/{api_key}"
-    response = requests.get(url, timeout=10)
+    response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
 
     result = response.json()
@@ -157,7 +158,7 @@ async def upload_package(
     with open(zip_filename, 'rb') as file:
         response = requests.post(url, files={
             'files': (os.path.basename(zip_filename), file, 'application/zip')},
-            headers=headers)
+                                 headers=headers)
         if response.status_code != 200:
             log.error("package upload failed: %s", response.status_code)
             log.error("response: %s", response.text)
