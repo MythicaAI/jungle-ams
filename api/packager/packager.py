@@ -135,7 +135,7 @@ def is_houdini_file(content: DownloadInfoResponse) -> bool:
     return extension in ('hda', 'hdalc')
 
 
-async def generate_houdini_job_defs(content: DownloadInfoResponse) -> bool:
+async def generate_houdini_job_defs(content: DownloadInfoResponse, token: str) -> bool:
     parameter_set = ParameterSet(
         hda_file=FileParameter(file_id=content.file_id)
     )
@@ -143,7 +143,7 @@ async def generate_houdini_job_defs(content: DownloadInfoResponse) -> bool:
     event = AutomationRequest(
         process_guid=process_guid,
         work_guid=str(uuid4()),
-        auth_token="xxxxxx",
+        auth_token=token,
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
         telemetry_context=get_telemetry_context(),
@@ -189,7 +189,7 @@ async def create_zip_from_asset(
         # Trigger job_def generation for package contents
         for content in contents:
             if is_houdini_file(content):
-                await generate_houdini_job_defs(content)
+                await generate_houdini_job_defs(content, token)
 
 
 async def upload_package(
