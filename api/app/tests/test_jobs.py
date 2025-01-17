@@ -4,7 +4,7 @@
 
 from http import HTTPStatus
 
-from cryptid.cryptid import event_id_to_seq, job_id_to_seq
+from cryptid.cryptid import asset_seq_to_id, event_id_to_seq, job_id_to_seq
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.jobs import Job
@@ -204,8 +204,17 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert old_hda_file_id is not None
     assert new_hda_file_id is not None
 
-    # Create a job definition for each asset version
+    # Verify no job definitions exist
     asset_id = old_version.asset_id
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 0)
+
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{old_version.version[0]}/{old_version.version[1]}/{old_version.version[2]}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert(len(r.json()) == 0)
+
+    # Create a job definition for each asset version
     r = client.post(f'{api_base}/jobs/definitions',
                     json={
                         'job_type': 'houdini::/mythica/generate_mesh',
@@ -267,6 +276,13 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert job_def.job_def_id == old_job_def_id
     assert job_def.source.asset_id == asset_id
     assert job_def.source.major == 1
+
+    # Test bad asset id
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_seq_to_id(99999)}')
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
+
+    r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_seq_to_id(99999)}/versions/1/0/0')
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
 
 
 def test_delete_canary(client: TestClient, api_base, create_profile):
