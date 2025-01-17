@@ -9,4 +9,6 @@ cd /api/packager
 
 /api/app/print_ip_address.py
 
-python3 packager.py --endpoint=${PACKAGER_ENDPOINT} $*
+python3 packager.py \
+  --endpoint=${PACKAGER_ENDPOINT} \
+  --api_key=${MYTHICA_API_KEY} $*
