@@ -12,6 +12,7 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Optional
 
 import requests
 from pydantic import AnyHttpUrl
@@ -41,7 +42,12 @@ def parse_args():
         default="0.0.0",
         required=False
     )
-
+    parser.add_argument(
+        "-p", "--profile",
+        help="Profile ID to to run as or use the default in the API key",
+        default=None,
+        required=False
+    )
     parser.add_argument(
         "-e", "--endpoint",
         help="API endpoint",
@@ -105,8 +111,11 @@ def resolve_contents(endpoint, file: AssetFileReference) -> DownloadInfoResponse
     return dl_info
 
 
-def start_session(endpoint: str, api_key: str, as_profile_id: str) -> str:
-    headers = {"Impersonate-Profile-Id": as_profile_id}
+def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> str:
+    if as_profile_id:
+        headers = {"Impersonate-Profile-Id": as_profile_id}
+    else:
+        headers = {}
     url = f"{endpoint}/v1/sessions/key/{api_key}"
     response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
@@ -120,10 +129,11 @@ async def create_zip_from_asset(
         endpoint: str,
         api_key: str,
         asset_id: str,
+        profile_id: Optional[str],
         version: tuple[int, ...]):
     """Given an output zip file name, resolve all the content of the asset_id and create a zip file"""
 
-    token = start_session(endpoint, api_key)
+    token = start_session(endpoint, api_key, profile_id)
     headers = {'Authorization': f"Bearer {token}"}
 
     versions = get_versions(endpoint, asset_id, version)
@@ -175,6 +185,7 @@ async def console_main(
         endpoint: str,
         api_key: str,
         asset_id: str,
+        profile_id: Optional[str],
         version: tuple[int, ...]):
     """Main entrypoint when running with argument overrides (non-worker mode)"""
     await create_zip_from_asset(
@@ -182,6 +193,7 @@ async def console_main(
         endpoint,
         api_key,
         asset_id,
+        profile_id,
         version)
 
 
@@ -191,6 +203,10 @@ async def exec_job(endpoint: str, api_key: str, job_data):
     if asset_id is None:
         log.error("asset_id is missing from job_data")
         return
+    profile_id = job_data.get('owner')
+    if profile_id is None:
+        log.error("profile_id is missing from job_data")
+        return
     version = job_data.get('version')
     if version is None:
         log.error("version is missing from job_data")
@@ -198,7 +214,7 @@ async def exec_job(endpoint: str, api_key: str, job_data):
 
     assert type(version) is list or type(version) is tuple
     with tempfile.TemporaryDirectory() as tmp_dir:
-        await create_zip_from_asset(Path(tmp_dir), endpoint, api_key, asset_id, version)
+        await create_zip_from_asset(Path(tmp_dir), endpoint, api_key, asset_id, profile_id, version)
 
 
 async def worker_main(endpoint: str, api_key: str):
@@ -243,6 +259,7 @@ def main():
             args.endpoint,
             args.api_key,
             args.asset,
+            args.profile,
             tuple(map(int, args.version.split('.')))))
     else:
         log.info("no asset provided, running in event worker mode")
