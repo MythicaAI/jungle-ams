@@ -20,7 +20,7 @@ from routes.automation.automation import (
 
 
 @pytest.fixture(name="request_data")
-def valid_request_data():
+def request_data_fixture():
     """Fixture: Returns a valid request data dictionary."""
     return {
         "work_guid": "test-guid",
@@ -30,45 +30,48 @@ def valid_request_data():
         "auth_token": "test-token",
     }
 
+@pytest.fixture(name="async_iterator")
+def async_iterator_fixture():
+    """Create async iterator fixture."""
+    class AsyncIterator:
+        def __init__(self, items):
+            self._items = items
+            self._iter = None
 
-class AsyncIterator:
-    """Asynchronous iterator for mocking async response streams."""
+        def __aiter__(self):
+            self._iter = iter(self._items)
+            return self
 
-    def __init__(self, items):
-        """Initialize with a list of items to iterate over."""
-        self._items = items
-        self._iter = None
-
-    def __aiter__(self):
-        """Begin async iteration."""
-        self._iter = iter(self._items)
-        return self
-
-    async def __anext__(self):
-        """Return the next item from the iterator."""
-        try:
-            return next(self._iter)
-        except StopIteration as exc:
-            raise StopAsyncIteration from exc
+        async def __anext__(self):
+            try:
+                return next(self._iter)
+            except StopIteration as exc:
+                raise StopAsyncIteration from exc
+    return AsyncIterator
 
 
-result_msg = {
-    "item_type": "result",
-    "correlation": "test-guid",
-    "data": {"test": "data"},
-}
+@pytest.fixture(name="mock_message")
+def mock_message_fixture():
+    """Create mock NATS message."""
+    result_msg = {
+        "item_type": "result",
+        "correlation": "test-guid",
+        "data": {"test": "data"},
+    }
+    mock = MagicMock()
+    mock.data.decode = MagicMock(return_value=json.dumps(result_msg))
+    return mock
 
-mock_msg = MagicMock()
-mock_msg.data.decode = MagicMock(return_value=json.dumps(result_msg))
-
-mock_response = AsyncMock(
-    messages=AsyncIterator([mock_msg]),
-    errors=AsyncIterator([]),
-)
-
+@pytest.fixture(name="mock_response")
+def mock_response_fixture(async_iterator, mock_message):
+    """Create mock NATS response."""
+    return AsyncMock(
+        messages=async_iterator([mock_message]),
+        errors=async_iterator([]),
+    )
 
 @pytest.fixture(name="nats")
-async def mock_nats():
+def mock_nats_fixture(mock_response):
     """Fixture: Returns a mocked NATS client."""
     mock = AsyncMock(spec=NATS)
     mock.connect = AsyncMock()
