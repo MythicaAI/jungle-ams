@@ -135,9 +135,11 @@ def is_houdini_file(content: DownloadInfoResponse) -> bool:
     return extension in ('hda', 'hdalc')
 
 
-async def generate_houdini_job_defs(content: DownloadInfoResponse, token: str) -> bool:
+async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str) -> bool:
     parameter_set = ParameterSet(
-        hda_file=FileParameter(file_id=content.file_id)
+        hda_file=FileParameter(file_id=content.file_id),
+        asset_id=avr.asset_id,
+        version=avr.version
     )
 
     event = AutomationRequest(
@@ -189,7 +191,7 @@ async def create_zip_from_asset(
         # Trigger job_def generation for package contents
         for content in contents:
             if is_houdini_file(content):
-                await generate_houdini_job_defs(content, token)
+                await generate_houdini_job_defs(v, content, token)
 
 
 async def upload_package(

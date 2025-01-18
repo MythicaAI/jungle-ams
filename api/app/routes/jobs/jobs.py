@@ -35,6 +35,7 @@ from ripple.auth.authorization import Scope, validate_roles
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
+from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile
 from ripple.models.streaming import JobDefinition as JobDefinitionRef
@@ -49,14 +50,6 @@ from telemetry_config import get_telemetry_context
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
-
-class AssetVersionEntryPointReference(BaseModel):
-    asset_id: str
-    major: int
-    minor: int
-    patch: int
-    file_id: str
-    entry_point: str
 
 
 class JobDefinitionRequest(BaseModel):

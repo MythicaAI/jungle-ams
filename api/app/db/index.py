@@ -64,7 +64,9 @@ async def update(ctx: UploadContext) -> Tuple[str, str]:
         # Create a new NATS event
         if should_post_to_nats(ctx):
             parameter_set = ParameterSet(
-                hda_file=FileParameter(file_id=file_id)
+                hda_file=FileParameter(file_id=file_id),
+                src_asset_id="",
+                src_version=[0, 0, 0]
             )
 
             event = AutomationRequest(
