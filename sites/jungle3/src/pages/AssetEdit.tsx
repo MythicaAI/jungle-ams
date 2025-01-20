@@ -59,7 +59,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
   version: propVersion = "0.0.0",
 }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const { orgRoles, isOrgRolesLoading } = useGlobalStore();
+  const { isOrgRolesLoading } = useGlobalStore();
   const { setSuccess, addError, addWarning } = useStatusStore();
   const { mutate: deleteAsset } = useDeleteAsset();
   const {
