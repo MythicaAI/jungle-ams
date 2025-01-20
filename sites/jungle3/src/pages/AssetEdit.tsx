@@ -106,13 +106,6 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     navigate("/packages");
   };
 
-  // org_id state and initial update to first index
-  useEffect(() => {
-    if (orgRoles && orgRoles.length > 0 && orgRoles[0].org_id) {
-      updateVersion({ org_id: orgRoles[0].org_id });
-    }
-  }, [orgRoles]);
-
   // handle populating the form if an asset ID was specified
   useEffect(() => {
     if (error) {
