@@ -224,7 +224,9 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         return ""
 
     parameter_set = ParameterSet(
-        hda_file=FileParameter(file_id=file_id)
+        hda_file=FileParameter(file_id=file_id),
+        src_asset_id="",
+        src_version=[0, 0, 0]
     )
     work_guid = str(uuid4())
     event = AutomationRequest(
