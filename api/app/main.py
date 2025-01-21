@@ -86,6 +86,7 @@ route_names = [
     'profiles',
     'files',
     'jobs',
+    'automation',
     'assets',
     'asset_groups',
     'orgs',

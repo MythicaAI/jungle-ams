@@ -82,9 +82,12 @@ jobs:
           helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-images.yaml api-staging api/helm/api
           echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
           cat api/helm/api/values-images.yaml >> $GITHUB_STEP_SUMMARY
+          helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.yaml -n default
 
       - name: Rollout deployments
         run: |
+          kubectl rollout restart deployment/otel-agent -n default
+          kubectl rollout restart deployment/otel-collector -n default
           kubectl rollout restart deployment/app -n api-staging
           kubectl rollout restart deployment/packager -n api-staging
           kubectl rollout restart deployment/lets-encrypt -n api-staging

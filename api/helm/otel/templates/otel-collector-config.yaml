@@ -25,31 +25,29 @@ data:
                 - targets: [localhost:8888]
 
     exporters:
-      logging:
-        verbosity: detailed
       otlp:
         endpoint: ingest.us.signoz.cloud:443
         tls:
           insecure: false
-        timeout: 10s
+        timeout: 30s
         headers:
           "signoz-access-token": ${SIGNOZ_API_KEY}
 
     processors:
-        batch:
-          timeout: 5s
-          send_batch_size: 1024
-          send_batch_max_size: 8192
+      batch:
+        timeout: 5s
+        send_batch_size: 512
+        send_batch_max_size: 10000
 
     service:
       pipelines:
         logs:
           receivers: [otlp]
+          processors: [batch]
           exporters: [otlp]
         metrics:
           receivers: [otlp]
-          processors: [batch]
-          exporters: [logging, otlp]
+          exporters: [otlp]
         traces:
           receivers: [otlp]
           processors: [batch]

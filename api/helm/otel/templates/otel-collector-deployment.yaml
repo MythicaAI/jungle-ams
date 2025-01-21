@@ -4,7 +4,7 @@ metadata:
   name: otel-collector
   namespace: default
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: otel-collector
@@ -17,12 +17,12 @@ spec:
         - name: otel-collector
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "50m"
-            limits:
               memory: "256Mi"
-              cpu: "100m"
-          image: signoz/signoz-otel-collector
+              cpu: "2000m"
+            limits:
+              memory: "512Mi"
+              cpu: "4000m"
+          image: signoz/signoz-otel-collector:latest
           args:
             - "--config=/etc/otel-collector-config.yaml"
           env:

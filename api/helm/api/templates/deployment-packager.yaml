@@ -42,6 +42,11 @@ spec:
               value: "gke-main-us-central1"
             - name: K8S_CLUSTER_NAME
               value: "gke-main-us-central1"
+            - name: MYTHICA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: packager-secrets
+                  key: MYTHICA_API_KEY
           volumeMounts:
             - name: ephemeral-packaged-content
               mountPath: /tmp
