@@ -165,11 +165,11 @@ class Worker:
                     telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.OK)
                 except Exception as e:
                     msg=f"Executor error - {log_str} - {format_exception(e)}"
+                    if publisher:
+                        publisher.result(Message(message=msg), complete=True)
                     telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg)
                     log.error(msg)
                     span.record_exception(e)
-                    if publisher:
-                        publisher.result(Message(message=msg), complete=True)
                 finally:
                     span.set_attribute("worker.completed", datetime.now(timezone.utc).isoformat())
                     if ret_data and ret_data.job_id:

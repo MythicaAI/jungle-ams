@@ -459,7 +459,17 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
     publisher.result(test_item, complete=True)
     
     mock_nats.post_to.assert_called_once()
-    mock_rest.post.assert_called_once_with(
+    assert mock_rest.post.call_count == 2
+    mock_rest.post.assert_any_call(
+        f"{publisher.api_url}/jobs/results/test-job",
+        json_data={
+            "created_in": "automation-worker",
+            "result_data": test_item.model_dump(),
+        },
+        headers=invalid_data["telemetry_context"],
+        token=publisher.request.auth_token
+    )
+    mock_rest.post.assert_any_call(
         f"{publisher.api_url}/jobs/complete/test-job",
         json_data={},
         headers=invalid_data["telemetry_context"],
