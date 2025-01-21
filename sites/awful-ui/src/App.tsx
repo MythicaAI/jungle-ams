@@ -6,6 +6,7 @@ import { CssVarsProvider } from '@mui/joy';
 import AutomationProvider from './providers/AutomationProvider';
 import MythicaApiProvider from './providers/MythicaApiProvider';
 import AwfulFlowProvider from './providers/AwfulFlowProvider';
+import UndoRedoProvider from './providers/UndoRedoProvider';
 
 import AwfulUI from './AwfulUI';
 import { useTheme } from './styles/theme';
@@ -17,9 +18,11 @@ const App: React.FC = () => {
       <ReactFlowProvider>
         <MythicaApiProvider>
           <AutomationProvider>
-            <AwfulFlowProvider>
-              <AwfulUI />
-            </AwfulFlowProvider>
+            <UndoRedoProvider>
+              <AwfulFlowProvider>
+                <AwfulUI />
+              </AwfulFlowProvider>
+            </UndoRedoProvider>
           </AutomationProvider>
         </MythicaApiProvider>
       </ReactFlowProvider>

@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import useMythicaApi from '../hooks/useMythicaApi';
 import { GetFileResponse } from '../types/MythicaApi';
 import useAutomation from '../hooks/useAutomation';
+import useUndoRedoContext from '../hooks/useUndoRedo';
 
 const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -46,6 +47,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   >({});
 
   const { savedAutomationsById, allAutomations } = useAutomation();
+  const { takeSnapshot } = useUndoRedoContext();
 
   const [refreshEdgeData, setRefreshEdgeData] = useState<Edge[]>([]);
 
@@ -306,6 +308,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       if (!nodeType) return;
+      takeSnapshot();
 
       const position = screenToFlowPosition({
         x: event.clientX,
@@ -410,6 +413,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   const onConnect = useCallback(
     (connection: Edge | Connection) => {
       if (!connection.sourceHandle || !connection.targetHandle) return;
+      takeSnapshot();
 
       const edgeData =
         flowData[connection.source]?.[connection.sourceHandle] || [];
@@ -470,6 +474,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   // Handle disconnection by removing stored connection
   const onDisconnect = useCallback(
     (edgesToRemove: Edge[]) => {
+      takeSnapshot();
       setEdges((eds) =>
         eds.filter((e) => !edgesToRemove.some((er) => er.id === e.id))
       );
@@ -485,6 +490,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const onNodesDelete = useCallback((nodesToDelete: Node[]) => {
+    takeSnapshot();
     nodesToDelete.forEach(
       (node) => {
         setFlowDataState((prevData) => {
@@ -506,6 +512,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const onManualNodesDelete = useCallback(
     (deleted: Node[]) => {
+      takeSnapshot();
       setEdges(
         deleted.reduce((acc, node) => {
           const incomers = getIncomers(node, nodes, edges);
