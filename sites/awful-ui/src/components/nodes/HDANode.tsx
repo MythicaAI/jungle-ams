@@ -13,6 +13,7 @@ import { Button, Card } from '@mui/joy';
 import useMythicaApi from '../../hooks/useMythicaApi';
 import { NodeDeleteButton } from '../NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
+import { NodeHeader } from '../NodeHeader';
 
 type InterfaceExecutionData = ExecutionData & {
   output: {
@@ -308,6 +309,7 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
           deleteElements({ nodes: [node] });
         }}
       />
+      <NodeHeader />
       <h3 style={{ marginBottom: '2px' }}>
         {nodeType['description'] as string}
       </h3>

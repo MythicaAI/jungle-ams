@@ -21,6 +21,7 @@ import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Input, Stack, Typography } from '@mui/joy';
 import { NodeDeleteButton } from '../NodeDeleteButton';
+import { NodeHeader } from '../NodeHeader';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -124,7 +125,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const [scriptContent, setScriptContent] = useState<string>(
     node.data.script?.script || template
   ); // State to store Monaco editor content
-  
+
   const timeout = 2000;
   const typingTimeout = useRef(timeout);
 
@@ -189,7 +190,6 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     [setScriptContent]
   );
 
-  
   /**
    * Update fileInputs with the resolved file_id values
    * when the flowData changes.
@@ -328,20 +328,20 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   }, [myExecutionData, node.id, setFlowData, getFile, processOutputMessage]);
 
   useEffect(() => {
-      if (typingTimeout.current) {
-        clearTimeout(typingTimeout.current);
-      }
-      typingTimeout.current = setTimeout(() => {
-        runAutomation(
-          automationTask?.worker,
-          node.id,
-          scriptInterfacePath,
-          { script: scriptContent},
-          setMyInterfaceData
-        );
-      }, timeout); // Adjust delay as needed
-  }, [scriptContent, runAutomation, automationTask?.worker, node.id]);;
-  
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+    }
+    typingTimeout.current = setTimeout(() => {
+      runAutomation(
+        automationTask?.worker,
+        node.id,
+        scriptInterfacePath,
+        { script: scriptContent },
+        setMyInterfaceData
+      );
+    }, timeout); // Adjust delay as needed
+  }, [scriptContent, runAutomation, automationTask?.worker, node.id]);
+
   // Update fileInputs when flowData changes or when the fileparams change
   useEffect(() => {
     if (inputFileKeys) updateFileInputs();
@@ -433,6 +433,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           flexDirection: 'column',
           minHeight: min,
           minWidth: isScriptNode ? '640px' : 'auto',
+          position: 'relative',
+          paddingTop: '28px',
         }}
       >
         <NodeDeleteButton
@@ -440,6 +442,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             deleteElements({ nodes: [node] });
           }}
         />
+        <NodeHeader />
         <AutomationInputs
           inputSchema={inputSpec}
           onChange={setInputData}
@@ -521,7 +524,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             id={outputKey}
             left={outputPositions[index]}
             isConnectable
-            style={{ background: '#007bff' }}
+            style={{ background: '#555555' }}
             label={outputKey + '[ ]'}
           />
         ))}

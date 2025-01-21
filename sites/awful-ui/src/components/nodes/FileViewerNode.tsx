@@ -20,6 +20,7 @@ import FilePickerModal from '../utils/FilePickerModal'; // <-- The new component
 
 import { useReactFlow } from '@xyflow/react';
 import { NodeDeleteButton } from '../NodeDeleteButton';
+import { NodeHeader } from '../NodeHeader';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -193,6 +194,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         display: 'flex',
         minHeight: 300,
         flexDirection: 'column',
+        paddingTop: '50px',
       }}
       ref={containerRef}
     >
@@ -201,6 +203,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
           deleteElements({ nodes: [node] });
         }}
       />
+      <NodeHeader />
       {/* Input handle */}
       <FileInputHandle
         id={INPUT_FILES}

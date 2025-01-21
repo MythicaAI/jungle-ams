@@ -29,7 +29,9 @@ const FileOutputHandle: React.FC<FileOutputHandleProps> = (
         isConnectable={prop.isConnectable}
         style={{ background: '#007bff', ...prop.style }}
       />
-      <Typography className="label">{prop.label}</Typography>
+      <Typography className="label" fontWeight={500}>
+        {prop.label}
+      </Typography>
     </div>
   );
 };
