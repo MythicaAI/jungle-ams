@@ -28,7 +28,7 @@ class NatsAdapter():
     async def _connect(self) -> None:
         """Establish a connection to NATS."""
         if not self.nc:
-            log.debug("Connecting to NATS")
+            log.debug("Connecting to NATS, nats_url: %s", self.nats_url)
             self.nc = await nats.connect(servers=[self.nats_url])
             log.info("Connected to NATS")
 

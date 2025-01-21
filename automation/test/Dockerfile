@@ -11,8 +11,9 @@ LABEL version="1.0.0"
 LABEL tier="auto"
 
 # Default for local (docker compose) mode, override in deployment
-ENV NATS_ENDPOINT="nats://nats:4222"
+ARG NATS_ENDPOINT="nats://nats:4222"
 
+ENV NATS_ENDPOINT=${NATS_ENDPOINT}
 # Install Poetry
 RUN apt-get update && apt-get install -y curl
 
