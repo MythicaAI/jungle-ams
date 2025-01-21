@@ -10,10 +10,12 @@ data:
         config:
           scrape_configs:
             - job_name: 'nginx'
+              scrape_interval: 15s
               static_configs:
                 - targets: ['web-front:80']
                   metrics_path: '/nginx_status'
             - job_name: 'app'
+              scrape_interval: 15s
               static_configs:
                 - targets: ['app:5555']
                   metrics_path: '/metrics'

@@ -62,7 +62,14 @@ def apply_params(asset, params: dict):
 
 
 def create_inputs(asset, geo, params: dict):
+    """
+    Create input nodes for the specified asset and geometry network in Houdini, 
+    based on file extensions.
+
+    Supports: obj, fbx, gltf/glb, usd/usdz.
+    """
     for k, v in params.items():
+        # Match keys in the format input<n>
         match = re.search(r'^input(\d+)$', k)
         if not match:
             continue
@@ -70,19 +77,53 @@ def create_inputs(asset, geo, params: dict):
         input_index = int(match.group(1))
         input_file = v.get('file_path', '')
 
+        # If the file doesn't exist, create a null node
+        if not os.path.exists(input_file):
+            input_node = geo.createNode('null')
+            asset.setInput(input_index, input_node, 0)
+            continue
+
+        # Get the file extension (lowercase)
+        file_ext = os.path.splitext(input_file)[-1].lower()
         input_node = None
-        if os.path.exists(input_file):
+
+        if file_ext in ['.usd', '.usdz']:
+            # Handle USD/USZ files
             input_node = geo.createNode('usdimport')
             input_node.parm('filepath1').set(input_file)
 
             # Load as unpacked polygons
             input_node.parm('input_unpack').set(1)
             input_node.parm('unpack_geomtype').set(1)
+
+        elif file_ext == '.obj':
+            # Handle OBJ files
+            input_node = geo.createNode('obj_importer')
+            input_node.parm('sObjFile').set(input_file)
+            
+        elif file_ext == '.fbx':
+            # Handle FBX files
+            input_node = geo.createNode('fbx_archive_import')
+            input_node.parm('sFBXFile').set(input_file)
+            input_node.parm('bConvertUnits').set(True)
+            input_node.parm('bImportAnimation').set(True)
+            input_node.parm('bImportBoneSkin').set(True)
+            input_node.parm('bConvertYUp').set(True)
+            input_node.parm('bUnlockGeo').set(True)
+            input_node.parm('pack').set(True)
+
+        elif file_ext in ['.gltf', '.glb']:
+            # Handle GLTF/GLB files
+            input_node = geo.createNode('gltf')
+            input_node.parm('filename').set(input_file)
+
         else:
+            # Unsupported file types: Create a null node
             input_node = geo.createNode('null')
+            input_node.setName(f"unsupported_input_{input_index}")
 
+        # Connect the input node to the asset
         asset.setInput(input_index, input_node, 0)
-
 
 def generate_mesh_impl(
         hda_path: str,
@@ -170,7 +211,6 @@ def generate_mesh_impl(
         for index in range(len(asset.outputNames())):
             output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
             usd_node.parm("lopoutput").set(output_file_path)
-            outputs.append(output_file_path)
 
             log.debug("Exporting USD %s", output_file_path)
 

@@ -6,13 +6,14 @@ or worker mode when connected to an events table.
 """
 
 import argparse
+import asyncio
 import logging
 import os
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Optional
 
-import asyncio
 import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
@@ -41,11 +42,22 @@ def parse_args():
         default="0.0.0",
         required=False
     )
-
+    parser.add_argument(
+        "-p", "--profile",
+        help="Profile ID to to run as or use the default in the API key",
+        default=None,
+        required=False
+    )
     parser.add_argument(
         "-e", "--endpoint",
         help="API endpoint",
         default="http://localhost:5555",
+        required=False
+    )
+
+    parser.add_argument(
+        "-k", "--api_key",
+        help="API access key",
         required=False
     )
 
@@ -99,12 +111,30 @@ def resolve_contents(endpoint, file: AssetFileReference) -> DownloadInfoResponse
     return dl_info
 
 
+def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> str:
+    if as_profile_id:
+        headers = {"Impersonate-Profile-Id": as_profile_id}
+    else:
+        headers = {}
+    url = f"{endpoint}/v1/sessions/key/{api_key}"
+    response = requests.get(url, headers=headers, timeout=10)
+    response.raise_for_status()
+
+    result = response.json()
+    return result['token']
+
+
 async def create_zip_from_asset(
         output_path: Path,
         endpoint: str,
+        api_key: str,
         asset_id: str,
+        profile_id: Optional[str],
         version: tuple[int, ...]):
     """Given an output zip file name, resolve all the content of the asset_id and create a zip file"""
+
+    token = start_session(endpoint, api_key, profile_id)
+    headers = {'Authorization': f"Bearer {token}"}
 
     versions = get_versions(endpoint, asset_id, version)
     for v in versions:
@@ -124,11 +154,12 @@ async def create_zip_from_asset(
             manifest = v.model_dump_json()
             zip_file.writestr("manifest.json", manifest.encode("utf-8"))
 
-        await upload_package(endpoint, asset_id, version_str, zip_filename)
+        await upload_package(endpoint, headers, asset_id, version_str, zip_filename)
 
 
 async def upload_package(
         endpoint: str,
+        headers: dict[str, str],
         asset_id: str,
         version_str: str,
         zip_filename: Path):
@@ -136,7 +167,8 @@ async def upload_package(
     url = f"{endpoint}/v1/upload/package/{asset_id}/{version_str}"
     with open(zip_filename, 'rb') as file:
         response = requests.post(url, files={
-            'files': (os.path.basename(zip_filename), file, 'application/zip')})
+            'files': (os.path.basename(zip_filename), file, 'application/zip')},
+                                 headers=headers)
         if response.status_code != 200:
             log.error("package upload failed: %s", response.status_code)
             log.error("response: %s", response.text)
@@ -151,21 +183,29 @@ async def upload_package(
 async def console_main(
         output_path: Path,
         endpoint: str,
+        api_key: str,
         asset_id: str,
+        profile_id: Optional[str],
         version: tuple[int, ...]):
     """Main entrypoint when running with argument overrides (non-worker mode)"""
     await create_zip_from_asset(
         output_path,
         endpoint,
+        api_key,
         asset_id,
+        profile_id,
         version)
 
 
-async def exec_job(endpoint: str, job_data):
+async def exec_job(endpoint: str, api_key: str, job_data):
     """Given the job data from the event, create the ZIP package"""
     asset_id = job_data.get('asset_id')
     if asset_id is None:
         log.error("asset_id is missing from job_data")
+        return
+    profile_id = job_data.get('owner')
+    if profile_id is None:
+        log.error("profile_id is missing from job_data")
         return
     version = job_data.get('version')
     if version is None:
@@ -174,10 +214,10 @@ async def exec_job(endpoint: str, job_data):
 
     assert type(version) is list or type(version) is tuple
     with tempfile.TemporaryDirectory() as tmp_dir:
-        await create_zip_from_asset(Path(tmp_dir), endpoint, asset_id, version)
+        await create_zip_from_asset(Path(tmp_dir), endpoint, api_key, asset_id, profile_id, version)
 
 
-async def worker_main(endpoint: str):
+async def worker_main(endpoint: str, api_key: str):
     """Async entrypoint to test worker dequeue, looks for SQL_URL
         environment variable to form an initial connection"""
     sql_url = os.environ.get('SQL_URL',
@@ -191,7 +231,7 @@ async def worker_main(endpoint: str):
         async for event_seq, _, job_data in session.ack_next():
             log.info("event: %s, %s", event_seq, job_data)
             try:
-                await exec_job(endpoint, job_data)
+                await exec_job(endpoint, api_key, job_data)
                 await session.complete(event_seq)
             except allowed_job_exceptions:
                 log.exception("job failed")
@@ -217,11 +257,13 @@ def main():
         asyncio.run(console_main(
             Path(args.output),
             args.endpoint,
+            args.api_key,
             args.asset,
+            args.profile,
             tuple(map(int, args.version.split('.')))))
     else:
         log.info("no asset provided, running in event worker mode")
-        asyncio.run(worker_main(args.endpoint))
+        asyncio.run(worker_main(args.endpoint, args.api_key))
 
 
 if __name__ == '__main__':

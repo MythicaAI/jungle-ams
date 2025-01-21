@@ -11,7 +11,11 @@ from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk._logs.export import (
+    BatchLogRecordProcessor,
+    ConsoleLogExporter,
+    SimpleLogRecordProcessor,
+)
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.resources import OTELResourceDetector, Resource
@@ -103,6 +107,10 @@ def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, heade
         headers=headers,
     )
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
+    if ripple_config().mythica_environment == "debug":
+        logger_provider.add_log_record_processor(
+            SimpleLogRecordProcessor(ConsoleLogExporter())
+        )
 
     otel_log_handler = LoggingHandler(level=logging.INFO)
     logger.addHandler(otel_log_handler)

@@ -30,5 +30,7 @@ ENV SQL_URL='postgresql+asyncpg://test:test@postgres:5432/upload_pipeline'
 
 ENV PACKAGER_ENDPOINT=http://app:5555
 
+ENV MYTHICA_API_KEY=""
+
 # Entrypoint to bootstrap the published content
 ENTRYPOINT ["sh", "./docker-entrypoint.sh"]

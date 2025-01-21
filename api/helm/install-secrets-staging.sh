@@ -25,6 +25,7 @@ AUTH0_CLIENT_ID=$(op read op://Infrastructure/api-staging-secrets/auth0-client-i
 AUTH0_CLIENT_SECRET=$(op read op://Infrastructure/api-staging-secrets/auth0-client-secret)
 AUTH0_DOMAIN=$(op read op://Infrastructure/api-staging-secrets/auth0-domain)
 CANARY_API_KEY=$(op read op://Infrastructure/api-staging-secrets/canary-api-key)
+PACKAGER_API_KEY=$(op read op://Infrastructure/api-staging-secrets/packager-api-key)
 
 kubectl delete secret/secrets -n api-staging
 kubectl create secret generic secrets \
@@ -41,6 +42,10 @@ kubectl create secret generic canary-secrets \
   --from-literal=MYTHICA_API_KEY=$CANARY_API_KEY \
   --namespace=api-staging
 
+kubectl delete secret/packager-secrets -n api-staging
+kubectl create secret generic packager-secrets \
+  --from-literal=MYTHICA_API_KEY=$PACKAGER_API_KEY \
+  --namespace=api-staging
 
 kubectl delete secret/front-end-api-staging-sa -n api-staging
 kubectl create secret generic front-end-api-staging-sa \

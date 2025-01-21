@@ -8,11 +8,8 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Annotated
 
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
-from ripple.models.contexts import FilePurpose
-from ripple.models.sessions import SessionProfile
 from sqlmodel import and_, select, update
 
 import db.index as db_index
@@ -20,10 +17,13 @@ from assets.repo import convert_version_input, process_join_results, select_asse
 from config import app_config
 from content.validate_filename import validate_filename
 from context import UploadContext
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
 from db.connection import get_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from ripple.models.contexts import FilePurpose
+from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
 from routes.files.files import delete_by_id
@@ -214,7 +214,10 @@ async def store_and_attach_package(
 
         # if a package existed, mark it as deleted
         if avr.package_id:
-            await delete_by_id(avr.package_id, ctx.profile.profile_id)
+            try:
+                await delete_by_id(avr.package_id, profile)
+            except HTTPException:
+                log.exception("cleanup of existing package %s failed", avr.package_id)
 
         # attach the response to the asset version
         asset_seq = asset_id_to_seq(asset_id)
