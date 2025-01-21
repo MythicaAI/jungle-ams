@@ -6,7 +6,7 @@ import requests
 
 from ripple.automation.publishers import ResultPublisher
 from ripple.compile.rpsc import compile_interface
-from ripple.models.asset import AssetVersionEntryPointReference
+from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
@@ -83,7 +83,7 @@ def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher
                 asset_id=request.src_asset_id,
                 major=request.src_version[0],
                 minor=request.src_version[1],
-                patch=request.src_version[2]
+                patch=request.src_version[2],
                 file_id=hda_file.file_id,
                 entry_point=type_info['name']
             )
