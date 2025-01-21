@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import useMythicaApi from '../hooks/useMythicaApi';
 import { GetFileResponse } from '../types/MythicaApi';
 import useAutomation from '../hooks/useAutomation';
-import { useUndoRedoContext } from './UndoRedoProvider';
+import useUndoRedoContext from '../hooks/useUndoRedo';
 
 const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   children,

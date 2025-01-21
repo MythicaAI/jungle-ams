@@ -15,7 +15,7 @@ import { Header } from './components/Header';
 import { TabValues } from './enums';
 import { FileEdge } from './components/edges/FileEdge';
 import useCopyPaste from './hooks/useCopyPaste';
-import { useUndoRedoContext } from './providers/UndoRedoProvider';
+import useUndoRedo from './hooks/useUndoRedo';
 import { UndoRedoPanel } from './components/UndoRedoPanel';
 import { CopyPastePanel } from './components/CopyPastePanel';
 
@@ -24,7 +24,7 @@ const AwfulUI: React.FC = () => {
   const [tab, setTab] = useState<string>(TabValues.EDIT);
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const { cut, copy, paste, bufferedNodes } = useCopyPaste();
-  const { undo, redo, canUndo, canRedo } = useUndoRedoContext();
+  const { undo, redo, canUndo, canRedo } = useUndoRedo();
   const {
     onConnect,
     onDisconnect,

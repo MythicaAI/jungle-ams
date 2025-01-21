@@ -6,10 +6,10 @@ import { CssVarsProvider } from '@mui/joy';
 import AutomationProvider from './providers/AutomationProvider';
 import MythicaApiProvider from './providers/MythicaApiProvider';
 import AwfulFlowProvider from './providers/AwfulFlowProvider';
+import UndoRedoProvider from './providers/UndoRedoProvider';
 
 import AwfulUI from './AwfulUI';
 import { useTheme } from './styles/theme';
-import { UndoRedoProvider } from './providers/UndoRedoProvider';
 
 const App: React.FC = () => {
   const { theme } = useTheme();
