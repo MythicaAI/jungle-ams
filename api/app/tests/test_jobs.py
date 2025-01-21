@@ -58,6 +58,19 @@ def test_create_update(client, api_base, create_profile):
     o = munchify(r.json())
     job_def_id = o.job_def_id
 
+    # Create a job definition with no owner
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus 2',
+                        'description': 'Generates a cactus mesh',
+                        'params_schema': {
+                            'params': {}
+                        }
+                    })
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+
     # Get job definition from list
     r = client.get(f'{api_base}/jobs/definitions', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
