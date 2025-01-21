@@ -138,8 +138,8 @@ def is_houdini_file(content: DownloadInfoResponse) -> bool:
 async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str) -> bool:
     parameter_set = ParameterSet(
         hda_file=FileParameter(file_id=content.file_id),
-        asset_id=avr.asset_id,
-        version=avr.version
+        src_asset_id=avr.asset_id,
+        src_version=avr.version
     )
 
     event = AutomationRequest(
