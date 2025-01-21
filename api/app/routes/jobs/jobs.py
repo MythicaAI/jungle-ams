@@ -148,7 +148,8 @@ async def list_definitions() -> list[JobDefinitionModel]:
         job_defs = session.exec(select(JobDefinition)).all()
         return [JobDefinitionModel(
             job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-            owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
+            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
+            **job_def.model_dump())
             for job_def in job_defs
         ]
 
