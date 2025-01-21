@@ -35,6 +35,7 @@ from ripple.auth.authorization import Scope, validate_roles
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
+from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile
 from ripple.models.streaming import JobDefinition as JobDefinitionRef
@@ -49,14 +50,6 @@ from telemetry_config import get_telemetry_context
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
-
-class AssetVersionEntryPointReference(BaseModel):
-    asset_id: str
-    major: int
-    minor: int
-    patch: int
-    file_id: str
-    entry_point: str
 
 
 class JobDefinitionRequest(BaseModel):
@@ -155,7 +148,8 @@ async def list_definitions() -> list[JobDefinitionModel]:
         job_defs = session.exec(select(JobDefinition)).all()
         return [JobDefinitionModel(
             job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-            owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
+            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
+            **job_def.model_dump())
             for job_def in job_defs
         ]
 
@@ -230,7 +224,9 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         return ""
 
     parameter_set = ParameterSet(
-        hda_file=FileParameter(file_id=file_id)
+        hda_file=FileParameter(file_id=file_id),
+        src_asset_id="",
+        src_version=[0, 0, 0]
     )
     work_guid = str(uuid4())
     event = AutomationRequest(

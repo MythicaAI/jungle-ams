@@ -46,3 +46,12 @@ class AssetVersionRef(BaseModel):
             org_id=org_seq_to_id(org_seq) if org_seq is not None else None,
             package_seq=package_seq,
             package_id=profile_seq_to_id(package_seq) if package_seq is not None else None)
+
+
+class AssetVersionEntryPointReference(BaseModel):
+    asset_id: str
+    major: int
+    minor: int
+    patch: int
+    file_id: str
+    entry_point: str
