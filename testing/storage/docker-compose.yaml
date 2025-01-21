@@ -98,6 +98,8 @@ services:
       - TS_EXTRA_ARGS=--reset
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=true
+      - TS_ROUTES=34.118.224.0/20,10.0.0.0/8
+      - TS_DNS=34.118.224.10
     volumes:
       - ${PWD}/tailscale/state:/var/lib/tailscale
     devices:

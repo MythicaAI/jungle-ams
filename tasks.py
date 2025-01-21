@@ -229,7 +229,7 @@ def stop_docker_compose(c, docker_compose_path):
             f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
 
 
-def build_image(c, image_path: PathLike, no_cache: bool = False):
+def build_image(c, image_path: PathLike, no_cache: bool = False, use_tailscale: bool = False):
     """Build a docker image"""
 
     working_directory = Path(BASE_DIR) / image_path
@@ -240,10 +240,14 @@ def build_image(c, image_path: PathLike, no_cache: bool = False):
     requires = IMAGES[image_path].get('requires')
     if requires is not None:
         for image in requires:
-            build_image(c, image)
+            build_image(c, image, use_tailscale=use_tailscale)
 
     buildarg_str = ''
     buildargs = IMAGES[image_path].get('buildargs')
+    if use_tailscale:
+        if buildargs is None:
+            buildargs = {}
+        buildargs.update({"NATS_ENDPOINT": "nats://nats.nats.svc.cluster.local:4222"})
     if buildargs is not None:
         buildarg_str = ' '.join(
             [f'--build-arg {key}={value}' for key, value in buildargs.items()])
@@ -363,9 +367,13 @@ def docker_cleanup(c):
 
 
 @task
-def storage_start(c):
+def storage_start(c, use_tailscale: bool = False):
     """Start storage tier components"""
+    print("Use flag -u or --use_tailscale to connect storage to remote NATS")
     start_docker_compose(c, TESTING_STORAGE_DIR)
+    if use_tailscale:
+        with c.cd(TESTING_STORAGE_DIR):
+            c.run("docker compose stop nats", pty=True)
 
 
 @task
@@ -453,16 +461,16 @@ def image_path_action(c, image, action, **kwargs):
 
 @task(help={'image': f'Image path to build: {IMAGES.keys()}'})
 @timed
-def docker_build(c, image='all', no_cache: bool = False):
+def docker_build(c, image='all', no_cache: bool = False, use_tailscale: bool = False):
     """Build a docker image by sub path or set name"""
-    image_path_action(c, image, build_image, no_cache=no_cache)
+    image_path_action(c, image, build_image, no_cache=no_cache, use_tailscale=use_tailscale)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})
 @timed
-def docker_deploy(c, image='all', target='gcs'):
+def docker_deploy(c, image='all', target='gcs', no_cache: bool = False):
     """Deploy a docker image by sub path set name"""
-    image_path_action(c, image, build_image)
+    image_path_action(c, image, build_image, no_cache=no_cache)
     image_path_action(c, image, deploy_image, target=target)
 
 

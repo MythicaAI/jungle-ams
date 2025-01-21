@@ -52,10 +52,11 @@ services:
     container_name: app
     image: mythica-app:latest
     environment:
-      MINIO_ENDPOINT: minio:9000
-      LOCAL_STORAGE_PATH: /tmp/local_storage
-      REDIS_HOST: redis
-      MYTHICA_ENVIRONMENT: debug
+      - MINIO_ENDPOINT=minio:9000
+      - LOCAL_STORAGE_PATH=/tmp/local_storage
+      - REDIS_HOST=redis
+      - MYTHICA_ENVIRONMENT=debug
+      - NATS_ENDPOINT=${NATS_ENDPOINT} # It should be in testing/.env file in this folder
     ports:
       - "15555:5555"
     networks:
