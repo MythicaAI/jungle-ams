@@ -60,6 +60,23 @@ class ResultPublisher:
 
         task.add_done_callback(error_handler(log))
         if self.request.job_id:
+            data = {
+                "created_in": "automation-worker",
+                "result_data": item.model_dump()
+            }
+            self.rest.post(
+                f"{job_result_endpoint}/{self.request.job_id}",
+                json_data=data,
+                token=self.request.auth_token,
+                headers=self.request.telemetry_context,
+            )
+            log.debug(
+                "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
+                f"{job_result_endpoint}/{self.request.job_id}",
+                self.request.auth_token,
+                self.request.telemetry_context,
+                data,
+            )
             if complete:
                 self.rest.post(
                     f"{job_complete_endpoint}/{self.request.job_id}",
@@ -67,29 +84,11 @@ class ResultPublisher:
                     token=self.request.auth_token,
                     headers=self.request.telemetry_context,
                 )
-                log.info(
+                log.debug(
                     "ResultPublisher-nats-post: url-%s; token-%s; headers-%s",
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     self.request.auth_token,
                     self.request.telemetry_context,
-                )
-            else:
-                data = {
-                    "created_in": "automation-worker",
-                    "result_data": item.model_dump()
-                }
-                self.rest.post(
-                    f"{job_result_endpoint}/{self.request.job_id}",
-                    json_data=data,
-                    token=self.request.auth_token,
-                    headers=self.request.telemetry_context,
-                )
-                log.info(
-                    "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
-                    f"{job_complete_endpoint}/{self.request.job_id}",
-                    self.request.auth_token,
-                    self.request.telemetry_context,
-                    data,
                 )
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
@@ -116,7 +115,8 @@ class ResultPublisher:
                 'job_type': job_def.job_type,
                 'name': job_def.name,
                 'description': job_def.description,
-                'params_schema': job_def.parameter_spec.model_dump()
+                'params_schema': job_def.parameter_spec.model_dump(),
+                'source': job_def.source
             }
             response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
                 headers=self.request.telemetry_context

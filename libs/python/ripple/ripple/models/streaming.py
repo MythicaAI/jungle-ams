@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal, Optional, Union
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import ParameterSpec
 
 
@@ -66,6 +67,7 @@ class JobDefinition(ProcessStreamItem):
     description: str
     parameter_spec: ParameterSpec
     owner_id: Optional[str] = None
+    source: Optional[AssetVersionEntryPointReference] = None
 
 
 class Event(StreamItem):

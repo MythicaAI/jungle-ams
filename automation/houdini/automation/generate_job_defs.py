@@ -6,6 +6,7 @@ import requests
 
 from ripple.automation.publishers import ResultPublisher
 from ripple.compile.rpsc import compile_interface
+from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
@@ -53,6 +54,8 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
 
 class GenerateJobDefRequest(ParameterSet):
     hda_file: FileParameter
+    src_asset_id: str
+    src_version: list[int]
 
 class GenerateJobDefResponse(ProcessStreamItem):
     item_type: Literal["job_defs"] = "job_defs"
@@ -74,11 +77,23 @@ def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher
         param_spec = compile_interface(json.dumps(type_info, indent=2))
         set_config_params(param_spec, hda_file.file_id, index)
 
+        source = None
+        if len(request.src_asset_id) > 0:
+            source = AssetVersionEntryPointReference(
+                asset_id=request.src_asset_id,
+                major=request.src_version[0],
+                minor=request.src_version[1],
+                patch=request.src_version[2],
+                file_id=hda_file.file_id,
+                entry_point=type_info['name']
+            )
+
         res = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
             name=f"Generate {type_info['name']}",
             description=type_info['description'],
-            parameter_spec=param_spec
+            parameter_spec=param_spec,
+            source=source
         )
         ret.append(res)
         responder.result(res)
