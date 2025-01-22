@@ -7,6 +7,7 @@ import FileOutputHandle from '../handles/FileOutputHandle';
 import { Box, Button, Card, List, ListItem, Typography } from '@mui/joy';
 import { NodeDeleteButton } from '../NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
+import { NodeHeader } from '../NodeHeader';
 
 interface FileUploadNodeProps {
   id: string;
@@ -53,13 +54,14 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
   return (
     <Card
       className={`mythica-node file-upload-node ${node.selected && 'selected'}`}
-      sx={{ minWidth: '300px' }}
+      sx={{ minWidth: '300px', paddingTop: '60px' }}
     >
       <NodeDeleteButton
         onDelete={() => {
           deleteElements({ nodes: [node] });
         }}
       />
+      <NodeHeader />
       <Typography level="h4">File Upload</Typography>
       <Button
         variant="outlined"

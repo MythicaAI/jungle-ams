@@ -29,8 +29,9 @@ export const NodeDeleteButton: React.FC<Props> = ({ onDelete }) => {
           minWidth: 0,
           minHeight: 0,
           position: 'absolute',
-          right: '12px',
-          top: '12px',
+          right: '7px',
+          top: '6px',
+          zIndex: 1,
         }}
         color="neutral"
         onClick={() => setOpen(true)}
