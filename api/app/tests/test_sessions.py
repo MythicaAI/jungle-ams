@@ -7,58 +7,13 @@ Test the session creation from different contexts including negative cases
 from http import HTTPStatus
 
 from munch import munchify
-from sqlmodel import col, select
 
-from db.connection import get_session
-from db.schema.profiles import ProfileSession
 from main import app
 from profiles.auth0_validator import Auth0ValidatorFake
 from routes.sessions.sessions import get_auth_validator
 from tests.conftest import api_base
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import ProfileTestObj, assert_status_code
-
-
-def test_start_session_direct(api_base, client, create_profile):
-    # main test case
-    test_profile: ProfileTestObj = create_profile()
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert 'token' in o
-    assert 'profile' in o
-    assert len(o.token) > 8
-
-    # invalid profile ID
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id[0:7]}')
-    assert_status_code(r, HTTPStatus.BAD_REQUEST)
-
-    # missing profile ID
-    r = client.get(f'{api_base}/sessions/direct/')
-    assert_status_code(r, HTTPStatus.NOT_FOUND)
-
-    # delete the profile session
-    r = client.delete(f'{api_base}/sessions/', headers=test_profile.authorization_header())
-    assert_status_code(r, HTTPStatus.OK)
-
-
-def test_resume_session_direct(api_base, client, create_profile):
-    test_profile: ProfileTestObj = create_profile()
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-    assert 'token' in o
-    assert 'profile' in o
-    assert len(o.token) > 8
-
-    r = client.get(f'{api_base}/sessions/direct/{test_profile.profile.profile_id}')
-    assert_status_code(r, HTTPStatus.OK)
-    o = munchify(r.json())
-
-    with get_session() as session:
-        ## assert token is present
-        s = session.exec(select(ProfileSession).where(col(ProfileSession.auth_token) == o.token)).one_or_none()
-        assert s is not None
 
 
 def test_start_session_api_key(api_base, client, create_profile):

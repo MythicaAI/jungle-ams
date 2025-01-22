@@ -84,12 +84,12 @@ def test_privilege_access(client, api_base, create_profile, create_org):
     assert o.state == 'validated'
 
     # get the token with the refreshed roles
-    mythica_profile.auth_token = refresh_auth_token(client, api_base, mythica_profile)
+    mythica_profile.auth_token = refresh_auth_token(mythica_profile)
 
     create_org(user_profile)
 
     # get user token with refreshed org roles
-    user_profile.auth_token = refresh_auth_token(client, api_base, user_profile)
+    user_profile.auth_token = refresh_auth_token(user_profile)
 
     # Ensure that the user profile
     #   does not get tag create

@@ -77,7 +77,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     org_id = o.org_id
 
     # after creating the org, refresh the auth token to get the new roles
-    test_profile.auth_token = refresh_auth_token(client, api_base, test_profile)
+    test_profile.auth_token = refresh_auth_token(test_profile)
     headers = test_profile.authorization_header()
 
     # create asset in org
@@ -354,7 +354,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     new_profile_org_id = o.org_id
 
     # after creating the org, refresh the auth token to get the new roles
-    new_profile.auth_token = refresh_auth_token(client, api_base, new_profile)
+    new_profile.auth_token = refresh_auth_token(new_profile)
     new_headers = new_profile.authorization_header()
 
     # create asset for new_profile
