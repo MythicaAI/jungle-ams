@@ -123,8 +123,9 @@ def test_param_compile():
             "test_enum": {
                 "type": "Menu",
                 "label": "Test Enum",
-                "menu_items": ["0", "1", "2"],
+                "menu_items": ["", "", ""],
                 "menu_labels": ["A", "B", "C"],
+                "menu_use_tokens": false,
                 "default": 0
             }
         },
@@ -169,8 +170,9 @@ def test_param_compile():
             "test_enum": {
                 "type": "Int",
                 "label": "Test Enum",
-                "menu_items": ["0", "1", "2"],
+                "menu_items": ["", "", ""],
                 "menu_labels": ["A", "B", "C"],
+                "menu_use_tokens": false,
                 "default": 0
             }
         },
@@ -337,11 +339,25 @@ def test_menu_parms():
         assert isinstance(param, EnumParameterSpec)
         assert param.default in (value.name for value in param.values)
 
-    assert compiled.params["menu_no"].values == ["0", "1", "2"]
-    assert compiled.params["menu_yes"].values == ["4", "1", "1"]
-    assert compiled.params["int_no"].values == ["0", "1", "2"]
-    assert compiled.params["int_yes"].values == ["4", "1", "1"]
-    assert compiled.params["string"].values == ["a", "b", ""]
+    assert compiled.params["menu_no"].values[0].name == "0"
+    assert compiled.params["menu_no"].values[1].name == "1"
+    assert compiled.params["menu_no"].values[2].name == "2"
+
+    assert compiled.params["menu_yes"].values[0].name == "4"
+    assert compiled.params["menu_yes"].values[1].name == "1"
+    assert compiled.params["menu_yes"].values[2].name == "1"
+
+    assert compiled.params["int_no"].values[0].name == "0"
+    assert compiled.params["int_no"].values[1].name == "1"
+    assert compiled.params["int_no"].values[2].name == "2"
+
+    assert compiled.params["int_yes"].values[0].name == "4"
+    assert compiled.params["int_yes"].values[1].name == "1"
+    assert compiled.params["int_yes"].values[2].name == "1"
+
+    assert compiled.params["string"].values[0].name == "a"
+    assert compiled.params["string"].values[1].name == "b"
+    assert compiled.params["string"].values[2].name == ""
 
 
 def test_param_validate():
