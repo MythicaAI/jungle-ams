@@ -284,6 +284,56 @@ def test_param_compile():
     assert compiled.params['no_category_toggle'].category_label is None
 
 
+def test_menu_parms():
+    data = """
+    {
+        "defaults": {
+            "menu_no": {
+                "type": "Menu",
+                "label": "Label",
+                "menu_items": ["", "", ""],
+                "menu_labels": ["A", "B", "C"],
+                "menu_use_tokens": false,
+                "default": 0
+            },
+            "menu_yes": {
+                "type": "Menu",
+                "label": "Label",
+                "menu_items": ["4", "", "1"],
+                "menu_labels": ["A", "B", "C"],
+                "menu_use_tokens": true,
+                "default": 0
+            },
+            "int_no": {
+                "type": "Int",
+                "label": "Label",
+                "menu_items": ["", "", ""],
+                "menu_labels": ["A", "B", "C"],
+                "menu_use_tokens": false,
+                "default": 0
+            },
+            "int_yes": {
+                "type": "Int",
+                "label": "Label",
+                "menu_items": ["4", "", "1"],
+                "menu_labels": ["A", "B", "C"],
+                "menu_use_tokens": true,
+                "default": 0
+            },
+            "string": {
+                "type": "String",
+                "label": "Label",
+                "menu_items": ["a", "b", ""],
+                "menu_labels": ["A", "B", "C"],
+                "default": ""
+            }
+        },
+        "inputLabels": []
+    }"""
+    compiled = compile_interface(data)
+    assert len(compiled.params) == 5
+
+
 def test_param_validate():
     # Minimal test
     spec = ParameterSpec(params={})
