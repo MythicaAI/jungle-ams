@@ -30,11 +30,12 @@ import { motion } from 'motion/react';
 
 type Props = {
   tab: string;
+  isMenuOpen: boolean;
+  setIsMenuOpen: (value: boolean) => void;
 };
 
-const Sidebar: React.FC<Props> = ({ tab }) => {
+const Sidebar: React.FC<Props> = ({ tab, isMenuOpen, setIsMenuOpen }) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
-  const [isOpened, setIsOpened] = useState(true);
 
   const automationContext = useAutomation();
   const { apiKey, setApiKey } = useMythicaApi();
@@ -176,7 +177,7 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  return isOpened ? (
+  return isMenuOpen ? (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -200,7 +201,7 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
               display: 'flex',
             },
           }}
-          onClick={() => setIsOpened(false)}
+          onClick={() => setIsMenuOpen(false)}
         >
           <Typography fontSize={18} level="h4">
             Hide Menu
@@ -427,11 +428,11 @@ const Sidebar: React.FC<Props> = ({ tab }) => {
       sx={{
         position: 'absolute',
         right: '12px',
-        top: '70px',
+        top: '15px',
         ':hover': { opacity: '0.8', cursor: 'pointer' },
       }}
       onClick={() => {
-        setIsOpened(true);
+        setIsMenuOpen(true);
       }}
     >
       <LucidePanelLeftClose strokeWidth={1.7} color="#9fa6ad" />

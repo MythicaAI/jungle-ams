@@ -22,6 +22,7 @@ import { CopyPastePanel } from './components/CopyPastePanel';
 // Main Awful UI component
 const AwfulUI: React.FC = () => {
   const [tab, setTab] = useState<string>(TabValues.EDIT);
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const { cut, copy, paste, bufferedNodes } = useCopyPaste();
   const { undo, redo, canUndo, canRedo } = useUndoRedo();
@@ -58,8 +59,11 @@ const AwfulUI: React.FC = () => {
 
   return (
     <Stack>
-      <Header tab={tab} setTab={setTab} />
-      <div className="dndflow" data-joy-color-scheme="dark">
+      <Header tab={tab} setTab={setTab} isMenuOpen={isMenuOpen} />
+      <div
+        className={isMenuOpen ? 'dndflow' : 'dndflow fullheight'}
+        data-joy-color-scheme="dark"
+      >
         <div className="reactflow-wrapper" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
@@ -99,7 +103,11 @@ const AwfulUI: React.FC = () => {
             />
           </ReactFlow>
         </div>
-        <Sidebar tab={tab} />
+        <Sidebar
+          tab={tab}
+          isMenuOpen={isMenuOpen}
+          setIsMenuOpen={setIsMenuOpen}
+        />
       </div>
     </Stack>
   );

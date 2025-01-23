@@ -28,6 +28,14 @@ body {
   background: #24292e;
 }
 
+.dndflow.fullheight {
+  height: 100vh;
+}
+
+.dndflow.fullheight .reactflow-wrapper {
+  height: 100%;
+}
+
 .dndflow {
   flex-direction: row;
   display: flex;

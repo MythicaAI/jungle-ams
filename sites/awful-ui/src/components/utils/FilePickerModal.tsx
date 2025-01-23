@@ -55,7 +55,7 @@ const FilePickerModal: React.FC<FilePickerModalProps> = ({
     }
   }, [open, selectedFileIds]);
 
-  // Memo: sort files by file_name, then reorder selected to top 
+  // Memo: sort files by file_name, then reorder selected to top
   const sortedFiles = useMemo(() => {
     // 1) Sort by file_name
     const sorted = [...files].sort((a, b) =>
@@ -169,7 +169,9 @@ const FilePickerModal: React.FC<FilePickerModalProps> = ({
         </Box>
 
         {/* Footer Buttons */}
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Box
+          sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}
+        >
           <Button variant="plain" color="neutral" onClick={handleClearAll}>
             Clear
           </Button>
