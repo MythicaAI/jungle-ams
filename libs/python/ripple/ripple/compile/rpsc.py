@@ -33,7 +33,7 @@ def parse_index_menu_parameter(value: dict) -> EnumParameterSpec:
         values.append(EnumValueSpec(name=name, label=label))
 
     default = str(value['default'])
-    if default not in value['menu_items']:
+    if default not in (v.name for v in values):
         default = values[0].name
     return EnumParameterSpec(values=values, default=default, label=value['label'])
 
@@ -42,7 +42,7 @@ def parse_string_menu_parameter(value: dict) -> EnumParameterSpec:
     values = [EnumValueSpec(name=name, label=label) for name, label in zip(value['menu_items'], value['menu_labels'])]
 
     default = str(value['default'])
-    if default not in value['menu_items']:
+    if default not in (v.name for v in values):
         default = values[0].name
     return EnumParameterSpec(values=values, default=default, label=value['label'])
 
