@@ -315,7 +315,7 @@ def test_menu_parms():
             "int_yes": {
                 "type": "Int",
                 "label": "Label",
-                "menu_items": ["4", "", "1"],
+                "menu_items": ["4", "abc", "1"],
                 "menu_labels": ["A", "B", "C"],
                 "menu_use_tokens": true,
                 "default": 0
@@ -325,13 +325,23 @@ def test_menu_parms():
                 "label": "Label",
                 "menu_items": ["a", "b", ""],
                 "menu_labels": ["A", "B", "C"],
-                "default": ""
+                "default": "a"
             }
         },
         "inputLabels": []
     }"""
     compiled = compile_interface(data)
     assert len(compiled.params) == 5
+
+    for param in compiled.params.values():
+        assert isinstance(param, EnumParameterSpec)
+        assert param.default in (value.name for value in param.values)
+
+    assert compiled.params["menu_no"].values == ["0", "1", "2"]
+    assert compiled.params["menu_yes"].values == ["4", "1", "1"]
+    assert compiled.params["int_no"].values == ["0", "1", "2"]
+    assert compiled.params["int_yes"].values == ["4", "1", "1"]
+    assert compiled.params["string"].values == ["a", "b", ""]
 
 
 def test_param_validate():
