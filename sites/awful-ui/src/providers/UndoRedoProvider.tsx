@@ -1,20 +1,12 @@
-import React,{  useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Edge, Node, useReactFlow } from '@xyflow/react';
 import { UndoRedoContext } from '../hooks/useUndoRedo';
 
 type HistoryItem = {
-  nodes: Node[],
-  edges: Edge[]
+  nodes: Node[];
+  edges: Edge[];
 };
 
-/*
-// https://redux.js.org/usage/implementing-undo-history
-export const useUndoRedo: UndoRedoContextType = ({
-  maxHistorySize = defaultOptions.maxHistorySize,
-  enableShortcuts = defaultOptions.enableShortcuts,
-} = defaultOptions) => {
-
-*/
 const MAX_HISTORY_SIZE = 100;
 const ENABLE_SHORTCUTS = true;
 
@@ -23,10 +15,9 @@ export type UndoRedoOptions = {
   enableShortcuts: boolean;
 };
 
-const UndoRedoProvider: React.FC<{ children: React.ReactNode}> = ({
+const UndoRedoProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-
   // the past and future arrays store the states that we can jump to
   const [past, setPast] = useState<HistoryItem[]>([]);
   const [future, setFuture] = useState<HistoryItem[]>([]);
@@ -99,19 +90,18 @@ const UndoRedoProvider: React.FC<{ children: React.ReactNode}> = ({
   }, [undo, redo, ENABLE_SHORTCUTS]);
 
   return (
-      <UndoRedoContext.Provider 
-        value={{
-          undo,
-          redo,
-          takeSnapshot,
-          canUndo: !!past.length,
-          canRedo: !!future.length,
-        }}
-      >
+    <UndoRedoContext.Provider
+      value={{
+        undo,
+        redo,
+        takeSnapshot,
+        canUndo: !!past.length,
+        canRedo: !!future.length,
+      }}
+    >
       {children}
     </UndoRedoContext.Provider>
   );
-};  
-
+};
 
 export default UndoRedoProvider;

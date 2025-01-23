@@ -6,9 +6,10 @@ import { NavLinks } from './NavLinks';
 type Props = {
   tab: string;
   setTab: (value: string) => void;
+  isMenuOpen: boolean;
 };
 
-export const Header: React.FC<Props> = (header: Props) => {
+export const Header: React.FC<Props> = ({ tab, setTab, isMenuOpen }) => {
   return (
     <Stack
       direction="row"
@@ -18,10 +19,11 @@ export const Header: React.FC<Props> = (header: Props) => {
         background: '#24292E',
         boxShadow: 'rgba(0, 0, 0, 0.3) 1px 0px 16px;',
         zIndex: 1,
+        display: isMenuOpen ? 'flex' : 'none',
       }}
     >
       <Box component="img" height="32px" src={Logo} />
-      <NavLinks tab={header.tab} setTab={header.setTab} />
+      <NavLinks tab={tab} setTab={setTab} />
     </Stack>
   );
 };
