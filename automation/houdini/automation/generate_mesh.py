@@ -57,8 +57,11 @@ def apply_params(asset, params: dict):
         else:
             parm = asset.parmTuple(k)
             if parm:
-                val = [v] if not isinstance(v, (tuple, list)) else v
-                parm.set(val)
+                if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
+                    parm.set([int(v)])
+                else:
+                    val = [v] if not isinstance(v, (tuple, list)) else v
+                    parm.set(val)
 
 
 def create_inputs(asset, geo, params: dict):
