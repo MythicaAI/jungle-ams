@@ -26,7 +26,11 @@ services:
       - site-shared-publish:/mnt/publish
     environment:
       PUBLISH_PATH: /mnt/publish/awful
-
+      VITE_AWFUL_WORKERS: houdini
+      VITE_AWFUL_SCRIPT_PATH: /mythica/script
+      VITE_AWFUL_SCRIPT_INTERFACE_PATH: /mythica/script/interface
+      VITE_MYTHICA_API_URL: http://localhost:8080/v1
+      VITE_AWFUL_REST_URL: http://localhost:8080/v1/automation/run
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
@@ -53,11 +57,13 @@ services:
     container_name: app
     image: mythica-app:latest
     environment:
-      - MINIO_ENDPOINT=minio:9000
-      - LOCAL_STORAGE_PATH=/tmp/local_storage
-      - REDIS_HOST=redis
-      - MYTHICA_ENVIRONMENT=debug
-      - NATS_ENDPOINT=${NATS_ENDPOINT} # It should be in testing/.env file in this folder
+      MINIO_ENDPOINT: minio:9000
+      LOCAL_STORAGE_PATH: /tmp/local_storage
+      REDIS_HOST: redis
+      MYTHICA_ENVIRONMENT: debug
+      NATS_ENDPOINT: ${NATS_ENDPOINT}
+      MINIO_ACCESS_KEY: foo-access
+      MINIO_SECRET_KEY: bar-secret
     ports:
       - "15555:5555"
     networks:
