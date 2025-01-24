@@ -178,7 +178,7 @@ def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[J
         )
         job_defs.append(JobDefinitionModel(
             job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-            owner_id=profile_seq_to_id(job_def.owner_seq), 
+            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
             source=source,
             **job_def.model_dump()
         ))
@@ -214,7 +214,11 @@ async def by_id(job_def_id: str) -> JobDefinitionModel:
             JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id))).one_or_none()
         if job_def is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
-        return JobDefinitionModel(job_def_id=job_def_id, owner_id=profile_seq_to_id(job_def.owner_seq), **job_def.model_dump())
+        return JobDefinitionModel(
+            job_def_id=job_def_id, 
+            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
+            **job_def.model_dump()
+        )
 
 
 @router.get('/def_from_file/{file_id}')
