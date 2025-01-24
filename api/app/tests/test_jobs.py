@@ -70,6 +70,7 @@ def test_create_update(client, api_base, create_profile):
                     })
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
+    job_def_id_no_owner = o.job_def_id
 
     # Get job definition from list
     r = client.get(f'{api_base}/jobs/definitions', headers=headers)
@@ -83,6 +84,13 @@ def test_create_update(client, api_base, create_profile):
     definition = r.json()
     assert definition['job_def_id'] == job_def_id
     assert definition['owner_id'] == test_profile.profile.profile_id
+
+    # Get job definition directly with no owner
+    r = client.get(f'{api_base}/jobs/definitions/{job_def_id_no_owner}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definition = r.json()
+    assert definition['job_def_id'] == job_def_id_no_owner
+    assert definition['owner_id'] == None
 
     # Get invalid job definitions
     r = client.get(f'{api_base}/jobs/definitions/jobdef_3ZUcvpXisvZeAjWWyHzFpuJdSSKr', headers=headers)
@@ -228,6 +236,7 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert(len(r.json()) == 0)
 
     # Create a job definition for each asset version
+    # Test both with and without an owner cases
     r = client.post(f'{api_base}/jobs/definitions',
                     json={
                         'job_type': 'houdini::/mythica/generate_mesh',
@@ -244,8 +253,7 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
                             'file_id': old_hda_file_id,
                             'entry_point': 'cactus'
                         }
-                    },
-                    headers=headers)
+                    })
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     old_job_def_id = o.job_def_id
@@ -280,6 +288,7 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert job_def.job_def_id == new_job_def_id
     assert job_def.source.asset_id == asset_id
     assert job_def.source.major == 2
+    assert job_def.owner_id == test_profile.profile.profile_id
 
     # Get old job definition
     r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{old_version.version[0]}/{old_version.version[1]}/{old_version.version[2]}')
@@ -289,6 +298,7 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     assert job_def.job_def_id == old_job_def_id
     assert job_def.source.asset_id == asset_id
     assert job_def.source.major == 1
+    assert job_def.owner_id == None
 
     # Test bad asset id
     r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_seq_to_id(99999)}')
