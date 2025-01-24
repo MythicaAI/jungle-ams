@@ -61,7 +61,7 @@ services:
       LOCAL_STORAGE_PATH: /tmp/local_storage
       REDIS_HOST: redis
       MYTHICA_ENVIRONMENT: debug
-      NATS_ENDPOINT: ${NATS_ENDPOINT}
+      NATS_ENDPOINT: nats://nats:4222
       MINIO_ACCESS_KEY: foo-access
       MINIO_SECRET_KEY: bar-secret
     ports:
