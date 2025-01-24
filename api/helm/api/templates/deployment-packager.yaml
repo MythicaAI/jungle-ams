@@ -47,6 +47,8 @@ spec:
                 secretKeyRef:
                   name: packager-secrets
                   key: MYTHICA_API_KEY
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
           volumeMounts:
             - name: ephemeral-packaged-content
               mountPath: /tmp
