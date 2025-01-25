@@ -59,6 +59,8 @@ tables:
         type: TEXT
       - name: description
         type: TEXT
+      - name: blurb
+        type: TEXT
       - name: author_seq
         type: BIGINT
         nullable: false
