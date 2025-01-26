@@ -328,18 +328,20 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   }, [myExecutionData, node.id, setFlowData, getFile, processOutputMessage]);
 
   useEffect(() => {
-    if (typingTimeout.current) {
-      clearTimeout(typingTimeout.current);
+    if (isScriptNode) {
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+      }
+      typingTimeout.current = setTimeout(() => {
+        runAutomation(
+          automationTask?.worker,
+          node.id,
+          scriptInterfacePath,
+          { script: scriptContent },
+          setMyInterfaceData
+        );
+      }, timeout); // Adjust delay as needed
     }
-    typingTimeout.current = setTimeout(() => {
-      runAutomation(
-        automationTask?.worker,
-        node.id,
-        scriptInterfacePath,
-        { script: scriptContent },
-        setMyInterfaceData
-      );
-    }, timeout); // Adjust delay as needed
   }, [scriptContent, runAutomation, automationTask?.worker, node.id]);
 
   // Update fileInputs when flowData changes or when the fileparams change
@@ -363,7 +365,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     if (executed) processAutomationOutput();
   }, [myExecutionData, processAutomationOutput]);
 
-  // Process automation output when execution data changes
+  // Process automation output when interface data changes
   useEffect(() => {
     const executed = myInterfaceData.state === NodeState.Executed;
     if (executed) processInterfaceOutput();
