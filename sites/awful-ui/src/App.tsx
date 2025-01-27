@@ -10,6 +10,7 @@ import UndoRedoProvider from './providers/UndoRedoProvider';
 
 import AwfulUI from './AwfulUI';
 import { useTheme } from './styles/theme';
+import RequireAuth from './components/RequireAuth';
 
 const App: React.FC = () => {
   const { theme } = useTheme();
@@ -20,7 +21,9 @@ const App: React.FC = () => {
           <AutomationProvider>
             <UndoRedoProvider>
               <AwfulFlowProvider>
-                <AwfulUI />
+                <RequireAuth>
+                  <AwfulUI />
+                </RequireAuth>
               </AwfulFlowProvider>
             </UndoRedoProvider>
           </AutomationProvider>
