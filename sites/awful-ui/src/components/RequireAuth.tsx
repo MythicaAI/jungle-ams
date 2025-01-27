@@ -4,30 +4,24 @@ import Cookies from 'universal-cookie';
 
 const RequireAuth: React.FC<PropsWithChildren> = ({ children }) => {
   const cookies = new Cookies();
-  const [isLoading, setIsLoading] = React.useState(true);
-  let authToken: string | null = null;
+  const authToken = cookies.get('auth_token');
+
+  console.info('token: ', authToken);
 
   React.useEffect(() => {
-    authToken = cookies.get('auth_token');
-    setIsLoading(false);
-  }, []);
-
-  React.useEffect(() => {
-    if (!authToken && !isLoading) {
+    if (!authToken) {
       localStorage.setItem('awful_requires_token', 'true');
       window.location.pathname = '/';
     }
-  }, [authToken, isLoading]);
+  }, [authToken]);
 
-  if (isLoading) {
+  if (!authToken) {
     return (
       <Stack alignItems="center" justifyContent="center" height="100vh">
         <CircularProgress />
       </Stack>
     );
   }
-
-  if (!isLoading && !authToken) return null;
 
   return <>{children}</>;
 };

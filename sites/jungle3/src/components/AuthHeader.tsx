@@ -39,6 +39,10 @@ export const AuthHeader = () => {
   useEffect(() => {
     if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
+      if (!!localStorage.getItem("awful_requires_token")) {
+        localStorage.removeItem("awful_requires_token");
+        navigate("/awful");
+      }
     }
   }, [cookies]);
 
@@ -86,10 +90,6 @@ export const AuthHeader = () => {
           setCookie("auth_token", data.token, { path: "/" });
           setCookie("refresh_token", "", { path: "/" });
           setCookie("profile_id", data.profile.profile_id, { path: "/" });
-          if (!!localStorage.getItem("awful_requires_token")) {
-            localStorage.removeItem("awful_requires_token");
-            navigate("/awful");
-          }
         })
         .catch((err) => {
           addError(`session start failed ${err}`);
