@@ -49,6 +49,14 @@ export const AuthHeader = () => {
   }, [getAccessTokenSilently, isAuthenticated, user]);
 
   useEffect(() => {
+    const awfulIsMissingToken = localStorage.getItem("awful_requires_token");
+
+    if (awfulIsMissingToken) {
+      loginWithRedirect();
+    }
+  }, []);
+
+  useEffect(() => {
     if (
       user &&
       localStorage.getItem("shouldStartOnboarding") === "true" &&
@@ -78,6 +86,10 @@ export const AuthHeader = () => {
           setCookie("auth_token", data.token, { path: "/" });
           setCookie("refresh_token", "", { path: "/" });
           setCookie("profile_id", data.profile.profile_id, { path: "/" });
+          if (!!localStorage.getItem("awful_requires_token")) {
+            localStorage.removeItem("awful_requires_token");
+            navigate("/awful");
+          }
         })
         .catch((err) => {
           addError(`session start failed ${err}`);
