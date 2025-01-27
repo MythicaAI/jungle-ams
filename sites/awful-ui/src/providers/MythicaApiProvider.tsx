@@ -1,6 +1,6 @@
 // src/context/AuthContext.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { MythicaApiContext } from '../hooks/useMythicaApi';
 import axios from 'axios';
 
@@ -26,7 +26,7 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
   const authToken = cookies.get('auth_token');
 
   // const [authToken, setAuthToken] = useState<string>('');
-  const [profile, setProfile] = useState<Profile>();
+  const [profile] = useState<Profile>();
 
   // Fetch the full authentication response using the API key
   // const authenticate = useCallback(async () => {
