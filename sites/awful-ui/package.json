@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@auth0/auth0-react": "^2.3.0",
     "@codingame/monaco-languageclient": "^0.17.4",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
