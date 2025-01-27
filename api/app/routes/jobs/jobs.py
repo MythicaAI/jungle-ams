@@ -135,7 +135,7 @@ async def define_new(
                 entry_point=request.source.entry_point,
                 job_def_seq=job_def_seq
             )
-            session.add(asset_version_entry_point)
+            session.merge(asset_version_entry_point)
             session.commit()
 
         return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
