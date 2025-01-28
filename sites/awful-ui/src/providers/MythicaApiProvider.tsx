@@ -1,6 +1,6 @@
 // src/context/AuthContext.tsx
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { MythicaApiContext } from '../hooks/useMythicaApi';
 import axios from 'axios';
 
@@ -11,6 +11,7 @@ import {
   UploadFileResponse,
 } from '../types/MythicaApi';
 import Cookies from 'universal-cookie';
+import { jwtDecode } from 'jwt-decode';
 
 const BASE_URL = import.meta.env.VITE_MYTHICA_API_URL;
 
@@ -18,34 +19,24 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const cookies = new Cookies();
-  // Initialize apiKey with value from localStorage if it exists
-  const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem('apiKey') || ''; // Retrieve apiKey from localStorage
-  });
 
   const authToken = cookies.get('auth_token');
+  const decodedToken: { profile_id: string } = jwtDecode(authToken);
 
-  // const [authToken, setAuthToken] = useState<string>('');
-  const [profile] = useState<Profile>();
+  const [profile, setProfile] = useState<Profile>();
 
-  // Fetch the full authentication response using the API key
-  // const authenticate = useCallback(async () => {
-  //   const response = await axios.get(`${BASE_URL}/sessions/key/${apiKey}`);
-  //   setAuthToken(response.data.token); // Return the full response data
-  //   setProfile(response.data.profile);
-  // }, [apiKey]);
+  const getProfile = useCallback(async () => {
+    const response = await axios.get(
+      `${BASE_URL}/profiles/${decodedToken.profile_id}`
+    );
+    setProfile(response.data);
+  }, [authToken]);
 
-  // Update localStorage whenever apiKey changes
-  // useEffect(() => {
-  //   if (apiKey) {
-  //     localStorage.setItem('apiKey', apiKey); // Store apiKey in localStorage
-  //     authenticate(); // Fetch the full authentication response
-  //   } else {
-  //     localStorage.removeItem('apiKey'); // Remove it if apiKey is cleared
-  //   }
-  // }, [apiKey, authenticate]);
-
-  // Define the type for the authentication response
+  useEffect(() => {
+    if (authToken) {
+      getProfile();
+    }
+  }, [authToken, getProfile]);
 
   const getFile = async (fileId: string): Promise<GetFileResponse> => {
     const response = await axios.get(`${BASE_URL}/files/${fileId}`, {
@@ -108,8 +99,6 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <MythicaApiContext.Provider
       value={{
-        setApiKey,
-        apiKey,
         authToken,
         profile,
         getFile,
