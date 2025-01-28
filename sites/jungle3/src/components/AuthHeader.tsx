@@ -39,16 +39,17 @@ export const AuthHeader = () => {
   useEffect(() => {
     if (cookies.auth_token && cookies.auth_token.length > 0) {
       updateProfileData();
-      if (!!localStorage.getItem("awful_requires_token")) {
-        localStorage.removeItem("awful_requires_token");
-        navigate("/awful");
-      }
     }
   }, [cookies]);
 
   useEffect(() => {
     if (isAuthenticated && user && user.sub) {
-      startAuthenticatedSession(user.sub);
+      startAuthenticatedSession(user.sub).then(() => {
+        if (!!localStorage.getItem("awful_requires_token")) {
+          localStorage.removeItem("awful_requires_token");
+          window.location.pathname = "/awful";
+        }
+      });
     }
   }, [getAccessTokenSilently, isAuthenticated, user]);
 
