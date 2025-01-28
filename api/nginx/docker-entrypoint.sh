@@ -9,9 +9,24 @@ entrypoint_log() {
     fi
 }
 
+# Log the command being executed
 echo "cmd: $1"
 
 if [ "$1" = "nginx" ] || [ "$1" = "nginx-debug" ]; then
+    # Dynamically set nginx config based on MYTHICA_ENVIRONMENT
+    NGINX_CONFIG="/etc/nginx/nginx-${MYTHICA_ENVIRONMENT}.conf"
+    echo "Using NGINX config: ${NGINX_CONFIG}"
+
+    # Validate if the configuration file exists
+    if [ ! -f "${NGINX_CONFIG}" ]; then
+        echo "Error: Config file ${NGINX_CONFIG} does not exist!" >&2
+        exit 1
+    fi
+
+    # Append the dynamically constructed config file to the command
+    set -- "$@" -c "${NGINX_CONFIG}"
+
+    # Check for scripts in /docker-entrypoint.d/
     if /usr/bin/find "/docker-entrypoint.d/" -mindepth 1 -maxdepth 1 -type f -print -quit 2>/dev/null | read v; then
         entrypoint_log "$0: /docker-entrypoint.d/ is not empty, will attempt to perform configuration"
 
@@ -46,4 +61,8 @@ if [ "$1" = "nginx" ] || [ "$1" = "nginx-debug" ]; then
     fi
 fi
 
-exec "$@"
+# Execute the command
+if ! exec "$@"; then
+    echo "Failed to execute command: $@" >&2
+    exit 1
+fi
