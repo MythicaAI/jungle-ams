@@ -2,9 +2,9 @@
 
 # pylint: disable=redefined-outer-name, unused-import
 
-import json
 from http import HTTPStatus
 
+import json
 from fastapi.testclient import TestClient
 from munch import munchify
 
@@ -151,6 +151,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     o = munchify(r[0])
     assert o.asset_id == asset_id
     assert o.org_id == org_id
+    blurb = "An updated test asset"
 
     # create new asset version
     test_asset_ver_json = {
@@ -158,6 +159,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
         'contents': {'files': asset_contents[1:]},
         'name': test_asset_name + '-updated',
         'author_id': profile_id,
+        'blurb': blurb,
     }
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.2.0",
@@ -169,6 +171,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     assert o.org_id == org_id
     assert o.commit_ref == test_commit_ref + '-updated'
     assert o.name == test_asset_name + '-updated'
+    assert o.blurb == blurb
     assert o.version == [0, 2, 0]
     assert len(o.contents['files']) == 1
 

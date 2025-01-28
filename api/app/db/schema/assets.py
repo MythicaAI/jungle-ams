@@ -61,6 +61,7 @@ class AssetVersion(SQLModel, table=True):
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
+    blurb: str | None = Field(default=None)
     author_seq: int = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

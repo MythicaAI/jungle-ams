@@ -1,34 +1,34 @@
 # pylint: disable=unnecessary-lambda, no-member, unsupported-membership-test
 
+from http import HTTPStatus
+
 import logging
+import sqlalchemy
 from datetime import datetime
 from enum import Enum
-from functools import partial
-from http import HTTPStatus
-from typing import Any, Dict, Iterable, Optional, Union
-
-import sqlalchemy
-from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
-    org_seq_to_id, \
-    profile_id_to_seq, profile_seq_to_id
-from cryptid.location import location
 from fastapi import HTTPException
+from functools import partial
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
-from ripple.auth import roles
-from ripple.auth.authorization import Scope, validate_roles
-from ripple.models.assets import AssetVersionRef
-from ripple.models.sessions import SessionProfile
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col, desc, insert, or_, select, update
+from typing import Any, Dict, Iterable, Optional, Union
 
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
 from content.validate_filename import validate_filename
+from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
+    org_seq_to_id, \
+    profile_id_to_seq, profile_seq_to_id
+from cryptid.location import location
 from db.schema.assets import Asset, AssetVersion
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
+from ripple.auth import roles
+from ripple.auth.authorization import Scope, validate_roles
+from ripple.models.assets import AssetVersionRef
+from ripple.models.sessions import SessionProfile
 from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
 from tags.tag_models import TagType
@@ -106,6 +106,7 @@ class AssetCreateVersionRequest(BaseModel):
     org_id: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
+    blurb: Optional[str] = None
     published: Optional[bool] = False
     commit_ref: Optional[str] = None
     contents: Optional[dict[str, list[AssetFileReference | AssetDependency | str]]] = None
@@ -133,6 +134,7 @@ class AssetVersionResult(BaseModel):
     author_name: str | None = None
     name: str | None = None
     description: str | None = None
+    blurb: str | None = None
     published: bool | None = False
     version: list[int] = Field(default_factory=lambda: ZERO_VERSION.copy())
     commit_ref: Optional[str] = None
@@ -215,6 +217,7 @@ def process_join_results(
             author_name=resolve_profile_name(session, ver.author_seq) if ver.author_seq else None,
             name=ver.name,
             description=ver.description,
+            blurb=ver.blurb,
             published=ver.published,
             version=[ver.major, ver.minor, ver.patch],
             commit_ref=ver.commit_ref,
@@ -683,6 +686,7 @@ def top(session: Session):
             author_name=resolve_profile_name(session, ver.author_seq),
             name=ver.name,
             description=ver.description,
+            blurb=ver.blurb,
             published=ver.published,
             version=(ver.major, ver.minor, ver.patch),
             commit_ref=ver.commit_ref,
