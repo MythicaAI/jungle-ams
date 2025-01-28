@@ -30,7 +30,13 @@ def upgrade() -> None:
     bind = op.get_bind()
     session = Session(bind)
 
-    asset_versions = session.exec(select(AssetVersion)).all()
+    asset_versions = session.exec(select(
+        AssetVersion.asset_seq,
+        AssetVersion.major,
+        AssetVersion.minor,
+        AssetVersion.patch,
+        AssetVersion.contents
+    )).all()
     contents_as_string = 0
     contents_with_string_lists = 0
     contents_list_converted = 0
