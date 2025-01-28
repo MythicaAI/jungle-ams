@@ -44,22 +44,23 @@ export const AuthHeader = () => {
 
   useEffect(() => {
     if (isAuthenticated && user && user.sub) {
-      startAuthenticatedSession(user.sub).then(() => {
-        if (!!localStorage.getItem("awful_requires_token")) {
-          localStorage.removeItem("awful_requires_token");
-          window.location.pathname = "/awful";
-        }
-      });
+      startAuthenticatedSession(user.sub);
     }
   }, [getAccessTokenSilently, isAuthenticated, user]);
 
   useEffect(() => {
     const awfulIsMissingToken = localStorage.getItem("awful_requires_token");
 
+    if (awfulIsMissingToken && isAuthenticated && !!cookies.auth_token) {
+      localStorage.removeItem("awful_requires_token");
+      window.location.pathname = "/awful";
+      return;
+    }
+
     if (awfulIsMissingToken) {
       loginWithRedirect();
     }
-  }, []);
+  }, [isAuthenticated, cookies]);
 
   useEffect(() => {
     if (
