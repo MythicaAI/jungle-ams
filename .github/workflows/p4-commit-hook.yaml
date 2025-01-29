@@ -109,7 +109,7 @@ jobs:
             --endpoint https://api-staging.mythica.gg \
             --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
             --license MPLv2.txt \
-            --tag Official \
+            --tag Mythica \
             --markdown results.md
           cat results.md
           cat results.md >> $GITHUB_STEP_SUMMARY

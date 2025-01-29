@@ -663,7 +663,8 @@ class PackageUploader(object):
                 file_id=file_info.file_id,
                 file_name=file_info.file_name,
                 content_hash=file_info.content_hash,
-                size=file_info.size)
+                size=file_info.size,
+                already=False)
 
     def create_version(self, package: ProcessedPackageModel, asset_contents: dict[str, list]):
         """Create new asset version"""
