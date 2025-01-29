@@ -104,6 +104,6 @@ class AssetVersionEntryPoint(SQLModel, table=True):
     major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
     minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
     patch: int = Field(sa_column=Column('patch',Integer,primary_key=True,nullable=False))
-    src_file_seq: int | None = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
-    entry_point: str | None = Field(default=None)
+    src_file_seq: int = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    entry_point: str = Field(primary_key=True,nullable=False)
     job_def_seq: int | None = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('job_defs.job_def_seq'),default=None))

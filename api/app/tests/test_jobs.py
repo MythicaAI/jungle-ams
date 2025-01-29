@@ -251,6 +251,8 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
 
     # Create a job definition for each asset version
     # Test both with and without an owner cases
+    # Test multiple entry points for the same file
+    old_job_def_ids = []
     r = client.post(f'{api_base}/jobs/definitions',
                     json={
                         'job_type': 'houdini::/mythica/generate_mesh',
@@ -270,7 +272,28 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
                     })
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    old_job_def_id = o.job_def_id
+    old_job_def_ids.append(o.job_def_id)
+
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus',
+                        'description': 'Generates a flower mesh',
+                        'params_schema': {
+                            'params': {}
+                        },
+                        'source': {
+                            'asset_id': asset_id,
+                            'major': old_version.version[0],
+                            'minor': old_version.version[1],
+                            'patch': old_version.version[2],
+                            'file_id': old_hda_file_id,
+                            'entry_point': 'flower'
+                        }
+                    })
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    old_job_def_ids.append(o.job_def_id)
 
     r = client.post(f'{api_base}/jobs/definitions',
                     json={
@@ -307,9 +330,9 @@ def test_asset_link(client, api_base, create_profile, create_asset_versions, upl
     # Get old job definition
     r = client.get(f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{old_version.version[0]}/{old_version.version[1]}/{old_version.version[2]}')
     assert_status_code(r, HTTPStatus.OK)
-    assert(len(r.json()) == 1)
+    assert(len(r.json()) == 2)
     job_def = munchify(r.json()[0])
-    assert job_def.job_def_id == old_job_def_id
+    assert job_def.job_def_id in old_job_def_ids
     assert job_def.source.asset_id == asset_id
     assert job_def.source.major == 1
     assert job_def.owner_id == None
