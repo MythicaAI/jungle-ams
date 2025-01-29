@@ -585,12 +585,12 @@ class PackageUploader(object):
         file_contents = []
         for package_file in files:
             file_contents.append(
-                self.maybe_upload_package_file(package, package_file))
+                self.maybe_upload_package_file(package, package_file).model_dump())
 
         thumbnail_contents = []
         for package_file in thumbnails:
             thumbnail_contents.append(
-                self.maybe_upload_package_file(package, package_file))
+                self.maybe_upload_package_file(package, package_file).model_dump())
 
         return {
             'files': file_contents,
