@@ -2,7 +2,7 @@
 
 # Exit on error
 set -ex
-
+kubectl config use-context gke_controlnet-407314_us-central1_gke-main-us-central1
 # Path to this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

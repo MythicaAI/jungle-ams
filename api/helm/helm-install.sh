@@ -2,6 +2,8 @@
 
 set -x
 
+kubectl config use-context gke_controlnet-407314_us-central1_gke-main-us-central1
+kubectl get pods -n tailscale --output wide
 ENV=${1:-"staging"}
 
 if [ $ENV == "staging" ]; then

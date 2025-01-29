@@ -21,7 +21,9 @@ spec:
         version: "1.0"
         release: production
     spec:
-      serviceAccountName: "tailscale"
+      dnsPolicy: "ClusterFirst"
+      hostname: aws-tailscale
+      serviceAccountName: tailscale
       restartPolicy: Always
       containers:
       - name: tailscale
@@ -29,14 +31,24 @@ spec:
         image: "ghcr.io/tailscale/tailscale:latest"
         env:
         # Store the state in a k8s secret
+        - name: TS_ACCEPT_DNS
+          value: "true"
         - name: TS_EXTRA_ARGS
-          value: "--accept-routes"
+          value: " --accept-routes"
         - name: TS_KUBE_SECRET
           value: "tailscale-auth"
-        - name: TS_USERSPACE
-          value: "false"
         - name: TS_DEBUG_FIREWALL_MODE
           value: auto
+        - name: TS_USERSPACE
+          value: "false"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
         - name: TS_AUTHKEY
           valueFrom:
             secretKeyRef:
@@ -44,8 +56,10 @@ spec:
               key: TS_AUTHKEY
               optional: true
         - name: TS_ROUTES
-          value: "34.118.224.0/20,10.0.0.0/8"
+          value: "192.168.0.0/16"
         securityContext:
+          privileged: true
+          allowPrivilegeEscalation: true
           capabilities:
             add:
-            - NET_ADMIN
+              - NET_ADMIN

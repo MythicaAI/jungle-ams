@@ -1,0 +1,10 @@
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
+metadata:
+  name: ts-pod-cidrs
+  finalizers: []
+spec:
+  hostname: ts-pod-cidrs
+  subnetRouter:
+    advertiseRoutes:
+      - "192.168.240.0/20"
