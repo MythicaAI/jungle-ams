@@ -5,7 +5,7 @@ description = "Library for the popogation of distributed parameterized jobs and 
 authors = [
     "Jacob Repp <jacob@mythica.ai>",
     "Kevin Calderone <kevin@mythica.ai",
-    "Pedro "]
+    "Pedro <pedro@mythica.ai> "]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/MythicaAI/infra/libs/python/ripple"

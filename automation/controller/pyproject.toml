@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "worker-controller"
+version = "0.1.0"
+description = "Worker application for image automations"
+authors = ["Jacob Repp <jacobrepp@gmail.com>"]
+readme = "README.md"
+package-mode = false
+repository = "https://github.com/MythicaAI/infra"
+
+# use this group to install without dev redirects
+[tool.poetry.dependencies]
+python = "<4.0,>=3.10"
+opentelemetry-instrumentation = "^0.48b0"
+opentelemetry-exporter-otlp = "^1.27.0"
+opentelemetry-distro = "^0.48b0"
+opentelemetry-api = "^1.27.0"
+opentelemetry-sdk = "^1.27.0"
+redis = "^5.2.1"
+etcd3gw = "^2.4.2"
+
+[tool.poetry.group.infra.dependencies]
+ripple = { path = "../../libs/python/ripple" }
+cryptid = { path = "../../libs/python/cryptid" }
+
+# use thie group to install the local dev dependencies
+[tool.poetry.group.dev.dependencies]
+ripple = { path = "../../libs/python/ripple", develop = true }
+cryptid = { path = "../../libs/python/cryptid", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

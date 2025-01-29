@@ -45,6 +45,8 @@ services:
       - storage
   # this is a one shot container to configure the minio access key within
   # the minio service
+  # build with inv docker-build --image testing/storage/minio-config
+  # or docker-compose build
   minio-config:
     image: minio-config
     depends_on:
@@ -110,6 +112,22 @@ services:
     cap_add:
       - net_admin
     restart: unless-stopped
+  etcd:
+    container_name: etcd
+    image: bitnami/etcd:latest
+    environment:
+      - ETCD_NAME=etcd-single
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    volumes:
+      - etcd:/etcd-data
+    networks:
+      - storage
 volumes:
   pgdata:
     driver: local
@@ -129,7 +147,12 @@ volumes:
       type: none
       o: bind
       device: ${NATS_PATH}
-
+  etcd:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${ETCD_PATH}
 networks:
   storage:
     name: storage

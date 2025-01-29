@@ -140,6 +140,7 @@ LOCAL_MOUNT_POINTS = {
     'pgdata': 'testing/mnt/pgdata',
     'static': 'testing/mnt/static',
     'nats': 'testing/mnt/nats',
+    'etcd': 'testing/mnt/etcd',
     'tailscale': 'testing/mnt/tailscale',
 }
 
