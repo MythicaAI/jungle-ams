@@ -116,7 +116,7 @@ class ResultPublisher:
                 'name': job_def.name,
                 'description': job_def.description,
                 'params_schema': job_def.parameter_spec.model_dump(),
-                'source': job_def.source
+                'source': job_def.source.model_dump() if job_def.source else None,
             }
             response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
                 headers=self.request.telemetry_context

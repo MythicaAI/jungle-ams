@@ -116,6 +116,20 @@ def test_create_update(client, api_base, create_profile):
                     headers=headers)
     assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
+    # Create a job with invalid parameters
+    r = client.post(f'{api_base}/jobs',
+                    json={
+                        'job_def_id': job_def_id,
+                        'params': {
+                            'size': 'foo'
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+    o = munchify(r.json())
+    assert "did not match expected type" in o.detail
+
+
     # Create a job
     r = client.post(f'{api_base}/jobs',
                     json={

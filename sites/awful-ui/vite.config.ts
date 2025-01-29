@@ -1,37 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import type { Plugin, ViteDevServer } from 'vite';
-import {v4 as uuidv4} from 'uuid';
 // In-memory store for URLs
 const urlStore: { [key: string]: string } = {};
 
-// Custom middleware plugin
-const gcsKeyMiddleware = (): Plugin => ({
-  name: 'gcs-key-middleware',
-  configureServer(server: ViteDevServer) {
-    server.middlewares.use('/gcs-keys', (req, res) => {
-      // Extract path and query string
-      const encodedUrlPath = req.originalUrl.replace(/^\/gcs-keys/, '');
-      const filename = new URL('http://localhost' + encodedUrlPath).pathname.split('/').pop();
-
-
-      // Generate a UUID as the key
-      const key = `gcsfile_${uuidv4()}_${filename}`;
-
-      // Store the URL path and query string in the in-memory store
-      urlStore[key] = encodedUrlPath;
-
-      // Return the generated key as the response (plain text)
-      res.setHeader('Content-Type', 'text/plain');
-      res.end(key);
-    });
-    
-  }
-});
 
 export default defineConfig({
   plugins: [
-    gcsKeyMiddleware(),
     react()
   ],
   base: '/awful/',
@@ -44,15 +18,16 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "require-corp",
       "Cross-Origin-Opener-Policy": "same-origin",
     },
+    host: '0.0.0.0',
     port: 5174,
     proxy: {
       '/mythica-api': {
-        target: 'http://localhost:15555/v1',
+        target: 'http://localhost:5555/v1',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/mythica-api/, ''),
       },
       '/gcsfile_': {
-        target: 'https://storage.googleapis.com',
+        target: 'https://localhost:9000',
         changeOrigin: true,
         rewrite: (path) => {
           // Extract the key from the path

@@ -10,6 +10,8 @@ services:
     networks:
       - web
       - storage
+    environment:
+      MYTHICA_ENVIRONMENT: debug
   houdini-worker:
     container_name: houdini
     image: mythica-auto-houdini:latest
@@ -18,6 +20,7 @@ services:
       - storage
     environment:
       MYTHICA_ENVIRONMENT: debug
+      API_BASE_URI: http://app:5555/v1
       SFX_CLIENT_ID: ${SFX_CLIENT_ID}
       SFX_CLIENT_SECRET: ${SFX_CLIENT_SECRET}
 networks:

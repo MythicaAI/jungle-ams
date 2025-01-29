@@ -39,7 +39,7 @@ from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
 from ripple.models.sessions import SessionProfile
 from ripple.models.streaming import JobDefinition as JobDefinitionRef
-from ripple.runtime.params import repair_parameters, validate_params
+from ripple.runtime.params import ParamError, repair_parameters, validate_params
 from routes.authorization import maybe_session_profile, session_profile
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col
@@ -135,7 +135,7 @@ async def define_new(
                 entry_point=request.source.entry_point,
                 job_def_seq=job_def_seq
             )
-            session.add(asset_version_entry_point)
+            session.merge(asset_version_entry_point)
             session.commit()
 
         return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
@@ -317,10 +317,11 @@ async def create(
 
             parameter_spec = ParameterSpec(**job_def.params_schema)
             repair_parameters(parameter_spec, request.params)
-            valid = validate_params(parameter_spec, request.params)
-            if not valid:
-                span.set_status(Status(StatusCode.ERROR, "Invalid job parameters"))
-                raise HTTPException(HTTPStatus.BAD_REQUEST, detail="Invalid params")
+            # validate parameters, report back the parameter error that caused the problem
+            try:
+                validate_params(parameter_spec, request.params)
+            except ParamError as e:
+                raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
 
             job = session.exec(insert(Job).values(
                 job_def_seq=job_def_id_to_seq(request.job_def_id),

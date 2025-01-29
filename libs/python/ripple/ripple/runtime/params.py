@@ -1,27 +1,21 @@
 import os
+from http import HTTPStatus
+
 import requests
 
-from http import HTTPStatus
-from typing import Optional
-from ripple.models.params import (
-    ParameterSpec, 
-    ParameterSpecModel, 
-    ParameterSet, 
-    IntParameterSpec, 
-    FloatParameterSpec, 
-    StringParameterSpec, 
-    BoolParameterSpec,
-    EnumParameterSpec,
-    FileParameterSpec, 
-    FileParameter
-)
+from ripple.models.params import (BoolParameterSpec, EnumParameterSpec, FileParameter, FileParameterSpec,
+                                  FloatParameterSpec, IntParameterSpec, ParameterSet, ParameterSpec, ParameterSpecModel,
+                                  StringParameterSpec)
+
+class ParamError(ValueError):
+    def __init__(self, label, message):
+        super().__init__(f"`{label}`: {message}")
 
 
 def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    """Populate all constant defaults from the paramSpec in the paramSet"""
     for name, paramSpec in paramSpec.params.items():
         if paramSpec.constant and name not in paramSet.model_fields.keys():
-            default = None
-
             if isinstance(paramSpec, FileParameterSpec):
                 if isinstance(paramSpec.default, list):
                     default = [FileParameter(file_id=file_id) for file_id in paramSpec.default]
@@ -34,7 +28,7 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 
 
 def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
-    # Implicitly cast int values to float
+    """Implicitly cast int values to float"""
     for name, spec in paramSpec.params.items():
         if not hasattr(paramSet, name) or not isinstance(spec, FloatParameterSpec):
             continue
@@ -51,77 +45,76 @@ def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 
 
 def repair_parameters(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    """Combine constant population and numerical casts"""
     populate_constants(paramSpec, paramSet)
     cast_numeric_types(paramSpec, paramSet)
 
 
-def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> bool:           
+def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> None:
+    """Validate the parameter against the spec and expected type"""
+    if not expectedType:
+        raise ParamError(paramSpec.label, f"invalid type validation")
+
     if isinstance(param, (list, tuple, set, frozenset)):
-        for item in param:
-            if not validate_param(paramSpec, item, expectedType):
-                return False
         if len(param) != len(paramSpec.default):
-            return False
+            raise ParamError(paramSpec.label, f"length mismatch {len(param)} != expected: {len(paramSpec.default)}")
+        for item in param:
+            validate_param(paramSpec, item, expectedType)
     else:
-        try:
-            if expectedType in (bool,str,float,int):
-                if not isinstance(param,expectedType):
-                    return False
-            else:
-                expectedType(**param)
-        except:
-            print(f"Failed cast")
-            return False
-    return True
+        allowed_atomic_types = {bool, str, float, int}
+        if expectedType in allowed_atomic_types:
+            if not isinstance(param, expectedType):
+                raise ParamError(paramSpec.label,
+                    f"type `{type(param).__name__}` did not match expected type `{expectedType.__name__}`")
+        else:
+            expectedType(**param)
 
 
-def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> bool:
-    params = paramSet.model_dump() 
+def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+    """Validate all parameters in the paramSpec using the provided paramSet"""
+    params = paramSet.model_dump()
 
     for name, paramSpec in paramSpec.params.items():
         if name not in params:
-            return False
-        
+            raise ParamError(paramSpec.label, "param not provided")
+
         param = params[name]
 
         # Validate type
-        typematch = None
+        use_type = None
         if isinstance(paramSpec, IntParameterSpec):
-            typematch=int
+            use_type = int
         elif isinstance(paramSpec, FloatParameterSpec):
-            typematch=float
+            use_type = float
         elif isinstance(paramSpec, StringParameterSpec) or isinstance(paramSpec, EnumParameterSpec):
-            typematch=str
+            use_type = str
         elif isinstance(paramSpec, BoolParameterSpec):
-            typematch=bool
+            use_type = bool
         elif isinstance(paramSpec, FileParameterSpec):
-            typematch=FileParameter
-        else:
-            return False
-
-        if typematch:
-            if not validate_param(paramSpec,param,typematch):
-                return False
+            use_type = FileParameter
+        validate_param(paramSpec, param, use_type)
 
         # Validate enum
         if isinstance(paramSpec, EnumParameterSpec):
-            if param not in [value.name for value in paramSpec.values]:
-                return False
+            validValues = {value.name for value in paramSpec.values}
+            if param not in validValues:
+                raise ParamError(paramSpec.label, f"{param} not in {validValues}")
 
         # Validate constant
         if paramSpec.constant:
             if isinstance(paramSpec, FileParameterSpec):
-                file_ids = [file_param['file_id'] for file_param in param] if isinstance(param, list) else param['file_id']
+                file_ids = [file_param['file_id']  \
+                            for file_param in param] \
+                    if isinstance(param, list) else param['file_id']
                 if file_ids != paramSpec.default:
-                    return False
+                    raise ParamError(paramSpec.label, f"{file_ids} != {paramSpec.default}")
             else:
                 if param != paramSpec.default:
-                    return False
-
-    return True
+                    raise ParamError(paramSpec.label, f"constant mismatch `{param}` != expected: `{paramSpec.default}`")
 
 
 def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> str:
+    """Automatically download an entire file at runtime, used to resolve file references"""
     # Get the URL to download the file
     url = f"{endpoint}/download/info/{file_id}"
     r = requests.get(url, headers=headers)
@@ -143,15 +136,16 @@ def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> st
     return file_path
 
 
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, headers={}) -> ParameterSet:
-    def resolve(field,value):
+def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, headers=None) -> ParameterSet:
+    """Resolve any parameters that are external references"""
+    def resolve(field, value):
         # For list-like, check each value
         if isinstance(value, (list, tuple, set, frozenset)):
             for item in value:
                 resolve(field, item)
         # For Dicts, check if they are FileParams. Otherwise check each item        
         elif isinstance(value, FileParameter):
-            value.file_path = download_file(endpoint, directory, value.file_id, headers)
+            value.file_path = download_file(endpoint, directory, value.file_id, headers or {})
         elif isinstance(value, dict):
             try:
                 FileParameter(**value)
@@ -159,11 +153,10 @@ def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, header
             except Exception:
                 for key, item in value.items():
                     resolve(f"{field}:{key}", item)
-    
+
     for name in paramSet.model_fields.keys():
-        resolve(name,getattr(paramSet,name))
+        resolve(name, getattr(paramSet, name))
     for name in paramSet.model_extra.keys():
-        resolve(name,getattr(paramSet,name))
+        resolve(name, getattr(paramSet, name))
 
-    return True
-
+    return paramSet

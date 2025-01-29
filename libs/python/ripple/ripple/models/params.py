@@ -1,3 +1,5 @@
+from itertools import starmap
+
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Annotated, Literal, Optional, Union, Any
 
@@ -84,24 +86,24 @@ ParameterType = (
 )
 
 def _validate_parameter_types(values:dict, match_type) -> Any:
-    def check(field,value):
+    def check(field, value):
         # For list-like, check each value
         if isinstance(value, (list, tuple, set, frozenset)):
             for item in value:
                 check(field, item)
-        # For Dicts, check if they are FileParams. Otherwise check each item        
+        # For Dicts, check if they are FileParams. Otherwise, check each item
         elif isinstance(value, dict):
             try:
                 FileParameter(**value)
             except Exception:
                 for key, item in value.items():
                     check(f"{field}:{key}", item)
-        # If its not a "collection" value it must be of match_type            
+        # If it's not a "collection" value it must be of match_type
         elif not isinstance(value, match_type):
             raise TypeError(f"Field '{field}' contains invalid type: {type(value)}. Must match {match_type}.")
         
-    for field, value in values.items():
-        check(field,value)
+    starmap(check, values.items())
+
     return values
 
 class ParameterSet(BaseModel):

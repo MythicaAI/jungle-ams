@@ -52,13 +52,6 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
     return response.data;
   };
 
-  // Function to fetch the URL key from the special VITE middleware
-  const getUrlKey = async (url: string) => {
-    const res = await fetch(`/gcs-keys${url}`);
-    const key = await res.text();
-    return key; // Return the key directly
-  };
-
   const getDownloadInfo = async (
     fileId: string
   ): Promise<GetDownloadInfoResponse> => {
@@ -66,16 +59,8 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
       headers: { Authorization: `Bearer ${authToken}` },
     });
     const src = response.data.url;
-    if (import.meta.env.MODE === 'development') {
-      // DEV mode: Use the VITE middleware to generate a URL key
-      const encodedSrc = `${new URL(src).pathname}${new URL(src).search}`;
-      response.data.url = `/${await getUrlKey(encodedSrc)}`;
-    } else {
-      // PROD mode: Use the gcs-files_ proxy in the nginx config
-      response.data.url = `/gcs-files_${new URL(src).pathname
-        .split('/')
-        .pop()}`;
-    }
+    response.data.url = `/gcs-files_${new URL(src).pathname.split('/').pop()}`;
+
     return response.data; // Return the URL for downloading
   };
 
