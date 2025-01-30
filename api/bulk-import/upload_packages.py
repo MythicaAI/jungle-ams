@@ -5,10 +5,11 @@ import importlib.util
 import json
 import logging
 import os
+import re
 import tempfile
 from http import HTTPStatus
 from pathlib import Path, PurePosixPath
-from typing import Optional
+from typing import Any, Optional
 
 import git
 import requests
@@ -43,12 +44,16 @@ def as_posix_path(path: str) -> PurePosixPath:
     return PurePosixPath(Path(path).as_posix())
 
 
-def get_github_user_project_name(ref_url: str) -> tuple[str, str]:
-    """Given a GitHub style URL git@github.com:user/repo.git returns (user, repo)"""
-    _, name_path = ref_url.split(':')
-    name, path = name_path.split('/')
-    assert path.endswith('.git')
-    return name, path.replace('.git', '')
+def get_github_user_project_name(ref_url: str) -> tuple[str | Any, ...]:
+    """
+    Given a GitHub style URL git@github.com:user/repo.git or https://github.com/user/repo
+
+    returns (user, repo)
+    """
+    match = re.match(r'(?:git@github\.com:|https://github\.com/)([^/]+)/([^/.]+)', ref_url)
+    if not match:
+        raise ValueError(f"Invalid GitHub URL: {ref_url}")
+    return match.groups()
 
 
 def get_repo_versions(repo):
