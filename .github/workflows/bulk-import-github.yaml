@@ -9,11 +9,11 @@ on:
 
   workflow_dispatch:
     inputs:
-      endpoint:
-        description: 'Force full sync'
+      mythica_endpoint:
+        description: 'Base URL for Mythica API'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: "https://api-staging.mythica.gg"
 env:
   REPO_BASE: /mnt/p4/github-scratch
 
@@ -43,7 +43,7 @@ jobs:
           poetry env info
           poetry run python3.11 upload_packages.py \
             --package-list package_list.py \
-            --endpoint https://api-staging.mythica.gg \
+            --endpoint ${{ github.event.inputs.mythica_endpoint }} \
             --repo-base ${REPO_BASE} \
             --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
             --github-api-token ${{ secrets.BULK_IMPORT_GITHUB_API_KEY }} \
