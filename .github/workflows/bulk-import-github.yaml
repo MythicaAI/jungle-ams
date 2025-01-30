@@ -18,7 +18,6 @@ on:
         default: "https://api-staging.mythica.gg"
 env:
   REPO_BASE: /mnt/p4/github-scratch
-  MYTHICA_ENDPOINT: ${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
 
 jobs:
   sync-and-process:
@@ -37,9 +36,7 @@ jobs:
       - name: Bulk Import GitHub Changes
         working-directory: api/bulk-import
         run: |
-          # Example: Get latest changelist
-          LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
-          echo "Latest changelist: $LATEST_CL"
+          MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
           
           # bulk import HDA packages
           poetry install --no-root

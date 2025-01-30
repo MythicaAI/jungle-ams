@@ -37,7 +37,6 @@ env:
   P4TRUST: /home/ec2-user/.p4trust
   P4CLIENT: github-action-workspace
   P4_WORKSPACE: /mnt/p4/mythica
-  MYTHICA_ENDPOINT: ${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
 jobs:
   sync-and-process:
     runs-on: p4-automation
@@ -106,6 +105,8 @@ jobs:
       - name: Bulk Import HDA Changes
         working-directory: api/bulk-import
         run: |
+          MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
+          
           # Example: Get latest changelist
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
           echo "Latest changelist: $LATEST_CL"
