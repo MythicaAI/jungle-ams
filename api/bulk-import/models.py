@@ -2,10 +2,10 @@
 Models used for bulk import
 """
 from datetime import datetime
-
 from pathlib import Path, PurePosixPath
-from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class PackageFile(BaseModel):
@@ -27,6 +27,7 @@ class PackageModel(BaseModel):
     """Model to validate the input dictionary"""
     repo: str  # the repository URL
     directory: str  # directory where OTLs or HDAs are stored
+    thumbnails: list[str] | None = None  # input patterns, file names or paths in order
     name: str  # the friendly name of the package
     description: str  # a short description
     user: Optional[str] = None  # user name override
