@@ -28,6 +28,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: System diag
+          MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
+
         run: |
           # these should be already installed on the system
           which python3.11

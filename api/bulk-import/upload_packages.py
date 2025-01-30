@@ -377,8 +377,8 @@ class PackageUploader(object):
 
         log.info("Processing package: %s", package.name)
 
-        if package.repo.startswith("git"):
-            self.update_local_repo(package)
+        if package.repo.startswith("git") or package.repo.startswith("https://github"):
+            self.update_local_github_repo(package)
 
             user, project = get_github_user_project_name(package.repo)
             user_description = f"imported from {package.commit_ref}"
@@ -569,7 +569,7 @@ class PackageUploader(object):
             return True
         return False
 
-    def update_local_repo(self, package: PackageModel):
+    def update_local_github_repo(self, package: PackageModel):
         """Clone or refresh the local repo"""
         package.root_disk_path = Path(os.path.abspath(os.path.join(str(self.repo_base_dir), package.name)))
         if os.path.exists(package.root_disk_path):
