@@ -694,7 +694,7 @@ class PackageUploader(object):
                      package.repo, package.root_disk_path)
             repo = git.Repo.clone_from(package.repo, package.root_disk_path)
 
-        package.last_github_commit_hash = repo.head.commit.hexsha
+        package.latest_github_commit_hash = repo.head.commit.hexsha
         package.commit_ref = build_version_commit_ref(package.repo, repo.head.commit.hexsha)
 
         # get the latest release if it exists
