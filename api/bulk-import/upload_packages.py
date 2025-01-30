@@ -555,8 +555,9 @@ class PackageUploader(object):
             self.emit_md(package, "skipped, no changes detected")
             self.stats.skipped += 1
 
-        # always add the specified tag
+        # always add the specified tag, must be using an admin session
         if self.tag:
+            self.start_session()
             if not self.tag_id:
                 self.tag_id = self.find_or_create_tag(self.tag)
             self.tag_asset(package, self.tag_id)
@@ -577,7 +578,7 @@ class PackageUploader(object):
 
     def find_or_create_profile(self, user: str, description: str):
         """Find or create a profile object implementation"""
-        response = self.conn_pool.get(f"{self.endpoint}/v1/profiles/named/{user}?exact=true")
+        response = self.conn_pool.get(f"{self.endpoint}/v1/profiles/named/{user}?exact_match=true")
         response.raise_for_status()
         profiles = response.json()
         if len(profiles) == 1:
