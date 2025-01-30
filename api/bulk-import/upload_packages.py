@@ -84,6 +84,11 @@ def as_posix_path(path: str) -> PurePosixPath:
     return PurePosixPath(Path(path).as_posix())
 
 
+def build_version_commit_ref(repo: str, commit_id: str) -> str:
+    """String used as the full commit_ref on the asset version storage"""
+    return f"{repo}/{commit_id}"
+
+
 def human_readable_timedelta(dt1: datetime, dt2: datetime) -> str:
     # Calculate the time difference
     delta = abs(dt1 - dt2)
@@ -308,8 +313,12 @@ def any_upstream_changes(package: ProcessedPackageModel,
 
 def bump_package_version(package: ProcessedPackageModel):
     """Update the package version"""
-    assert package.latest_version != ZERO_VERSION
-    package.latest_version[2] += 1
+    if package.latest_version == ZERO_VERSION:
+        package.latest_version = list(DEFAULT_STARTING_VERSION)
+        log.info("no latest version found in bump_package_version, defaulting to %s",
+                 DEFAULT_STARTING_VERSION)
+    else:
+        package.latest_version[2] += 1
 
 
 def get_description_from_readme(package: ProcessedPackageModel):
@@ -465,8 +474,11 @@ class PackageUploader(object):
                 package.root_disk_path = Path(os.path.abspath(
                     os.path.join(os.path.dirname(self.package_list_file), package.repo)))
 
-            package.commit_ref = f"#{get_p4_change_list(package.root_disk_path)}"
+            # repo is an internal tracking string
             package.repo = "MythicaPerforce::" + package.name
+            cl_number = get_p4_change_list(package.root_disk_path)
+            package.latest_p4_change_list = cl_number
+            package.commit_ref = build_version_commit_ref(package.repo, str(cl_number))
 
             user = "Mythica"
             user_description = "Upload automation profile"
@@ -489,12 +501,13 @@ class PackageUploader(object):
         self.populate_latest_commit_ref(package)
         if not package.asset_id:
             package.asset_id = self.create_asset(package)
-            package.latest_version = DEFAULT_STARTING_VERSION
+            package.latest_version = list(DEFAULT_STARTING_VERSION)
             log.info("No asset_id found, creating new base asset %s %s",
                      package.asset_id,
                      package.latest_version)
         else:
-            log.info("Attaching versions to existing asset %s %s",
+            log.info("Attaching new versions to existing asset %s %s, latest version %s",
+                     package.name,
                      package.asset_id,
                      package.latest_version)
 
@@ -503,8 +516,10 @@ class PackageUploader(object):
             log.error("Failed to find any files in directory %s for package %s",
                       package.directory, package.name)
             return
-        log.info("gathered %s files, %s images to create the asset version",
-                 len(package.asset_contents['files']), len(package.asset_contents['thumbnails']))
+        log.info("Collected %s FILES, %s THUMBNAILS for version %s",
+                 len(package.asset_contents['files']),
+                 len(package.asset_contents['thumbnails']),
+                 package.latest_version)
 
         # Version bumping, duplicate existing version for check
         last_known_version = list(package.latest_version)
@@ -512,6 +527,14 @@ class PackageUploader(object):
             package.latest_version = package.latest_github_version
             log.info("Updating %s to latest github release: %s",
                      package.name, package.latest_github_version)
+        elif package.latest_p4_change_list and \
+                package.commit_ref != build_version_commit_ref(package.repo, str(package.latest_p4_change_list)):
+            bump_package_version(package)
+            log.info("P4 commit_ref is now %s, previously %s, bumped %s version to %s",
+                     build_version_commit_ref(package.repo, str(package.latest_p4_change_list)),
+                     package.commit_ref,
+                     package.name,
+                     package.latest_version)
         elif any_upstream_changes(package, 'files') or any_upstream_changes(package, 'thumbnails'):
             bump_package_version(package)
             log.info("File change detected, bumped %s version to %s",
@@ -599,8 +622,10 @@ class PackageUploader(object):
         versions = munchify(response.json())
         sorted_versions = sorted(versions, key=lambda k: k['version'], reverse=True)
         if len(sorted_versions) == 0:
-            return '', ZERO_VERSION
-        log.info("Found %s versions for %s committed at %s",
+            log.info("No versions found for commits like %s", package.repo)
+            return
+
+        log.info("Found %s versions of %s committed in %s",
                  len(sorted_versions),
                  package.name,
                  package.repo)
@@ -667,7 +692,8 @@ class PackageUploader(object):
                      package.repo, package.root_disk_path)
             repo = git.Repo.clone_from(package.repo, package.root_disk_path)
 
-        package.commit_ref = repo.head.commit.hexsha
+        package.last_github_commit_hash = repo.head.commit.hexsha
+        package.commit_ref = build_version_commit_ref(package.repo, repo.head.commit.hexsha)
 
         # get the latest release if it exists
         latest_release = get_github_latest_release(self.github_api_token, package)
@@ -680,7 +706,7 @@ class PackageUploader(object):
                 pass
             package.description += " (Release: " + latest_release.title + ")"
         else:
-            package.latest_version = ZERO_VERSION
+            package.latest_version = list(ZERO_VERSION)
 
     def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list[FileRef]]:
         """Gather all files to be included in the package"""
@@ -803,7 +829,7 @@ class PackageUploader(object):
 
         asset_ver_json = {
             'asset_id': package.asset_id,
-            'commit_ref': f"{package.repo}/{package.commit_ref}",
+            'commit_ref': package.commit_ref,
             'contents': json_asset_contents,
             'name': package.name,
             'description': package.description,
@@ -830,9 +856,11 @@ class PackageUploader(object):
         print(file=self.markdown)
         print(f" - version: {package.latest_version}", file=self.markdown)
         print(f" - status: {package_status}", file=self.markdown)
+        print(f" - repo: {package.repo}", file=self.markdown)
         print(f" - commit_ref: {package.commit_ref}", file=self.markdown)
         print(f" - profile: {package.profile_name} {package.profile_id}", file=self.markdown)
         print(f" - org: {package.org_name} {package.org_id}", file=self.markdown)
+        print(f" - created: {package.created}", file=self.markdown)
         print(file=self.markdown)
 
         print("#### Files", file=self.markdown)

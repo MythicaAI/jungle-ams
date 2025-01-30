@@ -45,7 +45,9 @@ class ProcessedPackageModel(PackageModel):
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
     latest_version: List[int] | None = None  # latest matching package version
+    latest_github_commit_hash: str | None = None  # last queried commit hash
     latest_github_version: List[int] | None = None  # populated with the newest GitHub release version
+    latest_p4_change_list: int | None = None  # populated with the most recent cl# commit ref
     commit_ref: str = ''  # commit reference for the imported assets
     root_disk_path: Path | None = None  # absolute path on disk to root of GitHub repo
     latest_version_contents: Dict[str, dict] = Field(default_factory=dict)  # latest contents from API version query

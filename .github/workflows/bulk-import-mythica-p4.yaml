@@ -124,7 +124,6 @@ jobs:
             --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
             --license MPLv2.txt \
             --tag Mythica \
-            --always-bump \
             --markdown results.md
           cat results.md
           cat results.md >> $GITHUB_STEP_SUMMARY
