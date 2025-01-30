@@ -1,7 +1,6 @@
 """Tags models"""
 
 from enum import Enum
-from datetime import datetime
 from typing import Callable, Union
 
 from better_profanity import profanity

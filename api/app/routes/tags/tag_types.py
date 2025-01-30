@@ -1,13 +1,11 @@
 """API routing layer and logic for tag management for model types"""
 
-from datetime import timezone
 from http import HTTPStatus
 import logging
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from cryptid.cryptid import (
-    profile_seq_to_id,
     tag_id_to_seq,
     tag_seq_to_id,
 )
@@ -15,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func
 from sqlmodel import col, delete, insert, select
 
-from db.connection import TZ, get_session
+from db.connection import get_session
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
 from ripple.auth import roles

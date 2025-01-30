@@ -43,7 +43,7 @@ def test_tags_operations(api_base, client, create_profile):
     simple_profile = simple_profile.profile
 
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
+    test_profile.profile
     headers = test_profile.authorization_header()
 
     # create org to contain assets
@@ -153,7 +153,7 @@ def test_tags_operations(api_base, client, create_profile):
 
 def test_tag_asset_operations(api_base, client, create_profile):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
+    test_profile.profile
     headers = test_profile.authorization_header()
     not_allowed_test_profile = create_profile(email="test@somewhere.com", validate_email=True)
     not_allowed_headers = not_allowed_test_profile.authorization_header()
@@ -360,7 +360,6 @@ def test_tag_files_operations(
         api_base, client, create_profile, request_to_upload_files
 ):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
     headers = test_profile.authorization_header()
     not_allowed_profile = create_profile(email="user@somewhere.com")
     not_allowed_headers = not_allowed_profile.authorization_header()

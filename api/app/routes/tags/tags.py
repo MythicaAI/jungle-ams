@@ -1,11 +1,9 @@
 """API routing layer and logic for tag management"""
 
 import logging
-from datetime import timezone
 from http import HTTPStatus
 
 from cryptid.cryptid import (
-    profile_seq_to_id,
     tag_seq_to_id,
 )
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -15,7 +13,7 @@ from ripple.models.sessions import SessionProfile
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import delete as sql_delete, insert, select
 
-from db.connection import TZ, get_session
+from db.connection import get_session
 from db.schema.tags import Tag
 from routes.authorization import session_profile
 from routes.tags.tag_types import router as tag_types_router
