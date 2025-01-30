@@ -166,14 +166,48 @@ def collect_doc_package_paths(package: ProcessedPackageModel, default_license: s
     return [license_files[0], *readme_files[0:]]
 
 
+image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
+
+
+def collect_image_inputs_by_attribute(
+        package: ProcessedPackageModel,
+        attr_name: str,
+        inputs: list[str]) -> list[PackageFile]:
+    """
+    Collect image inputs from an explicit attribute of the package
+    """
+    log.info("pulling in image inputs from %s: %s", attr_name, inputs)
+    contents = []
+    for input in inputs:
+        if '*' in input:
+            raise ValueError("globbing not yet supported")
+
+        disk_path = os.path.join(package.root_disk_path, input)
+        name, ext = os.path.splitext(disk_path)
+        if ext not in image_extensions:
+            raise ValueError(f"{disk_path} not supported with {image_extensions}")
+        if not os.path.exists(disk_path):
+            raise ValueError(f"{disk_path} does not exist")
+
+        package_path = as_posix_path(os.path.relpath(disk_path, package.root_disk_path))
+        contents.append(
+            PackageFile(
+                disk_path=Path(disk_path),
+                package_path=package_path))
+    return contents
+
+
 def collect_images_paths(package: ProcessedPackageModel) -> list[PackageFile]:
     """Collect all image package paths"""
-    extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
+    # Shortcut the image paths if thumbnails are specified
+    if package.thumbnails:
+        return collect_image_inputs_by_attribute(package, 'thumbnails', package.thumbnails)
+
     contents: list[PackageFile] = list()
     for root, dirs, files in os.walk(package.root_disk_path):
         for file in files:
             name, ext = os.path.splitext(file)
-            if ext in extensions:
+            if ext in image_extensions:
                 disk_path = Path(os.path.join(root, file))
                 package_path = as_posix_path(os.path.relpath(disk_path, package.root_disk_path))
                 contents.append(
