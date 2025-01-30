@@ -42,6 +42,8 @@ class ProcessedPackageModel(PackageModel):
     profile_email: str = ''
     org_id: str = ''  # org_id for the named org that was passed in
     org_name: str = ''
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
     latest_version: List[int] | None = None  # latest matching package version
     latest_github_version: List[int] | None = None  # populated with the newest GitHub release version
     commit_ref: str = ''  # commit reference for the imported assets

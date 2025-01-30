@@ -7,11 +7,13 @@ import logging
 import os
 import re
 import tempfile
+from datetime import datetime, timezone
 from http import HTTPStatus
 from pathlib import Path, PurePosixPath
 from typing import Any, Optional
 
 import git
+import humanize
 import requests
 from github import GitRelease, Github
 from munch import munchify
@@ -80,6 +82,24 @@ class Stats(BaseModel):
 def as_posix_path(path: str) -> PurePosixPath:
     """Convert string paths to explicitly posix paths for package relative paths"""
     return PurePosixPath(Path(path).as_posix())
+
+
+def human_readable_timedelta(dt1: datetime, dt2: datetime) -> str:
+    # Calculate the time difference
+    delta = abs(dt1 - dt2)
+
+    # Convert to human-readable format
+    seconds = delta.total_seconds()
+
+    # Use humanize for better readability
+    if seconds < 60:
+        return f"{int(seconds)} seconds"
+    elif seconds < 3600:
+        return f"{int(seconds // 60)} minutes, {int(seconds % 60)} seconds"
+    elif seconds < 86400:
+        return f"{int(seconds // 3600)} hours, {int((seconds % 3600) // 60)} minutes"
+    else:
+        return humanize.naturaldelta(delta)
 
 
 def get_github_user_project_name(ref_url: str) -> tuple[str | Any, ...]:
@@ -219,7 +239,7 @@ def collect_image_inputs_by_attribute(
     """
     Collect image inputs from an explicit attribute of the package
     """
-    log.info("pulling in image inputs from %s: %s", attr_name, inputs)
+    log.info("Collecting image inputs from %s: %s", attr_name, inputs)
     contents = []
     for input_pattern in inputs:
         if '*' in input_pattern:
@@ -466,10 +486,17 @@ class PackageUploader(object):
         self.start_session(package.profile_id)
 
         # First try to resolve the version from the repo link
-        package.asset_id, package.latest_version = self.find_latest_repo_version(package)
+        self.populate_latest_commit_ref(package)
         if not package.asset_id:
             package.asset_id = self.create_asset(package)
-            package.latest_version = ZERO_VERSION
+            package.latest_version = DEFAULT_STARTING_VERSION
+            log.info("No asset_id found, creating new base asset %s %s",
+                     package.asset_id,
+                     package.latest_version)
+        else:
+            log.info("Attaching versions to existing asset %s %s",
+                     package.asset_id,
+                     package.latest_version)
 
         package.asset_contents = self.gather_contents(package)
         if len(package.asset_contents['files']) == 0:
@@ -479,38 +506,29 @@ class PackageUploader(object):
         log.info("gathered %s files, %s images to create the asset version",
                  len(package.asset_contents['files']), len(package.asset_contents['thumbnails']))
 
-        last_known_version = package.latest_version
-        if self.latest_version_exists(package):
-            if package.latest_github_version and package.latest_github_version != package.latest_version:
-                package.latest_version = package.latest_github_version
-                log.info("Updating %s to latest github release: %s",
-                         package.name, package.latest_github_version)
-            elif any_upstream_changes(package, 'files'):
-                bump_package_version(package)
-                log.info("File change detected, bumped %s version to %s",
-                         package.name, package.latest_version)
-            elif any_upstream_changes(package, 'thumbnails'):
-                bump_package_version(package)
-                log.info("Thumbnail change detected, bumped %s version to %s",
-                         package.name, package.latest_version)
-            else:
-                if self.always_bump:
-                    bump_package_version(package)
-                    log.info("Bumping %s to %s, always-bump set",
-                             package.name, package.latest_version)
-                else:
-                    log.info("Skipping %s, latest version available: %s",
-                             package.name, package.latest_version)
-                    self.emit_md(package, "skipped, no changes detected")
-                    self.stats.skipped += 1
-        else:
-            package.latest_version = DEFAULT_STARTING_VERSION
-            log.info("Creating package: %s, version: %s",
-                     package.name, DEFAULT_STARTING_VERSION)
+        # Version bumping, duplicate existing version for check
+        last_known_version = list(package.latest_version)
+        if package.latest_github_version and package.latest_github_version != package.latest_version:
+            package.latest_version = package.latest_github_version
+            log.info("Updating %s to latest github release: %s",
+                     package.name, package.latest_github_version)
+        elif any_upstream_changes(package, 'files') or any_upstream_changes(package, 'thumbnails'):
+            bump_package_version(package)
+            log.info("File change detected, bumped %s version to %s",
+                     package.name, package.latest_version)
+        elif self.always_bump:
+            bump_package_version(package)
+            log.info("Bumping %s to %s, always-bump set",
+                     package.name, package.latest_version)
 
         # create the version if it has been updated
         if last_known_version != package.latest_version:
             self.create_version(package, package.asset_contents)
+        else:
+            log.info("Skipping %s, latest version available: %s",
+                     package.name, package.latest_version)
+            self.emit_md(package, "skipped, no changes detected")
+            self.stats.skipped += 1
 
         # always add the specified tag
         if self.tag:
@@ -573,7 +591,7 @@ class PackageUploader(object):
                                 headers=self.auth_header())
         r.raise_for_status()
 
-    def find_latest_repo_version(self, package: PackageModel) -> tuple[str, list[int]]:
+    def populate_latest_commit_ref(self, package: ProcessedPackageModel):
         """Find the latest ID, version the package repo, returns empty asset_id if none"""
         response = self.conn_pool.get(f"{self.endpoint}/v1/assets/committed_at?ref={package.repo}")
         response.raise_for_status()
@@ -582,10 +600,35 @@ class PackageUploader(object):
         sorted_versions = sorted(versions, key=lambda k: k['version'], reverse=True)
         if len(sorted_versions) == 0:
             return '', ZERO_VERSION
-        log.info("Found %s verisons for %s", len(sorted_versions), package.name)
-        log.info("Using latest version: %s", sorted_versions[0]['version'])
+        log.info("Found %s versions for %s committed at %s",
+                 len(sorted_versions),
+                 package.name,
+                 package.repo)
+
         latest_version = sorted_versions[0]
-        return latest_version.asset_id, latest_version.version
+        package.name = latest_version.name
+        package.profile_id = latest_version.author_id
+        package.profile_name = latest_version.author_name
+        package.org_id = latest_version.org_id
+        package.org_name = latest_version.org_name
+        package.asset_id = latest_version.asset_id
+        package.description = latest_version.description
+        package.blurb = latest_version.blurb
+        package.created = datetime.fromisoformat(latest_version.created)
+        package.latest_version = latest_version.version
+        package.commit_ref = latest_version.commit_ref
+        package.latest_version_contents = latest_version.contents
+        log.info("FOUND %s (%s), version: %s, (%s files, %s thumbnails)",
+                 package.name,
+                 package.asset_id,
+                 package.latest_version,
+                 len(latest_version.contents.files),
+                 len(latest_version.contents.thumbnails))
+        log.info("  package info: ")
+        log.info("    profile: %s (%s)", package.profile_name, package.profile_id)
+        log.info("    org: %s (%s)", package.org_name, package.org_id)
+        log.info("    created: %s", human_readable_timedelta(datetime.now(timezone.utc), package.created))
+        log.info("    commit-ref: %s", package.commit_ref)
 
     def auth_header(self) -> dict[str, str]:
         """Return the authorization token header"""
@@ -610,26 +653,6 @@ class PackageUploader(object):
         asset_id = o.asset_id
         log.info("Created assetId: %s for package: %s", asset_id, package.name)
         return asset_id
-
-    def latest_version_exists(self, package: PackageModel) -> bool:
-        """Check if the asset version already exists"""
-        assert len(package.latest_version) == 3
-        if package.latest_version == ZERO_VERSION:
-            return False
-
-        version_str = '.'.join(map(str, package.latest_version))
-        response = self.conn_pool.get(f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}")
-        if response.status_code != 200:
-            log.error("Version %s not found for %s (%s)",
-                      version_str, package.name, package.asset_id)
-            return False
-
-        o = munchify(response.json())
-        package.latest_version_contents = o.contents
-        if o.version == package.latest_version:
-            log.info("Skipping package %s already uploaded.", package.name)
-            return True
-        return False
 
     def update_local_github_repo(self, package: PackageModel):
         """Clone or refresh the local repo"""
