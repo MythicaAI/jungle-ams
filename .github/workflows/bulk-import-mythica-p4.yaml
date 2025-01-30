@@ -1,10 +1,14 @@
-name: p4-commit-hook
+# This workflow is designed to run bulk import on the entire Mythica P4
+# repository. The bulk import process internally does diffing and will
+# determine which packages need to be updated based on the content hash
+# of the files in the package and the structure of the package itself.
+name: bulk-import-mythica-p4
 
 on:
   # Run when this file itself changes
   push:
     paths:
-      - '.github/workflows/p4-commit-hook.yaml'
+      - '.github/workflows/bulk-import-mythica-p4.yaml'
       - 'api/bulk-import/**'
 
   workflow_dispatch:
@@ -14,6 +18,11 @@ on:
         required: false
         type: boolean
         default: false
+      mythica_endpoint:
+        description: 'Base URL for Mythica API'
+        required: false
+        type: string
+        default: "https://api-staging.mythica.gg"
       changelist:
         description: 'Perforce changelist ID'
         required: false
@@ -28,7 +37,6 @@ env:
   P4TRUST: /home/ec2-user/.p4trust
   P4CLIENT: github-action-workspace
   P4_WORKSPACE: /mnt/p4/mythica
-
 jobs:
   sync-and-process:
     runs-on: p4-automation
@@ -93,7 +101,13 @@ jobs:
             echo "Performing incremental sync..."
             p4 sync
           fi
-
+      - name: Set default endpoint
+        run: |
+          if [ -z "${{ github.event.inputs.mythica_endpoint }}" ]; then
+            echo "MYTHICA_ENDPOINT=https://api-staging.mythica.gg" >> $GITHUB_ENV
+          else
+            echo "MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint }}" >> $GITHUB_ENV
+          fi
       - name: Bulk Import HDA Changes
         working-directory: api/bulk-import
         run: |
@@ -106,7 +120,7 @@ jobs:
           poetry env info
           poetry run python3.11 upload_packages.py \
             --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
-            --endpoint https://api-staging.mythica.gg \
+            --endpoint ${MYTHICA_ENDPOINT} \
             --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
             --license MPLv2.txt \
             --tag Mythica \

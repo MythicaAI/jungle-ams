@@ -1,0 +1,58 @@
+# This workflow will clone approved repos and import the contents to packages
+# on the mythica package index.
+name: bulk-import-github
+
+on:
+  # Run when this file itself changes
+  push:
+    paths:
+      - '.github/workflows/bulk-import-github.yaml'
+      - 'api/bulk-import/**'
+
+  workflow_dispatch:
+    inputs:
+      mythica_endpoint:
+        description: 'Base URL for Mythica API'
+        required: false
+        type: string
+        default: "https://api-staging.mythica.gg"
+env:
+  REPO_BASE: /mnt/p4/github-scratch
+
+jobs:
+  sync-and-process:
+    runs-on: p4-automation
+    concurrency: bulk-import-github # only one job at a time accessing the perforce client
+    steps:
+      - name: Checkout github
+        uses: actions/checkout@v4
+
+      - name: System diag
+        run: |
+          # these should be already installed on the system
+          which python3.11
+          which poetry
+      - name: Set default endpoint
+        run: |
+          if [ -z "${{ github.event.inputs.mythica_endpoint }}" ]; then
+            echo "MYTHICA_ENDPOINT=https://api-staging.mythica.gg" >> $GITHUB_ENV
+          else
+            echo "MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint }}" >> $GITHUB_ENV
+          fi
+      - name: Bulk Import GitHub Changes
+        working-directory: api/bulk-import
+        run: |
+          # bulk import HDA packages
+          poetry install --no-root
+          poetry env info
+          poetry run python3.11 upload_packages.py \
+            --package-list package_list.py \
+            --endpoint ${MYTHICA_ENDPOINT} \
+            --repo-base ${REPO_BASE} \
+            --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
+            --github-api-token ${{ secrets.BULK_IMPORT_GITHUB_API_KEY }} \
+            --license MPLv2.txt \
+            --tag "Open Source" \
+            --markdown results.md
+          cat results.md
+          cat results.md >> $GITHUB_STEP_SUMMARY

@@ -5,16 +5,18 @@ import importlib.util
 import json
 import logging
 import os
+import re
 import tempfile
 from http import HTTPStatus
 from pathlib import Path, PurePosixPath
-from typing import Optional
+from typing import Any, Optional
 
 import git
 import requests
 from github import GitRelease, Github
 from munch import munchify
 from packaging import version
+from pathspec import PathSpec
 from pydantic import BaseModel
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
@@ -32,6 +34,43 @@ log_config(log_level="DEBUG")
 
 log = logging.getLogger(__name__)
 
+default_ignore = {
+    '.DS_Store',
+    '.zip',
+    '.swp',
+    '.swo',
+
+    # Executable files
+    '.exe', '.dll', '.so', '.dylib', '.bin', '.cmd', '.bat', '.sh', '.com',
+    '.gadget', '.msi', '.msp', '.scr', '.hta', '.cpl', '.msc', '.jar',
+    '.vb', '.vbs', '.vbe', '.js', '.jse', '.ws', '.wsf', '.wsc', '.wsh',
+    '.ps1', '.ps1xml', '.ps2', '.ps2xml', '.psc1', '.psc2', '.msh',
+    '.msh1', '.msh2', '.mshxml', '.msh1xml', '.msh2xml', '.scf', '.lnk',
+    '.inf', '.reg', '.au3', '.ade', '.adp', '.app', '.csh', '.ksh',
+
+    # Office documents with macro support
+    '.doc', '.dot', '.wbk', '.docm', '.dotm', '.xlm', '.xla', '.xlam',
+    '.xll', '.xlw', '.pptm', '.potm', '.ppam', '.ppsm', '.sldm',
+    '.xlsm',
+
+    # Other potentially dangerous formats
+    '.chm', '.hlp', '.application',
+    '.mst', '.ops', '.pcd', '.prg', '.wch', '.workflow',
+
+    # Archive formats that could contain dangerous files
+    # TODO: archive validation
+    # '.zip', '.rar', '.7z', '.gz', '.tar', '.tgz', '.cab',
+
+    # Browser executable formats
+    '.xpi', '.crx', '.wasm',
+
+    # Additional script formats
+    '.php', '.php3', '.php4', '.php5', '.phtml', '.py', '.rb', '.pl',
+
+    # Configuration files that could trigger actions
+    '.bashrc', '.profile', '.config',
+}
+
 
 class Stats(BaseModel):
     uploaded: int = 0
@@ -43,12 +82,16 @@ def as_posix_path(path: str) -> PurePosixPath:
     return PurePosixPath(Path(path).as_posix())
 
 
-def get_github_user_project_name(ref_url: str) -> tuple[str, str]:
-    """Given a GitHub style URL git@github.com:user/repo.git returns (user, repo)"""
-    _, name_path = ref_url.split(':')
-    name, path = name_path.split('/')
-    assert path.endswith('.git')
-    return name, path.replace('.git', '')
+def get_github_user_project_name(ref_url: str) -> tuple[str | Any, ...]:
+    """
+    Given a GitHub style URL git@github.com:user/repo.git or https://github.com/user/repo
+
+    returns (user, repo)
+    """
+    match = re.match(r'(?:git@github\.com:|https://github\.com/)([^/]+)/([^/.]+)', ref_url)
+    if not match:
+        raise ValueError(f"Invalid GitHub URL: {ref_url}")
+    return match.groups()
 
 
 def get_repo_versions(repo):
@@ -178,11 +221,11 @@ def collect_image_inputs_by_attribute(
     """
     log.info("pulling in image inputs from %s: %s", attr_name, inputs)
     contents = []
-    for input in inputs:
-        if '*' in input:
+    for input_pattern in inputs:
+        if '*' in input_pattern:
             raise ValueError("globbing not yet supported")
 
-        disk_path = os.path.join(package.root_disk_path, input)
+        disk_path = os.path.join(package.root_disk_path, input_pattern)
         name, ext = os.path.splitext(disk_path)
         if ext not in image_extensions:
             raise ValueError(f"{disk_path} not supported with {image_extensions}")
@@ -261,7 +304,7 @@ def get_description_from_readme(package: ProcessedPackageModel):
 class PackageUploader(object):
     """Processes git repos into packages"""
 
-    def __init__(self, conn_pool: ConnectionPool):
+    def __init__(self, conn_pool: ConnectionPool, ignore_spec: PathSpec):
         self.license = None
         self.package_list_file = None
         self.endpoint = ''
@@ -274,6 +317,7 @@ class PackageUploader(object):
         self.conn_pool = conn_pool
         self.markdown = None
         self.stats = Stats()
+        self.ignore_spec = ignore_spec
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -377,8 +421,8 @@ class PackageUploader(object):
 
         log.info("Processing package: %s", package.name)
 
-        if package.repo.startswith("git"):
-            self.update_local_repo(package)
+        if package.repo.startswith("git") or package.repo.startswith("https://github"):
+            self.update_local_github_repo(package)
 
             user, project = get_github_user_project_name(package.repo)
             user_description = f"imported from {package.commit_ref}"
@@ -421,6 +465,8 @@ class PackageUploader(object):
             log.error("Failed to find any files in directory %s for package %s",
                       package.directory, package.name)
             return
+        log.info("gathered %s files, %s images to create the asset version",
+                 len(package.asset_contents['files']), len(package.asset_contents['thumbnails']))
 
         last_known_version = package.latest_version
         if self.latest_version_exists(package):
@@ -569,7 +615,7 @@ class PackageUploader(object):
             return True
         return False
 
-    def update_local_repo(self, package: PackageModel):
+    def update_local_github_repo(self, package: PackageModel):
         """Clone or refresh the local repo"""
         package.root_disk_path = Path(os.path.abspath(os.path.join(str(self.repo_base_dir), package.name)))
         if os.path.exists(package.root_disk_path):
@@ -597,7 +643,7 @@ class PackageUploader(object):
         else:
             package.latest_version = ZERO_VERSION
 
-    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list[PackageFile]]:
+    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list[FileRef]]:
         """Gather all files to be included in the package"""
         files: list[PackageFile] = list()
         thumbnails: list[PackageFile] = list()
@@ -622,11 +668,11 @@ class PackageUploader(object):
         # Perform the file uploads
         file_contents = []
         for package_file in files:
-            file_contents.append(self.maybe_upload_package_file(package, package_file))
+            file_contents.extend(self.maybe_upload_package_file(package, package_file))
 
         thumbnail_contents = []
         for package_file in thumbnails:
-            thumbnail_contents.append(self.maybe_upload_package_file(package, package_file))
+            thumbnail_contents.extend(self.maybe_upload_package_file(package, package_file))
 
         return {
             'files': file_contents,
@@ -635,8 +681,13 @@ class PackageUploader(object):
 
     def maybe_upload_package_file(self,
                                   package: ProcessedPackageModel,
-                                  package_file: PackageFile) -> FileRef:
+                                  package_file: PackageFile) -> list[FileRef]:
         """Upload a file from a package path, return its asset contents"""
+
+        if self.ignore_spec.match_file(package_file.package_path):
+            log.info("ignoring: %s", package_file.package_path)
+            return []
+
         page_size = 64 * 1024
         sha1 = hashlib.sha1()
         with open(package_file.disk_path, "rb") as file:
@@ -653,12 +704,12 @@ class PackageUploader(object):
             o = munchify(response.json())
             log.info("Found existing file '%s': file_id: %s, sha1: %s",
                      o.file_name, o.file_id, existing_digest)
-            return FileRef(
+            return [FileRef(
                 file_id=o.file_id,
                 file_name=o.file_name,
                 content_hash=o.content_hash,
                 size=o.size,
-                already=True)
+                already=True)]
 
         # raise on unexpected result
         if response.status_code != HTTPStatus.NOT_FOUND:
@@ -695,12 +746,12 @@ class PackageUploader(object):
                      file_info.size,
                      file_info.content_hash,
                      file_info.file_id)
-            return FileRef(
+            return [FileRef(
                 file_id=file_info.file_id,
                 file_name=file_info.file_name,
                 content_hash=file_info.content_hash,
                 size=file_info.size,
-                already=False)
+                already=False)]
 
     def create_version(
             self,
@@ -776,9 +827,24 @@ def main():
         start_uploads(conn_pool)
 
 
+def load_ignore_file(file_name) -> PathSpec:
+    ignore_patterns = set(map(lambda p: '*' + p, default_ignore))
+    if os.path.exists(file_name):
+        with open(file_name, 'r') as f:
+            user_patterns = set(map(str.strip, f.readlines()))
+            ignore_patterns.union(user_patterns)
+    else:
+        log.info('%s does not exist, continuing', file_name)
+
+    spec = PathSpec.from_lines('gitignore', ignore_patterns)
+    return spec
+
+
 def start_uploads(conn_pool: ConnectionPool):
     """Using the package uploader and connection pool create assets on the backend API"""
-    uploader = PackageUploader(conn_pool)
+
+    ignore_spec = load_ignore_file('bulk-ignore.txt')
+    uploader = PackageUploader(conn_pool, ignore_spec)
     uploader.parse_args()
 
     # start the authenticated session
