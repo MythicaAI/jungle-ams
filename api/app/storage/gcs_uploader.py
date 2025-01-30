@@ -7,7 +7,7 @@ from google.cloud import storage
 
 from context import UploadContext
 from storage.bucket_types import BucketType
-from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
+from storage.storage_client import StorageClient, tracer
 
 # Configure GCS bucket mappings here directly - this could get more involved as bucket limits,
 # regional and migrations occur
@@ -55,7 +55,7 @@ class Client(StorageClient):
                 'gcs',
                 location() + '.' + ctx.bucket_name,
                 object_name)
-        upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": object_name})
+        log.info("File uploaded", extra={"bucket_name": bucket_type.name, "file_name": object_name})
 
     def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType):
         """Streaming not currently implemented for GCS"""
@@ -68,7 +68,7 @@ class Client(StorageClient):
             log.info("Request to download file from the bucket. name: %s", object_name)
             bucket = self.gcs.bucket(bucket_name)
             blob = bucket.blob(object_name)
-        download_counter.add(1, {"bucket_name": bucket_name, "file_name": object_name})
+        log.info("File download link requested", extra={"bucket_name": bucket_name, "file_name": object_name})
         return blob.generate_signed_url(version="v4", expiration=timedelta(days=7), method="GET")
 
 

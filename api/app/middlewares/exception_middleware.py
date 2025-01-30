@@ -1,23 +1,17 @@
 import json
-import time
-from fastapi.concurrency import iterate_in_threadpool
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import HTTPException, Request
 import logging
+import time
 
+from fastapi import HTTPException, Request
+from fastapi.concurrency import iterate_in_threadpool
 from opentelemetry import trace
-from opentelemetry.trace.status import Status, StatusCode
-from opentelemetry.metrics import get_meter_provider
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-
+from opentelemetry.trace.status import Status, StatusCode
+from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
-meter = get_meter_provider().get_meter(__name__)
-counter = meter.create_counter("request-count")
-histogram = meter.create_histogram("request-latency")
-gauge_histogram = meter.create_gauge("request-gauge-latency")
 
 
 def propagate_context(func):
@@ -95,7 +89,4 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
             # Log the request duration
             duration = time.time() - start_time
             log_params.update({"duration": duration})
-            histogram.record(duration, log_params)
-            gauge_histogram.set(duration, log_params)
             logger.info("Request completed", extra=log_params)
-            counter.add(1, {"name": str(request.url), **log_params, "duration": duration})

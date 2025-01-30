@@ -2,13 +2,12 @@ import hashlib
 import logging
 from io import BytesIO
 
-from minio import Minio
-from minio.error import S3Error
-
 from config import app_config
 from context import UploadContext
+from minio import Minio
+from minio.error import S3Error
 from storage.bucket_types import BucketType
-from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
+from storage.storage_client import StorageClient, tracer
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ class Client(StorageClient):
             except S3Error as exc:
                 log.exception("upload failed to %s:%s", ctx.bucket_name, ctx.object_name)
                 raise exc
-        upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": ctx.object_name})
+        log.info("File uploaded", extra={"bucket_name": bucket_type.name, "file_name": ctx.object_name})
 
     def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType):
         """Upload object via the streaming API"""
@@ -105,7 +104,7 @@ class Client(StorageClient):
         with tracer.start_as_current_span("file.download") as span:
             span.set_attribute("file.name", object_name)
             log.info("Request to download file from the minio bucket. name: %s", object_name)
-        download_counter.add(1, {"bucket_name": bucket_name, "file_name": object_name})
+        log.info("File download link requested", extra={"bucket_name": bucket_name, "file_name": object_name})
         return self.minio.presigned_get_object(bucket_name, object_name)
 
 
