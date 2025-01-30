@@ -50,7 +50,7 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
             "client": request.client.host,
             "method": request.method,
             "headers": str(headers),
-            "body": body.decode('utf-8', errors='ignore') if body else "",
+            "body": body.decode('utf-8', errors='ignore') if body and request.url.path != '/v1/upload/store' else "",
             "start_time": start_time,
         }
 

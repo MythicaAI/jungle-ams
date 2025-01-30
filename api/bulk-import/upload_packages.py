@@ -1,24 +1,24 @@
 """Bulk import package uploader, consumes a package list and uploads them to the package index API"""
-from http import HTTPStatus
-
 import argparse
-import git
 import hashlib
 import importlib.util
 import json
 import logging
 import os
-import requests
 import tempfile
-from munch import munchify
-from packaging import version
+from http import HTTPStatus
 from pathlib import Path, PurePosixPath
-from pydantic import BaseModel
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 from typing import Optional
 
-from connection_pool import ConnectionPool
+import git
+import requests
 from github import GitRelease, Github
+from munch import munchify
+from packaging import version
+from pydantic import BaseModel
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+from connection_pool import ConnectionPool
 from log_config import log_config
 from models import FileRef, OrgResponse, PackageFile, PackageModel, ProcessedPackageModel
 from perforce import parse_perforce_change, run_p4_command
@@ -166,14 +166,48 @@ def collect_doc_package_paths(package: ProcessedPackageModel, default_license: s
     return [license_files[0], *readme_files[0:]]
 
 
+image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
+
+
+def collect_image_inputs_by_attribute(
+        package: ProcessedPackageModel,
+        attr_name: str,
+        inputs: list[str]) -> list[PackageFile]:
+    """
+    Collect image inputs from an explicit attribute of the package
+    """
+    log.info("pulling in image inputs from %s: %s", attr_name, inputs)
+    contents = []
+    for input in inputs:
+        if '*' in input:
+            raise ValueError("globbing not yet supported")
+
+        disk_path = os.path.join(package.root_disk_path, input)
+        name, ext = os.path.splitext(disk_path)
+        if ext not in image_extensions:
+            raise ValueError(f"{disk_path} not supported with {image_extensions}")
+        if not os.path.exists(disk_path):
+            raise ValueError(f"{disk_path} does not exist")
+
+        package_path = as_posix_path(os.path.relpath(disk_path, package.root_disk_path))
+        contents.append(
+            PackageFile(
+                disk_path=Path(disk_path),
+                package_path=package_path))
+    return contents
+
+
 def collect_images_paths(package: ProcessedPackageModel) -> list[PackageFile]:
     """Collect all image package paths"""
-    extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
+    # Shortcut the image paths if thumbnails are specified
+    if package.thumbnails:
+        return collect_image_inputs_by_attribute(package, 'thumbnails', package.thumbnails)
+
     contents: list[PackageFile] = list()
     for root, dirs, files in os.walk(package.root_disk_path):
         for file in files:
             name, ext = os.path.splitext(file)
-            if ext in extensions:
+            if ext in image_extensions:
                 disk_path = Path(os.path.join(root, file))
                 package_path = as_posix_path(os.path.relpath(disk_path, package.root_disk_path))
                 contents.append(
@@ -301,7 +335,7 @@ class PackageUploader(object):
         self.license = args.license
         self.tag = args.tag
         self.tag_id = None
-        self.markdown = open(args.markdown, "w+t") or None
+        self.markdown = open(args.markdown, "w+t") if args.markdown else None
         if self.markdown:
             self.start_md()
 
@@ -321,7 +355,8 @@ class PackageUploader(object):
         url = f"{self.endpoint}/v1/sessions/key/{self.mythica_api_key}"
         response = self.conn_pool.get(url, headers=headers)
         if response.status_code != 200:
-            log.error("Failed to start session: %s", response.status_code)
+            log.error("Failed to start session: %s, check your Mythica API Key",
+                      response.status_code)
             raise SystemExit
 
         o = munchify(response.json())
@@ -387,6 +422,7 @@ class PackageUploader(object):
                       package.directory, package.name)
             return
 
+        last_known_version = package.latest_version
         if self.latest_version_exists(package):
             if package.latest_github_version and package.latest_github_version != package.latest_version:
                 package.latest_version = package.latest_github_version
@@ -405,14 +441,16 @@ class PackageUploader(object):
                          package.name, package.latest_version)
                 self.emit_md(package, "skipped, no changes detected")
                 self.stats.skipped += 1
-                return
         else:
             package.latest_version = DEFAULT_STARTING_VERSION
             log.info("Creating package: %s, version: %s",
                      package.name, DEFAULT_STARTING_VERSION)
 
-        self.create_version(package, package.asset_contents)
+        # create the version if it has been updated
+        if last_known_version != package.latest_version:
+            self.create_version(package, package.asset_contents)
 
+        # always add the specified tag
         if self.tag:
             if not self.tag_id:
                 self.tag_id = self.find_or_create_tag(self.tag)
@@ -584,13 +622,11 @@ class PackageUploader(object):
         # Perform the file uploads
         file_contents = []
         for package_file in files:
-            file_contents.append(
-                self.maybe_upload_package_file(package, package_file))
+            file_contents.append(self.maybe_upload_package_file(package, package_file))
 
         thumbnail_contents = []
         for package_file in thumbnails:
-            thumbnail_contents.append(
-                self.maybe_upload_package_file(package, package_file))
+            thumbnail_contents.append(self.maybe_upload_package_file(package, package_file))
 
         return {
             'files': file_contents,
@@ -663,18 +699,26 @@ class PackageUploader(object):
                 file_id=file_info.file_id,
                 file_name=file_info.file_name,
                 content_hash=file_info.content_hash,
-                size=file_info.size)
+                size=file_info.size,
+                already=False)
 
-    def create_version(self, package: ProcessedPackageModel, asset_contents: dict[str, list]):
+    def create_version(
+            self,
+            package: ProcessedPackageModel,
+            asset_contents: dict[str, list[FileRef]]):
         """Create new asset version"""
+        json_asset_contents = {}
+        for category, contents in asset_contents.items():
+            json_asset_contents[category] = list(map(lambda file_ref: file_ref.model_dump(), contents))
+
         asset_ver_json = {
             'asset_id': package.asset_id,
             'commit_ref': f"{package.repo}/{package.commit_ref}",
-            'contents': asset_contents,
+            'contents': json_asset_contents,
             'name': package.name,
             'description': package.description,
             'author': package.profile_id,
-            'published': True
+            'published': True,
         }
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
@@ -685,8 +729,8 @@ class PackageUploader(object):
 
         log.info("Successfully uploaded package: %s", package.name)
 
-        self.emit_md(package, "uploaded as %s-%s", package.name, package.latest_version)
-        self.status.uploaded += 1
+        self.emit_md(package, f"uploaded as {package.name}-{package.latest_version}")
+        self.stats.uploaded += 1
 
     def emit_md(self, package: ProcessedPackageModel, package_status: str):
         if self.markdown is None:

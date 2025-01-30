@@ -106,9 +106,11 @@ tables:
         primary_key: true
       - name: src_file_seq
         type: BIGINT
+        primary_key: true
         foreign_key: files.file_seq
       - name: entry_point
         type: TEXT
+        primary_key: true
       - name: job_def_seq
         type: BIGINT
         foreign_key: job_defs.job_def_seq
