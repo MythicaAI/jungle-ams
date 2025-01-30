@@ -421,9 +421,6 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         flexDirection: 'column',
       }}
     >
-      {isScriptNode && (
-        <NodeResizer minHeight={min + delta} minWidth={min + 2 * delta} />
-      )}
 
       <div
         className={`mythica-node ${isScriptNode && 'script'} ${
@@ -439,6 +436,11 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           paddingTop: '28px',
         }}
       >
+        
+        {isScriptNode && (
+          <NodeResizer minHeight={min + delta} minWidth={min + 2 * delta} />
+        )}
+
         <NodeDeleteButton
           onDelete={() => {
             deleteElements({ nodes: [node] });
