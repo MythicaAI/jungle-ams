@@ -52,7 +52,6 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         assert o.name == tag_name
-        assert o.owner_id == profile.profile_id
         tag_id = o.tag_id
         return tag_id, tag_name
 

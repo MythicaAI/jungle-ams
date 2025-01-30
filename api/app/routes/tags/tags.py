@@ -41,8 +41,7 @@ async def create(
             session.exec(
                 insert(Tag).values(
                     name=create_req.name,
-                    owner_seq=profile.profile_seq,
-                )
+                    owner_seq=profile.profile_seq)  # record authorship
             )
             session.commit()
         except IntegrityError:
@@ -57,10 +56,7 @@ async def create(
             )
         return TagResponse(
             name=create_req.name,
-            tag_id=tag_seq_to_id(result.tag_seq),
-            owner_id=profile_seq_to_id(profile.profile_seq),
-            created=result.created.replace(tzinfo=TZ).astimezone(timezone.utc),
-        )
+            tag_id=tag_seq_to_id(result.tag_seq))
 
 
 @router.delete('/{name}')
@@ -70,9 +66,7 @@ async def delete(name: str, profile: SessionProfile = Depends(session_profile)):
         validate_roles(role=roles.tag_delete, auth_roles=profile.auth_roles)
         stmt = (
             sql_delete(Tag)
-            .where(Tag.name == name)
-            .where(Tag.owner_seq == profile.profile_seq)
-        )
+            .where(Tag.name == name))
         session.execute(stmt)
         session.commit()
 
@@ -86,10 +80,7 @@ async def list_all(limit: int = Query(1, le=100), offset: int = 0) -> list[TagRe
         response = [
             TagResponse(
                 name=r.name,
-                tag_id=tag_seq_to_id(r.tag_seq),
-                owner_id=profile_seq_to_id(r.owner_seq),
-                created=r.created.replace(tzinfo=TZ).astimezone(timezone.utc),
-            )
+                tag_id=tag_seq_to_id(r.tag_seq))
             for r in rows
         ]
         return response

@@ -31,8 +31,6 @@ class TagRequest(BaseModel):
 class TagResponse(BaseModel):
     name: str
     tag_id: str
-    owner_id: str = None
-    created: datetime
 
 
 class TagTypeRequest(BaseModel):
