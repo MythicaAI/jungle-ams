@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [
     react()
   ],
-  base: '/awful/',
+  base: '/awful',
   build: {
     target: 'es2022', // Or a modern browser version like 'chrome91'
     sourcemap: true,
