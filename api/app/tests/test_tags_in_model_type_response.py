@@ -23,7 +23,6 @@ test_file_content_type = "application/octet-stream"
 
 def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
     headers = test_profile.authorization_header()
     profile_id = test_profile.profile.profile_id
 
@@ -52,7 +51,6 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         assert o.name == tag_name
-        assert o.owner_id == profile.profile_id
         tag_id = o.tag_id
         return tag_id, tag_name
 

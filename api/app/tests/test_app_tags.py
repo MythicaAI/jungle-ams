@@ -21,13 +21,28 @@ test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
 test_file_content_type = "application/octet-stream"
 
 
+def unauthorized_create_type_tag(client, api_base, type_model_name, type_id, tag_id, headers):
+    r = client.post(
+        f"{api_base}/tags/types/{type_model_name}",
+        json={'tag_id': tag_id, "type_id": type_id},
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
+
+
+def unauthorized_delete_type_tag(client, api_base, type_model_name, type_id, tag_id, headers):
+    r = client.delete(
+        f"{api_base}/tags/types/{type_model_name}/{tag_id}/{type_id}",
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
+
 def test_tags_operations(api_base, client, create_profile):
     simple_profile = create_profile(email="test@test.ai", validate_email=True)
     simple_headers = simple_profile.authorization_header()
     simple_profile = simple_profile.profile
 
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
     headers = test_profile.authorization_header()
 
     # create org to contain assets
@@ -56,7 +71,6 @@ def test_tags_operations(api_base, client, create_profile):
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         assert o.name == tag_name
-        assert o.owner_id == profile.profile_id
         tag_id = o.tag_id
         return tag_id, tag_name
 
@@ -138,10 +152,9 @@ def test_tags_operations(api_base, client, create_profile):
 
 def test_tag_asset_operations(api_base, client, create_profile):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
     headers = test_profile.authorization_header()
-    new_test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    new_headers = new_test_profile.authorization_header()
+    not_allowed_test_profile = create_profile(email="test@somewhere.com", validate_email=True)
+    not_allowed_headers = not_allowed_test_profile.authorization_header()
 
     # create org to contain assets
     org_name = 'org-' + random_str(10, digits=False)
@@ -187,7 +200,6 @@ def test_tag_asset_operations(api_base, client, create_profile):
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         assert o.name == tag_name
-        assert o.owner_id == profile.profile_id
         tag_id = o.tag_id
         return tag_id, tag_name
 
@@ -224,23 +236,8 @@ def test_tag_asset_operations(api_base, client, create_profile):
         for tag_id in created_tag_ids:
             delete_tag(tag_id)
 
-    def not_owner_create_type_tag(type_model_name, type_id, tag_id, headers):
-        r = client.post(
-            f"{api_base}/tags/types/{type_model_name}",
-            json={'tag_id': tag_id, "type_id": type_id},
-            headers=headers,
-        )
-        assert_status_code(r, HTTPStatus.FORBIDDEN)
-
-    def not_owner_delete_type_tag(type_model_name, type_id, tag_id, headers):
-        r = client.delete(
-            f"{api_base}/tags/types/{type_model_name}/{tag_id}/{type_id}",
-            headers=headers,
-        )
-        assert_status_code(r, HTTPStatus.FORBIDDEN)
-
-    not_owner_create_type_tag("asset", asset_id, tag_id, new_headers)
-    not_owner_delete_type_tag("asset", asset_id, tag_id, new_headers)
+    unauthorized_create_type_tag(client, api_base, "asset", asset_id, tag_id, not_allowed_headers)
+    unauthorized_delete_type_tag(client, api_base, "asset", asset_id, tag_id, not_allowed_headers)
 
     model_type_count_to_filter = 5
     include_tags_count_to_filter = 3
@@ -361,10 +358,9 @@ def test_tag_files_operations(
         api_base, client, create_profile, request_to_upload_files
 ):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
-    profile = test_profile.profile
     headers = test_profile.authorization_header()
-    new_test_profile = create_profile(email="test@mythica.ai")
-    new_headers = new_test_profile.authorization_header()
+    not_allowed_profile = create_profile(email="user@somewhere.com")
+    not_allowed_headers = not_allowed_profile.authorization_header()
 
     top_limit = 5
     files = [
@@ -388,7 +384,6 @@ def test_tag_files_operations(
         assert_status_code(r, HTTPStatus.CREATED)
         o = munchify(r.json())
         assert o.name == tag_name
-        assert o.owner_id == profile.profile_id
         tag_id = o.tag_id
         return tag_id, tag_name
 
@@ -425,23 +420,8 @@ def test_tag_files_operations(
         for tag_id in created_tag_ids:
             delete_tag(tag_id)
 
-    def not_owner_create_type_tag(type_model_name, type_id, tag_id, headers):
-        r = client.post(
-            f"{api_base}/tags/types/{type_model_name}",
-            json={'tag_id': tag_id, "type_id": type_id},
-            headers=headers,
-        )
-        assert_status_code(r, HTTPStatus.FORBIDDEN)
-
-    def not_owner_delete_type_tag(type_model_name, type_id, tag_id, headers):
-        r = client.delete(
-            f"{api_base}/tags/types/{type_model_name}/{tag_id}/{type_id}",
-            headers=headers,
-        )
-        assert_status_code(r, HTTPStatus.FORBIDDEN)
-
-    not_owner_create_type_tag("file", first_file_id, tag_id, new_headers)
-    not_owner_delete_type_tag("file", first_file_id, tag_id, new_headers)
+    unauthorized_create_type_tag(client, api_base, "file", first_file_id, tag_id, not_allowed_headers)
+    unauthorized_delete_type_tag(client, api_base, "file", first_file_id, tag_id, not_allowed_headers)
 
     model_type_count_to_filter = top_limit
     include_tags_count_to_filter = 3

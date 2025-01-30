@@ -1,13 +1,11 @@
 """API routing layer and logic for tag management for model types"""
 
-from datetime import timezone
 from http import HTTPStatus
 import logging
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from cryptid.cryptid import (
-    profile_seq_to_id,
     tag_id_to_seq,
     tag_seq_to_id,
 )
@@ -15,9 +13,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func
 from sqlmodel import col, delete, insert, select
 
-from db.connection import TZ, get_session
+from db.connection import get_session
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
+from ripple.auth import roles
+from ripple.auth.authorization import validate_roles
 from routes.authorization import session_profile, maybe_session_profile
 from tags.repo import process_type_model_result
 from tags.tag_models import (
@@ -42,6 +42,9 @@ async def create_tag_for_type(
         create: TagTypeRequest,
         response: Response,
         profile: Profile = Depends(session_profile)):
+
+    validate_roles(role=roles.tag_create, auth_roles=profile.auth_roles)
+
     type_model = get_model_type(tag_type)
     model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
@@ -58,14 +61,13 @@ async def create_tag_for_type(
     with get_session() as session:
         model_exists = session.exec(
             select(model_of_type_model)
-            .where(model_of_type_model.owner_seq == profile.profile_seq)
             .where(model_type_seq_col == type_seq)
         ).first()
 
         if not model_exists:
             raise HTTPException(
                 HTTPStatus.FORBIDDEN,
-                detail=f"You are not authorized to create tag for this {tag_type}:{create.type_id}.",
+                detail=f"You are not authorized to create tag for this {tag_type}:{create.type_id}",
             )
 
         try:
@@ -113,10 +115,7 @@ async def get_tags_for_type(
         response = [
             TagResponse(
                 name=r.name,
-                tag_id=tag_seq_to_id(r.tag_seq),
-                owner_id=profile_seq_to_id(r.owner_seq),
-                created=r.created.replace(tzinfo=TZ).astimezone(timezone.utc),
-            )
+                tag_id=tag_seq_to_id(r.tag_seq))
             for r in tags
         ]
         return response
@@ -130,6 +129,8 @@ async def delete_tag_type(
     profile: Profile = Depends(session_profile),
 ):
     """Delete an existing tag associated with a specified model type."""
+    validate_roles(role=roles.tag_delete, auth_roles=profile.auth_roles)
+
     type_model = get_model_type(tag_type)
     model_of_type_model = get_model_of_model_type(tag_type)
     type_id_to_seq = get_type_id_to_seq(tag_type)
@@ -141,7 +142,6 @@ async def delete_tag_type(
     with get_session() as session:
         model_exists = session.exec(
             select(model_of_type_model)
-            .where(model_of_type_model.owner_seq == profile.profile_seq)
             .where(model_type_seq_col == type_seq)
         ).first()
 
@@ -215,10 +215,7 @@ async def get_top_tags_for_type(
         response = [
             TagResponse(
                 name=tag.name,
-                tag_id=tag_seq_to_id(tag.tag_seq),
-                owner_id=profile_seq_to_id(tag.owner_seq),
-                created=tag.created.replace(tzinfo=TZ).astimezone(timezone.utc),
-            )
+                tag_id=tag_seq_to_id(tag.tag_seq))
             for tag in tags
         ]
 

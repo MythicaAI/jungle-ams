@@ -1,7 +1,6 @@
 """Tags models"""
 
 from enum import Enum
-from datetime import datetime
 from typing import Callable, Union
 
 from better_profanity import profanity
@@ -31,8 +30,6 @@ class TagRequest(BaseModel):
 class TagResponse(BaseModel):
     name: str
     tag_id: str
-    owner_id: str = None
-    created: datetime
 
 
 class TagTypeRequest(BaseModel):
