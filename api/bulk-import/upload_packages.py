@@ -34,6 +34,43 @@ log_config(log_level="DEBUG")
 
 log = logging.getLogger(__name__)
 
+default_ignore = {
+    '.DS_Store',
+    '.zip',
+    '.swp',
+    '.swo',
+
+    # Executable files
+    '.exe', '.dll', '.so', '.dylib', '.bin', '.cmd', '.bat', '.sh', '.com',
+    '.gadget', '.msi', '.msp', '.scr', '.hta', '.cpl', '.msc', '.jar',
+    '.vb', '.vbs', '.vbe', '.js', '.jse', '.ws', '.wsf', '.wsc', '.wsh',
+    '.ps1', '.ps1xml', '.ps2', '.ps2xml', '.psc1', '.psc2', '.msh',
+    '.msh1', '.msh2', '.mshxml', '.msh1xml', '.msh2xml', '.scf', '.lnk',
+    '.inf', '.reg', '.au3', '.ade', '.adp', '.app', '.csh', '.ksh',
+
+    # Office documents with macro support
+    '.doc', '.dot', '.wbk', '.docm', '.dotm', '.xlm', '.xla', '.xlam',
+    '.xll', '.xlw', '.pptm', '.potm', '.ppam', '.ppsm', '.sldm',
+    '.xlsm',
+
+    # Other potentially dangerous formats
+    '.chm', '.hlp', '.application',
+    '.mst', '.ops', '.pcd', '.prg', '.wch', '.workflow',
+
+    # Archive formats that could contain dangerous files
+    # TODO: archive validation
+    # '.zip', '.rar', '.7z', '.gz', '.tar', '.tgz', '.cab',
+
+    # Browser executable formats
+    '.xpi', '.crx', '.wasm',
+
+    # Additional script formats
+    '.php', '.php3', '.php4', '.php5', '.phtml', '.py', '.rb', '.pl',
+
+    # Configuration files that could trigger actions
+    '.bashrc', '.profile', '.config',
+}
+
 
 class Stats(BaseModel):
     uploaded: int = 0
@@ -791,19 +828,16 @@ def main():
 
 
 def load_ignore_file(file_name) -> PathSpec:
-    default_ignore = """
-    .DS_Store
-    *.zip
-    *.swp
-    *.swo
-    """
-    if not os.path.exists(file_name):
+    ignore_patterns = set(map(lambda p: '*' + p, default_ignore))
+    if os.path.exists(file_name):
+        with open(file_name, 'r') as f:
+            user_patterns = set(map(str.strip, f.readlines()))
+            ignore_patterns.union(user_patterns)
+    else:
         log.info('%s does not exist, continuing', file_name)
-        return PathSpec.from_lines('gitignore', default_ignore.split())
 
-    with open(file_name, 'r') as f:
-        spec = PathSpec.from_lines('gitignore', f.readlines())
-        return spec
+    spec = PathSpec.from_lines('gitignore', ignore_patterns)
+    return spec
 
 
 def start_uploads(conn_pool: ConnectionPool):
