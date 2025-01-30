@@ -32,12 +32,16 @@ jobs:
           # these should be already installed on the system
           which python3.11
           which poetry
-
+      - name: Set default endpoint
+        run: |
+          if [ -z "${{ github.event.inputs.mythica_endpoint }}" ]; then
+            echo "MYTHICA_ENDPOINT=https://api-staging.mythica.gg" >> $GITHUB_ENV
+          else
+            echo "MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint }}" >> $GITHUB_ENV
+          fi
       - name: Bulk Import GitHub Changes
         working-directory: api/bulk-import
         run: |
-          MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
-          
           # bulk import HDA packages
           poetry install --no-root
           poetry env info

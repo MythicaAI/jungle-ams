@@ -101,12 +101,16 @@ jobs:
             echo "Performing incremental sync..."
             p4 sync
           fi
-
+      - name: Set default endpoint
+        run: |
+          if [ -z "${{ github.event.inputs.mythica_endpoint }}" ]; then
+            echo "MYTHICA_ENDPOINT=https://api-staging.mythica.gg" >> $GITHUB_ENV
+          else
+            echo "MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint }}" >> $GITHUB_ENV
+          fi
       - name: Bulk Import HDA Changes
         working-directory: api/bulk-import
         run: |
-          MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
-          
           # Example: Get latest changelist
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)
           echo "Latest changelist: $LATEST_CL"
