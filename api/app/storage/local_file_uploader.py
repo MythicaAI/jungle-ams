@@ -7,7 +7,7 @@ import shutil
 from config import app_config
 from context import UploadContext
 from storage.bucket_types import BucketType
-from storage.storage_client import StorageClient, upload_counter, download_counter, tracer
+from storage.storage_client import StorageClient, tracer
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class LocalFileStorageClient(StorageClient):
                 'test',
                 'local',
                 file_path)
-            upload_counter.add(1, {"bucket_name": bucket_type.name, "file_name": file_id})
+            log.info("File uploaded", extra={"bucket_name": bucket_type.name, "file_name": file_id})
             return file_id
 
     def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType) -> str:
@@ -58,8 +58,7 @@ class LocalFileStorageClient(StorageClient):
     def download_link(self, bucket_name: str, object_name: str) -> str:
         with tracer.start_as_current_span("file.download") as span:
             span.set_attribute("file.name", object_name)
-            # log.info(f"Request to download file locally. name: {object_name}")
-            download_counter.add(1, {"bucket_name": bucket_name, "file_name": object_name})
+            log.info("File download link requested", extra={"bucket_name": bucket_name, "file_name": object_name})
             return object_name
 
 
