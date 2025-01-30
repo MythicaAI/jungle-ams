@@ -30,6 +30,7 @@ class PackageModel(BaseModel):
     thumbnails: list[str] | None = None  # input patterns, file names or paths in order
     name: str  # the friendly name of the package
     description: str  # a short description
+    blurb: Optional[str] = None  # a short headline
     user: Optional[str] = None  # user name override
 
 
@@ -41,8 +42,12 @@ class ProcessedPackageModel(PackageModel):
     profile_email: str = ''
     org_id: str = ''  # org_id for the named org that was passed in
     org_name: str = ''
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
     latest_version: List[int] | None = None  # latest matching package version
+    latest_github_commit_hash: str | None = None  # last queried commit hash
     latest_github_version: List[int] | None = None  # populated with the newest GitHub release version
+    latest_p4_change_list: int | None = None  # populated with the most recent cl# commit ref
     commit_ref: str = ''  # commit reference for the imported assets
     root_disk_path: Path | None = None  # absolute path on disk to root of GitHub repo
     latest_version_contents: Dict[str, dict] = Field(default_factory=dict)  # latest contents from API version query
