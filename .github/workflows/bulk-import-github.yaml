@@ -1,4 +1,6 @@
-name: p4-commit-hook
+# This workflow will clone approved repos and import the contents to packages
+# on the mythica package index.
+name: bulk-import-github
 
 on:
   # Run when this file itself changes
