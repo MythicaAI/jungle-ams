@@ -148,7 +148,7 @@ export function useCopyPaste<
 // eslint-disable-next-line
 function useShortcut(keyCode: KeyCode, callback: Function): void {
   const [didRun, setDidRun] = useState(false);
-  const shouldRun = useKeyPress(keyCode);
+  const shouldRun = useKeyPress(keyCode, {actInsideInputWithModifier:false});
 
   useEffect(() => {
     if (shouldRun && !didRun) {
