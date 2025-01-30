@@ -16,6 +16,7 @@ import requests
 from github import GitRelease, Github
 from munch import munchify
 from packaging import version
+from pathspec import PathSpec
 from pydantic import BaseModel
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
@@ -183,11 +184,11 @@ def collect_image_inputs_by_attribute(
     """
     log.info("pulling in image inputs from %s: %s", attr_name, inputs)
     contents = []
-    for input in inputs:
-        if '*' in input:
+    for input_pattern in inputs:
+        if '*' in input_pattern:
             raise ValueError("globbing not yet supported")
 
-        disk_path = os.path.join(package.root_disk_path, input)
+        disk_path = os.path.join(package.root_disk_path, input_pattern)
         name, ext = os.path.splitext(disk_path)
         if ext not in image_extensions:
             raise ValueError(f"{disk_path} not supported with {image_extensions}")
@@ -266,7 +267,7 @@ def get_description_from_readme(package: ProcessedPackageModel):
 class PackageUploader(object):
     """Processes git repos into packages"""
 
-    def __init__(self, conn_pool: ConnectionPool):
+    def __init__(self, conn_pool: ConnectionPool, ignore_spec: PathSpec):
         self.license = None
         self.package_list_file = None
         self.endpoint = ''
@@ -279,6 +280,7 @@ class PackageUploader(object):
         self.conn_pool = conn_pool
         self.markdown = None
         self.stats = Stats()
+        self.ignore_spec = ignore_spec
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -426,6 +428,8 @@ class PackageUploader(object):
             log.error("Failed to find any files in directory %s for package %s",
                       package.directory, package.name)
             return
+        log.info("gathered %s files, %s images to create the asset version",
+                 len(package.asset_contents['files']), len(package.asset_contents['thumbnails']))
 
         last_known_version = package.latest_version
         if self.latest_version_exists(package):
@@ -602,7 +606,7 @@ class PackageUploader(object):
         else:
             package.latest_version = ZERO_VERSION
 
-    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list[PackageFile]]:
+    def gather_contents(self, package: ProcessedPackageModel) -> dict[str, list[FileRef]]:
         """Gather all files to be included in the package"""
         files: list[PackageFile] = list()
         thumbnails: list[PackageFile] = list()
@@ -627,11 +631,11 @@ class PackageUploader(object):
         # Perform the file uploads
         file_contents = []
         for package_file in files:
-            file_contents.append(self.maybe_upload_package_file(package, package_file))
+            file_contents.extend(self.maybe_upload_package_file(package, package_file))
 
         thumbnail_contents = []
         for package_file in thumbnails:
-            thumbnail_contents.append(self.maybe_upload_package_file(package, package_file))
+            thumbnail_contents.extend(self.maybe_upload_package_file(package, package_file))
 
         return {
             'files': file_contents,
@@ -640,8 +644,13 @@ class PackageUploader(object):
 
     def maybe_upload_package_file(self,
                                   package: ProcessedPackageModel,
-                                  package_file: PackageFile) -> FileRef:
+                                  package_file: PackageFile) -> list[FileRef]:
         """Upload a file from a package path, return its asset contents"""
+
+        if self.ignore_spec.match_file(package_file.package_path):
+            log.info("ignoring: %s", package_file.package_path)
+            return []
+
         page_size = 64 * 1024
         sha1 = hashlib.sha1()
         with open(package_file.disk_path, "rb") as file:
@@ -658,12 +667,12 @@ class PackageUploader(object):
             o = munchify(response.json())
             log.info("Found existing file '%s': file_id: %s, sha1: %s",
                      o.file_name, o.file_id, existing_digest)
-            return FileRef(
+            return [FileRef(
                 file_id=o.file_id,
                 file_name=o.file_name,
                 content_hash=o.content_hash,
                 size=o.size,
-                already=True)
+                already=True)]
 
         # raise on unexpected result
         if response.status_code != HTTPStatus.NOT_FOUND:
@@ -700,12 +709,12 @@ class PackageUploader(object):
                      file_info.size,
                      file_info.content_hash,
                      file_info.file_id)
-            return FileRef(
+            return [FileRef(
                 file_id=file_info.file_id,
                 file_name=file_info.file_name,
                 content_hash=file_info.content_hash,
                 size=file_info.size,
-                already=False)
+                already=False)]
 
     def create_version(
             self,
@@ -781,9 +790,27 @@ def main():
         start_uploads(conn_pool)
 
 
+def load_ignore_file(file_name) -> PathSpec:
+    default_ignore = """
+    .DS_Store
+    *.zip
+    *.swp
+    *.swo
+    """
+    if not os.path.exists(file_name):
+        log.info('%s does not exist, continuing', file_name)
+        return PathSpec.from_lines('gitignore', default_ignore.split())
+
+    with open(file_name, 'r') as f:
+        spec = PathSpec.from_lines('gitignore', f.readlines())
+        return spec
+
+
 def start_uploads(conn_pool: ConnectionPool):
     """Using the package uploader and connection pool create assets on the backend API"""
-    uploader = PackageUploader(conn_pool)
+
+    ignore_spec = load_ignore_file('bulk-ignore.txt')
+    uploader = PackageUploader(conn_pool, ignore_spec)
     uploader.parse_args()
 
     # start the authenticated session
