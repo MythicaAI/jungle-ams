@@ -30,6 +30,7 @@ class PackageModel(BaseModel):
     thumbnails: list[str] | None = None  # input patterns, file names or paths in order
     name: str  # the friendly name of the package
     description: str  # a short description
+    blurb: Optional[str] = None  # a short headline
     user: Optional[str] = None  # user name override
 
 

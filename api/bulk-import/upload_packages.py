@@ -316,6 +316,7 @@ class PackageUploader(object):
         self.tag_id = None
         self.conn_pool = conn_pool
         self.markdown = None
+        self.always_bump = False
         self.stats = Stats()
         self.ignore_spec = ignore_spec
 
@@ -370,6 +371,13 @@ class PackageUploader(object):
             default=None,
             required=False
         )
+        parser.add_argument(
+            '--always-bump',
+            help='Always bump package versions',
+            default=False,
+            required=False,
+            action='store_true'
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
@@ -382,6 +390,7 @@ class PackageUploader(object):
         self.markdown = open(args.markdown, "w+t") if args.markdown else None
         if self.markdown:
             self.start_md()
+        self.always_bump = args.always_bump
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -399,13 +408,15 @@ class PackageUploader(object):
         url = f"{self.endpoint}/v1/sessions/key/{self.mythica_api_key}"
         response = self.conn_pool.get(url, headers=headers)
         if response.status_code != 200:
-            log.error("Failed to start session: %s, check your Mythica API Key",
+            log.error("%s: failed to start session: %s, check your Mythica API Key",
+                      self.endpoint,
                       response.status_code)
             raise SystemExit
 
         o = munchify(response.json())
         self.auth_token = o.token
-        log.info("started session for profile: \"%s\" <%s> (%s), validated: %s",
+        log.info("%s: started session for profile: \"%s\" <%s> (%s, %s)",
+                 self.endpoint,
                  o.profile.name,
                  o.profile.email,
                  o.profile.profile_id,
@@ -483,10 +494,15 @@ class PackageUploader(object):
                 log.info("Thumbnail change detected, bumped %s version to %s",
                          package.name, package.latest_version)
             else:
-                log.info("Skipping %s, latest version available: %s",
-                         package.name, package.latest_version)
-                self.emit_md(package, "skipped, no changes detected")
-                self.stats.skipped += 1
+                if self.always_bump:
+                    bump_package_version(package)
+                    log.info("Bumping %s to %s, always-bump set",
+                             package.name, package.latest_version)
+                else:
+                    log.info("Skipping %s, latest version available: %s",
+                             package.name, package.latest_version)
+                    self.emit_md(package, "skipped, no changes detected")
+                    self.stats.skipped += 1
         else:
             package.latest_version = DEFAULT_STARTING_VERSION
             log.info("Creating package: %s, version: %s",
@@ -768,6 +784,7 @@ class PackageUploader(object):
             'contents': json_asset_contents,
             'name': package.name,
             'description': package.description,
+            'blurb': package.blurb or '',
             'author': package.profile_id,
             'published': True,
         }
