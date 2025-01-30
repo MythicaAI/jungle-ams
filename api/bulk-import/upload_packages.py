@@ -522,17 +522,19 @@ class PackageUploader(object):
                  package.latest_version)
 
         # Version bumping, duplicate existing version for check
+        last_commit_ref = package.commit_ref
         last_known_version = list(package.latest_version)
         if package.latest_github_version and package.latest_github_version != package.latest_version:
             package.latest_version = package.latest_github_version
-            log.info("Updating %s to latest github release: %s",
+            log.info("Updating %s to latest GitHub release: %s",
                      package.name, package.latest_github_version)
         elif package.latest_p4_change_list and \
                 package.commit_ref != build_version_commit_ref(package.repo, str(package.latest_p4_change_list)):
+            package.commit_ref = build_version_commit_ref(package.repo, str(package.latest_p4_change_list))
             bump_package_version(package)
             log.info("P4 commit_ref is now %s, previously %s, bumped %s version to %s",
-                     build_version_commit_ref(package.repo, str(package.latest_p4_change_list)),
                      package.commit_ref,
+                     last_commit_ref,
                      package.name,
                      package.latest_version)
         elif any_upstream_changes(package, 'files') or any_upstream_changes(package, 'thumbnails'):
