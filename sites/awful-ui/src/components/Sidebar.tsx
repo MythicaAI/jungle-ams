@@ -1,5 +1,4 @@
 import React, { DragEvent, useRef, useState } from 'react';
-import useMythicaApi from '../hooks/useMythicaApi';
 import useAutomation from '../hooks/useAutomation';
 import useAwfulFlow from '../hooks/useAwfulFlow';
 import { GetFileResponse } from '../types/MythicaApi';
@@ -11,7 +10,6 @@ import {
   AccordionSummary,
   Box,
   Button,
-  FormLabel,
   Input,
   Option,
   Select,
@@ -38,7 +36,6 @@ const Sidebar: React.FC<Props> = ({ tab, isMenuOpen, setIsMenuOpen }) => {
   const selectFileRef = useRef<HTMLSelectElement>(null);
 
   const automationContext = useAutomation();
-  const { apiKey, setApiKey } = useMythicaApi();
 
   const { savedAwfulsById, onRestore, onSave, onNew, onDelete, setNodeType } =
     useAwfulFlow(); // Import AwfulFlow methods
@@ -208,26 +205,6 @@ const Sidebar: React.FC<Props> = ({ tab, isMenuOpen, setIsMenuOpen }) => {
           </Typography>
           <LucidePanelRightClose strokeWidth={1.7} color="#9fa6ad" />
         </Stack>
-        {tab === TabValues.API_KEY && (
-          <Stack p="8px 12px">
-            <FormLabel htmlFor="apiKey" sx={{ fontSize: 18, mb: '8px' }}>
-              Api Key:
-            </FormLabel>
-            <Input
-              type="password"
-              id="apiKey"
-              placeholder="Enter API Key"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              sx={{
-                mb: '12px',
-                '&:focus-within': {
-                  borderColor: 'yellow', // Change this to your desired color
-                },
-              }}
-            />
-          </Stack>
-        )}
 
         {tab === TabValues.WORKFLOWS && (
           <Stack gap="8px" key="Saved Workflows" p="8px 12px">

@@ -10,21 +10,24 @@ import UndoRedoProvider from './providers/UndoRedoProvider';
 
 import AwfulUI from './AwfulUI';
 import { useTheme } from './styles/theme';
+import RequireAuth from './components/RequireAuth';
 
 const App: React.FC = () => {
   const { theme } = useTheme();
   return (
     <CssVarsProvider theme={theme} defaultMode="dark">
       <ReactFlowProvider>
-        <MythicaApiProvider>
-          <AutomationProvider>
-            <UndoRedoProvider>
-              <AwfulFlowProvider>
-                <AwfulUI />
-              </AwfulFlowProvider>
-            </UndoRedoProvider>
-          </AutomationProvider>
-        </MythicaApiProvider>
+        <RequireAuth>
+          <MythicaApiProvider>
+            <AutomationProvider>
+              <UndoRedoProvider>
+                <AwfulFlowProvider>
+                  <AwfulUI />
+                </AwfulFlowProvider>
+              </UndoRedoProvider>
+            </AutomationProvider>
+          </MythicaApiProvider>
+        </RequireAuth>
       </ReactFlowProvider>
     </CssVarsProvider>
   );

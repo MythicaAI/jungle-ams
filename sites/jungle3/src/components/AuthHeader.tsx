@@ -49,6 +49,20 @@ export const AuthHeader = () => {
   }, [getAccessTokenSilently, isAuthenticated, user]);
 
   useEffect(() => {
+    const awfulIsMissingToken = localStorage.getItem("awful_requires_token");
+
+    if (awfulIsMissingToken && isAuthenticated && !!cookies.auth_token) {
+      localStorage.removeItem("awful_requires_token");
+      window.location.pathname = "/awful";
+      return;
+    }
+
+    if (awfulIsMissingToken) {
+      loginWithRedirect();
+    }
+  }, [isAuthenticated, cookies]);
+
+  useEffect(() => {
     if (
       user &&
       localStorage.getItem("shouldStartOnboarding") === "true" &&

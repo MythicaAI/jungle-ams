@@ -1,11 +1,14 @@
 // src/context/AuthContext.tsx
 
-import {createContext, useContext} from 'react';
-import { GetDownloadInfoResponse, GetFileResponse, Profile, UploadFileResponse } from '../types/MythicaApi';
+import { createContext, useContext } from 'react';
+import {
+  GetDownloadInfoResponse,
+  GetFileResponse,
+  Profile,
+  UploadFileResponse,
+} from '../types/MythicaApi';
 
 type MythicaApiContextType = {
-  apiKey: string;
-  setApiKey: React.Dispatch<React.SetStateAction<string>>;
   authToken: string;
   profile?: Profile;
   getFile: (fileId: string) => Promise<GetFileResponse>;
@@ -15,9 +18,9 @@ type MythicaApiContextType = {
   deleteFile: (fileId: string) => Promise<void>;
 };
 
-export const MythicaApiContext = createContext<MythicaApiContextType | undefined>(undefined);
-
-
+export const MythicaApiContext = createContext<
+  MythicaApiContextType | undefined
+>(undefined);
 
 const useMythicaApi = () => {
   const context = useContext(MythicaApiContext);
