@@ -11,7 +11,7 @@ from functools import partial
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, col, desc, insert, or_, select, update
+from sqlmodel import Session, col, desc, insert, or_, select, update, delete as sql_delete
 from typing import Any, Dict, Iterable, Optional, Union
 
 from content.locate_content import locate_content_by_seq
@@ -21,7 +21,7 @@ from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, fi
     org_seq_to_id, \
     profile_id_to_seq, profile_seq_to_id
 from cryptid.location import location
-from db.schema.assets import Asset, AssetVersion
+from db.schema.assets import Asset, AssetVersion, AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
@@ -568,6 +568,14 @@ def create_version(session: Session,
             if result.rowcount != 1:
                 raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
                                     detail="update failed")
+            stmt = sql_delete(AssetVersionEntryPoint).where(
+                AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id)).where(
+                AssetVersionEntryPoint.major == version_id[0]).where(
+                AssetVersionEntryPoint.minor == version_id[1]).where(
+                AssetVersionEntryPoint.patch == version_id[2])
+            result = session.exec(stmt)
+            if result.rowcount > 0:
+                log.info("Cleared %s entry points for %s, version %s", result.rowcount, asset_id, version_id)
             session.commit()
             log.info("asset version updated %s, version %s",
                      asset_id,
