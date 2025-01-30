@@ -19,10 +19,10 @@ on:
         type: boolean
         default: false
       mythica_endpoint:
-          description: 'Base URL for Mythica API'
-          required: false
-          type: string
-          default: "https://api-staging.mythica.gg"
+        description: 'Base URL for Mythica API'
+        required: false
+        type: string
+        default: "https://api-staging.mythica.gg"
       changelist:
         description: 'Perforce changelist ID'
         required: false
@@ -37,7 +37,7 @@ env:
   P4TRUST: /home/ec2-user/.p4trust
   P4CLIENT: github-action-workspace
   P4_WORKSPACE: /mnt/p4/mythica
-
+  MYTHICA_ENDPOINT: ${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
 jobs:
   sync-and-process:
     runs-on: p4-automation
@@ -115,7 +115,7 @@ jobs:
           poetry env info
           poetry run python3.11 upload_packages.py \
             --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
-            --endpoint ${{ github.event.inputs.mythica_endpoint }} \
+            --endpoint ${MYTHICA_ENDPOINT} \
             --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
             --license MPLv2.txt \
             --tag Mythica \

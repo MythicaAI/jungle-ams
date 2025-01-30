@@ -18,6 +18,7 @@ on:
         default: "https://api-staging.mythica.gg"
 env:
   REPO_BASE: /mnt/p4/github-scratch
+  MYTHICA_ENDPOINT: ${{ github.event.inputs.mythica_endpoint || "https://api-staging.mythica.gg" }}
 
 jobs:
   sync-and-process:
@@ -45,7 +46,7 @@ jobs:
           poetry env info
           poetry run python3.11 upload_packages.py \
             --package-list package_list.py \
-            --endpoint ${{ github.event.inputs.mythica_endpoint }} \
+            --endpoint ${MYTHICA_ENDPOINT} \
             --repo-base ${REPO_BASE} \
             --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
             --github-api-token ${{ secrets.BULK_IMPORT_GITHUB_API_KEY }} \
