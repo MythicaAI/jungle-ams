@@ -17,17 +17,17 @@ const App: React.FC = () => {
   return (
     <CssVarsProvider theme={theme} defaultMode="dark">
       <ReactFlowProvider>
-        <MythicaApiProvider>
-          <AutomationProvider>
-            <UndoRedoProvider>
-              <AwfulFlowProvider>
-                <RequireAuth>
+        <RequireAuth>
+          <MythicaApiProvider>
+            <AutomationProvider>
+              <UndoRedoProvider>
+                <AwfulFlowProvider>
                   <AwfulUI />
-                </RequireAuth>
-              </AwfulFlowProvider>
-            </UndoRedoProvider>
-          </AutomationProvider>
-        </MythicaApiProvider>
+                </AwfulFlowProvider>
+              </UndoRedoProvider>
+            </AutomationProvider>
+          </MythicaApiProvider>
+        </RequireAuth>
       </ReactFlowProvider>
     </CssVarsProvider>
   );
