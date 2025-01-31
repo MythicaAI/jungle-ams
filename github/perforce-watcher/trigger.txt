@@ -1,0 +1,1 @@
+hda-commit change-submit //.../*.hda "/home/perforce/github/p4_invoke_infra_webhook.py %changelist% %client%"
