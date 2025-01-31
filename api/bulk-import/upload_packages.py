@@ -75,8 +75,11 @@ default_ignore = {
 
 
 class Stats(BaseModel):
-    uploaded: int = 0
-    skipped: int = 0
+    versions_created: int = 0
+    versions_published: int = 0
+    versions_uptodate: int = 0
+    files_uploaded: int = 0
+    files_uptodate: int = 0
 
 
 def as_posix_path(path: str) -> PurePosixPath:
@@ -549,11 +552,10 @@ class PackageUploader(object):
         # create the version if it has been updated
         if last_known_version != package.latest_version:
             self.create_version(package, package.asset_contents)
+        elif not package.published:
+            self.publish_version(package)
         else:
-            log.info("Skipping %s, latest version available: %s",
-                     package.name, package.latest_version)
-            self.emit_md(package, "skipped, no changes detected")
-            self.stats.skipped += 1
+            self.uptodate_version(package)
 
         # always add the specified tag, must be using an admin session
         if self.tag:
@@ -771,8 +773,9 @@ class PackageUploader(object):
         # return the file_id if the content digest already exists
         if response.status_code == HTTPStatus.OK:
             o = munchify(response.json())
-            log.info("Found existing file '%s': file_id: %s, sha1: %s",
+            log.info("File '%s' up-to-date as file_id: %s, sha1: %s",
                      o.file_name, o.file_id, existing_digest)
+            self.stats.files_uptodate += 1
             return [FileRef(
                 file_id=o.file_id,
                 file_name=o.file_name,
@@ -784,7 +787,7 @@ class PackageUploader(object):
         if response.status_code != HTTPStatus.NOT_FOUND:
             response.raise_for_status()
 
-        log.info("Uploading file: %s as %s, sha1: %s",
+        log.info("Uploading: %s as %s, sha1: %s",
                  package_file.disk_path,
                  package_file.package_path,
                  existing_digest)
@@ -815,12 +818,38 @@ class PackageUploader(object):
                      file_info.size,
                      file_info.content_hash,
                      file_info.file_id)
+            self.stats.files_uploaded += 1
             return [FileRef(
                 file_id=file_info.file_id,
                 file_name=file_info.file_name,
                 content_hash=file_info.content_hash,
                 size=file_info.size,
                 already=False)]
+
+    def uptodate_version(self, package: ProcessedPackageModel):
+        """Indicate that asset is up-to-date, here for symmetry"""
+        log.info("Skipping %s, latest version available: %s",
+                 package.name, package.latest_version)
+        self.emit_md(package, "no changes detected")
+        self.stats.versions_uptodate += 1
+
+    def publish_version(self,
+                        package: ProcessedPackageModel):
+        """Set the published flag of an existing version. For cleaning up old versions a valid workflow is to
+        mark all known versions as un-published then re-run this process"""
+
+        asset_ver_json = {'published': True, }
+        version_str = '.'.join(map(str, package.latest_version))
+        assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
+        response = self.conn_pool.post(assets_url,
+                                       json=asset_ver_json,
+                                       headers=self.auth_header())
+        response.raise_for_status()
+
+        log.info("Published package: %s", package.name)
+
+        self.emit_md(package, f"published version: {package.name}-{package.latest_version}")
+        self.stats.versions_published += 1
 
     def create_version(
             self,
@@ -850,8 +879,8 @@ class PackageUploader(object):
 
         log.info("Successfully uploaded package: %s", package.name)
 
-        self.emit_md(package, f"uploaded as {package.name}-{package.latest_version}")
-        self.stats.uploaded += 1
+        self.emit_md(package, f"created version: {package.name}-{package.latest_version}")
+        self.stats.versions_created += 1
 
     def emit_md(self, package: ProcessedPackageModel, package_status: str):
         if self.markdown is None:
@@ -889,8 +918,11 @@ class PackageUploader(object):
             return
         print("## Bulk Import Finished", file=self.markdown)
         print("", file=self.markdown)
-        print(f"  - {self.stats.uploaded} uploaded", file=self.markdown)
-        print(f"  - {self.stats.uploaded} skipped", file=self.markdown)
+        print(f"  - {self.stats.versions_created} versions created", file=self.markdown)
+        print(f"  - {self.stats.versions_published} versions published", file=self.markdown)
+        print(f"  - {self.stats.versions_uptodate} versions up-to-date", file=self.markdown)
+        print(f"  - {self.stats.files_uploaded} files uploaded", file=self.markdown)
+        print(f"  - {self.stats.files_uptodate} files up-to-date", file=self.markdown)
 
 
 def main():
