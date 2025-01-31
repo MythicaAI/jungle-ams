@@ -62,7 +62,7 @@ api:
     replicas: 2
     maxUnavailable: 1
     maxSurge: 5
-    nginxConfig: "/etc/nginx/nginx-gke-staging.conf"
+    nginxConfig: "nginx-gke-staging.conf"
     nodeSelector: spot
     terminationGracePeriodSeconds: 15
   canary:

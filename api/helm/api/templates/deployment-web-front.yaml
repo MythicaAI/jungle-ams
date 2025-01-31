@@ -62,9 +62,11 @@ spec:
       containers:
         - name: nginx
           image: {{ include "api.image" (list . "mythica-web-front") }}
-          args: [ "nginx", "-c", "{{ $componentContext.nginxConfig }}" ]
+          args: [ "nginx" ]
           imagePullPolicy: Always
           env:
+            - name: CONF_FILE
+              value: {{ $componentContext.nginxConfig }}
             - name: API_ENDPOINT
               value: api.app:5555
             - name: DEX_ENDPOINT

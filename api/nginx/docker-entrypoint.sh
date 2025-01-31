@@ -14,7 +14,7 @@ echo "cmd: $1"
 
 if [ "$1" = "nginx" ] || [ "$1" = "nginx-debug" ]; then
     # Dynamically set nginx config based on MYTHICA_ENVIRONMENT
-    NGINX_CONFIG="/etc/nginx/nginx-${MYTHICA_ENVIRONMENT}.conf"
+    NGINX_CONFIG="/etc/nginx/${CONF_FILE}"
     echo "Using NGINX config: ${NGINX_CONFIG}"
 
     # Validate if the configuration file exists
