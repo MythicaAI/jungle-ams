@@ -4,7 +4,7 @@ import {Card, Stack, Typography, Chip, Divider, ListItem, List} from "@mui/joy";
 import { LucideGitCommitVertical, LucidePackage, LucideFile } from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link } from "react-router-dom";
-import {ListItemAvatar, ListItemText} from "@mui/material";
+import {ListItemAvatar} from "@mui/material";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
