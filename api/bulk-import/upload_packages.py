@@ -581,8 +581,9 @@ class PackageUploader(object):
         response = self.conn_pool.get(f"{self.endpoint}/v1/profiles/named/{user}?exact_match=true")
         response.raise_for_status()
         profiles = response.json()
-        if len(profiles) == 1:
-            return munchify(profiles[0])
+        sorted_by_id = sorted(profiles, key=lambda p: datetime.fromisoformat(p['created']))
+        if len(sorted_by_id) > 0:
+            return munchify(sorted_by_id[0])
 
         profile_json = {
             "name": user,
