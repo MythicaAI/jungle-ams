@@ -42,9 +42,9 @@ spec:
             - name: APP_VERSION
               value: {{ include "api.imageVersion" (list . "mythica-app") }}
             - name: MYTHICA_LOCATION
-              value: "{{ .Values.MYTHICA_LOCATION }}"
+              value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
-              value: "{{ .Values.K8S_CLUSTER_NAME }}"
+              value: "{{ .Values.location }}"
             - name: GCS_SERVICE_ENABLE
               value: "true"
             - name: GOOGLE_APPLICATION_CREDENTIALS
