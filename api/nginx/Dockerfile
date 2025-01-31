@@ -11,7 +11,7 @@ WORKDIR /
 ENV API_ENDPOINT=app:5555
 ENV DEX_ENDPOINT=dex:5556
 ENV EXTERNAL_IP=127.0.0.1
-ENV MYTHICA_ENVIRONMENT=local
+ENV CONF_FILE=nginx-local.conf
 
 COPY conf/variables.template /etc/nginx/templates/10-variables.conf.template
 COPY conf/upstream.template /etc/nginx/templates/11-upstream.conf.template
