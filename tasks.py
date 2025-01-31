@@ -147,6 +147,7 @@ LOCAL_MOUNT_POINTS = {
     'pgdata': 'testing/mnt/pgdata',
     'static': 'testing/mnt/static',
     'nats': 'testing/mnt/nats',
+    'tailscale': 'testing/mnt/tailscale',
 }
 
 
@@ -173,7 +174,8 @@ def generate_mount_env_file() -> str:
 
     # Load local .env variables if the file exists
     local_env_path = os.path.join(BASE_DIR, 'testing/.env')
-    local_env = dotenv_values(local_env_path) if os.path.exists(local_env_path) else {}
+    local_env = dotenv_values(local_env_path) if os.path.exists(
+        local_env_path) else {}
 
     with open(env_file_path, "w+") as f:
         for name, mnt_point in LOCAL_MOUNT_POINTS.items():
@@ -247,7 +249,8 @@ def build_image(c, image_path: PathLike, no_cache: bool = False, use_tailscale: 
     if use_tailscale:
         if buildargs is None:
             buildargs = {}
-        buildargs.update({"NATS_ENDPOINT": "nats://nats.nats.svc.cluster.local:4222"})
+        buildargs.update(
+            {"NATS_ENDPOINT": "nats://nats.nats.svc.cluster.local:4222"})
     if buildargs is not None:
         buildarg_str = ' '.join(
             [f'--build-arg {key}={value}' for key, value in buildargs.items()])
@@ -430,7 +433,8 @@ def auto_stop(c):
 @task
 def observe_start(c):
     """Start observability tier components"""
-    start_docker_compose(c, TESTING_OBSERVE_DIR, cleanup_web_shared_publish_volume)
+    start_docker_compose(c, TESTING_OBSERVE_DIR,
+                         cleanup_web_shared_publish_volume)
 
 
 @task(post=[cleanup_web_shared_publish_volume])
@@ -463,7 +467,8 @@ def image_path_action(c, image, action, **kwargs):
 @timed
 def docker_build(c, image='all', no_cache: bool = False, use_tailscale: bool = False):
     """Build a docker image by sub path or set name"""
-    image_path_action(c, image, build_image, no_cache=no_cache, use_tailscale=use_tailscale)
+    image_path_action(c, image, build_image, no_cache=no_cache,
+                      use_tailscale=use_tailscale)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})

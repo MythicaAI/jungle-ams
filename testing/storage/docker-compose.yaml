@@ -103,7 +103,7 @@ services:
       - TS_ROUTES=34.118.224.0/20,10.0.0.0/8
       - TS_DNS=34.118.224.10
     volumes:
-      - ${PWD}/tailscale/state:/var/lib/tailscale
+      - ${TAILSCALE_PATH}:/var/lib/tailscale
     devices:
       - /dev/net/tun:/dev/net/tun
     cap_add:
