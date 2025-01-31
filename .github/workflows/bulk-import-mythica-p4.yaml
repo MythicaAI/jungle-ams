@@ -18,17 +18,19 @@ on:
         required: false
         type: boolean
         default: false
-      mythica_endpoint:
-        description: 'Base URL for Mythica API'
-        required: false
-        type: string
-        default: "https://api-staging.mythica.gg"
       changelist:
         description: 'Perforce changelist ID'
         required: false
         type: integer
         default: 0
-
+      environment:
+        description: 'Environment to run against'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
 
 env:
   P4PORT: ssl:p4.garden.mythica.ai:1666
@@ -101,12 +103,15 @@ jobs:
             echo "Performing incremental sync..."
             p4 sync
           fi
-      - name: Set default endpoint
+      - name: Configure environment
         run: |
-          if [ -z "${{ github.event.inputs.mythica_endpoint }}" ]; then
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "staging" ]]; then
             echo "MYTHICA_ENDPOINT=https://api-staging.mythica.gg" >> $GITHUB_ENV
+            echo "MYTHICA_API_KEY=${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }}" >> $GITHUB_ENV
           else
-            echo "MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint }}" >> $GITHUB_ENV
+            echo "MYTHICA_ENDPOINT=https://api.mythica.gg" >> $GITHUB_ENV
+            echo "MYTHICA_API_KEY=${{ secrets.BULK_IMPORT_PRODUCTION_MYTHICA_API_KEY }}" >> $GITHUB_ENV
           fi
       - name: Bulk Import HDA Changes
         working-directory: api/bulk-import
@@ -121,7 +126,7 @@ jobs:
           poetry run python3.11 upload_packages.py \
             --package-list ${P4_WORKSPACE}/Houdini/Automation/package_list.py \
             --endpoint ${MYTHICA_ENDPOINT} \
-            --mythica-api-key ${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }} \
+            --mythica-api-key ${MYTHICA_API_KEY} \
             --license MPLv2.txt \
             --tag Mythica \
             --markdown results.md
