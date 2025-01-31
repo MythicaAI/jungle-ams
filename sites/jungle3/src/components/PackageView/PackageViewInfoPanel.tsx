@@ -50,7 +50,11 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
     <Stack gap="10px">
       <Card>
         <Stack>
-          <Typography level={"h4"}>{av.name}</Typography>
+          <Typography level={"h3"}>{av.name}</Typography>
+          <Typography fontSize={12} color="neutral">
+            by
+          </Typography>
+          <Typography level={"h4"}>{av.owner_name}</Typography>
           <Typography
             sx={{
               overflow: "hidden",
@@ -62,19 +66,20 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           </Typography>
         </Stack>
       </Card>
-      <Card>
-        <Stack
-          direction="row"
-          justifyContent="center"
-          alignItems="center"
-          gap="8px"
-        >
-          <Typography fontSize={12} color="neutral">
-            created by
-          </Typography>
-          <Typography level={"h4"}>{av.owner_name}</Typography>
-        </Stack>
-      </Card>
+      {av.blurb ?
+        <Card>
+          <Stack
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            gap="8px"
+          >
+            <Typography fontSize={18} fontWeight="bold">
+              {av.blurb}
+            </Typography>
+          </Stack>
+        </Card>
+        : null }
 
       <Card>
         <Typography fontSize={18} textAlign="left">
