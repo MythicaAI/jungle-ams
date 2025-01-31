@@ -29,6 +29,8 @@ spec:
               memory: "128Mi"
               cpu: "500m"
           env:
+            - name: MYTHICA_ENVIRONMENT
+              value: "{{ .Values.release }}"
             - name: SQL_URL
               valueFrom:
                 secretKeyRef:
@@ -38,10 +40,10 @@ spec:
               value: "http://app.{{ .Values.namespace }}:80"
             - name: APP_VERSION
               value: {{ include "api.imageVersion" (list . "mythica-packager") }}
-            - name: MYTHICA_LOCATION  # basically cluster but can be "on-prem"
-              value: "gke-main-us-central1"
+            - name: MYTHICA_LOCATION
+              value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
-              value: "gke-main-us-central1"
+              value: "{{ .Values.location }}"
             - name: MYTHICA_API_KEY
               valueFrom:
                 secretKeyRef:

@@ -6,9 +6,8 @@
 replicaCount: 3
 namespace: "api"
 tier: "web"
-release: "production"  # note that helm release is mapped to MYTHICA_ENVIRONMENT in k8s deployments
-K8S_CLUSTER_NAME: "gke-main-us-central1"
-MYTHICA_LOCATION: "gke-main-us-central1"  # basically cluster but can be "on-prem"
+release: "production"  # helm value mapped to MYTHICA_ENVIRONMENT in k8s deployments
+location: "gke-main-us-central1"
 imageRepository: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images
 hostnameDecorator: ""
 domains:
