@@ -15,7 +15,7 @@ import { TagsPanel } from "@components/TagPanel";
 import { useSearchParams } from "react-router-dom";
 
 const ALL_ASSETS_TAG = "All assets";
-const COMPETITION_TAG = "Competition";
+const DEFAULT_TAG = "Mythica";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
@@ -24,7 +24,7 @@ const Assets = () => {
   // const [search, setSearch] = useState<string>("");
   const [sorting, setSorting] = useState<SortType>("latest");
   const [selectedTag, setSelectedTag] = useState(
-    searchParams.get("tag") ?? COMPETITION_TAG,
+    searchParams.get("tag") ?? DEFAULT_TAG,
   );
   const {
     data: assetsByTag,

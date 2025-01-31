@@ -112,6 +112,7 @@ export interface AssetVersionResponse {
   author_name: string;
   name: string;
   description: string;
+  blurb: string;
   version: number[];
   commit_ref: string;
   published: boolean;

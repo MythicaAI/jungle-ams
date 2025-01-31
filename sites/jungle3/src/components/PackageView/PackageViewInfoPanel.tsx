@@ -1,9 +1,10 @@
 import React from "react";
 import { AssetVersionResponse } from "types/apiTypes";
-import { Card, Stack, Typography, Chip } from "@mui/joy";
-import { LucideGitCommitVertical, LucidePackage } from "lucide-react";
+import {Card, Stack, Typography, Chip, Divider, ListItem, List} from "@mui/joy";
+import { LucideGitCommitVertical, LucidePackage, LucideFile } from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link } from "react-router-dom";
+import {ListItemAvatar} from "@mui/material";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
@@ -43,14 +44,26 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
         );
       }
     }
-    return ref;
+    return <i>{ref}</i>;
   };
+
+  const formatBytes = (bytes: number, decimals = 2): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(decimals))} ${sizes[i]}`;
+  }
 
   return (
     <Stack gap="10px">
       <Card>
         <Stack>
-          <Typography level={"h4"}>{av.name}</Typography>
+          <Stack direction={"row"} alignItems={"center"} gap={"8px"}>
+            <Typography level={"h3"}>{av.name}</Typography>
+            <Typography level={"h5"}>by {av.owner_name}</Typography>
+          </Stack>
+           <Divider />
           <Typography
             sx={{
               overflow: "hidden",
@@ -62,19 +75,20 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           </Typography>
         </Stack>
       </Card>
-      <Card>
-        <Stack
-          direction="row"
-          justifyContent="center"
-          alignItems="center"
-          gap="8px"
-        >
-          <Typography fontSize={12} color="neutral">
-            created by
-          </Typography>
-          <Typography level={"h4"}>{av.owner_name}</Typography>
-        </Stack>
-      </Card>
+      {av.blurb ?
+        <Card>
+          <Stack
+            direction="row"
+            justifyContent="center"
+            alignItems="center"
+            gap="8px"
+          >
+            <Typography fontSize={18} fontWeight="bold">
+              {av.blurb}
+            </Typography>
+          </Stack>
+        </Card>
+        : null }
 
       <Card>
         <Typography fontSize={18} textAlign="left">
@@ -99,6 +113,36 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
             {av.version.join(".")}
           </Chip>
         </Stack>
+      </Card>
+      <Card variant="outlined" sx={{ width: "100%", maxWidth: 500, p: 2 }}>
+        <List>
+        {av.contents['files'].map((avc) =>
+          <ListItem key={avc.file_id} sx={{ display: "flex", gap: 2 }}>
+            <ListItemAvatar>
+              <LucideFile />
+            </ListItemAvatar>
+            <Stack
+              direction="row"
+              sx={{ flex: 1, minWidth: 0, alignItems: "left", justifyContent: "space-between" }}
+            >
+              <Typography
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {avc.file_name}
+              </Typography>
+              <Typography sx={{ color: "text.secondary", minWidth: 50, textAlign: "right" }}>
+                {avc.size ? `${formatBytes(avc.size)}` : ""}
+              </Typography>
+            </Stack>
+          </ListItem>
+        )}
+        </List>
       </Card>
     </Stack>
   );
