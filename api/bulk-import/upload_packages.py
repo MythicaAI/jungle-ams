@@ -265,18 +265,35 @@ def collect_doc_package_paths(package: ProcessedPackageModel, default_license: s
 image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.webm'}
 
 
-def collect_image_inputs_by_attribute(
+def find_patterns(root_path: os.PathLike, patterns: list[str]):
+    spec = PathSpec.from_lines("gitwildmatch", patterns)
+    matches = []
+
+    for dir_path, _, filenames in os.walk(root_path):
+        for file in filenames:
+            rel_path = os.path.relpath(os.path.join(dir_path, file), root_path)
+            if spec.match_file(rel_path):
+                matches.append(os.path.join(root_path, rel_path))
+    return matches
+
+
+def collect_inputs_by_attribute(
         package: ProcessedPackageModel,
         attr_name: str,
         inputs: list[str]) -> list[PackageFile]:
     """
     Collect image inputs from an explicit attribute of the package
     """
-    log.info("Collecting image inputs from %s: %s", attr_name, inputs)
+    log.info("Collecting inputs from %s: %s", attr_name, inputs)
     contents = []
     for input_pattern in inputs:
         if '*' in input_pattern:
-            raise ValueError("globbing not yet supported")
+            for match in find_patterns(package.root_disk_path, [input_pattern]):
+                package_path = as_posix_path(os.path.relpath(match, package.root_disk_path))
+                contents.append(PackageFile(
+                    disk_path=Path(match),
+                    package_path=package_path))
+            continue
 
         disk_path = os.path.join(package.root_disk_path, input_pattern)
         name, ext = os.path.splitext(disk_path)
@@ -297,7 +314,7 @@ def collect_images_paths(package: ProcessedPackageModel) -> list[PackageFile]:
     """Collect all image package paths"""
     # Shortcut the image paths if thumbnails are specified
     if package.thumbnails:
-        return collect_image_inputs_by_attribute(package, 'thumbnails', package.thumbnails)
+        return collect_inputs_by_attribute(package, 'thumbnails', package.thumbnails)
 
     contents: list[PackageFile] = list()
     for root, dirs, files in os.walk(package.root_disk_path):
@@ -376,6 +393,7 @@ class PackageUploader(object):
         self.always_bump = False
         self.stats = Stats()
         self.ignore_spec = ignore_spec
+        self.package_name_filter = None
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -435,6 +453,12 @@ class PackageUploader(object):
             required=False,
             action='store_true'
         )
+        parser.add_argument(
+            '--name-filter',
+            help='Only process matching package names',
+            default=None,
+            required=False,
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
@@ -448,6 +472,7 @@ class PackageUploader(object):
         if self.markdown:
             self.start_md()
         self.always_bump = args.always_bump
+        self.package_name_filter = args.name_filter
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -481,11 +506,14 @@ class PackageUploader(object):
 
     def process_package(self, const_package: PackageModel):
         """Main entry point for each package definition being processed"""
-
         package = ProcessedPackageModel(**const_package.model_dump())
 
         if package.name == "":
             package.name = os.path.basename(package.repo)
+
+        if self.package_name_filter and not self.package_name_filter in package.name:
+            log.debug("name filter not matched: %s", package.name)
+            return
 
         log.info("Processing package: %s", package.name)
 
@@ -747,16 +775,25 @@ class PackageUploader(object):
         # add all images
         thumbnails.extend(collect_images_paths(package))
 
+        # add hdas
+        if package.hdas:
+            files.extend(collect_inputs_by_attribute(package, 'hdas', package.hdas))
+
+        # add docs
+        if package.docs:
+            files.extend(collect_inputs_by_attribute(package, 'docs', package.docs))
+
         # add scanned files in path
-        scan_path = os.path.join(package.root_disk_path, package.directory)
-        for root, dirs, file_listing in os.walk(scan_path):
-            for file in file_listing:
-                abs_path = Path(os.path.abspath(Path(root) / file))
-                package_path = as_posix_path(os.path.relpath(abs_path, package.root_disk_path))
-                files.append(
-                    PackageFile(
-                        disk_path=abs_path,
-                        package_path=package_path))
+        if package.directory:
+            scan_path = os.path.join(package.root_disk_path, package.directory)
+            for root, dirs, file_listing in os.walk(scan_path):
+                for file in file_listing:
+                    abs_path = Path(os.path.abspath(Path(root) / file))
+                    package_path = as_posix_path(os.path.relpath(abs_path, package.root_disk_path))
+                    files.append(
+                        PackageFile(
+                            disk_path=abs_path,
+                            package_path=package_path))
 
         # Perform the file uploads
         file_contents = []

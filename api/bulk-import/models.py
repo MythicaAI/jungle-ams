@@ -26,7 +26,9 @@ class FileRef(BaseModel):
 class PackageModel(BaseModel):
     """Model to validate the input dictionary"""
     repo: str  # the repository URL
-    directory: str  # directory where OTLs or HDAs are stored
+    directory: str | None = None  # directory where OTLs or HDAs are stored
+    hdas: list[str] | None = None  # path patterns for run time files
+    docs: list[str] | None = None  # path patterns for docs, extra files for full distribution
     thumbnails: list[str] | None = None  # input patterns, file names or paths in order
     name: str  # the friendly name of the package
     description: str  # a short description
