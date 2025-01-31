@@ -105,7 +105,6 @@ jobs:
           fi
       - name: Configure environment
         run: |
-        run: |
           if [[ "${{ github.event.inputs.environment }}" == "staging" ]]; then
             echo "MYTHICA_ENDPOINT=https://api-staging.mythica.gg" >> $GITHUB_ENV
             echo "MYTHICA_API_KEY=${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }}" >> $GITHUB_ENV
