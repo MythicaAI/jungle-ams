@@ -61,7 +61,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
         <Stack>
           <Stack direction={"row"} alignItems={"center"} gap={"8px"}>
             <Typography level={"h3"}>{av.name}</Typography>
-            <Typography level={"h5"}>by {av.owner_name}</Typography>
+            <Typography>by {av.owner_name}</Typography>
           </Stack>
            <Divider />
           <Typography
