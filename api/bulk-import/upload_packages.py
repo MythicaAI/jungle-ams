@@ -793,7 +793,8 @@ class PackageUploader(object):
                                       headers=self.auth_header())
 
         # return the file_id if the content digest already exists
-        if response.status_code == HTTPStatus.OK:
+        if response.status_code == HTTPStatus.OK and \
+                response.json()['file_name'] == str(package_file.package_path):
             o = munchify(response.json())
             log.info("'%s' EXISTS as file_id: %s, sha1: %s",
                      o.file_name, o.file_id, existing_digest)
