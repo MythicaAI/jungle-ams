@@ -852,7 +852,7 @@ class PackageUploader(object):
 
     def uptodate_version(self, package: ProcessedPackageModel):
         """Indicate that asset is up-to-date, here for symmetry"""
-        log.info("Skipping %s, latest version available: %s",
+        log.info("UP-TO-DATE %s %s",
                  package.name, package.latest_version)
         self.emit_md(package, "no changes detected")
         self.stats.versions_uptodate += 1
@@ -870,7 +870,7 @@ class PackageUploader(object):
                                        headers=self.auth_header())
         response.raise_for_status()
 
-        log.info("Published package: %s", package.name)
+        log.info("PUBLISHED: %s %s", package.name, package.latest_version)
 
         self.emit_md(package, f"published version: {package.name}-{package.latest_version}")
         self.stats.versions_published += 1
