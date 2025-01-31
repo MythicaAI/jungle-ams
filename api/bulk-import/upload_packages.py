@@ -75,8 +75,22 @@ default_ignore = {
 
 
 class Stats(BaseModel):
-    uploaded: int = 0
-    skipped: int = 0
+    """Struct to collect stats as the program progresses"""
+    versions_created: int = 0
+    versions_published: int = 0
+    versions_uptodate: int = 0
+    files_uploaded: int = 0
+    files_uptodate: int = 0
+    bytes_uploaded: int = 0
+
+
+def package_size(package: ProcessedPackageModel):
+    """Collect the size in bytes for files in a package"""
+    size = 0
+    for category, refs in package.latest_version_contents.items():
+        for file_ref in refs:
+            size += file_ref.size
+    return size
 
 
 def as_posix_path(path: str) -> PurePosixPath:
@@ -90,7 +104,7 @@ def build_version_commit_ref(repo: str, commit_id: str) -> str:
 
 
 def human_readable_timedelta(dt1: datetime, dt2: datetime) -> str:
-    # Calculate the time difference
+    """Calculate a readable time difference"""
     delta = abs(dt1 - dt2)
 
     # Convert to human-readable format
@@ -105,6 +119,20 @@ def human_readable_timedelta(dt1: datetime, dt2: datetime) -> str:
         return f"{int(seconds // 3600)} hours, {int((seconds % 3600) // 60)} minutes"
     else:
         return humanize.naturaldelta(delta)
+
+
+def human_readable_size(size: int, decimal_places: int = 2) -> str:
+    """Convert bytes to a human-readable string with appropriate units."""
+    units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+    if size < 1024:
+        return f"{size} B"
+
+    index = 0
+    while size >= 1024 and index < len(units) - 1:
+        size /= 1024
+        index += 1
+
+    return f"{size:.{decimal_places}f} {units[index]}"
 
 
 def get_github_user_project_name(ref_url: str) -> tuple[str | Any, ...]:
@@ -502,21 +530,13 @@ class PackageUploader(object):
         if not package.asset_id:
             package.asset_id = self.create_asset(package)
             package.latest_version = list(DEFAULT_STARTING_VERSION)
-            log.info("No asset_id found, creating new base asset %s %s",
-                     package.asset_id,
-                     package.latest_version)
-        else:
-            log.info("Attaching new versions to existing asset %s %s, latest version %s",
-                     package.name,
-                     package.asset_id,
-                     package.latest_version)
+            log.info("CREATED new base asset %s %s", package.asset_id, package.latest_version)
 
         package.asset_contents = self.gather_contents(package)
         if len(package.asset_contents['files']) == 0:
-            log.error("Failed to find any files in directory %s for package %s",
-                      package.directory, package.name)
+            log.error("No files found in directory %s for package %s", package.directory, package.name)
             return
-        log.info("Collected %s FILES, %s THUMBNAILS for version %s",
+        log.info("Collected %s files, %s thumbnails for version %s",
                  len(package.asset_contents['files']),
                  len(package.asset_contents['thumbnails']),
                  package.latest_version)
@@ -549,11 +569,10 @@ class PackageUploader(object):
         # create the version if it has been updated
         if last_known_version != package.latest_version:
             self.create_version(package, package.asset_contents)
+        elif not package.published:
+            self.publish_version(package)
         else:
-            log.info("Skipping %s, latest version available: %s",
-                     package.name, package.latest_version)
-            self.emit_md(package, "skipped, no changes detected")
-            self.stats.skipped += 1
+            self.uptodate_version(package)
 
         # always add the specified tag, must be using an admin session
         if self.tag:
@@ -641,19 +660,24 @@ class PackageUploader(object):
         package.org_id = latest_version.org_id
         package.org_name = latest_version.org_name
         package.asset_id = latest_version.asset_id
+        package.published = latest_version.published
         package.description = latest_version.description
         package.blurb = latest_version.blurb
         package.created = datetime.fromisoformat(latest_version.created)
         package.latest_version = latest_version.version
         package.commit_ref = latest_version.commit_ref
         package.latest_version_contents = latest_version.contents
-        log.info("FOUND %s (%s), version: %s, (%s files, %s thumbnails)",
+        published_state = "published" if package.published else "draft"
+        log.info("FOUND %s (%s, %s), version: %s, (%s files, %s thumbnails)",
                  package.name,
                  package.asset_id,
+                 published_state,
                  package.latest_version,
                  len(latest_version.contents.files),
                  len(latest_version.contents.thumbnails))
         log.info("  package info: ")
+        log.info("    [%s]", published_state)
+        log.info("    size: %s", human_readable_size(package_size(package)))
         log.info("    profile: %s (%s)", package.profile_name, package.profile_id)
         log.info("    org: %s (%s)", package.org_name, package.org_id)
         log.info("    created: %s", human_readable_timedelta(datetime.now(timezone.utc), package.created))
@@ -771,8 +795,9 @@ class PackageUploader(object):
         # return the file_id if the content digest already exists
         if response.status_code == HTTPStatus.OK:
             o = munchify(response.json())
-            log.info("Found existing file '%s': file_id: %s, sha1: %s",
+            log.info("'%s' EXISTS as file_id: %s, sha1: %s",
                      o.file_name, o.file_id, existing_digest)
+            self.stats.files_uptodate += 1
             return [FileRef(
                 file_id=o.file_id,
                 file_name=o.file_name,
@@ -784,7 +809,7 @@ class PackageUploader(object):
         if response.status_code != HTTPStatus.NOT_FOUND:
             response.raise_for_status()
 
-        log.info("Uploading file: %s as %s, sha1: %s",
+        log.info("Uploading: %s as %s, sha1: %s",
                  package_file.disk_path,
                  package_file.package_path,
                  existing_digest)
@@ -810,17 +835,45 @@ class PackageUploader(object):
             # validate that we're doing digest checks correctly
             file_info = o.files[0]
             assert file_info.content_hash == existing_digest
-            log.info("Uploaded: %s with size: %s, sha1: %s, file_id: %s",
+            log.info("UPLOADED: %s -> %s, size: %s bytes, sha1: %s, file_id: %s",
+                     package_file.disk_path,
                      file_info.file_name,
                      file_info.size,
                      file_info.content_hash,
                      file_info.file_id)
+            self.stats.files_uploaded += 1
+            self.stats.bytes_uploaded += file_info.size
             return [FileRef(
                 file_id=file_info.file_id,
                 file_name=file_info.file_name,
                 content_hash=file_info.content_hash,
                 size=file_info.size,
                 already=False)]
+
+    def uptodate_version(self, package: ProcessedPackageModel):
+        """Indicate that asset is up-to-date, here for symmetry"""
+        log.info("UP-TO-DATE %s %s",
+                 package.name, package.latest_version)
+        self.emit_md(package, "no changes detected")
+        self.stats.versions_uptodate += 1
+
+    def publish_version(self,
+                        package: ProcessedPackageModel):
+        """Set the published flag of an existing version. For cleaning up old versions a valid workflow is to
+        mark all known versions as un-published then re-run this process"""
+
+        asset_ver_json = {'published': True, }
+        version_str = '.'.join(map(str, package.latest_version))
+        assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
+        response = self.conn_pool.post(assets_url,
+                                       json=asset_ver_json,
+                                       headers=self.auth_header())
+        response.raise_for_status()
+
+        log.info("PUBLISHED: %s %s", package.name, package.latest_version)
+
+        self.emit_md(package, f"published version: {package.name}-{package.latest_version}")
+        self.stats.versions_published += 1
 
     def create_version(
             self,
@@ -848,10 +901,9 @@ class PackageUploader(object):
                                        headers=self.auth_header())
         response.raise_for_status()
 
-        log.info("Successfully uploaded package: %s", package.name)
-
-        self.emit_md(package, f"uploaded as {package.name}-{package.latest_version}")
-        self.stats.uploaded += 1
+        log.info("CREATED version: %s-%s", package.name, package.latest_version)
+        self.emit_md(package, f"created version: {package.name}-{package.latest_version}")
+        self.stats.versions_created += 1
 
     def emit_md(self, package: ProcessedPackageModel, package_status: str):
         if self.markdown is None:
@@ -889,8 +941,12 @@ class PackageUploader(object):
             return
         print("## Bulk Import Finished", file=self.markdown)
         print("", file=self.markdown)
-        print(f"  - {self.stats.uploaded} uploaded", file=self.markdown)
-        print(f"  - {self.stats.uploaded} skipped", file=self.markdown)
+        print(f"  - {self.stats.versions_created} versions created", file=self.markdown)
+        print(f"  - {self.stats.versions_published} versions published", file=self.markdown)
+        print(f"  - {self.stats.versions_uptodate} versions up-to-date", file=self.markdown)
+        print(f"  - {self.stats.files_uploaded} files uploaded", file=self.markdown)
+        print(f"  - {self.stats.files_uptodate} files up-to-date", file=self.markdown)
+        print(f"  - {self.stats.bytes_uploaded} bytes uploaded", file=self.markdown)
 
 
 def main():

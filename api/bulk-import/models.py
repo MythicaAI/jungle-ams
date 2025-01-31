@@ -37,6 +37,7 @@ class PackageModel(BaseModel):
 class ProcessedPackageModel(PackageModel):
     """Instance info filled out by resolving repo and assets"""
     asset_id: str = ''  # asset_id matching package name
+    published: bool = False  # true when the published flag is set
     profile_id: str = ''  # profile_id for the GitHub username
     profile_name: str = ''
     profile_email: str = ''
