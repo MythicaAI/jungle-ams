@@ -946,8 +946,15 @@ class PackageUploader(object):
     def emit_md(self, package: ProcessedPackageModel, package_status: str):
         if self.markdown is None:
             return
+
+        # header
         print(f"### {package.name}", file=self.markdown)
         print(file=self.markdown)
+
+        # info elements
+        size_str = human_readable_size(package_size(package))
+        print(f" - size: {size_str}", file=self.markdown)
+        print(f" - asset_id: {package.asset_id}", file=self.markdown)
         print(f" - version: {package.latest_version}", file=self.markdown)
         print(f" - status: {package_status}", file=self.markdown)
         print(f" - repo: {package.repo}", file=self.markdown)
@@ -957,6 +964,7 @@ class PackageUploader(object):
         print(f" - created: {package.created}", file=self.markdown)
         print(file=self.markdown)
 
+        # file list
         print("#### Files", file=self.markdown)
         print(file=self.markdown)
         print("| category | file | file_id | content_hash |", file=self.markdown)
