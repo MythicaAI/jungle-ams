@@ -11,6 +11,8 @@ on:
       - 'libs/**'
       - 'automation/**'
       - '.github/workflows/push-tagged-images.yaml'
+
+  workflow_dispatch:
 jobs:
   changes:
     runs-on: ubuntu-latest
