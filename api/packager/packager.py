@@ -19,6 +19,7 @@ import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
 
+from api.packager.sanitize_filename import sanitize_filename
 from assets.repo import AssetFileReference, AssetVersionResult
 from events.events import EventsSession
 from ripple.automation.adapters import NatsAdapter
@@ -171,7 +172,8 @@ async def create_zip_from_asset(
     versions = get_versions(endpoint, asset_id, version)
     for v in versions:
         version_str = '.'.join(map(str, v.version))
-        zip_filename = output_path / f"{asset_id}-{version_str}.zip"
+        zip_name = f"{sanitize_filename(v.name)}-{version_str}.zip"
+        zip_filename = output_path / zip_name
         log.info("creating package %s", zip_filename)
         log.info("version data: %s", v.model_dump())
         contents = list(map(lambda c: resolve_contents(endpoint, c), get_file_contents(v)))

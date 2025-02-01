@@ -55,10 +55,16 @@ class LocalFileStorageClient(StorageClient):
             f.write(stream.getvalue())
         return file_id
 
-    def download_link(self, bucket_name: str, object_name: str) -> str:
+    def download_link(self, bucket_name: str, object_name: str, file_name: str) -> str:
         with tracer.start_as_current_span("file.download") as span:
-            span.set_attribute("file.name", object_name)
-            log.info("File download link requested", extra={"bucket_name": bucket_name, "file_name": object_name})
+            span.set_attribute("object.name", object_name)
+            span.set_attribute("file.name", file_name)
+            log.info("File download link requested",
+                     extra={
+                         "bucket_name": bucket_name,
+                         "object_name": object_name,
+                         "file_name": file_name})
+            # return the original object as it exists on the local file system
             return object_name
 
 

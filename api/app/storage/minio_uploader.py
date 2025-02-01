@@ -99,7 +99,7 @@ class Client(StorageClient):
         ctx.file_size = size
         ctx.add_object_locator('minio', ctx.bucket_name, object_name)
 
-    def download_link(self, bucket_name: str, object_name: str):
+    def download_link(self, bucket_name: str, object_name: str, file_name: str):
         """Get a pre-signed URL to down the object"""
         with tracer.start_as_current_span("file.download") as span:
             span.set_attribute("file.name", object_name)

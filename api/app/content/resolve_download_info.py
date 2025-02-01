@@ -25,20 +25,20 @@ class DownloadInfoResponse(BaseModel):
     url: str
 
 
-def translate_minio(storage, object_spec) -> str:
+def translate_minio(storage: StorageClient, file: FileContent, object_spec: str) -> str:
     """minio download link creator"""
     bucket, object_name = object_spec.split(":")
-    return storage.download_link(bucket, object_name)
+    return storage.download_link(bucket, object_name, file.name)
 
 
-def translate_gcs(storage, object_spec) -> str:
+def translate_gcs(storage: StorageClient, file: FileContent, object_spec: str) -> str:
     """GCS download link creator"""
     region_bucket, object_name = object_spec.split(":")
     _, bucket_name = region_bucket.split('.')
-    return storage.download_link(bucket_name, object_name)
+    return storage.download_link(bucket_name, object_name, file.name)
 
 
-def translate_test(storage: LocalFileStorageClient, object_spec: str) -> str:
+def translate_test(storage: LocalFileStorageClient, file: FileContent, object_spec: str) -> str:
     """LocalStorage download link creator"""
     parts = object_spec.split(":")
     bucket_name = parts[0]
@@ -47,7 +47,7 @@ def translate_test(storage: LocalFileStorageClient, object_spec: str) -> str:
         object_name = f"/lfs/{parts[1]}/{path_replace}"  # Windows file names may have colons in local test
     else:
         object_name = parts[1]
-    return storage.download_link(bucket_name, object_name)
+    return storage.download_link(bucket_name, object_name, file.name)
 
 
 storage_types = {
@@ -65,8 +65,14 @@ def increment_download_count(session: Session, file_seq: int):
     session.commit()
 
 
-def translate_download_url(storage, locators: list[str]) -> str:
+def translate_download_url(storage, file: FileContent) -> str:
     """translate locators to a downloadable URL"""
+    locators = file.locators
+    if type(locators) == dict:
+        locators = locators['locators']
+    elif type(locators) != list:
+        raise ValueError(f"file locators were invalid type {type(file.locators)}")
+
     for locator in locators:
         log.info("translating %s", locator)
         locator_type, object_spec = locator.split("://")
@@ -74,7 +80,7 @@ def translate_download_url(storage, locators: list[str]) -> str:
         if translate_func is None:
             raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "unsupported storage type %s", locator_type)
 
-        url = translate_func(storage, object_spec)
+        url = translate_func(storage, file, object_spec)
         if url is not None:
             return url
     raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, detail="no valid locators for file")
@@ -82,7 +88,7 @@ def translate_download_url(storage, locators: list[str]) -> str:
 
 def resolve_download_info(
         session: Session,
-        file_id,
+        file_id: str,
         storage: StorageClient) -> Optional[DownloadInfoResponse]:
     """Given a file_id and storage client resolve the download info"""
     file_seq = file_id_to_seq(file_id)
@@ -90,9 +96,8 @@ def resolve_download_info(
     file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).one_or_none()
     if file is None:
         return None
-    locator_list = file.locators['locators']
     return DownloadInfoResponse(
         **file.model_dump(),
         file_id=file_seq_to_id(file.file_seq),
         owner_id=profile_seq_to_id(file.owner_seq),
-        url=translate_download_url(storage, locator_list))
+        url=translate_download_url(storage, file))
