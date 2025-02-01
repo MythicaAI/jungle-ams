@@ -15,7 +15,7 @@ class StorageClient:
     def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType):
         raise NotImplementedError
 
-    def download_link(self, bucket_name: str, object_name: str):
+    def download_link(self, bucket_name: str, object_name: str, file_name: str):
         raise NotImplementedError
 
 

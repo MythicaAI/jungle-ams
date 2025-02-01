@@ -4,6 +4,7 @@ import logging
 
 from cryptid.location import location
 from google.cloud import storage
+from urllib.parse import quote
 
 from context import UploadContext
 from storage.bucket_types import BucketType
@@ -61,7 +62,7 @@ class Client(StorageClient):
         """Streaming not currently implemented for GCS"""
         raise NotImplementedError
 
-    def download_link(self, bucket_name: str, object_name: str):
+    def download_link(self, bucket_name: str, object_name: str, file_name: str):
         """Get a pre-signed URL to down the object"""
         with tracer.start_as_current_span("file.download") as span:
             span.set_attribute("file.name", object_name)
@@ -69,7 +70,15 @@ class Client(StorageClient):
             bucket = self.gcs.bucket(bucket_name)
             blob = bucket.blob(object_name)
         log.info("File download link requested", extra={"bucket_name": bucket_name, "file_name": object_name})
-        return blob.generate_signed_url(version="v4", expiration=timedelta(days=7), method="GET")
+
+        # Set Content-Disposition header to specify the user-friendly filename
+        response_disposition = f'attachment; filename="{quote(file_name)}"'
+
+        return blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(days=2),
+            method="GET",
+            response_disposition=response_disposition)
 
 
 def create_client():

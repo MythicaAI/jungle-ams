@@ -42,6 +42,5 @@ async def redirect(
         file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).first()
         if file is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
-        locator_list = file.locators['locators']
         response.status_code = HTTPStatus.TEMPORARY_REDIRECT
-        response.headers['location'] = translate_download_url(storage, locator_list)
+        response.headers['location'] = translate_download_url(storage, file)
