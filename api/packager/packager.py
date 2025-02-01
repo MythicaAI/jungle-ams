@@ -19,7 +19,7 @@ import requests
 from pydantic import AnyHttpUrl
 from pythonjsonlogger import jsonlogger
 
-from api.packager.sanitize_filename import sanitize_filename
+from sanitize_filename import sanitize_filename
 from assets.repo import AssetFileReference, AssetVersionResult
 from events.events import EventsSession
 from ripple.automation.adapters import NatsAdapter
