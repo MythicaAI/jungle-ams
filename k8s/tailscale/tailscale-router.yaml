@@ -29,6 +29,8 @@ spec:
         image: "ghcr.io/tailscale/tailscale:latest"
         env:
         # Store the state in a k8s secret
+        - name: TS_EXTRA_ARGS
+          value: "--accept-routes"
         - name: TS_KUBE_SECRET
           value: "tailscale-auth"
         - name: TS_USERSPACE
@@ -42,7 +44,7 @@ spec:
               key: TS_AUTHKEY
               optional: true
         - name: TS_ROUTES
-          value: "34.118.224.0/20,10.0.0.0/8"
+          value: "34.118.224.0/20"
         securityContext:
           capabilities:
             add:

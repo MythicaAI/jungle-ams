@@ -6,6 +6,8 @@ metadata:
   annotations:
     networking.gke.io/load-balancer-type: "Internal"
     cloud.google.com/neg: '{"exposed_ports": {"4222":{}}}'
+    tailscale.com/expose: "true"
+    tailscale.com/experimental-forward-cluster-traffic-via-ingress: "true"
 spec:
   type: LoadBalancer
   ports:

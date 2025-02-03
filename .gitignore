@@ -60,3 +60,4 @@ __pycache__
 
 testing/mnt/*.env
 testing/mnt/.env
+api/helm/aws/registry-access-key.json
