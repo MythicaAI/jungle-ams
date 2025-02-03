@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: houdini
+  namespace: automation
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: "houdini"
+  template:
+    metadata:
+      labels:
+        app: houdini
+        tier: automation
+        version: "1.0"
+        release: production
+    spec:
+      nodeSelector:
+        nvidia.com/gpu: "true"
+      serviceAccountName: automation
+      imagePullSecrets:
+      - name: registry-secret
+      containers:
+        - name: houdini
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-houdini:latest
+          imagePullPolicy: Always
+          command: ["/bin/bash", "houdini.sh"]
+          stdin: true
+          tty: true
+          env:
+            - name: NAMESPACE
+              value: automation
+            - name: TELEMETRY_ENDPOINT
+              value: http://otel-collector.default:4317
+            - name: TELEMETRY_INSECURE
+              value: "true"
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats:4222
+            - name: MYTHICA_ENVIRONMENT
+              value: production
+            - name: MYTHICA_LOCATION  # basically cluster but can be "on-prem"
+              value: "gke-main-us-central1"
+            - name: K8S_CLUSTER_NAME
+              value: "gke-main-us-central1"
+            - name: APP_VERSION
+              value: "latest"
+          resources:
+            limits:
+              ephemeral-storage: 10Gi
+              nvidia.com/gpu: "1"
+            requests:
+              ephemeral-storage: 10Gi
+              nvidia.com/gpu: "1"
+      restartPolicy: Always
