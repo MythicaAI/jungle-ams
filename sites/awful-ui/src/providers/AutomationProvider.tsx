@@ -181,7 +181,6 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
    * MythicaApiProvider when an API key is enterered)
    */
   const loadAutomations = useCallback(async () => {
-    if (!authToken) return; // Ensure profileId is available
 
     workers.map(async (worker) => {
       try {
@@ -189,7 +188,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
           .post(
             BASE_URL,
             {
-              work_guid: '', // Generate or retrieve unique work_id if needed
+              correlation: '', // Generate or retrieve unique work_id if needed
               channel: worker,
               path: '/mythica/automations',
               env:
@@ -272,7 +271,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
         if (inputData.script) inputData.env = env;
         // Send request to the backend
         const response = await axios.post(BASE_URL, {
-          work_guid: nodeId,
+          correlation: nodeId,
           channel: worker,
           env: import.meta.env.MODE === 'staging' ? 'staging' : 'production',
           path: path,
@@ -308,7 +307,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error('Failed to load automations:', error);
       }
     }
-  }, [loadAutomations, loaded, authToken, workerAutomations]); // Only re-run when apiKey changes
+  }, [loadAutomations, loaded, authToken]); // Only re-run when apiKey changes
 
   return (
     <AutomationContext.Provider

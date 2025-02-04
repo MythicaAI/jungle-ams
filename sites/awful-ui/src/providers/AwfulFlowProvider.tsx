@@ -340,9 +340,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
             id: getId(),
             type: 'hdaWorker',
             position,
-            data: {
-              automation: nodeType,
-            },
+            data: {},
             dragHandle: '.drag-panel',
           };
           break;

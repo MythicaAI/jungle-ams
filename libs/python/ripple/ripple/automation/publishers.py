@@ -40,7 +40,7 @@ class ResultPublisher:
     #Callback for reporting back. 
     def result(self, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = self.request.process_guid
-        item.correlation = self.request.work_guid
+        item.correlation = self.request.correlation
         item.job_id = self.request.job_id or ""
 
         # Upload any references to local data
@@ -145,7 +145,7 @@ class SlimPublisher(ResultPublisher):
 
     def result(myself, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = myself.request.process_guid
-        item.correlation = myself.request.work_guid
+        item.correlation = myself.request.correlation
         item.job_id = ""
 
         # Upload any references to local data

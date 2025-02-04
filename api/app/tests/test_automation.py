@@ -23,7 +23,7 @@ from routes.automation.automation import (
 def request_data_fixture():
     """Fixture: Returns a valid request data dictionary."""
     return {
-        "work_guid": "test-guid",
+        "correlation": "test-guid",
         "channel": "test-channel",
         "path": "/test/path",
         "data": {"test": "data"},
@@ -88,7 +88,7 @@ class TestAutomationRequest:
     def test_valid_request(self, request_data):
         """Test creating a valid AutomationRequest object."""
         request = AutomationRequest(**request_data)
-        assert request.work_guid == request_data["work_guid"]
+        assert request.correlation == request_data["correlation"]
         assert request.channel == request_data["channel"]
         assert request.path == request_data["path"]
         assert request.data == request_data["data"]
@@ -97,7 +97,7 @@ class TestAutomationRequest:
     def test_minimal_request(self):
         """Test creating an AutomationRequest with minimal required fields."""
         minimal_data = {
-            "work_guid": "test-guid",
+            "correlation": "test-guid",
             "channel": "test-channel",
             "path": "/test/path",
             "data": {},
@@ -114,7 +114,7 @@ class TestAutomationEndpoint:
         with patch("nats.connect", return_value=nats):
             response = automation_request(AutomationRequest(**request_data))
             assert isinstance(response, AutomationResponse)
-            assert response.work_guid == request_data["work_guid"]
+            assert response.correlation == request_data["correlation"]
             nats.publish.assert_awaited_once()
 
     def test_automation_request_connection_error(self, request_data):
@@ -139,8 +139,8 @@ class TestAutomationEndpoint:
             assert exc_info.value.status_code == 503
 
 
-def test_automation_request_missing_work_guid():
-    """Test that AutomationRequest requires 'work_guid'."""
+def test_automation_request_missing_correlation():
+    """Test that AutomationRequest requires 'correlation'."""
     invalid_data = {
         "channel": "test-channel",
         "path": "/test/path",

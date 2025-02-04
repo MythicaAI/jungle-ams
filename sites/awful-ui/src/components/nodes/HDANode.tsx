@@ -14,6 +14,7 @@ import useMythicaApi from '../../hooks/useMythicaApi';
 import { NodeDeleteButton } from '../NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
 import { NodeHeader } from '../NodeHeader';
+import { AutomationNodeProps } from './AutomationNode';
 
 type InterfaceExecutionData = ExecutionData & {
   output: {
@@ -45,23 +46,16 @@ export type AutomationExecutionData = ExecutionData & {
   };
 };
 
-export interface HDANodeProps {
-  id: string;
-  selected?: boolean;
-  data: {
-    automation: string;
-    interfaceData: InterfaceExecutionData;
-    inputData: dictionary;
-    executionData: ExecutionData;
-  };
-}
-
 const INPUT_FILE = 'HDA';
 
-const HDANode: React.FC<HDANodeProps> = (node) => {
+const HDANode: React.FC<AutomationNodeProps> = (node) => {
+  node.data.automation = 'houdini://mythica/hda';
+
+  // Flow data for the interface (HDA -> /mythica/hda)
   const [interfaceFlowData, setInterfaceFlowData] = useState<GetFileResponse[]>(
     []
   );
+  // Flow data for the execution (HDA -> /mythica/run_hda)
   const [executionFlowData, setExecutionFlowData] = useState<{
     [key: string]: GetFileResponse[];
   }>({});
@@ -73,8 +67,9 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
 
   const { initAutomation, runAutomation, allAutomations } = useAutomation();
   const automationTask = allAutomations[node.data.automation];
+  
   const [myInterfaceData, setMyInterfaceData] = useState<ExecutionData>(
-    node.data.interfaceData || initAutomation(automationTask)
+    initAutomation(automationTask)
   );
   const [myExecutionData, setMyExecutionData] = useState<ExecutionData>(
     node.data.executionData || initAutomation(automationTask)
@@ -241,6 +236,10 @@ const HDANode: React.FC<HDANodeProps> = (node) => {
     node.data.inputData = inputData;
   }, [inputData, node.data]);
 
+  useEffect(() => {
+    node.data.executionData = myExecutionData;
+  }, [myExecutionData, node.data]);
+  
   useEffect(() => {
     setExecutionFlowData((prev) => {
       // Destructure INPUT_FILE out and collect the rest

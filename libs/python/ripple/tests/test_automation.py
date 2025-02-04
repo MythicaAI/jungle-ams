@@ -139,7 +139,7 @@ async def test_worker_executor(worker, mock_responder, test_token):
         executor = worker._get_executor()
         await executor({
             "process_guid": "test-guid",
-            "work_guid": "test-work",
+            "correlation": "test-work",
             "path": "/test/path",
             "data": {},
             "auth_token": test_token
@@ -188,7 +188,7 @@ async def test_worker_executor_error(worker):
     
         assert len(exc_info.value.errors()) == 4
         error_fields = [e["loc"][0] for e in exc_info.value.errors()]
-        assert set(error_fields) == {"process_guid", "work_guid", "path", "data"}
+        assert set(error_fields) == {"process_guid", "correlation", "path", "data"}
 
 
 @pytest.mark.asyncio
@@ -198,7 +198,7 @@ async def test_worker_web_executor(worker, test_token):
     
     response = client.post("/",
         json={
-            "work_guid": "test-work",
+            "correlation": "test-work",
             "path": "/mythica/automations",
             "data": {},
             "auth_token": test_token
@@ -214,7 +214,7 @@ async def test_worker_web_executor_error(worker,test_token):
     with pytest.raises(KeyError):
         response = client.post("/",
             json={
-                "work_guid": "test-work",
+                "correlation": "test-work",
                 "path": "/invalid/path",
                 "data": {},
                 "auth_token": test_token
@@ -238,7 +238,7 @@ def valid_automation_spec():
 def valid_automation_request_data():
     return {
         "process_guid": "123e4567-e89b-12d3-a456-426614174000",
-        "work_guid": "123e4567-e89b-12d3-a456-426614174001",
+        "correlation": "123e4567-e89b-12d3-a456-426614174001",
         "job_id": "test_job",
         "path": "/test/path",
         "data": {"test": "data"},
@@ -293,7 +293,7 @@ class TestAutomationRequest:
         
         request = AutomationRequest(**request_data)
         assert request.process_guid == request_data["process_guid"]
-        assert request.work_guid == request_data["work_guid"]
+        assert request.correlation == request_data["correlation"]
         assert request.job_id == request_data["job_id"]
         assert request.auth_token == test_token
         assert request.path == request_data["path"]
@@ -302,7 +302,7 @@ class TestAutomationRequest:
     def test_minimal_request(self, valid_automation_request_data):
         minimal_data = {
             "process_guid": valid_automation_request_data["process_guid"],
-            "work_guid": valid_automation_request_data["work_guid"],
+            "correlation": valid_automation_request_data["correlation"],
             "path": valid_automation_request_data["path"],
             "data": valid_automation_request_data["data"]
         }
@@ -351,7 +351,7 @@ def publisher(mock_nats, mock_rest, test_request, mock_profile, tmp_path):
 def test_request(test_token):
     return AutomationRequest(
         process_guid="test-process-guid",
-        work_guid="test-work-guid",
+        correlation="test-correlation",
         path="/test/path",
         auth_token=test_token,
         data={"test": "data"},
@@ -508,7 +508,7 @@ async def test_slim_publisher_result(test_request, mock_rest, tmp_path):
     slim_publisher.result(test_item)
     
     assert test_item.process_guid == test_request.process_guid
-    assert test_item.correlation == test_request.work_guid
+    assert test_item.correlation == test_request.correlation
     assert test_item.job_id == ""
 
 @pytest.mark.asyncio
