@@ -1,5 +1,4 @@
 """API routes for automation endpoints."""
-import asyncio
 import logging
 import os
 import uuid
