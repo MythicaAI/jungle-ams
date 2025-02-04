@@ -236,6 +236,8 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     const automationOutput = execData.output;
     if (automationOutput && automationOutput.message) {
       setFlowExecutionMessage(automationOutput.message as string);
+    } else if (automationOutput && automationOutput.error) {
+      setFlowExecutionMessage(automationOutput.error as string);
     } else {
       setFlowExecutionMessage('');
     }

@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from ripple.automation.models import AutomationModel, AutomationRequest, AutomationsResponse
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
 from ripple.automation.utils import format_exception, error_handler
-from ripple.models.streaming import Message, Progress, StreamItemUnion
+from ripple.models.streaming import Error, Progress, StreamItemUnion
 
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.automations import get_default_automations
@@ -138,7 +138,7 @@ class Worker:
                     msg=f'Validation error - {json_payload} - {format_exception(e)}'
                     log.error(msg)
                     span.set_status(opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg))
-                    await doer.nats.post("result", Message(message=msg).model_dump())
+                    await doer.nats.post("result", Error(error=msg).model_dump())
                     return 
 
                 #Run the worker
@@ -163,7 +163,7 @@ class Worker:
                 except Exception as e:
                     msg=f"Executor error - {log_str} - {format_exception(e)}"
                     if publisher:
-                        publisher.result(Message(message=msg), complete=True)
+                        publisher.result(Error(error=msg), complete=True)
                     telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg)
                     log.error(msg)
                     span.record_exception(e)

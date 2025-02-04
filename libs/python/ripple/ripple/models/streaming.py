@@ -47,6 +47,14 @@ class Message(ProcessStreamItem):
     message: str
 
 
+class Error(ProcessStreamItem):
+    """
+    Non-localized message for processes to communicate process - for
+    debugging purposes.
+    """
+    item_type: Literal["error"] = "error"
+    error: str
+
 class OutputFiles(ProcessStreamItem):
     """
     A file output event for generated files, the outputs are keyed
