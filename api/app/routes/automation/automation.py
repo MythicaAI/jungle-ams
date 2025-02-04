@@ -1,12 +1,10 @@
 """API routes for automation endpoints."""
 import asyncio
-import json
 import logging
 import os
 import uuid
 from http import HTTPStatus
 
-import nats
 from cryptid import location
 from fastapi import APIRouter, HTTPException
 from nats.errors import ConnectionClosedError, NoServersError

@@ -34,6 +34,7 @@ def request_data_fixture():
 def async_iterator_fixture():
     """Create async iterator fixture."""
     class AsyncIterator:
+        """Async iterator class."""
         def __init__(self, items):
             self._items = items
             self._iter = None
