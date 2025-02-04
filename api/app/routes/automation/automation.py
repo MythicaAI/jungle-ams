@@ -34,7 +34,7 @@ class AutomationRequest(BaseModel):
 class AutomationResponse(BaseModel):
     """Response model for automation endpoints."""
     correlation: str
-    result: dict
+    result: dict|list[dict]
 
 @router.post('/run', status_code=HTTPStatus.CREATED)
 def automation_request(request: AutomationRequest) -> AutomationResponse:
@@ -102,5 +102,5 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
     # Return the result
     return AutomationResponse(
         correlation=correlation,
-        result=result
+        result=result.pop() if len(result) >0 else None
     )

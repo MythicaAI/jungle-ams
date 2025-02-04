@@ -30,12 +30,12 @@ def error_handler(log: Logger) -> callable:
 
 
 NATS_URL = os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
-STATUS_SUBJECT = "result"
+NATS_RESULT_SUBJECT = os.environ.get('NATS_RESULT_SUBJECT', 'result')
 ENVIRONMENT = os.getenv('MYTHICA_ENVIRONMENT', 'debug')
 LOCATION = location.location()
 PROCESS_GUID = str(uuid.uuid4())
 
-async def nats_submit(channel: str, path: str, data: dict, correlation: str, auth_token: str) -> dict:
+async def nats_submit(channel: str, path: str, data: dict, correlation: str, auth_token: str) -> list[dict]:
     """Submit work to NATS.
     
     Args:
@@ -48,7 +48,7 @@ async def nats_submit(channel: str, path: str, data: dict, correlation: str, aut
     Returns:
         dict: Response data
     """
-    return_data = None
+    return_data = []
     nats_client = None
     response = None
 
@@ -58,7 +58,7 @@ async def nats_submit(channel: str, path: str, data: dict, correlation: str, aut
 
     # Wait for the response with a timeout (customize as necessary)
     log.debug("Setting up NATS response listener")
-    result_subject = (f"{STATUS_SUBJECT}.{ENVIRONMENT}.{LOCATION}"
+    result_subject = (f"{NATS_RESULT_SUBJECT}.{ENVIRONMENT}.{LOCATION}"
                         f".{PROCESS_GUID}")
     response = await nats_client.subscribe(result_subject)
     log.debug("NATS response listener set up")
@@ -87,12 +87,27 @@ async def nats_submit(channel: str, path: str, data: dict, correlation: str, aut
                 data = json.loads(msg.data.decode('utf-8'))
                 if data['correlation'] == correlation:
                     log.debug("Message matched %s. Processing",correlation)
-                    datatype = "result"
+                    # StreamItems must have a datatype
+                    datatype = "error"
                     if 'item_type' in data:
                         datatype = data['item_type']
-                    if datatype != "progress":
-                        return_data = data
+                    else:
+                        data['item_type'] = 'error'
+                        data['error'] = "No item_type in message"
+                        
+                    if datatype == "progress":
+                        if data['progress'] == 100:
+                            break
+                        else:
+                            #we just iterate through as we ignore progress messages in sync mode
+                            pass
+
+                    elif datatype == "error":
+                        return_data = []
+                        return_data.append(data)
                         break
+                    else:
+                        return_data.append(data)
                 else:
                     log.debug("Message ignored")
     except Exception as e: # pylint: disable=broad-except
@@ -105,5 +120,5 @@ async def nats_submit(channel: str, path: str, data: dict, correlation: str, aut
         if nats_client is not None:
             await nats_client.flush()
             await nats_client.close()
-
+    
     return return_data

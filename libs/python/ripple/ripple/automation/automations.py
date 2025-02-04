@@ -2,7 +2,7 @@ from ripple.automation.models import AutomationModel, AutomationsResponse
 from ripple.automation.publishers import ResultPublisher
 from ripple.automation.utils import format_exception
 from ripple.models.params import ParameterSet
-from ripple.models.streaming import Message, ProcessStreamItem
+from ripple.models.streaming import Error, ProcessStreamItem
 from typing import Callable, Literal
 
 from ripple.config import ripple_config
@@ -81,7 +81,7 @@ def _get_script_interface() -> Callable:
                 }
             })
         except Exception as e:
-            responder.result(Message(message=f"Script Interface Generation Error: {format_exception(e)}"))
+            responder.result(Error(error=f"Script Interface Generation Error: {format_exception(e)}"))
 
         return(AutomationsResponse(automations={}))
     return impl

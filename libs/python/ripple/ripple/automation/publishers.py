@@ -50,7 +50,7 @@ class ResultPublisher:
         job_complete_endpoint=f"{self.api_url}/jobs/complete"
 
         # Publish results
-        log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")
+        log.info(f"Automation {'Result' if not complete else 'Complete'} -> {item}")
 
         task = asyncio.create_task(
             self.nats.post_to(
