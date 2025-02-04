@@ -289,6 +289,7 @@ async def add_job_nats_event(
 
     event = AutomationRequest(
         process_guid=process_guid,
+        correlation=str(uuid4()),
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
