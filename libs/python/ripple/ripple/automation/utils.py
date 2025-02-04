@@ -35,7 +35,12 @@ ENVIRONMENT = os.getenv('MYTHICA_ENVIRONMENT', 'debug')
 LOCATION = location.location()
 PROCESS_GUID = str(uuid.uuid4())
 
-async def nats_submit(channel: str, path: str, data: dict, correlation: str, auth_token: str) -> list[dict]:
+def nats_submit(channel: str, path: str, data: dict, correlation: str, auth_token: str) -> list[dict]:
+    return asyncio.run(
+        __nats_submit(channel, path, data, correlation, auth_token)
+    )
+
+async def __nats_submit(channel: str, path: str, data: dict, correlation: str, auth_token: str) -> list[dict]:
     """Submit work to NATS.
     
     Args:

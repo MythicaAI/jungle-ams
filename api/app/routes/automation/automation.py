@@ -1,5 +1,4 @@
 """API routes for automation endpoints."""
-import asyncio
 import logging
 import os
 import uuid
@@ -69,12 +68,12 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
         )
 
     try:
-        result = asyncio.run(nats_submit(
+        result = nats_submit(
             channel,
             path,
             data,
             correlation,
-            auth_token))
+            auth_token)
     except ConnectionClosedError as exc:
         raise HTTPException(
             status_code=HTTPStatus.SERVICE_UNAVAILABLE,
