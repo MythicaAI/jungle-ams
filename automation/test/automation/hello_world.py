@@ -11,7 +11,7 @@ class HelloWorldResponse(Message):
     pass
 
 def hello_world_api(request: HelloWorldRequest, result_callback):
-    time.sleep(1)
+    time.sleep(3)
     return Message(message=f"Received message: {request.message}")
 
 

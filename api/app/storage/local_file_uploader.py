@@ -1,11 +1,12 @@
 import logging
 import os
+import shutil
 from io import BytesIO
 from pathlib import Path
-import shutil
 
 from config import app_config
 from context import UploadContext
+from opentelemetry.context import get_current as get_current_context
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, tracer
 
@@ -21,7 +22,7 @@ class LocalFileStorageClient(StorageClient):
         return self.base_path.exists() and self.base_path.is_dir()
 
     def upload(self, ctx: UploadContext, bucket_type: BucketType) -> str:
-        with tracer.start_as_current_span("file.upload") as span:
+        with tracer.start_as_current_span("file.upload", context=get_current_context()) as span:
             span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             file_id = ctx.content_hash + '.' + ctx.extension
             file_path = self.base_path / f"{ctx.content_hash}.{ctx.extension}"
@@ -56,7 +57,7 @@ class LocalFileStorageClient(StorageClient):
         return file_id
 
     def download_link(self, bucket_name: str, object_name: str, file_name: str) -> str:
-        with tracer.start_as_current_span("file.download") as span:
+        with tracer.start_as_current_span("file.download", context=get_current_context()) as span:
             span.set_attribute("object.name", object_name)
             span.set_attribute("file.name", file_name)
             log.info("File download link requested",

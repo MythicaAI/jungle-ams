@@ -114,19 +114,16 @@ class Worker:
         reporting status
         """
         doer=self
-        async def implementation(json_payload):
-            with tracer.start_as_current_span("worker.execution") as span:
-                span_with_context = None
+        async def implementation(json_payload: dict):
+            headers: dict = json_payload.get("telemetry_context", {})
+            # Init telemetry_context before root trace
+            telemetry_context = TraceContextTextMapPropagator().extract(carrier=headers)
+            log.info('auto/ telemetry_context: %s', telemetry_context)
+            with tracer.start_as_current_span("worker.execution", context=telemetry_context) as span:
                 ret_data = None
                 span.set_attribute("worker.started", datetime.now(timezone.utc).isoformat())
                 try:
                     auto_request = AutomationRequest(**json_payload)
-
-                    # Set up telemetry_context
-                    telemetry_context = TraceContextTextMapPropagator().extract(carrier=auto_request.telemetry_context)
-                    trace.set_span_in_context(span, telemetry_context)
-                    span_with_context = tracer.start_span("span_with_context", context=telemetry_context)
-                    log.info("span_with_context: %s", span_with_context)
 
                     trace_data = {"work_guid": auto_request.work_guid,
                                   "job_id": auto_request.job_id if auto_request.job_id else "" }
@@ -176,8 +173,6 @@ class Worker:
                         span.set_attribute("job_id", ret_data.job_id)
                     span.set_status(telemetry_status)
                     log.info("Job finished %s", auto_request.work_guid)
-                    if span_with_context:
-                        span_with_context.end()
 
         return implementation
 

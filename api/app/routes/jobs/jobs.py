@@ -45,7 +45,8 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import Session, col
 from sqlmodel import delete as sql_delete
 from sqlmodel import insert, select, text, update
-from telemetry_config import get_telemetry_context
+from telemetry_config import get_telemetry_headers
+from opentelemetry.context import get_current as get_current_context
 
 log = logging.getLogger(__name__)
 
@@ -239,7 +240,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
         auth_token=profile.auth_token,
-        telemetry_context=get_telemetry_context(),
+        telemetry_context=get_telemetry_headers(),
     )
     nats = NatsAdapter()
     await nats.post("houdini", event.model_dump())
@@ -294,7 +295,7 @@ async def add_job_nats_event(
         auth_token=auth_token,
         path=path,
         data=params.model_dump(),
-        telemetry_context=get_telemetry_context(),
+        telemetry_context=get_telemetry_headers(),
     )
 
     nats = NatsAdapter()
@@ -307,7 +308,7 @@ async def create(
         request: JobRequest,
         profile: SessionProfile = Depends(session_profile)) -> JobResponse:
     """Request a job from an existing definition"""
-    with tracer.start_as_current_span("job.status") as span:
+    with tracer.start_as_current_span("job.status", context=get_current_context()) as span:
         with get_session() as session:
             job_def = session.exec(select(JobDefinition).where(
                 JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
@@ -391,7 +392,7 @@ async def create_result(
         job_id: str,
         request: JobResultRequest) -> JobResultCreateResponse:
     """Add a new job result"""
-    with tracer.start_as_current_span("job.status") as span:
+    with tracer.start_as_current_span("job.status", context=get_current_context()) as span:
         span.set_attribute("job.id", job_id)
         with get_session() as session:
             job_seq = job_id_to_seq(job_id)
@@ -434,7 +435,7 @@ async def list_results(
 async def set_complete(
         job_id: str):
     """Mark a job as complete"""
-    with tracer.start_as_current_span("job.status") as span:
+    with tracer.start_as_current_span("job.status", context=get_current_context()) as span:
         span.set_attribute("job.id", job_id)
         with get_session() as session:
             job_result = session.exec(update(Job)
