@@ -10,6 +10,9 @@ from context import UploadContext
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, tracer
 
+from opentelemetry.context import get_current as get_current_telemetry_context
+
+
 # Configure GCS bucket mappings here directly - this could get more involved as bucket limits,
 # regional and migrations occur
 
@@ -42,7 +45,7 @@ class Client(StorageClient):
 
     def upload(self, ctx: UploadContext, bucket_type: BucketType):
         """Upload the object in the request context to the bucket"""
-        with tracer.start_as_current_span("file.upload") as span:
+        with tracer.start_as_current_span("file.upload", context=get_current_telemetry_context()) as span:
             span.set_attribute("file.id", ctx.file_id if ctx.file_id else "")
             ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
             bucket = self.gcs.bucket(ctx.bucket_name)
@@ -64,7 +67,7 @@ class Client(StorageClient):
 
     def download_link(self, bucket_name: str, object_name: str, file_name: str):
         """Get a pre-signed URL to down the object"""
-        with tracer.start_as_current_span("file.download") as span:
+        with tracer.start_as_current_span("file.download", context=get_current_telemetry_context()) as span:
             span.set_attribute("file.name", object_name)
             log.info("Request to download file from the bucket. name: %s", object_name)
             bucket = self.gcs.bucket(bucket_name)

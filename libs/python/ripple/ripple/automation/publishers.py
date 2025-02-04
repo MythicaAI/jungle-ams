@@ -1,14 +1,17 @@
+import asyncio
 import logging
+import os
 from typing import Optional
+
+from opentelemetry.context import get_current as get_current_telemetry_context
+from opentelemetry.propagate import inject
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
+from ripple.automation.utils import error_handler
 from ripple.config import ripple_config
 from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem
 
-from ripple.automation.utils import error_handler
-import asyncio
-import os
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -37,6 +40,11 @@ class ResultPublisher:
         self.rest = rest
         self.api_url = ripple_config().api_base_uri
 
+    def update_headers_from_context(self) -> dict:
+        updated_headers = {}
+        inject(updated_headers, get_current_telemetry_context())
+        return updated_headers
+
     #Callback for reporting back. 
     def result(self, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = self.request.process_guid
@@ -59,6 +67,7 @@ class ResultPublisher:
                 item.model_dump()))
 
         task.add_done_callback(error_handler(log))
+        updated_headers = self.update_headers_from_context()
         if self.request.job_id:
             data = {
                 "created_in": "automation-worker",
@@ -68,13 +77,13 @@ class ResultPublisher:
                 f"{job_result_endpoint}/{self.request.job_id}",
                 json_data=data,
                 token=self.request.auth_token,
-                headers=self.request.telemetry_context,
+                headers=updated_headers,
             )
             log.debug(
                 "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
                 f"{job_result_endpoint}/{self.request.job_id}",
                 self.request.auth_token,
-                self.request.telemetry_context,
+                updated_headers,
                 data,
             )
             if complete:
@@ -82,18 +91,18 @@ class ResultPublisher:
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     json_data={},
                     token=self.request.auth_token,
-                    headers=self.request.telemetry_context,
+                    headers=updated_headers,
                 )
                 log.debug(
                     "ResultPublisher-nats-post: url-%s; token-%s; headers-%s",
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     self.request.auth_token,
-                    self.request.telemetry_context,
+                    updated_headers,
                 )
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
-
+        updated_headers = self.update_headers_from_context()
         def upload_file(file_path: str) -> Optional[str]:
             if not os.path.exists(file_path):
                 return None
@@ -103,7 +112,7 @@ class ResultPublisher:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
                     response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
-                        headers=self.request.telemetry_context
+                        headers=updated_headers
                     )
                     file_id = response['files'][0]['file_id'] if response else None
                     return file_id
@@ -119,7 +128,7 @@ class ResultPublisher:
                 'source': job_def.source.model_dump() if job_def.source else None,
             }
             response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
-                headers=self.request.telemetry_context
+                headers=updated_headers
             )
             return response['job_def_id'] if response else None
 

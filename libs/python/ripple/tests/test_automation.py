@@ -242,7 +242,7 @@ def valid_automation_request_data():
         "job_id": "test_job",
         "path": "/test/path",
         "data": {"test": "data"},
-        "telemetry_context": {"test": "test"},
+        "telemetry_context": {},
     }
 
 # ---- AutomationsResponse Tests ----

@@ -43,7 +43,7 @@ def configure_logging():
         otel_log_handler.setFormatter(CustomJSONFormatter())
 
 
-def get_telemetry_context() -> dict:
+def get_telemetry_headers() -> dict:
     trace_context = {}
     inject(trace_context, get_current())
     return trace_context

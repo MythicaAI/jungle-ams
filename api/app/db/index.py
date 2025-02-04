@@ -15,7 +15,7 @@ from context import UploadContext
 from db.connection import get_session
 from db.schema.events import Event
 from db.schema.media import FileContent
-from telemetry_config import get_telemetry_context
+from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ async def update(ctx: UploadContext) -> Tuple[str, str]:
                 auth_token=ctx.profile.auth_token,
                 path='/mythica/generate_job_defs',
                 data=parameter_set.model_dump(),
-                telemetry_context=get_telemetry_context(),
+                telemetry_context=get_telemetry_headers(),
             )
 
             nats = NatsAdapter()

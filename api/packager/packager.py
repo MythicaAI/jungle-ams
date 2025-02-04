@@ -28,7 +28,7 @@ from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
-from telemetry_config import get_telemetry_context
+from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
         auth_token=token,
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
-        telemetry_context=get_telemetry_context(),
+        telemetry_context=get_telemetry_headers(),
     )
 
     nats = NatsAdapter()

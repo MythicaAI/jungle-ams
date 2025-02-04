@@ -64,6 +64,11 @@ services:
       NATS_ENDPOINT: nats://nats:4222
       MINIO_ACCESS_KEY: foo-access
       MINIO_SECRET_KEY: bar-secret
+      WORKER_COUNT: 3
+      TELEMETRY_ENABLE: True
+      TELEMETRY_ENDPOINT: otel-sidecar:4317
+      TELEMETRY_INSECURE: True
+      ENABLE_GCS_PYTHON_CLIENT_OTEL_TRACES: false
     ports:
       - "15555:5555"
     networks:
