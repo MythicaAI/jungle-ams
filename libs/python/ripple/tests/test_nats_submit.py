@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
-from nats.errors import ConnectionClosedError, TimeoutError, NoServersError
+from nats.errors import ConnectionClosedError, TimeoutError
 from nats.aio.client import Client as NATS
 
-from ripple.automation.utils import nats_submit
+from ripple.automation.utils import __nats_submit
 @pytest.fixture(name="request_data")
 def request_data_fixture():
     """Fixture: Returns a valid request data dictionary."""
@@ -80,7 +80,7 @@ async def test_nats_submit_success(nats):
     }
     
     with patch('nats.connect', return_value=nats):
-        result = await nats_submit(**test_data)
+        result = await __nats_submit(**test_data)
         
         assert isinstance(result, list)
         assert len(result) > 0
@@ -92,7 +92,7 @@ async def test_nats_submit_connection_error():
     """Test NATS connection error handling."""
     with patch('nats.connect', side_effect=ConnectionClosedError()):
         with pytest.raises(ConnectionClosedError):
-            await nats_submit(
+            await __nats_submit(
                 channel="test-channel",
                 path="/test/path",
                 data={},
@@ -106,7 +106,7 @@ async def test_nats_submit_timeout():
     
     with patch('nats.connect', side_effect=TimeoutError()):
         with pytest.raises(TimeoutError):
-            await nats_submit(
+            await __nats_submit(
                 channel="test-channel",
                 path="/test/path",
                 data={},
@@ -118,7 +118,7 @@ async def test_nats_submit_timeout():
 async def test_nats_submit_cleanup(nats):
     """Test NATS client cleanup."""
     with patch('nats.connect', return_value=nats):
-        await nats_submit(
+        await __nats_submit(
             channel="test-channel",
             path="/test/path",
             data={},
