@@ -1,19 +1,16 @@
 # pylint: disable=redefined-outer-name, unused-import
 
-import asyncio
 import itertools
 import json
 import logging
-import random
-
-from itertools import cycle
-from string import ascii_lowercase
-from uuid import uuid4
-
-from fastapi.testclient import TestClient
 import pytest
+import random
+from fastapi.testclient import TestClient
+from itertools import cycle
 from sqlmodel import insert, select
 from starlette.testclient import WebSocketTestSession
+from string import ascii_lowercase
+from uuid import uuid4
 
 from cryptid.cryptid import (
     event_seq_to_id,
@@ -24,6 +21,7 @@ from cryptid.cryptid import (
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
+from ripple.client_ops import ReadClientOp
 from ripple.models.streaming import (
     Event,
     Message,
@@ -32,10 +30,7 @@ from ripple.models.streaming import (
 )
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
-from ripple.client_ops import ReadClientOp
-
 from tests.shared_test import ProfileTestObj
-
 
 # length of event data in test events
 test_event_info_len = 10
@@ -113,21 +108,23 @@ def get_event_dumped_models(events_ids):
 
 @pytest.mark.asyncio
 async def test_websocket(
-    api_base,
-    client: TestClient,
-    create_profile,
-    use_test_source_fixture,  # pylint: disable=unused-argument
+        api_base,
+        client: TestClient,
+        create_profile,
+        use_test_source_fixture,  # pylint: disable=unused-argument
 ):
     test_profile: ProfileTestObj = create_profile()
     auth_header = test_profile.authorization_header()
 
+    page_size = 3
     item_list_length = 10
-
     generate_event_count = 10
+
+    # generate the test data
     events_ids = generate_events(test_profile.profile, generate_event_count)
     stream_items = get_event_dumped_models(events_ids)
 
-    page_size = 3
+    # find active readers
     r = client.post(
         f"{api_base}/readers/",
         json={'source': 'events', 'params': {'page_size': page_size}},
@@ -137,18 +134,18 @@ async def test_websocket(
     assert "reader_id" in reader
     reader_id = reader["reader_id"]
 
+    # make the auth header a cookie for the connection
     client.cookies.update(auth_header)
+
     with client.websocket_connect(
-        f"{api_base}/readers/connect", data={"body": {}}
+            f"{api_base}/readers/connect", data={"body": {}}
     ) as websocket:
         websocket: WebSocketTestSession
 
-        await asyncio.sleep(0.1)
-
-        max_reads = item_list_length / page_size
+        max_reads = (item_list_length / page_size) + 1
 
         def check_new_items_in_connection(
-            page_size, generate_event_count, stream_items
+                page_size, generate_event_count, stream_items
         ):
             reads = 0
             page_sized_reads = 0
@@ -173,14 +170,20 @@ async def test_websocket(
             ), "full pages read constraint"
             assert count_events == generate_event_count, "total events read constraint"
 
+        # read the current stream items
         check_new_items_in_connection(page_size, generate_event_count, stream_items)
-        old_stream_items = stream_items
+
+        # cache off old items
+        old_stream_items = list(stream_items)
+
         # Trigger new events to fetch the latest data
         events_ids = generate_events(test_profile.profile, generate_event_count)
         stream_items = get_event_dumped_models(events_ids)
 
+        # get the next set
         check_new_items_in_connection(page_size, generate_event_count, stream_items)
 
+        # Do a raw read operation
         data_without_op = ReadClientOp().model_dump()
         data_without_op["reader_id"] = reader_id
         del data_without_op["op"]
@@ -190,6 +193,7 @@ async def test_websocket(
         log.info("Received output_data %s", output_data)
         assert {'error': "No 'op' included in client message"} == output_data
 
+        # Test an invalid operation
         data_invalid_op = ReadClientOp().model_dump()
         data_invalid_op["reader_id"] = reader_id
         data_invalid_op["op"] = "1916846835184884"
@@ -203,8 +207,8 @@ async def test_websocket(
 
         first_item_position = len(new_old_stream_items) // 4
         stream_items = new_old_stream_items[
-            first_item_position:
-        ]  # Start stream_items from the third quarter of all items
+                       first_item_position:
+                       ]  # Start stream_items from the third quarter of all items
         item_list_length = len(stream_items)
 
         max_reads = item_list_length / page_size
