@@ -1,17 +1,16 @@
 # pylint: disable=redefined-outer-name, unused-import
-
 import itertools
 import json
 import logging
-import pytest
 import random
-from fastapi.testclient import TestClient
 from itertools import cycle
-from sqlmodel import insert, select
-from starlette.testclient import WebSocketTestSession
 from string import ascii_lowercase
 from uuid import uuid4
 
+from httpx_ws import AsyncWebSocketSession
+
+import main
+import pytest
 from cryptid.cryptid import (
     event_seq_to_id,
     file_seq_to_id,
@@ -21,6 +20,8 @@ from cryptid.cryptid import (
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
+from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from ripple.client_ops import ReadClientOp
 from ripple.models.streaming import (
     Event,
@@ -28,9 +29,14 @@ from ripple.models.streaming import (
     OutputFiles,
     Progress,
 )
+from sqlmodel import insert, select
+from starlette.testclient import WebSocketTestSession
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import ProfileTestObj
+
+# prevent fixture from being optimized away
+__fixtures__ = [create_profile, use_test_source_fixture]
 
 # length of event data in test events
 test_event_info_len = 10
@@ -89,7 +95,7 @@ def generate_events(profile: Profile, event_count: int):
     return [event.inserted_primary_key[0] for event in events]
 
 
-def get_event_dumped_models(events_ids):
+def read_db_events(events_ids) -> list[Event]:
     with get_session() as session:
         statement = (
             select(DbEvent)
@@ -106,6 +112,37 @@ def get_event_dumped_models(events_ids):
     ]
 
 
+async def read_socket(
+        ws: WebSocketTestSession,
+        page_size: int,
+        source_event_count: int,
+        stream_items
+):
+    max_reads = source_event_count / page_size
+    reads = 0
+    page_sized_reads = 0
+    count_events = 0
+    while reads < max_reads:
+        reads += 1
+        output_data = await ws.receive_json(timeout=.1)
+        assert output_data is not None
+        log.info("Received output_data %s", output_data)
+        if len(output_data) == page_size:
+            page_sized_reads += 1
+        for output_raw in output_data:
+            log.info("expected output_data %s", stream_items[count_events])
+            raw: dict = json.loads(output_raw)
+            assert 'index' in raw
+            assert 'payload' in raw
+            assert raw["index"] == stream_items[count_events]["index"]
+            count_events += 1
+
+    assert page_sized_reads == int(
+        source_event_count / page_size
+    ), "full pages read constraint"
+    assert count_events == source_event_count, "total events read constraint"
+
+
 @pytest.mark.asyncio
 async def test_websocket(
         api_base,
@@ -118,11 +155,11 @@ async def test_websocket(
 
     page_size = 3
     item_list_length = 10
-    generate_event_count = 10
+    source_event_count = 10
 
     # generate the test data
-    events_ids = generate_events(test_profile.profile, generate_event_count)
-    stream_items = get_event_dumped_models(events_ids)
+    events_ids = generate_events(test_profile.profile, source_event_count)
+    stream_items = read_db_events(events_ids)
 
     # find active readers
     r = client.post(
@@ -137,58 +174,32 @@ async def test_websocket(
     # make the auth header a cookie for the connection
     client.cookies.update(auth_header)
 
-    with client.websocket_connect(
+    transport = ASGITransport(app=main.app)
+    async with AsyncWebSocketSession(transport=transport, base_url="http://testserver") as client:
+        async with client.websocket_connect(
             f"{api_base}/readers/connect", data={"body": {}}
-    ) as websocket:
-        websocket: WebSocketTestSession
-
-        max_reads = (item_list_length / page_size) + 1
-
-        def check_new_items_in_connection(
-                page_size, generate_event_count, stream_items
-        ):
-            reads = 0
-            page_sized_reads = 0
-            count_events = 0
-            while reads < max_reads:
-                reads += 1
-                output_data = websocket.receive_json()
-                assert output_data is not None
-                log.info("Received output_data %s", output_data)
-                if len(output_data) == page_size:
-                    page_sized_reads += 1
-                for output_raw in output_data:
-                    log.info("expected output_data %s", stream_items[count_events])
-                    raw: dict = json.loads(output_raw)
-                    assert 'index' in raw
-                    assert 'payload' in raw
-                    assert raw["index"] == stream_items[count_events]["index"]
-                    count_events += 1
-
-            assert page_sized_reads == int(
-                generate_event_count / page_size
-            ), "full pages read constraint"
-            assert count_events == generate_event_count, "total events read constraint"
+    ) as ws:
+        ws: WebSocketTestSession
 
         # read the current stream items
-        check_new_items_in_connection(page_size, generate_event_count, stream_items)
+        await read_socket(ws, page_size, source_event_count, stream_items)
 
         # cache off old items
         old_stream_items = list(stream_items)
 
         # Trigger new events to fetch the latest data
-        events_ids = generate_events(test_profile.profile, generate_event_count)
-        stream_items = get_event_dumped_models(events_ids)
+        events_ids = generate_events(test_profile.profile, source_event_count)
+        stream_items = read_db_events(events_ids)
 
         # get the next set
-        check_new_items_in_connection(page_size, generate_event_count, stream_items)
+        await read_socket(ws, page_size, source_event_count, stream_items)
 
         # Do a raw read operation
         data_without_op = ReadClientOp().model_dump()
         data_without_op["reader_id"] = reader_id
         del data_without_op["op"]
-        websocket.send_json(data_without_op)
-        output_data = websocket.receive_json()
+        ws.send_json(data_without_op)
+        output_data = ws.receive_json()
         assert output_data is not None
         log.info("Received output_data %s", output_data)
         assert {'error': "No 'op' included in client message"} == output_data
@@ -197,8 +208,8 @@ async def test_websocket(
         data_invalid_op = ReadClientOp().model_dump()
         data_invalid_op["reader_id"] = reader_id
         data_invalid_op["op"] = "1916846835184884"
-        websocket.send_json(data_invalid_op)
-        output_data = websocket.receive_json()
+        ws.send_json(data_invalid_op)
+        output_data = ws.receive_json()
         assert output_data is not None
         log.info("Received output_data %s", output_data)
         assert {'error': "Invalid 'op' included in client message"} == output_data
@@ -211,26 +222,24 @@ async def test_websocket(
                        ]  # Start stream_items from the third quarter of all items
         item_list_length = len(stream_items)
 
-        max_reads = item_list_length / page_size
-
         send_data = ReadClientOp(
             position=new_old_stream_items[(first_item_position - 1)][
                 "index"
             ]  # Adjusted to "first_item_position - 1" since the reader reads after its current position
         ).model_dump()
 
-        websocket.send_json(send_data)
-        output_data = websocket.receive_json()
+        ws.send_json(send_data)
+        output_data = ws.receive_json()
         assert output_data is not None
         log.info("Received output_data %s", output_data)
         assert {'error': "No 'reader_id' included in client message"} == output_data
 
         # Test with a new position
         send_data["reader_id"] = reader_id
-        websocket.send_json(send_data)
-        output_data = websocket.receive_json()
+        ws.send_json(send_data)
+        output_data = ws.receive_json()
         assert output_data is not None
         log.info("Received output_data %s", output_data)
         assert {"success": "The processor is being updated"} == output_data
 
-        check_new_items_in_connection(page_size, item_list_length, stream_items)
+        await read_socket(ws, page_size, item_list_length, stream_items)
