@@ -27,7 +27,6 @@ AUTH0_DOMAIN=$(op read op://Infrastructure/api-staging-secrets/auth0-domain)
 CANARY_API_KEY=$(op read op://Infrastructure/api-staging-secrets/canary-api-key)
 PACKAGER_API_KEY=$(op read op://Infrastructure/api-staging-secrets/packager-api-key)
 
-kubectl config use-context gke_controlnet-407314_us-central1_gke-main-us-central1
 kubectl delete secret/secrets -n api-staging
 kubectl create secret generic secrets \
   --from-literal=SIGNOZ_API_KEY=$SIGNOZ_API_KEY \

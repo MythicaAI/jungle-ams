@@ -4,7 +4,6 @@
 NAMESPACE="api-staging"
 RELEASE_NAME="api-staging"
 
-kubectl config use-context gke_controlnet-407314_us-central1_gke-main-us-central1
 # Fetch and display the Helm release history
 echo "Fetching Helm history for '$RELEASE_NAME' in namespace '$NAMESPACE'..."
 helm history $RELEASE_NAME --namespace $NAMESPACE
