@@ -125,14 +125,14 @@ class Worker:
                 try:
                     auto_request = AutomationRequest(**json_payload)
 
-                    trace_data = {"work_guid": auto_request.work_guid,
+                    trace_data = {"correlation": auto_request.correlation,
                                   "job_id": auto_request.job_id if auto_request.job_id else "" }
                     span.set_attributes(trace_data)
                     if len(auto_request.data) == 1 and 'params' in auto_request.data:
                         # If it only contains "params", replace payload.data with its content
                         auto_request.data = auto_request.data['params']
 
-                    log_str = f"work_guid: {auto_request.work_guid}, work:{auto_request.path}, job_id: {auto_request.job_id}, data: {auto_request.data}"
+                    log_str = f"correlation: {auto_request.correlation}, work:{auto_request.path}, job_id: {auto_request.job_id}, data: {auto_request.data}"
 
                 except Exception as e:
                     msg=f'Validation error - {json_payload} - {format_exception(e)}'
@@ -172,7 +172,7 @@ class Worker:
                     if ret_data and ret_data.job_id:
                         span.set_attribute("job_id", ret_data.job_id)
                     span.set_status(telemetry_status)
-                    log.info("Job finished %s", auto_request.work_guid)
+                    log.info("Job finished %s", auto_request.correlation)
 
         return implementation
 
@@ -214,7 +214,7 @@ class Worker:
 
             if not automation:
                 return JSONResponse(
-                    content={"work_guid": auto_request.work_guid, "result": {"error": f"No automation found for path '{auto_request.path}'"}},
+                    content={"correlation": auto_request.correlation, "result": {"error": f"No automation found for path '{auto_request.path}'"}},
                     status_code=404,
                     headers=headers,
                 )
@@ -226,7 +226,7 @@ class Worker:
             except Exception as e:
                 log.error(f"Automation failed: {format_exception(e)}")
                 return JSONResponse(
-                    content={"work_guid": auto_request.work_guid, "result": {"error": f"Invalid input data: {format_exception(e)}"}},
+                    content={"correlation": auto_request.correlation, "result": {"error": f"Invalid input data: {format_exception(e)}"}},
                     status_code=422,
                     headers=headers,
                 )
@@ -245,14 +245,14 @@ class Worker:
             except Exception as e:
                 log.error(f"Automation failed: {format_exception(e)}")
                 return JSONResponse(
-                    content={"work_guid": auto_request.work_guid, "result": {"error": f"Automation failed: {format_exception(e)}"}},
+                    content={"correlation": auto_request.correlation, "result": {"error": f"Automation failed: {format_exception(e)}"}},
                     status_code=500,
                     headers=headers,
                 )
 
             # Return result
             return JSONResponse(
-                content={"work_guid": auto_request.work_guid, "result": result.model_dump()},
+                content={"correlation": auto_request.correlation, "result": result.model_dump()},
                 status_code=200,
                 headers=headers,
             )

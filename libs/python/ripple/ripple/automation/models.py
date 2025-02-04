@@ -25,7 +25,7 @@ class AutomationRequest(BaseModel):
     result subject of the process guid.
     """
     process_guid: str
-    work_guid: str
+    correlation: str
     job_id: Optional[str] = None
     auth_token: Optional[str] = None
     path: str

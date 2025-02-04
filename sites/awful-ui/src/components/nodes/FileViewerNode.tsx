@@ -332,6 +332,15 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                           language="javascript"
                           fileUrl={fileInfo.url}
                         />
+                      ) : fileInfo.content_type === 'application/txt' ? (
+                      <CodeViewer
+                        style={{
+                          height: '100%',
+                          width: '100%',
+                        }}
+                        language="txt"
+                        fileUrl={fileInfo.url}
+                      />
                       ) : fileInfo.content_type === 'application/usd' ||
                         fileInfo.content_type === 'application/usdz' ? (
                         <USDViewer
