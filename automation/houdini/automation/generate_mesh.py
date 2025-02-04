@@ -261,6 +261,7 @@ class ExportMeshRequest(ParameterSet):
     hda_file: FileParameter
     hda_definition_index: int
     format: str
+    record_profile: bool
 
 
 class ExportMeshResponse(OutputFiles):
@@ -270,16 +271,27 @@ class ExportMeshResponse(OutputFiles):
 def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
     log.info(f"Starting generate_mesh: {model}")
 
+    if model.record_profile:
+        profile = hou.perfMon.startProfile("Generate Mesh Profile")
+
     tmp_dir = tempfile.mkdtemp()
     result_file_paths = generate_mesh_impl(
         model.hda_file.file_path,
         model.hda_definition_index,
         model.format,
-        model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format'}),
+        model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format', 'record_profile'}),
         tmp_dir
     )
 
+    if model.record_profile:
+        profile.stop()
+        profile_path = os.path.join(tmp_dir, "generate_mesh_profile.hperf")
+        profile.save(profile_path)
+
     log.info(f"Completed generate_mesh")
     return ExportMeshResponse(
-        files={'mesh': [result_file_paths[0]]}
+        files={
+            'mesh': [result_file_paths[0]],
+            'profile': [profile_path] if model.record_profile else []
+        }
     )

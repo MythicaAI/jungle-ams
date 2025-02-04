@@ -7,7 +7,7 @@ import requests
 from ripple.automation.publishers import ResultPublisher
 from ripple.compile.rpsc import compile_interface
 from ripple.models.assets import AssetVersionEntryPointReference
-from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec
+from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, BoolParameterSpec, IntParameterSpec, StringParameterSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
 
@@ -51,16 +51,21 @@ def set_config_params(param_spec: ParameterSpec, hda_file_id: str, index: int):
         label='Format', 
         default='usdz'
     )
+    param_spec.params['record_profile'] = BoolParameterSpec(
+        label='Record Profile', 
+        default=False
+    )
+
 
 class GenerateJobDefRequest(ParameterSet):
     hda_file: FileParameter
     src_asset_id: str
     src_version: list[int]
 
+
 class GenerateJobDefResponse(ProcessStreamItem):
     item_type: Literal["job_defs"] = "job_defs"
     job_definitions: list[JobDefinition]
-
 
 
 def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
@@ -99,4 +104,3 @@ def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher
         responder.result(res)
             
         return GenerateJobDefResponse(job_definitions=ret)
-
