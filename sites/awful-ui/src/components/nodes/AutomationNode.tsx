@@ -89,7 +89,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     node.data.executionData || initAutomation(automationTask)
   );
   const [myInterfaceData, setMyInterfaceData] = useState<ExecutionData>(
-    node.data.executionData || initAutomation(automationTask)
+    initAutomation(automationTask)
   );
   const { getFile } = useMythicaApi();
 
@@ -516,8 +516,17 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           </div>
         )}
         {isScriptNode && (
-          <div>
-            <pre style={{ overflow: 'auto', maxHeight: '400px', width: '100%' }}>{flowExecutionMessage}</pre>
+          <div className="nowheel">
+            <pre 
+              style={{ 
+                overflow: 'auto', 
+                maxHeight: '300px',
+                width: '100%',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+            }}>
+              {flowExecutionMessage}
+            </pre>
           </div>
         )}
 

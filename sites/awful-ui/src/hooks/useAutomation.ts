@@ -8,7 +8,7 @@ type AutomationContextType = {
     automations: WorkerAutomations;
     allAutomations: { [uri: string]: AutomationTask };
     loadAutomations: () => Promise<void>;
-    initAutomation: (task: AutomationTask) => void;
+    initAutomation: (task: AutomationTask) => ExecutionData;
     runAutomation: (worker: string, nodeId: string, path: string, inputs: dictionary, responseCallback:React.Dispatch<React.SetStateAction<ExecutionData>>) => Promise<void>;
     parseAutomation: (worker: string, workerSpecs:{[path:string]:AutomationSpec}) => AutomationTask[];
     savedAutomationsById: {[id:string]: AutomationScript};

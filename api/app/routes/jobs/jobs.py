@@ -232,10 +232,10 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
         src_asset_id="",
         src_version=[0, 0, 0]
     )
-    work_guid = str(uuid4())
+    correlation = str(uuid4())
     event = AutomationRequest(
         process_guid=process_guid,
-        work_guid=work_guid,
+        correlation=correlation,
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
         auth_token=profile.auth_token,
@@ -243,7 +243,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
     )
     nats = NatsAdapter()
     await nats.post("houdini", event.model_dump())
-    return work_guid
+    return correlation
 
 
 def add_job_requested_event(
@@ -289,7 +289,6 @@ async def add_job_nats_event(
 
     event = AutomationRequest(
         process_guid=process_guid,
-        work_guid=str(uuid4()),
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
