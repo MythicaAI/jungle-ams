@@ -8,7 +8,7 @@ from minio import Minio
 from minio.error import S3Error
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, tracer
-from opentelemetry.context import get_current as get_current_context
+from opentelemetry.context import get_current as get_current_telemetry_context
 
 
 log = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class Client(StorageClient):
         any S3 compatible backend including GCS or a minio gateway for
         transparent object migrations.
         """
-        with tracer.start_as_current_span("file.upload", context=get_current_context()) as span:
+        with tracer.start_as_current_span("file.upload", context=get_current_telemetry_context()) as span:
             span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             ctx.bucket_name = _create_bucket(self.minio, bucket_type)
 
@@ -103,7 +103,7 @@ class Client(StorageClient):
 
     def download_link(self, bucket_name: str, object_name: str, file_name: str):
         """Get a pre-signed URL to down the object"""
-        with tracer.start_as_current_span("file.download", context=get_current_context()) as span:
+        with tracer.start_as_current_span("file.download", context=get_current_telemetry_context()) as span:
             span.set_attribute("file.name", object_name)
             log.info("Request to download file from the minio bucket. name: %s", object_name)
         log.info("File download link requested", extra={"bucket_name": bucket_name, "file_name": object_name})

@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Optional
 
-from opentelemetry.context import get_current as get_current_context
+from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.propagate import inject
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
@@ -42,7 +42,7 @@ class ResultPublisher:
 
     def update_headers_from_context(self) -> dict:
         updated_headers = {}
-        inject(updated_headers, get_current_context())
+        inject(updated_headers, get_current_telemetry_context())
         return updated_headers
 
     #Callback for reporting back. 

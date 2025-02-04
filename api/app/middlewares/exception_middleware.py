@@ -5,23 +5,14 @@ import time
 from fastapi import HTTPException, Request
 from fastapi.concurrency import iterate_in_threadpool
 from opentelemetry import trace
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace.status import Status, StatusCode
 from starlette.middleware.base import BaseHTTPMiddleware
+from ripple.runtime.decorators import propagate_telemetry_context
+from opentelemetry.context import get_current as get_current_telemetry_context
 
 logger = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
-
-
-def propagate_context(func):
-    def wrapper(*args, **kwargs):
-        request: Request = args[1]
-        context = TraceContextTextMapPropagator().extract(carrier=dict(request.headers))
-        with tracer.start_as_current_span("request", context=context):
-            result = func(*args, **kwargs)
-        return result
-    return wrapper
 
 
 class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
@@ -29,10 +20,10 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
     A middleware that catches the app's exceptions,
     logs it, and re-raises exceptions.
     """
-    @propagate_context
+    @propagate_telemetry_context
     async def dispatch(self, request: Request, call_next):
+        span = trace.get_current_span(context=get_current_telemetry_context())
         start_time = time.time()
-        span = trace.get_current_span()
 
         body = await request.body()
         headers = dict(request.headers)
