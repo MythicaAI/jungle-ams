@@ -145,7 +145,7 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
 
     event = AutomationRequest(
         process_guid=process_guid,
-        work_guid=str(uuid4()),
+        correlation=str(uuid4()),
         auth_token=token,
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
