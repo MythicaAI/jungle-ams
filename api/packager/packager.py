@@ -9,28 +9,37 @@ import argparse
 import asyncio
 import logging
 import os
+import requests
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Optional
-from uuid import uuid4
-
-import requests
 from pydantic import AnyHttpUrl
+from pydantic_settings import BaseSettings
 from pythonjsonlogger import jsonlogger
-
-from sanitize_filename import sanitize_filename
-from assets.repo import AssetFileReference, AssetVersionResult
-from events.events import EventsSession
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
+from typing import Optional
+from uuid import uuid4
+
+from assets.repo import AssetFileReference, AssetVersionResult
+from events.events import EventsSession
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
+from sanitize_filename import sanitize_filename
 from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
+
+
+class Settings(BaseSettings):
+    """Core settings that come from the environment"""
+    mythica_api_key: str = None
+    mythica_endpoint: str = None
+
+
+settings = Settings()
 
 
 def parse_args():
@@ -58,13 +67,14 @@ def parse_args():
     parser.add_argument(
         "-e", "--endpoint",
         help="API endpoint",
-        default="http://localhost:5555",
+        default=settings.mythica_endpoint,
         required=False
     )
 
     parser.add_argument(
         "-k", "--api_key",
         help="API access key",
+        default=settings.mythica_api_key,
         required=False
     )
 
@@ -88,8 +98,8 @@ def get_versions(
     if version == (0, 0, 0):
         r = requests.get(f"{endpoint}/v1/assets/{asset_id}")
     else:
-        version_str = ".".join(map(str, version))
-        r = requests.get(f"{endpoint}/v1/assets/{asset_id}/versions/{version_str}")
+        url = build_asset_url(endpoint, asset_id, version)
+        r = requests.get(url)
     if r.status_code != 200:
         raise ConnectionError(r.text)
     o = r.json()
@@ -157,6 +167,12 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
     await nats.post("houdini", event.model_dump())
 
 
+def build_asset_url(endpoint: str, asset_id: str, version: tuple[int]) -> str:
+    """Build an access API access URL to a specific asset version"""
+    version_str = '.'.join(map(str, version))
+    return f"{endpoint}/v1/assets/{asset_id}/versions/{version_str}"
+
+
 async def create_zip_from_asset(
         output_path: Path,
         endpoint: str,
@@ -171,11 +187,14 @@ async def create_zip_from_asset(
 
     versions = get_versions(endpoint, asset_id, version)
     for v in versions:
+        if v.name is None:
+            log.warning("asset does not have a name %s",
+                        build_asset_url(endpoint, asset_id, v.version))
+            continue
         version_str = '.'.join(map(str, v.version))
         zip_name = f"{sanitize_filename(v.name)}-{version_str}.zip"
         zip_filename = output_path / zip_name
-        log.info("creating package %s", zip_filename)
-        log.info("version data: %s", v.model_dump())
+        log.info("creating package %s with %s", zip_filename, v.model_dump())
         contents = list(map(lambda c: resolve_contents(endpoint, c), get_file_contents(v)))
         with zipfile.ZipFile(zip_filename, 'w') as zip_file:
             for content in contents:
@@ -259,6 +278,13 @@ async def exec_job(endpoint: str, api_key: str, job_data):
 async def worker_main(endpoint: str, api_key: str):
     """Async entrypoint to test worker dequeue, looks for SQL_URL
         environment variable to form an initial connection"""
+
+    if endpoint is None:
+        raise ValueError("endpoint is required as an argument or through MYTHICA_ENDPOINT")
+
+    if api_key is None:
+        raise ValueError("api_key is required as an argument or through MYTHICA_API_KEY")
+
     sql_url = os.environ.get('SQL_URL',
                              'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline').strip()
     sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
