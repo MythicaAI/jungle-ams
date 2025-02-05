@@ -36,7 +36,7 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_ASYNC_URL
-            - name: PACKAGER_ENDPOINT
+            - name: MYTHICA_ENDPOINT
               value: "http://app.{{ .Values.namespace }}:80"
             - name: APP_VERSION
               value: {{ include "api.imageVersion" (list . "mythica-packager") }}
