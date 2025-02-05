@@ -22,7 +22,6 @@ from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, fi
 from cryptid.location import location
 from db.schema.assets import Asset, AssetVersion, AssetVersionEntryPoint
 from db.schema.events import Event
-from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from ripple.auth import roles
 from ripple.auth.authorization import Scope, validate_roles
@@ -32,7 +31,7 @@ from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
 from tags.tag_models import TagType
 from tags.type_utils import resolve_type_tags
-from assets.queries import top_published_assets_metadata_query, resolve_assets_tag
+from assets.queries import get_top_published_assets_metadata_query, resolve_assets_tag
 from db.connection import sql_profiler_decorator
 
 ZERO_VERSION = [0, 0, 0]
@@ -674,7 +673,7 @@ def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionP
 
 @sql_profiler_decorator
 def top(session: Session):
-    results = session.exec(top_published_assets_metadata_query).all()
+    results = get_top_published_assets_metadata_query(session)
 
     def avf_to_top(
         asset, ver, downloads, sorted_versions, tag_to_asset,  owner_name, author_name, org_name
