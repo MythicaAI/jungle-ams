@@ -109,7 +109,7 @@ export const AssetEditVersionDropdown = () => {
 
   React.useEffect(() => {
     if (isVersionZero(sanitizedVersion) || isVersionZero(version)) {
-      const defaultVersion = "1.0.0";
+      const defaultVersion = paramVersion ?? "1.0.0";
       const newSanitizedVersion = sanitizeVersion(
         convertUserVersion(defaultVersion),
       );

@@ -1,10 +1,23 @@
 import React from "react";
 import { AssetVersionResponse } from "types/apiTypes";
-import {Card, Stack, Typography, Chip, Divider, ListItem, List} from "@mui/joy";
-import { LucideGitCommitVertical, LucidePackage, LucideFile } from "lucide-react";
+import {
+  Card,
+  Stack,
+  Typography,
+  Chip,
+  Divider,
+  Accordion,
+  AccordionDetails,
+  AccordionGroup,
+  AccordionSummary,
+} from "@mui/joy";
+import {
+  LucideGitCommitVertical,
+  LucidePackage,
+  LucideFile,
+} from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link } from "react-router-dom";
-import {ListItemAvatar} from "@mui/material";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
@@ -53,7 +66,13 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
     const sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(decimals))} ${sizes[i]}`;
-  }
+  };
+
+  const bundleSize = formatBytes(
+    av.contents["files"].reduce((prev, curr) => {
+      return curr.size + prev;
+    }, 0),
+  );
 
   return (
     <Stack gap="10px">
@@ -63,7 +82,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
             <Typography level={"h3"}>{av.name}</Typography>
             <Typography>by {av.owner_name}</Typography>
           </Stack>
-           <Divider />
+          <Divider />
           <Typography
             sx={{
               overflow: "hidden",
@@ -75,7 +94,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           </Typography>
         </Stack>
       </Card>
-      {av.blurb ?
+      {av.blurb ? (
         <Card>
           <Stack
             direction="row"
@@ -88,7 +107,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
             </Typography>
           </Stack>
         </Card>
-        : null }
+      ) : null}
 
       <Card>
         <Typography fontSize={18} textAlign="left">
@@ -114,35 +133,84 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           </Chip>
         </Stack>
       </Card>
-      <Card variant="outlined" sx={{ width: "100%", maxWidth: 500, p: 2 }}>
-        <List>
-        {av.contents['files'].map((avc) =>
-          <ListItem key={avc.file_id} sx={{ display: "flex", gap: 2 }}>
-            <ListItemAvatar>
-              <LucideFile />
-            </ListItemAvatar>
-            <Stack
-              direction="row"
-              sx={{ flex: 1, minWidth: 0, alignItems: "left", justifyContent: "space-between" }}
+      <Card
+        variant="outlined"
+        sx={{ width: "100%", maxWidth: { xs: "100%", md: 500 }, p: 0 }}
+      >
+        <AccordionGroup>
+          <Accordion>
+            <AccordionSummary
+              slotProps={{
+                button: {
+                  sx: {
+                    ":focus": { outline: "none" },
+                    borderRadius: "8px",
+                    gap: "9px",
+                    py: "10px",
+                  },
+                },
+              }}
             >
-              <Typography
-                sx={{
-                  flex: 1,
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                width="100%"
               >
-                {avc.file_name}
-              </Typography>
-              <Typography sx={{ color: "text.secondary", minWidth: 50, textAlign: "right" }}>
-                {avc.size ? `${formatBytes(avc.size)}` : ""}
-              </Typography>
-            </Stack>
-          </ListItem>
-        )}
-        </List>
+                <Typography fontSize={18} fontWeight={600}>
+                  Bundle size
+                </Typography>
+
+                <Typography>{bundleSize}</Typography>
+              </Stack>
+            </AccordionSummary>
+            <AccordionDetails>
+              {av.contents["files"].map((avc, idx, arr) => {
+                const isLast = idx === arr.length - 1;
+                return (
+                  <>
+                    <Stack
+                      width="100%"
+                      direction="row"
+                      justifyContent="space-between"
+                      gap="10px"
+                      sx={{
+                        ":not(:last-child)": {
+                          mb: "6px",
+                        },
+                        ":not(:first-child)": {
+                          mt: "6px",
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {avc.file_name}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        gap="6px"
+                        minWidth="100px"
+                        justifyContent="flex-end"
+                      >
+                        <Typography fontSize={14}>
+                          {avc.size ? `${formatBytes(avc.size)}` : ""}
+                        </Typography>
+                        <LucideFile />
+                      </Stack>
+                    </Stack>
+                    {!isLast && <Divider />}
+                  </>
+                );
+              })}
+            </AccordionDetails>
+          </Accordion>
+        </AccordionGroup>
       </Card>
     </Stack>
   );
