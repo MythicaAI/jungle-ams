@@ -1,0 +1,486 @@
+{
+  "flow": {
+    "nodes": [
+      {
+        "id": "awful_node_2bd6a73c-bd48-474b-8996-5c09ee13e82a",
+        "type": "fileViewer",
+        "position": {
+          "x": 5208.45650911007,
+          "y": 176.90038310634327
+        },
+        "data": {
+          "selectedPane": 0,
+          "selectedFileIds": [
+            "file_4BeJRfvJdkZk2tgdVPg784zKNM8B"
+          ],
+          "selectedFileNames": [
+            "mythica.fan_palm.1.0.hda"
+          ]
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 522,
+          "height": 368
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912",
+        "type": "hdaWorker",
+        "position": {
+          "x": 5422.5518957117365,
+          "y": 966.4245147892565
+        },
+        "data": {
+          "automation": "houdini://mythica/hda",
+          "inputData": {
+            "nonce": "nonce"
+          },
+          "executionData": {
+            "worker": "houdini",
+            "path": "/mythica/hda",
+            "state": "clean",
+            "output": {}
+          }
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 389,
+          "height": 844
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_17941f0f-3db1-4819-9ac0-401d4c8813b7",
+        "type": "fileViewer",
+        "position": {
+          "x": 4195.408348778665,
+          "y": 185.89267415922689
+        },
+        "data": {
+          "selectedPane": 0,
+          "selectedFileIds": [
+            "file_3mnLwbhLTFi7ngrFd9BYHUJb1spr"
+          ],
+          "selectedFileNames": [
+            "mythica.Tree.palm_tree_segment.1.0.hda"
+          ]
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 634,
+          "height": 368
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3",
+        "type": "hdaWorker",
+        "position": {
+          "x": 4361.900381151145,
+          "y": 760.5311576750497
+        },
+        "data": {
+          "automation": "houdini://mythica/hda",
+          "inputData": {
+            "nonce": "nonce"
+          },
+          "executionData": {
+            "worker": "houdini",
+            "path": "/mythica/hda",
+            "state": "clean",
+            "output": {}
+          }
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 341,
+          "height": 1155
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_ec305111-a0c2-4cff-8d83-746bfdd695f6",
+        "type": "fileViewer",
+        "position": {
+          "x": 2100,
+          "y": 1605
+        },
+        "data": {
+          "selectedPane": 0,
+          "selectedFileIds": [
+            "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+          ],
+          "selectedFileNames": [
+            "mythica.segmented_palm_tree.1.0.hda"
+          ]
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 615,
+          "height": 368
+        },
+        "selected": false
+      },
+      {
+        "id": "awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59",
+        "type": "hdaWorker",
+        "position": {
+          "x": 3411.227878263029,
+          "y": 2233.1644415371584
+        },
+        "data": {
+          "automation": "houdini://mythica/hda",
+          "inputData": {
+            "nonce": "nonce"
+          },
+          "executionData": {
+            "worker": "houdini",
+            "path": "/mythica/hda",
+            "state": "clean",
+            "output": {}
+          }
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 427,
+          "height": 1691
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_9b80595b-ab90-4d2a-a20a-b08ddac1e9ed",
+        "type": "fileViewer",
+        "position": {
+          "x": 5354.6518036156085,
+          "y": 2266.3675323681473
+        },
+        "data": {
+          "selectedPane": 0,
+          "selectedFileIds": [],
+          "selectedFileNames": []
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 434,
+          "height": 368
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_179a4349-2c51-4cc4-8098-eae6e5786636",
+        "type": "fileViewer",
+        "position": {
+          "x": 4167.9613280324875,
+          "y": 2472.681240867132
+        },
+        "data": {
+          "selectedPane": 0,
+          "selectedFileIds": [],
+          "selectedFileNames": []
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 434,
+          "height": 368
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "awful_node_0eaba5f0-933a-40c3-9005-bef6f93fd163",
+        "type": "fileViewer",
+        "position": {
+          "x": 3781.622534538642,
+          "y": 4406.614844067735
+        },
+        "data": {
+          "selectedPane": 0,
+          "selectedFileIds": [],
+          "selectedFileNames": []
+        },
+        "dragHandle": ".drag-panel",
+        "measured": {
+          "width": 434,
+          "height": 368
+        },
+        "selected": false,
+        "dragging": false
+      }
+    ],
+    "edges": [
+      {
+        "source": "awful_node_2bd6a73c-bd48-474b-8996-5c09ee13e82a",
+        "sourceHandle": "outputFiles",
+        "target": "awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912",
+        "targetHandle": "HDA",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_2bd6a73c-bd48-474b-8996-5c09ee13e82aoutputFiles-awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912HDA"
+      },
+      {
+        "source": "awful_node_17941f0f-3db1-4819-9ac0-401d4c8813b7",
+        "sourceHandle": "outputFiles",
+        "target": "awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3",
+        "targetHandle": "HDA",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_17941f0f-3db1-4819-9ac0-401d4c8813b7outputFiles-awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3HDA"
+      },
+      {
+        "source": "awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912",
+        "sourceHandle": "output0",
+        "target": "awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59",
+        "targetHandle": "input1",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912output0-awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59input1"
+      },
+      {
+        "source": "awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3",
+        "sourceHandle": "output0",
+        "target": "awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59",
+        "targetHandle": "input0",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3output0-awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59input0"
+      },
+      {
+        "id": "awful_node_ec305111-a0c2-4cff-8d83-746bfdd695f6->awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59",
+        "source": "awful_node_ec305111-a0c2-4cff-8d83-746bfdd695f6",
+        "target": "awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59"
+      },
+      {
+        "source": "awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912",
+        "sourceHandle": "output0",
+        "target": "awful_node_9b80595b-ab90-4d2a-a20a-b08ddac1e9ed",
+        "targetHandle": "inputFiles",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912output0-awful_node_9b80595b-ab90-4d2a-a20a-b08ddac1e9edinputFiles"
+      },
+      {
+        "source": "awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3",
+        "sourceHandle": "output0",
+        "target": "awful_node_179a4349-2c51-4cc4-8098-eae6e5786636",
+        "targetHandle": "inputFiles",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3output0-awful_node_179a4349-2c51-4cc4-8098-eae6e5786636inputFiles"
+      },
+      {
+        "source": "awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59",
+        "sourceHandle": "output0",
+        "target": "awful_node_0eaba5f0-933a-40c3-9005-bef6f93fd163",
+        "targetHandle": "inputFiles",
+        "type": "fileEdge",
+        "id": "xy-edge__awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59output0-awful_node_0eaba5f0-933a-40c3-9005-bef6f93fd163inputFiles"
+      }
+    ],
+    "viewport": {
+      "x": -178.28199766103535,
+      "y": -266.8317213116376,
+      "zoom": 0.25348986994750655
+    }
+  },
+  "mythicaFlow": {
+    "flowData": {
+      "awful_node_b9599ac3-cf4b-406e-bfe6-b924baad5abf": {
+        "uploadFiles": [
+          {
+            "file_id": "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.segmented_palm_tree.1.0.hda",
+            "event_ids": [
+              "evt_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+            ],
+            "size": 112407,
+            "content_type": "application/octet-stream",
+            "content_hash": "269476a8a34d17886ac26582340551acc44006a1",
+            "created": "2025-02-03T18:34:27.230625Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_2bd6a73c-bd48-474b-8996-5c09ee13e82a": {
+        "inputFiles": [
+          {
+            "file_id": "file_4BeJRfvJdkZk2tgdVPg784zKNM8B",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.fan_palm.1.0.hda",
+            "event_ids": [
+              "evt_4BeJRfvJdkZk2tgdVPg784zKNM8B"
+            ],
+            "size": 54002,
+            "content_type": "application/hda",
+            "content_hash": "f5f014a83a95079c7c524496e54ed6770512e809",
+            "created": "2025-02-03T18:34:15.373946Z",
+            "tags": []
+          }
+        ],
+        "outputFiles": [
+          {
+            "file_id": "file_4BeJRfvJdkZk2tgdVPg784zKNM8B",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.fan_palm.1.0.hda",
+            "event_ids": [
+              "evt_4BeJRfvJdkZk2tgdVPg784zKNM8B"
+            ],
+            "size": 54002,
+            "content_type": "application/hda",
+            "content_hash": "f5f014a83a95079c7c524496e54ed6770512e809",
+            "created": "2025-02-03T18:34:15.373946Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_26d2cf8c-d1bc-47ff-aa75-231892ed4912": {
+        "HDA": [
+          {
+            "file_id": "file_4BeJRfvJdkZk2tgdVPg784zKNM8B",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.fan_palm.1.0.hda",
+            "event_ids": [
+              "evt_4BeJRfvJdkZk2tgdVPg784zKNM8B"
+            ],
+            "size": 54002,
+            "content_type": "application/hda",
+            "content_hash": "f5f014a83a95079c7c524496e54ed6770512e809",
+            "created": "2025-02-03T18:34:15.373946Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_17941f0f-3db1-4819-9ac0-401d4c8813b7": {
+        "inputFiles": [
+          {
+            "file_id": "file_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.Tree.palm_tree_segment.1.0.hda",
+            "event_ids": [
+              "evt_3mnLwbhLTFi7ngrFd9BYHUJb1spr"
+            ],
+            "size": 51109,
+            "content_type": "application/hda",
+            "content_hash": "6ef7c7023d01337646fb3e7e80f57e372b4d9c1a",
+            "created": "2025-02-03T18:34:15.346872Z",
+            "tags": []
+          }
+        ],
+        "outputFiles": [
+          {
+            "file_id": "file_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.Tree.palm_tree_segment.1.0.hda",
+            "event_ids": [
+              "evt_3mnLwbhLTFi7ngrFd9BYHUJb1spr"
+            ],
+            "size": 51109,
+            "content_type": "application/hda",
+            "content_hash": "6ef7c7023d01337646fb3e7e80f57e372b4d9c1a",
+            "created": "2025-02-03T18:34:15.346872Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_29e6fca8-b7cc-45cf-b43d-0e8b2452ebb3": {
+        "HDA": [
+          {
+            "file_id": "file_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.Tree.palm_tree_segment.1.0.hda",
+            "event_ids": [
+              "evt_3mnLwbhLTFi7ngrFd9BYHUJb1spr"
+            ],
+            "size": 51109,
+            "content_type": "application/hda",
+            "content_hash": "6ef7c7023d01337646fb3e7e80f57e372b4d9c1a",
+            "created": "2025-02-03T18:34:15.346872Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_ec305111-a0c2-4cff-8d83-746bfdd695f6": {
+        "inputFiles": [
+          {
+            "file_id": "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.segmented_palm_tree.1.0.hda",
+            "event_ids": [
+              "evt_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+            ],
+            "size": 112407,
+            "content_type": "application/hda",
+            "content_hash": "269476a8a34d17886ac26582340551acc44006a1",
+            "created": "2025-02-03T18:34:27.220237Z",
+            "tags": []
+          }
+        ],
+        "outputFiles": [
+          {
+            "file_id": "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.segmented_palm_tree.1.0.hda",
+            "event_ids": [
+              "evt_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+            ],
+            "size": 112407,
+            "content_type": "application/hda",
+            "content_hash": "269476a8a34d17886ac26582340551acc44006a1",
+            "created": "2025-02-03T18:34:27.220237Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_e17f3bf1-ee4d-4bd8-ad6b-49de6d199a59": {
+        "HDA": [
+          {
+            "file_id": "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.segmented_palm_tree.1.0.hda",
+            "event_ids": [
+              "evt_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+            ],
+            "size": 112407,
+            "content_type": "application/hda",
+            "content_hash": "269476a8a34d17886ac26582340551acc44006a1",
+            "created": "2025-02-03T18:34:27.220237Z",
+            "tags": []
+          }
+        ]
+      },
+      "awful_node_8315cbc3-6b25-477e-9b94-d277c2f033da": {
+        "inputFiles": [
+          {
+            "file_id": "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.segmented_palm_tree.1.0.hda",
+            "event_ids": [
+              "evt_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+            ],
+            "size": 112407,
+            "content_type": "application/hda",
+            "content_hash": "269476a8a34d17886ac26582340551acc44006a1",
+            "created": "2025-02-03T18:34:27.220237Z",
+            "tags": []
+          }
+        ],
+        "outputFiles": [
+          {
+            "file_id": "file_3XWBg1yA2bzWcXXG8ZkhFy5URn6y",
+            "owner_id": "prf_3mnLwbhLTFi7ngrFd9BYHUJb1spr",
+            "file_name": "mythica.segmented_palm_tree.1.0.hda",
+            "event_ids": [
+              "evt_3XWBg1yA2bzWcXXG8ZkhFy5URn6y"
+            ],
+            "size": 112407,
+            "content_type": "application/hda",
+            "content_hash": "269476a8a34d17886ac26582340551acc44006a1",
+            "created": "2025-02-03T18:34:27.220237Z",
+            "tags": []
+          }
+        ]
+      }
+    }
+  }
+}

@@ -46,7 +46,6 @@ def hda(request: HdaRequest, responder: ResultPublisher) -> HdaResponse:
     for hda in request.hdas:    
         hou.hda.installFile(hda.file_path, force_use_assets=True)
         # Create a temporary directory
-        tmpdirname = tempfile.mkdtemp()
         for assetdef in hou.hda.definitionsInFile(hda.file_path):
             # Get the node type for the asset
             nodeType = mnet.get_node_type(assetdef.nodeType())
@@ -59,6 +58,7 @@ def hda(request: HdaRequest, responder: ResultPublisher) -> HdaResponse:
 
         # Uninstall the HDA file after processing
         hou.hda.uninstallFile(hda.file_path)
+
 
     return HdaResponse(node_types=nodeTypes) 
 

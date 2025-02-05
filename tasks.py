@@ -109,6 +109,9 @@ IMAGES = {
     },
     'automation/imagemagick': {
         'requires': ['libs/python'],
+    },
+    'automation/workflow': {
+        'requires': ['libs/python'],
     }
 }
 
@@ -135,9 +138,10 @@ IMAGE_SETS = {
         'testing/storage/minio-config'},
     'auto': {
         'automation/houdini',
-        'automation/genai',
+        #'automation/genai',
         'automation/test',
-        'automation/blender',
+        'automation/workflow',
+        #'automation/blender',
         'api/packager'
     },
 }
@@ -260,6 +264,7 @@ def build_image(c, image_path: PathLike, no_cache: bool = False, use_tailscale: 
         c.run(
             (f"docker buildx build --platform={IMAGE_PLATFORM}"
              f" {buildarg_str} -f {dockerfile_path}"
+             f" --network=host"
              f'{" --no-cache" if no_cache else ""}'
              f"  -t {image_name}:latest ."),
             pty=PTY_SUPPORTED)
