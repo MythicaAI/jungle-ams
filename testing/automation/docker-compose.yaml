@@ -12,6 +12,8 @@ services:
       - storage
     environment:
       MYTHICA_ENVIRONMENT: debug
+      MYTHICA_ENDPOINT: http://app:5555
+      MYTHICA_API_KEY: ${MYTHICA_API_KEY}
   houdini-worker:
     container_name: houdini
     image: mythica-auto-houdini:latest
