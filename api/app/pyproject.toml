@@ -51,6 +51,7 @@ uvicorn = "^0.34.0"
 pydantic = "2.9.2"
 email-validator = "2.2.0"
 opentelemetry-exporter-gcp-trace = "^1.8.0"
+sqltap-ng = "^0.3.11"
 
 
 [tool.poetry.extras]

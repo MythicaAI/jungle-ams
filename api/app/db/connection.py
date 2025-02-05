@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
+from ripple.config import ripple_config
 from sqlmodel import Session, create_engine
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
@@ -82,3 +83,18 @@ def get_session(echo=False):
 
     engine.echo = echo
     return Session(engine)
+
+
+def sql_profiler_decorator(func, report_name="report.html"):
+    "Focusing on the SQL profiling aspect"
+    import sqltap
+    def wrapper(*args, **kwargs):
+        if not ripple_config().mythica_environment == "debug":
+            return func(*args, **kwargs)
+
+        profiler = sqltap.start()
+        result = func(*args, **kwargs)
+        statistics = profiler.collect()
+        sqltap.report(statistics, report_name)
+        return result
+    return wrapper
