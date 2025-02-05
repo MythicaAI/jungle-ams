@@ -18,12 +18,10 @@ from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
 from content.validate_filename import validate_filename
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
-    org_seq_to_id, \
-    profile_id_to_seq, profile_seq_to_id
+    org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from cryptid.location import location
 from db.schema.assets import Asset, AssetVersion, AssetVersionEntryPoint
 from db.schema.events import Event
-from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from ripple.auth import roles
 from ripple.auth.authorization import Scope, validate_roles
@@ -33,6 +31,8 @@ from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
 from tags.tag_models import TagType
 from tags.type_utils import resolve_type_tags
+from assets.queries import get_top_published_assets_metadata_query, resolve_assets_tag
+from db.connection import sql_profiler_decorator
 
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
@@ -671,27 +671,23 @@ def delete_asset_and_versions(session: Session, asset_id: str, profile: SessionP
     session.commit()
 
 
+@sql_profiler_decorator
 def top(session: Session):
-    results = session.exec(
-        select(Asset, AssetVersion, FileContent)
-        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-        .outerjoin(FileContent, FileContent.file_seq == AssetVersion.package_seq)
-        .where(AssetVersion.published == True)
-        .where(AssetVersion.package_seq != None)
-        .where(Asset.deleted == None, AssetVersion.deleted == None)
-    ).all()
+    results = get_top_published_assets_metadata_query(session)
 
-    def avf_to_top(asset, ver, downloads, sorted_versions):
+    def avf_to_top(
+        asset, ver, downloads, sorted_versions, tag_to_asset,  owner_name, author_name, org_name
+    ):
         asset_id = asset_seq_to_id(asset.asset_seq)
         return AssetTopResult(
             asset_id=asset_id,
             org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
-            org_name=resolve_org_name(session, asset.org_seq),
+            org_name=org_name if org_name else "",
             owner_id=profile_seq_to_id(asset.owner_seq),
-            owner_name=resolve_profile_name(session, asset.owner_seq),
+            owner_name=owner_name or "",
             package_id=file_seq_to_id(ver.package_seq),
             author_id=profile_seq_to_id(ver.author_seq),
-            author_name=resolve_profile_name(session, ver.author_seq),
+            author_name=author_name or "",
             name=ver.name,
             description=ver.description,
             blurb=ver.blurb,
@@ -702,18 +698,19 @@ def top(session: Session):
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
             downloads=downloads,
-            tags=resolve_type_tags(session, TagType.asset, asset.asset_seq))
+            tags=resolve_assets_tag(tag_to_asset),
+        )
 
     reduced = {}
     for result in results:
-        asset, ver, file = result
+        asset, ver, file, tag_to_asset, owner_name, author_name, org_name = result
         if ver is None or file is None:
             continue
         atr = reduced.get(asset.asset_seq, None)
         version_id = [ver.major, ver.minor, ver.patch]
         if atr is None:
             reduced[asset.asset_seq] = avf_to_top(
-                asset, ver, file.downloads, [])
+                asset, ver, file.downloads, [], tag_to_asset,  owner_name, author_name, org_name)
         else:
             versions = atr.versions
             versions.append(version_id)
@@ -721,7 +718,7 @@ def top(session: Session):
             atr.downloads += file.downloads
             if version_id > atr.version:
                 reduced[asset.asset_seq] = avf_to_top(
-                    asset, ver, atr.downloads, atr.versions)
+                    asset, ver, atr.downloads, atr.versions, tag_to_asset,  owner_name, author_name, org_name)
 
     sort_results = sorted(reduced.values(), key=lambda x: x.downloads, reverse=True)
     return sort_results

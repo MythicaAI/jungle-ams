@@ -62,3 +62,4 @@ testing/mnt/*.env
 testing/mnt/.env
 testing/.env
 api/helm/aws/registry-access-key.json
+api/app/report.html
