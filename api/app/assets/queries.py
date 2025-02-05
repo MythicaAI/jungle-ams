@@ -1,5 +1,6 @@
 # pylint: disable=no-member, unsupported-membership-test
 
+import json
 from functools import lru_cache
 from typing import Callable, Union
 
@@ -14,20 +15,27 @@ from sqlmodel import Session, func, select
 
 @lru_cache
 def build_json_function(session: Session) -> Callable:
-    """Return the appropriate JSON function based on the database engine."""
     if session.bind.name == 'postgresql':
         return func.json_build_object
     elif session.bind.name == 'sqlite':
         return func.json_object
 
+@lru_cache
+def build_json_agg_function(session: Session) -> Callable:
+    if session.bind.name == 'postgresql':
+        return func.json_agg
+    elif session.bind.name == 'sqlite':
+        return func.json_group_array
+
 
 def get_tag_subquery(session: Session) -> select:
     json_func = build_json_function(session)
+    json_agg_func = build_json_agg_function(session)
 
     return (
         select(
             AssetTag.type_seq.label('asset_seq'),  # pylint: disable=no-member
-            func.json_agg(
+            json_agg_func(
                 json_func('tag_seq', AssetTag.tag_seq, 'tag_name', Tag.name)
             ).label('tag_to_asset'),
         )
@@ -69,6 +77,8 @@ def get_top_published_assets_metadata_query(session: Session):
 def resolve_assets_tag(
     tags_to_asset: dict[str, Union[int, str]]
 ) -> list | list[dict[str, str]]:
+    if isinstance(tags_to_asset, str):
+        tags_to_asset = json.loads(tags_to_asset)
     if not tags_to_asset:
         return []
     return [
