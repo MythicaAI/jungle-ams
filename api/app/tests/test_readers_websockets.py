@@ -3,11 +3,10 @@ import itertools
 import json
 import logging
 import random
+from contextlib import asynccontextmanager
 from itertools import cycle
 from string import ascii_lowercase
 from uuid import uuid4
-
-from httpx_ws import AsyncWebSocketSession
 
 import main
 import pytest
@@ -19,9 +18,9 @@ from cryptid.cryptid import (
 )
 from db.connection import get_session
 from db.schema.events import Event as DbEvent
-from db.schema.profiles import Profile
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
+from httpx_ws import aconnect_ws
 from ripple.client_ops import ReadClientOp
 from ripple.models.streaming import (
     Event,
@@ -68,7 +67,7 @@ def generate_stream_items(item_list_length: int):
     return [next(gen_cycle)() for i in range(item_list_length)]
 
 
-def generate_events(profile: Profile, event_count: int):
+def generate_events(profile_id: str, event_count: int):
     """Generate some random event data in the database"""
 
     def generate_test_job_data():
@@ -83,7 +82,7 @@ def generate_events(profile: Profile, event_count: int):
         {
             'event_type': 'test',
             'job_data': generate_test_job_data(),
-            'owner_seq': profile_id_to_seq(profile.profile_id),
+            'owner_seq': profile_id_to_seq(profile_id),
         }
         for _ in range(event_count)
     ]
@@ -143,6 +142,15 @@ async def read_socket(
     assert count_events == source_event_count, "total events read constraint"
 
 
+@asynccontextmanager
+async def local_ws_connect(api_base):
+    transport = ASGITransport(app=main.app)
+    async with AsyncClient(transport=transport, base_url='http://testserver/') as client:
+        url = f"ws://testserver/{api_base}/readers/connect"
+        async with aconnect_ws(url=url, client=client) as ws:
+            yield ws
+
+
 @pytest.mark.asyncio
 async def test_websocket(
         api_base,
@@ -158,7 +166,8 @@ async def test_websocket(
     source_event_count = 10
 
     # generate the test data
-    events_ids = generate_events(test_profile.profile, source_event_count)
+    profile_id = test_profile.profile.profile_id
+    events_ids = generate_events(profile_id, source_event_count)
     stream_items = read_db_events(events_ids)
 
     # find active readers
@@ -174,13 +183,7 @@ async def test_websocket(
     # make the auth header a cookie for the connection
     client.cookies.update(auth_header)
 
-    transport = ASGITransport(app=main.app)
-    async with AsyncWebSocketSession(transport=transport, base_url="http://testserver") as client:
-        async with client.websocket_connect(
-            f"{api_base}/readers/connect", data={"body": {}}
-    ) as ws:
-        ws: WebSocketTestSession
-
+    async with local_ws_connect(api_base) as ws:
         # read the current stream items
         await read_socket(ws, page_size, source_event_count, stream_items)
 
@@ -188,7 +191,7 @@ async def test_websocket(
         old_stream_items = list(stream_items)
 
         # Trigger new events to fetch the latest data
-        events_ids = generate_events(test_profile.profile, source_event_count)
+        events_ids = generate_events(profile_id, source_event_count)
         stream_items = read_db_events(events_ids)
 
         # get the next set
