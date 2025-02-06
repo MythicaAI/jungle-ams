@@ -27,20 +27,8 @@ def configure_logging():
             [('signoz-access-token', app_config().telemetry_token)],
         )
     else:
-        logger = logging.getLogger()
         logging.basicConfig(level=logging.INFO, format="%(message)s")
-        resource = get_telemetry_resource()
-        logger_provider = LoggerProvider(resource=resource)
-        set_logger_provider(logger_provider)
 
-        logger_provider.add_log_record_processor(
-            SimpleLogRecordProcessor(ConsoleLogExporter())
-        )
-
-        otel_log_handler = LoggingHandler(level=logging.INFO)
-        logger.addHandler(otel_log_handler)
-
-        otel_log_handler.setFormatter(CustomJSONFormatter())
 
 
 def get_telemetry_headers() -> dict:
