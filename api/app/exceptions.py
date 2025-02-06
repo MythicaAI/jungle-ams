@@ -45,7 +45,6 @@ async def role_error(_: Request, exc: RoleError):
 async def other_errors(_: Request, exc: Exception):
     span = trace.get_current_span()
     span.record_exception(exc)
-    span.set_status(Status(StatusCode.ERROR, "Unexpected Exception occurred"))
 
 
 def register_exceptions(app):

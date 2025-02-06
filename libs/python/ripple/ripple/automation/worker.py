@@ -137,7 +137,6 @@ class Worker:
                 except Exception as e:
                     msg=f'Validation error - {json_payload} - {format_exception(e)}'
                     log.error(msg)
-                    span.set_status(opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg))
                     await doer.nats.post("result", Error(error=msg).model_dump())
                     return 
 
@@ -159,19 +158,16 @@ class Worker:
 
                         publisher.result(ret_data)
                     publisher.result(Progress(progress=100), complete=True)
-                    telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.OK)
                 except Exception as e:
                     msg=f"Executor error - {log_str} - {format_exception(e)}"
                     if publisher:
                         publisher.result(Error(error=msg), complete=True)
-                    telemetry_status = opentelemetry_status.Status(opentelemetry_status.StatusCode.ERROR, msg)
                     log.error(msg)
                     span.record_exception(e)
                 finally:
                     span.set_attribute("worker.completed", datetime.now(timezone.utc).isoformat())
                     if ret_data and ret_data.job_id:
                         span.set_attribute("job_id", ret_data.job_id)
-                    span.set_status(telemetry_status)
                     log.info("Job finished %s", auto_request.correlation)
 
         return implementation

@@ -71,14 +71,12 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
                 "HTTP Exception occurred %s", exc.detail, extra=log_params.get_dict()
             )
             span.record_exception(exc)
-            span.set_status(Status(StatusCode.ERROR, "HTTP Exception occurred"))
             raise exc
         except Exception as exc:
             logger.critical(
                 "Unhandled exception occurred %s", str(exc), extra=log_params.get_dict()
             )
             span.record_exception(exc)
-            span.set_status(Status(StatusCode.ERROR, "internal error"))
             raise exc
 
     async def _resolve_response_code_400(self, log_params, response: Response):

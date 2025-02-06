@@ -313,7 +313,6 @@ async def create(
         job_def = session.exec(select(JobDefinition).where(
             JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
         if job_def is None:
-            span.set_status(Status(StatusCode.ERROR, "Job definition not found"))
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
         parameter_spec = ParameterSpec(**job_def.params_schema)
@@ -398,7 +397,6 @@ async def create_result(
         job_seq = job_id_to_seq(job_id)
         job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
         if job is None:
-            span.set_status(Status(StatusCode.ERROR, "Job not found"))
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
 
         job_result = job_result_insert(session, job_seq, request)
@@ -443,7 +441,6 @@ async def set_complete(
                                     .where(Job.completed == None)
                                     .values(completed=sql_now()))
         if job_result.rowcount == 0:
-            span.set_status(Status(StatusCode.ERROR, "Job not found or already completed"))
             log.error("Job %s not found or already completed", job_id)
             raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
 
