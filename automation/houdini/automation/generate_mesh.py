@@ -10,6 +10,7 @@ from pydantic import Field
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import FileParameter, ParameterSet
 from ripple.models.streaming import OutputFiles
+from typing import Optional
 
 tracer = trace.get_tracer(__name__)
 logging.basicConfig(
@@ -261,7 +262,7 @@ class ExportMeshRequest(ParameterSet):
     hda_file: FileParameter
     hda_definition_index: int
     format: str
-    record_profile: bool
+    record_profile: Optional[bool] = False
 
 
 class ExportMeshResponse(OutputFiles):
