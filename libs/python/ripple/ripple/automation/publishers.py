@@ -8,7 +8,7 @@ from opentelemetry.propagate import inject
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
-from ripple.automation.utils import error_handler
+from ripple.automation.utils import format_exception
 from ripple.config import ripple_config
 from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem
 
@@ -46,7 +46,7 @@ class ResultPublisher:
         return updated_headers
 
     #Callback for reporting back. 
-    def result(self, item: ProcessStreamItem, complete: bool=False):
+    async def result(self, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = self.request.process_guid
         item.correlation = self.request.correlation
         item.job_id = self.request.job_id or ""
@@ -60,13 +60,14 @@ class ResultPublisher:
         # Publish results
         log.info(f"Automation {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(
-            self.nats.post_to(
+        try:
+            await self.nats.post_to(
                 "result",
                 self.request.process_guid,
-                item.model_dump()))
+                item.model_dump())
+        except Exception as e:
+            log.error(f"Error publishing result: {format_exception(e)}")
 
-        task.add_done_callback(error_handler(log))
         updated_headers = self.update_headers_from_context()
         if self.request.job_id:
             data = {

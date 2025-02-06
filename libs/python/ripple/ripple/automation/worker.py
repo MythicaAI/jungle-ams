@@ -145,7 +145,7 @@ class Worker:
                 try:
                     with tempfile.TemporaryDirectory() as tmpdir:
                         publisher = ResultPublisher(auto_request, self.nats, self.rest, tmpdir)
-                        publisher.result(Progress(progress=0))
+                        await publisher.result(Progress(progress=0))
 
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
@@ -156,12 +156,12 @@ class Worker:
                             ret_data: StreamItemUnion = worker.provider(inputs, publisher)
                             job_span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
 
-                        publisher.result(ret_data)
-                    publisher.result(Progress(progress=100), complete=True)
+                        await publisher.result(ret_data)
+                    await publisher.result(Progress(progress=100), complete=True)
                 except Exception as e:
                     msg=f"Executor error - {log_str} - {format_exception(e)}"
                     if publisher:
-                        publisher.result(Error(error=msg), complete=True)
+                        await publisher.result(Error(error=msg), complete=True)
                     log.error(msg)
                     span.record_exception(e)
                 finally:
@@ -236,7 +236,7 @@ class Worker:
                     resolve_params(api_url, tmpdir, input_data)
                     publisher = SlimPublisher(request=auto_request, rest=self.rest, directory=tmpdir)
                     result = automation.provider(input_data, publisher)
-                    publisher.result(result)
+                    await publisher.result(result)
                     
             except Exception as e:
                 log.error(f"Automation failed: {format_exception(e)}")
