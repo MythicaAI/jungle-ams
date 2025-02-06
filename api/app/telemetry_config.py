@@ -2,16 +2,9 @@ import logging
 import sys
 
 from config import app_config
-from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import get_current
 from opentelemetry.propagate import inject
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import ConsoleLogExporter, SimpleLogRecordProcessor
-from ripple.config import (
-    CustomJSONFormatter,
-    configure_telemetry,
-    get_telemetry_resource,
-)
+from ripple.config import configure_telemetry
 
 
 def configure_logging():

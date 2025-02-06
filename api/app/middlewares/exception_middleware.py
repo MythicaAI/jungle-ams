@@ -1,7 +1,12 @@
 import json
 import logging
 import time
-from collections.abc import Mapping
+import sys
+
+if sys.version_info < (3, 13):
+    from collections.abc import Mapping  # pylint: disable=deprecated-class, unused-import
+else:
+    from collections import Mapping  # pylint: disable=deprecated-class, unused-import
 
 from fastapi import HTTPException, Request, Response
 from fastapi.concurrency import iterate_in_threadpool
