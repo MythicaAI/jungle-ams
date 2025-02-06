@@ -10,7 +10,7 @@ import json
 
 
 import logging
-from pydantic import BaseModel
+
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,

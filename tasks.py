@@ -141,7 +141,7 @@ IMAGE_SETS = {
         #'automation/genai',
         'automation/test',
         'automation/workflow',
-        #'automation/blender',
+        'automation/blender',
         'api/packager'
     },
 }
