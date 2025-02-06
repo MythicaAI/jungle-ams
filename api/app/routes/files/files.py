@@ -71,7 +71,7 @@ async def delete_by_id(
         file_id,
         profile: SessionProfile = Depends(session_profile)):
     """Delete a file by its ID"""
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         try:
             file_seq = file_id_to_seq(file_id)
             result = session.exec(

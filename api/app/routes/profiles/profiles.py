@@ -145,7 +145,7 @@ async def update(
                    scope=Scope(profile=profile))
 
     profile_seq = profile_id_to_seq(profile_id)
-    session = get_session(echo=True)
+    session = get_session(echo=False)
     values = req_profile.model_dump(exclude_unset=True)
 
     # Only update if at least one value is supplied

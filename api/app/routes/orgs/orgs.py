@@ -153,7 +153,7 @@ async def update(
         profile: SessionProfile = Depends(session_profile)
 ) -> OrgResponse:
     """Update an existing organization"""
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         org_seq = org_id_to_seq(org_id)
         org = session.exec(select(Org).where(Org.org_seq == org_seq)).first()
         if org is None:

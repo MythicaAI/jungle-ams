@@ -38,7 +38,7 @@ async def list_all() -> list[repo.AssetVersionResult]:
 @router.get('/top')
 async def list_top() -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         return repo.top(session)
 
 
@@ -116,7 +116,7 @@ async def delete_version(
         version_str: str,
         profile: SessionProfile = Depends(session_profile)):
     """Delete a specific asset version"""
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         repo.delete_version(session, asset_id, version_str, profile.profile_seq)
 
 
@@ -125,7 +125,7 @@ async def delete_asset(
         asset_id: str,
         profile: SessionProfile = Depends(session_profile)):
     """Delete an asset and it's asset-versions"""
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         repo.delete_asset_and_versions(session, asset_id, profile)
 
 
