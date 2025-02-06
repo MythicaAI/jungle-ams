@@ -1,13 +1,15 @@
 ARG LIBS_PYTHON_IMAGE=mythica-libs-python
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
-# Use the specified CUDA base image
-FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
 LABEL maintainer="pedro@mythica.ai"
 LABEL name="mythica-auto-blender"
 LABEL description="Automation for mythica blender services"
 LABEL version="1.0.0"
 LABEL tier="auto"
+
+
+# Use the NVidia CUDA base image
+FROM nvcr.io/nvidia/cuda:12.6.0-base-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -17,6 +19,8 @@ ENV PATH="/usr/local/bin:$PATH"
 
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"
+ENV MYTHICA_ENVIRONMENT=dev
+ENV MYTHICA_LOCATION=localhost
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-blender"
 ENV K8S_CLUSTER_NAME=localhost
 
@@ -44,30 +48,25 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Ensure pip is up-to-date
-RUN python3.11 -m pip install --upgrade pip
 
-# Set Python 3.11 as the default python version
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-
-RUN mkdir /app
-
-# Creates a non-root user and adds permission to access the /app folder
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && \
-    chown -R appuser /app 
-
-USER appuser
-ENV PATH="/home/appuser/.local/bin:$PATH"
-
-# Copy monorepo dependencies
 COPY --from=libs-python-image /libs/python /libs/python
 
-COPY requirements.txt /app/requirements.txt
-
-# Set working directory
-RUN pip install --no-cache-dir -r /app/requirements.txt
-
+# Copy monorepo dependencies
 COPY . /app
+
 WORKDIR /app
 
-#ENTRYPOINT ["python3.11", "workers.py"]
+# Ensure pip is up-to-date
+RUN python3.11 -m pip install \
+    --upgrade \
+    --no-cache-dir pip poetry
+
+# Install everything into the python site-packages, these
+# will be referenced later to build the houdini site-packages
+RUN poetry config --local virtualenvs.create false
+RUN poetry install --only main,infra --no-root --no-cache
+ENV TELEMETRY_ENABLE=True
+ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV API_BASE_URI=http://app:5555/v1
+
+ENTRYPOINT ["poetry", "run", "python3.11", "workers.py"]

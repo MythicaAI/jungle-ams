@@ -26,7 +26,7 @@ services:
       - site-shared-publish:/mnt/publish
     environment:
       PUBLISH_PATH: /mnt/publish/awful
-      VITE_AWFUL_WORKERS: houdini
+      VITE_AWFUL_WORKERS: houdini,blender,workflow
       VITE_AWFUL_SCRIPT_PATH: /mythica/script
       VITE_AWFUL_SCRIPT_INTERFACE_PATH: /mythica/script/interface
       VITE_MYTHICA_API_URL: http://localhost:8080/v1
@@ -61,6 +61,7 @@ services:
       LOCAL_STORAGE_PATH: /tmp/local_storage
       REDIS_HOST: redis
       MYTHICA_ENVIRONMENT: debug
+      CONF_FILE: nginx-local.conf
       NATS_ENDPOINT: nats://nats:4222
       MINIO_ACCESS_KEY: foo-access
       MINIO_SECRET_KEY: bar-secret

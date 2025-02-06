@@ -1,10 +1,8 @@
 """API routes for automation endpoints."""
 import logging
-import os
 import uuid
 from http import HTTPStatus
 
-from cryptid import location
 from fastapi import APIRouter, HTTPException
 from nats.errors import ConnectionClosedError, NoServersError
 from opentelemetry import trace
@@ -13,12 +11,6 @@ from ripple.automation.utils import nats_submit
 
 log = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
-
-NATS_URL = os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
-STATUS_SUBJECT = "result"
-ENVIRONMENT = os.getenv('MYTHICA_ENVIRONMENT', 'debug')
-LOCATION = location.location()
-PROCESS_GUID = str(uuid.uuid4())
 
 router = APIRouter(prefix="/automation", tags=["automation"])
 
