@@ -146,7 +146,7 @@ async def read_socket(
 async def local_ws_connect(api_base):
     transport = ASGITransport(app=main.app)
     async with AsyncClient(transport=transport, base_url='http://testserver/') as client:
-        url = f"ws://testserver/{api_base}/readers/connect"
+        url = f"ws://testserver{api_base}/readers/connect"
         async with aconnect_ws(url=url, client=client) as ws:
             yield ws
 
