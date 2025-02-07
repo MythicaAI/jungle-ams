@@ -1,12 +1,12 @@
 import logging
 import sys
-
-from config import app_config
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import get_current
 from opentelemetry.propagate import inject
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import ConsoleLogExporter, SimpleLogRecordProcessor
+
+from config import app_config
 from ripple.config import (
     CustomJSONFormatter,
     configure_telemetry,
@@ -26,7 +26,7 @@ def configure_logging():
             app_config().telemetry_insecure,
             [('signoz-access-token', app_config().telemetry_token)],
         )
-    else:
+
         logger = logging.getLogger()
         logging.basicConfig(level=logging.INFO, format="%(message)s")
         resource = get_telemetry_resource()
