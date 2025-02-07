@@ -4,12 +4,13 @@ import hashlib
 from http import HTTPStatus
 
 import itertools
+from cryptid.cryptid import file_seq_to_id
 from munch import munchify
 from ripple.auth import roles
 
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
-from tests.shared_test import FileContentTestObj, assert_status_code, random_str
+from tests.shared_test import FileContentTestObj, assert_status_code, make_random_content, random_str
 
 # length of event data in test events
 test_event_info_len = 10
@@ -37,7 +38,7 @@ def unauthorized_delete_type_tag(client, api_base, type_model_name, type_id, tag
     )
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
-def test_tags_operations(api_base, client, create_profile):
+def test_tags_operations(api_base, client, create_profile, request_to_upload_files):
     simple_profile = create_profile(email="test@test.ai", validate_email=True)
     simple_headers = simple_profile.authorization_header()
     simple_profile = simple_profile.profile
@@ -64,15 +65,29 @@ def test_tags_operations(api_base, client, create_profile):
     top_limit = 5
     top_tag_name = None
 
-    def create_tag():
+    def create_tag(page_priority=1):
         # create tag
         tag_name = "tag_" + random_str(10, digits=False)
-        r = client.post(f"{api_base}/tags", json={'name': tag_name}, headers=headers)
+        thumbnail_obj = make_random_content("png")
+        thumbnail_id = list(request_to_upload_files(headers, [thumbnail_obj]))[0]
+        blurb = "text"
+        data = {
+            'name': tag_name,
+            "page_priority": page_priority,
+            "contents": {
+                "thumbnail_id": thumbnail_id,
+                "blurb": blurb,
+            }
+        }
+        r = client.post(f"{api_base}/tags", json=data, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
-        o = munchify(r.json())
-        assert o.name == tag_name
-        tag_id = o.tag_id
-        return tag_id, tag_name
+        tag_obj = munchify(r.json())
+        assert tag_obj.name == tag_name
+        assert tag_obj.page_priority == page_priority
+        assert tag_obj.contents is not None
+        assert tag_obj.contents.thumbnail_id == thumbnail_id
+        assert tag_obj.contents.blurb == blurb
+        return tag_obj
 
     def create_type_tag(type_model_name, type_id, tag_id):
         # create tag for type_model
@@ -108,14 +123,15 @@ def test_tags_operations(api_base, client, create_profile):
     created_tag_ids = []
     top_asset_ids = [create_asset(headers) for _ in range(10)]
     for i in range(top_limit):
-        tag_id, tag_name = create_tag()
-        created_tag_ids.append(tag_id)
-        create_type_tag("asset", asset_id, tag_id)
+        tag_obj = create_tag()
+        tag_name = tag_obj.name
+        created_tag_ids.append(tag_obj.tag_id)
+        create_type_tag("asset", asset_id, tag_obj.tag_id)
         if i == top_limit - 1:
             # last tag will be on the top
-            top_tag_name = tag_name
+            top_tag_name = tag_obj.name
             for new_asset_id in top_asset_ids:
-                create_type_tag("asset", new_asset_id, tag_id)
+                create_type_tag("asset", new_asset_id, tag_obj.tag_id)
 
     r = client.get(
         f"{api_base}/tags/",
@@ -131,7 +147,7 @@ def test_tags_operations(api_base, client, create_profile):
 
     # Test deletion of a tag from a non-existent type_model
     r = client.delete(
-        f"{api_base}/tags/types/asset{tag_id}/{random_str(10, digits=False)}",
+        f"{api_base}/tags/types/asset{tag_obj.tag_id}/{random_str(10, digits=False)}",
         headers=headers,
     )
     assert_status_code(r, HTTPStatus.NOT_FOUND)
@@ -147,10 +163,10 @@ def test_tags_operations(api_base, client, create_profile):
     assert len(o) == top_limit
     assert o[0].name == top_tag_name
 
-    delete_all_created_type_tags(top_asset_ids, tag_id)
+    delete_all_created_type_tags(top_asset_ids, tag_obj.tag_id)
 
 
-def test_tag_asset_operations(api_base, client, create_profile):
+def test_tag_asset_operations(api_base, client, create_profile, request_to_upload_files):
     test_profile = create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
     not_allowed_test_profile = create_profile(email="test@somewhere.com", validate_email=True)
@@ -193,17 +209,32 @@ def test_tag_asset_operations(api_base, client, create_profile):
 
     top_limit = 5
 
-    def create_tag():
+    def create_tag(page_priority=1):
         # create tag
         tag_name = "tag_" + random_str(10, digits=False)
-        r = client.post(f"{api_base}/tags", json={'name': tag_name}, headers=headers)
+        thumbnail_obj = make_random_content("png")
+        thumbnail_id = list(request_to_upload_files(headers, [thumbnail_obj]))[0]
+        blurb = "text"
+        data = {
+            'name': tag_name,
+            "page_priority": page_priority,
+            "contents": {
+                "thumbnail_id": thumbnail_id,
+                "blurb": blurb,
+            }
+        }
+        r = client.post(f"{api_base}/tags", json=data, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
-        o = munchify(r.json())
-        assert o.name == tag_name
-        tag_id = o.tag_id
-        return tag_id, tag_name
+        tag_obj = munchify(r.json())
+        assert tag_obj.name == tag_name
+        assert tag_obj.page_priority == page_priority
+        assert tag_obj.contents is not None
+        assert tag_obj.contents.thumbnail_id == thumbnail_id
+        assert tag_obj.contents.blurb == blurb
+        return tag_obj
 
-    tag_id, tag_name = create_tag()
+    tag_obj = create_tag()
+    tag_name = tag_obj.name
 
     def create_type_tag(type_model_name, type_id, tag_id):
         # create tag for type_model
@@ -236,8 +267,8 @@ def test_tag_asset_operations(api_base, client, create_profile):
         for tag_id in created_tag_ids:
             delete_tag(tag_id)
 
-    unauthorized_create_type_tag(client, api_base, "asset", asset_id, tag_id, not_allowed_headers)
-    unauthorized_delete_type_tag(client, api_base, "asset", asset_id, tag_id, not_allowed_headers)
+    unauthorized_create_type_tag(client, api_base, "asset", asset_id, tag_obj.tag_id, not_allowed_headers)
+    unauthorized_delete_type_tag(client, api_base, "asset", asset_id, tag_obj.tag_id, not_allowed_headers)
 
     model_type_count_to_filter = 5
     include_tags_count_to_filter = 3
@@ -248,27 +279,27 @@ def test_tag_asset_operations(api_base, client, create_profile):
     created_tag__type_ids: list[tuple[str, str, str]] = []
     for i in range(model_type_count_to_filter):
         filter_model_type_id = filter_assets_ids[i]
-        for filter_tag_id, filter_tag_name in include_tags_id_names:
+        for filter_tag_obj in include_tags_id_names:
             created_tag__type_ids.append(
                 (
-                    filter_tag_id,
-                    filter_tag_name,
+                    filter_tag_obj.tag_id,
+                    filter_tag_obj.name,
                     filter_model_type_id,
                 )
             )
-            create_type_tag("asset", filter_model_type_id, filter_tag_id)
+            create_type_tag("asset", filter_model_type_id, filter_tag_obj.tag_id)
 
         # last model_type_tag has exclude_tags
         if i == top_limit - 1:
-            for filter_tag_id, filter_tag_name in exclude_tags_id_names:
+            for filter_tag_obj in exclude_tags_id_names:
                 created_tag__type_ids.append(
                     (
-                        filter_tag_id,
-                        filter_tag_name,
+                        filter_tag_obj.tag_id,
+                        filter_tag_obj.name,
                         filter_model_type_id,
                     )
                 )
-                create_type_tag("asset", filter_model_type_id, filter_tag_id)
+                create_type_tag("asset", filter_model_type_id, filter_tag_obj.tag_id)
 
     # get filtered assets by tags
     r = client.get(
@@ -276,8 +307,8 @@ def test_tag_asset_operations(api_base, client, create_profile):
         params={
             "limit": model_type_count_to_filter,
             "offset": 0,
-            "include": [i[1] for i in include_tags_id_names],
-            "exclude": [i[1] for i in exclude_tags_id_names],
+            "include": [i.name for i in include_tags_id_names],
+            "exclude": [i.name for i in exclude_tags_id_names],
         },
         headers=headers,
     )
@@ -320,6 +351,22 @@ def test_tag_asset_operations(api_base, client, create_profile):
     for tag__type_ids in created_tag__type_ids:
         new_tag_id, _, asset_id = tag__type_ids
         delete_type_tag("asset", asset_id, new_tag_id)
+
+
+    # Test assign thumbnail that does not exist
+    tag_name = "tag_" + random_str(10, digits=False)
+    thumbnail_file_id = file_seq_to_id(1000000)
+    blurb = "text"
+    data = {
+        'name': tag_name,
+        "page_priority": 1,
+        "contents": {
+            "thumbnail_id": thumbnail_file_id,
+            "blurb": blurb,
+        }
+    }
+    r = client.post(f"{api_base}/tags", json=data, headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
 
     # check was asset_tag deleted
     new_tag_id, filter_tag_name, asset_id = created_tag__type_ids[0]

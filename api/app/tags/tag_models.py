@@ -1,7 +1,7 @@
 """Tags models"""
 
 from enum import Enum
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 from better_profanity import profanity
 from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
@@ -18,6 +18,8 @@ class TagType(str, Enum):
 
 class TagRequest(BaseModel):
     name: str
+    page_priority: Optional[int] = None
+    contents: Optional[dict[str, str | None]] = None
 
     @field_validator('name')
     @classmethod
@@ -30,6 +32,8 @@ class TagRequest(BaseModel):
 class TagResponse(BaseModel):
     name: str
     tag_id: str
+    page_priority: Optional[int] = None
+    contents: Optional[dict[str, str | None]] = None
 
 
 class TagTypeRequest(BaseModel):
