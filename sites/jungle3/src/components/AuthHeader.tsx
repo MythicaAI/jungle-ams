@@ -1,4 +1,4 @@
-import { Box, Button, Divider, Stack, Typography } from "@mui/joy";
+import { Box, Button, Divider, Stack } from "@mui/joy";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { useEffect } from "react";
@@ -16,7 +16,7 @@ import { api } from "@services/api";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useStatusStore } from "@store/statusStore";
 import { LanguageSelect } from "./LanguageSelector";
-import { LucideBookText } from "lucide-react";
+import { HeaderLinkButtons } from "./HeaderLinkButtons";
 
 // proxy the auth token from cookies to the auth store
 // TODO: there are security problems with this approach, the cookies should be HttpsOnly
@@ -176,7 +176,7 @@ export const AuthHeader = () => {
                 mb: 2,
                 display: {
                   xs: "none",
-                  sm: "block",
+                  md: "block",
                 },
               }}
               id="appLogo"
@@ -184,49 +184,24 @@ export const AuthHeader = () => {
           </Stack>
         </Link>
 
-        <Stack direction="row" spacing={1}>
-          <Box
-            width="100%"
-            component="a"
-            href={`${window.location.origin}/docs`}
-            target="_blank"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              height: "42px",
-              minWidth: "75px",
-            }}
-          >
-            <Button
-              variant="plain"
-              color="neutral"
-              sx={{
-                width: "100%",
-                height: "100%",
-                justifyContent: "center",
-                padding: "0",
-                gap: "5px",
-              }}
-            >
-              <Typography>API</Typography>
-              <LucideBookText />
-            </Button>
-          </Box>
-
-          <LanguageSelect />
-          {isAuthenticated && <StatusAlarm />}
-          {isAuthenticated ? (
-            <ProfileMenu name={user && user.name ? user.name : ""} />
-          ) : (
-            <Button
-              variant="outlined"
-              color="neutral"
-              onClick={() => doLoginWithRedirect()}
-              sx={{ height: "42px", minWidth: "80px" }}
-            >
-              Sign in
-            </Button>
-          )}
+        <Stack direction={{ xs: "column-reverse", sm: "row" }} spacing={1}>
+          <HeaderLinkButtons />
+          <Stack direction="row" spacing={1}>
+            <LanguageSelect />
+            {isAuthenticated && <StatusAlarm />}
+            {isAuthenticated ? (
+              <ProfileMenu name={user && user.name ? user.name : ""} />
+            ) : (
+              <Button
+                variant="outlined"
+                color="neutral"
+                onClick={() => doLoginWithRedirect()}
+                sx={{ height: "42px", minWidth: "80px" }}
+              >
+                Sign in
+              </Button>
+            )}
+          </Stack>
         </Stack>
       </Stack>
       <Divider orientation="horizontal" sx={{ mb: "10px" }} />
