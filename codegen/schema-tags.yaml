@@ -18,3 +18,7 @@ tables:
       - name: created
         type: TIMESTAMP
         auto_create: true
+      - name: page_priority
+        type: INTEGER
+      - name: contents
+        type: JSON
