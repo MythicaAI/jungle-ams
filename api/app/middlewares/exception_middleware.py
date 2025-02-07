@@ -12,7 +12,6 @@ from fastapi import HTTPException, Request, Response
 from fastapi.concurrency import iterate_in_threadpool
 from opentelemetry import trace
 from opentelemetry.context import get_current as get_current_telemetry_context
-from opentelemetry.trace.status import Status, StatusCode
 from ripple.runtime.decorators import propagate_telemetry_context
 from starlette.middleware.base import BaseHTTPMiddleware
 

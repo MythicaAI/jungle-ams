@@ -4,7 +4,6 @@ from cryptid.cryptid import IdError, SequenceError
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
-from opentelemetry.trace.status import Status, StatusCode
 from pydantic import ValidationError
 from ripple.auth.authorization import RoleError
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
