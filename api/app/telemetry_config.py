@@ -2,16 +2,9 @@ import logging
 import sys
 
 from config import app_config
-from opentelemetry._logs import set_logger_provider
 from opentelemetry.context import get_current
 from opentelemetry.propagate import inject
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import ConsoleLogExporter, SimpleLogRecordProcessor
-from ripple.config import (
-    CustomJSONFormatter,
-    configure_telemetry,
-    get_telemetry_resource,
-)
+from ripple.config import configure_telemetry
 
 
 def configure_logging():
@@ -27,20 +20,8 @@ def configure_logging():
             [('signoz-access-token', app_config().telemetry_token)],
         )
     else:
-        logger = logging.getLogger()
         logging.basicConfig(level=logging.INFO, format="%(message)s")
-        resource = get_telemetry_resource()
-        logger_provider = LoggerProvider(resource=resource)
-        set_logger_provider(logger_provider)
 
-        logger_provider.add_log_record_processor(
-            SimpleLogRecordProcessor(ConsoleLogExporter())
-        )
-
-        otel_log_handler = LoggingHandler(level=logging.INFO)
-        logger.addHandler(otel_log_handler)
-
-        otel_log_handler.setFormatter(CustomJSONFormatter())
 
 
 def get_telemetry_headers() -> dict:

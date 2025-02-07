@@ -96,7 +96,7 @@ async def for_profile(
     """
     Return all assets that have been listed by this profile
     """
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         return select_filtered_g_assets(session, auth_profile, category=category)
 
 

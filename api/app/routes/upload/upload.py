@@ -188,7 +188,7 @@ async def store_and_attach_package(
     response_files = []
 
     # do the upload
-    with get_session(echo=True) as session:
+    with get_session(echo=False) as session:
         avr_results = select_asset_version(session, asset_id, version_id)
         avr = process_join_results(session, avr_results)[0] if avr_results else None
         if avr is None:
