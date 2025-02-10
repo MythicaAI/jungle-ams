@@ -1,12 +1,12 @@
 """Readers API"""
+from http import HTTPStatus
+
 import logging
 from datetime import timezone
-from http import HTTPStatus
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
 from sqlmodel import delete as sql_delete, insert, select
+from typing import Optional
 
 from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, get_session
@@ -140,7 +140,7 @@ async def connect_all(
         profile = await current_cookie_profile(websocket)
     try:
         log.info("websocket connected to profile %s", profile)
-        await reader_connection_manager.connect(websocket, profile)
+        await connect_client(websocket, profile)
     except WebSocketDisconnect:
         log.info("websocket disconnected from profile %s", profile)
         await reader_connection_manager.disconnect(websocket, profile)

@@ -1,11 +1,11 @@
 """Readers API"""
+from http import HTTPStatus
+
 import logging
 from datetime import timezone
-from http import HTTPStatus
-from typing import Any
-
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Session, select, update
+from typing import Any
 
 from cryptid.cryptid import profile_seq_to_id, reader_seq_to_id
 from db.connection import TZ
@@ -52,10 +52,11 @@ def select_reader(session: Session, reader_seq: int, profile_seq: int) -> Reader
             f"failed to find reader {reader_seq_to_id(reader_seq)}")
     return reader
 
+
 def select_profile_readers(session: Session, profile_seq: int) -> list[Reader]:
-    """Get a single owned reader"""
+    """Get all owned readers for this profile"""
     readers = session.exec(select(Reader)
-                          .where(Reader.owner_seq == profile_seq).order_by("reader_seq")).all()
+                           .where(Reader.owner_seq == profile_seq).order_by("reader_seq")).all()
     return readers
 
 

@@ -1,29 +1,27 @@
 """Readers API"""
 
+from json import JSONDecodeError
+
 import asyncio
 import json
 import logging
-from json import JSONDecodeError
+from fastapi import WebSocket
 from typing import Callable, Optional, TypeVar
 
-from fastapi import WebSocket
-
-from cryptid.cryptid import reader_id_to_seq, IdError
 from config import app_config
+from cryptid.cryptid import IdError, reader_id_to_seq
 from db.connection import get_session
 from db.schema.profiles import Profile
+from db.schema.streaming import Reader
 from ripple.client_ops import ClientOp, ReadClientOp
 from ripple.funcs import Boundary, Source
 from ripple.models.streaming import StreamItem
-from db.schema.streaming import Reader
+from ripple.source_types import create_source
 from routes.readers.utils import (
     reader_to_source_params,
-    select_profile_readers,
     select_reader,
     update_reader_index,
 )
-from ripple.source_types import create_source
-
 
 log = logging.getLogger(__name__)
 configs = app_config()
@@ -52,71 +50,15 @@ class ReaderConnectionManager:
         self.manager_active_tasks: dict[str, asyncio.Task] = dict()
         self.loop = None
 
-    async def connect(
-        self,
-        websocket: WebSocket,
-        profile: Profile,
-        op_data: Optional[dict] = None,
-    ):
-        # there is no loop while async testing (Python 3.10), it should be set up on connect 
-        if not self.loop:
-            self.loop = asyncio.get_event_loop()
-        await websocket.accept()
-
-        if not op_data:
-            op_data: ReadClientOp = self.default_op[0]()
-            op_data: dict = op_data.model_dump()
-        log.debug("websocket connected with op_data %s", op_data)
-
-        if op_data.get("op") and op_data["op"] in self.ops:
-            if not self.active_connections.get(profile.profile_seq):
-                self.active_connections[profile.profile_seq] = dict()
-                self.active_connections[profile.profile_seq]["websockets"] = list()
-                log.info("New profile connected to websocket %s", websocket)
-                with get_session() as session:
-                    if not op_data.get("reader_id"):
-                        readers = select_profile_readers(session, profile.profile_seq)
-                    else:
-                        reader_seq = reader_id_to_seq(op_data['reader_id'])
-                        reader = await self.get_reader_model(
-                            session, reader_seq, profile.profile_seq
-                        )
-                        readers = [reader]
-
-                if op_data.get("reader_id"):
-                    del op_data['reader_id']
-
-                log.info("websocket connected to readers %s", readers)
-                if readers is None:
-                    await websocket.send_json({'error': 'There are no readers'})
-                for reader in readers:
-                    await self.add_reader_to_profile(reader, profile, op_data)
-
-            self.active_connections[profile.profile_seq]["websockets"].append(websocket)
-
-            await self.add_all_tasks_for_new_websocket(
-                profile_seq=profile.profile_seq, websocket=websocket
-            )
-        else:
-            if not op_data.get("op"):
-                error_message = "No 'op' included in client message"
-                log.exception(error_message)
-                await websocket.send_json({'error': error_message})
-            else:
-                error_message = "Invalid 'op' included in client message"
-                log.exception(error_message)
-                await websocket.send_json({'error': error_message})
-        await self.websocket_handler(websocket, profile)
-
     async def add_all_tasks_for_new_websocket(
-        self, profile_seq: str, websocket: WebSocket
+            self, profile_seq: str, websocket: WebSocket
     ):
 
         try:
             if (
-                not self.active_connections.get(profile_seq)
-                or not self.active_connections[profile_seq].get("websockets")
-                or not len(self.active_connections[profile_seq]) > 1
+                    not self.active_connections.get(profile_seq)
+                    or not self.active_connections[profile_seq].get("websockets")
+                    or not len(self.active_connections[profile_seq]) > 1
             ):
                 return
 
@@ -202,13 +144,13 @@ class ReaderConnectionManager:
             return
 
     async def send_updates_periodically(
-        self,
-        processor: Callable,
-        websocket: WebSocket,
-        source_data: ReadClientOp,
-        reader: Reader,
-        source: Source,
-        interval: float = 0.5,
+            self,
+            processor: Callable,
+            websocket: WebSocket,
+            source_data: ReadClientOp,
+            reader: Reader,
+            source: Source,
+            interval: float = 0.5,
     ):
         """
         Continuously sends updates to the client at regular intervals.
@@ -336,9 +278,9 @@ class ReaderConnectionManager:
             await websocket.send_json({'error': error_message})
 
     async def change_reader_processor(
-        self,
-        profile_seq: str,
-        reader: Reader,
+            self,
+            profile_seq: str,
+            reader: Reader,
     ):
         """
         Deletes previous periodic tasks and creates new ones with a new processor.
@@ -365,10 +307,10 @@ class ReaderConnectionManager:
         connection_reader["reader_task_names"] = new_tasks
 
     async def process_read(
-        self,
-        websocket: WebSocket,
-        op: ReadClientOp,
-        source: Source,
+            self,
+            websocket: WebSocket,
+            op: ReadClientOp,
+            source: Source,
     ):
         """
         Responds with the received data.
@@ -377,7 +319,6 @@ class ReaderConnectionManager:
         stream_items: list[StreamItem] = source(boundary)
 
         if len(stream_items) > 0 and stream_items[-1].index:
-
             await websocket.send_json([item.model_dump_json() for item in stream_items])
             log.debug(
                 "Source output stream_items %s",
