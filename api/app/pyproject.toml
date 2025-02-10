@@ -15,7 +15,6 @@ python = "<4.0,>=3.11"
 minio = "^7.2.5"
 sqlalchemy = "2.0.38"
 asyncpg = "0.30.0"
-psycopg2-binary = "^2.9.9"
 google-auth = "^2.29.0"
 google-cloud-storage = { extras = ["tracing"], version = "^2.19.0" }
 fastapi = { version = "0.115.6", extras = ["standard"] }
@@ -55,7 +54,6 @@ sqltap-ng = "^0.3.11"
 
 
 [tool.poetry.extras]
-pgsql = ["psycopg2-binary"]
 sqlalchemy = ["asyncio"]
 authlib = []
 
