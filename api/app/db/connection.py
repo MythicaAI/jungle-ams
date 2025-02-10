@@ -1,3 +1,5 @@
+"""Database connection management module"""
+
 # global usage is not understood by pylint
 # pylint: disable=global-statement,global-variable-not-assigned
 # cursor() method is dynamic
@@ -7,13 +9,13 @@ import logging
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
+from alembic.config import Config, command
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from ripple.config import ripple_config
 from sqlmodel import Session, create_engine
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from config import app_config
-
-from alembic.config import Config, command
+from db.table_change_notify import register_table_change_notification
 
 engine = None
 
@@ -54,7 +56,7 @@ async def db_connection_lifespan():
     engine = create_engine(engine_url)
     conn = engine.connect()
     if app_config().telemetry_enable:
-        SQLAlchemyInstrumentor().instrument(engine=engine)  
+        SQLAlchemyInstrumentor().instrument(engine=engine)
 
     # Setup fallbacks for features that exist in postgres but not sqlite
     if engine.dialect.name == "sqlite":
@@ -64,6 +66,8 @@ async def db_connection_lifespan():
         log.info("sqlite fallbacks installed")
         run_sqlite_migrations()
 
+    # Setup the async table change notifications
+    await register_table_change_notification()
 
     log.info("database engine connected %s, %s", engine.name, engine.dialect.name)
     try:
@@ -86,7 +90,7 @@ def get_session(echo=False):
 
 
 def sql_profiler_decorator(func, report_name="report.html"):
-    "Focusing on the SQL profiling aspect"
+    """Focusing on the SQL profiling aspect"""
     import sqltap
     def wrapper(*args, **kwargs):
         if not ripple_config().mythica_environment == "debug":
@@ -97,4 +101,5 @@ def sql_profiler_decorator(func, report_name="report.html"):
         statistics = profiler.collect()
         sqltap.report(statistics, report_name)
         return result
+
     return wrapper
