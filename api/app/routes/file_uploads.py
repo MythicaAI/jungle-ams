@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_seq_to_id
@@ -9,7 +9,7 @@ from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from tags.type_utils import resolve_type_tags
-from tags.tag_models import TagType
+from tags.tag_models import TagResponse, TagType
 
 
 class FileUploadResponse(BaseModel):
@@ -21,7 +21,7 @@ class FileUploadResponse(BaseModel):
     content_type: str
     content_hash: str = ""
     created: datetime
-    tags: Optional[list[dict[str, Union[str, int]]]] = []
+    tags: Optional[list[TagResponse]] = Field(default_factory=list)
 
 
 def enrich_file(

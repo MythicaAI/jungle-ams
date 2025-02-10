@@ -12,6 +12,8 @@ from db.schema.tags import Tag
 from sqlalchemy.orm import aliased
 from sqlmodel import Session, func, select
 
+from tags.tag_models import TagResponse
+
 
 @lru_cache
 def build_json_function(session: Session) -> Callable:
@@ -36,7 +38,12 @@ def get_tag_subquery(session: Session) -> select:
         select(
             AssetTag.type_seq.label('asset_seq'),  # pylint: disable=no-member
             json_agg_func(
-                json_func('tag_seq', AssetTag.tag_seq, 'tag_name', Tag.name)
+                json_func(
+                    'tag_seq', AssetTag.tag_seq,
+                    'name', Tag.name,
+                    'page_priority', Tag.page_priority,
+                    'contents', Tag.contents,
+                )
             ).label('tag_to_asset'),
         )
         .join(Tag, Tag.tag_seq == AssetTag.tag_seq)
@@ -82,9 +89,11 @@ def resolve_assets_tag(
     if not tags_to_asset:
         return []
     return [
-        {
-            "tag_id": tag_seq_to_id(tag["tag_seq"]),
-            "tag_name": tag["tag_name"],
-        }
+        TagResponse(
+            name=tag["name"],
+            tag_id=tag_seq_to_id(tag["tag_seq"]),
+            page_priority=tag["page_priority"],
+            contents=tag["contents"],
+        )
         for tag in tags_to_asset
     ]

@@ -115,7 +115,10 @@ async def get_tags_for_type(
         response = [
             TagResponse(
                 name=r.name,
-                tag_id=tag_seq_to_id(r.tag_seq))
+                tag_id=tag_seq_to_id(r.tag_seq),
+                page_priority=r.page_priority,
+                contents=r.contents,
+            )
             for r in tags
         ]
         return response
@@ -215,7 +218,10 @@ async def get_top_tags_for_type(
         response = [
             TagResponse(
                 name=tag.name,
-                tag_id=tag_seq_to_id(tag.tag_seq))
+                tag_id=tag_seq_to_id(tag.tag_seq),
+                page_priority=tag.page_priority,
+                contents=tag.contents,
+            )
             for tag in tags
         ]
 

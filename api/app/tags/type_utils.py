@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 
 
 from db.schema.tags import Tag
-from tags.tag_models import get_model_type, TagType
+from tags.tag_models import TagResponse, get_model_type, TagType
 
 
 def resolve_type_tags(
@@ -20,7 +20,12 @@ def resolve_type_tags(
         .outerjoin(Tag, model_type.tag_seq == Tag.tag_seq)
     ).all()
     converted = [
-        {"tag_name": r[1].name, "tag_id": tag_seq_to_id(r[1].tag_seq)}
+        TagResponse(
+            name=r[1].name,
+            tag_id=tag_seq_to_id(r[1].tag_seq),
+            page_priority=r[1].page_priority,
+            contents=r[1].contents,
+        )
         for r in tag_results
-    ]
+    ] if tag_results else []
     return converted
