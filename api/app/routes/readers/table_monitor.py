@@ -1,5 +1,6 @@
-from sqlmodel import SQLModel
 from typing import Type
+
+from sqlmodel import SQLModel
 
 from db.schema.events import Event
 from db.schema.jobs import Job, JobResult
@@ -7,7 +8,7 @@ from db.schema.jobs import Job, JobResult
 
 def generate_trigger_function(model: Type[SQLModel], trigger_name: str, channel: str):
     """
-    Generates a PostgreSQL trigger function that sends the entire row as JSON via NOTIFY.
+    Generates a PostgresSQL trigger function that sends the entire row as JSON via NOTIFY.
     """
     table_name = model.__tablename__  # Get table name from SQLModel class
     column_names = [field.name for field in model.__annotations__.keys()]  # Extract column names
