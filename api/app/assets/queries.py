@@ -82,7 +82,7 @@ def get_top_published_assets_metadata_query(session: Session):
 
 
 def resolve_assets_tag(
-    tags_to_asset: dict[str, Union[int, str]]
+    tags_to_asset: list[dict[str, Union[int, str]]]
 ) -> list | list[dict[str, str]]:
     if isinstance(tags_to_asset, str):
         tags_to_asset = json.loads(tags_to_asset)
@@ -90,10 +90,14 @@ def resolve_assets_tag(
         return []
     return [
         TagResponse(
-            name=tag["name"],
-            tag_id=tag_seq_to_id(tag["tag_seq"]),
-            page_priority=tag["page_priority"],
-            contents=tag["contents"],
+            name=tag.get("name"),
+            tag_id=tag_seq_to_id(tag.get("tag_seq")),
+            page_priority=tag.get("page_priority"),
+            contents=(
+                tag.get("contents")
+                if tag.get("contents") != "null"  # if sqlite column value
+                else None
+            ),
         )
         for tag in tags_to_asset
     ]
