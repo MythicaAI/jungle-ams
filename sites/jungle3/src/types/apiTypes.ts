@@ -119,7 +119,7 @@ export interface AssetVersionResponse {
   created: ISOTime;
   updated: ISOTime;
   contents: AssetVersionContentListMap;
-  tags: { tag_id: string; tag_name: string }[] | null;
+  tags: { tag_id: string; name: string }[] | null;
 }
 
 export interface AssetTopResponse extends AssetVersionResponse {
@@ -156,7 +156,7 @@ export interface FileUploadResponse {
   content_type: string;
   content_hash: string;
   download_url: string;
-  tags: { tag_id: string; tag_name: string }[];
+  tags: { tag_id: string; name: string }[];
 }
 
 export interface FileInfoResponse {

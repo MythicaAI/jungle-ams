@@ -8,7 +8,7 @@ type Link = {
 
 type Tag = {
   tag_id: string;
-  tag_name: string;
+  name: string;
 };
 
 export type Dependency = {

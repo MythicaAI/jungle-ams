@@ -69,11 +69,12 @@ const Assets = () => {
         <title>Mythica • All packages</title>
       </Helmet>
 
-      {isTopAssetsLoading || isTagsLoading || isAssetsByTagLoading ? (
+      {isTopAssetsLoading && isTagsLoading && isAssetsByTagLoading && (
         <CircularProgress />
-      ) : (
-        <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
-          {/* <Stack direction="row" gap="10px" mb="15px">
+      )}
+
+      <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
+        {/* <Stack direction="row" gap="10px" mb="15px">
             <Input
               startDecorator={<LucideSearch width="16px" />}
               placeholder="Package name filter..."
@@ -81,31 +82,21 @@ const Assets = () => {
               onChange={(e) => setSearch(e.target.value)}
               sx={{ width: "90%" }}
             />
-            <Select
-              value={sorting}
-              onChange={(_, value) => setSorting(value as SortType)}
-              sx={{
-                minWidth: "110px",
-                width: "10%",
-                height: "34px",
-                "& button": { outline: "none" },
-              }}
-            >
-              <Option value="latest">Latest</Option>
-              <Option value="oldest">Oldest</Option>
-            </Select>
           </Stack> */}
 
-          <Stack mb="25px" direction="row" gap="10px">
-            <Box width="100%">
-              <TagsPanel
-                tags={tags as Tag[]}
-                selectedTag={selectedTag}
-                handleChangeTag={handleSetSelectedTag}
-              />
-            </Box>
-          </Stack>
+        <Stack mb="25px" direction="row" gap="10px">
+          <Box width="100%">
+            <TagsPanel
+              tags={tags as Tag[]}
+              selectedTag={selectedTag}
+              handleChangeTag={handleSetSelectedTag}
+            />
+          </Box>
+        </Stack>
 
+        {isAssetsByTagLoading && !isTagsLoading && !isTopAssetsLoading ? (
+          <CircularProgress />
+        ) : (
           <Stack>
             <Grid container spacing={2}>
               {(assetsByTag && selectedTag !== ALL_ASSETS_TAG
@@ -130,9 +121,9 @@ const Assets = () => {
                 ))}
             </Grid>
           </Stack>
-          <BottomSortingPanel sorting={sorting} setSorting={setSorting} />
-        </Box>
-      )}
+        )}
+        <BottomSortingPanel sorting={sorting} setSorting={setSorting} />
+      </Box>
     </>
   );
 };
