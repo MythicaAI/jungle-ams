@@ -617,7 +617,7 @@ class PackageUploader(object):
         if len(orgs) == 1:
             return OrgResponse(**orgs[0])
         org_json = {"name": org_name}
-        response = self.conn_pool.post(f"{self.endpoint}/v1/orgs",
+        response = self.conn_pool.post(f"{self.endpoint}/v1/orgs/",
                                        headers=self.auth_header(),
                                        json=org_json)
         response.raise_for_status()
@@ -637,7 +637,7 @@ class PackageUploader(object):
             "email": "donotreply+importer@mythica.ai",
             "description": description,
         }
-        response = self.conn_pool.post(f"{self.endpoint}/v1/profiles", json=profile_json)
+        response = self.conn_pool.post(f"{self.endpoint}/v1/profiles/", json=profile_json)
         response.raise_for_status()
         return munchify(response.json())
 
@@ -658,7 +658,7 @@ class PackageUploader(object):
 
     def tag_asset(self, package: ProcessedPackageModel, tag_id):
         """Add a specific tag to an asset as the asset package owner"""
-        r = self.conn_pool.post(f"{self.endpoint}/v1/tags/types/asset/",
+        r = self.conn_pool.post(f"{self.endpoint}/v1/tags/types/asset",
                                 json={
                                     "type_id": package.asset_id,
                                     "tag_id": tag_id},
