@@ -23,6 +23,8 @@ const exampleTag: Tag = {
   tag_id: "",
   owner_id: "",
   created: "",
+  contents: null,
+  page_priority: null,
 };
 
 export const Default: Story = {

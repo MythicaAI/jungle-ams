@@ -11,6 +11,8 @@ describe("TagCard", () => {
     tag_id: "",
     owner_id: "",
     created: "",
+    page_priority: null,
+    contents: null,
   };
 
   it("renders the tag name", () => {
