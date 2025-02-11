@@ -4,25 +4,22 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from cryptid.cryptid import (
-    file_id_to_seq,
-    tag_id_to_seq,
-    tag_seq_to_id,
-)
+from cryptid.cryptid import tag_id_to_seq, tag_seq_to_id
+from db.connection import get_session
+from db.schema.tags import Tag
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from ripple.auth import roles
 from ripple.auth.authorization import validate_roles
 from ripple.models.sessions import SessionProfile
-from sqlalchemy import Sequence, asc, desc
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import delete as sql_delete, insert, select
-
-from content.locate_content import locate_content_by_seq
-from db.connection import get_session
-from db.schema.tags import Tag
 from routes.authorization import session_profile
 from routes.tags.tag_types import router as tag_types_router
-from tags.tag_models import TagRequest, TagResponse
+from sqlalchemy import Sequence, asc, desc
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import delete as sql_delete
+from sqlmodel import insert, select
+from sqlmodel import update as sql_update
+from tags.repo import resolve_contents_as_json
+from tags.tag_models import TagRequest, TagResponse, TagUpdateRequest
 
 log = logging.getLogger(__name__)
 
@@ -39,13 +36,9 @@ async def create(
     """Create a tag"""
     with get_session() as session:
         validate_roles(role=roles.tag_create, auth_roles=profile.auth_roles)
-        
-        if create_req.contents is not None and create_req.contents.get("thumbnail_id"):
-            file_id = create_req.contents.get("thumbnail_id")
-            db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
-            if db_file is None:
-                raise HTTPException(HTTPStatus.NOT_FOUND,
-                                    detail=f"file '{file_id}' not found")
+
+        if create_req.contents:
+            create_req.contents = resolve_contents_as_json(session, create_req.contents)
         try:
             session.exec(
                 insert(Tag).values(
@@ -120,3 +113,33 @@ async def by_id(tag_id: str) -> Optional[TagResponse]:
             page_priority=result.page_priority,
             contents=result.contents,
         ) if result else None
+
+
+@router.post('/{tag_id}')
+async def update(
+        tag_id: str,
+        req: TagUpdateRequest,
+        profile: SessionProfile = Depends(session_profile)
+) -> TagResponse:
+    """Update an existing tag"""
+    with get_session() as session:
+        validate_roles(role=roles.tag_update, auth_roles=profile.auth_roles)
+        if req.contents:
+            req.contents = resolve_contents_as_json(session, req.contents)
+        tag_seq = tag_id_to_seq(tag_id)
+        tag = session.exec(select(Tag).where(Tag.tag_seq == tag_seq)).first()
+        if tag is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND,
+                                f"tag: {tag_id} not found")
+
+        r = session.exec(sql_update(Tag).where(
+            Tag.tag_seq == tag_seq).values(
+            **req.model_dump(exclude_unset=True)))
+        if r.rowcount == 0:
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
+                                f"update for: {tag_id} failed")
+        session.commit()
+        session.refresh(tag)
+        result = TagResponse(tag_id=tag_seq_to_id(tag.tag_seq),
+                             **tag.model_dump())
+        return result
