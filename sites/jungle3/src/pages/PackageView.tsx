@@ -1,10 +1,17 @@
-import { Box, CircularProgress, Grid } from "@mui/joy";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  Stack,
+  Typography,
+} from "@mui/joy";
 import {
   extractValidationErrors,
   translateError,
 } from "@services/backendCommon";
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useStatusStore } from "@store/statusStore";
 import PackageViewCarousel from "@components/PackageView/PackageViewCarousel";
 import { PackageViewInfoPanel } from "@components/PackageView/PackageViewInfoPanel";
@@ -17,12 +24,15 @@ interface PackageViewProps {
 
 export const PackageView = (props: PackageViewProps) => {
   const { addError, addWarning } = useStatusStore();
+  const navigate = useNavigate();
 
   const {
     data: assetVersion,
     isLoading,
     error,
   } = useGetAssetByVersion(props?.asset_id, props?.version_id);
+
+  const notFound = !assetVersion?.created;
 
   const handleError = (err: any) => {
     addError(translateError(err));
@@ -55,6 +65,23 @@ export const PackageView = (props: PackageViewProps) => {
   if (isLoading) {
     return <CircularProgress />;
   }
+
+  if (notFound)
+    return (
+      <Stack
+        height="400px"
+        justifyContent="center"
+        alignItems="center"
+        gap="16px"
+      >
+        <Typography level="h3">
+          We could not find the package you are looking for.
+        </Typography>
+        <Button onClick={() => navigate("/")} sx={{ width: "fit-content" }}>
+          Back to home
+        </Button>
+      </Stack>
+    );
 
   return <div>{assetVersion ? fileView : filePending}</div>;
 };

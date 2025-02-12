@@ -18,6 +18,7 @@ import useCopyPaste from './hooks/useCopyPaste';
 import useUndoRedo from './hooks/useUndoRedo';
 import { UndoRedoPanel } from './components/UndoRedoPanel';
 import { CopyPastePanel } from './components/CopyPastePanel';
+import AssetViewerNode from './components/nodes/AssetViewerNode';
 
 // Main Awful UI component
 const AwfulUI: React.FC = () => {
@@ -47,6 +48,7 @@ const AwfulUI: React.FC = () => {
       worker: AutomationNode,
       fileUpload: FileUploadNode,
       fileViewer: FileViewerNode,
+      assetViewer: AssetViewerNode
     }),
     []
   );

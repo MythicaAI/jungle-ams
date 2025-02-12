@@ -69,7 +69,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   };
 
   const bundleSize = formatBytes(
-    av.contents["files"].reduce((prev, curr) => {
+    av?.contents["files"]?.reduce((prev, curr) => {
       return curr.size + prev;
     }, 0),
   );
@@ -165,7 +165,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
               </Stack>
             </AccordionSummary>
             <AccordionDetails>
-              {av.contents["files"].map((avc, idx, arr) => {
+              {av.contents["files"]?.map((avc, idx, arr) => {
                 const isLast = idx === arr.length - 1;
                 return (
                   <>

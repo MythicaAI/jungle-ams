@@ -142,7 +142,7 @@ const Uploads = () => {
       const prevTag = tagModalOpen.selectedFile.tags[0];
 
       const isDifferent =
-        (customTag && prevTag.tag_name !== customTag) ||
+        (customTag && prevTag.name !== customTag) ||
         (dropdownTag && prevTag.tag_id !== dropdownTag);
       if (!isDifferent) return;
 
@@ -342,7 +342,7 @@ const Uploads = () => {
                   <Stack direction="row" alignItems="center" gap="8px">
                     {value.tags && value.tags.length > 0 && (
                       <Button disabled variant="outlined">
-                        {value.tags[0].tag_name}
+                        {value.tags[0].name}
                       </Button>
                     )}
                     <Button

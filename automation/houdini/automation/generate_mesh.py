@@ -9,7 +9,7 @@ from opentelemetry import trace
 from pydantic import Field
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import FileParameter, ParameterSet
-from ripple.models.streaming import OutputFiles
+from ripple.models.streaming import OutputFiles, Error
 from typing import Optional
 
 tracer = trace.get_tracer(__name__)
@@ -134,7 +134,8 @@ def generate_mesh_impl(
         hda_definition_index: int,
         format: str,
         params: dict,
-        working_dir: str
+        working_dir: str,
+        responder: ResultPublisher
 ) -> list[str]:
     log.debug("Preparing scene")
     output_file_name = os.path.basename(hda_path)
@@ -166,12 +167,14 @@ def generate_mesh_impl(
         asset.cook(force=True)
     except Exception as e:
         log.error(f"Cook failed with exception: {e}")
-        for error in asset.errors():
-            log.error(f"Cook Error: {error}")
-        for warning in asset.warnings():
-            log.error(f"Cook Warning: {warning}")
-        for message in asset.messages():
-            log.error(f"Cook Message: {message}")
+
+        error_details = {
+            "errors": list(asset.errors()),
+            "warnings": list(asset.warnings()),
+            "messages": list(asset.messages())
+        }
+        log.error(f"Cook error details: {error_details}")
+        responder.result(Error(error=str(error_details)))
         raise
     log.debug("HDA cook completed")
 
@@ -281,7 +284,8 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Expor
         model.hda_definition_index,
         model.format,
         model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format', 'record_profile'}),
-        tmp_dir
+        tmp_dir,
+        responder
     )
 
     if model.record_profile:

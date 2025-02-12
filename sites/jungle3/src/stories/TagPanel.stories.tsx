@@ -17,9 +17,30 @@ export default meta;
 type Story = StoryObj<typeof TagsPanel>;
 
 const exampleTags: Tag[] = [
-  { name: "Tag 1", tag_id: "tag1", owner_id: "", created: "" },
-  { name: "Tag 2", tag_id: "tag2", owner_id: "", created: "" },
-  { name: "Tag 3", tag_id: "tag3", owner_id: "", created: "" },
+  {
+    name: "Tag 1",
+    tag_id: "tag1",
+    owner_id: "",
+    created: "",
+    contents: null,
+    page_priority: null,
+  },
+  {
+    name: "Tag 2",
+    tag_id: "tag2",
+    owner_id: "",
+    created: "",
+    contents: null,
+    page_priority: null,
+  },
+  {
+    name: "Tag 3",
+    tag_id: "tag3",
+    owner_id: "",
+    created: "",
+    contents: null,
+    page_priority: null,
+  },
 ];
 
 const InteractiveTemplate: Story["render"] = (args) => {

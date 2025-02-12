@@ -294,6 +294,14 @@ const Sidebar: React.FC<Props> = ({ tab, isMenuOpen, setIsMenuOpen }) => {
                 <AccordionDetails sx={{ padding: 0 }}>
                   <Box
                     className="dndnode"
+                    onDragStart={(event) => onDragStart(event, 'assetViewer')}
+                    draggable
+                  >
+                    <Typography fontSize={14}>Package Viewer</Typography>
+                    <GripVertical />
+                  </Box>
+                  <Box
+                    className="dndnode"
                     onDragStart={(event) => onDragStart(event, 'fileUpload')}
                     draggable
                     sx={{ p: '4px' }}

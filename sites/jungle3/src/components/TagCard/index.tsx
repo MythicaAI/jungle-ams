@@ -1,4 +1,4 @@
-import { Button } from "@mui/joy";
+import { Box, Button, Typography } from "@mui/joy";
 import { Tag } from "@queries/tags/types";
 import React from "react";
 
@@ -7,15 +7,44 @@ type Props = {
   selectedTag: string;
 };
 
+const getTagThumbnailSrc = (tag: Tag) => {
+  if (!tag.contents) {
+    return { url: "/houdini.svg" };
+  }
+
+  const file_name = tag.contents?.thumbnails[0]?.file_name;
+  const content_hash = tag.contents?.thumbnails[0]?.content_hash;
+  const extension = file_name?.split(".").at(-1);
+  const baseUrl = import.meta.env.VITE_IMAGES_BASE_URL;
+  return {
+    url: `${baseUrl}/${content_hash}.${extension}`,
+  };
+};
+
 export const TagCard: React.FC<Props> = ({ tag, selectedTag }) => {
+  const { url } = getTagThumbnailSrc(tag);
+
   return (
     <Button
       size="sm"
       variant={tag.name === selectedTag ? "solid" : "soft"}
       color="neutral"
-      sx={{ outline: "none !important" }}
+      sx={{
+        outline: "none !important",
+        display: "flex",
+        padding: "10px",
+        alignItems: "center",
+        gap: "10px",
+      }}
     >
-      {tag.name}
+      <Box
+        component="img"
+        width="40px"
+        height="40px"
+        borderRadius="4px"
+        src={url}
+      />
+      <Typography fontSize={14}>{tag.name}</Typography>
     </Button>
   );
 };

@@ -244,7 +244,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
 
     const isTagDifferentFromInitial =
       initialTag &&
-      ((customTag && initialTag.tag_name !== customTag) ||
+      ((customTag && initialTag.name !== customTag) ||
         (tag && initialTag.tag_id !== tag));
 
     if (isTagDifferentFromInitial && customTag) {
