@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from 'react';
 import {
+  GetAssetResponse,
   GetDownloadInfoResponse,
   GetFileResponse,
   Profile,
@@ -13,6 +14,7 @@ type MythicaApiContextType = {
   profile?: Profile;
   getFile: (fileId: string) => Promise<GetFileResponse>;
   getFiles: () => Promise<GetFileResponse[]>;
+  getAssets: () => Promise<GetAssetResponse[]>;
   getDownloadInfo: (fileId: string) => Promise<GetDownloadInfoResponse>;
   uploadFile: (formData: FormData) => Promise<UploadFileResponse>;
   deleteFile: (fileId: string) => Promise<void>;

@@ -326,6 +326,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       switch (nt) {
         case 'fileViewer':
+        case 'assetViewer':
         case 'fileUpload':
           newNode = {
             id: getId(),

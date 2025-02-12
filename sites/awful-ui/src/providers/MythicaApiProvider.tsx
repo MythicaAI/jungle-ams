@@ -9,6 +9,7 @@ import {
   GetDownloadInfoResponse,
   GetFileResponse,
   UploadFileResponse,
+  GetAssetResponse,
 } from '../types/MythicaApi';
 import Cookies from 'universal-cookie';
 import { jwtDecode } from 'jwt-decode';
@@ -52,6 +53,13 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
     return response.data;
   };
 
+  const getAssets = async (): Promise<GetAssetResponse[]> => {
+    const response = await axios.get(`${BASE_URL}/assets/all`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    return response.data;
+  };
+
   const getDownloadInfo = async (
     fileId: string
   ): Promise<GetDownloadInfoResponse> => {
@@ -88,6 +96,7 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
         profile,
         getFile,
         getFiles,
+        getAssets,
         getDownloadInfo,
         uploadFile,
         deleteFile,
