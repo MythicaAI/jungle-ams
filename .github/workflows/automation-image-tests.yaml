@@ -2,8 +2,13 @@ name: automation-image-tests
 on:
   pull_request:
     types:
-      - opened
-      - synchronize
+      - closed
+    paths:
+      - 'automation/**'
+      - '.github/workflows/automation-image-tests.yaml'
+  push: # change
+    branches:
+      - '**'
     paths:
       - 'automation/**'
       - '.github/workflows/automation-image-tests.yaml'
@@ -29,7 +34,7 @@ jobs:
           filters: |
             automation/test/:
               - 'libs/python/**'
-              - '.github/workflows/test-build-automation.yaml' # always build at least one image if the workflow changes
+              - '.github/workflows/automation-image-tests.yaml' # always build at least one image if the workflow changes
             automation/houdini/:
               - 'libs/python/**'
               - 'automation/houdini/**'
@@ -58,28 +63,87 @@ jobs:
     env:
       IMAGE_NAME: "${{ matrix.image }}"
       NODE_ENV: "staging"
+      PROJECT_ID: "296075347103"
+      AR_REPO_LOCATION: 'us-central1'
+      AR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
+      SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
+      WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: 8BitJonny/gh-get-current-pr@3.0.0
+        id: PR
         with:
-          python-version: '3.12'
+          sha: ${{ github.event.pull_request.head.sha }}
 
-      - name: Install base python dependencies
-        run: |
-          python -m pip install --upgrade pip poetry flake8
-          python -m pip install -r local_requirements.txt 
+      - name: Fetch tags
+        if: ${{ steps.PR.outputs.number != null }}
+        run: git fetch --prune --unshallow --tags
 
-      - name: Lint with flake8
-        working-directory: ${{ matrix.image }}
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Setup Docker BuildX
+        if: ${{ steps.PR.outputs.number != null }}
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
-      - name: Test build ${{ matrix.image }}
+      - name: Google Auth
+        if: ${{ steps.PR.outputs.number != null }}
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: 'access_token'
+          project_id: ${{ env.PROJECT_ID }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Login to Artifact Registry
+        if: ${{ steps.PR.outputs.number != null }}
+        uses: docker/login-action@v3
+        with:
+          registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Generate tag
+        if: ${{ steps.PR.outputs.number != null }}
+        id: generate_tag
         run: |
-          inv docker-build --image ${{ matrix.image }}
+          github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+
+      - name: Push tag
+        if: ${{ steps.PR.outputs.number != null }}
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 10
+          command: |
+            git tag ${{ steps.generate_tag.outputs.new_tag }}
+            git push origin ${{ steps.generate_tag.outputs.new_tag }}
+            echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
+
+      # - name: Checkout
+      #   uses: actions/checkout@v4
+
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+
+      # - name: Install base python dependencies
+      #   run: |
+      #     python -m pip install --upgrade pip poetry flake8
+      #     python -m pip install -r local_requirements.txt 
+
+      # - name: Lint with flake8
+      #   working-directory: ${{ matrix.image }}
+      #   run: |
+      #     # stop the build if there are Python syntax errors or undefined names
+      #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+      #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      # - name: Test build ${{ matrix.image }}
+      #   run: |
+      #     inv docker-build --image ${{ matrix.image }}
