@@ -51,7 +51,6 @@ jobs:
             api/app/:
               - 'libs/python/**'
               - 'api/app/**'
-              - '.github/workflows/push-tagged-images.yaml' # always build at least one image if the workflow changes
             api/nginx/:
               - 'api/nginx/**'
             api/gcs-proxy/:
@@ -71,6 +70,7 @@ jobs:
             automation/houdini/:
               - 'libs/python/**'
               - 'automation/houdini/**'
+              - '.github/workflows/push-tagged-images.yaml' # always build at least one image if the workflow changes
 
   build-base:
     permissions:
