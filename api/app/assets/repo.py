@@ -29,7 +29,7 @@ from ripple.models.assets import AssetVersionRef
 from ripple.models.sessions import SessionProfile
 from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
-from tags.tag_models import TagType
+from tags.tag_models import TagResponse, TagType
 from tags.type_utils import resolve_type_tags
 from assets.queries import get_top_published_assets_metadata_query, resolve_assets_tag
 from db.connection import sql_profiler_decorator
@@ -140,7 +140,7 @@ class AssetVersionResult(BaseModel):
     commit_ref: Optional[str] = None
     created: datetime | None = None
     contents: Dict[str, list[AssetFileReference | AssetDependency | str]] = Field(default_factory=dict)
-    tags: Optional[list[dict[str, Union[str, int]]]] = Field(default_factory=list)
+    tags: Optional[list[TagResponse]] = Field(default_factory=list)
 
 
 class AssetTopResult(AssetVersionResult):
