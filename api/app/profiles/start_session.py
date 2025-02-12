@@ -5,19 +5,20 @@ the profile and generates a session start response.
 import logging
 from http import HTTPStatus
 
-from cryptid.cryptid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from fastapi import HTTPException
-from ripple.auth import roles
-from ripple.auth.authorization import validate_roles
-from ripple.auth.generate_token import generate_token
 from sqlalchemy.sql.functions import func, now as sql_now
-from sqlmodel import Session, asc, col, delete, insert, select, update
+from sqlmodel import asc, col, delete, insert, select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from auth.data import resolve_org_roles
+from cryptid.cryptid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
+from ripple.auth import roles
+from ripple.auth.authorization import validate_roles
+from ripple.auth.generate_token import generate_token
 from ripple.config import ripple_config
 from ripple.models.sessions import SessionProfile
 from validate_email.responses import ValidateEmailState
@@ -35,40 +36,40 @@ privileged_emails = {
 }
 
 
-def start_session(
-        session: Session,
+async def start_session(
+        db_session: AsyncSession,
         profile_seq: int,
         location: str,
         impersonate_profile_id: str = None) -> SessionStartResponse:
-    """Given a database session start a new session"""
+    """Given a database session start a new authenticated session"""
 
     #
     # Update profile, login count and location
     #
-    result = session.exec(update(Profile).values(
+    result = await db_session.exec(update(Profile).values(
         login_count=func.coalesce(Profile.login_count, 0) + 1,
         active=True,
         location=location).where(Profile.profile_seq == profile_seq))
     if result.rowcount == 0:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail='profile not found')
-    session.commit()
+    await db_session.commit()
 
     #
     # Delete existing sessions
     #
-    session.exec(delete(ProfileSession).where(
+    await db_session.exec(delete(ProfileSession).where(
         ProfileSession.profile_seq == profile_seq))
-    session.commit()
+    await db_session.commit()
 
     #
     # Generate a new token with the profile and role data embedded in the token
     # for validation to other API endpoints
     #
-    profile_org_results = session.exec(select(Profile, Org, OrgRef)
-                                       .where(Profile.profile_seq == profile_seq)
-                                       .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
-                                       .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
-                                       ).all()
+    profile_org_results = (await db_session.exec(select(Profile, Org, OrgRef)
+                                                 .where(Profile.profile_seq == profile_seq)
+                                                 .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
+                                                 .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
+                                                 )).all()
 
     # Convert org roles into auth role declarations for ripple
     auth_roles = set()
@@ -100,7 +101,7 @@ def start_session(
     if impersonate_profile_id:
         validate_roles(role=roles.profile_impersonate, auth_roles=auth_roles)
         profile = impersonated_profile(
-            session=session,
+            db_session=db_session,
             auth_profile=profile,
             profile_id=impersonate_profile_id)
 
@@ -118,14 +119,11 @@ def start_session(
                                      location=location,
                                      authenticated=True,
                                      auth_token=token)
-    session.add(profile_session)
-    session.commit()
+    db_session.add(profile_session)
+    await db_session.commit()
 
     # resolve all roles across all orgs this profile exists in
-    auth_roles = resolve_org_roles(session, profile.profile_seq)
-
-
-
+    auth_roles = await resolve_org_roles(db_session, profile.profile_seq)
 
     # Convert db profile to profile response
     profile_response = profile_to_profile_response(
@@ -140,27 +138,25 @@ def start_session(
     return result
 
 
-def impersonated_profile(
-        session: Session,
+async def impersonated_profile(
+        db_session: AsyncSession,
         auth_profile: Profile,
         profile_id: str) -> SessionProfile:
     """
     Return an impersonated profile and log the access
     """
     profile_seq = profile_id_to_seq(profile_id)
-    db_profile = session.exec(select(Profile)
-                              .where(Profile.profile_seq == profile_seq)
-                              ).one_or_none()
+    db_profile = (await db_session.exec(select(Profile).where(Profile.profile_seq == profile_seq))).one_or_none()
     if db_profile is None:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="No profile to impersonate")
 
     log.info("profile: (%s) %s #%s, impersonating (%s) %s #%s",
-                auth_profile.email,
-                profile_seq_to_id(auth_profile.profile_seq),
-                profile_seq,
-                db_profile.email,
-                profile_id,
-                profile_id_to_seq(profile_id))
+             auth_profile.email,
+             profile_seq_to_id(auth_profile.profile_seq),
+             profile_seq,
+             db_profile.email,
+             profile_id,
+             profile_id_to_seq(profile_id))
     return db_profile
 
 
@@ -171,28 +167,28 @@ async def start_session_with_token_validator(token: str, validator: AuthTokenVal
     log.info("starting session with token: %s", token)
     valid_token = await validator.validate(token)
 
-    with (get_session() as session):
+    with (get_session() as db_session):
         #
         # look for an existing association of the unique sub key
         #
-        locator_oid = session.exec(select(ProfileLocatorOID)
-                                   .where(col(ProfileLocatorOID.sub) == valid_token.sub)).one_or_none()
+        locator_oid = (await db_session.exec(select(ProfileLocatorOID)
+                                             .where(col(ProfileLocatorOID.sub) == valid_token.sub))).one_or_none()
         if locator_oid is not None:
-            return start_session(session, locator_oid.owner_seq, locator_oid.sub)
+            return await start_session(db_session, locator_oid.owner_seq, locator_oid.sub)
 
         #
         # Resolve the locator to a profile, start by querying the user profile data associated with the sub
         # get all profiles with the email, with the oldest profile as the first result
         #
         user_profile = await validator.query_user_profile(token)
-        profiles = session.exec(select(Profile)
-                                .where(col(Profile.email) == user_profile.email)
-                                .order_by(asc(Profile.created))).all()
+        profiles = (await db_session.exec(select(Profile)
+                                          .where(col(Profile.email) == user_profile.email)
+                                          .order_by(asc(Profile.created)))).all()
         if profiles is None or len(profiles) == 0:
             # if there are no profiles, attempt to associate the sub to a new profile
-            profile_seq = await create_profile_for_oid(session, valid_token, user_profile)
-            session_start = await create_profile_locator_oid(session, valid_token, profile_seq)
-            return session_start
+            profile_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
+            session_start = await create_profile_locator_oid(db_session, valid_token, profile_seq)
+            return await session_start
 
         #
         # a locator does not exist for the token subject, in this case we will associate all profiles
@@ -200,12 +196,12 @@ async def start_session_with_token_validator(token: str, validator: AuthTokenVal
         # with an email verification on our side before allowing the new sub to take over the profile
         # select the oldest profile, what to do with the rest?
         oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
-        session_start = await associate_profile(session, oldest_profile, valid_token, user_profile)
+        session_start = await associate_profile(db_session, oldest_profile, valid_token, user_profile)
         return session_start
 
 
 async def associate_profile(
-        session: Session,
+        db_session: AsyncSession,
         profile: Profile,
         valid_token: ValidTokenPayload,
         user_profile: UserProfile) -> SessionStartResponse:
@@ -213,7 +209,7 @@ async def associate_profile(
         validate_email_state = 1
     else:
         validate_email_state = 0
-    profile_insert = session.exec(insert(Profile).values(
+    profile_insert = await db_session.exec(insert(Profile).values(
         name=user_profile.nickname,
         full_name=user_profile.name,
         email=user_profile.email,
@@ -222,34 +218,34 @@ async def associate_profile(
     ))
     profile_seq = profile_insert.inserted_primary_key[0]
 
-    session.exec(insert(ProfileLocatorOID).values(
+    await db_session.exec(insert(ProfileLocatorOID).values(
         sub=valid_token.sub,
         owner_seq=profile_seq,
     ))
-    session.commit()
+    await db_session.commit()
 
-    profile = session.exec(select(Profile).where(Profile.profile_seq == profile_seq)).one_or_none()
+    profile = (await db_session.exec(select(Profile).where(Profile.profile_seq == profile_seq))).one_or_none()
     if profile is None:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
-    return start_session(session, profile.profile_seq, valid_token.sub)
+    return await start_session(db_session, profile.profile_seq, valid_token.sub)
 
 
 async def merge_profile(
-        session: Session,
+        db_session: AsyncSession,
         valid_token: ValidTokenPayload,
         user_profile: UserProfile,
         _: ProfileLocatorOID) -> SessionStartResponse:
-    results = session.exec(select(Profile).where(col(Profile.email) == user_profile.email)).all()
+    results = (await db_session.exec(select(Profile).where(col(Profile.email) == user_profile.email))).all()
     profile = None
     if results is None or len(results) == 0:
-        owner_seq = await create_profile_for_oid(session, valid_token, user_profile)
-        await create_profile_locator_oid(session, valid_token, owner_seq)
+        owner_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
+        await create_profile_locator_oid(db_session, valid_token, owner_seq)
     else:
         profile = next(sorted(results, key=lambda p: p.profile_seq))
 
     if profile is None:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
-    return start_session(session, profile.profile_seq, valid_token.sub)
+    return await start_session(db_session, profile.profile_seq, valid_token.sub)
 
 
 def email_validate_state(email_verified) -> int:
@@ -259,19 +255,19 @@ def email_validate_state(email_verified) -> int:
         return 0
 
 
-async def create_profile_locator_oid(session: Session, valid_token: ValidTokenPayload, owner_seq: int):
-    r = session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
+async def create_profile_locator_oid(db_session: AsyncSession, valid_token: ValidTokenPayload, owner_seq: int):
+    r = db_session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
     if r is None or r.rowcount == 0:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "OID locator could not be created")
-    session.commit()
-    return start_session(session, owner_seq, valid_token.sub)
+    await db_session.commit()
+    return await start_session(db_session, owner_seq, valid_token.sub)
 
 
 async def create_profile_for_oid(
-        session: Session,
+        db_session: AsyncSession,
         valid_token: ValidTokenPayload,
         user_profile: UserProfile) -> int:
-    r = session.exec(insert(Profile).values(
+    r = await db_session.exec(insert(Profile).values(
         name=user_profile.nickname,
         full_name=user_profile.name,
         email=user_profile.email,

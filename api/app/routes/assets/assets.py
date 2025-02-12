@@ -4,11 +4,11 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-
-from ripple.models.sessions import SessionProfile
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 import assets.repo as repo
 from db.connection import get_session
+from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.storage_client import storage_client
 from storage.storage_client import StorageClient
@@ -27,27 +27,25 @@ async def log_request_headers(r: Request):
 
 
 @router.get('/all')
-async def list_all() -> list[repo.AssetVersionResult]:
+async def list_all(db_session: AsyncSession = Depends(get_session)) -> list[repo.AssetVersionResult]:
     """Get all asset versions"""
-    with get_session() as session:
-        join_results = session.exec(
-            repo.asset_join_select).all()
-        return repo.process_join_results(session, join_results)
+    join_results = await (db_session.exec(
+        repo.asset_join_select)).all()
+    return await repo.process_join_results(db_session, join_results)
 
 
 @router.get('/top')
-async def list_top() -> list[repo.AssetTopResult]:
+async def list_top(db_session: AsyncSession = Depends(get_session)) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
-    with get_session(echo=False) as session:
-        return repo.top(session)
+    return await repo.top(db_session)
 
 
 @router.get('/owned')
 async def list_owned(
-        profile: SessionProfile = Depends(session_profile)) -> list[repo.AssetVersionResult]:
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_session)) -> list[repo.AssetVersionResult]:
     """Get the list of asset headers owned by the current profile"""
-    with get_session() as session:
-        return repo.owned_versions(session, profile.profile_seq)
+    return repo.owned_versions(db_session, profile.profile_seq)
 
 
 @router.get('/named/{asset_name}')

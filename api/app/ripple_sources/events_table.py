@@ -20,9 +20,9 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
     if owner_seq is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST, 'an owner is required for event table streams')
 
-    def events_table_source(boundary: Boundary) -> list[StreamItem]:
+    async def events_table_source(boundary: Boundary) -> list[StreamItem]:
         """Function that produces event table result streams"""
-        with get_session() as session:
+        with get_session() as db_session:
             stmt = select(DbEvent).where(DbEvent.owner_seq == owner_seq)
             if boundary.position is not None:
                 event_seq_position = event_id_to_seq(boundary.position)
@@ -31,7 +31,7 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
                 else:
                     stmt = stmt.where(DbEvent.event_seq < event_seq_position)
             stmt = stmt.order_by(asc(DbEvent.event_seq)).limit(page_size)
-            r = session.exec(stmt).all()
+            r = (await db_session.exec(stmt)).all()
             return [Event(
                 index=event_seq_to_id(i.event_seq),
                 payload=i.job_data,

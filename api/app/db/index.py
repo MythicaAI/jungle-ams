@@ -1,20 +1,20 @@
 import logging
+import sys
 from typing import Tuple
 from uuid import uuid4
 
-import sys
+from sqlmodel import insert
+
+from context import UploadContext
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from cryptid.location import location
+from db.connection import get_session
+from db.schema.events import Event
+from db.schema.media import FileContent
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
-from sqlmodel import insert
-
-from context import UploadContext
-from db.connection import get_session
-from db.schema.events import Event
-from db.schema.media import FileContent
 from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
@@ -22,14 +22,14 @@ log = logging.getLogger(__name__)
 
 async def update(ctx: UploadContext) -> Tuple[str, str]:
     """Update the database index for the upload"""
-    with get_session() as session:
+    with get_session() as db_session:
         content_type = f"application/{ctx.extension}"
 
         # if the locators format changes we can add a different key
         locators = {'locators': ctx.locators}
 
         # create a new upload
-        file_content_result = session.exec(insert(FileContent).values(
+        file_content_result = await db_session.exec(insert(FileContent).values(
             {'name': ctx.filename,
              'owner_seq': profile_id_to_seq(ctx.owner_id),
              'locators': locators,
@@ -37,7 +37,7 @@ async def update(ctx: UploadContext) -> Tuple[str, str]:
              'content_hash': ctx.content_hash,
              'size': ctx.file_size,
              'content_type': content_type}))
-        session.commit()
+        await db_session.commit()
         file_id = file_seq_to_id(file_content_result.inserted_primary_key[0])
 
         # Create a new pipeline event
@@ -51,13 +51,13 @@ async def update(ctx: UploadContext) -> Tuple[str, str]:
             'file_type': ctx.extension
         }
         loc = location()
-        event_result = session.exec(insert(Event).values(
+        event_result = await db_session.exec(insert(Event).values(
             event_type=f"file_uploaded:{ctx.extension}",
             job_data=job_data,
             owner_seq=profile_id_to_seq(ctx.owner_id),
             created_in=loc,
             affinity=loc))
-        session.commit()
+        await db_session.commit()
         event_seq = event_result.inserted_primary_key[0]
         event_id = event_seq_to_id(event_seq)
 

@@ -7,15 +7,18 @@ import logging
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
-from ripple.config import ripple_config
-from sqlmodel import Session, create_engine
+from alembic.config import Config, command
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import sessionmaker
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from config import app_config
-
-from alembic.config import Config, command
+from ripple.config import ripple_config
 
 engine = None
+create_new_session = None
 
 log = logging.getLogger(__name__)
 
@@ -48,41 +51,51 @@ def run_sqlite_migrations():
 @asynccontextmanager
 async def db_connection_lifespan():
     """Lifecycle management of the database connection"""
-    global engine
+    global create_new_session, engine
 
     engine_url = app_config().sql_url.strip()
-    engine = create_engine(engine_url)
-    conn = engine.connect()
+
+    engine = create_async_engine(engine_url, echo=True, future=True)
+    create_new_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+    # test creating a new session
+    session = create_new_session()
+
+    # instrument the engine for telemetry
     if app_config().telemetry_enable:
-        SQLAlchemyInstrumentor().instrument(engine=engine)  
+        SQLAlchemyInstrumentor().instrument(engine=engine)
+
+    log.info("database engine %s, driver: %s", engine.dialect.name, engine.dialect.driver)
 
     # Setup fallbacks for features that exist in postgres but not sqlite
     if engine.dialect.name == "sqlite":
-        cursor = engine.raw_connection().cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
-        cursor.close()
-        log.info("sqlite fallbacks installed")
-        run_sqlite_migrations()
+        raw_conn = await engine.raw_connection()
+        try:
+            cursor = raw_conn.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
+            cursor.close()
+            log.info("sqlite fallbacks installed")
+            run_sqlite_migrations()
+        finally:
+            raw_conn.close()
 
-
-    log.info("database engine connected %s, %s", engine.name, engine.dialect.name)
     try:
         yield engine
     except GeneratorExit:
         pass
     finally:
-        conn.close()
+        session.close()
         log.info("database engine disconnected %s", engine.name)
-        engine.dispose()
+        session.dispose()
         engine = None
 
 
-def get_session(echo=False):
+async def get_session() -> AsyncSession:
     """Get a database session using the main database connection"""
-    global engine
-
-    engine.echo = echo
-    return Session(engine)
+    global engine, create_new_session
+    if engine is not None:
+        return create_new_session()
+    raise OperationalError("engine is not available", None, None)
 
 
 def sql_profiler_decorator(func, report_name="report.html"):
@@ -99,4 +112,5 @@ def sql_profiler_decorator(func, report_name="report.html"):
         except PermissionError:
             result = func(*args, **kwargs)
         return result
+
     return wrapper

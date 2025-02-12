@@ -1,11 +1,11 @@
 """Main entrypoint for FastAPI app creation"""
 import importlib
 import logging
+import sys
 from contextlib import asynccontextmanager
 
-import sys
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 from opentelemetry import trace
@@ -19,7 +19,6 @@ from exceptions import register_exceptions
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources
-from routes.type_adapters import register_adapters
 from telemetry_config import configure_logging
 
 # This must run before the app is created to override the default
@@ -103,20 +102,18 @@ for name in route_names:
     router = getattr(module, 'router')
     app.include_router(router)
 
-register_adapters()
 register_exceptions(app)
 register_streaming_sources()
 
 
 @app.get("/", include_in_schema=False, tags=["internal", "health"])
-async def health():
+async def health(db_session=Depends(get_session), redis=Depends(get_redis)):
     """Health check"""
-    with get_session() as session, get_redis() as redis:
-        cache_health_status = await redis.info()
-        return {'healthy': True,
-                'tracing': trace.get_current_span().is_recording(),
-                'db': session.is_active,
-                'cache': 'redis_version' in cache_health_status}
+    cache_health_status = await redis.info()
+    return {'healthy': True,
+            'tracing': trace.get_current_span().is_recording(),
+            'db': db_session.is_active,
+            'cache': 'redis_version' in cache_health_status}
 
 
 def main():

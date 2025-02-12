@@ -30,11 +30,11 @@ def create_job_results_table_source(params: dict[str, Any]) -> Source:
     if param_job_seq is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST, 'a job is required for job result table streams')
 
-    def job_results_source(after: str, page_size: int) -> list[StreamItem]:
+    async def job_results_source(after: str, page_size: int) -> list[StreamItem]:
         """Function that produces event table result streams"""
         page_size = max(param_page_size, page_size)
         after_job_result_seq = job_result_id_to_seq(after) if after else 0
-        with get_session() as session:
+        with get_session() as db_session:
             stmt = select(JobResult).where(JobResult.owner_seq == param_owner_seq)
             if param_job_seq:
                 stmt.where(JobResult.job_seq == param_job_seq)
@@ -44,6 +44,6 @@ def create_job_results_table_source(params: dict[str, Any]) -> Source:
                 stmt.where(JobResult.job_result_seq > after_job_result_seq)
 
             stmt.limit(page_size)
-            return transform_job_results(session.exec(stmt).all())
+            return transform_job_results((await db_session.exec(stmt)).all())
 
     return job_results_source

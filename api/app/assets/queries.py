@@ -4,23 +4,26 @@ import json
 from functools import lru_cache
 from typing import Callable, Union
 
+from sqlalchemy.orm import aliased
+from sqlmodel import Session, func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from cryptid.cryptid import tag_seq_to_id
 from db.schema.assets import Asset, AssetTag, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from db.schema.tags import Tag
-from sqlalchemy.orm import aliased
-from sqlmodel import Session, func, select
 
 from tags.tag_models import TagResponse
 
 
 @lru_cache
-def build_json_function(session: Session) -> Callable:
-    if session.bind.name == 'postgresql':
+def build_json_function(db_session: AsyncSession) -> Callable:
+    if db_session.bind.name == 'postgresql':
         return func.json_build_object
-    elif session.bind.name == 'sqlite':
+    elif db_session.bind.name == 'sqlite':
         return func.json_object
+
 
 @lru_cache
 def build_json_agg_function(session: Session) -> Callable:
@@ -30,9 +33,9 @@ def build_json_agg_function(session: Session) -> Callable:
         return func.json_group_array
 
 
-def get_tag_subquery(session: Session) -> select:
-    json_func = build_json_function(session)
-    json_agg_func = build_json_agg_function(session)
+def get_tag_subquery(db_session: AsyncSession) -> select:
+    json_func = build_json_function(db_session)
+    json_agg_func = build_json_agg_function(db_session)
 
     return (
         select(
@@ -56,8 +59,8 @@ OwnerProfile = aliased(Profile)
 AuthorProfile = aliased(Profile)
 
 
-def get_top_published_assets_metadata_query(session: Session):
-    tag_subquery = get_tag_subquery(session)
+async def get_top_published_assets_metadata_query(db_session: AsyncSession):
+    tag_subquery = await get_tag_subquery(db_session)
     top_published_assets_metadata_query = (
         select(
             Asset,
@@ -82,7 +85,7 @@ def get_top_published_assets_metadata_query(session: Session):
 
 
 def resolve_assets_tag(
-    tags_to_asset: list[dict[str, Union[int, str]]]
+        tags_to_asset: list[dict[str, Union[int, str]]]
 ) -> list | list[dict[str, str]]:
     if isinstance(tags_to_asset, str):
         tags_to_asset = json.loads(tags_to_asset)

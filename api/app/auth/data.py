@@ -3,10 +3,11 @@ from http import HTTPStatus
 
 from fastapi import HTTPException
 from jwt import DecodeError, InvalidTokenError
-from ripple.auth.generate_token import SessionProfile, decode_token
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from db.schema.profiles import OrgRef, Profile
+from ripple.auth.generate_token import SessionProfile, decode_token
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +41,12 @@ def resolve_profile(session, profile: Profile) -> Profile:
     return resolved_profile
 
 
-def resolve_org_roles(session: Session, profile_seq: int, org_seq: int = None) -> set[str]:
+async def resolve_org_roles(db_session: AsyncSession, profile_seq: int, org_seq: int = None) -> set[str]:
     """Get the set of roles for a profile in an org"""
     if org_seq is not None:
-        org_refs = session.exec(select(OrgRef).where(
-            OrgRef.org_seq == org_seq, OrgRef.profile_seq == profile_seq)).all()
+        org_refs = (await db_session.exec(select(OrgRef).where(
+            OrgRef.org_seq == org_seq, OrgRef.profile_seq == profile_seq))).all()
     else:
-        org_refs = session.exec(select(OrgRef).where(
-            OrgRef.profile_seq == profile_seq)).all()
+        org_refs = (await db_session.exec(select(OrgRef).where(
+            OrgRef.profile_seq == profile_seq))).all()
     return {o.role for o in org_refs}

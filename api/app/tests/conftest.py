@@ -1,22 +1,21 @@
 # use of defined fixture function names
 # pylint: disable=redefined-outer-name,unused-argument
 
-from contextlib import contextmanager
-
+import logging
 import os
 import tempfile
+from contextlib import contextmanager
 
 import pytest
-import logging
-
 from fastapi.testclient import TestClient
 
-from main import app
 from config import app_config
+from main import app
 
 log = logging.getLogger(__name__)
 
 print("conftest-debug")
+
 
 @pytest.fixture(scope='package', autouse=True)
 def setup_database():
@@ -31,7 +30,7 @@ def setup_database():
         with (tempfile.TemporaryDirectory() as tmp_dir):
             db_path = os.path.join(tmp_dir, 'mythica.db')
             local_storage_path = os.path.join(tmp_dir, 'local_storage')
-            sql_url = f"sqlite:///{db_path}"
+            sql_url = f"sqlite+aiosqlite:///{db_path}"
             os.environ["SQL_URL"] = sql_url
 
             cfg = app_config()
@@ -50,6 +49,7 @@ def setup_database():
 def api_base(setup_database) -> str:
     """Return the current api base"""
     return "/v1"
+
 
 @contextmanager
 @pytest.fixture(scope='module')
