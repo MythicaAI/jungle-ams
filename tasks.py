@@ -1,6 +1,7 @@
 # This file is intended for invoke, see README.md for install setup instructions
 import os
 import re
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from functools import wraps
@@ -138,7 +139,7 @@ IMAGE_SETS = {
         'testing/storage/minio-config'},
     'auto': {
         'automation/houdini',
-        #'automation/genai',
+        # 'automation/genai',
         'automation/test',
         'automation/workflow',
         'automation/blender',
@@ -491,3 +492,41 @@ def docker_deploy(c, image='all', target='gcs', no_cache: bool = False):
 def docker_run(c, image='api/app', background=False):
     """Run a docker image by path"""
     image_path_action(c, image, run_image, background=background)
+
+
+@task(help={
+    'path': 'Path to run poetry operations'
+})
+def poetry_nuke(c, path):
+    with c.cd(os.path.join(BASE_DIR, path)):
+        poetry_env = c.run('poetry env info --path').stdout.strip()
+        answer = input(f"Nuking poetry env in {poetry_env}.\nContinue? Type 'nuke' to confirm: ")
+        if answer.upper() not in ["NUKE"]:
+            print("skipping nuke")
+            return
+        shutil.rmtree(poetry_env)
+
+
+@task(help={
+    'path': 'Path to run poetry operations'
+})
+def poetry_upgrade(c, path):
+    if path is None:
+        raise ValueError("pass a relative path in the infra repo e.g. libs/python/ripple")
+    ignore = {'ripple', 'cryptid'}
+    abs_path = os.path.join(BASE_DIR, path)
+    with c.cd(abs_path):
+        for group in ['dev', 'main', 'infra']:
+            package_list = [line.split(" ")[0] \
+                            for line in \
+                            c.run(f'poetry show --top-level --only={group}').stdout.splitlines() \
+                            if line]
+            for package in package_list:
+                if package in ignore:
+                    print(f"IGNORING {group}.{package}")
+                    continue
+                print(f"UPGRADE {group}.{package}")
+                c.run(f'poetry add {package}@latest --group={group}')
+                print(f"{package} upgraded")
+        c.run(f'poetry lock')
+        print(f"Finished upgrading packages in {abs_path}")
