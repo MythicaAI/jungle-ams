@@ -106,7 +106,7 @@ const AssetFilePickerModal: React.FC<AssetFilePickerModalProps> = ({
       <ModalDialog
         aria-labelledby="asset-file-picker-modal"
         size="lg"
-        sx={{ width: 800, height: 500 }}
+        sx={{ width: 800, height: 580 }}
       >
         <Typography id="asset-file-picker-modal" level="title-lg" mb={1}>
           {label}
@@ -155,7 +155,7 @@ const AssetFilePickerModal: React.FC<AssetFilePickerModalProps> = ({
                         <ListItemDecorator>
                         <Checkbox
                             checked={isChecked}
-                            onChange={(e) => {
+                            onClick={(e) => {
                             e.stopPropagation(); // Prevent ListItemButton from also triggering
                             handleToggleFile(file.file_id);
                             }}
