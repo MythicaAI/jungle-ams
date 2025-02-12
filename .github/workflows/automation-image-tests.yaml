@@ -124,13 +124,6 @@ jobs:
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
-      - name: Download api-app image
-        if: ${{ steps.PR.outputs.number != null }}
-        uses: actions/download-artifact@v4
-        with:
-          name: api-app-${{ github.sha }}
-          path: /tmp
-
       - name: Download libs-python base image
         if: ${{ steps.PR.outputs.number != null }}
         uses: actions/download-artifact@v4
@@ -142,7 +135,6 @@ jobs:
         if: ${{ steps.PR.outputs.number != null }}
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
-          docker load --input /tmp/api-app-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
         if: ${{ steps.PR.outputs.number != null }}
@@ -157,7 +149,6 @@ jobs:
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            API_APP_IMAGE=api-app:${{ github.sha }}
           load: true
 
       # - name: Send Discord notification
