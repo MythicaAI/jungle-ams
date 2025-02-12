@@ -1,14 +1,23 @@
 import asyncio
+import importlib
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.util import await_only, greenlet_spawn
+from sqlmodel import SQLModel
 
 from config import app_config
+
 # import the SQLModels
-from db.schema.tags import *
+importlib.import_module("db.schema.profiles")
+importlib.import_module("db.schema.events")
+importlib.import_module("db.schema.media")
+importlib.import_module("db.schema.assets")
+importlib.import_module("db.schema.graph")
+importlib.import_module("db.schema.jobs")
+importlib.import_module("db.schema.streaming")
+importlib.import_module("db.schema.tags")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -58,7 +67,7 @@ def run_migrations_online_sync(connection):
         target_metadata=target_metadata
     )
     with context.begin_transaction():
-        await_only(context.run_migrations())
+        context.run_migrations()
 
 
 async def run_migrations_online() -> None:
@@ -70,7 +79,9 @@ async def run_migrations_online() -> None:
     """
     # Update the config with the environment
     config_dict = config.get_section(config.config_ini_section, {})
-    config_dict["sqlalchemy.url"] = app_config().sql_url.strip()
+    sql_url = app_config().sql_url.strip()
+    print(f'running online migration on {sql_url}')
+    config_dict["sqlalchemy.url"] = sql_url
     connectable = AsyncEngine(engine_from_config(
         config_dict,
         prefix="sqlalchemy.",
@@ -78,7 +89,7 @@ async def run_migrations_online() -> None:
         future=True
     ))
     async with connectable.connect() as connection:
-        await greenlet_spawn(lambda: connection.run_sync(run_migrations_online_sync))
+        await connection.run_sync(run_migrations_online_sync)
     await connectable.dispose()
 
 

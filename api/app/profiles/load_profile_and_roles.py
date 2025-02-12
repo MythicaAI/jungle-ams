@@ -1,22 +1,23 @@
 from http import HTTPStatus
 
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
 from db.schema.profiles import Org, OrgRef, Profile
 from profiles.responses import ProfileOrgRoles
 
 
-def load_profile_and_roles(
-        session: Session,
+async def load_profile_and_roles(
+        db_session: AsyncSession,
         profile_seq: int) -> tuple[Profile, list[ProfileOrgRoles]]:
     """Collect the set of org references for the requested profile from the database"""
-    profile_org_results = session.exec(select(Profile, Org, OrgRef)
-                                       .where(Profile.profile_seq == profile_seq)
-                                       .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
-                                       .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
-                                       ).all()
+    profile_org_results = (await db_session.exec(select(Profile, Org, OrgRef)
+                                                 .where(Profile.profile_seq == profile_seq)
+                                                 .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
+                                                 .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
+                                                 )).all()
     if not profile_org_results:
         raise HTTPException(
             HTTPStatus.NOT_FOUND,

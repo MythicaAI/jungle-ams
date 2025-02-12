@@ -1,11 +1,24 @@
+import importlib
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlmodel import SQLModel
 
 from config import app_config
+
+# import the SQLModels, imported explicitly to prevent auto-cleanup
+# by import optimization tooling
 # import the SQLModels
-from db.schema.tags import *
+
+importlib.import_module("db.schema.profiles")
+importlib.import_module("db.schema.events")
+importlib.import_module("db.schema.media")
+importlib.import_module("db.schema.assets")
+importlib.import_module("db.schema.graph")
+importlib.import_module("db.schema.jobs")
+importlib.import_module("db.schema.streaming")
+importlib.import_module("db.schema.tags")
 
 LOCAL_DB = "postgresql+asyncpg://test:test@localhost:5432/upload_pipeline"
 
