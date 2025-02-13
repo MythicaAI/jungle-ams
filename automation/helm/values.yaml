@@ -1,0 +1,20 @@
+# Default values for automation.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 3
+namespace: "automation"
+tier: "automation"
+release: "production"  # helm value mapped to MYTHICA_ENVIRONMENT in k8s deployments
+location: "gke-main-us-central1"
+imageRepository: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images
+
+serviceAccount:
+  account: automation
+
+telemetry_endpoint: http://otel-collector.default:4317
+telemetry_insecure: "true"
+nats_endpoint: nats://nats.nats:4222
+app_base_url: http://app.api/v1
+
