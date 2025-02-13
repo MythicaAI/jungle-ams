@@ -4,22 +4,12 @@ on:
     types:
       - closed
     branches:
-      - '**' # change
+      - 'main'
     paths:
       - 'sites/**'
       - 'api/**'
       - 'libs/**'
-      - 'automation/**'
       - '.github/workflows/push-tagged-images.yaml'
-  # push: # change
-  #   branches:
-  #     - '**'
-  #   paths:
-  #     - 'sites/**'
-  #     - 'api/**'
-  #     - 'libs/**'
-  #     - 'automation/**'
-  #     - '.github/workflows/push-tagged-images.yaml'
 
   workflow_dispatch:
 jobs:
@@ -35,14 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: 8BitJonny/gh-get-current-pr@3.0.0
-        id: PR
-        with:
-          sha: ${{ github.event.pull_request.head.sha }}
-
       - uses: dorny/paths-filter@v3
         id: filter
-        if: ${{ steps.PR.outputs.number != null }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -68,15 +52,8 @@ jobs:
               - 'sites/editor/**'
             sites/awful-ui/:
               - 'sites/awful-ui/**'
-            automation/houdini/:
-              - 'libs/python/**'
-              - 'automation/houdini/**'
 
   build-base:
-    permissions:
-      contents: read
-      pull-requests: read
-      repository-projects: read
     runs-on: ubuntu-latest
     needs:
       - changes
@@ -84,27 +61,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: 8BitJonny/gh-get-current-pr@3.0.0
-        id: PR
-        with:
-          sha: ${{ github.event.pull_request.head.sha }}
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        if: ${{ steps.PR.outputs.number != null }}
         with:
           driver: docker
 
       - name: Build libs-python image
         uses: docker/build-push-action@v5
-        if: ${{ steps.PR.outputs.number != null }}
         with:
           context: libs/python
           tags: libs-python:${{ github.sha }}
           load: true
       - name: Build api-app image
         uses: docker/build-push-action@v5
-        if: ${{ steps.PR.outputs.number != null }}
         with:
           context: api/app
           tags: api-app:${{ github.sha }}
@@ -112,12 +81,10 @@ jobs:
           build-args: |
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
       - name: Save api-app to tar
-        if: ${{ steps.PR.outputs.number != null }}
         run: |
           docker save api-app:${{ github.sha }} > /tmp/api-app-${{ github.sha }}.tar
           docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
       - name: Upload libs-python image
-        if: ${{ steps.PR.outputs.number != null }}
         uses: actions/upload-artifact@v4
         with:
           name: libs-python-${{ github.sha }}
@@ -125,7 +92,6 @@ jobs:
           retention-days: 1
           overwrite: true
       - name: Upload api-app image
-        if: ${{ steps.PR.outputs.number != null }}
         uses: actions/upload-artifact@v4
         with:
           name: api-app-${{ github.sha }}
@@ -163,23 +129,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: 8BitJonny/gh-get-current-pr@3.0.0
-        id: PR
-        with:
-          sha: ${{ github.event.pull_request.head.sha }}
-
       - name: Fetch tags
-        if: ${{ steps.PR.outputs.number != null }}
         run: git fetch --prune --unshallow --tags
 
       - name: Setup Docker BuildX
-        if: ${{ steps.PR.outputs.number != null }}
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker
 
       - name: Google Auth
-        if: ${{ steps.PR.outputs.number != null }}
         id: auth
         uses: google-github-actions/auth@v2
         with:
@@ -189,7 +147,6 @@ jobs:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Login to Artifact Registry
-        if: ${{ steps.PR.outputs.number != null }}
         uses: docker/login-action@v3
         with:
           registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
@@ -197,13 +154,11 @@ jobs:
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Generate tag
-        if: ${{ steps.PR.outputs.number != null }}
         id: generate_tag
         run: |
           github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
 
       - name: Push tag
-        if: ${{ steps.PR.outputs.number != null }}
         uses: nick-fields/retry@v3
         with:
           max_attempts: 3
@@ -215,27 +170,23 @@ jobs:
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
       - name: Download api-app image
-        if: ${{ steps.PR.outputs.number != null }}
         uses: actions/download-artifact@v4
         with:
           name: api-app-${{ github.sha }}
           path: /tmp
 
       - name: Download libs-python base image
-        if: ${{ steps.PR.outputs.number != null }}
         uses: actions/download-artifact@v4
         with:
           name: libs-python-${{ github.sha }}
           path: /tmp
 
       - name: Load images
-        if: ${{ steps.PR.outputs.number != null }}
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
           docker load --input /tmp/api-app-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
-        if: ${{ steps.PR.outputs.number != null }}
         id: build_push
         uses: docker/build-push-action@v6
         with:
@@ -251,7 +202,7 @@ jobs:
           load: true
 
       - name: Send Discord notification
-        if: ${{ steps.PR.outputs.number != null }}
+        if: always()
         run: |
           echo "{ \"content\": \"" > message.json
           echo "${{ github.event.pull_request.title }}\n" >> message.json
