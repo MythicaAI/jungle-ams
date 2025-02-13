@@ -33,6 +33,7 @@ jobs:
   helm-deploy:
     runs-on: ubuntu-latest
     permissions:
+      pull-requests: read
       id-token: write
       contents: read
 
@@ -96,3 +97,17 @@ jobs:
       - name: Rollout deployments
         run: |
           kubectl rollout restart deployment/houdini -n automation-staging
+
+      # TODO: secrets.DISCORD_WEBHOOK is unreachable
+      # - name: Debug Discord Webhook
+      #   run: echo "DISCORD_WEBHOOK is set? ${{ secrets.DISCORD_WEBHOOK != '' }}"
+      # - name: Send Discord notification
+      #   if: always()
+      #   run: |
+      #     echo "{ \"content\": \"" > message.json
+      #     echo "${{ github.event.pull_request.title }}\n" >> message.json
+      #     echo "✅ automation-staging has been deployed" >> message.json
+      #     echo "\" }" >> message.json
+      #     curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+      #          -H "Content-Type: application/json" \
+      #          --data @message.json
