@@ -89,7 +89,7 @@ jobs:
 
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --namespace automation-staging -f automation/helm/values-staging.yaml -f automation/helm/values-images.yaml automation/helm
+          helm upgrade --namespace automation-staging -f automation/helm/values-staging.yaml -f automation/helm/values-images.yaml automation-staging automation/helm
           echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
           cat automation/helm/values-images.yaml >> $GITHUB_STEP_SUMMARY
 
