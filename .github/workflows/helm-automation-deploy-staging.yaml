@@ -8,17 +8,12 @@ on:
       - completed
 
   # trigger helm deploy when the helm or gha config changes
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'api/helm/**'
-  #     - '.github/workflows/helm-automation-deploy-staging.yaml'
-  push: # change
+  push:
     branches:
-      - '**'
+      - main
     paths:
-      - '**'
+      - 'api/helm/**'
+      - '.github/workflows/helm-automation-deploy-staging.yaml'
 
 
 concurrency:
