@@ -1,17 +1,11 @@
-name: automation-image-tests
+name: push-automation-images
 on:
   pull_request:
     types:
       - closed
     paths:
       - 'automation/**'
-      - '.github/workflows/automation-image-tests.yaml'
-  push: # change
-    branches:
-      - '**'
-    paths:
-      - 'automation/**'
-      - '.github/workflows/automation-image-tests.yaml'
+      - '.github/workflows/push-automation-images.yaml'
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -34,7 +28,7 @@ jobs:
           filters: |
             automation/test/:
               - 'libs/python/**'
-              - '.github/workflows/automation-image-tests.yaml' # always build at least one image if the workflow changes
+              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
             automation/houdini/:
               - 'libs/python/**'
               - 'automation/houdini/**'
@@ -73,23 +67,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: 8BitJonny/gh-get-current-pr@3.0.0
-        id: PR
-        with:
-          sha: ${{ github.event.pull_request.head.sha }}
-
       - name: Fetch tags
-        if: ${{ steps.PR.outputs.number != null }}
         run: git fetch --prune --unshallow --tags
 
       - name: Setup Docker BuildX
-        if: ${{ steps.PR.outputs.number != null }}
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker
 
       - name: Google Auth
-        if: ${{ steps.PR.outputs.number != null }}
         id: auth
         uses: google-github-actions/auth@v2
         with:
@@ -99,7 +85,6 @@ jobs:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Login to Artifact Registry
-        if: ${{ steps.PR.outputs.number != null }}
         uses: docker/login-action@v3
         with:
           registry: '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
@@ -107,13 +92,11 @@ jobs:
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Generate tag
-        if: ${{ steps.PR.outputs.number != null }}
         id: generate_tag
         run: |
           github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
 
       - name: Push tag
-        if: ${{ steps.PR.outputs.number != null }}
         uses: nick-fields/retry@v3
         with:
           max_attempts: 3
@@ -142,12 +125,10 @@ jobs:
           overwrite: true
 
       - name: Load images
-        if: ${{ steps.PR.outputs.number != null }}
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
-        if: ${{ steps.PR.outputs.number != null }}
         id: build_push
         uses: docker/build-push-action@v6
         with:
@@ -161,19 +142,19 @@ jobs:
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
           load: true
 
-      # - name: Send Discord notification
-      #   if: ${{ steps.PR.outputs.number != null }}
-      #   run: |
-      #     echo "{ \"content\": \"" > message.json
-      #     echo "${{ github.event.pull_request.title }}\n" >> message.json
-      #     echo "IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}\n" >> message.json
-      #     echo IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} >> $GITHUB_ENV
-      #     if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
-      #         echo "❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> message.json
-      #     else
-      #         echo "✅ $IMAGE is now available for testing at https://api-staging.mythica.gg" >> message.json
-      #     fi
-      #     echo "\" }" >> message.json
-      #     curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
-      #          -H "Content-Type: application/json" \
-      #          --data @message.json
+      - name: Send Discord notification
+        if: always()
+        run: |
+          echo "{ \"content\": \"" > message.json
+          echo "${{ github.event.pull_request.title }}\n" >> message.json
+          echo "IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}\n" >> message.json
+          echo IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} >> $GITHUB_ENV
+          if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
+              echo "❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> message.json
+          else
+              echo "✅ $IMAGE is now available for testing at https://api-staging.mythica.gg" >> message.json
+          fi
+          echo "\" }" >> message.json
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+               -H "Content-Type: application/json" \
+               --data @message.json
