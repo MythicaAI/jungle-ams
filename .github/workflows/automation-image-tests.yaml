@@ -124,12 +124,22 @@ jobs:
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
-      - name: Download libs-python base image
-        if: ${{ steps.PR.outputs.number != null }}
-        uses: actions/download-artifact@v4
+      - name: Build libs-python image
+        uses: docker/build-push-action@v5
+        with:
+          context: libs/python
+          tags: libs-python:${{ github.sha }}
+          load: true
+      - name: Save libs-python to tar
+        run: |
+          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
+      - name: Upload libs-python image
+        uses: actions/upload-artifact@v4
         with:
           name: libs-python-${{ github.sha }}
-          path: /tmp
+          path: /tmp/libs-python-${{ github.sha }}.tar
+          retention-days: 1
+          overwrite: true
 
       - name: Load images
         if: ${{ steps.PR.outputs.number != null }}
