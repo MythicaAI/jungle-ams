@@ -150,7 +150,12 @@ class Worker:
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
                         api_url = ripple_config().api_base_uri
-                        resolve_params(api_url, tmpdir, inputs, headers=auto_request.telemetry_context)
+
+                        with tracer.start_as_current_span("resolve_params", context=telemetry_context) as resolve_span:
+                            resolve_span.set_attribute("resolve_params.started", datetime.now(timezone.utc).isoformat())
+                            resolve_params(api_url, tmpdir, inputs, headers=auto_request.telemetry_context)
+                            resolve_span.set_attribute("resolve_params.completed", datetime.now(timezone.utc).isoformat())
+
                         with tracer.start_as_current_span("job.execution", context=telemetry_context) as job_span:
                             job_span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
                             ret_data: StreamItemUnion = worker.provider(inputs, publisher)

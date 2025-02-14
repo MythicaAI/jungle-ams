@@ -135,7 +135,8 @@ def generate_mesh_impl(
         format: str,
         params: dict,
         working_dir: str,
-        responder: ResultPublisher
+        responder: ResultPublisher,
+        telemetry_context: Optional[str] = None
 ) -> list[str]:
     log.debug("Preparing scene")
     output_file_name = os.path.basename(hda_path)
@@ -144,7 +145,8 @@ def generate_mesh_impl(
     hou.hipFile.clear(suppress_save_prompt=True)
 
     log.debug("Intalling HDA")
-    hou.hda.installFile(hda_path, force_use_assets=True)
+    with tracer.start_as_current_span("job.generate_mesh.install_hda", context=telemetry_context) as span:
+        hou.hda.installFile(hda_path, force_use_assets=True)
     log.debug("Intalling HDA completed")
 
     # Geometry
@@ -156,26 +158,28 @@ def generate_mesh_impl(
     asset = geo.createNode(assetdef.nodeTypeName())
 
     # Set parms
-    log.debug("Applying parameters")
-    apply_params(asset, params)
-    log.debug("Creating inputs")
-    create_inputs(asset, geo, params)
-    log.debug("Setting up scene completed")
+    with tracer.start_as_current_span("job.generate_mesh.apply_params", context=telemetry_context) as span:
+        log.debug("Applying parameters")
+        apply_params(asset, params)
+        log.debug("Creating inputs")
+        create_inputs(asset, geo, params)
+        log.debug("Setting up scene completed")
 
     log.debug("Forcing HDA cook (internal HDA cooks must happen before exporting)")
-    try:
-        asset.cook(force=True)
-    except Exception as e:
-        log.error(f"Cook failed with exception: {e}")
+    with tracer.start_as_current_span("job.generate_mesh.cook", context=telemetry_context) as span:
+        try:
+            asset.cook(force=True)
+        except Exception as e:
+            log.error(f"Cook failed with exception: {e}")
 
-        error_details = {
-            "errors": list(asset.errors()),
-            "warnings": list(asset.warnings()),
-            "messages": list(asset.messages())
-        }
-        log.error(f"Cook error details: {error_details}")
-        responder.result(Error(error=str(error_details)))
-        raise
+            error_details = {
+                "errors": list(asset.errors()),
+                "warnings": list(asset.warnings()),
+                "messages": list(asset.messages())
+            }
+            log.error(f"Cook error details: {error_details}")
+            responder.result(Error(error=str(error_details)))
+            raise
     log.debug("HDA cook completed")
 
     # Export
@@ -184,79 +188,82 @@ def generate_mesh_impl(
     output_file_path = ""
     outputs: list[str] = []
 
-    if format == 'fbx':
-        output_file_path = os.path.join(working_dir, f"{output_file_name}.fbx")
-        outputs.append(output_file_path)
+    with tracer.start_as_current_span("job.generate_mesh.export", context=telemetry_context) as span:
+        if format == 'fbx':
+            output_file_path = os.path.join(working_dir, f"{output_file_name}.fbx")
+            outputs.append(output_file_path)
 
-        fbx_node = out.createNode("filmboxfbx", "fbx_node")
-        fbx_node.parm("sopoutput").set(output_file_path)
-        fbx_node.parm("exportkind").set(0)  # Export in binary format
+            fbx_node = out.createNode("filmboxfbx", "fbx_node")
+            fbx_node.parm("sopoutput").set(output_file_path)
+            fbx_node.parm("exportkind").set(0)  # Export in binary format
 
-        log.debug("Exporting FBX %s", output_file_path)
-        fbx_node.parm("execute").pressButton()
-        log.debug("Exporting mesh completed")
-    elif format == 'glb':
-        # gltf vs glb export is inferred from the output extension
-        output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
-        outputs.append(output_file_path)
-
-        gltf_node = out.createNode("gltf", "gltf_node")
-        gltf_node.parm("file").set(output_file_path)
-
-        log.debug("Exporting GLB %s", output_file_path)
-        gltf_node.parm("execute").pressButton()
-        log.debug("Exporting mesh completed")
-    elif format == 'usdz':
-        # Export to USD
-        usd_node = geo.createNode("usdexport", "usd_node")
-        usd_node.parm("authortimesamples").set("never")
-        render_node = stage.createNode("usd_rop")
-        sublayer_node = stage.createNode("sublayer")
-        attrib_node = stage.createNode("attribwrangle")
-        usdz_node = out.createNode("usdzip", "usdz_node")
-
-        for index in range(len(asset.outputNames())):
-            output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
-            usd_node.parm("lopoutput").set(output_file_path)
-
-            log.debug("Exporting USD %s", output_file_path)
-
-            usd_node.setInput(0, asset, 0)
-            usd_node.parm("execute").pressButton()
+            log.debug("Exporting FBX %s", output_file_path)
+            fbx_node.parm("execute").pressButton()
             log.debug("Exporting mesh completed")
+        elif format == 'glb':
+            # gltf vs glb export is inferred from the output extension
+            output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
+            outputs.append(output_file_path)
 
-            # Bind material
-            if 'material/type' in params and 'material/source_asset' in params:
-                if params['material/type'] == "Unreal":
-                    sublayer_node.parm("num_files").set(1)
-                    sublayer_node.parm("filepath1").set(output_file_path)
+            gltf_node = out.createNode("gltf", "gltf_node")
+            gltf_node.parm("file").set(output_file_path)
 
-                    sourceAssset = params['material/source_asset']
-                    attrib_node.parm("primpattern").set("%type:Boundable")
-                    attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
-                    attrib_node.setInput(0, sublayer_node, 0)
+            log.debug("Exporting GLB %s", output_file_path)
+            gltf_node.parm("execute").pressButton()
+            log.debug("Exporting mesh completed")
+        elif format == 'usdz':
+            # Export to USD
+            usd_node = geo.createNode("usdexport", "usd_node")
+            usd_node.parm("authortimesamples").set("never")
+            render_node = stage.createNode("usd_rop")
+            sublayer_node = stage.createNode("sublayer")
+            attrib_node = stage.createNode("attribwrangle")
+            usdz_node = out.createNode("usdzip", "usdz_node")
 
-                    binded_file = os.path.join(working_dir, f"{output_file_name}_{index}_with_material.usd")
-                    render_node.parm("lopoutput").set(binded_file)
-                    render_node.setInput(0, attrib_node, 0)
-                    render_node.parm("execute").pressButton()
+            for index in range(len(asset.outputNames())):
+                output_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usd")
+                usd_node.parm("lopoutput").set(output_file_path)
 
-                    output_file_path = binded_file
+                log.debug("Exporting USD %s", output_file_path)
 
-            # Convert to USDZ format
-            output_zip_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usdz")
-            usdz_node.parm("infile1").set(output_file_path)
-            usdz_node.parm("outfile1").set(output_zip_file_path)
+                usd_node.setInput(0, asset, 0)
+                usd_node.parm("execute").pressButton()
+                log.debug("Exporting mesh completed")
 
-            log.debug("Packaging usdz")
-            usdz_node.parm("execute").pressButton()
-            log.debug("Packaging usdz completed")
+                # Bind material
+                if 'material/type' in params and 'material/source_asset' in params:
+                    if params['material/type'] == "Unreal":
+                        sublayer_node.parm("num_files").set(1)
+                        sublayer_node.parm("filepath1").set(output_file_path)
 
-            outputs.append(output_zip_file_path)
+                        sourceAssset = params['material/source_asset']
+                        attrib_node.parm("primpattern").set("%type:Boundable")
+                        attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
+                        attrib_node.setInput(0, sublayer_node, 0)
+
+                        binded_file = os.path.join(working_dir, f"{output_file_name}_{index}_with_material.usd")
+                        render_node.parm("lopoutput").set(binded_file)
+                        render_node.setInput(0, attrib_node, 0)
+                        render_node.parm("execute").pressButton()
+
+                        output_file_path = binded_file
+
+                # Convert to USDZ format
+                output_zip_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usdz")
+                usdz_node.parm("infile1").set(output_file_path)
+                usdz_node.parm("outfile1").set(output_zip_file_path)
+
+                log.debug("Packaging usdz")
+                usdz_node.parm("execute").pressButton()
+                log.debug("Packaging usdz completed")
+
+                outputs.append(output_zip_file_path)
 
     log.debug("Uninstalling HDA")
-    hou.hda.uninstallFile(hda_path)
+    with tracer.start_as_current_span("job.generate_mesh.uninstall_hda", context=telemetry_context) as span:
+        hou.hda.uninstallFile(hda_path)
     log.debug("Uninstalling HDA completed")
+
     hou.hipFile.clear(suppress_save_prompt=True)
     return outputs
 
@@ -278,15 +285,18 @@ def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> Expor
     if model.record_profile:
         profile = hou.perfMon.startProfile("Generate Mesh Profile")
 
-    tmp_dir = tempfile.mkdtemp()
-    result_file_paths = generate_mesh_impl(
-        model.hda_file.file_path,
-        model.hda_definition_index,
-        model.format,
-        model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format', 'record_profile'}),
-        tmp_dir,
-        responder
-    )
+    context = trace.get_current_span().get_span_context()
+    with tracer.start_as_current_span("job.generate_mesh", context=context) as span:
+        tmp_dir = tempfile.mkdtemp()
+        result_file_paths = generate_mesh_impl(
+            model.hda_file.file_path,
+            model.hda_definition_index,
+            model.format,
+            model.model_dump(exclude={'hda_file', 'hda_definition_index', 'format', 'record_profile'}),
+            tmp_dir,
+            responder,
+            context
+        )
 
     if model.record_profile:
         profile.stop()

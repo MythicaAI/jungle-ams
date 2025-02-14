@@ -5,6 +5,7 @@ from typing import Optional
 
 from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.propagate import inject
+from opentelemetry import trace
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
@@ -17,6 +18,8 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
+
+tracer = trace.get_tracer(__name__)
 
 class ResultPublisher:
     """"
@@ -47,58 +50,60 @@ class ResultPublisher:
 
     #Callback for reporting back. 
     def result(self, item: ProcessStreamItem, complete: bool=False):
-        item.process_guid = self.request.process_guid
-        item.correlation = self.request.correlation
-        item.job_id = self.request.job_id or ""
+        context = trace.get_current_span().get_span_context()
+        with tracer.start_as_current_span("publish_result", context=context) as span:
+            item.process_guid = self.request.process_guid
+            item.correlation = self.request.correlation
+            item.job_id = self.request.job_id or ""
 
-        # Upload any references to local data
-        self._publish_local_data(item, self.api_url)
+            # Upload any references to local data
+            self._publish_local_data(item, self.api_url)
 
-        job_result_endpoint=f"{self.api_url}/jobs/results"
-        job_complete_endpoint=f"{self.api_url}/jobs/complete"
+            job_result_endpoint=f"{self.api_url}/jobs/results"
+            job_complete_endpoint=f"{self.api_url}/jobs/complete"
 
-        # Publish results
-        log.info(f"Automation {'Result' if not complete else 'Complete'} -> {item}")
+            # Publish results
+            log.info(f"Automation {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(
-            self.nats.post_to(
-                "result",
-                self.request.process_guid,
-                item.model_dump()))
+            task = asyncio.create_task(
+                self.nats.post_to(
+                    "result",
+                    self.request.process_guid,
+                    item.model_dump()))
 
-        task.add_done_callback(error_handler(log))
-        updated_headers = self.update_headers_from_context()
-        if self.request.job_id:
-            data = {
-                "created_in": "automation-worker",
-                "result_data": item.model_dump()
-            }
-            self.rest.post(
-                f"{job_result_endpoint}/{self.request.job_id}",
-                json_data=data,
-                token=self.request.auth_token,
-                headers=updated_headers,
-            )
-            log.debug(
-                "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
-                f"{job_result_endpoint}/{self.request.job_id}",
-                self.request.auth_token,
-                updated_headers,
-                data,
-            )
-            if complete:
+            task.add_done_callback(error_handler(log))
+            updated_headers = self.update_headers_from_context()
+            if self.request.job_id:
+                data = {
+                    "created_in": "automation-worker",
+                    "result_data": item.model_dump()
+                }
                 self.rest.post(
-                    f"{job_complete_endpoint}/{self.request.job_id}",
-                    json_data={},
+                    f"{job_result_endpoint}/{self.request.job_id}",
+                    json_data=data,
                     token=self.request.auth_token,
                     headers=updated_headers,
                 )
                 log.debug(
-                    "ResultPublisher-nats-post: url-%s; token-%s; headers-%s",
-                    f"{job_complete_endpoint}/{self.request.job_id}",
+                    "ResultPublisher-nats-post: url-%s; token-%s; headers-%s; json_data-%s",
+                    f"{job_result_endpoint}/{self.request.job_id}",
                     self.request.auth_token,
                     updated_headers,
+                    data,
                 )
+                if complete:
+                    self.rest.post(
+                        f"{job_complete_endpoint}/{self.request.job_id}",
+                        json_data={},
+                        token=self.request.auth_token,
+                        headers=updated_headers,
+                    )
+                    log.debug(
+                        "ResultPublisher-nats-post: url-%s; token-%s; headers-%s",
+                        f"{job_complete_endpoint}/{self.request.job_id}",
+                        self.request.auth_token,
+                        updated_headers,
+                    )
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
