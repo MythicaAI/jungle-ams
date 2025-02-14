@@ -55,6 +55,7 @@ class Error(ProcessStreamItem):
     item_type: Literal["error"] = "error"
     error: str
 
+
 class OutputFiles(ProcessStreamItem):
     """
     A file output event for generated files, the outputs are keyed
@@ -62,6 +63,17 @@ class OutputFiles(ProcessStreamItem):
     """
     item_type: Literal["file"] = "file"
     files: dict[str, list[str]]  # "inputs": ["file_id", "file_id"]
+
+
+class FileContentChunk(ProcessStreamItem):
+    """
+    A chunk of a file's content encoded as a base64 string.
+    """
+    item_type: Literal["file_content_chunk"] = "file_content_chunk"
+    file_guid: str
+    encoded_data: str
+    chunk_size: int
+    file_size: int
 
 
 class JobDefinition(ProcessStreamItem):
@@ -92,10 +104,10 @@ class Event(StreamItem):
 
 
 # Build the set of models for verification
-StreamModelTypes = {Progress, Message, OutputFiles, Event}
+StreamModelTypes = {Progress, Message, OutputFiles, Event, FileContentChunk}
 
 # Define a Union type with a discriminator for proper serialization
 StreamItemUnion = Annotated[
-    Union[Progress, Message, OutputFiles, Event],
+    Union[Progress, Message, OutputFiles, Event, FileContentChunk],
     Field(discriminator='item_type')
 ]
