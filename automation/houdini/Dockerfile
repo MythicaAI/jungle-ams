@@ -45,6 +45,9 @@ ENV NATS_ENDPOINT="nats://nats:4222"
 ENV MYTHICA_ENVIRONMENT=dev
 ENV MYTHICA_LOCATION=localhost
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-houdini"
+ENV TELEMETRY_ENABLE=True
+ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV TELEMETRY_INSECURE=True
 ENV K8S_CLUSTER_NAME=localhost
 
 # Make sure that hython is in the path

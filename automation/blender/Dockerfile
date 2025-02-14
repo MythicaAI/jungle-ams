@@ -22,6 +22,9 @@ ENV NATS_ENDPOINT="nats://nats:4222"
 ENV MYTHICA_ENVIRONMENT=dev
 ENV MYTHICA_LOCATION=localhost
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-blender"
+ENV TELEMETRY_ENABLE=True
+ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV TELEMETRY_INSECURE=True
 ENV K8S_CLUSTER_NAME=localhost
 
 # Install Python 3.11 and dependencies
@@ -65,8 +68,6 @@ RUN python3.11 -m pip install \
 # will be referenced later to build the houdini site-packages
 RUN poetry config --local virtualenvs.create false
 RUN poetry install --only main,infra --no-root --no-cache
-ENV TELEMETRY_ENABLE=True
-ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
 ENV API_BASE_URI=http://app:5555/v1
 
 ENTRYPOINT ["poetry", "run", "python3.11", "workers.py"]

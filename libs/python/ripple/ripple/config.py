@@ -31,6 +31,10 @@ class RippleConfig(BaseSettings):
     ripple_token_secret_key: str = 'X' * 32  # shared secret for auth token generation
     api_base_uri: str = 'http://localhost:5555/v1'
     mythica_environment: str = "debug"
+    telemetry_enable: bool = False
+    telemetry_insecure: bool = True
+    telemetry_endpoint: str = "otel-sidecar:4317"
+
 
 @functools.lru_cache
 def ripple_config() -> RippleConfig:
@@ -64,6 +68,11 @@ def get_telemetry_resource() -> Resource:
 def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, headers: Optional[list[tuple]] = None):
 
     logger = logging.getLogger()
+    logger.info(
+        "Telemetry enabled. telemetry_endpoint: %s, telemetry_insecure: %s",
+        telemetry_endpoint,
+        telemetry_insecure,
+    )
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger.handlers.clear()
 
