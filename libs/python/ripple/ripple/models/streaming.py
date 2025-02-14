@@ -68,9 +68,11 @@ class OutputFiles(ProcessStreamItem):
 class FileContentChunk(ProcessStreamItem):
     """
     A chunk of a file's content encoded as a base64 string.
+    Key and index are used to associate the chunk with a specific OutputFiles file.
     """
     item_type: Literal["file_content_chunk"] = "file_content_chunk"
-    file_guid: str
+    file_key: str
+    file_index: int
     encoded_data: str
     chunk_size: int
     file_size: int
