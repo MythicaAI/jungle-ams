@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AspectRatio, Box, IconButton, Skeleton } from "@mui/joy";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AssetVersionContent, AssetVersionResponse } from "types/apiTypes.ts";
+import ImageWithSkeleton from "@components/common/ImageWithSkeleton";
 
 export interface PackageViewCarouselProps {
   thumbnails?: string[];
@@ -72,15 +73,13 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
         ratio="4/3"
         sx={{ background: "transparent", borderRadius: "8px" }}
       >
-        <img
+        <ImageWithSkeleton
           src={thumbnailRefs[currentIndex].url}
           alt={`${thumbnailRefs[currentIndex].file_name}`}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            borderRadius: "8px",
-          }}
+          width="100%"
+          height="100%"
+          position="absolute"
+          sx={{ objectFit: "cover", borderRadius: "8px" }}
         />
       </AspectRatio>
 
@@ -109,18 +108,19 @@ const PackageViewCarousel: React.FC<AssetVersionResponse> = (av) => {
       </IconButton>
       <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
         {thumbnailRefs.map((_, slideIndex) => (
-          <Box
+          <ImageWithSkeleton
             key={slideIndex}
+            width="50px"
+            height="50px"
+            containerMargin="0 5px"
             sx={{
-              width: 50,
-              height: 50,
-              backgroundImage: `url(${thumbnailRefs[slideIndex].url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
               border: slideIndex === currentIndex ? "2px solid blue" : "none",
-              margin: "0 5px",
+              objectFit: "cover",
               cursor: "pointer",
+              borderRadius: "3px",
             }}
+            alt={thumbnailRefs[slideIndex].file_name}
+            src={thumbnailRefs[slideIndex].url}
             onClick={() => goToSlide(slideIndex)}
           />
         ))}

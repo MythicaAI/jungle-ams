@@ -1,4 +1,5 @@
-import { Box, Button, Typography } from "@mui/joy";
+import ImageWithSkeleton from "@components/common/ImageWithSkeleton";
+import { Button, Typography } from "@mui/joy";
 import { Tag } from "@queries/tags/types";
 import React from "react";
 
@@ -37,12 +38,12 @@ export const TagCard: React.FC<Props> = ({ tag, selectedTag }) => {
         gap: "10px",
       }}
     >
-      <Box
-        component="img"
+      <ImageWithSkeleton
         width="40px"
         height="40px"
-        borderRadius="4px"
         src={url}
+        sx={{ borderRadius: "4px" }}
+        alt={tag.name}
       />
       <Typography fontSize={14}>{tag.name}</Typography>
     </Button>
