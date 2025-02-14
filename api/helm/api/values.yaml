@@ -77,5 +77,8 @@ api:
     replicas: 0
     maxUnavailable: 0
     maxSurge: 0
+    telemetry_enable: "true"
+    telemetry_endpoint: "http://otel-collector.default:4317"
+    telemetry_insecure: "true"
     nodeSelector: spot
     terminationGracePeriodSeconds: 15
