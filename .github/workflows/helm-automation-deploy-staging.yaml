@@ -1,9 +1,9 @@
-name: helm-deploy-staging
+name: helm-automation-deploy-staging
 
 on:
   # trigger helm deploy when new images are available
   workflow_run:
-    workflows: [ "push-tagged-images" ]
+    workflows: [ "push-automation-images" ]
     types:
       - completed
 
@@ -13,7 +13,8 @@ on:
       - main
     paths:
       - 'api/helm/**'
-      - '.github/workflows/helm-deploy-staging.yaml'
+      - '.github/workflows/helm-automation-deploy-staging.yaml'
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +27,9 @@ defaults:
 jobs:
   helm-deploy:
     runs-on: ubuntu-latest
+    environment: main
     permissions:
+      pull-requests: read
       id-token: write
       contents: read
 
@@ -49,7 +52,7 @@ jobs:
 
       - name: Generate values file for image tags
         run: |
-          api/helm/helm-gen-values-images.sh
+          automation/helm/helm-gen-values-images.sh
 
       - name: Google Auth
         id: auth
@@ -83,18 +86,21 @@ jobs:
 
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-images.yaml api-staging api/helm/api
+          helm upgrade --namespace automation-staging -f automation/helm/values-staging.yaml -f automation/helm/values-images.yaml automation-staging automation/helm
           echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
-          cat api/helm/api/values-images.yaml >> $GITHUB_STEP_SUMMARY
-          helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.yaml -n default
+          cat automation/helm/values-images.yaml >> $GITHUB_STEP_SUMMARY
 
       - name: Rollout deployments
         run: |
-          kubectl rollout restart deployment/otel-agent -n default
-          kubectl rollout restart deployment/otel-collector -n default
-          kubectl rollout restart deployment/app -n api-staging
-          kubectl rollout restart deployment/packager -n api-staging
-          kubectl rollout restart deployment/lets-encrypt -n api-staging
-          kubectl rollout restart deployment/gcs-proxy -n api-staging
-          kubectl rollout restart deployment/web-front -n api-staging
-          kubectl rollout restart deployment/canary -n api-staging
+          kubectl rollout restart deployment/houdini -n automation-staging
+
+      - name: Send Discord notification
+        if: always()
+        run: |
+          echo "{ \"content\": \"" > message.json
+          echo "${{ github.event.pull_request.title }}\n" >> message.json
+          echo "✅ automation-staging has been deployed" >> message.json
+          echo "\" }" >> message.json
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+               -H "Content-Type: application/json" \
+               --data @message.json

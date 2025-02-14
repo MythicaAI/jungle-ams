@@ -1,17 +1,11 @@
-name: push-tagged-images
+name: push-automation-images
 on:
   pull_request:
     types:
       - closed
-    branches:
-      - 'main'
     paths:
-      - 'sites/**'
-      - 'api/**'
-      - 'libs/**'
-      - '.github/workflows/push-tagged-images.yaml'
-
-  workflow_dispatch:
+      - 'automation/**'
+      - '.github/workflows/push-automation-images.yaml'
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -32,79 +26,23 @@ jobs:
         with:
           # setup all the filters to match Dockerfile locations
           filters: |
-            api/app/:
+            automation/test/:
               - 'libs/python/**'
-              - 'api/app/**'
-              - '.github/workflows/push-tagged-images.yaml' # always build at least one image if the workflow changes
-            api/nginx/:
-              - 'api/nginx/**'
-            api/gcs-proxy/:
-              - 'api/gcs-proxy/**'
-            api/lets-encrypt/:
-              - 'api/lets-encrypt/**'
-            api/packager/:
-              - 'api/packager/**'
-            api/canary/:
-              - 'api/canary/**'
-            sites/jungle3/:
-              - 'sites/jungle3/**'
-            sites/editor/:
-              - 'sites/editor/**'
-            sites/awful-ui/:
-              - 'sites/awful-ui/**'
+              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
+            automation/houdini/:
+              - 'libs/python/**'
+              - 'automation/houdini/**'
+            automation/blender/:
+              - 'libs/python/**'
+              - 'automation/blender/**'
+            automation/imagemagick/:
+              - 'libs/python/**'
+              - 'automation/imagemagick/**'
 
-  build-base:
+  build:
     runs-on: ubuntu-latest
     needs:
       - changes
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
-
-      - name: Build libs-python image
-        uses: docker/build-push-action@v5
-        with:
-          context: libs/python
-          tags: libs-python:${{ github.sha }}
-          load: true
-      - name: Build api-app image
-        uses: docker/build-push-action@v5
-        with:
-          context: api/app
-          tags: api-app:${{ github.sha }}
-          load: true
-          build-args: |
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-      - name: Save api-app to tar
-        run: |
-          docker save api-app:${{ github.sha }} > /tmp/api-app-${{ github.sha }}.tar
-          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
-      - name: Upload libs-python image
-        uses: actions/upload-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp/libs-python-${{ github.sha }}.tar
-          retention-days: 1
-          overwrite: true
-      - name: Upload api-app image
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-app-${{ github.sha }}
-          path: /tmp/api-app-${{ github.sha }}.tar
-          retention-days: 1
-          overwrite: true
-
-  build-tag-publish:
-    runs-on: ubuntu-latest
-    environment: main
-    needs:
-      - changes
-      - build-base
     permissions:
       repository-projects: read
       pull-requests: write
@@ -169,22 +107,26 @@ jobs:
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
-      - name: Download api-app image
-        uses: actions/download-artifact@v4
+      - name: Build libs-python image
+        uses: docker/build-push-action@v5
         with:
-          name: api-app-${{ github.sha }}
-          path: /tmp
-
-      - name: Download libs-python base image
-        uses: actions/download-artifact@v4
+          context: libs/python
+          tags: libs-python:${{ github.sha }}
+          load: true
+      - name: Save libs-python to tar
+        run: |
+          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
+      - name: Upload libs-python image
+        uses: actions/upload-artifact@v4
         with:
           name: libs-python-${{ github.sha }}
-          path: /tmp
+          path: /tmp/libs-python-${{ github.sha }}.tar
+          retention-days: 1
+          overwrite: true
 
       - name: Load images
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
-          docker load --input /tmp/api-app-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
         id: build_push
@@ -198,7 +140,6 @@ jobs:
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            API_APP_IMAGE=api-app:${{ github.sha }}
           load: true
 
       - name: Send Discord notification
