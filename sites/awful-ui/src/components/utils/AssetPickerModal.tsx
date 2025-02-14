@@ -106,7 +106,7 @@ const AssetFilePickerModal: React.FC<AssetFilePickerModalProps> = ({
       <ModalDialog
         aria-labelledby="asset-file-picker-modal"
         size="lg"
-        sx={{ width: 800, height: 580 }}
+        sx={{ width: 900, height: 580 }}
       >
         <Typography id="asset-file-picker-modal" level="title-lg" mb={1}>
           {label}

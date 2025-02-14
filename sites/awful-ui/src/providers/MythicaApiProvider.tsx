@@ -67,7 +67,10 @@ const MythicaApiProvider: React.FC<{ children: React.ReactNode }> = ({
       headers: { Authorization: `Bearer ${authToken}` },
     });
     const src = response.data.url;
-    response.data.url = `/gcs-files_${new URL(src).pathname.split('/').pop()}`;
+    const url = new URL(src).pathname.split('/'); 
+    const file = url.pop(); 
+    const type = url.pop();
+    response.data.url = `/gcs-${type}_${file}`;
 
     return response.data; // Return the URL for downloading
   };

@@ -17,10 +17,13 @@ type AwfulFlowContextType = {
   nodes: Node[];
   edges: Edge[];
   onEdgesChange: (edges: EdgeChange<Edge>[]) => void;
+  onRemoveHandle: (nodeId: string, handleId: string) => void;
   onNodesChange: (nodes: NodeChange<Node>[]) => void;
   onNodesDelete: (nodes: Node[]) => void;
   getFlowData: (nodeId: string) => { [key: string]: GetFileResponse[] };
   setFlowData: (nodeId: string, key: string, value: GetFileResponse[]) => void;
+  unsetFlowData: (nodeId: string, key: string) => void;
+  clearFlowData: (nodeId: string) => void;
   setNodeType: Dispatch<SetStateAction<string | null>>;
   onConnect: (connection: Edge | Connection) => void;
   onDisconnect: (connections: Edge[]) => void;
@@ -34,7 +37,6 @@ type AwfulFlowContextType = {
   onSaveSession: () => Promise<void>;
   onRestoreSession: () => Promise<void>;
   onDelete: (filename: string) => void;
-  onManualNodesDelete: (deleted: Node[]) => void;
   onNew: () => void;
   savedAwfulsById: Record<string, GetFileResponse>;
   savedAwfulsByName: Record<string, GetFileResponse>;

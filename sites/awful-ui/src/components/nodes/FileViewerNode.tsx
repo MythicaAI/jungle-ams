@@ -16,7 +16,7 @@ import {
   GetFileResponse,
 } from '../../types/MythicaApi';
 
-import FilePickerModal from '../utils/FilePickerModal'; // <-- The new component
+import FilePickerModal from './utils/FilePickerModal'; // <-- The new component
 
 import { useReactFlow } from '@xyflow/react';
 import { NodeDeleteButton } from '../NodeDeleteButton';
@@ -86,11 +86,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
           dInfos.push(null);
         }
       }
-      setFlowData(
-        node.id,
-        OUTPUT_FILES,
-        files.filter((file) => file !== null)
-      );
+
       return dInfos;
     },
     [getDownloadInfo, setFlowData, node.id]
@@ -152,18 +148,27 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       const selectedNames = selectedFiles.map((file) => file.file_name);
       const selectedIds = selectedFiles.map((file) => file.file_id);
 
-      setSelectedFileIds(selectedIds);
+      setSelectedFileIds(() => 
+        selectedIds
+      );
+
       setSelectedFileNames(selectedNames);
 
       getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
+      setFlowData(
+        node.id,
+        OUTPUT_FILES,
+        inputFlowData.filter((file) => file !== null)
+      );
     }
   }, [inputFlowData, getDownloads]);
 
   // Watch for container resize
-
+ 
   // On first render, if we already have file IDs but no downloadInfo, restore them
   useEffect(() => {
     if (
+      !inputFlowData &&
       selectedFileIds.length > 0 &&
       downloadInfo.length === 0 &&
       apiFiles.length > 0 &&
@@ -206,6 +211,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <NodeHeader />
       {/* Input handle */}
       <FileInputHandle
+        nodeId={node.id}
         id={INPUT_FILES}
         left="50%"
         isConnectable
@@ -379,6 +385,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
       {/* Output handle */}
       <FileOutputHandle
+        nodeId={node.id}
         id={OUTPUT_FILES}
         left="50%"
         isConnectable
