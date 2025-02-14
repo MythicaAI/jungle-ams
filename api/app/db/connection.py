@@ -91,10 +91,12 @@ def sql_profiler_decorator(func, report_name="report.html"):
     def wrapper(*args, **kwargs):
         if not ripple_config().mythica_environment == "debug":
             return func(*args, **kwargs)
-
-        profiler = sqltap.start()
-        result = func(*args, **kwargs)
-        statistics = profiler.collect()
-        sqltap.report(statistics, report_name)
+        try:
+            profiler = sqltap.start()
+            result = func(*args, **kwargs)
+            statistics = profiler.collect()
+            sqltap.report(statistics, report_name)
+        except PermissionError:
+            result = func(*args, **kwargs)
         return result
     return wrapper

@@ -84,7 +84,11 @@ async def list_all(limit: int = Query(1, le=100), offset: int = 0) -> list[TagRe
     """Get all tags"""
     with get_session() as session:
         rows: Sequence[Tag] = session.exec(
-            select(Tag).order_by(asc(Tag.page_priority), desc(Tag.created)).limit(limit).offset(offset)
+            select(Tag).where(
+                Tag.page_priority > 0
+            ).order_by(
+                asc(Tag.page_priority), desc(Tag.created)
+            ).limit(limit).offset(offset)
         ).all()
 
         response = [
