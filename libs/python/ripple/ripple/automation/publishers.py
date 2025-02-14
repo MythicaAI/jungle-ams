@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 from typing import Optional
+import base64
 
 from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.propagate import inject
@@ -10,7 +11,7 @@ from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.utils import error_handler
 from ripple.config import ripple_config
-from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem
+from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
 
 
 logging.basicConfig(
@@ -115,6 +116,9 @@ class ResultPublisher:
                         headers=updated_headers
                     )
                     file_id = response['files'][0]['file_id'] if response else None
+                    
+                    # Stream the file chunks after upload
+                    self._stream_file_chunks(file_path, file_name, 0)
                     return file_id
             finally:
                 os.remove(file_path)
@@ -143,6 +147,32 @@ class ResultPublisher:
             job_def_id = upload_job_def(item)
             if job_def_id is not None:
                 item.job_def_id = job_def_id
+
+    def _stream_file_chunks(self, file_path: str, key: str, index: int) -> None:
+        """Stream a file's contents as base64-encoded chunks via NATS"""
+        with open(file_path, 'rb') as file:
+            file_size = os.path.getsize(file_path)
+            chunk_size = 64 * 1024  # 64KB chunks
+            
+            while chunk := file.read(chunk_size):
+                chunk_data = base64.b64encode(chunk).decode('utf-8')
+                chunk_item = FileContentChunk(
+                    process_guid=self.request.process_guid,
+                    correlation=self.request.correlation,
+                    job_id=self.request.job_id or "",
+                    file_key=key,
+                    file_index=index,
+                    encoded_data=chunk_data,
+                    chunk_size=len(chunk),
+                    file_size=file_size
+                )
+                
+                task = asyncio.create_task(
+                    self.nats.post_to(
+                        "result",
+                        self.request.process_guid,
+                        chunk_item.model_dump()))
+                task.add_done_callback(error_handler(log))
 
 
 class SlimPublisher(ResultPublisher):
