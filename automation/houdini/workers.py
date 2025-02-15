@@ -12,15 +12,16 @@ from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMes
 from automation.run_hda import hda, HdaRequest, HdaResponse, run_hda, RunHdaRequest, RunHdaResponse
 from automation.helloworld import hello_world_api, HelloWorldRequest, HelloWorldResponse
 from ripple.automation.worker import Worker
-
-
-from telemetry import init_telemetry
+from ripple.config import configure_telemetry, ripple_config
 
 
 worker = Worker()
 
-if os.environ.get("TELEMETRY_ENABLE", False):
-    init_telemetry()
+if ripple_config().telemetry_enable:
+    configure_telemetry(
+        ripple_config().telemetry_endpoint,
+        ripple_config().telemetry_insecure,
+    )
 
 automations = [
     {
