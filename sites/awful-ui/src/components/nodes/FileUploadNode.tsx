@@ -88,6 +88,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
       <p>{uploadStatus}</p>
       <FileOutputHandle
         id={UPLOAD_FILES}
+        nodeId={node.id}
         left="50%"
         isConnectable
         style={{ background: '#555' }}

@@ -30,7 +30,7 @@ const AwfulUI: React.FC = () => {
   const {
     onConnect,
     onDisconnect,
-    onManualNodesDelete,
+    onNodesDelete,
     onNodesChange,
     onDrop,
     onDragOver,
@@ -73,7 +73,7 @@ const AwfulUI: React.FC = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodesDelete={onManualNodesDelete}
+            onNodesDelete={onNodesDelete}
             onEdgesDelete={onDisconnect}
             onDrop={onDrop}
             onDragOver={onDragOver}

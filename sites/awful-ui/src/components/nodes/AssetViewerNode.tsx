@@ -1,197 +1,132 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-
-import Split from 'react-split';
-
+import React, { useState, useEffect, useMemo, memo } from 'react';
+import { Card, Typography, Box, List, ListItem, ListItemButton, ListItemDecorator, Checkbox, Input } from '@mui/joy';
+import { GetFileResponse, GetAssetResponse } from '../../types/MythicaApi';
+import { useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import useMythicaApi from '../../hooks/useMythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
-
-import USDViewer from './viewers/USDViewer';
-import CodeViewer from './viewers/CodeViewer';
-import FileInputHandle from '../handles/FileInputHandle';
-import FileOutputHandle from '../handles/FileOutputHandle';
-
-import { Card, Typography, Tabs, Box, Button } from '@mui/joy';
-import {
-  GetDownloadInfoResponse,
-  GetFileResponse,
-  GetAssetResponse,
-} from '../../types/MythicaApi';
-
-import AssetPickerModal from '../utils/AssetPickerModal'; // <-- The new component
-
-import { useReactFlow } from '@xyflow/react';
 import { NodeDeleteButton } from '../NodeDeleteButton';
 import { NodeHeader } from '../NodeHeader';
+import FileOutputHandle from '../handles/FileOutputHandle';
+
 interface AssetViewerNodeProps {
   id: string;
   selected?: boolean;
   data: {
-    selectedPane: number;
+    selectedAssetId: string;
     selectedFileIds: string[];
-    selectedFileNames: string[];
   };
 }
 
-const INPUT_FILES = 'inputFiles';
-const OUTPUT_FILES = 'outputFiles';
 
 const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { getAssets, getDownloadInfo, authToken } = useMythicaApi();
-  const { getFlowData, setFlowData, NodeResizer } = useAwfulFlow();
+  const { getAssets } = useMythicaApi();
+  const { setFlowData, NodeResizer } = useAwfulFlow();
   const { deleteElements } = useReactFlow();
-  const [apiAssets, setApiAssets] = useState<GetAssetResponse[]>([]);
-  const [downloadInfo, setDownloadInfo] = useState<
-    Array<GetDownloadInfoResponse | null>
-  >([]);
-  const [isRestoredFromLocalStorage, setIsRestoredFromLocalStorage] =
-    useState(false);
-  const [selectedPane, setSelectedPane] = useState(node.data.selectedPane || 0);
-  const [selectedFileIds, setSelectedFileIds] = useState<string[]>(
-    node.data.selectedFileIds || []
-  );
-  const [selectedFileNames, setSelectedFileNames] = useState<string[]>(
-    node.data.selectedFileNames || []
-  );
-  const [initialized, setInitialized] = useState(false);
 
-  // New state to control whether our FilePickerModal is open
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [assets, setAssets] = useState<GetAssetResponse[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<GetAssetResponse | undefined>();
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  
+  const [selectedFiles, setSelectedFiles] = useState<GetFileResponse[]>([]);
 
-  const inputFlowData = getFlowData(node.id)[INPUT_FILES] as GetFileResponse[];
+  const [flowKeys, setFlowKeys] = useState<string[]>([]);
+  
+  const updateNodeInternals = useUpdateNodeInternals();
 
-  /**
-   * Fetch available files
-   */
-  const fetchAvailableFiles = useCallback(async () => {
-    if (!authToken) return;
-    try {
-      const assets = await getAssets();
-      setApiAssets(assets);
-    } catch (error) {
-      console.error('Error fetching available files:', error);
-    }
-  }, [getAssets, authToken]);
+  const handleSelectAsset = (asset: GetAssetResponse) => {
+    setSelectedAsset(asset);
+    setSelectedFiles([]);
+  };
 
-  /**
-   * Retrieve the download info for a list of files
-   */
-  const getDownloads = useCallback(
-    async (files: Array<GetFileResponse | null>) => {
-      const dInfos: Array<GetDownloadInfoResponse | null> = [];
-      for (const file of files) {
-        try {
-          if (!file) throw new Error();
-          dInfos.push(await getDownloadInfo(file.file_id));
-        } catch {
-          dInfos.push(null);
-        }
+  const filteredFiles = useMemo(() => {
+    if (!selectedAsset) return [];
+    const lowerSearch = searchTerm.toLowerCase().trim();
+    return selectedAsset.contents.files.filter((file) =>
+      file.file_name.toLowerCase().includes(lowerSearch)
+    );
+  }, [selectedAsset, searchTerm]);
+
+  const handleToggleFile = (fileId: string) => {
+    const file = filteredFiles.find((f) => f.file_id === fileId);
+    if (!file) return;
+    setSelectedFiles((prevSelected) =>
+      prevSelected.some((f) => f.file_id === fileId)
+        ? prevSelected.filter((f) => f.file_id !== fileId)
+        : [...prevSelected, file]
+    );
+  };
+
+
+
+  const updateFlow = () => {
+    const fileTypes = new Map<string, GetFileResponse[]>();
+    selectedFiles.forEach((file) => {
+      const fileType = file.file_name.split('.').pop() || '';
+      const existingFiles = fileTypes.get(fileType) || [];
+      fileTypes.set(fileType, [...existingFiles, file]);
+    });
+
+    // Set flow data for each file type.
+    fileTypes.forEach((files, fileType) => {
+      setFlowData(node.id, fileType, files);
+    });
+    setFlowKeys(Array.from(fileTypes.keys()));
+  };
+
+  useEffect(() => {
+    getAssets().then(setAssets);
+  }, [getAssets]);
+
+  useEffect(() => {
+    if (!selectedAsset) {
+      const myasset = assets.find((asset) => asset.asset_id === node.data.selectedAssetId)
+      if (myasset) {
+        setSelectedAsset(myasset);
+        setSelectedFiles(myasset.contents.files.filter((file) => node.data.selectedFileIds.includes(file.file_id)));
       }
-      setFlowData(
-        node.id,
-        OUTPUT_FILES,
-        files.filter((file) => file !== null)
-      );
-      return dInfos;
-    },
-    [getDownloadInfo, setFlowData, node.id]
+    } else {
+      updateNodeInternals(node.id);
+    }
+  }, [assets]);
+
+  useEffect(() => {
+    updateNodeInternals(node.id);
+  }, [flowKeys]);
+
+  useEffect(() => {
+    if (!selectedAsset) return;
+    updateFlow();
+    
+    node.data.selectedAssetId = selectedAsset.asset_id;
+    node.data.selectedFileIds = selectedFiles.map((file)=>file.file_id);
+  }, [selectedFiles]);
+
+
+
+  
+
+  // Determine if all filtered files are selected
+  const allFilesSelected = useMemo(
+    () =>
+      filteredFiles.length > 0 &&
+      filteredFiles.every((file) => selectedFiles.some((f) => f.file_id === file.file_id)),
+    [filteredFiles, selectedFiles]
   );
 
-  /**
-   * Called when the user finalizes their file selection in the modal.
-   * Maps the IDs -> real files -> updates node state & flow data.
-   */
-  const handleFileSelection = useCallback(
-    (newSelectedFileIds: string[]) => {
-      // Make a quick map of ID -> file
-      const filesById = new Map<string, GetFileResponse>();
-      apiAssets.forEach((asset) => {
-        asset.contents.files.forEach((file) =>
-          filesById.set(file.file_id,file));
-      });
-
-      const selectedFiles: GetFileResponse[] = [];
-      if (newSelectedFileIds && newSelectedFileIds.length > 0) {
-        newSelectedFileIds.forEach((fid) => {
-          const file = filesById.get(fid);
-          if (file) selectedFiles.push(file);
-        });
-      }
-
-      const selectedNames = selectedFiles.map((f) => f.file_name);
-      const selectedIds = selectedFiles.map((f) => f.file_id);
-
-      setSelectedFileIds(selectedIds);
-      setSelectedFileNames(selectedNames);
-
-      // Provide them to the flow
-      setFlowData(node.id, INPUT_FILES, selectedFiles);
-
-      // Close the modal (if open)
-      setIsPickerOpen(false);
-    },
-    [apiAssets, setFlowData, node.id]
-  );
-
-  // On mount, fetch files
-  useEffect(() => {
-    fetchAvailableFiles().then(() => setInitialized(true));
-  }, [fetchAvailableFiles]);
-
-  // Keep node.data in sync
-  useEffect(() => {
-    if (initialized) {
-      node.data.selectedPane = selectedPane;
-      node.data.selectedFileIds = selectedFileIds;
-      node.data.selectedFileNames = selectedFileNames;
+  const handleSelectAll = () => {
+    if (allFilesSelected) {
+      setSelectedFiles([]);
+    } else {
+      setSelectedFiles(filteredFiles);
     }
-  }, [initialized, selectedPane, selectedFileIds, selectedFileNames, node]);
+  };
 
-  // If the inputFlowData changes, update our selection & get the download info
-  useEffect(() => {
-    if (inputFlowData) {
-      const selectedFiles = inputFlowData.filter(
-        (file) => file !== null
-      ) as GetFileResponse[];
-      const selectedNames = selectedFiles.map((file) => file.file_name);
-      const selectedIds = selectedFiles.map((file) => file.file_id);
-
-      setSelectedFileIds(selectedIds);
-      setSelectedFileNames(selectedNames);
-
-      getDownloads(inputFlowData).then((dInfos) => setDownloadInfo(dInfos));
-    }
-  }, [inputFlowData, getDownloads]);
-
-  // Watch for container resize
-
-  // On first render, if we already have file IDs but no downloadInfo, restore them
-  useEffect(() => {
-    if (
-      selectedFileIds.length > 0 &&
-      downloadInfo.length === 0 &&
-      apiAssets.length > 0 &&
-      !isRestoredFromLocalStorage
-    ) {
-      handleFileSelection(selectedFileIds);
-      setIsRestoredFromLocalStorage(true);
-      setSelectedPane(0);
-    }
-  }, [
-    apiAssets,
-    selectedFileIds,
-    downloadInfo,
-    isRestoredFromLocalStorage,
-    handleFileSelection,
-  ]);
-
-  const columnWidth = 200;
-  //const viewerHeight = 480;
-  const columnStyle = { width: columnWidth };
 
   return (
     <Card
-      className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
+      className={`mythica-node asset-viewer-node ${node.selected && 'selected'}`}
       sx={{
         minWidth: 400,
         height: '100%',
@@ -200,195 +135,121 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
         flexDirection: 'column',
         paddingTop: '50px',
       }}
-      ref={containerRef}
     >
-      <NodeDeleteButton
-        onDelete={() => {
-          deleteElements({ nodes: [node] });
-        }}
-      />
+      <NodeDeleteButton onDelete={() => deleteElements({ nodes: [node] })} />
       <NodeHeader />
-      {/* Input handle */}
-      <FileInputHandle
-        id={INPUT_FILES}
-        left="50%"
-        isConnectable
-        style={{ background: '#555' }}
-        label="Inputs[ ]"
-      />
-
       <NodeResizer minHeight={100} minWidth={300} />
-      <Typography level="h4">Package Viewer</Typography>
 
-      {/* The "Select Files" button now opens our new FilePickerModal */}
-      <Box mb="10px" className="nodrag">
-        <Button variant="outlined" onClick={() => setIsPickerOpen(true)}>
-          Select Package & Files
-        </Button>
+      <Typography level="h4" sx={{ mb: 1 }}>
+        Package Loader
+      </Typography>
+
+      {/* Content container */}
+      <Box
+        sx={{ flex: 1, display: 'flex', gap: 2, overflow: 'hidden' }}
+        className="nowheel nodrag"
+      >
+        {/* Asset List */}
+        <Box sx={{ width: '40%', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Typography level="body-lg" mb={1}>
+            Select Package:
+          </Typography>
+          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            <List size="sm">
+              {assets.map((asset) => (
+                <ListItem key={asset.asset_id}>
+                  <ListItemButton
+                    selected={selectedAsset?.asset_id == asset.asset_id}
+                    onClick={() => handleSelectAsset(asset)}
+                  >
+                    <Typography sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {asset.name}
+                    </Typography>
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        </Box>
+
+        {/* File List */}
+        <Box sx={{ width: '60%', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Typography level="body-lg" mb={1}>
+            {selectedAsset?.name || 'None'} Package Files:
+          </Typography>
+          <Input
+            value={searchTerm}
+            placeholder="Filter files..."
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ mb: 1 }}
+          />
+
+          {/* Header row with "Select All" */}
+          <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, borderBottom: '1px solid #ccc' }}>
+            <Checkbox
+              checked={allFilesSelected}
+              onChange={handleSelectAll}
+              sx={{ mr: 1 }}
+            />
+            <Typography sx={{ flex: 1, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+              Select All
+            </Typography>
+          </Box>
+
+          {/* File List */}
+          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            <List size="sm">
+              {filteredFiles.map((file) => {
+                const isChecked = selectedFiles.find((f) => f.file_id === file.file_id)?true:false;
+                return (
+                  <ListItem key={file.file_id}>
+                    <ListItemButton
+                      selected={isChecked}
+                      onClick={() => handleToggleFile(file.file_id)}
+                    >
+                      <ListItemDecorator>
+                        <Checkbox
+                          checked={isChecked}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFile(file.file_id);
+                          }}
+                        />
+                      </ListItemDecorator>
+                      <Typography sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {file.file_name}
+                      </Typography>
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+              {filteredFiles.length === 0 && (
+                <ListItem>
+                  <Typography level="body-sm" sx={{ fontStyle: 'italic', color: 'neutral.500' }}>
+                    No files found.
+                  </Typography>
+                </ListItem>
+              )}
+            </List>
+          </Box>
+        </Box>
       </Box>
 
-      {/* Our new FilePickerModal for searching / selecting multiple files */}
-      <AssetPickerModal
-        open={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        onSave={(newSelectedFileIds: string[]) =>
-          handleFileSelection(newSelectedFileIds)
-        }
-        selectedFileIds={selectedFileIds}
-        assets={apiAssets}
-        label="Choose Your Files"
-      />
 
-      {/* If we have download info, render the tab/pane viewer */}
-      {downloadInfo && downloadInfo.length > 0 && (
-        <div
-          className="nodrag nowheel folder-container"
-          style={{ flex: '1 1 0', height: '100%' }}
-        >
-          <Split
-            sizes={[20, 80]}
-            minSize={[0, 100]}
-            expandToMin={false}
-            gutterSize={5}
-            gutterAlign="center"
-            direction="horizontal"
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              height: '100%',
-              width: '100%',
-            }}
-          >
-            {/* Tab Navigation */}
-            <Tabs
-              className="folder-tabs vertical"
-              style={{ ...columnStyle, overflow: 'clip' }}
-            >
-              {downloadInfo.map((fileInfo, index) => (
-                <div
-                  key={index}
-                  onClick={() => setSelectedPane(index)}
-                  className={`folder-tab ${
-                    selectedPane === index ? 'active' : ''
-                  }`}
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {fileInfo?.name || 'Error!'}
-                </div>
-              ))}
-            </Tabs>
-
-            {/* Pane Content */}
-            <div style={{ position: 'relative', width: '90%', height: '100%' }}>
-              {downloadInfo.map((fileInfo, index) => (
-                <div
-                  className="folder-content"
-                  key={index}
-                  style={{
-                    position: index === selectedPane ? 'relative' : 'absolute',
-                    visibility: index === selectedPane ? 'visible' : 'hidden',
-                    display: 'block',
-                    height: '100%',
-                  }}
-                >
-                  {fileInfo ? (
-                    <>
-                      {[
-                        'jpeg',
-                        'jpg',
-                        'png',
-                        'gif',
-                        'webp',
-                        'svg',
-                        'svg+xml',
-                        'bmp',
-                        'avif',
-                      ].includes(fileInfo.content_type.split('/')[1]) ? (
-                        <img
-                          src={fileInfo.url}
-                          alt={fileInfo.name}
-                          style={{
-                            height: '100%',
-                            width: '100%',
-                          }}
-                        />
-                      ) : fileInfo.content_type === 'application/json' ||
-                        fileInfo.content_type === 'application/awpy' ||
-                        fileInfo.content_type === 'application/awful' ? (
-                        <CodeViewer
-                          style={{
-                            height: '100%',
-                            width: '100%',
-                          }}
-                          language="json"
-                          fileUrl={fileInfo.url}
-                        />
-                      ) : fileInfo.content_type === 'application/awjs' ? (
-                        <CodeViewer
-                          style={{
-                            height: '100%',
-                            width: '100%',
-                          }}
-                          language="javascript"
-                          fileUrl={fileInfo.url}
-                        />
-                      ) : fileInfo.content_type === 'application/txt' ? (
-                      <CodeViewer
-                        style={{
-                          height: '100%',
-                          width: '100%',
-                        }}
-                        language="txt"
-                        fileUrl={fileInfo.url}
-                      />
-                      ) : fileInfo.content_type === 'application/usd' ||
-                        fileInfo.content_type === 'application/usdz' ? (
-                        <USDViewer
-                          src={fileInfo.url}
-                          alt={fileInfo.name}
-                          style={{
-                            height: '100vh',
-                            width: '100vh',
-                            minHeight: '480px',
-                            minWidth: '640px',
-                          }}
-                        />
-                      ) : (
-                        <div style={{ height: '100px' }}>
-                          <p>Unsupported file type: {fileInfo.content_type}</p>
-                          <a
-                            href={fileInfo.url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Download
-                          </a>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <p>Error loading file</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Split>
-        </div>
-      )}
       <div style={{ height: '24px' }} />
 
       {/* Output handle */}
-      <FileOutputHandle
-        id={OUTPUT_FILES}
-        left="50%"
-        isConnectable
-        style={{ background: '#555' }}
-        label="Outputs[ ]"
-      />
+      {flowKeys.map((key, index, array) => (
+        <FileOutputHandle
+          nodeId={node.id}
+          key={key}
+          id={key} 
+          left={`${(index + 1) * (100 / (array.length + 1))}%`} 
+          isConnectable 
+          style={{ background: '#555' }} 
+          label={key} />
+      ))}
+
     </Card>
   );
 };
