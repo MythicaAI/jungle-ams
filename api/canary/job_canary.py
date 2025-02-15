@@ -2,17 +2,30 @@ import argparse
 import hashlib
 import logging
 import os
+import time
 from http import HTTPStatus
 from typing import Optional
 
 import requests
-import time
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
+from opentelemetry.propagate import inject
+from telemetry import configure_telemetry
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+if os.getenv("TELEMETRY_ENABLE", "False") == "True":
+    configure_telemetry(
+        os.getenv("TELEMETRY_ENDPOINT", "localhost:4317"),
+        os.getenv("TELEMETRY_INSECURE", "False") == "True",
+    )
+else:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 log = logging.getLogger(__name__)
+
+
+tracer = trace.get_tracer(__name__)
 
 PROFILE_NAME = "Mythica_Canary"
 HDA_FILE = "test_scale_input.hda"
@@ -57,9 +70,9 @@ def find_or_create_profile(endpoint: str) -> str:
     return response.json()['profile_id']
 
 
-def start_session(endpoint: str, api_key: str) -> str:
+def start_session(endpoint: str, api_key: str, headers={}) -> str:
     url = f"{endpoint}/sessions/key/{api_key}"
-    response = requests.get(url, timeout=10)
+    response = requests.get(url, timeout=10, headers=headers)
     response.raise_for_status()
 
     result = response.json()
@@ -176,8 +189,12 @@ def run_test(endpoint: str, api_key: str):
     profile_id = find_or_create_profile(endpoint)
     log.info(f"Using profile: {profile_id}")
 
-    token = start_session(endpoint, api_key)
+    # Propagate context
+    telemetry_headers = get_headers_from_telemetry()
+
+    token = start_session(endpoint, api_key, headers=telemetry_headers)
     headers = {"Authorization": f"Bearer {token}"}
+    headers.update(telemetry_headers)
     log.info(f"Got token: {token}")
 
     hda_file_id = upload_file(endpoint, headers, HDA_FILE)
@@ -199,15 +216,23 @@ def run_test(endpoint: str, api_key: str):
     delete_job_defs(endpoint, headers)
 
 
+def get_headers_from_telemetry() -> dict:
+    "By the propagating context unions traces across services"
+    updated_headers = {}
+    inject(updated_headers, get_current_telemetry_context())
+    return updated_headers
+
+
 def main():
     args = parse_args()
 
     while True:
-        try:
-            run_test(args.endpoint, args.api_key)
-        except Exception as e:
-            log.error(f"Test failed: {e}")
-        log.info("Retrying test in %s seconds...", TEST_FREQUENCY_SEC)
+        with tracer.start_as_current_span("canary"):
+            try:
+                run_test(args.endpoint, args.api_key)
+            except Exception as e:
+                log.error(f"Test failed: {e}")
+            log.info("Retrying test in %s seconds...", TEST_FREQUENCY_SEC)
         time.sleep(TEST_FREQUENCY_SEC)
 
 

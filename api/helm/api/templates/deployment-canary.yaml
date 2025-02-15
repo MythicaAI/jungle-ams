@@ -39,6 +39,14 @@ spec:
               value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
               value: "{{ .Values.location }}"
+            - name: TELEMETRY_ENABLE
+              value: "{{ .Values.api.canary.telemetry_enable }}"
+            - name: TELEMETRY_ENDPOINT
+              value: {{ .Values.api.canary.telemetry_endpoint }}
+            - name: TELEMETRY_INSECURE
+              value: "{{ .Values.api.canary.telemetry_insecure }}"
+            - name: NAMESPACE
+              value: {{ .Values.namespace }}
 
             - name: MYTHICA_API_KEY
               valueFrom:
