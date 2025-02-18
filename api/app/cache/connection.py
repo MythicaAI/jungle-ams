@@ -21,7 +21,6 @@ async def cache_connection_lifespan(app: FastAPI):
     )
     str_desc = f"host: {app_config().redis_host}:{app_config().redis_port}, db: {app_config().redis_db}"
     log.info("redis client initialized %s", str_desc)
-    connection_pool = pool
     try:
         app.state.redis_pool = pool
         yield pool
@@ -35,9 +34,9 @@ async def cache_connection_lifespan(app: FastAPI):
 
 
 @asynccontextmanager
-async def redis_connection_pool(request: Request) -> StrictRedis:
+async def redis_connection_pool(app: FastAPI) -> StrictRedis:
     """Yields a strict redis accessor around the global connection pool"""
-    redis_pool = request.app.state.redis_pool
+    redis_pool = app.state.redis_pool
     if redis_pool is None:
         raise ValueError("cache pool is not available")
     conn = StrictRedis(connection_pool=redis_pool)
@@ -48,5 +47,5 @@ async def redis_connection_pool(request: Request) -> StrictRedis:
 async def get_redis(request: Request) -> StrictRedis:
     """Fast API Depends() compatible AsyncExit construction of the redis connection, uses
     async context manager to handle session state cleanup"""
-    async with redis_connection_pool(request) as redis:
+    async with redis_connection_pool(request.app) as redis:
         yield redis

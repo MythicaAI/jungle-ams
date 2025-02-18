@@ -1,3 +1,5 @@
+# pylint: disable=broad-exception-caught
+
 """Readers API"""
 
 import asyncio

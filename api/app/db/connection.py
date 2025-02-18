@@ -1,4 +1,4 @@
-# pylint: disable=no-member
+# pylint: disable=no-member,broad-exception-caught
 
 import asyncio
 import logging
@@ -109,8 +109,8 @@ async def db_session_pool(app: FastAPI) -> AsyncGenerator[AsyncSession, None]:
         # check the session back in
         try:
             await session.close()
-        except:
-            log.exception("failed to close session %s", id(session))
+        except Exception as ex:
+            log.exception("failed to close session %s", id(session), exc_info=ex)
 
 
 async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
