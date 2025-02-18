@@ -542,8 +542,8 @@ develop = false
 
 [package.dependencies]
 base58 = "^2.1.1"
-cryptography = "^44.0.0"
-flake8 = "^7.1.1"
+cryptography = "^44.0.1"
+flake8 = "^7.1.2"
 munch = "^4.0.0"
 pydantic = "^2.10.6"
 pydantic_settings = "^2.7.1"
