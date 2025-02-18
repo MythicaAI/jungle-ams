@@ -103,6 +103,7 @@ class ResultPublisher:
                 )
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
+
         updated_headers = self.update_headers_from_context()
         def upload_file(file_path: str, key: str, index: int) -> Optional[str]:
             if not os.path.exists(file_path):
@@ -116,7 +117,7 @@ class ResultPublisher:
                         headers=updated_headers
                     )
                     file_id = response['files'][0]['file_id'] if response else None
-                    
+
                 self._stream_file_chunks(file_path, key, index)
                 return file_id
             finally:
