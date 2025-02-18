@@ -99,7 +99,7 @@ async def set_email_validation_expires(
         update(ProfileKey).where(ProfileKey.key == expire_req.key).values(expires=expire_req.expires))
     await db_session.commit()
     if update_result.rowcount != 1:
-        raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {key} not found")
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {expire_req.key} not found")
 
 
 def bind_test_routes(app):
