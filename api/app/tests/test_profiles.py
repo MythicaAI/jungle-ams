@@ -14,10 +14,11 @@ from profiles.start_session import start_session
 from ripple.auth import roles
 from sqlalchemy import desc, update
 from sqlmodel import select
+from tests.fixtures.create_org import create_org
+from tests.fixtures.create_profile import create_profile
 from tests.script_tests.profile_factory import get_verification_email_code
 from tests.shared_test import ProfileTestObj, assert_status_code, refresh_auth_token
 from validate_email.responses import ValidateEmailResponse, ValidateEmailState
-
 
 test_profile_name = "test-profile"
 test_profile_description = "test-description"

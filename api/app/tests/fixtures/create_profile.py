@@ -1,14 +1,15 @@
+# pylint: disable=unused-argument, redefined-outer-name
+
 from http import HTTPStatus
 
 import pytest
-from munch import munchify
-
 from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
+from munch import munchify
 from profiles.responses import ProfileResponse
+from profiles.start_session import start_session
 from tests.script_tests.profile_factory import get_verification_email_code
 from tests.shared_test import ProfileTestObj, assert_status_code
-from profiles.start_session import start_session
 
 @pytest.fixture
 def create_profile(client, api_base: str, mock_mail_send_success, email="test@test.com"):

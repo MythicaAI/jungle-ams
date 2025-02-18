@@ -89,7 +89,7 @@ async def complete_email(
             raise HTTPException(HTTPStatus.FORBIDDEN, detail='verification profile mismatch')
 
         # validate the expire time
-        if validate_key.expires < datetime.now(timezone.utc):
+        if validate_key.expires.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
             raise HTTPException(HTTPStatus.GONE, detail='Verification code expired')
 
         # extract and validate the payload
