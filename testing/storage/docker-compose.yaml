@@ -97,6 +97,7 @@ services:
     image: tailscale/tailscale:latest
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY} # It should be in testing/.env file in this folder
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
       - TS_EXTRA_ARGS=--reset
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=true

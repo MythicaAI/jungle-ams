@@ -48,6 +48,9 @@ class AppConfig(BaseSettings):
     telemetry_endpoint: str = "https://ingest.us.signoz.com:443"
     telemetry_token: str = 'doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG'
 
+    sendgrid_api_key: str = 'test-api-key'
+    sendgrid_email: str = 'test@mythica.ai'
+
     mythica_org_name: str = "Mythica"
 
     app_image_version: str = "unknown"

@@ -1,16 +1,18 @@
+# pylint: disable=unused-argument, redefined-outer-name
+
 from http import HTTPStatus
 
 import pytest
-from munch import munchify
-
 from cryptid.cryptid import profile_id_to_seq
 from db.connection import get_session
+from munch import munchify
 from profiles.responses import ProfileResponse
-from tests.shared_test import ProfileTestObj, assert_status_code
 from profiles.start_session import start_session
+from tests.script_tests.profile_factory import get_verification_email_code
+from tests.shared_test import ProfileTestObj, assert_status_code
 
 @pytest.fixture
-def create_profile(client, api_base: str, email="test@test.com"):
+def create_profile(client, api_base: str, mock_mail_send_success, email="test@test.com"):
     """factory fixture, returns profile creation function"""
 
     def _create_profile(
@@ -70,10 +72,8 @@ def create_profile(client, api_base: str, email="test@test.com"):
                 f"{api_base}/validate-email/",
                 headers=headers).json())
             assert o.owner_id == profile.profile_id
-            assert len(o.link) > 0
-            assert len(o.code) > 0
             assert o.state == 'link_sent'
-            validate_code = o.code
+            validate_code = get_verification_email_code(profile.profile_id)
 
             o = munchify(client.get(
                 f"{api_base}/validate-email/{validate_code}",

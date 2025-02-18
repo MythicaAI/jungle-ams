@@ -1,6 +1,12 @@
+from cryptid.cryptid import profile_id_to_seq
 import httpx
 from http import HTTPStatus
 
+from sqlalchemy import desc
+from sqlmodel import select
+
+from db.connection import get_session
+from db.schema.profiles import ProfileKey
 from profiles.responses import ProfileResponse, SessionStartResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 
@@ -61,3 +67,11 @@ async def create_profile_and_start_session(
         auth_token = session_response.token
 
         return ProfileTestObj(profile=profile, auth_token=auth_token)
+
+
+def get_verification_email_code(profile_id: str) -> str:
+    with get_session() as db_session:
+        db_profile = db_session.exec(select(ProfileKey).where(
+            ProfileKey.owner_seq==profile_id_to_seq(profile_id)
+        ).order_by(desc(ProfileKey.created))).first()
+        return db_profile.key

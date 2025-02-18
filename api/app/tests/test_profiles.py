@@ -2,14 +2,30 @@
 
 # pylint: disable=redefined-outer-name, unused-import
 
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 
+from cryptid.cryptid import profile_id_to_seq
+from db.connection import get_session
+from db.schema.profiles import ProfileKey
+from fastapi.testclient import TestClient
 from munch import munchify
+from profiles.start_session import start_session
 from ripple.auth import roles
-
+from sqlalchemy import desc, update
+from sqlmodel import select
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code, refresh_auth_token
+from tests.script_tests.profile_factory import get_verification_email_code
+from tests.shared_test import ProfileTestObj, assert_status_code, refresh_auth_token
+from validate_email.responses import ValidateEmailResponse, ValidateEmailState
+
+test_profile_name = "test-profile"
+test_profile_description = "test-description"
+test_profile_signature = 32 * 'X'
+test_profile_href = "https://test.com/"
+test_profile_full_name = "test-profile-full-name"
+test_profile_email = "test@test.com"
 
 
 def test_public_profile(api_base, client, create_profile):
@@ -68,8 +84,8 @@ def test_profile_update_admin(api_base, client, create_profile):
 
 
 def test_privilege_access(client, api_base, create_profile, create_org):
-    user_profile = create_profile(email="test@somewhere.com")
-    mythica_profile = create_profile(email="test@mythica.ai")
+    user_profile: ProfileTestObj = create_profile(email="test@somewhere.com")
+    mythica_profile: ProfileTestObj = create_profile(email="test@mythica.ai")
 
     # validate email to add the mythica roles, this also currently creates
     # a mythica org if one does not currently exist
@@ -78,7 +94,7 @@ def test_privilege_access(client, api_base, create_profile, create_org):
         headers=mythica_profile.authorization_header()).json())
     assert o.owner_id == mythica_profile.profile.profile_id
     o = munchify(client.get(
-        f"{api_base}/validate-email/{o.code}",
+        f"{api_base}/validate-email/{get_verification_email_code(mythica_profile.profile.profile_id)}",
         headers=mythica_profile.authorization_header()).json())
     assert o.owner_id == mythica_profile.profile.profile_id
     assert o.state == 'validated'
@@ -106,3 +122,92 @@ def test_privilege_access(client, api_base, create_profile, create_org):
     o = munchify(client.get(f"{api_base}/profiles/roles/",
                             headers=mythica_profile.authorization_header()).json())
     assert roles.alias_tag_author in o.auth_roles
+
+
+def test_email_validation(api_base, client: TestClient, create_profile):
+
+    test_profile: ProfileTestObj = create_profile(name=test_profile_name,
+                                email=test_profile_email,
+                                full_name=test_profile_full_name,
+                                signature=test_profile_signature,
+                                description=test_profile_description,
+                                profile_href=test_profile_href)
+    profile_id = test_profile.profile.profile_id
+    assert profile_id is not None
+    headers = test_profile.authorization_header()
+    # validate email
+    validate_res = ValidateEmailResponse(
+        **client.get(f"{api_base}/validate-email", headers=headers).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.link_sent
+
+    # Test link is expired
+    with get_session() as db_session:
+        db_profile = db_session.exec(
+            update(ProfileKey).where(ProfileKey.owner_seq == profile_id_to_seq(profile_id)).values(
+                expires=datetime.now(timezone.utc) - timedelta(minutes=60)
+            )
+        )
+        db_session.commit()
+        
+        
+        db_profile = db_session.exec(select(ProfileKey).where(
+            ProfileKey.owner_seq==profile_id_to_seq(profile_id)
+        ).order_by(desc(ProfileKey.created))).first()
+        validate_code = db_profile.key
+
+    expired_res = client.get(
+        f"{api_base}/validate-email/{validate_code}", headers=headers
+    )
+    assert_status_code(expired_res, HTTPStatus.GONE)
+    
+    # Test link is not expired
+    with get_session() as db_session:
+        db_profile = db_session.exec(
+            update(ProfileKey).where(ProfileKey.owner_seq == profile_id_to_seq(profile_id)).values(
+                expires=datetime.now(timezone.utc) + timedelta(minutes=60)
+            )
+        )
+        db_session.commit()
+
+    validate_res = ValidateEmailResponse(
+        **client.get(
+            f"{api_base}/validate-email/{validate_code}", headers=headers
+        ).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.validated
+
+
+    def start_test_session(session_profile_id: str, as_profile_id=None) -> str:
+        with get_session() as db_session:
+            session_start_response = start_session(
+                db_session,
+                profile_id_to_seq(session_profile_id),
+                location='test-case',
+                impersonate_profile_id=as_profile_id)
+            auth_token = session_start_response.token
+            return auth_token
+
+    # start the default session
+    test_profile = ProfileTestObj(
+        profile=test_profile.profile,
+        auth_token=start_test_session(test_profile.profile.profile_id),
+    )
+    headers = test_profile.authorization_header()
+    
+    # Test validate email if it has been already validated
+    validate_res = ValidateEmailResponse(
+        **client.get(f"{api_base}/validate-email", headers=headers).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.validated
+
+    validate_res = ValidateEmailResponse(
+        **client.get(
+            f"{api_base}/validate-email/{validate_code}", headers=headers
+        ).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.validated
