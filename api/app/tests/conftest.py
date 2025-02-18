@@ -5,6 +5,7 @@ import concurrent.futures
 import logging
 import os
 import tempfile
+from unittest.mock import Mock, patch
 from contextlib import contextmanager
 
 import pytest
@@ -73,3 +74,16 @@ async def client() -> TestClient:
         yield c
         executor.shutdown(wait=True)
     del app
+
+@pytest.fixture(scope='module')
+def mock_mail_send_success():
+    # Mock the SendGrid's send method
+    with patch('sendgrid.SendGridAPIClient.send') as mock_send:
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.body = "Email sent successfully"
+        mock_response.headers = {'Content-Type': 'application/json'}
+
+        mock_send.return_value = mock_response
+
+        yield mock_send

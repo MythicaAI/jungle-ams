@@ -2,15 +2,26 @@
 
 # pylint: disable=redefined-outer-name, unused-import
 
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 
 import pytest
+from fastapi.testclient import TestClient
 from munch import munchify
 
 from ripple.auth import roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import assert_status_code, refresh_auth_token
+from tests.script_tests.profile_factory import get_email_validation_key, set_email_validation_expires
+from tests.shared_test import ProfileTestObj, assert_status_code, refresh_auth_token
+from validate_email.responses import ValidateEmailResponse, ValidateEmailState
+
+test_profile_name = "test-profile"
+test_profile_description = "test-description"
+test_profile_signature = 32 * 'X'
+test_profile_href = "https://test.com/"
+test_profile_full_name = "test-profile-full-name"
+test_profile_email = "test@test.com"
 
 
 @pytest.mark.asyncio
@@ -73,8 +84,8 @@ async def test_profile_update_admin(api_base, client, create_profile):
 
 @pytest.mark.asyncio
 async def test_privilege_access(client, api_base, create_profile, create_org):
-    user_profile = await create_profile(email="test@somewhere.com")
-    mythica_profile = await create_profile(email="test@mythica.ai")
+    user_profile: ProfileTestObj = await create_profile(email="test@somewhere.com")
+    mythica_profile: ProfileTestObj = await create_profile(email="test@mythica.ai")
 
     # validate email to add the mythica roles, this also currently creates
     # a mythica org if one does not currently exist
@@ -82,8 +93,9 @@ async def test_privilege_access(client, api_base, create_profile, create_org):
         f"{api_base}/validate-email/",
         headers=mythica_profile.authorization_header()).json())
     assert o.owner_id == mythica_profile.profile.profile_id
+    key = get_email_validation_key(api_base, client, mythica_profile.profile.profile_id)
     o = munchify(client.get(
-        f"{api_base}/validate-email/{o.code}",
+        f"{api_base}/validate-email/{key}",
         headers=mythica_profile.authorization_header()).json())
     assert o.owner_id == mythica_profile.profile.profile_id
     assert o.state == 'validated'
@@ -111,3 +123,63 @@ async def test_privilege_access(client, api_base, create_profile, create_org):
     o = munchify(client.get(f"{api_base}/profiles/roles/",
                             headers=mythica_profile.authorization_header()).json())
     assert roles.alias_tag_author in o.auth_roles
+
+
+@pytest.mark.asyncio
+async def test_email_validation(api_base, client: TestClient, create_profile):
+    test_profile: ProfileTestObj = await create_profile(name=test_profile_name,
+                                                        email=test_profile_email,
+                                                        full_name=test_profile_full_name,
+                                                        signature=test_profile_signature,
+                                                        description=test_profile_description,
+                                                        profile_href=test_profile_href)
+    profile_id = test_profile.profile.profile_id
+    assert profile_id is not None
+    headers = test_profile.authorization_header()
+
+    # validate email
+    validate_res = ValidateEmailResponse(
+        **client.get(f"{api_base}/validate-email", headers=headers).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.link_sent
+
+    # Test link is expired
+    key = get_email_validation_key(api_base, client, profile_id)
+
+    set_email_validation_expires(
+        api_base, client, key, datetime.now(timezone.utc) - timedelta(minutes=60))
+
+    expired_res = client.get(
+        f"{api_base}/validate-email/{key}", headers=headers
+    )
+    assert_status_code(expired_res, HTTPStatus.GONE)
+
+    # Move the expiration time on the key
+    set_email_validation_expires(
+        api_base, client, key, datetime.now(timezone.utc) + timedelta(minutes=60))
+
+    validate_res = ValidateEmailResponse(**client.get(f"{api_base}/validate-email/{key}", headers=headers).json())
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.validated
+
+    # start the default session
+    test_profile = ProfileTestObj(
+        profile=test_profile.profile,
+        auth_token=refresh_auth_token(client, test_profile))
+    headers = test_profile.authorization_header()
+
+    # Test validate email if it has been already validated
+    validate_res = ValidateEmailResponse(
+        **client.get(f"{api_base}/validate-email", headers=headers).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.validated
+
+    validate_res = ValidateEmailResponse(
+        **client.get(
+            f"{api_base}/validate-email/{key}", headers=headers
+        ).json()
+    )
+    assert validate_res.owner_id == profile_id
+    assert validate_res.state == ValidateEmailState.validated

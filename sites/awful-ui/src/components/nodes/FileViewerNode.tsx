@@ -16,11 +16,11 @@ import {
   GetFileResponse,
 } from '../../types/MythicaApi';
 
-import FilePickerModal from './utils/FilePickerModal'; // <-- The new component
+import FilePickerModal from '../ux/FilePickerModal'; // <-- The new component
 
 import { useReactFlow } from '@xyflow/react';
-import { NodeDeleteButton } from '../NodeDeleteButton';
-import { NodeHeader } from '../NodeHeader';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
+import { NodeHeader } from './ux/NodeHeader';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;

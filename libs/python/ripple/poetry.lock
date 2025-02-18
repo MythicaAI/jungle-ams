@@ -547,6 +547,7 @@ flake8 = "^7.1.2"
 munch = "^4.0.0"
 pydantic = "^2.10.6"
 pydantic_settings = "^2.7.1"
+pyjwt = "2.9.0"
 pylint = "^3.3.4"
 pytest = "^8.3.4"
 typing-extensions = "^4.12.2"
@@ -1648,14 +1649,14 @@ files = [
 
 [[package]]
 name = "pyjwt"
-version = "2.10.1"
+version = "2.9.0"
 description = "JSON Web Token implementation in Python"
 optional = false
-python-versions = ">=3.9"
-groups = ["main"]
+python-versions = ">=3.8"
+groups = ["main", "dev"]
 files = [
-    {file = "PyJWT-2.10.1-py3-none-any.whl", hash = "sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb"},
-    {file = "pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953"},
+    {file = "PyJWT-2.9.0-py3-none-any.whl", hash = "sha256:3b02fb0f44517787776cf48f2ae25d8e14f300e6d7545a4315cee571a415e850"},
+    {file = "pyjwt-2.9.0.tar.gz", hash = "sha256:7e1e5b56cc735432a7369cbfa0efe50fa113ebecdc04ae6922deba8b84582d0c"},
 ]
 
 [package.extras]
@@ -2178,4 +2179,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "<4.0,>=3.10"
-content-hash = "90edfaffc1d928084859980c46f72751c25b0fce87b24b4837b22c1081860b9e"
+content-hash = "148e59f6452c396ea3cd6fc65467a787e124ba0d3dfe221b8f57ccf29019397b"

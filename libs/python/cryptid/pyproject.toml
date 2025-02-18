@@ -21,6 +21,7 @@ flake8 = "^7.1.2"
 munch = "^4.0.0"
 pylint = "^3.3.4"
 pytest = "^8.3.4"
+pyjwt = "2.9.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

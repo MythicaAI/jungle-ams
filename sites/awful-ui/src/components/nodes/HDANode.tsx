@@ -11,9 +11,9 @@ import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Card } from '@mui/joy';
 import useMythicaApi from '../../hooks/useMythicaApi';
-import { NodeDeleteButton } from '../NodeDeleteButton';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
-import { NodeHeader } from '../NodeHeader';
+import { NodeHeader } from './ux/NodeHeader';
 import { AutomationNodeProps } from './AutomationNode';
 
 type InterfaceExecutionData = ExecutionData & {

@@ -32,7 +32,7 @@ class TagFileReference(BaseModel):
 class TagRequest(BaseModel):
     name: str
     page_priority: Optional[int] = None
-    contents: Optional[dict[str, str | list[TagFileReference] | None]] = None
+    contents: Optional[dict[str, str | list[TagFileReference] | None | list[dict]]] = None
 
     @field_validator('name')
     @classmethod

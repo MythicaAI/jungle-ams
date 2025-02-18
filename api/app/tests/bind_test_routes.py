@@ -1,15 +1,17 @@
+from datetime import datetime
 from http import HTTPStatus
 from http.client import HTTPException
 from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlmodel import insert, select
+from sqlmodel import desc, insert, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import event_id_to_seq, event_seq_to_id, profile_id_to_seq
 from db.connection import get_db_session
 from db.schema.events import Event
+from db.schema.profiles import ProfileKey
 from profiles.start_session import start_session
 
 router = APIRouter(prefix='/test')
@@ -71,6 +73,33 @@ async def get_event_by_id(event_id: str, db_session: AsyncSession = Depends(get_
     if event is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, f"event {event_id} not found")
     return event
+
+
+@router.get('/email-validation-key/{profile_id}', tags=['test'])
+async def get_email_validation_key(
+        profile_id: str,
+        db_session: AsyncSession = Depends(get_db_session)):
+    db_profile = (await db_session.exec(select(ProfileKey).where(
+        ProfileKey.owner_seq == profile_id_to_seq(profile_id)).order_by(desc(ProfileKey.created)))).one_or_none()
+    if db_profile is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {profile_id} not found")
+    return {'key': db_profile.key}
+
+
+class ExtendValidationTime(BaseModel):
+    key: str
+    expires: datetime
+
+
+@router.post('/email-validation-key-expires', tags=['test'])
+async def set_email_validation_expires(
+        expire_req: ExtendValidationTime,
+        db_session: AsyncSession = Depends(get_db_session)):
+    update_result = await db_session.exec(
+        update(ProfileKey).where(ProfileKey.key == expire_req.key).values(expires=expire_req.expires))
+    await db_session.commit()
+    if update_result.rowcount != 1:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {key} not found")
 
 
 def bind_test_routes(app):
