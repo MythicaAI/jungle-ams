@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import Any, AsyncGenerator
 from uuid import uuid4
 
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from sqlmodel import select
 
 from cryptid.cryptid import job_result_id_to_seq
@@ -18,7 +18,7 @@ def transform_job_results(_):
     return [Message(process_id=uuid4(), message="job result")]
 
 
-def create_job_results_table_source(params: dict[str, Any]) -> Source:
+def create_job_results_table_source(app: FastAPI, params: dict[str, Any]) -> Source:
     """Constructor of event table result stream sources"""
     param_page_size = params.get('page_size', 1)
     param_owner_seq = params.get('owner_seq', None)
@@ -34,7 +34,7 @@ def create_job_results_table_source(params: dict[str, Any]) -> Source:
         """Function that produces event table result streams"""
         page_size = max(param_page_size, page_size)
         after_job_result_seq = job_result_id_to_seq(after) if after else 0
-        async with db_session_pool() as db_session:
+        async with db_session_pool(app) as db_session:
             stmt = select(JobResult).where(JobResult.owner_seq == param_owner_seq)
             if param_job_seq:
                 stmt.where(JobResult.job_seq == param_job_seq)

@@ -12,7 +12,7 @@ from prometheus_fastapi_instrumentator import Instrumentator as PrometheusInstru
 from cache.connection import cache_connection_lifespan, get_redis
 from config import app_config
 from db.connection import db_connection_lifespan, get_db_session
-from exception_handlers import register_exceptions
+from exception_handlers import exception_handlers
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources, unregister_streaming_sources
@@ -24,10 +24,9 @@ async def server_lifespan(app: FastAPI):
     Create a lifespan that binds application resources to the startup and shutdown
     of the application
     """
-    register_streaming_sources()
-    register_exceptions(app)
+    register_streaming_sources(app)
 
-    async with db_connection_lifespan() as db_conn, cache_connection_lifespan() as cache_conn:
+    async with db_connection_lifespan(app) as db_conn, cache_connection_lifespan(app) as cache_conn:
         yield {
             'db': db_conn,
             'cache': cache_conn,
@@ -48,6 +47,7 @@ def create_app(use_prom=False, intercept_exceptions=False):
     app = FastAPI(
         openapi_version='3.1.0',
         generate_unique_id_function=custom_generate_unique_id,
+        exception_handlers=exception_handlers(),
         servers=[
             {'url': 'https://api.mythica.ai/', 'description': 'Production environment'},
             {'url': 'http://localhost:8080', 'description': 'Local environment'}],

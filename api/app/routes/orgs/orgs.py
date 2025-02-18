@@ -162,7 +162,7 @@ async def update(
 ) -> OrgResponse:
     """Update an existing organization"""
     org_seq = org_id_to_seq(org_id)
-    org = await db_session.exec(select(Org).where(Org.org_seq == org_seq)).first()
+    org = (await db_session.exec(select(Org).where(Org.org_seq == org_seq))).first()
     if org is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             f"org: {org_id} not found")
@@ -203,10 +203,10 @@ async def member_of(
         profile: Profile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> list[OrgRefResponse]:
     """Default get returns roles for the requesting profile"""
-    return await resolve_org_refs(db_session,
-                                  (await db_session.exec(select(OrgRef)
-                                                         .where(OrgRef.profile_seq == profile.profile_seq))
-                                   .all()))
+    refs = (await db_session.exec(select(OrgRef)
+                                  .where(OrgRef.profile_seq == profile.profile_seq))
+            ).all()
+    return await resolve_org_refs(db_session, refs)
 
 
 @router.get('/{org_id}')
@@ -264,8 +264,8 @@ async def add_role(
 
     return await resolve_org_refs(
         db_session,
-        db_session.exec(select(OrgRef).where(
-            OrgRef.org_seq == org_seq)).all())
+        (await db_session.exec(select(OrgRef).where(
+            OrgRef.org_seq == org_seq))).all())
 
 
 @router.delete('/{org_id}/roles/{profile_id}/{role}')

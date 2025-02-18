@@ -29,7 +29,7 @@ async def log_request_headers(r: Request):
 @router.get('/all')
 async def list_all(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
     """Get all asset versions"""
-    join_results = await (db_session.exec(
+    join_results = (await db_session.exec(
         repo.asset_join_select)).all()
     return await repo.process_join_results(db_session, join_results)
 

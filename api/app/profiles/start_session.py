@@ -99,7 +99,7 @@ async def start_session(
     # if you have this role, this is a super-use privilege and should be audited
     if impersonate_profile_id:
         validate_roles(role=roles.profile_impersonate, auth_roles=auth_roles)
-        profile = impersonated_profile(
+        profile = await impersonated_profile(
             db_session=db_session,
             auth_profile=profile,
             profile_id=impersonate_profile_id)

@@ -72,7 +72,7 @@ async def generate(
     await db_session.commit()
 
     # re-read the key to ensure consistency
-    result = db_session.exec(select(ProfileKey).where(ProfileKey.key == key)).one_or_none()
+    result = (await db_session.exec(select(ProfileKey).where(ProfileKey.key == key))).one_or_none()
     if result is None:
         raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
                             detail="failed to generate API key")
@@ -104,7 +104,7 @@ async def current(
     # pylint: disable=no-member
     stmt = select(ProfileKey).where(ProfileKey.owner_seq == profile.profile_seq).where(
         col(ProfileKey.key).startswith(KEY_PREFIX))
-    rows = await db_session.exec(stmt).all()
+    rows = (await db_session.exec(stmt)).all()
 
     # Ensure using normalized db timezone and in UTC at the API level
     response = [KeyGenerateResponse(

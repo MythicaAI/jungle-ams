@@ -10,7 +10,7 @@ from sqlmodel import delete as sql_delete, insert, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
-from db.connection import TZ, get_db_session
+from db.connection import TZ, db_session_pool, get_db_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from ripple.client_ops import ReadClientOp
@@ -112,8 +112,8 @@ async def items(reader_id: str,
         raise HTTPException(
             HTTPStatus.INTERNAL_SERVER_ERROR,
             f"failed to create source for reader {reader_id}")
-
-    raw_items = source(boundary)
+    item_gen = source(boundary)
+    raw_items = [item async for item in item_gen]
     if len(raw_items) > 0 and raw_items[-1].index:
         await update_reader_index(db_session, reader.reader_seq, raw_items[-1].index)
 
@@ -136,18 +136,18 @@ async def test_connect(websocket: WebSocket):
 @router.websocket("/connect")
 async def connect_all(
         websocket: WebSocket,
-        profile: Profile = Depends(maybe_session_profile),
-):
+        profile: Profile = Depends(maybe_session_profile)):
     """Create a profile websocket connection"""
-    if not profile:
-        # JavaScript does not support headers for WebSocket connections, use cookies instead.
-        profile = await current_cookie_profile(websocket)
-    try:
-        log.info("websocket connected to profile %s", profile)
-        await reader_connection_manager.connect(websocket, profile)
-    except WebSocketDisconnect:
-        log.info("websocket disconnected from profile %s", profile)
-        await reader_connection_manager.disconnect(websocket, profile)
-    except WebSocketException as e:
-        log.exception("websocket exception for profile %s", profile, exc_info=e)
-        await reader_connection_manager.disconnect(websocket, profile)
+    async with db_session_pool(websocket.app) as db_session:
+        if not profile:
+            # JavaScript does not support headers for WebSocket connections, use cookies instead.
+            profile = await current_cookie_profile(websocket)
+        try:
+            log.info("websocket connected to profile %s", profile)
+            await reader_connection_manager.connect(db_session, websocket, profile)
+        except WebSocketDisconnect:
+            log.info("websocket disconnected from profile %s", profile)
+            await reader_connection_manager.disconnect(websocket, profile)
+        except WebSocketException as e:
+            log.exception("websocket exception for profile %s", profile, exc_info=e)
+            await reader_connection_manager.disconnect(websocket, profile)

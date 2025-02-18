@@ -44,9 +44,9 @@ def resolve_results(results) -> list[ReaderResponse]:
 
 async def select_reader(db_session: AsyncSession, reader_seq: int, profile_seq: int) -> Reader:
     """Get a single owned reader"""
-    reader = await db_session.exec(select(Reader)
-                                   .where(Reader.reader_seq == reader_seq)
-                                   .where(Reader.owner_seq == profile_seq)).one_or_none()
+    reader = (await db_session.exec(select(Reader)
+                                    .where(Reader.reader_seq == reader_seq)
+                                    .where(Reader.owner_seq == profile_seq))).one_or_none()
     if reader is None:
         raise HTTPException(
             HTTPStatus.NOT_FOUND,

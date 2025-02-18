@@ -13,7 +13,6 @@ from db.schema.assets import Asset, AssetTag, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile
 from db.schema.tags import Tag
-
 from tags.tag_models import TagResponse
 
 
@@ -60,7 +59,7 @@ AuthorProfile = aliased(Profile)
 
 
 async def get_top_published_assets_metadata_query(db_session: AsyncSession):
-    tag_subquery = await get_tag_subquery(db_session)
+    tag_subquery = get_tag_subquery(db_session)
     top_published_assets_metadata_query = (
         select(
             Asset,
@@ -81,7 +80,7 @@ async def get_top_published_assets_metadata_query(db_session: AsyncSession):
         .where(AssetVersion.package_seq != None)
         .where(Asset.deleted == None, AssetVersion.deleted == None)
     )
-    return session.exec(top_published_assets_metadata_query).all()
+    return (await db_session.exec(top_published_assets_metadata_query)).all()
 
 
 def resolve_assets_tag(

@@ -7,6 +7,7 @@ from json import JSONDecodeError
 from typing import Callable, Optional, TypeVar
 
 from fastapi import WebSocket
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import app_config
 from cryptid.cryptid import IdError, reader_id_to_seq
@@ -15,7 +16,6 @@ from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from ripple.client_ops import ClientOp, ReadClientOp
 from ripple.funcs import Boundary, Source
-from ripple.models.streaming import StreamItem
 from ripple.source_types import create_source
 from routes.readers.utils import (
     reader_to_source_params,
@@ -53,6 +53,7 @@ class ReaderConnectionManager:
 
     async def connect(
             self,
+            db_session: AsyncSession,
             websocket: WebSocket,
             profile: Profile,
             op_data: Optional[dict] = None,
@@ -72,15 +73,14 @@ class ReaderConnectionManager:
                 self.active_connections[profile.profile_seq] = dict()
                 self.active_connections[profile.profile_seq]["websockets"] = list()
                 log.info("New profile connected to websocket %s", websocket)
-                async with db_session_pool() as session:
-                    if not op_data.get("reader_id"):
-                        readers = select_profile_readers(session, profile.profile_seq)
-                    else:
-                        reader_seq = reader_id_to_seq(op_data['reader_id'])
-                        reader = await self.get_reader_model(
-                            session, reader_seq, profile.profile_seq
-                        )
-                        readers = [reader]
+                if not op_data.get("reader_id"):
+                    readers = await select_profile_readers(db_session, profile.profile_seq)
+                else:
+                    reader_seq = reader_id_to_seq(op_data['reader_id'])
+                    reader = await self.get_reader_model(
+                        db_session, reader_seq, profile.profile_seq
+                    )
+                    readers = [reader]
 
                 if op_data.get("reader_id"):
                     del op_data['reader_id']
@@ -244,6 +244,9 @@ class ReaderConnectionManager:
                 "The periodically sending the updates catch unrecognized error",
                 exc_info=ex,
             )
+        except Exception as ex:
+            log.exception("An uncaught exception occurred in periodic update", exc_info=ex)
+            await websocket.send_json({'error': str(ex)})
         finally:
             if not is_cancelled_task:
                 await websocket.send_json(
@@ -278,7 +281,6 @@ class ReaderConnectionManager:
         It should be run in a separate thread, because of the blocking operation "websocket.receive_text()".
         Once the message is taken, it changes source for the reader.
         """
-        reader_seq: Optional[int] = None
         try:
             text = await websocket.receive_text()
             msg = json.loads(text)
@@ -306,9 +308,9 @@ class ReaderConnectionManager:
                 await websocket.send_json({'error': str(ex)})
                 return
 
-            async with db_session_pool() as session:
+            async with db_session_pool(websocket.app) as session:
                 if msg.get("position"):
-                    update_reader_index(session, reader_seq, msg.get("position"))
+                    await update_reader_index(session, reader_seq, msg.get("position"))
 
                 if not self.active_connections.get(profile.profile_seq).get(reader_seq):
                     reader = await self.get_reader_model(
@@ -336,7 +338,7 @@ class ReaderConnectionManager:
 
     async def change_reader_processor(
             self,
-            profile_seq: str,
+            profile_seq: int,
             reader: Reader,
     ):
         """
@@ -373,13 +375,11 @@ class ReaderConnectionManager:
         Responds with the received data.
         """
         boundary = Boundary(position=op.position, direction=op.direction)
-        stream_items: list[StreamItem] = source(boundary)
+        item_gen = source(boundary)
+        page = [item.model_dump(mode='json') async for item in item_gen]
+        await websocket.send_json(page)
+        if len(page) > 0:
+            op.position = page[-1]['index']
 
-        if len(stream_items) > 0 and stream_items[-1].index:
-            await websocket.send_json([item.model_dump_json() for item in stream_items])
-            log.debug(
-                "Source output stream_items %s",
-                [item.model_dump_json() for item in stream_items],
-            )
-            op.position = stream_items[-1].index
+        log.debug("sent page of %s items", len(page))
         return op

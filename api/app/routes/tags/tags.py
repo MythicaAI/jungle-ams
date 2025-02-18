@@ -11,7 +11,7 @@ from sqlmodel import delete as sql_delete, insert, select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import tag_id_to_seq, tag_seq_to_id
-from db.connection import get_db_session, get_session
+from db.connection import get_db_session
 from db.schema.tags import Tag
 from ripple.auth import roles
 from ripple.auth.authorization import validate_roles
@@ -38,7 +38,7 @@ async def create(
     validate_roles(role=roles.tag_create, auth_roles=profile.auth_roles)
 
     if create_req.contents:
-        create_req.contents = resolve_contents_as_json(session, create_req.contents)
+        create_req.contents = await resolve_contents_as_json(db_session, create_req.contents)
     try:
         await db_session.exec(
             insert(Tag).values(
@@ -77,7 +77,7 @@ async def delete(
     stmt = (
         sql_delete(Tag)
         .where(Tag.name == name))
-    await db_session.execute(stmt)
+    await db_session.exec(stmt)
     await db_session.commit()
 
 
@@ -128,27 +128,27 @@ async def by_id(
 async def update(
         tag_id: str,
         req: TagUpdateRequest,
-        profile: SessionProfile = Depends(session_profile)
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)
 ) -> TagResponse:
     """Update an existing tag"""
-    with get_session() as session:
-        validate_roles(role=roles.tag_update, auth_roles=profile.auth_roles)
-        if req.contents:
-            req.contents = resolve_contents_as_json(session, req.contents)
-        tag_seq = tag_id_to_seq(tag_id)
-        tag = session.exec(select(Tag).where(Tag.tag_seq == tag_seq)).first()
-        if tag is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND,
-                                f"tag: {tag_id} not found")
+    validate_roles(role=roles.tag_update, auth_roles=profile.auth_roles)
+    if req.contents:
+        req.contents = await resolve_contents_as_json(db_session, req.contents)
+    tag_seq = tag_id_to_seq(tag_id)
+    tag = (await db_session.exec(select(Tag).where(Tag.tag_seq == tag_seq))).first()
+    if tag is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND,
+                            f"tag: {tag_id} not found")
 
-        r = session.exec(sql_update(Tag).where(
-            Tag.tag_seq == tag_seq).values(
-            **req.model_dump(exclude_unset=True)))
-        if r.rowcount == 0:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
-                                f"update for: {tag_id} failed")
-        session.commit()
-        session.refresh(tag)
-        result = TagResponse(tag_id=tag_seq_to_id(tag.tag_seq),
-                             **tag.model_dump())
-        return result
+    r = await db_session.exec(sql_update(Tag).where(
+        Tag.tag_seq == tag_seq).values(
+        **req.model_dump(exclude_unset=True)))
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR,
+                            f"update for: {tag_id} failed")
+    await db_session.commit()
+    await db_session.refresh(tag)
+    result = TagResponse(tag_id=tag_seq_to_id(tag.tag_seq),
+                         **tag.model_dump())
+    return result

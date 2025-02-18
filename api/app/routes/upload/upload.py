@@ -62,6 +62,7 @@ def get_target_bucket(mappings: dict[BucketType, set], extension: str) -> Bucket
 
 
 async def upload_internal(
+        db_session: AsyncSession,
         storage: StorageClient,
         bucket_mappings: dict[BucketType, set],
         profile: SessionProfile,
@@ -119,7 +120,7 @@ async def upload_internal(
 
     # Update database index
     if cfg.enable_db:
-        ctx.file_id, ctx.event_id = await db_index.update(ctx)
+        ctx.file_id, ctx.event_id = await db_index.update(db_session, ctx)
     else:
         ctx.file_id, ctx.event_id = '', ''
 
@@ -134,7 +135,8 @@ async def upload_internal(
 async def store_files(
         files: list[UploadFile] = File(...),
         profile: SessionProfile = Depends(session_profile),
-        storage: StorageClient = Depends(storage_client)) -> UploadResponse:
+        storage: StorageClient = Depends(storage_client),
+        db_session: AsyncSession = Depends(get_db_session)) -> UploadResponse:
     """Store a list of files as a profile"""
 
     log.info("handling upload for profile: %s", profile)
@@ -146,6 +148,7 @@ async def store_files(
     for file in files:
         # do the upload
         ctx = await upload_internal(
+            db_session,
             storage,
             USER_BUCKET_MAPPINGS,
             profile,
@@ -196,6 +199,7 @@ async def store_and_attach_package(
         raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
     ctx = await upload_internal(
+        db_session,
         storage,
         PACKAGE_BUCKET_MAPPINGS,
         profile,

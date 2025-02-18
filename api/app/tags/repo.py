@@ -1,5 +1,4 @@
 """Utils for models types"""
-import asyncio
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional, Union
 
@@ -49,25 +48,25 @@ async def process_type_model_result(
         return await enrich_files(db_session, files, profile)
 
 
-def resolve_contents_as_json(
-        session: AsyncSession, in_files_categories: dict[str, list[TagFileReference | str]]
-) -> str:
+async def resolve_contents_as_json(
+        db_session: AsyncSession, in_files_categories: dict[str, list[TagFileReference | str]]
+) -> dict[str, list[dict]]:
     """Convert any partial content references into fully resolved references"""
     contents = {}
 
     # resolve all file content types
     for category, content_list in in_files_categories.items():
-        contents[category] = resolve_content_list(session, category, content_list)
+        contents[category] = await resolve_content_list(db_session, category, content_list)
 
     return contents
 
 
-def resolve_content_list(
+async def resolve_content_list(
         db_session: AsyncSession, category: str, in_content_list: list[Union[str, Dict[str, Any]]]
 ):
     """For each category return the fully resolved version of list of items in the category"""
     if category in THUMBNAILS_CONTENT_KEY:
-        return asyncio.gather(*[resolve_tag_file_reference(db_session, file_ref) for file_ref in in_content_list])
+        return [await resolve_tag_file_reference(db_session, file_ref) for file_ref in in_content_list]
     elif isinstance(category, str) and isinstance(in_content_list, str):
         return in_content_list
 

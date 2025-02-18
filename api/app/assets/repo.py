@@ -1,6 +1,5 @@
 # pylint: disable=unnecessary-lambda, no-member, unsupported-membership-test
 
-import asyncio
 import logging
 from datetime import datetime
 from enum import Enum
@@ -373,11 +372,11 @@ async def resolve_content_list(
         content: list[Union[str, Dict[str, Any]]]):
     """For each category return the fully resolved version of list of items in the category"""
     if category in FILE_TYPE_CATEGORIES:
-        return await asyncio.gather(*[resolve_asset_file_reference(db_session, x) for x in content])
+        return [await resolve_asset_file_reference(db_session, x) for x in content]
     elif category in ASSET_VERSION_TYPE_CATEGORIES:
-        return await asyncio.gather(*[resolve_asset_dependency(db_session, x) for x in content])
+        return [await resolve_asset_dependency(db_session, x) for x in content]
     elif category in LINK_TYPE_CATEGORIES:
-        return await asyncio.gather(*[resolve_asset_link(db_session, x) for x in content])
+        return [resolve_asset_link(x) for x in content]
 
 
 async def resolve_asset_file_reference(

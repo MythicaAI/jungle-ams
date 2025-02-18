@@ -45,11 +45,7 @@ def create_profile(client, api_base: str, email="test@test.com"):
         assert profile.profile_id == profile_id
 
         # use the test route to start the session
-        if impersonate_profile_id:
-            url = f"{api_base}/test/start_session/{profile_id}?as_profile_id={impersonate_profile_id}"
-        else:
-            url = f"{api_base}/test/start_session/{profile_id}"
-        r = client.get(url)
+        r = client.get(f"{api_base}/test/start_session/{profile_id}")
         assert_status_code(r, HTTPStatus.OK)
         auth_token = r.json()['token']
 

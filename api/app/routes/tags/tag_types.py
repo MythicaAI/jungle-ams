@@ -51,7 +51,7 @@ async def create_tag_for_type(
         "type_seq": type_seq,
     }
 
-    model_exists = (await session.exec(
+    model_exists = (await db_session.exec(
         select(model_of_type_model)
         .where(model_type_seq_col == type_seq)
     )).first()
@@ -107,9 +107,9 @@ async def get_tags_for_type(
         TagResponse(
             name=r.name,
             tag_id=tag_seq_to_id(r.tag_seq),
-        page_priority=r.page_priority,
-                contents=r.contents,
-            )for r in tags
+            page_priority=r.page_priority,
+            contents=r.contents,
+        ) for r in tags
     ]
     return response
 
@@ -166,6 +166,7 @@ async def get_top_tags_for_type(
         profile: Optional[Profile] = Depends(maybe_session_profile),
         limit: int = Query(1, le=100),
         offset: int = 0,
+        db_session: AsyncSession = Depends(get_db_session)
 ):
     type_model = get_model_type(tag_type)
     if tag_type == TagType.file:
@@ -207,9 +208,9 @@ async def get_top_tags_for_type(
         TagResponse(
             name=tag.name,
             tag_id=tag_seq_to_id(tag.tag_seq),
-        page_priority=tag.page_priority,
-                contents=tag.contents,
-            )for tag in tags
+            page_priority=tag.page_priority,
+            contents=tag.contents,
+        ) for tag in tags
     ]
 
     return response

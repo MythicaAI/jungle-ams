@@ -6,7 +6,7 @@ from jwt import DecodeError, InvalidTokenError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from db.schema.profiles import OrgRef, Profile
+from db.schema.profiles import OrgRef
 from ripple.auth.generate_token import SessionProfile, decode_token
 
 log = logging.getLogger(__name__)
@@ -31,14 +31,6 @@ def decode_session_profile(authorization: str) -> SessionProfile:
     except (DecodeError, InvalidTokenError) as exc:
         raise HTTPException(
             HTTPStatus.BAD_REQUEST, detail='Invalid authorization token') from exc
-
-
-def resolve_profile(session, profile: Profile) -> Profile:
-    resolved_profile = session.exec(
-        select(Profile).where(Profile.profile_seq == profile.profile_seq)).first()
-    if resolved_profile is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail=f'Profile {profile.profile_id} not found')
-    return resolved_profile
 
 
 async def resolve_org_roles(db_session: AsyncSession, profile_seq: int, org_seq: int = None) -> set[str]:

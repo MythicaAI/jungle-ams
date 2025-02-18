@@ -1,21 +1,19 @@
 # global usage is not understood by pylint
 # pylint: disable=global-statement,global-variable-not-assigned
 import logging
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 
-import asyncio
+from fastapi import FastAPI, Request
 from redis.asyncio import ConnectionPool, StrictRedis
 
 from config import app_config
 
 log = logging.getLogger(__name__)
-connection_pool = None
 
 
 @asynccontextmanager
-async def cache_connection_lifespan():
+async def cache_connection_lifespan(app: FastAPI):
     """On startup create the redis connection pool"""
-    global connection_pool
     pool = ConnectionPool(
         host=app_config().redis_host,
         port=app_config().redis_port,
@@ -25,21 +23,30 @@ async def cache_connection_lifespan():
     log.info("redis client initialized %s", str_desc)
     connection_pool = pool
     try:
+        app.state.redis_pool = pool
         yield pool
     except GeneratorExit:
         pass
     finally:
-        connection_pool = None
-        # log.info("redis connection pool closing %s", str_desc)
+        log.debug("redis connection pool closing %s", str_desc)
+        del app.state.redis_pool
         await pool.disconnect(False)
-        # log.info("redis connection pool closed %s", str_desc)
+        log.info("redis connection pool closed %s", str_desc)
 
 
-@contextmanager
-def get_redis() -> StrictRedis:
+@asynccontextmanager
+async def redis_connection_pool(request: Request) -> StrictRedis:
     """Yields a strict redis accessor around the global connection pool"""
-    global connection_pool
-    redis = StrictRedis(connection_pool=connection_pool)
-    yield redis
-    loop = asyncio.get_running_loop()
-    loop.create_task(redis.close(), name="close redis")
+    redis_pool = request.app.state.redis_pool
+    if redis_pool is None:
+        raise ValueError("cache pool is not available")
+    conn = StrictRedis(connection_pool=redis_pool)
+    yield conn
+    await conn.close()
+
+
+async def get_redis(request: Request) -> StrictRedis:
+    """Fast API Depends() compatible AsyncExit construction of the redis connection, uses
+    async context manager to handle session state cleanup"""
+    async with redis_connection_pool(request) as redis:
+        yield redis

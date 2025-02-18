@@ -21,7 +21,7 @@ async def test_create_update(client, api_base, create_profile, create_org):
     org_id = o.org_id
 
     # refresh the auth token (with roles) after creating an org
-    test_profile.auth_token = await refresh_auth_token(test_profile)
+    test_profile.auth_token = refresh_auth_token(client, test_profile)
     headers = test_profile.authorization_header()
 
     payload = {'name': 'test-updated',
@@ -56,8 +56,8 @@ async def test_org_ref_operations(client, api_base, create_profile, create_org):
     admin_id = org.profile_id
 
     # refresh auth
-    admin_profile_test_info.auth_token = await refresh_auth_token(admin_profile_test_info)
-    user_profile_test_info.auth_token = await refresh_auth_token(user_profile_test_info)
+    admin_profile_test_info.auth_token = refresh_auth_token(client, admin_profile_test_info)
+    user_profile_test_info.auth_token = refresh_auth_token(client, user_profile_test_info)
     headers = admin_profile_test_info.authorization_header()
 
     # validate that unknown roles fail

@@ -51,10 +51,12 @@ async def other_errors(_: Request, exc: Exception):
     )
 
 
-def register_exceptions(app):
+def exception_handlers():
     """Register all built-in exception handlers in this module"""
-    app.add_exception_handler(IdError, api_id_error)
-    app.add_exception_handler(SequenceError, api_seq_error)
-    app.add_exception_handler(ValidationError, validation_error)
-    app.add_exception_handler(RoleError, role_error)
-    app.add_exception_handler(Exception, other_errors)
+    return {
+        IdError: api_id_error,
+        SequenceError: api_seq_error,
+        ValidationError: validation_error,
+        RoleError: role_error,
+        Exception: other_errors
+    }

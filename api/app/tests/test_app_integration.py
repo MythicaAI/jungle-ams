@@ -82,7 +82,7 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     org_id = o.org_id
 
     # after creating the org, refresh the auth token to get the new roles
-    test_profile.auth_token = await refresh_auth_token(test_profile)
+    test_profile.auth_token = refresh_auth_token(client, test_profile)
     headers = test_profile.authorization_header()
 
     # create asset in org
@@ -364,7 +364,7 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     new_profile_org_id = o.org_id
 
     # after creating the org, refresh the auth token to get the new roles
-    new_profile.auth_token = await refresh_auth_token(new_profile)
+    new_profile.auth_token = refresh_auth_token(client, new_profile)
     new_headers = new_profile.authorization_header()
 
     # create asset for new_profile

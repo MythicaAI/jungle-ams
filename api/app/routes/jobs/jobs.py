@@ -95,6 +95,8 @@ class JobResultModel(JobResultRequest):
 
 
 class JobResultResponse(BaseModel):
+    job_def_id: Optional[str]
+    created: datetime
     completed: bool
     results: list[JobResultModel]
 
@@ -111,29 +113,29 @@ def disable_nats(context_str):
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
-        request: JobDefinitionRequest,
+        req_data: JobDefinitionRequest,
         profile: SessionProfile = Depends(maybe_session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> JobDefinitionResponse:
     """Create a new job definition"""
     # Create the job definition
-    request_model = request.model_dump()
+    req_model = req_data.model_dump()
     if profile:
-        request_model["owner_seq"] = profile.profile_seq
-    job_def = JobDefinition(**request_model)
+        req_model["owner_seq"] = profile.profile_seq
+    job_def = JobDefinition(**req_model)
     db_session.add(job_def)
     await db_session.commit()
     await db_session.refresh(job_def)
     job_def_seq = job_def.job_def_seq
 
     # Create the asset version link
-    if request.source:
+    if req_data.source:
         asset_version_entry_point = AssetVersionEntryPoint(
-            asset_seq=asset_id_to_seq(request.source.asset_id),
-            major=request.source.major,
-            minor=request.source.minor,
-            patch=request.source.patch,
-            src_file_seq=file_id_to_seq(request.source.file_id),
-            entry_point=request.source.entry_point,
+            asset_seq=asset_id_to_seq(req_data.source.asset_id),
+            major=req_data.source.major,
+            minor=req_data.source.minor,
+            patch=req_data.source.patch,
+            src_file_seq=file_id_to_seq(req_data.source.file_id),
+            entry_point=req_data.source.entry_point,
             job_def_seq=job_def_seq
         )
         await db_session.merge(asset_version_entry_point)
@@ -312,28 +314,28 @@ async def add_job_nats_event(
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
-        request: JobRequest,
+        req_data: JobRequest,
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> JobResponse:
     """Request a job from an existing definition"""
     span = trace.get_current_span(context=get_current_telemetry_context())
     job_def = (await db_session.exec(select(JobDefinition).where(
-        JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id)))).one_or_none()
+        JobDefinition.job_def_seq == job_def_id_to_seq(req_data.job_def_id)))).one_or_none()
     if job_def is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
     parameter_spec = ParameterSpec(**job_def.params_schema)
-    repair_parameters(parameter_spec, request.params)
+    repair_parameters(parameter_spec, req_data.params)
     # validate parameters, report back the parameter error that caused the problem
     try:
-        validate_params(parameter_spec, request.params)
+        validate_params(parameter_spec, req_data.params)
     except ParamError as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
 
     job_result = await db_session.exec(insert(Job).values(
-        job_def_seq=job_def_id_to_seq(request.job_def_id),
+        job_def_seq=job_def_id_to_seq(req_data.job_def_id),
         owner_seq=profile.profile_seq,
-        params=request.params.model_dump()))
+        params=req_data.params.model_dump()))
     job_seq = job_result.inserted_primary_key[0]
 
     span.set_attribute("job.id", job_seq_to_id(job_seq))
@@ -343,7 +345,7 @@ async def create(
         db_session,
         job_seq,
         job_def,
-        request.params.model_dump(),
+        req_data.params.model_dump(),
         profile.profile_seq,
         profile.auth_token)
     event_id = event_seq_to_id(event_result.inserted_primary_key[0])
@@ -353,24 +355,21 @@ async def create(
         job_seq,
         profile.auth_token,
         job_def.job_type,
-        request.params)
+        req_data.params)
 
     return JobResponse(
         job_id=job_seq_to_id(job_seq),
         event_id=event_id,
-        job_def_id=request.job_def_id)
+        job_def_id=req_data.job_def_id)
 
 
 async def job_result_insert(
         db_session: AsyncSession,
         job_seq: int,
-        request: JobResultRequest):
+        req_data: JobResultRequest):
     """Generate the job result insert with fallback for databases without sequences
     support on composite primary keys"""
-    from db.connection import engine
-
-    assert engine is not None
-
+    engine = db_session.get_bind()
     # fallback for composite primary key auto increment in SQLite
     # see the db connection code for the definition of this fallback
     requires_app_sequences = {'sqlite'}
@@ -389,32 +388,32 @@ async def job_result_insert(
         return await db_session.exec(insert(JobResult).values(
             job_seq=job_seq,
             job_result_seq=next_job_result_seq,
-            created_in=request.created_in,
-            result_data=request.result_data))
+            created_in=req_data.created_in,
+            result_data=req_data.result_data))
     else:
         return await db_session.exec(insert(JobResult).values(
             job_seq=job_seq,
-            created_in=request.created_in,
-            result_data=request.result_data))
+            created_in=req_data.created_in,
+            result_data=req_data.result_data))
 
 
 @router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
 async def create_result(
         job_id: str,
-        request: JobResultRequest,
+        req_data: JobResultRequest,
         db_session: AsyncSession = Depends(get_db_session)) -> JobResultCreateResponse:
     """Add a new job result"""
     span = trace.get_current_span(context=get_current_telemetry_context())
     span.set_attribute("job.id", job_id)
 
     job_seq = job_id_to_seq(job_id)
-    job = await db_session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
+    job = (await db_session.exec(select(Job).where(Job.job_seq == job_seq))).one_or_none()
     if job is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
 
-    job_result = await job_result_insert(db_session, job_seq, request)
-    if request.result_data:
-        span.set_attributes(request.result_data)
+    job_result = await job_result_insert(db_session, job_seq, req_data)
+    if req_data.result_data:
+        span.set_attributes(req_data.result_data)
     span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
     job_result_seq = job_result.inserted_primary_key[0]
     await db_session.commit()
@@ -439,7 +438,11 @@ async def list_results(
     results = [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_result_seq),
                               **job_result.model_dump())
                for job_result in job_results]
-    return JobResultResponse(completed=(job.completed is not None), results=results)
+    return JobResultResponse(
+        created=job.created,
+        completed=(job.completed is not None),
+        job_def_id=job_def_seq_to_id(job.job_def_seq) if job.job_def_seq else None,
+        results=results)
 
 
 @router.post('/complete/{job_id}')
@@ -467,12 +470,12 @@ async def delete_canary_jobs_def(
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)):
     """Delete profile's job_defs"""
-    job_defs_to_delete: list[JobDefinition] = db_session.exec(
+    job_defs_to_delete: list[JobDefinition] = (await db_session.exec(
         select(JobDefinition)
         .where(JobDefinition.job_type == "houdini::/mythica/generate_mesh")
         .where(JobDefinition.name == "Generate test_scale_input")
         .where(JobDefinition.description == "test_scale_input")
-    ).all()
+    )).all()
 
     if not job_defs_to_delete:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="No matching JobDefinition entries found")

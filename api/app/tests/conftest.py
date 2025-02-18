@@ -6,19 +6,14 @@ import logging
 import os
 import tempfile
 from contextlib import contextmanager
-from typing import Optional
 
 import pytest
 import pytest_asyncio
-from fastapi import APIRouter, Depends
 from fastapi.testclient import TestClient
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from config import app_config
 from create_app import create_app
-from cryptid.cryptid import profile_id_to_seq
-from db.connection import get_db_session
-from profiles.start_session import start_session
+from tests.bind_test_routes import bind_test_routes
 
 log = logging.getLogger(__name__)
 
@@ -58,28 +53,6 @@ def setup_database(verbose_db=False):
 def api_base(setup_database) -> str:
     """Return the current api base"""
     return "/v1"
-
-
-def bind_test_routes(app):
-    test_route = APIRouter(prefix='/test')
-
-    @test_route.get('/start_session/{session_profile_id}', tags=['test'])
-    async def start_test_session_async(
-            session_profile_id: str,
-            as_profile_id: Optional[str] = None,
-            db_session: AsyncSession = Depends(get_db_session)):
-        """Test only route to directly generate a session, this is done on
-        a route to ensure that the async context for the database matches
-        what has been configured already in the application startup"""
-        session_start_response = await start_session(
-            db_session,
-            profile_id_to_seq(session_profile_id),
-            location='test-case',
-            impersonate_profile_id=as_profile_id)
-        auth_token = session_start_response.token
-        return {'token': auth_token}
-
-    app.include_router(test_route)
 
 
 @contextmanager

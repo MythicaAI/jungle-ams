@@ -92,7 +92,7 @@ async def create(
     if not validate_topo_name(create_req.name):
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             detail=f'invalid topo name: {create_req.name}')
-    name_result = await session.exec(select(Topology).where(Topology.name == create_req.name))
+    name_result = await db_session.exec(select(Topology).where(Topology.name == create_req.name))
     if name_result.first() is not None:
         raise HTTPException(
             HTTPStatus.CONFLICT, detail=f'topology already exists: {create_req.name}')
