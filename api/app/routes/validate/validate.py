@@ -5,15 +5,17 @@ from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
+from ripple.models.sessions import SessionProfile
 from sqlmodel import delete, insert, select, update
 
-from config import app_config
 from cryptid.cryptid import profile_seq_to_id
 from db.connection import get_session
 from db.schema.profiles import Profile, ProfileKey
 from profiles.invalidate_sessions import invalidate_sessions
 from routes.authorization import session_profile
-from validate_email.responses import ValidateEmailResponse, ValidateEmailState
+from validate_email.responses import ValidateEmailResponse, ValidateEmailState, email_validate_state_enum
+from validate_email.verification import send_validating_email
+
 
 router = APIRouter(prefix="/validate-email", tags=["profiles"])
 
@@ -24,8 +26,13 @@ KEY_PREFIX = 'v_'
 
 @router.get('/')
 async def begin_email(
-        profile: Profile = Depends(session_profile)) -> ValidateEmailResponse:
+        profile: SessionProfile = Depends(session_profile)) -> ValidateEmailResponse:
     """Start validating an email address stored on the current profile"""
+    if email_validate_state_enum(profile.email_validate_state) == ValidateEmailState.validated:
+        return ValidateEmailResponse(
+            owner_id=profile_seq_to_id(profile.profile_seq),
+            state=ValidateEmailState.validated,
+        )
     with get_session() as session:
         validate_code = KEY_PREFIX + ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
         validate_link = f"https://api.mythica.ai/v1/validate_email/{validate_code}"
@@ -38,23 +45,33 @@ async def begin_email(
                 'verification_link': validate_link
             }
         ))
-        session.exec(update(Profile).values(
-            email_validate_state=ValidateEmailState.db_value(ValidateEmailState.link_sent)
-        ).where(
-            Profile.profile_seq == profile.profile_seq
-        ))
-        session.commit()
-        return ValidateEmailResponse(owner_id=profile_seq_to_id(profile.profile_seq),
-                                     link=validate_link,
-                                     code=validate_code,
-                                     state=ValidateEmailState.link_sent)
+        is_sent = send_validating_email(validate_link, profile.email)
+        if is_sent:
+            session.exec(update(Profile).values(
+                email_validate_state=ValidateEmailState.db_value(ValidateEmailState.link_sent)
+            ).where(
+                Profile.profile_seq == profile.profile_seq
+            ))
+            session.commit()
+            state = ValidateEmailState.link_sent
+        else:
+            state = ValidateEmailState.not_validated
+        return ValidateEmailResponse(
+            owner_id=profile_seq_to_id(profile.profile_seq),
+            state=state,
+        )
 
 
 @router.get('/{verification_code}')
 async def complete_email(
         verification_code: str,
-        profile: Profile = Depends(session_profile)) -> ValidateEmailResponse:
+        profile: SessionProfile = Depends(session_profile)) -> ValidateEmailResponse:
     """Provide a valid verification code to validate email"""
+    if email_validate_state_enum(profile.email_validate_state) == ValidateEmailState.validated:
+        return ValidateEmailResponse(
+            owner_id=profile_seq_to_id(profile.profile_seq),
+            state=ValidateEmailState.validated,
+        )
     with get_session() as session:
         validate_profile = session.exec(select(Profile).where(
             Profile.profile_seq == profile.profile_seq)).first()
@@ -70,6 +87,10 @@ async def complete_email(
         # validate the profile matches up
         if validate_key.owner_seq != profile.profile_seq:
             raise HTTPException(HTTPStatus.FORBIDDEN, detail='verification profile mismatch')
+
+        # validate the expire time
+        if validate_key.expires < datetime.now(timezone.utc):
+            raise HTTPException(HTTPStatus.GONE, detail='Verification code expired')
 
         # extract and validate the payload
         validation_payload = validate_key.payload
@@ -93,6 +114,5 @@ async def complete_email(
 
         return ValidateEmailResponse(
             owner_id=profile_seq_to_id(profile.profile_seq),
-            code=verification_code,
-            link=app_config().api_base_uri,
-            state=ValidateEmailState.validated)
+            state=ValidateEmailState.validated,
+        )

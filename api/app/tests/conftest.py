@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 import os
 import tempfile
+from unittest.mock import Mock, patch
 
 import pytest
 import logging
@@ -57,3 +58,16 @@ def client() -> TestClient:
     """Return a test client for the test module scope"""
     with TestClient(app) as c:
         yield c
+
+@pytest.fixture(scope='module')
+def mock_mail_send_success():
+    # Mock the SendGrid's send method
+    with patch('sendgrid.SendGridAPIClient.send') as mock_send:
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.body = "Email sent successfully"
+        mock_response.headers = {'Content-Type': 'application/json'}
+
+        mock_send.return_value = mock_response
+        
+        yield mock_send

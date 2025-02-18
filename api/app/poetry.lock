@@ -1142,13 +1142,13 @@ tracing = ["opentelemetry-api (>=1.1.0)"]
 
 [[package]]
 name = "google-cloud-trace"
-version = "1.15.0"
+version = "1.16.0"
 description = "Google Cloud Trace API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_cloud_trace-1.15.0-py2.py3-none-any.whl", hash = "sha256:5467e4a1d1d2f6c34dd3d08a8a57eb268aef4511bd884019fdb7e76fde475bba"},
-    {file = "google_cloud_trace-1.15.0.tar.gz", hash = "sha256:c20cbef5e52be8ca628a22febe65b8f45fdda685bb46ffca36f4ecea478ec4a3"},
+    {file = "google_cloud_trace-1.16.0-py2.py3-none-any.whl", hash = "sha256:a983d6f549e808393f2e99099598a715effeea4bd0b6f92c78ec4e8ab8f9b066"},
+    {file = "google_cloud_trace-1.16.0.tar.gz", hash = "sha256:9d27b163771572b561ebf753a5e4791f99d25e54edad4cb01217ab882f3df41a"},
 ]
 
 [package.dependencies]
@@ -1219,13 +1219,13 @@ requests = ["requests (>=2.18.0,<3.0.0dev)"]
 
 [[package]]
 name = "googleapis-common-protos"
-version = "1.66.0"
+version = "1.67.0"
 description = "Common protobufs used in Google APIs"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "googleapis_common_protos-1.66.0-py2.py3-none-any.whl", hash = "sha256:d7abcd75fabb2e0ec9f74466401f6c119a0b498e27370e9be4c94cb7e382b8ed"},
-    {file = "googleapis_common_protos-1.66.0.tar.gz", hash = "sha256:c3e7b33d15fdca5374cc0a7346dd92ffa847425cc4ea941d970f13680052ec8c"},
+    {file = "googleapis_common_protos-1.67.0-py2.py3-none-any.whl", hash = "sha256:579de760800d13616f51cf8be00c876f00a9f146d3e6510e19d1f4111758b741"},
+    {file = "googleapis_common_protos-1.67.0.tar.gz", hash = "sha256:21398025365f138be356d5923e9168737d94d46a72aefee4a6110a1f23463c86"},
 ]
 
 [package.dependencies]
@@ -2864,6 +2864,17 @@ files = [
 cli = ["click (>=5.0)"]
 
 [[package]]
+name = "python-http-client"
+version = "3.3.7"
+description = "HTTP REST client, simplified for Python"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "python_http_client-3.3.7-py3-none-any.whl", hash = "sha256:ad371d2bbedc6ea15c26179c6222a78bc9308d272435ddf1d5c84f068f249a36"},
+    {file = "python_http_client-3.3.7.tar.gz", hash = "sha256:bf841ee45262747e00dec7ee9971dfb8c7d83083f5713596488d67739170cea0"},
+]
+
+[[package]]
 name = "python-jose"
 version = "3.3.0"
 description = "JOSE implementation in Python"
@@ -3088,6 +3099,21 @@ files = [
 pyasn1 = ">=0.1.3"
 
 [[package]]
+name = "sendgrid"
+version = "6.11.0"
+description = "Twilio SendGrid library for Python"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+files = [
+    {file = "sendgrid-6.11.0-py3-none-any.whl", hash = "sha256:43ecf5bb742ea5850c7cfe68f5e7d9948772352306d4e83e119899959538b884"},
+    {file = "sendgrid-6.11.0.tar.gz", hash = "sha256:71424b2a97f5a034121ea3b2666c653ba0ed315982f0d57b7851c0c9503dc5ab"},
+]
+
+[package.dependencies]
+python-http-client = ">=3.2.1"
+starkbank-ecdsa = ">=2.0.1"
+
+[[package]]
 name = "shellingham"
 version = "1.5.4"
 description = "Tool to Detect Surrounding Shell"
@@ -3260,6 +3286,16 @@ Mako = ">=0.4.1"
 SQLAlchemy = ">=0.9"
 sqlparse = ">=0.1.15"
 Werkzeug = ">=0.9.6"
+
+[[package]]
+name = "starkbank-ecdsa"
+version = "2.2.0"
+description = "A lightweight and fast pure python ECDSA library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "starkbank-ecdsa-2.2.0.tar.gz", hash = "sha256:9399c3371b899d4a235b68a1ed7919d202fbf024bd2c863ae8ebdad343c2a63a"},
+]
 
 [[package]]
 name = "starlette"
@@ -3841,4 +3877,4 @@ sqlalchemy = ["asyncio"]
 [metadata]
 lock-version = "2.0"
 python-versions = "<4.0,>=3.11"
-content-hash = "e0789c29ebec14c35167319293fd32e846de1735c13087a357d77b0c264a47f7"
+content-hash = "895fa1f1433768322278806f595cd93946655e1c74ed0e4e8ae079f4893c00e3"
