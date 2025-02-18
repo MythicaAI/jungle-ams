@@ -63,6 +63,6 @@ ENV K8S_CLUSTER_NAME=localhost
 #ENV OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
 # Expose SQL connection using the environment variable
-ENV SQL_URL=postgresql://test:test@postgres:5432/upload_pipeline
+ENV SQL_URL="postgresql+asyncpg://test:test@postgres:5432/upload_pipeline"
 
 CMD ["sh", "./docker-entrypoint.sh"]

@@ -1,22 +1,28 @@
+import asyncio
+import importlib
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlmodel import SQLModel
 
 from config import app_config
-# import the SQLModels
-from sqlmodel import SQLModel
-from db.schema.profiles import *
-from db.schema.events import *
-from db.schema.media import *
-from db.schema.assets import *
-from db.schema.graph import *
-from db.schema.jobs import *
-from db.schema.streaming import *
-from db.schema.tags import *
 
-LOCAL_DB = "postgresql://test:test@localhost:5432/upload_pipeline"
+# import the SQLModels, imported explicitly to prevent auto-cleanup
+# by import optimization tooling
+# import the SQLModels
+
+importlib.import_module("db.schema.profiles")
+importlib.import_module("db.schema.events")
+importlib.import_module("db.schema.media")
+importlib.import_module("db.schema.assets")
+importlib.import_module("db.schema.graph")
+importlib.import_module("db.schema.jobs")
+importlib.import_module("db.schema.streaming")
+importlib.import_module("db.schema.tags")
+
+LOCAL_DB = "postgresql+asyncpg://test:test@localhost:5432/upload_pipeline"
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -59,7 +65,18 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
+def run_migrations_online_sync(connection):
+    """Synchronous callback to run migrations inside the async connection"""
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
@@ -68,24 +85,22 @@ def run_migrations_online() -> None:
     """
     # Update the config with the environment
     config_dict = config.get_section(config.config_ini_section, {})
-    config_dict["sqlalchemy.url"] = app_config().sql_url.strip()
-    connectable = engine_from_config(
+    sql_url = app_config().sql_url.strip()
+    print(f'running online migration on {sql_url}')
+    config_dict["sqlalchemy.url"] = sql_url
+    connectable = AsyncEngine(engine_from_config(
         config_dict,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-    )
+        future=True
+    ))
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    async with connectable.connect() as connection:
+        await connection.run_sync(run_migrations_online_sync)
+    await connectable.dispose()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())

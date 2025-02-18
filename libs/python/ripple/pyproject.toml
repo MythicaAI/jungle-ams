@@ -15,36 +15,35 @@ keywords = ["game assets", "file management", "streaming", "jobs"]
 
 [tool.poetry.dependencies]
 python = "<4.0,>=3.10"
-pydantic-settings = "2.6.1"
+pydantic-settings = "^2.7.1"
 typing-extensions = "^4.12.2"
-pydantic = "2.9.2"
-python-json-logger = "2.0.7"
-base58 = "2.1.1"
-tzdata = "2024.2"
-cryptography = "43.0.3"
-requests = ">=2.14.0"
-aiohttp = "3.10.10"
+pydantic = "^2.10.6"
+python-json-logger = "^3.2.1"
+base58 = "^2.1.1"
+tzdata = "^2025.1"
+cryptography = "^44.0.1"
+requests = "^2.32.3"
+aiohttp = "^3.11.12"
 nats-py = "^2.9.0"
 cryptid = { path = "../cryptid" }
-pyjwt = { version = "2.9.0",  extras = ["crypto"] }
-fastapi = "^0.115.6"
+pyjwt = "2.9.0"
+fastapi = "^0.115.8"
 uvicorn = "^0.34.0"
-opentelemetry-api = "^1.27.0"
-opentelemetry-sdk = "^1.27.0"
-opentelemetry-exporter-otlp = "^1.27.0"
+opentelemetry-api = "^1.30.0"
+opentelemetry-sdk = "^1.30.0"
+opentelemetry-exporter-otlp = "^1.30.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "8.2"
-flake8 = "7.1.0"
-munch = "4.0.0"
-pylint = "3.2.3"
-pytest-cov = "^5.0.0"
-pytest-timeout = "2.3.1"
+pytest = "^8.3.4"
+flake8 = "^7.1.2"
+munch = "^4.0.0"
+pylint = "^3.3.4"
+pytest-cov = "^6.0.0"
+pytest-timeout = "^2.3.1"
 cryptid = { path = "../cryptid", develop = true }
-
-# Add development dependencies here
-pytest-asyncio = "^0.25.0"
+pytest-asyncio = "^0.25.3"
 httpx = "^0.28.1"
+
 [tool.poetry.scripts]
 start = "main:start"
 

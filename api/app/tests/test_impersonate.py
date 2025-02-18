@@ -6,22 +6,25 @@ Test APIs that support impersonation
 
 from http import HTTPStatus
 
+import pytest
+from munch import munchify
+
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code, make_random_content, random_str
-from munch import munchify
+
 
 # files / store
 # files / get by content hash
 # assets / create version
-
-def test_impersonate(api_base, client, create_profile, uploader):
+@pytest.mark.asyncio
+async def test_impersonate(api_base, client, create_profile, uploader):
     """
     Profile impersonation is enabled by providing a privileged profile with validated email and
     the Impersonate-Profile-Id header to the key based session API.
     """
-    test_profile = create_profile()
-    admin_profile = create_profile(
+    test_profile = await create_profile()
+    admin_profile = await create_profile(
         email='test@mythica.ai',
         validate_email=True,
         impersonate_profile_id=test_profile.profile.profile_id)
@@ -72,5 +75,3 @@ def test_impersonate(api_base, client, create_profile, uploader):
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     assert o is not None
-
-

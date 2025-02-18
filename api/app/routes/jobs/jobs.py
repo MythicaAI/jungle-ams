@@ -5,6 +5,15 @@ from http import HTTPStatus
 from typing import Any, Optional
 from uuid import uuid4
 
+from fastapi import APIRouter, Depends, HTTPException
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
+from opentelemetry.trace.status import Status, StatusCode
+from pydantic import BaseModel
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import col, delete as sql_delete, insert, select, text, update
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from assets import repo
 from assets.repo import AssetVersionResult
 from config import app_config
@@ -21,15 +30,11 @@ from cryptid.cryptid import (
     profile_seq_to_id,
 )
 from cryptid.location import location
-from db.connection import get_session
+from db.connection import get_db_session
 from db.schema.assets import AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
-from fastapi import APIRouter, Depends, HTTPException
-from opentelemetry import trace
-from opentelemetry.trace.status import Status, StatusCode
-from pydantic import BaseModel
 from ripple.auth import roles
 from ripple.auth.authorization import Scope, validate_roles
 from ripple.automation.adapters import NatsAdapter
@@ -41,12 +46,7 @@ from ripple.models.sessions import SessionProfile
 from ripple.models.streaming import JobDefinition as JobDefinitionRef
 from ripple.runtime.params import ParamError, repair_parameters, validate_params
 from routes.authorization import maybe_session_profile, session_profile
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, col
-from sqlmodel import delete as sql_delete
-from sqlmodel import insert, select, text, update
 from telemetry_config import get_telemetry_headers
-from opentelemetry.context import get_current as get_current_telemetry_context
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +95,8 @@ class JobResultModel(JobResultRequest):
 
 
 class JobResultResponse(BaseModel):
+    job_def_id: Optional[str]
+    created: datetime
     completed: bool
     results: list[JobResultModel]
 
@@ -111,59 +113,60 @@ def disable_nats(context_str):
 
 @router.post('/definitions', status_code=HTTPStatus.CREATED)
 async def define_new(
-        request: JobDefinitionRequest,
-        profile: SessionProfile = Depends(maybe_session_profile)) -> JobDefinitionResponse:
+        req_data: JobDefinitionRequest,
+        profile: SessionProfile = Depends(maybe_session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> JobDefinitionResponse:
     """Create a new job definition"""
-    with get_session() as session:
-        # Create the job definition
-        request_model = request.model_dump()
-        if profile:
-            request_model["owner_seq"] = profile.profile_seq
-        job_def = JobDefinition(**request_model)
-        session.add(job_def)
-        session.commit()
-        session.refresh(job_def)
-        job_def_seq = job_def.job_def_seq
+    # Create the job definition
+    req_model = req_data.model_dump()
+    if profile:
+        req_model["owner_seq"] = profile.profile_seq
+    job_def = JobDefinition(**req_model)
+    db_session.add(job_def)
+    await db_session.commit()
+    await db_session.refresh(job_def)
+    job_def_seq = job_def.job_def_seq
 
-        # Create the asset version link
-        if request.source:
-            asset_version_entry_point = AssetVersionEntryPoint(
-                asset_seq=asset_id_to_seq(request.source.asset_id),
-                major=request.source.major,
-                minor=request.source.minor,
-                patch=request.source.patch,
-                src_file_seq=file_id_to_seq(request.source.file_id),
-                entry_point=request.source.entry_point,
-                job_def_seq=job_def_seq
-            )
-            session.merge(asset_version_entry_point)
-            session.commit()
+    # Create the asset version link
+    if req_data.source:
+        asset_version_entry_point = AssetVersionEntryPoint(
+            asset_seq=asset_id_to_seq(req_data.source.asset_id),
+            major=req_data.source.major,
+            minor=req_data.source.minor,
+            patch=req_data.source.patch,
+            src_file_seq=file_id_to_seq(req_data.source.file_id),
+            entry_point=req_data.source.entry_point,
+            job_def_seq=job_def_seq
+        )
+        await db_session.merge(asset_version_entry_point)
+        await db_session.commit()
 
-        return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
+    return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
 
 
 @router.get('/definitions')
-async def list_definitions() -> list[JobDefinitionModel]:
+async def list_definitions(db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:
     """List existing job definitions"""
-    with get_session() as session:
-        job_defs = session.exec(select(JobDefinition)).all()
-        return [JobDefinitionModel(
-            job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
-            **job_def.model_dump())
-            for job_def in job_defs
-        ]
+    job_defs = (await db_session.exec(select(JobDefinition))).all()
+    return [JobDefinitionModel(
+        job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+        owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None,
+        **job_def.model_dump())
+        for job_def in job_defs
+    ]
 
 
-def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[JobDefinitionModel]:
-    results = session.exec(
+async def resolve_job_definitions(
+        db_session: AsyncSession,
+        avr: AssetVersionResult) -> list[JobDefinitionModel]:
+    results = (await db_session.exec(
         select(AssetVersionEntryPoint, JobDefinition)
         .outerjoin(JobDefinition, AssetVersionEntryPoint.job_def_seq == JobDefinition.job_def_seq)
         .where(AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id))
         .where(AssetVersionEntryPoint.major == avr.version[0])
         .where(AssetVersionEntryPoint.minor == avr.version[1])
         .where(AssetVersionEntryPoint.patch == avr.version[2])
-    ).all()
+    )).all()
     if not results:
         return []
 
@@ -179,7 +182,7 @@ def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[J
         )
         job_defs.append(JobDefinitionModel(
             job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
+            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None,
             source=source,
             **job_def.model_dump()
         ))
@@ -188,38 +191,44 @@ def resolve_job_definitions(session: Session, avr: AssetVersionResult) -> list[J
 
 
 @router.get('/definitions/by_asset/{asset_id}')
-async def by_latest_asset(asset_id: str) -> list[JobDefinitionModel]:
-    with get_session() as session:
-        asset_seq = asset_id_to_seq(asset_id)
-        latest_version = repo.latest_version(session, asset_seq)
-        if latest_version is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
-        return resolve_job_definitions(session, latest_version)
+async def by_latest_asset(
+        asset_id: str,
+        db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:
+    asset_seq = asset_id_to_seq(asset_id)
+    latest_version = await repo.latest_version(db_session, asset_seq)
+    if latest_version is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id} not found")
+    return await resolve_job_definitions(db_session, latest_version)
 
 
 @router.get('/definitions/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
-async def by_asset_version(asset_id: str, major: int, minor: int, patch: int) -> list[JobDefinitionModel]:
-    with get_session() as session:
-        asset_seq = asset_id_to_seq(asset_id)
-        asset_version = repo.get_version(session, asset_seq, major, minor, patch)
-        if asset_version is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
-        return resolve_job_definitions(session, asset_version)
+async def by_asset_version(
+        asset_id: str,
+        major: int,
+        minor: int,
+        patch: int,
+        db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:
+    asset_seq = asset_id_to_seq(asset_id)
+    asset_version = await repo.get_version(db_session, asset_seq, major, minor, patch)
+    if asset_version is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
+    return await resolve_job_definitions(db_session, asset_version)
 
 
 @router.get('/definitions/{job_def_id}')
-async def by_id(job_def_id: str) -> JobDefinitionModel:
+async def by_id(
+        job_def_id: str,
+        db_session: AsyncSession = Depends(get_db_session)) -> JobDefinitionModel:
     """Get job definition by id"""
-    with get_session() as session:
-        job_def = session.exec(select(JobDefinition).where(
-            JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id))).one_or_none()
-        if job_def is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
-        return JobDefinitionModel(
-            job_def_id=job_def_id, 
-            owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None, 
-            **job_def.model_dump()
-        )
+    job_def = (await db_session.exec(select(JobDefinition).where(
+        JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id)))).one_or_none()
+    if job_def is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+    return JobDefinitionModel(
+        job_def_id=job_def_id,
+        owner_id=profile_seq_to_id(job_def.owner_seq) if job_def.owner_seq is not None else None,
+        **job_def.model_dump()
+    )
 
 
 @router.get('/def_from_file/{file_id}')
@@ -247,8 +256,8 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
     return correlation
 
 
-def add_job_requested_event(
-        session: Session,
+async def add_job_requested_event(
+        db_session: AsyncSession,
         job_seq: int,
         job_def,
         params: dict,
@@ -272,7 +281,7 @@ def add_job_requested_event(
         owner_seq=profile_seq,
         created_in=loc,
         affinity=loc)
-    event_result = session.exec(stmt)
+    event_result = await db_session.exec(stmt)
     log.info("job requested for %s by %s -> %s", job_def.job_type, profile_seq, event_result)
     return event_result
 
@@ -305,60 +314,62 @@ async def add_job_nats_event(
 
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
-        request: JobRequest,
-        profile: SessionProfile = Depends(session_profile)) -> JobResponse:
+        req_data: JobRequest,
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> JobResponse:
     """Request a job from an existing definition"""
     span = trace.get_current_span(context=get_current_telemetry_context())
-    with get_session() as session:
-        job_def = session.exec(select(JobDefinition).where(
-            JobDefinition.job_def_seq == job_def_id_to_seq(request.job_def_id))).one_or_none()
-        if job_def is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+    job_def = (await db_session.exec(select(JobDefinition).where(
+        JobDefinition.job_def_seq == job_def_id_to_seq(req_data.job_def_id)))).one_or_none()
+    if job_def is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
-        parameter_spec = ParameterSpec(**job_def.params_schema)
-        repair_parameters(parameter_spec, request.params)
-        # validate parameters, report back the parameter error that caused the problem
-        try:
-            validate_params(parameter_spec, request.params)
-        except ParamError as e:
-            raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
+    parameter_spec = ParameterSpec(**job_def.params_schema)
+    repair_parameters(parameter_spec, req_data.params)
+    # validate parameters, report back the parameter error that caused the problem
+    try:
+        validate_params(parameter_spec, req_data.params)
+    except ParamError as e:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
 
-        job = session.exec(insert(Job).values(
-            job_def_seq=job_def_id_to_seq(request.job_def_id),
-            owner_seq=profile.profile_seq,
-            params=request.params.model_dump()))
-        job_seq = job.inserted_primary_key[0]
+    job_result = await db_session.exec(insert(Job).values(
+        job_def_seq=job_def_id_to_seq(req_data.job_def_id),
+        owner_seq=profile.profile_seq,
+        params=req_data.params.model_dump()))
+    job_seq = job_result.inserted_primary_key[0]
 
-        span.set_attribute("job.id", job_seq_to_id(job_seq))
-        span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
+    span.set_attribute("job.id", job_seq_to_id(job_seq))
+    span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
 
-        event_result = add_job_requested_event(
-            session,
-            job_seq,
-            job_def,
-            request.params.model_dump(),
-            profile.profile_seq,
-            profile.auth_token)
-        event_id = event_seq_to_id(event_result.inserted_primary_key[0])
-        session.commit()
+    event_result = await add_job_requested_event(
+        db_session,
+        job_seq,
+        job_def,
+        req_data.params.model_dump(),
+        profile.profile_seq,
+        profile.auth_token)
+    event_id = event_seq_to_id(event_result.inserted_primary_key[0])
+    await db_session.commit()
 
-        await add_job_nats_event(
-            job_seq,
-            profile.auth_token,
-            job_def.job_type,
-            request.params)
+    await add_job_nats_event(
+        job_seq,
+        profile.auth_token,
+        job_def.job_type,
+        req_data.params)
 
-        return JobResponse(
-            job_id=job_seq_to_id(job_seq),
-            event_id=event_id,
-            job_def_id=request.job_def_id)
+    return JobResponse(
+        job_id=job_seq_to_id(job_seq),
+        event_id=event_id,
+        job_def_id=req_data.job_def_id)
 
 
-def job_result_insert(session: Session, job_seq: int, request: JobResultRequest):
+async def job_result_insert(
+        db_session: AsyncSession,
+        job_seq: int,
+        req_data: JobResultRequest):
     """Generate the job result insert with fallback for databases without sequences
     support on composite primary keys"""
-    from db.connection import engine
-
+    engine = db_session.get_bind()
     # fallback for composite primary key auto increment in SQLite
     # see the db connection code for the definition of this fallback
     requires_app_sequences = {'sqlite'}
@@ -370,133 +381,138 @@ def job_result_insert(session: Session, job_seq: int, request: JobResultRequest)
                     ON CONFLICT(name) DO UPDATE SET seq = seq + 1
                     RETURNING seq;
                 """)
-        next_job_result_seq = session.exec(
+        next_job_result_seq = (await db_session.exec(
             statement=upsert_query,
-            params={"name": "job_result_seq_seq"}).scalar()
+            params={"name": "job_result_seq_seq"})).scalar()
 
-        return session.exec(insert(JobResult).values(
+        return await db_session.exec(insert(JobResult).values(
             job_seq=job_seq,
             job_result_seq=next_job_result_seq,
-            created_in=request.created_in,
-            result_data=request.result_data))
+            created_in=req_data.created_in,
+            result_data=req_data.result_data))
     else:
-        return session.exec(insert(JobResult).values(
+        return await db_session.exec(insert(JobResult).values(
             job_seq=job_seq,
-            created_in=request.created_in,
-            result_data=request.result_data))
+            created_in=req_data.created_in,
+            result_data=req_data.result_data))
 
 
 @router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
 async def create_result(
         job_id: str,
-        request: JobResultRequest) -> JobResultCreateResponse:
+        req_data: JobResultRequest,
+        db_session: AsyncSession = Depends(get_db_session)) -> JobResultCreateResponse:
     """Add a new job result"""
     span = trace.get_current_span(context=get_current_telemetry_context())
     span.set_attribute("job.id", job_id)
-    with get_session() as session:
-        job_seq = job_id_to_seq(job_id)
-        job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
-        if job is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
 
-        job_result = job_result_insert(session, job_seq, request)
-        if request.result_data:
-            span.set_attributes(request.result_data)
-        span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
-        job_result_seq = job_result.inserted_primary_key[0]
-        session.commit()
-        return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
+    job_seq = job_id_to_seq(job_id)
+    job = (await db_session.exec(select(Job).where(Job.job_seq == job_seq))).one_or_none()
+    if job is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
+
+    job_result = await job_result_insert(db_session, job_seq, req_data)
+    if req_data.result_data:
+        span.set_attributes(req_data.result_data)
+    span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
+    job_result_seq = job_result.inserted_primary_key[0]
+    await db_session.commit()
+    return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
 
 
 @router.get('/results/{job_id}')
 async def list_results(
         job_id: str,
-        profile: Profile = Depends(session_profile)) -> JobResultResponse:
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> JobResultResponse:
     """List results for a job"""
-    with get_session() as session:
-        job_seq = job_id_to_seq(job_id)
-        job = session.exec(select(Job).where(Job.job_seq == job_seq)).one_or_none()
-        if job is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
-        if job.owner_seq != profile.profile_seq:
-            raise HTTPException(HTTPStatus.FORBIDDEN, detail="job_id not owned by profile")
+    job_seq = job_id_to_seq(job_id)
+    job = (await db_session.exec(select(Job).where(Job.job_seq == job_seq))).one_or_none()
+    if job is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found")
+    if job.owner_seq != profile.profile_seq:
+        raise HTTPException(HTTPStatus.FORBIDDEN, detail="job_id not owned by profile")
 
-        job_results = session.exec(select(JobResult)
-                                   .where(JobResult.job_seq == job_seq)).all()
-        results = [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_result_seq),
-                                  **job_result.model_dump())
-                   for job_result in job_results]
-        return JobResultResponse(completed=(job.completed is not None), results=results)
+    job_results = (await db_session.exec(select(JobResult)
+                                         .where(JobResult.job_seq == job_seq))).all()
+    results = [JobResultModel(job_result_id=job_result_seq_to_id(job_result.job_result_seq),
+                              **job_result.model_dump())
+               for job_result in job_results]
+    return JobResultResponse(
+        created=job.created,
+        completed=(job.completed is not None),
+        job_def_id=job_def_seq_to_id(job.job_def_seq) if job.job_def_seq else None,
+        results=results)
 
 
 @router.post('/complete/{job_id}')
 async def set_complete(
-        job_id: str):
+        job_id: str,
+        db_session: AsyncSession = Depends(get_db_session)):
     """Mark a job as complete"""
     span = trace.get_current_span(context=get_current_telemetry_context())
     span.set_attribute("job.id", job_id)
-    with get_session() as session:
-        job_result = session.exec(update(Job)
-                                    .where(Job.job_seq == job_id_to_seq(job_id))
-                                    .where(Job.completed == None)
-                                    .values(completed=sql_now()))
-        if job_result.rowcount == 0:
-            log.error("Job %s not found or already completed", job_id)
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
+    job_result = await db_session.exec(update(Job)
+                                       .where(Job.job_seq == job_id_to_seq(job_id))
+                                       .where(Job.completed == None)
+                                       .values(completed=sql_now()))
+    if job_result.rowcount == 0:
+        log.error("Job %s not found or already completed", job_id)
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_id not found or already completed")
 
-        span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
-        span.set_status(Status(StatusCode.OK))
-        session.commit()
+    span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
+    span.set_status(Status(StatusCode.OK))
+    await db_session.commit()
 
 
 @router.delete('/definitions/delete_canary_jobs_def')
-async def delete_canary_jobs_def(profile: SessionProfile = Depends(session_profile)):
+async def delete_canary_jobs_def(
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)):
     """Delete profile's job_defs"""
+    job_defs_to_delete: list[JobDefinition] = (await db_session.exec(
+        select(JobDefinition)
+        .where(JobDefinition.job_type == "houdini::/mythica/generate_mesh")
+        .where(JobDefinition.name == "Generate test_scale_input")
+        .where(JobDefinition.description == "test_scale_input")
+    )).all()
 
-    with get_session() as session:
-        job_defs_to_delete: list[JobDefinition] = session.exec(
-            select(JobDefinition)
-            .where(JobDefinition.job_type == "houdini::/mythica/generate_mesh")
-            .where(JobDefinition.name == "Generate test_scale_input")
-            .where(JobDefinition.description == "test_scale_input")
-        ).all()
+    if not job_defs_to_delete:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="No matching JobDefinition entries found")
 
-        if not job_defs_to_delete:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail="No matching JobDefinition entries found")
-
-        job_def_seqs_delete = []
-        for job_def in job_defs_to_delete:
-            scope = Scope(
-                profile=profile,
-                job_def=JobDefinitionRef(
-                    job_def_id=job_def_seq_to_id(job_def.job_def_seq),
-                    job_type=job_def.job_type,
-                    name=job_def.name,
-                    description=job_def.description,
-                    parameter_spec=job_def.params_schema,
-                    owner_id=profile_seq_to_id(job_def.owner_seq),
-                )
+    job_def_seqs_delete = []
+    for job_def in job_defs_to_delete:
+        scope = Scope(
+            profile=profile,
+            job_def=JobDefinitionRef(
+                job_def_id=job_def_seq_to_id(job_def.job_def_seq),
+                job_type=job_def.job_type,
+                name=job_def.name,
+                description=job_def.description,
+                parameter_spec=job_def.params_schema,
+                owner_id=profile_seq_to_id(job_def.owner_seq),
             )
-            validate_roles(role=roles.job_def_all, auth_roles=profile.auth_roles, scope=scope, is_canary=True)
-            job_def_seqs_delete.append(job_def.job_def_seq)
+        )
+        validate_roles(role=roles.job_def_all, auth_roles=profile.auth_roles, scope=scope, is_canary=True)
+        job_def_seqs_delete.append(job_def.job_def_seq)
 
-        try:
-            session.exec(
-                update(Job)
-                .where(col(Job.job_def_seq).in_(job_def_seqs_delete))  # pylint: disable=no-member
-                .values(job_def_seq=None)
-            )
-            session.exec(
-                sql_delete(JobDefinition)
-                .where(col(JobDefinition.job_def_seq).in_(job_def_seqs_delete))  # pylint: disable=no-member
-            )
-            session.commit()
-            log.info("Deleted JobDefinitions, ids:%s", job_def_seqs_delete)
-        except Exception as ex:
-            raise HTTPException(
-                HTTPStatus.INTERNAL_SERVER_ERROR, 
-                detail=f"Failed to delete JobDefinition entries: {str(ex)}"
-            ) from ex
+    try:
+        await db_session.exec(
+            update(Job)
+            .where(col(Job.job_def_seq).in_(job_def_seqs_delete))  # pylint: disable=no-member
+            .values(job_def_seq=None)
+        )
+        await db_session.exec(
+            sql_delete(JobDefinition)
+            .where(col(JobDefinition.job_def_seq).in_(job_def_seqs_delete))  # pylint: disable=no-member
+        )
+        await db_session.commit()
+        log.info("Deleted JobDefinitions, ids:%s", job_def_seqs_delete)
+    except Exception as ex:
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete JobDefinition entries: {str(ex)}"
+        ) from ex
     return {
         "message": f"Successfully deleted JobDefinition for profile:{profile.profile_id} and nullified references in Jobs"
     }

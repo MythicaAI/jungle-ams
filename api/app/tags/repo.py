@@ -1,34 +1,30 @@
 """Utils for models types"""
-
-from functools import partial
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional, Union
 
-from cryptid.cryptid import file_id_to_seq, file_seq_to_id
 from fastapi import HTTPException
 from sqlalchemy import Select, desc
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 import assets.repo as assets_repo
-
 from content.locate_content import locate_content_by_seq
+from cryptid.cryptid import file_id_to_seq, file_seq_to_id
 from db.schema.assets import Asset, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.file_uploads import enrich_files
 from tags.tag_models import TagFileReference, TagType
 
-
 THUMBNAILS_CONTENT_KEY = 'thumbnails'
 
 
-def process_type_model_result(
-    tag_type: TagType,
-    session: Session,
-    type_model_query: Optional[Select],
-    profile: Optional[Profile],
-    limit: int,
-    offset: int,
+async def process_type_model_result(
+        tag_type: TagType,
+        db_session: AsyncSession,
+        type_model_query: Optional[Select],
+        profile: Optional[Profile],
+        limit: int,
+        offset: int,
 ) -> Callable:
     "Dynamically return the type_model response"
     if tag_type == TagType.asset:
@@ -44,39 +40,39 @@ def process_type_model_result(
             .limit(limit)
             .offset(offset)
         )
-        results = session.exec(query)
-        return assets_repo.process_join_results(session, results)
+        results = await db_session.exec(query)
+        return await assets_repo.process_join_results(db_session, results)
     elif tag_type == TagType.file:
 
-        files = session.exec(type_model_query.where(FileContent.deleted == None)).all()
-        return enrich_files(session, files, profile)
+        files = (await db_session.exec(type_model_query.where(FileContent.deleted == None))).all()
+        return await enrich_files(db_session, files, profile)
 
 
-def resolve_contents_as_json(
-    session: Session, in_files_categories: dict[str, list[TagFileReference | str]]
-) -> str:
+async def resolve_contents_as_json(
+        db_session: AsyncSession, in_files_categories: dict[str, list[TagFileReference | str]]
+) -> dict[str, list[dict]]:
     """Convert any partial content references into fully resolved references"""
     contents = {}
 
     # resolve all file content types
     for category, content_list in in_files_categories.items():
-        contents[category] = resolve_content_list(session, category, content_list)
+        contents[category] = await resolve_content_list(db_session, category, content_list)
 
     return contents
 
 
-def resolve_content_list(
-    session: Session, category: str, in_content_list: list[Union[str, Dict[str, Any]]]
+async def resolve_content_list(
+        db_session: AsyncSession, category: str, in_content_list: list[Union[str, Dict[str, Any]]]
 ):
     """For each category return the fully resolved version of list of items in the category"""
     if category in THUMBNAILS_CONTENT_KEY:
-        return list(map(partial(resolve_tag_file_reference, session), in_content_list))
+        return [await resolve_tag_file_reference(db_session, file_ref) for file_ref in in_content_list]
     elif isinstance(category, str) and isinstance(in_content_list, str):
         return in_content_list
 
 
-def resolve_tag_file_reference(
-    session: Session, file_reference: Union[str, TagFileReference]
+async def resolve_tag_file_reference(
+        db_session: AsyncSession, file_reference: Union[str, TagFileReference]
 ) -> dict:
     file_id = file_reference.file_id
 
@@ -85,7 +81,7 @@ def resolve_tag_file_reference(
             HTTPStatus.BAD_REQUEST,
             f"file_id required on {str(file_reference)}",
         )
-    db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
+    db_file = await locate_content_by_seq(db_session, file_id_to_seq(file_id))
     if db_file is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"file '{file_id}' not found")
 

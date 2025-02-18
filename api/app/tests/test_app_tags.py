@@ -1,13 +1,14 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 import hashlib
+import itertools
 from http import HTTPStatus
 
-import itertools
-from cryptid.cryptid import file_seq_to_id
+import pytest
 from munch import munchify
-from ripple.auth import roles
 
+from cryptid.cryptid import file_seq_to_id
+from ripple.auth import roles
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
 from tests.shared_test import (
@@ -48,12 +49,13 @@ def unauthorized_delete_type_tag(
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
 
-def test_tags_operations(api_base, client, create_profile, request_to_upload_files):
-    simple_profile = create_profile(email="test@test.ai", validate_email=True)
+@pytest.mark.asyncio
+async def test_tags_operations(api_base, client, create_profile, request_to_upload_files):
+    simple_profile = await create_profile(email="test@test.ai", validate_email=True)
     simple_headers = simple_profile.authorization_header()
     simple_profile = simple_profile.profile
 
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
 
     # create org to contain assets
@@ -212,12 +214,13 @@ def test_tags_operations(api_base, client, create_profile, request_to_upload_fil
     delete_all_created_type_tags(top_asset_ids, tag_obj.tag_id)
 
 
-def test_tag_asset_operations(
+@pytest.mark.asyncio
+async def test_tag_asset_operations(
     api_base, client, create_profile, request_to_upload_files
 ):
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
-    not_allowed_test_profile = create_profile(
+    not_allowed_test_profile = await create_profile(
         email="test@somewhere.com", validate_email=True
     )
     not_allowed_headers = not_allowed_test_profile.authorization_header()
@@ -442,8 +445,9 @@ def test_tag_asset_operations(
     delete_all_created_tags(tag__type_ids[0] for tag__type_ids in created_tag__type_ids)
 
 
-def test_wrong_type_model(api_base, client, create_profile):
-    test_profile = create_profile(email="test@mythica.ai")
+@pytest.mark.asyncio
+async def test_wrong_type_model(api_base, client, create_profile):
+    test_profile = await create_profile(email="test@mythica.ai")
     headers = test_profile.authorization_header()
     r = client.get(
         f"{api_base}/tags/types/{random_str(23)}",
@@ -456,12 +460,13 @@ def test_wrong_type_model(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.UNPROCESSABLE_ENTITY)
 
 
-def test_tag_files_operations(
+@pytest.mark.asyncio
+async def test_tag_files_operations(
     api_base, client, create_profile, request_to_upload_files
 ):
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
-    not_allowed_profile = create_profile(email="user@somewhere.com")
+    not_allowed_profile = await create_profile(email="user@somewhere.com")
     not_allowed_headers = not_allowed_profile.authorization_header()
 
     top_limit = 5

@@ -5,7 +5,8 @@ from http import HTTPStatus
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from sqlmodel import Session, select, update
+from sqlmodel import select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import profile_seq_to_id, reader_seq_to_id
 from db.connection import TZ
@@ -41,34 +42,40 @@ def resolve_results(results) -> list[ReaderResponse]:
     return resolved
 
 
-def select_reader(session: Session, reader_seq: int, profile_seq: int) -> Reader:
+async def select_reader(db_session: AsyncSession, reader_seq: int, profile_seq: int) -> Reader:
     """Get a single owned reader"""
-    reader = session.exec(select(Reader)
-                          .where(Reader.reader_seq == reader_seq)
-                          .where(Reader.owner_seq == profile_seq)).one_or_none()
+    reader = (await db_session.exec(select(Reader)
+                                    .where(Reader.reader_seq == reader_seq)
+                                    .where(Reader.owner_seq == profile_seq))).one_or_none()
     if reader is None:
         raise HTTPException(
             HTTPStatus.NOT_FOUND,
             f"failed to find reader {reader_seq_to_id(reader_seq)}")
     return reader
 
-def select_profile_readers(session: Session, profile_seq: int) -> list[Reader]:
+
+async def select_profile_readers(
+        db_session: AsyncSession,
+        profile_seq: int) -> list[Reader]:
     """Get a single owned reader"""
-    readers = session.exec(select(Reader)
-                          .where(Reader.owner_seq == profile_seq).order_by("reader_seq")).all()
+    readers = (await db_session.exec(select(Reader)
+                                     .where(Reader.owner_seq == profile_seq).order_by("reader_seq"))).all()
     return readers
 
 
-def update_reader_index(session: Session, reader_seq: int, index: str):
+async def update_reader_index(
+        db_session: AsyncSession,
+        reader_seq: int,
+        index: str):
     """Update the reader with the last read index for seekable streams"""
-    r = session.exec(update(Reader)
-                     .values(position=index)
-                     .where(Reader.reader_seq == reader_seq))
+    r = await db_session.exec(update(Reader)
+                              .values(position=index)
+                              .where(Reader.reader_seq == reader_seq))
     if r.rowcount == 0:
         log.error("failed to update reader index for reader_seq %s", reader_seq)
     else:
         log.debug("reader_seq %s position moved to index %s", reader_seq, index)
-    session.commit()
+    await db_session.commit()
 
 
 def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:

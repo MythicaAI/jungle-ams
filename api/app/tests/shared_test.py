@@ -5,12 +5,11 @@ import json
 import logging
 import secrets
 import string
+from http import HTTPStatus
+
 from pydantic import BaseModel
 
-from cryptid.cryptid import profile_id_to_seq
-from db.connection import get_session
 from profiles.responses import ProfileResponse
-from profiles.start_session import start_session
 
 log = logging.getLogger(__name__)
 
@@ -68,16 +67,10 @@ def make_random_content(file_ext: str) -> FileContentTestObj:
         size=len(test_content))
 
 
-def refresh_auth_token(test_profile):
+def refresh_auth_token(client, test_profile):
     """Refresh the auth token after modifying the organization privileges"""
-    with get_session() as db_session:
-        profile_id = test_profile.profile.profile_id
-        session_response = start_session(
-            db_session,
-            profile_seq=profile_id_to_seq(profile_id),
-            location="test-case",
-            impersonate_profile_id=None)
-        assert session_response.profile.profile_id == profile_id
-        assert len(session_response.token) > 0
-        auth_token = session_response.token
-        return auth_token
+    profile_id = test_profile.profile.profile_id
+    url = f"/v1/test/start_session/{profile_id}"
+    r = client.get(url)
+    assert_status_code(r, HTTPStatus.OK)
+    return r.json()['token']

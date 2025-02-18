@@ -7,13 +7,12 @@ from itertools import cycle
 from string import ascii_lowercase
 from uuid import uuid4
 
+import pytest
 from munch import munchify
 from pydantic import TypeAdapter
-from sqlmodel import insert
+from starlette.testclient import TestClient
 
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
-from db.connection import get_session
-from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
 from ripple.funcs import Boundary
 from ripple.models.streaming import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
@@ -41,25 +40,24 @@ def generate_stream_items(item_list_length: int):
     return [next(gen_cycle)() for i in range(item_list_length)]
 
 
-def generate_events(profile: Profile, event_count: int):
+def generate_events(api_base: str, client: TestClient, profile: Profile, event_count: int):
     """Generate some random event data in the database"""
 
     def generate_test_job_data():
         """Build some random event payload"""
         return {'info': ''.join([random.choice(ascii_lowercase) for _ in range(test_event_info_len)])}
 
-    db_events = [{
+    events_json = [{
         'event_type': 'test',
         'job_data': generate_test_job_data(),
         'owner_seq': profile_id_to_seq(profile.profile_id)}
         for _ in range(event_count)]
-    with get_session() as session:
-        for e in db_events:
-            session.exec(insert(DbEvent).values(e))
-        session.commit()
+    r = client.post(f"{api_base}/test/events", json=events_json)
+    assert_status_code(r, HTTPStatus.CREATED)
 
 
-def test_source_fixture(use_test_source_fixture):
+@pytest.mark.asyncio
+async def test_source_fixture(use_test_source_fixture):
     progress = Progress(
         item_type='progress',
         correlation=str(uuid4()),
@@ -68,16 +66,17 @@ def test_source_fixture(use_test_source_fixture):
         progress=42)
     use_test_source_fixture['foo'] = [progress]
     source = create_source('test', {'name': 'foo', 'max_items': 1})
-    items = source(Boundary())
+    items = [item async for item in source(Boundary())]
     assert len(items) == 1
     assert type(items[0]) == Progress
     assert items[0].progress == 42
-    items = source(Boundary(position="1"))
+    items = [item async for item in source(Boundary(position="1"))]
     assert len(items) == 0
 
 
-def test_operations(api_base, client, create_profile, use_test_source_fixture):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_operations(api_base, client, create_profile, use_test_source_fixture):
+    test_profile = await create_profile()
     auth_header = test_profile.authorization_header()
 
     # enumerate readers, empty result
@@ -149,13 +148,14 @@ def test_operations(api_base, client, create_profile, use_test_source_fixture):
     assert o.reader_id not in reader_ids
 
 
-def test_events(api_base, client, create_profile):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_events(api_base, client, create_profile):
+    test_profile = await create_profile()
     auth_header = test_profile.authorization_header()
 
     # generate some events for the profile
     generate_event_count = 10
-    generate_events(test_profile.profile, generate_event_count)
+    generate_events(api_base, client, test_profile.profile, generate_event_count)
 
     # create event reader
     page_size = 3

@@ -4,7 +4,8 @@ from typing import Optional
 
 from fastapi import HTTPException
 from pydantic import BaseModel
-from sqlmodel import Session, select, update
+from sqlmodel import select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.schema.media import FileContent
@@ -57,12 +58,12 @@ storage_types = {
 }
 
 
-def increment_download_count(session: Session, file_seq: int):
+async def increment_download_count(db_session: AsyncSession, file_seq: int):
     """Increment the download count by one"""
-    session.exec(update(FileContent)
-                 .values(downloads=FileContent.downloads + 1)
-                 .where(FileContent.file_seq == file_seq))
-    session.commit()
+    await db_session.exec(update(FileContent)
+                          .values(downloads=FileContent.downloads + 1)
+                          .where(FileContent.file_seq == file_seq))
+    await db_session.commit()
 
 
 def translate_download_url(storage, file: FileContent) -> str:
@@ -86,14 +87,17 @@ def translate_download_url(storage, file: FileContent) -> str:
     raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, detail="no valid locators for file")
 
 
-def resolve_download_info(
-        session: Session,
-        file_id: str,
+async def resolve_download_info(
+        db_session: AsyncSession,
+        file_id: Optional[str],
         storage: StorageClient) -> Optional[DownloadInfoResponse]:
     """Given a file_id and storage client resolve the download info"""
+    if file_id is None:
+        return None
     file_seq = file_id_to_seq(file_id)
-    increment_download_count(session, file_seq)
-    file = session.exec(select(FileContent).where(FileContent.file_seq == file_seq)).one_or_none()
+    await increment_download_count(db_session, file_seq)
+    file = (await db_session.exec(
+        select(FileContent).where(FileContent.file_seq == file_seq))).one_or_none()
     if file is None:
         return None
     return DownloadInfoResponse(

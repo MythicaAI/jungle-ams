@@ -1,25 +1,22 @@
-from cryptid.cryptid import profile_id_to_seq
-import httpx
+from datetime import datetime
 from http import HTTPStatus
 
-from sqlalchemy import desc
-from sqlmodel import select
+import httpx
+from starlette.testclient import TestClient
 
-from db.connection import get_session
-from db.schema.profiles import ProfileKey
 from profiles.responses import ProfileResponse, SessionStartResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
 async def create_profile_and_start_session(
-    api_base: str,
-    timeout: int,
-    name: str = "test-profile",
-    email: str = "test@test.com",
-    full_name: str = "Test Profile",
-    signature: str = 32 * 'X',
-    description: str = "Test description",
-    profile_href: str = "https://nothing.com/",
+        api_base: str,
+        timeout: int,
+        name: str = "test-profile",
+        email: str = "test@test.com",
+        full_name: str = "Test Profile",
+        signature: str = 32 * 'X',
+        description: str = "Test description",
+        profile_href: str = "https://nothing.com/",
 ) -> ProfileTestObj:
     """
     Factory method to create a profile, validate existence, start a session,
@@ -69,9 +66,18 @@ async def create_profile_and_start_session(
         return ProfileTestObj(profile=profile, auth_token=auth_token)
 
 
-def get_verification_email_code(profile_id: str) -> str:
-    with get_session() as db_session:
-        db_profile = db_session.exec(select(ProfileKey).where(
-            ProfileKey.owner_seq==profile_id_to_seq(profile_id)
-        ).order_by(desc(ProfileKey.created))).first()
-        return db_profile.key
+def get_email_validation_key(api_base: str, client: TestClient, profile_id: str) -> str:
+    r = client.get(f"{api_base}/test/email-validation-key/{profile_id}")
+    assert_status_code(r, HTTPStatus.OK)
+    return r.json()['key']
+
+
+def set_email_validation_expires(
+        api_base: str,
+        client: TestClient,
+        key: str,
+        new_expiration: datetime):
+    r = client.post(f"{api_base}/test/email-validation-key-expires",
+                    json={'key': key,
+                          'expires': new_expiration.isoformat()})
+    assert_status_code(r, HTTPStatus.OK)
