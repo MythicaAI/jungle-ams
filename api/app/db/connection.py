@@ -102,22 +102,23 @@ async def db_session_pool(app: FastAPI) -> AsyncGenerator[AsyncSession, None]:
     create_sqlmodel_session = app.state.create_sqlmodel_session
     if db_engine is None or create_sqlmodel_session is None:
         raise ValueError("engine is not available")
+    db_session = None
     try:
-        session = create_sqlmodel_session()
-        yield session
+        db_session = create_sqlmodel_session()
+        yield db_session
+    except GeneratorExit:
+        pass
     finally:
         # check the session back in
-        try:
-            await session.close()
-        except Exception as ex:
-            log.exception("failed to close session %s", id(session), exc_info=ex)
+        if db_session is not None:
+            await db_session.close()
 
 
 async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
     """Fast API Depends() compatible AsyncExit construction of the session, uses
     async context manager to handle session state cleanup"""
-    async with db_session_pool(request.app) as session:
-        yield session
+    async with db_session_pool(request.app) as db_session:
+        yield db_session
 
 
 def sql_profiler_decorator(func, report_name="report.html"):

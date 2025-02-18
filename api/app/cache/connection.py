@@ -35,14 +35,22 @@ async def cache_connection_lifespan(app: FastAPI):
 
 
 @asynccontextmanager
-async def redis_connection_pool(app: FastAPI) -> StrictRedis:
+async def redis_connection_pool(app: FastAPI) -> AsyncGenerator[StrictRedis, None]:
     """Yields a strict redis accessor around the global connection pool"""
     redis_pool = app.state.redis_pool
     if redis_pool is None:
         raise ValueError("cache pool is not available")
-    conn = StrictRedis(connection_pool=redis_pool)
-    yield conn
-    await conn.close()
+    conn = None
+    try:
+        conn = StrictRedis(connection_pool=redis_pool)
+        log.debug("acquired connection %s", id(conn))
+        yield conn
+    except GeneratorExit:
+        pass
+    finally:
+        if conn is not None:
+            await conn.close()
+            log.debug("released connection %s", id(conn))
 
 
 async def get_redis(request: Request) -> AsyncGenerator[StrictRedis, None]:
