@@ -73,9 +73,10 @@ class FileContentChunk(ProcessStreamItem):
     item_type: Literal["file_content_chunk"] = "file_content_chunk"
     file_key: str
     file_index: int
-    encoded_data: str
-    chunk_size: int
+    chunk_index: int
+    total_chunks: int
     file_size: int
+    encoded_data: str
 
 
 class JobDefinition(ProcessStreamItem):
