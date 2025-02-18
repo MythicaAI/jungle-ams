@@ -1,7 +1,7 @@
 import React, { DragEvent, useRef, useState } from 'react';
-import useAutomation from '../hooks/useAutomation';
-import useAwfulFlow from '../hooks/useAwfulFlow';
-import { GetFileResponse } from '../types/MythicaApi';
+import useAutomation from '../../hooks/useAutomation';
+import useAwfulFlow from '../../hooks/useAwfulFlow';
+import { GetFileResponse } from '../../types/MythicaApi';
 import {
   Accordion,
   AccordionDetails,
@@ -22,8 +22,8 @@ import {
   LucidePanelRightClose,
   LucideTrash2,
 } from 'lucide-react';
-import { AutomationScript } from '../types/Automation';
-import { TabValues } from '../enums';
+import { AutomationScript } from '../../types/Automation';
+import { TabValues } from '../../enums';
 import { motion } from 'motion/react';
 
 type Props = {

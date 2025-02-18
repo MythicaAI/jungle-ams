@@ -4,8 +4,8 @@ import { GetFileResponse, GetAssetResponse } from '../../types/MythicaApi';
 import { useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import useMythicaApi from '../../hooks/useMythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
-import { NodeDeleteButton } from '../NodeDeleteButton';
-import { NodeHeader } from '../NodeHeader';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
+import { NodeHeader } from './ux/NodeHeader';
 import FileOutputHandle from '../handles/FileOutputHandle';
 
 interface AssetViewerNodeProps {
