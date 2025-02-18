@@ -29,7 +29,7 @@ export type GetFileResponse = {
 
 
 export type GetAssetTagResponse = {
-    tag_name: string,
+    name: string,
     tag_id: string,
 }
 
