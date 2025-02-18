@@ -8,7 +8,7 @@ from sqlmodel import insert
 from context import UploadContext
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
 from cryptid.location import location
-from db.connection import get_session
+from db.connection import db_session_pool
 from db.schema.events import Event
 from db.schema.media import FileContent
 from ripple.automation.adapters import NatsAdapter
@@ -22,21 +22,22 @@ log = logging.getLogger(__name__)
 
 async def update(ctx: UploadContext) -> Tuple[str, str]:
     """Update the database index for the upload"""
-    with get_session() as db_session:
+    async with db_session_pool() as db_session:
         content_type = f"application/{ctx.extension}"
 
         # if the locators format changes we can add a different key
         locators = {'locators': ctx.locators}
 
         # create a new upload
-        file_content_result = await db_session.exec(insert(FileContent).values(
-            {'name': ctx.filename,
-             'owner_seq': profile_id_to_seq(ctx.owner_id),
-             'locators': locators,
-             'purpose': str(ctx.purpose),
-             'content_hash': ctx.content_hash,
-             'size': ctx.file_size,
-             'content_type': content_type}))
+        insert_stmt = insert(FileContent).values(
+            name=ctx.filename,
+            owner_seq=profile_id_to_seq(ctx.owner_id),
+            locators=locators,
+            purpose=str(ctx.purpose),
+            content_hash=ctx.content_hash,
+            size=ctx.file_size,
+            content_type=content_type)
+        file_content_result = await db_session.exec(insert_stmt)
         await db_session.commit()
         file_id = file_seq_to_id(file_content_result.inserted_primary_key[0])
 

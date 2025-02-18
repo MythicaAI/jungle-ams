@@ -8,22 +8,21 @@ from typing import Callable, Optional, TypeVar
 
 from fastapi import WebSocket
 
-from cryptid.cryptid import reader_id_to_seq, IdError
 from config import app_config
-from db.connection import get_session
+from cryptid.cryptid import IdError, reader_id_to_seq
+from db.connection import db_session_pool
 from db.schema.profiles import Profile
+from db.schema.streaming import Reader
 from ripple.client_ops import ClientOp, ReadClientOp
 from ripple.funcs import Boundary, Source
 from ripple.models.streaming import StreamItem
-from db.schema.streaming import Reader
+from ripple.source_types import create_source
 from routes.readers.utils import (
     reader_to_source_params,
     select_profile_readers,
     select_reader,
     update_reader_index,
 )
-from ripple.source_types import create_source
-
 
 log = logging.getLogger(__name__)
 configs = app_config()
@@ -53,10 +52,10 @@ class ReaderConnectionManager:
         self.loop = None
 
     async def connect(
-        self,
-        websocket: WebSocket,
-        profile: Profile,
-        op_data: Optional[dict] = None,
+            self,
+            websocket: WebSocket,
+            profile: Profile,
+            op_data: Optional[dict] = None,
     ):
         # there is no loop while async testing (Python 3.10), it should be set up on connect 
         if not self.loop:
@@ -73,7 +72,7 @@ class ReaderConnectionManager:
                 self.active_connections[profile.profile_seq] = dict()
                 self.active_connections[profile.profile_seq]["websockets"] = list()
                 log.info("New profile connected to websocket %s", websocket)
-                with get_session() as session:
+                async with db_session_pool() as session:
                     if not op_data.get("reader_id"):
                         readers = select_profile_readers(session, profile.profile_seq)
                     else:
@@ -109,14 +108,14 @@ class ReaderConnectionManager:
         await self.websocket_handler(websocket, profile)
 
     async def add_all_tasks_for_new_websocket(
-        self, profile_seq: str, websocket: WebSocket
+            self, profile_seq: str, websocket: WebSocket
     ):
 
         try:
             if (
-                not self.active_connections.get(profile_seq)
-                or not self.active_connections[profile_seq].get("websockets")
-                or not len(self.active_connections[profile_seq]) > 1
+                    not self.active_connections.get(profile_seq)
+                    or not self.active_connections[profile_seq].get("websockets")
+                    or not len(self.active_connections[profile_seq]) > 1
             ):
                 return
 
@@ -144,8 +143,8 @@ class ReaderConnectionManager:
                 "Error while the creating the task for new websocket", exc_info=ex
             )
 
-    async def get_reader_model(self, session, reader_seq, profile_seq):
-        reader = select_reader(session, reader_seq, profile_seq)
+    async def get_reader_model(self, db_session, reader_seq, profile_seq):
+        reader = await select_reader(db_session, reader_seq, profile_seq)
         return reader
 
     async def add_reader_to_profile(self, reader: Reader, profile, op_data: dict):
@@ -202,13 +201,13 @@ class ReaderConnectionManager:
             return
 
     async def send_updates_periodically(
-        self,
-        processor: Callable,
-        websocket: WebSocket,
-        source_data: ReadClientOp,
-        reader: Reader,
-        source: Source,
-        interval: float = 0.5,
+            self,
+            processor: Callable,
+            websocket: WebSocket,
+            source_data: ReadClientOp,
+            reader: Reader,
+            source: Source,
+            interval: float = 0.5,
     ):
         """
         Continuously sends updates to the client at regular intervals.
@@ -307,7 +306,7 @@ class ReaderConnectionManager:
                 await websocket.send_json({'error': str(ex)})
                 return
 
-            with get_session() as session:
+            async with db_session_pool() as session:
                 if msg.get("position"):
                     update_reader_index(session, reader_seq, msg.get("position"))
 
@@ -336,9 +335,9 @@ class ReaderConnectionManager:
             await websocket.send_json({'error': error_message})
 
     async def change_reader_processor(
-        self,
-        profile_seq: str,
-        reader: Reader,
+            self,
+            profile_seq: str,
+            reader: Reader,
     ):
         """
         Deletes previous periodic tasks and creates new ones with a new processor.
@@ -365,10 +364,10 @@ class ReaderConnectionManager:
         connection_reader["reader_task_names"] = new_tasks
 
     async def process_read(
-        self,
-        websocket: WebSocket,
-        op: ReadClientOp,
-        source: Source,
+            self,
+            websocket: WebSocket,
+            op: ReadClientOp,
+            source: Source,
     ):
         """
         Responds with the received data.
@@ -377,7 +376,6 @@ class ReaderConnectionManager:
         stream_items: list[StreamItem] = source(boundary)
 
         if len(stream_items) > 0 and stream_items[-1].index:
-
             await websocket.send_json([item.model_dump_json() for item in stream_items])
             log.debug(
                 "Source output stream_items %s",

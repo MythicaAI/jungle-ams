@@ -12,7 +12,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from auth.data import resolve_org_roles
 from cryptid.cryptid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
-from db.connection import get_session
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
@@ -160,44 +159,46 @@ async def impersonated_profile(
     return db_profile
 
 
-async def start_session_with_token_validator(token: str, validator: AuthTokenValidator) -> SessionStartResponse:
+async def start_session_with_token_validator(
+        db_session: AsyncSession,
+        token: str,
+        validator: AuthTokenValidator) -> SessionStartResponse:
     """Given a token and a validator, validate the token - the token validator must
     return the user metadata which will be used to locate a profile and continue
     with the session logic"""
     log.info("starting session with token: %s", token)
     valid_token = await validator.validate(token)
 
-    with (get_session() as db_session):
-        #
-        # look for an existing association of the unique sub key
-        #
-        locator_oid = (await db_session.exec(select(ProfileLocatorOID)
-                                             .where(col(ProfileLocatorOID.sub) == valid_token.sub))).one_or_none()
-        if locator_oid is not None:
-            return await start_session(db_session, locator_oid.owner_seq, locator_oid.sub)
+    #
+    # look for an existing association of the unique sub key
+    #
+    locator_oid = (await db_session.exec(select(ProfileLocatorOID)
+                                         .where(col(ProfileLocatorOID.sub) == valid_token.sub))).one_or_none()
+    if locator_oid is not None:
+        return await start_session(db_session, locator_oid.owner_seq, locator_oid.sub)
 
-        #
-        # Resolve the locator to a profile, start by querying the user profile data associated with the sub
-        # get all profiles with the email, with the oldest profile as the first result
-        #
-        user_profile = await validator.query_user_profile(token)
-        profiles = (await db_session.exec(select(Profile)
-                                          .where(col(Profile.email) == user_profile.email)
-                                          .order_by(asc(Profile.created)))).all()
-        if profiles is None or len(profiles) == 0:
-            # if there are no profiles, attempt to associate the sub to a new profile
-            profile_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
-            session_start = await create_profile_locator_oid(db_session, valid_token, profile_seq)
-            return await session_start
+    #
+    # Resolve the locator to a profile, start by querying the user profile data associated with the sub
+    # get all profiles with the email, with the oldest profile as the first result
+    #
+    user_profile = await validator.query_user_profile(token)
+    profiles = (await db_session.exec(select(Profile)
+                                      .where(col(Profile.email) == user_profile.email)
+                                      .order_by(asc(Profile.created)))).all()
+    if profiles is None or len(profiles) == 0:
+        # if there are no profiles, attempt to associate the sub to a new profile
+        profile_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
+        session_start = await create_profile_locator_oid(db_session, valid_token, profile_seq)
+        return await session_start
 
-        #
-        # a locator does not exist for the token subject, in this case we will associate all profiles
-        # bearing the verified email with the subject, TODO: this should be done in a two step process
-        # with an email verification on our side before allowing the new sub to take over the profile
-        # select the oldest profile, what to do with the rest?
-        oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
-        session_start = await associate_profile(db_session, oldest_profile, valid_token, user_profile)
-        return session_start
+    #
+    # a locator does not exist for the token subject, in this case we will associate all profiles
+    # bearing the verified email with the subject, TODO: this should be done in a two step process
+    # with an email verification on our side before allowing the new sub to take over the profile
+    # select the oldest profile, what to do with the rest?
+    oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
+    session_start = await associate_profile(db_session, oldest_profile, valid_token, user_profile)
+    return session_start
 
 
 async def associate_profile(

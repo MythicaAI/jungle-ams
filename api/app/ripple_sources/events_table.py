@@ -7,13 +7,12 @@ from sqlalchemy import asc
 from sqlmodel import select
 
 from cryptid.cryptid import event_id_to_seq, event_seq_to_id
-from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from ripple.funcs import Boundary, Source
 from ripple.models.streaming import Event, StreamItem
 
 
-def create_events_table_source(params: dict[str, Any]) -> Source:
+async def create_events_table_source(params: dict[str, Any]) -> Source:
     """Constructor of event table result stream sources"""
     page_size = params.get('page_size', 1)
     owner_seq = params.get('owner_seq', None)
@@ -22,7 +21,7 @@ def create_events_table_source(params: dict[str, Any]) -> Source:
 
     async def events_table_source(boundary: Boundary) -> list[StreamItem]:
         """Function that produces event table result streams"""
-        with get_session() as db_session:
+        async with await db_session_pool() as db_session:
             stmt = select(DbEvent).where(DbEvent.owner_seq == owner_seq)
             if boundary.position is not None:
                 event_seq_position = event_id_to_seq(boundary.position)

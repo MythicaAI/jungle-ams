@@ -5,13 +5,12 @@ import itertools
 import json
 import logging
 import random
-
 from itertools import cycle
 from string import ascii_lowercase
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 from sqlmodel import insert, select
 from starlette.testclient import WebSocketTestSession
 
@@ -21,9 +20,10 @@ from cryptid.cryptid import (
     job_seq_to_id,
     profile_id_to_seq,
 )
-from db.connection import get_session
+from db.connection import db_session_pool
 from db.schema.events import Event as DbEvent
-from db.schema.profiles import Profile
+from profiles.responses import ProfileResponse
+from ripple.client_ops import ReadClientOp
 from ripple.models.streaming import (
     Event,
     Message,
@@ -32,10 +32,7 @@ from ripple.models.streaming import (
 )
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
-from ripple.client_ops import ReadClientOp
-
 from tests.shared_test import ProfileTestObj
-
 
 # length of event data in test events
 test_event_info_len = 10
@@ -67,7 +64,7 @@ def generate_stream_items(item_list_length: int):
     return [next(gen_cycle)() for i in range(item_list_length)]
 
 
-def generate_events(profile: Profile, event_count: int):
+async def generate_events(profile: ProfileResponse, event_count: int):
     """Generate some random event data in the database"""
 
     def generate_test_job_data():
@@ -87,21 +84,21 @@ def generate_events(profile: Profile, event_count: int):
         for _ in range(event_count)
     ]
     events = []
-    with get_session() as session:
+    async with db_session_pool() as db_session:
         for e in db_events:
-            events.append(session.exec(insert(DbEvent).values(e)))
-        session.commit()
+            events.append(await db_session.exec(insert(DbEvent).values(e)))
+        await db_session.commit()
     return [event.inserted_primary_key[0] for event in events]
 
 
-def get_event_dumped_models(events_ids):
-    with get_session() as session:
+async def get_event_dumped_models(events_ids):
+    async with db_session_pool() as db_session:
         statement = (
             select(DbEvent)
             .where(DbEvent.event_seq.in_(events_ids))  # pylint: disable=no-member
             .order_by(DbEvent.event_seq)
         )
-        events = session.exec(statement).all()
+        events = (await db_session.exec(statement)).all()
     return [
         Event(
             index=event_seq_to_id(i.event_seq),
@@ -113,18 +110,18 @@ def get_event_dumped_models(events_ids):
 
 @pytest.mark.asyncio
 async def test_websocket(
-    api_base,
-    client: TestClient,
-    create_profile,
-    use_test_source_fixture,  # pylint: disable=unused-argument
+        api_base,
+        client: TestClient,
+        create_profile,
+        use_test_source_fixture,  # pylint: disable=unused-argument
 ):
-    test_profile: ProfileTestObj = create_profile()
+    test_profile: ProfileTestObj = await create_profile()
     auth_header = test_profile.authorization_header()
 
     item_list_length = 10
 
     generate_event_count = 10
-    events_ids = generate_events(test_profile.profile, generate_event_count)
+    events_ids = await generate_events(test_profile.profile, generate_event_count)
     stream_items = get_event_dumped_models(events_ids)
 
     page_size = 3
@@ -139,7 +136,7 @@ async def test_websocket(
 
     client.cookies.update(auth_header)
     with client.websocket_connect(
-        f"{api_base}/readers/connect", data={"body": {}}
+            f"{api_base}/readers/connect", data={"body": {}}
     ) as websocket:
         websocket: WebSocketTestSession
 
@@ -148,7 +145,7 @@ async def test_websocket(
         max_reads = item_list_length / page_size
 
         def check_new_items_in_connection(
-            page_size, generate_event_count, stream_items
+                page_size, generate_event_count, stream_items
         ):
             reads = 0
             page_sized_reads = 0
@@ -203,8 +200,8 @@ async def test_websocket(
 
         first_item_position = len(new_old_stream_items) // 4
         stream_items = new_old_stream_items[
-            first_item_position:
-        ]  # Start stream_items from the third quarter of all items
+                       first_item_position:
+                       ]  # Start stream_items from the third quarter of all items
         item_list_length = len(stream_items)
 
         max_reads = item_list_length / page_size

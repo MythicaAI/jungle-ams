@@ -14,8 +14,9 @@ from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code
 
 
-def test_asset_groups(client, api_base, create_profile, create_asset_versions, uploader):
-    test_profile = create_profile(validate_email=True)
+@pytest.mark.asyncio
+async def test_asset_groups(client, api_base, create_profile, create_asset_versions, uploader):
+    test_profile = await create_profile(validate_email=True)
     asset_versions = create_asset_versions(
         test_profile,
         uploader,

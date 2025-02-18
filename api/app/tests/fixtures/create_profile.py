@@ -3,17 +3,15 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from cryptid.cryptid import profile_id_to_seq
-from db.connection import get_session
 from profiles.responses import ProfileResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
-from profiles.start_session import start_session
+
 
 @pytest.fixture
 def create_profile(client, api_base: str, email="test@test.com"):
     """factory fixture, returns profile creation function"""
 
-    def _create_profile(
+    async def _create_profile(
             name: str = "test-profile",
             email: str = email,
             full_name: str = "Test Profile",
@@ -46,20 +44,19 @@ def create_profile(client, api_base: str, email="test@test.com"):
         assert profile.name == name
         assert profile.profile_id == profile_id
 
-        def start_test_session(session_profile_id: str, as_profile_id=None) -> str:
-            with get_session() as db_session:
-                session_start_response = start_session(
-                    db_session,
-                    profile_id_to_seq(session_profile_id),
-                    location='test-case',
-                    impersonate_profile_id=as_profile_id)
-                auth_token = session_start_response.token
-                return auth_token
+        # use the test route to start the session
+        if impersonate_profile_id:
+            url = f"{api_base}/test/start_session/{profile_id}?as_profile_id={impersonate_profile_id}"
+        else:
+            url = f"{api_base}/test/start_session/{profile_id}"
+        r = client.get(url)
+        assert_status_code(r, HTTPStatus.OK)
+        auth_token = r.json()['token']
 
         # start the default session
         test_profile = ProfileTestObj(
             profile=profile,
-            auth_token=start_test_session(profile.profile_id),
+            auth_token=auth_token
         )
 
         # optionally validate the email
@@ -82,7 +79,13 @@ def create_profile(client, api_base: str, email="test@test.com"):
             assert o.state == 'validated'
 
             # re-start the profile session with the newly validated email
-            test_profile.auth_token = start_test_session(profile.profile_id, impersonate_profile_id)
+            if impersonate_profile_id:
+                url = f"{api_base}/test/start_session/{profile_id}?as_profile_id={impersonate_profile_id}"
+            else:
+                url = f"{api_base}/test/start_session/{profile_id}"
+            r = client.get(url)
+            assert_status_code(r, HTTPStatus.OK)
+            test_profile.auth_token = r.json()['token']
 
         return test_profile
 

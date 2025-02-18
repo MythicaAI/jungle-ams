@@ -7,12 +7,13 @@ from itertools import cycle
 from string import ascii_lowercase
 from uuid import uuid4
 
+import pytest
 from munch import munchify
 from pydantic import TypeAdapter
 from sqlmodel import insert
 
 from cryptid.cryptid import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
-from db.connection import get_session
+from db.connection import db_session_pool
 from db.schema.events import Event as DbEvent
 from db.schema.profiles import Profile
 from ripple.funcs import Boundary
@@ -41,7 +42,7 @@ def generate_stream_items(item_list_length: int):
     return [next(gen_cycle)() for i in range(item_list_length)]
 
 
-def generate_events(profile: Profile, event_count: int):
+async def generate_events(profile: Profile, event_count: int):
     """Generate some random event data in the database"""
 
     def generate_test_job_data():
@@ -53,10 +54,10 @@ def generate_events(profile: Profile, event_count: int):
         'job_data': generate_test_job_data(),
         'owner_seq': profile_id_to_seq(profile.profile_id)}
         for _ in range(event_count)]
-    with get_session() as session:
+    async with db_session_pool() as db_session:
         for e in db_events:
-            session.exec(insert(DbEvent).values(e))
-        session.commit()
+            await db_session.exec(insert(DbEvent).values(e))
+        await db_session.commit()
 
 
 def test_source_fixture(use_test_source_fixture):
@@ -76,8 +77,9 @@ def test_source_fixture(use_test_source_fixture):
     assert len(items) == 0
 
 
-def test_operations(api_base, client, create_profile, use_test_source_fixture):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_operations(api_base, client, create_profile, use_test_source_fixture):
+    test_profile = await create_profile()
     auth_header = test_profile.authorization_header()
 
     # enumerate readers, empty result
@@ -149,13 +151,14 @@ def test_operations(api_base, client, create_profile, use_test_source_fixture):
     assert o.reader_id not in reader_ids
 
 
-def test_events(api_base, client, create_profile):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_events(api_base, client, create_profile):
+    test_profile = await create_profile()
     auth_header = test_profile.authorization_header()
 
     # generate some events for the profile
     generate_event_count = 10
-    generate_events(test_profile.profile, generate_event_count)
+    await generate_events(test_profile.profile, generate_event_count)
 
     # create event reader
     page_size = 3

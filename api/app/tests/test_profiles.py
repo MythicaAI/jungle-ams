@@ -4,16 +4,18 @@
 
 from http import HTTPStatus
 
+import pytest
 from munch import munchify
-from ripple.auth import roles
 
+from ripple.auth import roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token
 
 
-def test_public_profile(api_base, client, create_profile):
-    test_profile = create_profile(validate_email=True)
+@pytest.mark.asyncio
+async def test_public_profile(api_base, client, create_profile):
+    test_profile = await create_profile(validate_email=True)
 
     # authenticated
     r = client.get(
@@ -29,8 +31,9 @@ def test_public_profile(api_base, client, create_profile):
     assert 'email' not in r.json()
 
 
-def test_profile_update_no_values(api_base, client, create_profile):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_profile_update_no_values(api_base, client, create_profile):
+    test_profile = await create_profile()
     profile_update_payload = {}
     r = client.post(
         f"{api_base}/profiles/{test_profile.profile.profile_id}",
@@ -41,9 +44,10 @@ def test_profile_update_no_values(api_base, client, create_profile):
     assert r.json()['name'] == test_profile.profile.name
 
 
-def test_profile_update_admin(api_base, client, create_profile):
-    test_profile = create_profile(validate_email=True)
-    test_profile_super = create_profile(
+@pytest.mark.asyncio
+async def test_profile_update_admin(api_base, client, create_profile):
+    test_profile = await create_profile(validate_email=True)
+    test_profile_super = await create_profile(
         email="jacob@mythica.ai",
         validate_email=True)
 
@@ -67,9 +71,10 @@ def test_profile_update_admin(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
 
-def test_privilege_access(client, api_base, create_profile, create_org):
-    user_profile = create_profile(email="test@somewhere.com")
-    mythica_profile = create_profile(email="test@mythica.ai")
+@pytest.mark.asyncio
+async def test_privilege_access(client, api_base, create_profile, create_org):
+    user_profile = await create_profile(email="test@somewhere.com")
+    mythica_profile = await create_profile(email="test@mythica.ai")
 
     # validate email to add the mythica roles, this also currently creates
     # a mythica org if one does not currently exist
@@ -84,12 +89,12 @@ def test_privilege_access(client, api_base, create_profile, create_org):
     assert o.state == 'validated'
 
     # get the token with the refreshed roles
-    mythica_profile.auth_token = refresh_auth_token(mythica_profile)
+    mythica_profile.auth_token = await refresh_auth_token(mythica_profile)
 
     create_org(user_profile)
 
     # get user token with refreshed org roles
-    user_profile.auth_token = refresh_auth_token(user_profile)
+    user_profile.auth_token = await refresh_auth_token(user_profile)
 
     # Ensure that the user profile
     #   does not get tag create

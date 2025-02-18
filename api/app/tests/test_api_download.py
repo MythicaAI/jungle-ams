@@ -1,8 +1,11 @@
 # pylint: disable=redefined-outer-name, unused-import
 
+import asyncio
 import hashlib
 from http import HTTPStatus
 from pathlib import Path
+
+import pytest
 
 from tests.fixtures.app import use_local_storage_fixture
 from tests.fixtures.create_profile import create_profile
@@ -25,6 +28,7 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
+@pytest.mark.asyncio(loop_scope="session")
 async def test_download(
         api_base,
         client,
@@ -32,8 +36,12 @@ async def test_download(
         create_profile,
         request_to_upload_files,
 ):
+    loop = asyncio.get_running_loop()
+    print(f"test event loop: {id(loop)}")
+
     assert use_local_storage_fixture.use_local_storage is True
-    test_profile = create_profile(
+
+    test_profile = await create_profile(
         name=test_profile_name,
         email=test_profile_email,
         full_name=test_profile_full_name,

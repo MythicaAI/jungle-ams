@@ -1,16 +1,16 @@
-
 # pylint: disable=redefined-outer-name, unused-import
 
 import hashlib
 
+import pytest
 from fastapi.testclient import TestClient
 
+from main import app
+from tests.fixtures.create_profile import create_profile
 from validate_email.responses import (
     ValidateEmailResponse,
     ValidateEmailState,
 )
-from main import app
-from tests.fixtures.create_profile import create_profile
 
 client = TestClient(app)
 test_profile_name = "test-profile"
@@ -29,14 +29,14 @@ test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
-def test_email_validation(api_base, client, create_profile):
-
-    test_profile = create_profile(name=test_profile_name,
-                                email=test_profile_email,
-                                full_name=test_profile_full_name,
-                                signature=test_profile_signature,
-                                description=test_profile_description,
-                                profile_href=test_profile_href)
+@pytest.mark.asyncio
+async def test_email_validation(api_base, client, create_profile):
+    test_profile = await create_profile(name=test_profile_name,
+                                        email=test_profile_email,
+                                        full_name=test_profile_full_name,
+                                        signature=test_profile_signature,
+                                        description=test_profile_description,
+                                        profile_href=test_profile_href)
     profile_id = test_profile.profile.profile_id
     assert profile_id is not None
     headers = test_profile.authorization_header()

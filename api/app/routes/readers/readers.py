@@ -7,9 +7,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import TypeAdapter, ValidationError
 from sqlmodel import delete as sql_delete, insert, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
-from db.connection import TZ, get_session
+from db.connection import TZ, get_db_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from ripple.client_ops import ReadClientOp
@@ -33,93 +34,96 @@ class WebsocketClientOp(ReadClientOp):
 
 
 @router.post("/", status_code=HTTPStatus.CREATED)
-def create(
+async def create(
         create_req: CreateReaderRequest,
-        profile: Profile = Depends(session_profile)) -> ReaderResponse:
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> ReaderResponse:
     """Create a new reader on a source"""
-    with get_session() as session:
-        r = session.exec(insert(Reader).values(
-            source=create_req.source,
-            owner_seq=profile.profile_seq,
-            name=create_req.name,
-            position=create_req.position,
-            params=create_req.params,
-            direction=direction_literal_to_db(create_req.direction),
-        ))
-        if r.rowcount == 0:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
-        session.commit()
-        reader_seq = r.inserted_primary_key[0]
-        r = session.exec(select(Reader)
-                         .where(Reader.reader_seq == reader_seq)
-                         .where(Reader.owner_seq == profile.profile_seq))
-        reader = r.one_or_none()
-        if reader is None:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to get created reader")
-        return ReaderResponse(
-            source=reader.source,
-            name=reader.name,
-            position=reader.position,
-            direction=direction_db_to_literal(reader.direction),
-            reader_id=reader_seq_to_id(reader_seq),
-            owner_id=profile_seq_to_id(profile.profile_seq),
-            created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc))
+    r = await db_session.exec(insert(Reader).values(
+        source=create_req.source,
+        owner_seq=profile.profile_seq,
+        name=create_req.name,
+        position=create_req.position,
+        params=create_req.params,
+        direction=direction_literal_to_db(create_req.direction),
+    ))
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
+    await db_session.commit()
+    reader_seq = r.inserted_primary_key[0]
+    r = await db_session.exec(select(Reader)
+                              .where(Reader.reader_seq == reader_seq)
+                              .where(Reader.owner_seq == profile.profile_seq))
+    reader = r.one_or_none()
+    if reader is None:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to get created reader")
+    return ReaderResponse(
+        source=reader.source,
+        name=reader.name,
+        position=reader.position,
+        direction=direction_db_to_literal(reader.direction),
+        reader_id=reader_seq_to_id(reader_seq),
+        owner_id=profile_seq_to_id(profile.profile_seq),
+        created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc))
 
 
 @router.get("/")
-def current(profile: Profile = Depends(session_profile)) -> list[ReaderResponse]:
+async def current(
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> list[ReaderResponse]:
     """Get all persistent readers for the current profile"""
-    with get_session() as session:
-        return resolve_results(session.exec(select(Reader)
-                                            .where(Reader.owner_seq == profile.profile_seq)).all())
+    return resolve_results((await db_session.exec(select(Reader)
+                                                  .where(Reader.owner_seq == profile.profile_seq))).all())
 
 
 @router.delete("/{reader_id}")
-def delete(reader_id: str, profile: Profile = Depends(session_profile)):
+async def delete(
+        reader_id: str,
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)):
     """Delete a reader by ID"""
-    with get_session() as session:
-        reader_seq = reader_id_to_seq(reader_id)
-        r = session.exec(sql_delete(Reader)
-                         .where(Reader.owner_seq == profile.profile_seq)
-                         .where(Reader.reader_seq == reader_seq))
-        if r.rowcount == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"failed to delete reader {reader_id}")
-        session.commit()
+    reader_seq = reader_id_to_seq(reader_id)
+    r = await db_session.exec(sql_delete(Reader)
+                              .where(Reader.owner_seq == profile.profile_seq)
+                              .where(Reader.reader_seq == reader_seq))
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"failed to delete reader {reader_id}")
+    await db_session.commit()
 
 
 @router.get("/{reader_id}/items")
 async def items(reader_id: str,
                 before: Optional[str] = None,
                 after: Optional[str] = None,
-                profile: Profile = Depends(session_profile)) -> list[StreamItemUnion]:
+                profile: Profile = Depends(session_profile),
+                db_session: AsyncSession = Depends(get_db_session)) -> list[StreamItemUnion]:
     """Dequeue items from the reader"""
     reader_seq = reader_id_to_seq(reader_id)
-    with get_session() as session:
-        reader = select_reader(session, reader_seq, profile.profile_seq)
-        params = reader_to_source_params(profile, reader)
-        source = create_source(reader.source, params)
-        if before is not None:
-            boundary = Boundary(position=before, direction='before')
-        elif after is not None:
-            boundary = Boundary(position=after, direction='after')
-        else:
-            boundary = Boundary(position=reader.position, direction=direction_db_to_literal(reader.direction))
-        if source is None:
-            raise HTTPException(
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                f"failed to create source for reader {reader_id}")
+    reader = await select_reader(db_session, reader_seq, profile.profile_seq)
+    params = reader_to_source_params(profile, reader)
+    source = create_source(reader.source, params)
+    if before is not None:
+        boundary = Boundary(position=before, direction='before')
+    elif after is not None:
+        boundary = Boundary(position=after, direction='after')
+    else:
+        boundary = Boundary(position=reader.position, direction=direction_db_to_literal(reader.direction))
+    if source is None:
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            f"failed to create source for reader {reader_id}")
 
-        raw_items = source(boundary)
-        if len(raw_items) > 0 and raw_items[-1].index:
-            update_reader_index(session, reader.reader_seq, raw_items[-1].index)
+    raw_items = source(boundary)
+    if len(raw_items) > 0 and raw_items[-1].index:
+        await update_reader_index(db_session, reader.reader_seq, raw_items[-1].index)
 
-        adapter = TypeAdapter(list[StreamItemUnion])
-        try:
-            return adapter.validate_python(raw_items)
-        except ValidationError as e:
-            log.exception("failed to validate", exc_info=e)
-            raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,  # pylint: disable=W0707:raise-missing-from
-                                detail=f"validation error for reader {reader_id}")
+    adapter = TypeAdapter(list[StreamItemUnion])
+    try:
+        return adapter.validate_python(raw_items)
+    except ValidationError as e:
+        log.exception("failed to validate", exc_info=e)
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,  # pylint: disable=W0707:raise-missing-from
+                            detail=f"validation error for reader {reader_id}")
 
 
 @router.websocket("/test/connect")

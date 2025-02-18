@@ -1,12 +1,13 @@
 import logging
 
-from cryptid.cryptid import IdError, SequenceError
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
 from pydantic import ValidationError
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERROR
+
+from cryptid.cryptid import IdError, SequenceError
 from ripple.auth.authorization import RoleError
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,10 @@ async def role_error(_: Request, exc: RoleError):
 async def other_errors(_: Request, exc: Exception):
     span = trace.get_current_span()
     span.record_exception(exc)
+    return JSONResponse(
+        status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": f"An unexpected error occurred: {type(exc).__name__}"}
+    )
 
 
 def register_exceptions(app):

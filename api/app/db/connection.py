@@ -3,15 +3,16 @@
 # cursor() method is dynamic
 # pylint: disable=no-member
 
+import asyncio
 import logging
+from collections.abc import AsyncGenerator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
-from alembic.config import Config, command
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.sql import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -33,32 +34,38 @@ log = logging.getLogger(__name__)
 TZ = ZoneInfo(app_config().db_timezone)
 
 
-def run_sqlite_migrations():
-    """Run the alembic migration"""
-    try:
-        # Configure Alembic to use the 'alembic_sqlite' section
-        alembic_cfg = Config("alembic.ini", ini_section='sqlite')
-        alembic_cfg.set_main_option('sqlalchemy.url', app_config().sql_url)
-
-        # Run migrations
-        command.upgrade(alembic_cfg, "head")
-
-        log.info("alembic head migration finished")
-    except Exception as e:
-        logging.error("migration failed: %s", e)
-        raise e
-
-
 @asynccontextmanager
 async def db_connection_lifespan():
     """Lifecycle management of the database connection"""
     global create_sqlmodel_session, engine
 
     engine_url = app_config().sql_url.strip()
+    connect_args = {}
 
-    engine = create_async_engine(engine_url, echo=True, future=True)
-    create_sqlmodel_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-    create_sqlalchemy_session = sessionmaker(bind=engine, class_=SQLA_AsyncSession, expire_on_commit=False)
+    # explicitly set the asyncpg event loop and TE to prevent futures
+    # awaited from different local event loops
+    if "asyncpg" in engine_url:
+        loop = asyncio.get_running_loop()
+        loop.set_default_executor(ThreadPoolExecutor())
+        connect_args.update(loop=loop)
+        print(f"asyncpg configured with event loop: {id(loop)}")
+
+    engine = create_async_engine(
+        engine_url,
+        echo=False,
+        future=True,
+        connect_args=connect_args)
+
+    log.info("database engine %s, driver: %s", engine.dialect.name, engine.dialect.driver)
+
+    create_sqlmodel_session = async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False)
+    create_sqlalchemy_session = async_sessionmaker(
+        bind=engine,
+        class_=SQLA_AsyncSession,
+        expire_on_commit=False)
 
     # test creating a new session on SQLAlchemy - this is required
     # to use the greenlet workaround internally in their code to run a sync function
@@ -67,8 +74,6 @@ async def db_connection_lifespan():
     # instrument the engine for telemetry
     if app_config().telemetry_enable:
         SQLAlchemyInstrumentor().instrument(engine=engine)
-
-    log.info("database engine %s, driver: %s", engine.dialect.name, engine.dialect.driver)
 
     # Setup fallbacks for features that exist in postgres but not sqlite
     if engine.dialect.name == "sqlite":
@@ -80,26 +85,41 @@ async def db_connection_lifespan():
                 log.info("sqlite fallbacks installed")
 
             await session.run_sync(create_sequence)
-            run_sqlite_migrations()
         finally:
             pass
     try:
         yield engine
+
     except GeneratorExit:
         pass
     finally:
-        session.close()
+        await session.close()
         log.info("database engine disconnected %s", engine.name)
-        del session
+        await engine.dispose()
         engine = None
 
 
-async def get_session() -> AsyncSession:
-    """Get a database session using the main database connection"""
+@asynccontextmanager
+async def db_session_pool() -> AsyncGenerator[AsyncSession, None]:
+    """Get a scoped database session using pool connections"""
     global engine, create_sqlmodel_session
-    if engine is not None:
-        return create_sqlmodel_session()
-    raise OperationalError("engine is not available", None, None)
+    if engine is None:
+        raise OperationalError("engine is not available", None, None)
+    session = None
+    try:
+        session = create_sqlmodel_session()
+        yield session
+    finally:
+        # check the session back in
+        if session is not None:
+            await session.close()
+
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Fast API Depends() compatible AsyncExit construction of the session, uses
+    async context manager to handle session state cleanup"""
+    async with db_session_pool() as session:
+        yield session
 
 
 def sql_profiler_decorator(func, report_name="report.html"):

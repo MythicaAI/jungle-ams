@@ -13,7 +13,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from assets import repo
 from assets.repo import AssetVersionResult, convert_version_input
 from cryptid.cryptid import asset_id_to_seq
-from db.connection import get_session
+from db.connection import get_db_session
 from db.schema.assets import Asset, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import ProfileAsset
@@ -96,7 +96,7 @@ async def select_filtered_g_assets(
 async def for_profile(
         category: str,
         auth_profile: SessionProfile = Depends(session_profile),
-        db_session: AsyncSession = Depends(get_session)) -> list[AssetVersionResult]:
+        db_session: AsyncSession = Depends(get_db_session)) -> list[AssetVersionResult]:
     """
     Return all assets that have been listed by this profile
     """
@@ -109,7 +109,7 @@ async def add(
         asset_id: str,
         version: str,
         profile: SessionProfile = Depends(session_profile),
-        db_session: AsyncSession = Depends(get_session)) -> AssetVersionResult:
+        db_session: AsyncSession = Depends(get_db_session)) -> AssetVersionResult:
     """
     Return all assets that have been attached to this profile
     """
@@ -141,7 +141,7 @@ async def g_delete(
         asset_id: str,
         version: str,
         profile: SessionProfile = Depends(session_profile),
-        db_session: AsyncSession = Depends(get_session)):
+        db_session: AsyncSession = Depends(get_db_session)):
     """
     Delete a profile asset group item
     """

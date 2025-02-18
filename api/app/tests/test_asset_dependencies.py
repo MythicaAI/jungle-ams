@@ -3,6 +3,8 @@
 """Test dependencies on asset versions"""
 from http import HTTPStatus
 
+import pytest
+
 from assets.repo import AssetDependency, AssetDependencyResult
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
@@ -21,8 +23,9 @@ def dependencies_uri(api_base, asset):
             f"{version_id_as_str(asset.version)}/dependencies")
 
 
-def test_asset_dependencies(client, api_base, create_profile, create_asset_versions, uploader):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_asset_dependencies(client, api_base, create_profile, create_asset_versions, uploader):
+    test_profile = await create_profile()
 
     versions = create_asset_versions(test_profile, uploader)
     assert len(versions) == 1
@@ -79,7 +82,7 @@ def test_asset_dependencies(client, api_base, create_profile, create_asset_versi
     assert result.dependencies[1].author_name == test_profile.profile.name
 
     # create a new asset with a different profile
-    other_profile = create_profile()
+    other_profile = await create_profile()
 
     # initially this asset has no dependencies
     versioned_asset = create_asset_versions(other_profile, uploader, attach_package=False)[0]

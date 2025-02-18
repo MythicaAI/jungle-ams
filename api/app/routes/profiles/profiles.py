@@ -10,7 +10,7 @@ from sqlmodel import col, select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import profile_id_to_seq
-from db.connection import get_session
+from db.connection import get_db_session
 from db.schema.profiles import Profile
 from profiles.load_profile_and_roles import load_profile_and_roles
 from profiles.responses import (
@@ -46,34 +46,34 @@ class CreateUpdateProfileModel(BaseModel):
 @router.get('/named/{profile_name}')
 async def by_name(
         profile_name: profile_name_str,
-        exact_match: Optional[bool] = False
+        exact_match: Optional[bool] = False,
+        db_session: AsyncSession = Depends(get_db_session)
 ) -> list[PublicProfileResponse]:
     """Get asset by name"""
-    with get_session() as session:
-        if exact_match:
-            results = session.exec(
-                select(Profile).where(Profile.name == profile_name)
-            ).all()
-        else:
-            results = session.exec(
-                select(Profile).where(
-                    col(Profile.name).contains(  # pylint: disable=no-member
-                        profile_name
-                    )
+    if exact_match:
+        results = (await db_session.exec(
+            select(Profile).where(Profile.name == profile_name)
+        )).all()
+    else:
+        results = (await db_session.exec(
+            select(Profile).where(
+                col(Profile.name).contains(  # pylint: disable=no-member
+                    profile_name
                 )
-            ).all()
-        return [
-            profile_to_profile_response(
-                x,
-                PublicProfileResponse)
-            for x in results
-        ]
+            )
+        )).all()
+    return [
+        profile_to_profile_response(
+            x,
+            PublicProfileResponse)
+        for x in results
+    ]
 
 
 @router.get('/roles')
 async def active_roles(
         auth_profile=Depends(session_profile),
-        db_session: AsyncSession = Depends(get_session)
+        db_session: AsyncSession = Depends(get_db_session)
 ) -> ProfileRolesResponse:
     """Get a profile by ID"""
     profile, org_roles = await load_profile_and_roles(db_session, auth_profile.profile_seq)
@@ -88,7 +88,7 @@ async def active_roles(
 @router.post('/', status_code=HTTPStatus.CREATED)
 async def create(
         req_profile: CreateUpdateProfileModel,
-        db_session: AsyncSession = Depends(get_session)) -> ProfileResponse:
+        db_session: AsyncSession = Depends(get_db_session)) -> ProfileResponse:
     """Create a new profile"""
     try:
         # copy over the request parameters as they have been auto validated,
@@ -98,7 +98,6 @@ async def create(
 
     except (TypeError, ValidationError) as e:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail=str(e)) from e
-
     db_session.add(profile)
     await db_session.commit()
 
@@ -114,7 +113,7 @@ async def create(
 async def by_id(
         profile_id: str,
         auth_profile: Optional[Profile] = Depends(maybe_session_profile),
-        db_session: AsyncSession = Depends(get_session)
+        db_session: AsyncSession = Depends(get_db_session)
 ) -> Union[PublicProfileResponse, ProfileResponse]:
     """Get a profile by ID"""
     profile_seq = profile_id_to_seq(profile_id)
@@ -139,7 +138,7 @@ async def update(
         profile_id: str,
         req_profile: CreateUpdateProfileModel,
         profile: SessionProfile = Depends(session_profile),
-        db_session: AsyncSession = Depends(get_session)
+        db_session: AsyncSession = Depends(get_db_session)
 ) -> ProfileResponse:
     """Update the profile of the owning account"""
     validate_roles(role=roles.profile_update,
@@ -153,7 +152,7 @@ async def update(
     # Only update if at least one value is supplied
     if len(values.keys()) > 0:
         stmt = sql_update(Profile).values(**values).where(Profile.profile_seq == profile_seq)
-        result = await db_session.execute(stmt)
+        result = await db_session.exec(stmt)
         rows_affected = result.rowcount
         if rows_affected == 0:
             raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')

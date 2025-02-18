@@ -1,9 +1,9 @@
 # pylint: disable=unnecessary-lambda, no-member, unsupported-membership-test
 
+import asyncio
 import logging
 from datetime import datetime
 from enum import Enum
-from functools import partial
 from http import HTTPStatus
 from typing import Any, Dict, Iterable, Optional, Union
 
@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import Session, col, delete as sql_delete, desc, insert, or_, select, update
+from sqlmodel import col, delete as sql_delete, desc, insert, or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from assets.queries import get_top_published_assets_metadata_query, resolve_assets_tag
@@ -275,7 +275,7 @@ async def select_asset_version(db_session: AsyncSession,
     return results
 
 
-def select_asset_dependencies(
+async def select_asset_dependencies(
         db_session: AsyncSession,
         asset_id: str,
         version_str: str,
@@ -289,8 +289,8 @@ def select_asset_dependencies(
         # Look for the first asset version in the list, resolve the asset, and it's package
         # download information
         asset_id, version_id = ctx.visit.pop()
-        avr_results = select_asset_version(db_session, asset_id, version_id)
-        avr = process_join_results(db_session, avr_results)[0] if avr_results else None
+        avr_results = await select_asset_version(db_session, asset_id, version_id)
+        avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
         if avr is None or avr.published is False:
             ctx.missing.append(
                 MissingDependencyResult(
@@ -301,7 +301,7 @@ def select_asset_dependencies(
                     missing_version=(asset_id, tuple(version_id)),
                     missing_package_link=True))
         else:
-            download_info = resolve_download_info(session, avr.package_id, storage)
+            download_info = await resolve_download_info(db_session, avr.package_id, storage)
             if download_info is None:
                 ctx.missing.append(
                     MissingDependencyResult(missing_package=avr.package_id))
@@ -368,20 +368,20 @@ def asset_contents_json_to_model(asset_id: str, contents: dict[str, list[dict]])
 
 
 async def resolve_content_list(
-        session: Session,
+        db_session: AsyncSession,
         category: str,
-        in_content_list: list[Union[str, Dict[str, Any]]]):
+        content: list[Union[str, Dict[str, Any]]]):
     """For each category return the fully resolved version of list of items in the category"""
     if category in FILE_TYPE_CATEGORIES:
-        return list(map(partial(resolve_asset_file_reference, session), in_content_list))
+        return await asyncio.gather(*[resolve_asset_file_reference(db_session, x) for x in content])
     elif category in ASSET_VERSION_TYPE_CATEGORIES:
-        return list(map(partial(resolve_asset_dependency, session), in_content_list))
+        return await asyncio.gather(*[resolve_asset_dependency(db_session, x) for x in content])
     elif category in LINK_TYPE_CATEGORIES:
-        return list(map(resolve_asset_link, in_content_list))
+        return await asyncio.gather(*[resolve_asset_link(db_session, x) for x in content])
 
 
-def resolve_asset_file_reference(
-        session: Session,
+async def resolve_asset_file_reference(
+        db_session: AsyncSession,
         file_reference: Union[str, AssetFileReference]) -> dict:
     file_id = file_reference.file_id
     file_name = file_reference.file_name
@@ -389,7 +389,7 @@ def resolve_asset_file_reference(
     if file_id is None or file_name is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f"file_id and file_name required on {str(file_reference)}")
-    db_file = locate_content_by_seq(session, file_id_to_seq(file_id))
+    db_file = await locate_content_by_seq(db_session, file_id_to_seq(file_id))
     if db_file is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             detail=f"file '{file_id}' not found")
@@ -401,18 +401,20 @@ def resolve_asset_file_reference(
         size=db_file.size).model_dump()
 
 
-def resolve_asset_dependency(session, dep: AssetDependency) -> dict:
+async def resolve_asset_dependency(
+        db_session: AsyncSession,
+        dep: AssetDependency) -> dict:
     asset_id = dep.asset_id
     version = dep.version
     if asset_id is None or version is None or len(version) != 3:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f'asset_id and version required on {str(dep)}')
-    avr_results = select_asset_version(session, asset_id, tuple(version))
-    avr = process_join_results(session, avr_results)[0] if avr_results else None
+    avr_results = await select_asset_version(db_session, asset_id, tuple(version))
+    avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             f'asset {asset_id} {version} not found')
-    package_file = locate_content_by_seq(session, file_id_to_seq(avr.package_id))
+    package_file = await locate_content_by_seq(db_session, file_id_to_seq(avr.package_id))
     return AssetDependency(
         asset_id=avr.asset_id,
         version=avr.version,
@@ -431,21 +433,24 @@ def resolve_asset_link(link):
                             detail=f"link '{link}' not valid") from e
 
 
-def resolve_contents_as_json(
-        session: Session,
+async def resolve_contents_as_json(
+        db_session: AsyncSession,
         in_files_categories: dict[str, list[AssetFileReference | str]]) \
-        -> str:
+        -> Dict[str, Any]:
     """Convert any partial content references into fully resolved references"""
     contents = {}
 
     # resolve all file content types
     for category, content_list in in_files_categories.items():
-        contents[category] = resolve_content_list(session, category, content_list)
+        contents[category] = await resolve_content_list(db_session, category, content_list)
 
     return contents
 
 
-def create_root(session: Session, r: AssetCreateRequest, owner_seq: int) -> AssetCreateResult:
+async def create_root(
+        db_session: AsyncSession,
+        r: AssetCreateRequest,
+        owner_seq: int) -> AssetCreateResult:
     """
     Create the root asset that is the stable ID for all asset versions
     """
@@ -454,15 +459,15 @@ def create_root(session: Session, r: AssetCreateRequest, owner_seq: int) -> Asse
     # If the user passes an organization ID ensure that it exists
     if r.org_id is not None:
         org_seq = org_id_to_seq(r.org_id)
-        col_result = session.exec(select(Org).where(
-            Org.org_seq == org_seq)).one_or_none()
+        col_result = (await db_session.exec(select(Org).where(
+            Org.org_seq == org_seq))).one_or_none()
         if col_result is None:
             raise HTTPException(HTTPStatus.NOT_FOUND, f"org {r.org_id} not found")
 
-    asset_result = session.exec(insert(Asset).values(
+    asset_result = await db_session.exec(insert(Asset).values(
         org_seq=org_seq, owner_seq=owner_seq))
     asset_seq = asset_result.inserted_primary_key[0]
-    session.commit()
+    await db_session.commit()
     return AssetCreateResult(
         asset_id=asset_seq_to_id(asset_seq),
         org_id=r.org_id,
@@ -482,7 +487,7 @@ async def create_version(db_session: AsyncSession,
 
     # Find an existing asset version
     avr_results = await select_asset_version(db_session, asset_id, version_id)
-    avr = await process_join_results(db_session, avr_results)[0] if avr_results else None
+    avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
 
@@ -519,7 +524,7 @@ async def create_version(db_session: AsyncSession,
     # and converted to json for serialization into storage
     contents = values.get('contents')
     if contents is not None:
-        values['contents'] = resolve_contents_as_json(session, r.contents)
+        values['contents'] = await resolve_contents_as_json(db_session, r.contents)
 
     # org change: if the org_id is specified update the property of the root asset
     org_id = values.pop('org_id', None)
@@ -584,9 +589,9 @@ async def create_version(db_session: AsyncSession,
 
         # read back the join result, add and commit the event back
         avr_results = await select_asset_version(db_session, asset_id, version_id)
-        read_back = process_join_results(db_session, avr_results)[0] if avr_results else None
-        add_version_packaging_event(db_session, read_back)
-        await session.commit()
+        read_back = (await process_join_results(db_session, avr_results))[0] if avr_results else None
+        await add_version_packaging_event(db_session, read_back)
+        await db_session.commit()
 
         return create_or_update, read_back
     except sqlalchemy.exc.IntegrityError as exc:
@@ -739,8 +744,12 @@ async def latest_version(db_session: AsyncSession, asset_seq: int) -> Optional[A
     return sorted_results[0]
 
 
-async def get_version(db_session: AsyncSession, asset_seq: int, major: int, minor: int, patch: int) -> Optional[
-    AssetVersionResult]:
+async def get_version(
+        db_session: AsyncSession,
+        asset_seq: int,
+        major: int,
+        minor: int,
+        patch: int) -> Optional[AssetVersionResult]:
     """Query a specific asset version"""
     results = (await db_session.exec(
         select(Asset, AssetVersion)
@@ -754,7 +763,7 @@ async def get_version(db_session: AsyncSession, asset_seq: int, major: int, mino
     if not results:
         return None
 
-    results = process_join_results(session, results)
+    results = await process_join_results(db_session, results)
     return results[0]
 
 
