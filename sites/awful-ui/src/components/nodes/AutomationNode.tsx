@@ -20,8 +20,8 @@ import { JSONSchema } from '../../types/JSONSchema';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Input, Stack, Typography } from '@mui/joy';
-import { NodeDeleteButton } from '../NodeDeleteButton';
-import { NodeHeader } from '../NodeHeader';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
+import { NodeHeader } from './ux/NodeHeader';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
