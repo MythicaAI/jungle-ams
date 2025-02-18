@@ -1,33 +1,31 @@
 """Utils for models types"""
 import asyncio
-from functools import partial
 from http import HTTPStatus
 from typing import Any, Callable, Dict, Optional, Union
 
-from cryptid.cryptid import file_id_to_seq, file_seq_to_id
 from fastapi import HTTPException
 from sqlalchemy import Select, desc
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 import assets.repo as assets_repo
-
 from content.locate_content import locate_content_by_seq
+from cryptid.cryptid import file_id_to_seq, file_seq_to_id
 from db.schema.assets import Asset, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from routes.file_uploads import enrich_files
 from tags.tag_models import TagFileReference, TagType
 
-
 THUMBNAILS_CONTENT_KEY = 'thumbnails'
+
 
 async def process_type_model_result(
         tag_type: TagType,
         db_session: AsyncSession,
-    type_model_query: Optional[Select],
-    profile: Optional[Profile],
-    limit: int,
-    offset: int,
+        type_model_query: Optional[Select],
+        profile: Optional[Profile],
+        limit: int,
+        offset: int,
 ) -> Callable:
     "Dynamically return the type_model response"
     if tag_type == TagType.asset:
@@ -52,7 +50,7 @@ async def process_type_model_result(
 
 
 def resolve_contents_as_json(
-    session: AsyncSession, in_files_categories: dict[str, list[TagFileReference | str]]
+        session: AsyncSession, in_files_categories: dict[str, list[TagFileReference | str]]
 ) -> str:
     """Convert any partial content references into fully resolved references"""
     contents = {}
@@ -65,7 +63,7 @@ def resolve_contents_as_json(
 
 
 def resolve_content_list(
-    db_session: AsyncSession, category: str, in_content_list: list[Union[str, Dict[str, Any]]]
+        db_session: AsyncSession, category: str, in_content_list: list[Union[str, Dict[str, Any]]]
 ):
     """For each category return the fully resolved version of list of items in the category"""
     if category in THUMBNAILS_CONTENT_KEY:
@@ -75,7 +73,7 @@ def resolve_content_list(
 
 
 async def resolve_tag_file_reference(
-    db_session: AsyncSession, file_reference: Union[str, TagFileReference]
+        db_session: AsyncSession, file_reference: Union[str, TagFileReference]
 ) -> dict:
     file_id = file_reference.file_id
 

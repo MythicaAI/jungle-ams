@@ -7,25 +7,17 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import Sequence, asc, desc
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import delete as sql_delete, insert, select
+from sqlmodel import delete as sql_delete, insert, select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from content.locate_content import locate_content_by_seq
 from cryptid.cryptid import tag_id_to_seq, tag_seq_to_id
-from db.connection import get_session
-from db.schema.tags import Tag
-from db.connection import get_db_session
+from db.connection import get_db_session, get_session
 from db.schema.tags import Tag
 from ripple.auth import roles
 from ripple.auth.authorization import validate_roles
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.tags.tag_types import router as tag_types_router
-from sqlalchemy import Sequence, asc, desc
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import delete as sql_delete
-from sqlmodel import insert, select
-from sqlmodel import update as sql_update
 from tags.repo import resolve_contents_as_json
 from tags.tag_models import TagRequest, TagResponse, TagUpdateRequest
 
@@ -97,10 +89,10 @@ async def list_all(
     """Get all tags"""
     rows: Sequence[Tag] = (await db_session.exec(
         select(Tag).where(
-                Tag.page_priority > 0
-            ).order_by(
-                asc(Tag.page_priority), desc(Tag.created)
-            ).limit(limit).offset(offset)
+            Tag.page_priority > 0
+        ).order_by(
+            asc(Tag.page_priority), desc(Tag.created)
+        ).limit(limit).offset(offset)
     )).all()
 
     response = [
