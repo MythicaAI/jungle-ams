@@ -1,8 +1,8 @@
 import asyncio
+import base64
 import logging
 import os
 from typing import Optional
-import base64
 
 from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.propagate import inject
@@ -110,6 +110,8 @@ class ResultPublisher:
                 return None
 
             try:
+                self._stream_file_chunks(file_path, key, index)
+
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
@@ -117,9 +119,7 @@ class ResultPublisher:
                         headers=updated_headers
                     )
                     file_id = response['files'][0]['file_id'] if response else None
-
-                self._stream_file_chunks(file_path, key, index)
-                return file_id
+                    return file_id
             finally:
                 os.remove(file_path)
 
