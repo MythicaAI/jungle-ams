@@ -352,6 +352,7 @@ def test_request(test_token):
     return AutomationRequest(
         process_guid="test-process-guid",
         correlation="test-correlation",
+        results_subject="test-results-subject",
         path="/test/path",
         auth_token=test_token,
         data={"test": "data"},
