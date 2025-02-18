@@ -2,6 +2,7 @@
 # pylint: disable=global-statement,global-variable-not-assigned
 import logging
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from redis.asyncio import ConnectionPool, StrictRedis
@@ -44,7 +45,7 @@ async def redis_connection_pool(app: FastAPI) -> StrictRedis:
     await conn.close()
 
 
-async def get_redis(request: Request) -> StrictRedis:
+async def get_redis(request: Request) -> AsyncGenerator[StrictRedis, None]:
     """Fast API Depends() compatible AsyncExit construction of the redis connection, uses
     async context manager to handle session state cleanup"""
     async with redis_connection_pool(request.app) as redis:

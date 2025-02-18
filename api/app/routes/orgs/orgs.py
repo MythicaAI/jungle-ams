@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 """APIs for working with organization objects and their relations"""
 
 from datetime import datetime
@@ -145,7 +146,6 @@ async def by_name(
         db_results = (await db_session.exec(select(Org).where(
             Org.name == org_name))).all()
     else:
-        # pylint: disable=no-member
         db_results = (await db_session.exec(select(Org).where(
             col(Org.name).contains(org_name)))).all()
     results = [OrgResponse(**r.model_dump(), org_id=org_seq_to_id(r.org_seq))
