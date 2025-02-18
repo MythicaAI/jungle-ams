@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import { Card, Typography, Box, List, ListItem, ListItemButton, ListItemDecorator, Checkbox, Input } from '@mui/joy';
+import { Card, Typography, Box, List, ListItem, ListItemButton, ListItemDecorator, Checkbox, Input, Button } from '@mui/joy';
 import { GetFileResponse, GetAssetResponse } from '../../types/MythicaApi';
 import { useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import useMythicaApi from '../../hooks/useMythicaApi';
@@ -17,7 +17,6 @@ interface AssetViewerNodeProps {
   };
 }
 
-
 const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
   const { getAssets } = useMythicaApi();
   const { setFlowData, NodeResizer } = useAwfulFlow();
@@ -25,15 +24,34 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
 
   const [assets, setAssets] = useState<GetAssetResponse[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<GetAssetResponse | undefined>();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  
-  const [selectedFiles, setSelectedFiles] = useState<GetFileResponse[]>([]);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<GetFileResponse[]>([]);
   const [flowKeys, setFlowKeys] = useState<string[]>([]);
-  
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // New state for tag filtering.
+  const [selectedTag, setSelectedTag] = useState<string>('All');
+
+  // Aggregate all tags from all assets.
+  const aggregateTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    assets.forEach((asset) => {
+      asset.tags.forEach((tag) => {
+        // Assuming each tag object has a property `name`
+        tagSet.add(tag.name);
+      });
+    });
+    return Array.from(tagSet);
+  }, [assets]);
+
+  // Filter assets based on the selected tag.
+  const filteredAssets = useMemo(() => {
+    if (selectedTag === 'All') return assets;
+    return assets.filter((asset) =>
+      asset.tags.some((tag) => tag.name === selectedTag)
+    );
+  }, [assets, selectedTag]);
 
   const handleSelectAsset = (asset: GetAssetResponse) => {
     setSelectedAsset(asset);
@@ -58,8 +76,6 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
     );
   };
 
-
-
   const updateFlow = () => {
     const fileTypes = new Map<string, GetFileResponse[]>();
     selectedFiles.forEach((file) => {
@@ -81,10 +97,12 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
 
   useEffect(() => {
     if (!selectedAsset) {
-      const myasset = assets.find((asset) => asset.asset_id === node.data.selectedAssetId)
+      const myasset = assets.find((asset) => asset.asset_id === node.data.selectedAssetId);
       if (myasset) {
         setSelectedAsset(myasset);
-        setSelectedFiles(myasset.contents.files.filter((file) => node.data.selectedFileIds.includes(file.file_id)));
+        setSelectedFiles(
+          myasset.contents.files.filter((file) => node.data.selectedFileIds.includes(file.file_id))
+        );
       }
     } else {
       updateNodeInternals(node.id);
@@ -98,14 +116,10 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
   useEffect(() => {
     if (!selectedAsset) return;
     updateFlow();
-    
+
     node.data.selectedAssetId = selectedAsset.asset_id;
-    node.data.selectedFileIds = selectedFiles.map((file)=>file.file_id);
+    node.data.selectedFileIds = selectedFiles.map((file) => file.file_id);
   }, [selectedFiles]);
-
-
-
-  
 
   // Determine if all filtered files are selected
   const allFilesSelected = useMemo(
@@ -122,7 +136,6 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
       setSelectedFiles(filteredFiles);
     }
   };
-
 
   return (
     <Card
@@ -154,15 +167,41 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
           <Typography level="body-lg" mb={1}>
             Select Package:
           </Typography>
+
+          {/* Tag Button Strip */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant={selectedTag === 'All' ? 'solid' : 'outlined'}
+              onClick={() => setSelectedTag('All')}
+            >
+              All
+            </Button>
+            {aggregateTags.map((tag) => (
+              <Button
+                key={tag}
+                variant={selectedTag === tag ? 'solid' : 'outlined'}
+                onClick={() => setSelectedTag(tag)}
+              >
+                {tag}
+              </Button>
+            ))}
+          </Box>
+
           <Box sx={{ flex: 1, overflowY: 'auto' }}>
             <List size="sm">
-              {assets.map((asset) => (
+              {filteredAssets.map((asset) => (
                 <ListItem key={asset.asset_id}>
                   <ListItemButton
-                    selected={selectedAsset?.asset_id == asset.asset_id}
+                    selected={selectedAsset?.asset_id === asset.asset_id}
                     onClick={() => handleSelectAsset(asset)}
                   >
-                    <Typography sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <Typography
+                      sx={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
                       {asset.name}
                     </Typography>
                   </ListItemButton>
@@ -186,21 +225,15 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
 
           {/* Header row with "Select All" */}
           <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, borderBottom: '1px solid #ccc' }}>
-            <Checkbox
-              checked={allFilesSelected}
-              onChange={handleSelectAll}
-              sx={{ mr: 1 }}
-            />
-            <Typography sx={{ flex: 1, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-              Select All
-            </Typography>
+            <Checkbox checked={allFilesSelected} onChange={handleSelectAll} sx={{ mr: 1 }} />
+            <Typography sx={{ flex: 1, fontWeight: 'bold', whiteSpace: 'nowrap' }}>Select All</Typography>
           </Box>
 
           {/* File List */}
           <Box sx={{ flex: 1, overflowY: 'auto' }}>
             <List size="sm">
               {filteredFiles.map((file) => {
-                const isChecked = selectedFiles.find((f) => f.file_id === file.file_id)?true:false;
+                const isChecked = selectedFiles.some((f) => f.file_id === file.file_id);
                 return (
                   <ListItem key={file.file_id}>
                     <ListItemButton
@@ -216,7 +249,13 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
                           }}
                         />
                       </ListItemDecorator>
-                      <Typography sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <Typography
+                        sx={{
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
                         {file.file_name}
                       </Typography>
                     </ListItemButton>
@@ -235,7 +274,6 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
         </Box>
       </Box>
 
-
       <div style={{ height: '24px' }} />
 
       {/* Output handle */}
@@ -243,13 +281,13 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
         <FileOutputHandle
           nodeId={node.id}
           key={key}
-          id={key} 
-          left={`${(index + 1) * (100 / (array.length + 1))}%`} 
-          isConnectable 
-          style={{ background: '#555' }} 
-          label={key} />
+          id={key}
+          left={`${(index + 1) * (100 / (array.length + 1))}%`}
+          isConnectable
+          style={{ background: '#555' }}
+          label={key}
+        />
       ))}
-
     </Card>
   );
 };
