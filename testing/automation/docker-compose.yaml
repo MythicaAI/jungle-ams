@@ -21,8 +21,10 @@ services:
       - web
       - storage
     environment:
+      TELEMETRY_ENABLE: False
+      NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
-      API_BASE_URI: http://app:5555/v1
+      API_BASE_URI: http://host.docker.internal:8080/v1
       SFX_CLIENT_ID: ${SFX_CLIENT_ID}
       SFX_CLIENT_SECRET: ${SFX_CLIENT_SECRET}
   blender-worker:
@@ -32,8 +34,10 @@ services:
       - web
       - storage
     environment:
+      TELEMETRY_ENABLE: False
+      NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
-      API_BASE_URI: http://app:5555/v1
+      API_BASE_URI: http://host.docker.internal:8080/v1
   workflow-worker:
     container_name: workflow
     image: mythica-auto-workflow:latest
@@ -41,8 +45,10 @@ services:
       - web
       - storage
     environment:
+      TELEMETRY_ENABLE: False
+      NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
-      API_BASE_URI: http://app:5555/v1
+      API_BASE_URI: http://host.docker.internal:8080/v1
 networks:
   storage:
     driver: bridge
