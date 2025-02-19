@@ -13,8 +13,6 @@ log = logging.getLogger(__name__)
 
 worker = Worker()
 
-if os.environ.get("TELEMETRY_ENABLE", False):
-    init_telemetry()
 
 workers = [
     {
