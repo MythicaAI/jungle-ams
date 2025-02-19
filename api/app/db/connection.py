@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Request
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.sql import text
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -63,10 +62,6 @@ async def db_connection_lifespan(app: FastAPI):
     # test creating a new session on SQLAlchemy - this is required
     # to use the greenlet workaround internally in their code to run a sync function
     session = create_sqlalchemy_session()
-
-    # instrument the engine for telemetry
-    if app_config().telemetry_enable:
-        SQLAlchemyInstrumentor().instrument(engine=db_engine)
 
     # Setup fallbacks for features that exist in postgres but not sqlite
     if db_engine.dialect.name == "sqlite":
