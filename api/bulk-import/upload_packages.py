@@ -494,6 +494,11 @@ class PackageUploader(object):
 
     def attach_tags_to_package(self, package: ProcessedPackageModel):
         "Adds the specified tags, must be using an admin session"
+
+        for tag in package.tags:
+            # if tags are in package_spec
+            self.tags[tag] = None
+
         if self.tags:
             self.start_session()
             for tag, tag_id in self.tags.copy().items():
