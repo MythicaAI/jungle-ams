@@ -57,6 +57,8 @@ async def __nats_submit(channel: str, path: str, data: dict, correlation: str, a
     nats_client = None
     response = None
 
+    request_guid = str(uuid.uuid4())
+
     log.debug("Starting NATS connection")
     nats_client = await nats.connect(servers=[NATS_URL])
     log.debug("NATS connected")
@@ -64,7 +66,7 @@ async def __nats_submit(channel: str, path: str, data: dict, correlation: str, a
     # Wait for the response with a timeout (customize as necessary)
     log.debug("Setting up NATS response listener")
     result_subject = (f"{NATS_RESULT_SUBJECT}.{ENVIRONMENT}.{LOCATION}"
-                        f".{PROCESS_GUID}")
+                        f".{request_guid}")
     response = await nats_client.subscribe(result_subject)
     log.debug("NATS response listener set up")
 
@@ -72,6 +74,7 @@ async def __nats_submit(channel: str, path: str, data: dict, correlation: str, a
     req = {
         'process_guid': PROCESS_GUID,
         'correlation': correlation,
+        'results_subject': request_guid,
         'path': path,
         'auth_token': auth_token or "",
         'data': data
