@@ -5,9 +5,9 @@ import useMythicaApi from '../../hooks/useMythicaApi'; // Import Auth context
 import useAwfulFlow from '../../hooks/useAwfulFlow'; // Import NodeDataContext
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Box, Button, Card, List, ListItem, Typography } from '@mui/joy';
-import { NodeDeleteButton } from '../NodeDeleteButton';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
-import { NodeHeader } from '../NodeHeader';
+import { NodeHeader } from './ux/NodeHeader';
 
 interface FileUploadNodeProps {
   id: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Stack } from '@mui/joy';
-import Logo from '../assets/img/mythica-logo.png';
+import Logo from '../../assets/img/mythica-logo.png';
 import { NavLinks } from './NavLinks';
 
 type Props = {

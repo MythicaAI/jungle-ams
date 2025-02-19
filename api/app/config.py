@@ -38,7 +38,7 @@ class AppConfig(BaseSettings):
     http_listen_port: int = 5555
     enable_db: bool = True
     db_timezone: str = 'UTC'
-    sql_url: str = 'postgresql://test:test@localhost:5432/upload_pipeline'
+    sql_url: str = 'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline'
 
     redis_host: str = 'localhost'
     redis_port: int = 6379
@@ -47,6 +47,9 @@ class AppConfig(BaseSettings):
     telemetry_insecure: bool = False
     telemetry_endpoint: str = "https://ingest.us.signoz.com:443"
     telemetry_token: str = 'doiPcVI9kn0gtNBgiycWZrS6ZbVcLBp1y0vG'
+
+    sendgrid_api_key: str = 'test-api-key'
+    sendgrid_email: str = 'test@mythica.ai'
 
     mythica_org_name: str = "Mythica"
 

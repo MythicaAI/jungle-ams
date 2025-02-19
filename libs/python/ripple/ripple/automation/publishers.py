@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import os
 from typing import Optional
@@ -10,8 +11,9 @@ from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.utils import error_handler
 from ripple.config import ripple_config
-from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem
+from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
 
+NATS_FILE_CHUNK_SIZE = 64 * 1024
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -103,11 +105,13 @@ class ResultPublisher:
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
         updated_headers = self.update_headers_from_context()
-        def upload_file(file_path: str) -> Optional[str]:
+        def upload_file(file_path: str, key: str, index: int) -> Optional[str]:
             if not os.path.exists(file_path):
                 return None
 
             try:
+                self._stream_file_chunks(file_path, key, index)
+
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
                     file_data = [('files', (file_name, file, 'application/octet-stream'))]
@@ -136,13 +140,44 @@ class ResultPublisher:
         if isinstance(item, OutputFiles):
             for key, files in item.files.items():
                 for index, file in enumerate(files):
-                    file_id = upload_file(file)
+                    file_id = upload_file(file, key, index)
                     files[index] = file_id
 
         elif isinstance(item, JobDefinition):
             job_def_id = upload_job_def(item)
             if job_def_id is not None:
                 item.job_def_id = job_def_id
+
+    def _stream_file_chunks(self, file_path: str, key: str, index: int) -> None:
+        """Stream a file's contents as base64-encoded chunks via NATS"""
+        with open(file_path, 'rb') as file:
+            file_size = os.path.getsize(file_path)
+            total_chunks = (file_size + NATS_FILE_CHUNK_SIZE - 1) // NATS_FILE_CHUNK_SIZE
+            chunk_index = 0
+            
+            while chunk := file.read(NATS_FILE_CHUNK_SIZE):
+                encoded_data = base64.b64encode(chunk).decode('utf-8')
+                chunk_item = FileContentChunk(
+                    process_guid=self.request.process_guid,
+                    correlation=self.request.correlation,
+                    job_id=self.request.job_id or "",
+                    file_key=key,
+                    file_index=index,
+                    chunk_index=chunk_index,
+                    total_chunks=total_chunks,
+                    file_size=file_size,
+                    encoded_data=encoded_data
+                )
+                
+                task = asyncio.create_task(
+                    self.nats.post_to(
+                        "result",
+                        self.request.process_guid,
+                        chunk_item.model_dump()))
+                task.add_done_callback(error_handler(log))
+                chunk_index += 1
+            
+            assert chunk_index == total_chunks
 
 
 class SlimPublisher(ResultPublisher):

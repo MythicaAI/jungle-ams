@@ -5,6 +5,7 @@ import itertools
 import json
 from http import HTTPStatus
 
+import pytest
 from munch import munchify
 
 from assets.repo import AssetFileReference
@@ -21,8 +22,9 @@ test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
 test_file_content_type = "application/octet-stream"
 
 
-def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+@pytest.mark.asyncio
+async def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
     profile_id = test_profile.profile.profile_id
 

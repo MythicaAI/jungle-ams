@@ -1,19 +1,22 @@
-import httpx
+from datetime import datetime
 from http import HTTPStatus
+
+import httpx
+from starlette.testclient import TestClient
 
 from profiles.responses import ProfileResponse, SessionStartResponse
 from tests.shared_test import ProfileTestObj, assert_status_code
 
 
 async def create_profile_and_start_session(
-    api_base: str,
-    timeout: int,
-    name: str = "test-profile",
-    email: str = "test@test.com",
-    full_name: str = "Test Profile",
-    signature: str = 32 * 'X',
-    description: str = "Test description",
-    profile_href: str = "https://nothing.com/",
+        api_base: str,
+        timeout: int,
+        name: str = "test-profile",
+        email: str = "test@test.com",
+        full_name: str = "Test Profile",
+        signature: str = 32 * 'X',
+        description: str = "Test description",
+        profile_href: str = "https://nothing.com/",
 ) -> ProfileTestObj:
     """
     Factory method to create a profile, validate existence, start a session,
@@ -61,3 +64,20 @@ async def create_profile_and_start_session(
         auth_token = session_response.token
 
         return ProfileTestObj(profile=profile, auth_token=auth_token)
+
+
+def get_email_validation_key(api_base: str, client: TestClient, profile_id: str) -> str:
+    r = client.get(f"{api_base}/test/email-validation-key/{profile_id}")
+    assert_status_code(r, HTTPStatus.OK)
+    return r.json()['key']
+
+
+def set_email_validation_expires(
+        api_base: str,
+        client: TestClient,
+        key: str,
+        new_expiration: datetime):
+    r = client.post(f"{api_base}/test/email-validation-key-expires",
+                    json={'key': key,
+                          'expires': new_expiration.isoformat()})
+    assert_status_code(r, HTTPStatus.OK)

@@ -4,6 +4,7 @@
 
 from http import HTTPStatus
 
+import pytest
 from munch import munchify
 
 from tests.fixtures.create_org import create_org
@@ -19,11 +20,12 @@ json_schema = {
 }
 
 
-def test_create_update(api_base, client, create_profile, create_org):
+@pytest.mark.asyncio
+async def test_create_update(api_base, client, create_profile, create_org):
     topo_name = "test-topo-" + random_str(10)
     topo_name_updated = topo_name + "-updated"
     invalid_org = 'foobar'
-    test_profile = create_profile()
+    test_profile = await create_profile()
     org_and_admin = create_org(test_profile)
     org_id = org_and_admin.org_id
     admin_id = org_and_admin.profile_id

@@ -2,14 +2,14 @@
 
 # pylint: disable=redefined-outer-name, unused-import
 
+import json
 from http import HTTPStatus
 
-import json
+import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
 from assets.repo import AssetFileReference
-from routes.type_adapters import register_adapters
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code, make_random_content, random_str, refresh_auth_token
@@ -26,18 +26,23 @@ test_asset_description = 'test-asset-description'
 test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
+# reference imported fixtures to prevent tooling auto-removal
+__fixtures__ = [
+    create_profile,
+    uploader
+]
+
 
 # see http://localhost:8080/docs for examples
-
-def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader):
-    register_adapters()
-    test_profile = create_profile(name=test_profile_name,
-                                  email=test_profile_email,
-                                  full_name=test_profile_full_name,
-                                  signature=test_profile_signature,
-                                  description=test_profile_description,
-                                  profile_href=test_profile_href,
-                                  validate_email=True)
+@pytest.mark.asyncio
+async def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader):
+    test_profile = await create_profile(name=test_profile_name,
+                                        email=test_profile_email,
+                                        full_name=test_profile_full_name,
+                                        signature=test_profile_signature,
+                                        description=test_profile_description,
+                                        profile_href=test_profile_href,
+                                        validate_email=True)
     profile_id = test_profile.profile.profile_id
     assert profile_id is not None
 
@@ -77,7 +82,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     org_id = o.org_id
 
     # after creating the org, refresh the auth token to get the new roles
-    test_profile.auth_token = refresh_auth_token(test_profile)
+    test_profile.auth_token = refresh_auth_token(client, test_profile)
     headers = test_profile.authorization_header()
 
     # create asset in org
@@ -176,7 +181,9 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     assert len(o.contents['files']) == 1
 
     # validate that invalid files fail
-    test_asset_ver_json['contents']['files'] = [{'file_id': 'file_foo', 'file_name': 'foo'}]
+    test_asset_ver_json['contents']['files'] = [{
+        'file_id': 'file_foo',
+        'file_name': 'foo'}]
     r = client.post(
         f"{api_base}/assets/{asset_id}/versions/0.2.0",
         json=test_asset_ver_json,
@@ -325,13 +332,13 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     assert o.name == test_asset_name + '-updated-2'
     assert len(o.contents['files']) == 0
 
-    new_profile = create_profile(name="new_profile",
-                                 email="test_test@gmail.com",
-                                 full_name=test_profile_full_name,
-                                 signature=test_profile_signature,
-                                 description=test_profile_description,
-                                 profile_href=test_profile_href,
-                                 validate_email=True)
+    new_profile = await create_profile(name="new_profile",
+                                       email="test_test@gmail.com",
+                                       full_name=test_profile_full_name,
+                                       signature=test_profile_signature,
+                                       description=test_profile_description,
+                                       profile_href=test_profile_href,
+                                       validate_email=True)
     new_profile_id = new_profile.profile.profile_id
     new_headers = new_profile.authorization_header()
 
@@ -357,7 +364,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     new_profile_org_id = o.org_id
 
     # after creating the org, refresh the auth token to get the new roles
-    new_profile.auth_token = refresh_auth_token(new_profile)
+    new_profile.auth_token = refresh_auth_token(client, new_profile)
     new_headers = new_profile.authorization_header()
 
     # create asset for new_profile
@@ -404,7 +411,7 @@ def test_create_profile_and_assets(api_base, client: TestClient, create_profile,
     assert o.contents['links'][0] == test_link_update1
     assert o.contents['links'][1] == test_link_update2
 
-    other_profile = create_profile()
+    other_profile = await create_profile()
     other_headers = other_profile.authorization_header()
 
     r = client.delete(

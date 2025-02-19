@@ -4,22 +4,24 @@
 
 from http import HTTPStatus
 
-from cryptid.cryptid import org_seq_to_id
+import pytest
 from munch import munchify
-from ripple.auth import roles
 
+from cryptid.cryptid import org_seq_to_id
+from ripple.auth import roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token
 
 
-def test_create_update(client, api_base, create_profile, create_org):
-    test_profile = create_profile()
+@pytest.mark.asyncio
+async def test_create_update(client, api_base, create_profile, create_org):
+    test_profile = await create_profile()
     o = create_org(test_profile)
     org_id = o.org_id
 
     # refresh the auth token (with roles) after creating an org
-    test_profile.auth_token = refresh_auth_token(test_profile)
+    test_profile.auth_token = refresh_auth_token(client, test_profile)
     headers = test_profile.authorization_header()
 
     payload = {'name': 'test-updated',
@@ -42,9 +44,10 @@ def test_create_update(client, api_base, create_profile, create_org):
     assert_status_code(r, HTTPStatus.NOT_FOUND)
 
 
-def test_org_ref_operations(client, api_base, create_profile, create_org):
-    admin_profile_test_info = create_profile()
-    user_profile_test_info = create_profile()
+@pytest.mark.asyncio
+async def test_org_ref_operations(client, api_base, create_profile, create_org):
+    admin_profile_test_info = await create_profile()
+    user_profile_test_info = await create_profile()
     org = create_org(admin_profile_test_info)
     org2 = create_org(admin_profile_test_info)
 
@@ -53,8 +56,8 @@ def test_org_ref_operations(client, api_base, create_profile, create_org):
     admin_id = org.profile_id
 
     # refresh auth
-    admin_profile_test_info.auth_token = refresh_auth_token(admin_profile_test_info)
-    user_profile_test_info.auth_token = refresh_auth_token(user_profile_test_info)
+    admin_profile_test_info.auth_token = refresh_auth_token(client, admin_profile_test_info)
+    user_profile_test_info.auth_token = refresh_auth_token(client, user_profile_test_info)
     headers = admin_profile_test_info.authorization_header()
 
     # validate that unknown roles fail

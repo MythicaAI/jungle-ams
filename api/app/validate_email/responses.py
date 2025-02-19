@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import BaseModel
 
 
 class ValidateEmailState(str, Enum):
@@ -21,8 +21,6 @@ class ValidateEmailState(str, Enum):
 class ValidateEmailResponse(BaseModel):
     """Response returned to a email validation request"""
     owner_id: str
-    code: str
-    link: AnyHttpUrl
     state: ValidateEmailState = ValidateEmailState.not_validated
 
 
