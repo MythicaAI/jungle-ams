@@ -66,6 +66,8 @@ cffi = "^1.17.1"
 charset-normalizer = "^3.4.1"
 pytest-asyncio = "^0.25.3"
 sendgrid = "^6.11.0"
+httpx = "^0.28.1"
+httpx-ws = "^0.7.1"
 
 
 [tool.poetry.extras]
@@ -76,12 +78,10 @@ authlib = []
 pytest = "^8.3.4"
 invoke = "^2.2.0"
 flake8 = "^7.1.2"
-httpx = "^0.28.1"
 munch = "^4.0.0"
 pylint = "^3.3.4"
 pytest-cov = "^6.0.0"
 pytest-timeout = "^2.3.1"
-httpx-ws = "^0.7.1"
 aiosqlite = "^0.21.0"
 
 [tool.poetry.scripts]
