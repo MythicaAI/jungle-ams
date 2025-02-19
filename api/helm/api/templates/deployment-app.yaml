@@ -36,7 +36,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: secrets
-                  key: SQL_URL
+                  key: SQL_ASYNC_URL
             - name: SENDGRID_API_KEY
               valueFrom:
                 secretKeyRef:
