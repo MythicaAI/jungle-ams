@@ -49,8 +49,8 @@ def create_app(use_prom=False, intercept_exceptions=False):
         generate_unique_id_function=custom_generate_unique_id,
         exception_handlers=exception_handlers(),
         servers=[
-            {'url': 'https://api.mythica.ai/', 'description': 'Production environment'},
-            {'url': 'http://localhost:8080', 'description': 'Local environment'}],
+            {'url': 'https://api.mythica.gg/', 'description': 'Production environment'},
+            {'url': 'https://api-staging.mythica.gg', 'description': 'Staging environment'}],
         root_path='/v1',
         lifespan=server_lifespan)
 
