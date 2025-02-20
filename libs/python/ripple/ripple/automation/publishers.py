@@ -62,15 +62,16 @@ class ResultPublisher:
         # Publish results
         log.info(f"Automation {'Result' if not complete else 'Complete'} -> {item}")
 
-        task = asyncio.create_task(
-            self.nats.post_to(
-                "result",
-                self.request.process_guid,
-                item.model_dump()))
+        if self.request.results_subject:
+            task = asyncio.create_task(
+                self.nats.post_to(
+                    "result",
+                    self.request.results_subject,
+                    item.model_dump()))
+            task.add_done_callback(error_handler(log))
 
-        task.add_done_callback(error_handler(log))
-        updated_headers = self.update_headers_from_context()
         if self.request.job_id:
+            updated_headers = self.update_headers_from_context()
             data = {
                 "created_in": "automation-worker",
                 "result_data": item.model_dump()
@@ -110,7 +111,8 @@ class ResultPublisher:
                 return None
 
             try:
-                self._stream_file_chunks(file_path, key, index)
+                if self.request.results_subject:
+                    self._stream_file_chunks(file_path, key, index)
 
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
@@ -172,7 +174,7 @@ class ResultPublisher:
                 task = asyncio.create_task(
                     self.nats.post_to(
                         "result",
-                        self.request.process_guid,
+                        self.request.results_subject,
                         chunk_item.model_dump()))
                 task.add_done_callback(error_handler(log))
                 chunk_index += 1

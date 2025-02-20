@@ -288,6 +288,7 @@ async def add_job_requested_event(
 
 async def add_job_nats_event(
         job_seq: int,
+        profile_id: str,
         auth_token: str,
         job_type: str,
         params: ParameterSet):
@@ -300,6 +301,7 @@ async def add_job_nats_event(
     event = AutomationRequest(
         process_guid=process_guid,
         correlation=str(uuid4()),
+        results_subject=profile_id,
         job_id=job_seq_to_id(job_seq),
         auth_token=auth_token,
         path=path,
@@ -353,6 +355,7 @@ async def create(
 
     await add_job_nats_event(
         job_seq,
+        profile.profile_id,
         profile.auth_token,
         job_def.job_type,
         req_data.params)

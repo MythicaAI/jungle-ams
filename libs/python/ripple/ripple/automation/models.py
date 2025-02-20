@@ -22,10 +22,11 @@ class AutomationModel(BaseModel):
 class AutomationRequest(BaseModel):
     """
     Contract for requests for work, results will be published back to
-    result subject of the process guid.
+    results_subject if specified.
     """
     process_guid: str
     correlation: str
+    results_subject: Optional[str] = None
     job_id: Optional[str] = None
     auth_token: Optional[str] = None
     path: str
