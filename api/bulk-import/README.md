@@ -42,7 +42,7 @@ poetry run python upload_packages.py \
     --package-list test_package_list.py \
     --license MPLv2.txt \
     --endpoint http://127.0.0.1:15555 \
-    --mythica-api-key  key_poqDttuPNQqcWIbUpxeW \
-    --github-api-token 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 \
-    --tags "Open Source,Mythica,Bohdan" 
+    --mythica-api-key  ${MYTYHICA_API_KEY} \
+    --github-api-token ${GITHUB_API_KEY} \
+    --tag "Open Source"
 ```

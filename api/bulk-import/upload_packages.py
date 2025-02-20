@@ -386,7 +386,8 @@ class PackageUploader(object):
         self.auth_token = None
         self.repo_base_dir = ''
         self.github_api_token = None
-        self.tags: dict[str, str | None] = {}
+        self.cached_tags: dict[str, str | None] = {}
+        self.united_tag: str = None
         self.conn_pool = conn_pool
         self.markdown = None
         self.always_bump = False
@@ -440,12 +441,6 @@ class PackageUploader(object):
             required=False
         )
         parser.add_argument(
-            '-ts', '--tags',
-            help='Several tags to use when importing the package',
-            default=None,
-            required=False,
-        )
-        parser.add_argument(
             '--markdown',
             help='File to write GitHub flavored markdown',
             default=None,
@@ -471,7 +466,7 @@ class PackageUploader(object):
         self.mythica_api_key = args.mythica_api_key
         self.package_list_file = args.package_list
         self.license = args.license
-        self.parse_tags(args.tags, args.tag)
+        self.united_tag = args.tag
         self.markdown = open(args.markdown, "w+t") if args.markdown else None
         if self.markdown:
             self.start_md()
@@ -482,28 +477,19 @@ class PackageUploader(object):
         if not os.path.exists(self.repo_base_dir):
             os.makedirs(self.repo_base_dir)
 
-    def parse_tags(self, bulk_of_tags: str = None, single_tag: str = None):
-        "Assigns result for self.tags"
-        if bulk_of_tags:
-            tags_list = bulk_of_tags.split(",")
-            for tag in tags_list:
-                if tag and tag != "":
-                    self.tags[tag] = None
-        if single_tag and single_tag != "":
-            self.tags[single_tag] = None
-
     def attach_tags_to_package(self, package: ProcessedPackageModel):
         "Adds the specified tags, must be using an admin session"
+        package_tags = package.tags if package.tags else []
+        if self.united_tag:
+            package_tags.append(self.united_tag)
+        self.start_session()
 
-        for tag in package.tags:
-            # if tags are in package_spec
-            self.tags[tag] = None
-
-        if self.tags:
-            self.start_session()
-            for tag, tag_id in self.tags.copy().items():
+        for tag in package_tags:
+            if tag != "":
+                tag_id = self.cached_tags.get(tag)
                 if not tag_id:
                     tag_id = self.find_or_create_tag(tag)
+                    self.cached_tags[tag] = tag_id
                 self.tag_asset(package, tag_id)
 
     def start_session(self, as_profile_id=None):
