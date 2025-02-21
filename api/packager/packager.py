@@ -17,7 +17,7 @@ from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
 from pythonjsonlogger import jsonlogger
 from ripple.automation.adapters import NatsAdapter
-from ripple.automation.models import AutomationRequest
+from ripple.automation.models import AutomationRequest, CropImageRequest
 from ripple.automation.worker import process_guid
 from ripple.models.params import FileParameter, ParameterSet
 from typing import Optional
@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webm'}
 
 def parse_args():
     """Parse command line arguments and provide the args structure"""
@@ -167,6 +168,37 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
     await nats.post("houdini", event.model_dump())
 
 
+async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse, token: str) -> bool:
+    parameter_set = CropImageRequest(
+        src_asset_id=avr.asset_id,
+        src_version=avr.version,
+        image_file=FileParameter(file_id=content.file_id),
+        crop_pos_x=None,
+        crop_pos_y=None,
+        crop_w=320,
+        crop_h=180,
+    )
+
+    event = AutomationRequest(
+        process_guid=process_guid,
+        correlation=str(uuid4()),
+        auth_token=token,
+        path='/mythica/crop_image',
+        data=parameter_set.model_dump(),
+        telemetry_context=get_telemetry_headers(),
+    )
+
+    nats = NatsAdapter()
+    log.info("Sent NATS imagemagick task. Request: %s", event.model_dump())
+    await nats.post("imagemagick", event.model_dump())
+
+
+
+def is_image_file(content: DownloadInfoResponse) -> bool:
+    extension = content.name.rpartition(".")[-1].lower()
+    return extension in image_extensions
+
+
 def build_asset_url(endpoint: str, asset_id: str, version: tuple[int]) -> str:
     """Build an access API access URL to a specific asset version"""
     version_str = '.'.join(map(str, version))
@@ -213,6 +245,8 @@ async def create_zip_from_asset(
         for content in contents:
             if is_houdini_file(content):
                 await generate_houdini_job_defs(v, content, token)
+            if is_image_file(content):
+                await crop_thumbnail(v, content, token)
 
 
 async def upload_package(

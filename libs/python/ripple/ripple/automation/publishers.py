@@ -11,7 +11,7 @@ from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.utils import error_handler
 from ripple.config import ripple_config
-from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
+from ripple.models.streaming import CropImageResponse, JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
 
 NATS_FILE_CHUNK_SIZE = 64 * 1024
 
@@ -146,6 +146,11 @@ class ResultPublisher:
                     files[index] = file_id
 
         elif isinstance(item, JobDefinition):
+            job_def_id = upload_job_def(item)
+            if job_def_id is not None:
+                item.job_def_id = job_def_id
+
+        elif isinstance(item, CropImageResponse):
             job_def_id = upload_job_def(item)
             if job_def_id is not None:
                 item.job_def_id = job_def_id

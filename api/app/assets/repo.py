@@ -79,6 +79,7 @@ class AssetFileReference(BaseModel):
     file_name: str
     content_hash: Optional[str] = None
     size: Optional[int] = None
+    src_file_id: Optional[str] = None
 
 
 class AssetDependency(BaseModel):

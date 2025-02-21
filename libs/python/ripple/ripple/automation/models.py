@@ -1,9 +1,8 @@
-from ripple.models.params import ParameterSet
+from typing import Any, Callable, Dict, Literal, Optional, Type
+
 from pydantic import BaseModel
+from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
 from ripple.models.streaming import ProcessStreamItem
-
-
-from typing import Any, Callable, Dict, Literal, Type, Optional
 
 
 class AutomationsResponse(ProcessStreamItem):
@@ -32,3 +31,13 @@ class AutomationRequest(BaseModel):
     path: str
     data: Dict
     telemetry_context: Optional[Dict] = {}
+
+class CropImageRequest(ParameterSet):
+    image_file: FileParameter
+    src_asset_id: str
+    src_version: list[int]
+    crop_pos_x: Optional[IntParameterSpec]
+    crop_pos_y: Optional[IntParameterSpec]
+    crop_w: IntParameterSpec
+    crop_h: IntParameterSpec
+

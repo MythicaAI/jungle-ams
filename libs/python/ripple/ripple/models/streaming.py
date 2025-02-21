@@ -106,6 +106,10 @@ class Event(StreamItem):
     completed: Optional[datetime] = None
 
 
+class CropImageResponse(OutputFiles):
+    files: dict[str, list[str]] = Field(default={"cropped_image": []})
+
+
 # Build the set of models for verification
 StreamModelTypes = {Progress, Message, OutputFiles, Event, FileContentChunk}
 
