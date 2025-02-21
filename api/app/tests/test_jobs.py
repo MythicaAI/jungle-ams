@@ -476,6 +476,17 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     # Verify no job definitions exist
     asset_id = asset_version.asset_id
 
+    # Test job list for asset that is not found
+    r = client.get(
+        f'{api_base}/jobs/by_asset/{asset_seq_to_id(9999)}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
+    
+    # Test empty job list for asset version
+    r = client.get(
+        f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
+    assert_status_code(r, HTTPStatus.OK)
+    assert (len(r.json()) == 0)
+
     # Create a job definition for asset version
     job_def_ids = []
     r = client.post(f'{api_base}/jobs/definitions',
