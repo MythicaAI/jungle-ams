@@ -189,7 +189,7 @@ async def start_session_with_token_validator(
         # if there are no profiles, attempt to associate the sub to a new profile
         profile_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
         session_start = await create_profile_locator_oid(db_session, valid_token, profile_seq)
-        return await session_start
+        return session_start
 
     #
     # a locator does not exist for the token subject, in this case we will associate all profiles
@@ -257,7 +257,7 @@ def email_validate_state(email_verified) -> int:
 
 
 async def create_profile_locator_oid(db_session: AsyncSession, valid_token: ValidTokenPayload, owner_seq: int):
-    r = db_session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
+    r = await db_session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
     if r is None or r.rowcount == 0:
         raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "OID locator could not be created")
     await db_session.commit()
