@@ -1,16 +1,22 @@
 # pylint: disable=redefined-outer-name, unused-import
 
 import hashlib
+import itertools
 from http import HTTPStatus
 
-import itertools
-from cryptid.cryptid import file_seq_to_id
+import pytest
 from munch import munchify
-from ripple.auth import roles
 
+from cryptid.cryptid import file_seq_to_id
+from ripple.auth import roles
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
-from tests.shared_test import FileContentTestObj, assert_status_code, make_random_content, random_str
+from tests.shared_test import (
+    FileContentTestObj,
+    assert_status_code,
+    make_random_content,
+    random_str,
+)
 
 # length of event data in test events
 test_event_info_len = 10
@@ -22,7 +28,9 @@ test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
 test_file_content_type = "application/octet-stream"
 
 
-def unauthorized_create_type_tag(client, api_base, type_model_name, type_id, tag_id, headers):
+def unauthorized_create_type_tag(
+    client, api_base, type_model_name, type_id, tag_id, headers
+):
     r = client.post(
         f"{api_base}/tags/types/{type_model_name}",
         json={'tag_id': tag_id, "type_id": type_id},
@@ -31,19 +39,23 @@ def unauthorized_create_type_tag(client, api_base, type_model_name, type_id, tag
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
 
-def unauthorized_delete_type_tag(client, api_base, type_model_name, type_id, tag_id, headers):
+def unauthorized_delete_type_tag(
+    client, api_base, type_model_name, type_id, tag_id, headers
+):
     r = client.delete(
         f"{api_base}/tags/types/{type_model_name}/{tag_id}/{type_id}",
         headers=headers,
     )
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
-def test_tags_operations(api_base, client, create_profile, request_to_upload_files):
-    simple_profile = create_profile(email="test@test.ai", validate_email=True)
+
+@pytest.mark.asyncio
+async def test_tags_operations(api_base, client, create_profile, request_to_upload_files):
+    simple_profile = await create_profile(email="test@test.ai", validate_email=True)
     simple_headers = simple_profile.authorization_header()
     simple_profile = simple_profile.profile
 
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
 
     # create org to contain assets
@@ -75,9 +87,9 @@ def test_tags_operations(api_base, client, create_profile, request_to_upload_fil
             'name': tag_name,
             "page_priority": page_priority,
             "contents": {
-                "thumbnail_id": thumbnail_id,
+                "thumbnails": [{"file_id": thumbnail_id}],
                 "blurb": blurb,
-            }
+            },
         }
         r = client.post(f"{api_base}/tags", json=data, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
@@ -85,7 +97,8 @@ def test_tags_operations(api_base, client, create_profile, request_to_upload_fil
         assert tag_obj.name == tag_name
         assert tag_obj.page_priority == page_priority
         assert tag_obj.contents is not None
-        assert tag_obj.contents.thumbnail_id == thumbnail_id
+        assert len(tag_obj.contents.thumbnails)
+        assert tag_obj.contents.thumbnails[0].file_id == thumbnail_id
         assert tag_obj.contents.blurb == blurb
         return tag_obj
 
@@ -117,7 +130,11 @@ def test_tags_operations(api_base, client, create_profile, request_to_upload_fil
 
     # Test profile does not have required_role to create tag
     unrequired_role_tag_name = "tag_" + random_str(10, digits=False)
-    r = client.post(f"{api_base}/tags", json={'name': unrequired_role_tag_name}, headers=simple_headers)
+    r = client.post(
+        f"{api_base}/tags",
+        json={'name': unrequired_role_tag_name},
+        headers=simple_headers,
+    )
     assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
     created_tag_ids = []
@@ -139,6 +156,37 @@ def test_tags_operations(api_base, client, create_profile, request_to_upload_fil
         headers=headers,
     )
     assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+
+    # Test update tag
+    thumbnail_obj = make_random_content("png")
+    thumbnail_id = list(request_to_upload_files(headers, [thumbnail_obj]))[0]
+    second_thumbnail_obj = make_random_content("png")
+    second_thumbnail_id = list(request_to_upload_files(headers, [second_thumbnail_obj]))[0]
+
+    tag_id = o[0].tag_id
+    tag_name = o[0].name
+    r = client.post(
+        f"{api_base}/tags/{tag_id}",
+        json={
+            "page_priority": 1,
+            "contents": {
+                "thumbnails": [{"file_id": thumbnail_id}, {"file_id": second_thumbnail_id}],
+                "blurb": "blurb",
+            },
+        },
+        headers=headers,
+    )
+    o = munchify(r.json())
+    assert_status_code(r, HTTPStatus.OK)
+    assert o.name == tag_name
+    assert o.tag_id == tag_id
+    assert o.page_priority == 1
+    assert o.contents
+    assert len(o.contents.thumbnails)
+    assert o.contents.thumbnails[0].file_id == thumbnail_id
+    assert o.contents.thumbnails[1].file_id == second_thumbnail_id
+    assert o.contents.blurb == "blurb"
 
     # Test profanity
     tag_name = "shit"
@@ -166,10 +214,15 @@ def test_tags_operations(api_base, client, create_profile, request_to_upload_fil
     delete_all_created_type_tags(top_asset_ids, tag_obj.tag_id)
 
 
-def test_tag_asset_operations(api_base, client, create_profile, request_to_upload_files):
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+@pytest.mark.asyncio
+async def test_tag_asset_operations(
+    api_base, client, create_profile, request_to_upload_files
+):
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
-    not_allowed_test_profile = create_profile(email="test@somewhere.com", validate_email=True)
+    not_allowed_test_profile = await create_profile(
+        email="test@somewhere.com", validate_email=True
+    )
     not_allowed_headers = not_allowed_test_profile.authorization_header()
 
     # create org to contain assets
@@ -180,9 +233,7 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
     org_id = o.org_id
 
     # initial role check
-    r = client.get(
-        f"{api_base}/profiles/roles/",
-        headers=headers)
+    r = client.get(f"{api_base}/profiles/roles/", headers=headers)
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
     assert roles.alias_tag_author in o.auth_roles
@@ -201,7 +252,8 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
         r = client.post(
             f"{api_base}/assets/{o.asset_id}/versions/0.1.0",
             json=test_asset_ver_json,
-            headers=headers)
+            headers=headers,
+        )
         assert_status_code(r, HTTPStatus.CREATED)
         return o.asset_id
 
@@ -219,9 +271,9 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
             'name': tag_name,
             "page_priority": page_priority,
             "contents": {
-                "thumbnail_id": thumbnail_id,
+                "thumbnails": [{"file_id": thumbnail_id}],
                 "blurb": blurb,
-            }
+            },
         }
         r = client.post(f"{api_base}/tags", json=data, headers=headers)
         assert_status_code(r, HTTPStatus.CREATED)
@@ -229,7 +281,8 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
         assert tag_obj.name == tag_name
         assert tag_obj.page_priority == page_priority
         assert tag_obj.contents is not None
-        assert tag_obj.contents.thumbnail_id == thumbnail_id
+        assert len(tag_obj.contents.thumbnails)
+        assert tag_obj.contents.thumbnails[0].file_id == thumbnail_id
         assert tag_obj.contents.blurb == blurb
         return tag_obj
 
@@ -267,13 +320,19 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
         for tag_id in created_tag_ids:
             delete_tag(tag_id)
 
-    unauthorized_create_type_tag(client, api_base, "asset", asset_id, tag_obj.tag_id, not_allowed_headers)
-    unauthorized_delete_type_tag(client, api_base, "asset", asset_id, tag_obj.tag_id, not_allowed_headers)
+    unauthorized_create_type_tag(
+        client, api_base, "asset", asset_id, tag_obj.tag_id, not_allowed_headers
+    )
+    unauthorized_delete_type_tag(
+        client, api_base, "asset", asset_id, tag_obj.tag_id, not_allowed_headers
+    )
 
     model_type_count_to_filter = 5
     include_tags_count_to_filter = 3
     exclude_tags_count_to_filter = 3
-    filter_assets_ids = [create_asset(headers) for _ in range(model_type_count_to_filter)]
+    filter_assets_ids = [
+        create_asset(headers) for _ in range(model_type_count_to_filter)
+    ]
     include_tags_id_names = [create_tag() for _ in range(include_tags_count_to_filter)]
     exclude_tags_id_names = [create_tag() for _ in range(exclude_tags_count_to_filter)]
     created_tag__type_ids: list[tuple[str, str, str]] = []
@@ -352,7 +411,6 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
         new_tag_id, _, asset_id = tag__type_ids
         delete_type_tag("asset", asset_id, new_tag_id)
 
-
     # Test assign thumbnail that does not exist
     tag_name = "tag_" + random_str(10, digits=False)
     thumbnail_file_id = file_seq_to_id(1000000)
@@ -361,9 +419,9 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
         'name': tag_name,
         "page_priority": 1,
         "contents": {
-            "thumbnail_id": thumbnail_file_id,
+            "thumbnails": [{"file_id": thumbnail_file_id}],
             "blurb": blurb,
-        }
+        },
     }
     r = client.post(f"{api_base}/tags", json=data, headers=headers)
     assert_status_code(r, HTTPStatus.NOT_FOUND)
@@ -375,7 +433,7 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
         params={
             "limit": model_type_count_to_filter,
             "offset": 0,
-            "include": [filter_tag_name]
+            "include": [filter_tag_name],
         },
         headers=headers,
     )
@@ -387,8 +445,9 @@ def test_tag_asset_operations(api_base, client, create_profile, request_to_uploa
     delete_all_created_tags(tag__type_ids[0] for tag__type_ids in created_tag__type_ids)
 
 
-def test_wrong_type_model(api_base, client, create_profile):
-    test_profile = create_profile(email="test@mythica.ai")
+@pytest.mark.asyncio
+async def test_wrong_type_model(api_base, client, create_profile):
+    test_profile = await create_profile(email="test@mythica.ai")
     headers = test_profile.authorization_header()
     r = client.get(
         f"{api_base}/tags/types/{random_str(23)}",
@@ -401,12 +460,13 @@ def test_wrong_type_model(api_base, client, create_profile):
     assert_status_code(r, HTTPStatus.UNPROCESSABLE_ENTITY)
 
 
-def test_tag_files_operations(
-        api_base, client, create_profile, request_to_upload_files
+@pytest.mark.asyncio
+async def test_tag_files_operations(
+    api_base, client, create_profile, request_to_upload_files
 ):
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
-    not_allowed_profile = create_profile(email="user@somewhere.com")
+    not_allowed_profile = await create_profile(email="user@somewhere.com")
     not_allowed_headers = not_allowed_profile.authorization_header()
 
     top_limit = 5
@@ -467,8 +527,12 @@ def test_tag_files_operations(
         for tag_id in created_tag_ids:
             delete_tag(tag_id)
 
-    unauthorized_create_type_tag(client, api_base, "file", first_file_id, tag_id, not_allowed_headers)
-    unauthorized_delete_type_tag(client, api_base, "file", first_file_id, tag_id, not_allowed_headers)
+    unauthorized_create_type_tag(
+        client, api_base, "file", first_file_id, tag_id, not_allowed_headers
+    )
+    unauthorized_delete_type_tag(
+        client, api_base, "file", first_file_id, tag_id, not_allowed_headers
+    )
 
     model_type_count_to_filter = top_limit
     include_tags_count_to_filter = 3

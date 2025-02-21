@@ -1,23 +1,21 @@
 """Database connection management module"""
 
-# global usage is not understood by pylint
-# pylint: disable=global-statement,global-variable-not-assigned
-# cursor() method is dynamic
-# pylint: disable=no-member
+# pylint: disable=no-member,broad-exception-caught
 
+import asyncio
 import logging
+from collections.abc import AsyncGenerator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
-from alembic.config import Config, command
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from ripple.config import ripple_config
-from sqlmodel import Session, create_engine
+from fastapi import FastAPI, Request
+from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.sql import text
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from config import app_config
-from db.table_change_notify import register_table_change_notification
-
-engine = None
+from ripple.config import ripple_config
 
 log = logging.getLogger(__name__)
 
@@ -31,62 +29,95 @@ log = logging.getLogger(__name__)
 TZ = ZoneInfo(app_config().db_timezone)
 
 
-def run_sqlite_migrations():
-    """Run the alembic migration"""
-    try:
-        # Configure Alembic to use the 'alembic_sqlite' section
-        alembic_cfg = Config("alembic.ini", ini_section='sqlite')
-        alembic_cfg.set_main_option('sqlalchemy.url', app_config().sql_url)
-
-        # Run migrations
-        command.upgrade(alembic_cfg, "head")
-
-        log.info("alembic head migration finished")
-    except Exception as e:
-        logging.error("migration failed: %s", e)
-        raise e
-
-
 @asynccontextmanager
-async def db_connection_lifespan():
+async def db_connection_lifespan(app: FastAPI):
     """Lifecycle management of the database connection"""
-    global engine
-
     engine_url = app_config().sql_url.strip()
-    engine = create_engine(engine_url)
-    conn = engine.connect()
-    if app_config().telemetry_enable:
-        SQLAlchemyInstrumentor().instrument(engine=engine)
+    connect_args = {}
+
+    # explicitly set the asyncpg event loop and TE to prevent futures
+    # awaited from different local event loops
+    if "asyncpg" in engine_url:
+        loop = asyncio.get_running_loop()
+        loop.set_default_executor(ThreadPoolExecutor())
+        connect_args.update(loop=loop)
+        print(f"asyncpg configured with event loop: {id(loop)}")
+
+    db_engine = create_async_engine(
+        engine_url,
+        echo=False,
+        future=True,
+        connect_args=connect_args)
+
+    log.info("database engine %s, driver: %s",
+             db_engine.dialect.name, db_engine.dialect.driver)
+
+    create_sqlmodel_session = async_sessionmaker(
+        bind=db_engine,
+        class_=AsyncSession,
+        expire_on_commit=False)
+    create_sqlalchemy_session = async_sessionmaker(
+        bind=db_engine,
+        class_=SQLA_AsyncSession,
+        expire_on_commit=False)
+
+    # test creating a new session on SQLAlchemy - this is required
+    # to use the greenlet workaround internally in their code to run a sync function
+    session = create_sqlalchemy_session()
 
     # Setup fallbacks for features that exist in postgres but not sqlite
-    if engine.dialect.name == "sqlite":
-        cursor = engine.raw_connection().cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);")
-        cursor.close()
-        log.info("sqlite fallbacks installed")
-        run_sqlite_migrations()
+    if db_engine.dialect.name == "sqlite":
+        try:
+            def create_sequence(sync_session):
+                sync_session.execute(
+                    text("CREATE TABLE IF NOT EXISTS app_sequences (seq INTEGER DEFAULT 1, name TEXT PRIMARY KEY);"))
+                sync_session.commit()
+                log.info("sqlite fallbacks installed")
 
-    # Setup the async table change notifications
-    await register_table_change_notification()
+            await session.run_sync(create_sequence)
+        finally:
+            pass
 
-    log.info("database engine connected %s, %s", engine.name, engine.dialect.name)
+    log.info("database engine connected %s, %s", db_engine.name, db_engine.dialect.name)
     try:
-        yield engine
+        await session.close()  # give the test session back to the engine
+        app.state.db_engine = db_engine
+        app.state.create_sqlmodel_session = create_sqlmodel_session
+        yield db_engine
+        del app.state.db_engine
+        del app.state.create_sqlmodel_session
+
     except GeneratorExit:
         pass
     finally:
-        conn.close()
-        log.info("database engine disconnected %s", engine.name)
-        engine.dispose()
-        engine = None
+        log.info("database engine disconnected %s", db_engine.name)
+        await db_engine.dispose()
 
 
-def get_session(echo=False):
-    """Get a database session using the main database connection"""
-    global engine
+@asynccontextmanager
+async def db_session_pool(app: FastAPI) -> AsyncGenerator[AsyncSession, None]:
+    """Get a scoped database session using pool connections"""
+    db_engine = app.state.db_engine
+    create_sqlmodel_session = app.state.create_sqlmodel_session
+    if db_engine is None or create_sqlmodel_session is None:
+        raise ValueError("engine is not available")
+    db_session = None
+    try:
+        db_session = create_sqlmodel_session()
+        yield db_session
+    except GeneratorExit:
+        pass
+    finally:
+        # check the session back in
+        if db_session is not None:
+            await db_session.close()
 
-    engine.echo = echo
-    return Session(engine)
+
+async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
+    """Fast API Depends() compatible AsyncExit construction of the session, uses
+    async context manager to handle session state cleanup"""
+    async with db_session_pool(request.app) as db_session:
+        yield db_session
 
 
 def sql_profiler_decorator(func, report_name="report.html"):
@@ -95,11 +126,13 @@ def sql_profiler_decorator(func, report_name="report.html"):
     def wrapper(*args, **kwargs):
         if not ripple_config().mythica_environment == "debug":
             return func(*args, **kwargs)
-
-        profiler = sqltap.start()
-        result = func(*args, **kwargs)
-        statistics = profiler.collect()
-        sqltap.report(statistics, report_name)
+        try:
+            profiler = sqltap.start()
+            result = func(*args, **kwargs)
+            statistics = profiler.collect()
+            sqltap.report(statistics, report_name)
+        except PermissionError:
+            result = func(*args, **kwargs)
         return result
 
     return wrapper

@@ -1,17 +1,21 @@
-from cache.connection import get_redis
-from ripple.funcs import Source
+from fastapi import FastAPI
+
+from cache.connection import redis_connection_pool
+from ripple.funcs import Boundary, Source
 
 
-def populate_list(key: str, source: Source):
+async def populate_list(app: FastAPI, key: str, source: Source):
     """
     Populate a list cache within redis from a streaming source
     """
-    with (get_redis() as redis):
+    async with redis_connection_pool(app) as redis:
         after = None
-        page_size = 10
         while True:
-            page = source(after, page_size)
-            if len(page) == 0:
-                break
+            boundary = Boundary(position=after)
+            item_gen = source(boundary)
+            page = [item async for item in item_gen]
             redis.rpush(key, page)
-            after = page[-1].get('index', None)
+            if len(page) > 0:
+                after = page[-1].get('index', None)
+            else:
+                after = None

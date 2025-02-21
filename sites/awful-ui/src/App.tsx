@@ -10,7 +10,7 @@ import UndoRedoProvider from './providers/UndoRedoProvider';
 
 import AwfulUI from './AwfulUI';
 import { useTheme } from './styles/theme';
-import RequireAuth from './components/RequireAuth';
+import RequireAuth from './components/utils/RequireAuth';
 
 const App: React.FC = () => {
   const { theme } = useTheme();

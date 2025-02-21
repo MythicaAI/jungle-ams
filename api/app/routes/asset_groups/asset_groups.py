@@ -2,21 +2,22 @@
     This API module defines the /assets/g grouping API for consolidating
     groups of assets under a profile
 """
-from http import HTTPStatus
-
 import re
-from cryptid.cryptid import asset_id_to_seq
-from fastapi import APIRouter, Depends, HTTPException
-from ripple.models.sessions import SessionProfile
-from sqlmodel import Session, delete, insert, select
+from http import HTTPStatus
 from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import delete, insert, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from assets import repo
 from assets.repo import AssetVersionResult, convert_version_input
-from db.connection import get_session
+from cryptid.cryptid import asset_id_to_seq
+from db.connection import get_db_session
 from db.schema.assets import Asset, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import ProfileAsset
+from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 
 router = APIRouter(prefix="/assets/g", tags=["assets", "groups"])
@@ -67,8 +68,10 @@ def validate_category(category: str) -> None:
         )
 
 
-def select_filtered_g_assets(session: Session, profile: SessionProfile, category: Optional[str]) -> list[
-    AssetVersionResult]:
+async def select_filtered_g_assets(
+        db_session: AsyncSession,
+        profile: SessionProfile,
+        category: Optional[str]) -> list[AssetVersionResult]:
     stmt = select(Asset, AssetVersion, FileContent, ProfileAsset) \
         .select_from(Asset) \
         .outerjoin(
@@ -84,20 +87,20 @@ def select_filtered_g_assets(session: Session, profile: SessionProfile, category
         & (ProfileAsset.category == category) if category else \
             (ProfileAsset.profile_seq == profile.profile_seq))
 
-    db_results = session.exec(stmt).all()
-    avr_results = repo.process_join_results(session, filter_profile_assets(db_results))
+    db_results = (await db_session.exec(stmt)).all()
+    avr_results = await repo.process_join_results(db_session, filter_profile_assets(db_results))
     return avr_results
 
 
 @router.get('/{category}')
 async def for_profile(
         category: str,
-        auth_profile=Depends(session_profile)) -> list[AssetVersionResult]:
+        auth_profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> list[AssetVersionResult]:
     """
     Return all assets that have been listed by this profile
     """
-    with get_session(echo=False) as session:
-        return select_filtered_g_assets(session, auth_profile, category=category)
+    return await select_filtered_g_assets(db_session, auth_profile, category=category)
 
 
 @router.post('/{category}/{asset_id}/versions/{version}', status_code=HTTPStatus.CREATED)
@@ -105,7 +108,8 @@ async def add(
         category: str,
         asset_id: str,
         version: str,
-        profile: SessionProfile = Depends(session_profile)) -> AssetVersionResult:
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> AssetVersionResult:
     """
     Return all assets that have been attached to this profile
     """
@@ -115,21 +119,20 @@ async def add(
     validate_category(category)
 
     major, minor, patch = version_id
-    with get_session() as session:
-        session.exec(insert(
-            ProfileAsset).values(
-            profile_seq=profile.profile_seq,
-            asset_seq=asset_seq,
-            major=major,
-            minor=minor,
-            patch=patch,
-            category=category))
-        session.commit()
+    await db_session.exec(insert(
+        ProfileAsset).values(
+        profile_seq=profile.profile_seq,
+        asset_seq=asset_seq,
+        major=major,
+        minor=minor,
+        patch=patch,
+        category=category))
+    await db_session.commit()
 
-        # read back
-        avr_results = repo.select_asset_version(session, asset_id, tuple(version_id))
-        avr = repo.process_join_results(session, avr_results)
-        return avr[0]
+    # read back
+    avr_results = await repo.select_asset_version(db_session, asset_id, tuple(version_id))
+    avr = await repo.process_join_results(db_session, avr_results)
+    return avr[0]
 
 
 @router.delete('/{category}/{asset_id}/versions/{version}')
@@ -137,7 +140,8 @@ async def g_delete(
         category: str,
         asset_id: str,
         version: str,
-        profile: SessionProfile = Depends(session_profile)):
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)):
     """
     Delete a profile asset group item
     """
@@ -145,15 +149,14 @@ async def g_delete(
     major, minor, patch = version_id
     validate_category(category)
     asset_seq = asset_id_to_seq(asset_id)
-    with get_session() as session:
-        stmt = delete(ProfileAsset) \
-            .where(ProfileAsset.profile_seq == profile.profile_seq) \
-            .where(ProfileAsset.asset_seq == asset_seq) \
-            .where(ProfileAsset.major == major) \
-            .where(ProfileAsset.minor == minor) \
-            .where(ProfileAsset.patch == patch) \
-            .where(ProfileAsset.category == category)
-        r = session.exec(stmt)
-        session.commit()
-        if r.rowcount == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND, f"delete failed for {category}/{asset_id}/{version}")
+    stmt = delete(ProfileAsset) \
+        .where(ProfileAsset.profile_seq == profile.profile_seq) \
+        .where(ProfileAsset.asset_seq == asset_seq) \
+        .where(ProfileAsset.major == major) \
+        .where(ProfileAsset.minor == minor) \
+        .where(ProfileAsset.patch == patch) \
+        .where(ProfileAsset.category == category)
+    r = await db_session.exec(stmt)
+    await db_session.commit()
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"delete failed for {category}/{asset_id}/{version}")

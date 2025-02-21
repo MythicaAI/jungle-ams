@@ -5,19 +5,20 @@ import '@xyflow/react/dist/style.css';
 
 import useAwfulFlow from './hooks/useAwfulFlow';
 
-import Sidebar from './components/Sidebar';
+import Sidebar from './components/ux/Sidebar';
 import AutomationNode from './components/nodes/AutomationNode';
 import FileUploadNode from './components/nodes/FileUploadNode';
 import FileViewerNode from './components/nodes/FileViewerNode';
 import HDANode from './components/nodes/HDANode';
 import { Stack } from '@mui/joy';
-import { Header } from './components/Header';
+import { Header } from './components/ux/Header';
 import { TabValues } from './enums';
 import { FileEdge } from './components/edges/FileEdge';
 import useCopyPaste from './hooks/useCopyPaste';
 import useUndoRedo from './hooks/useUndoRedo';
-import { UndoRedoPanel } from './components/UndoRedoPanel';
-import { CopyPastePanel } from './components/CopyPastePanel';
+import { UndoRedoPanel } from './components/utils/UndoRedoPanel';
+import { CopyPastePanel } from './components/utils/CopyPastePanel';
+import AssetViewerNode from './components/nodes/AssetViewerNode';
 
 // Main Awful UI component
 const AwfulUI: React.FC = () => {
@@ -29,7 +30,7 @@ const AwfulUI: React.FC = () => {
   const {
     onConnect,
     onDisconnect,
-    onManualNodesDelete,
+    onNodesDelete,
     onNodesChange,
     onDrop,
     onDragOver,
@@ -47,6 +48,7 @@ const AwfulUI: React.FC = () => {
       worker: AutomationNode,
       fileUpload: FileUploadNode,
       fileViewer: FileViewerNode,
+      assetViewer: AssetViewerNode
     }),
     []
   );
@@ -71,7 +73,7 @@ const AwfulUI: React.FC = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onNodesDelete={onManualNodesDelete}
+            onNodesDelete={onNodesDelete}
             onEdgesDelete={onDisconnect}
             onDrop={onDrop}
             onDragOver={onDragOver}

@@ -1,0 +1,106 @@
+name: helm-automation-deploy-staging
+
+on:
+  # trigger helm deploy when new images are available
+  workflow_run:
+    workflows: [ "push-automation-images" ]
+    types:
+      - completed
+
+  # trigger helm deploy when the helm or gha config changes
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/helm/**'
+      - '.github/workflows/helm-automation-deploy-staging.yaml'
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  helm-deploy:
+    runs-on: ubuntu-latest
+    environment: main
+    permissions:
+      pull-requests: read
+      id-token: write
+      contents: read
+
+    env:
+      NODE_ENV: "staging"
+      PROJECT_NUMBER: "296075347103"
+      PROJECT_ID: "controlnet-407314"
+      AR_REPO_LOCATION: "us-central1"
+      SERVICE_ACCOUNT: "github-actions-service-account@controlnet-407314.iam.gserviceaccount.com"
+      GKE_CLUSTER_NAME: "gke-main-us-central1"
+      GKE_CLUSTER_LOCATION: "us-central1"
+      WORKLOAD_IDENTITY_PROVIDER: "projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch tags
+        run: git fetch --prune --unshallow --tags
+
+      - name: Generate values file for image tags
+        run: |
+          automation/helm/helm-gen-values-images.sh
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: "access_token"
+          project_id: ${{ env.PROJECT_NUMBER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+
+      - name: Set up Kubernetes credentials
+        run: |
+          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER_NAME }} \
+            --region ${{ env.GKE_CLUSTER_LOCATION }} \
+            --project ${{ env.PROJECT_ID }}
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Deploy Helm Chart
+        run: |
+          helm upgrade --namespace automation-staging -f automation/helm/values-staging.yaml -f automation/helm/values-images.yaml automation-staging automation/helm
+          echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
+          cat automation/helm/values-images.yaml >> $GITHUB_STEP_SUMMARY
+
+      - name: Rollout deployments
+        run: |
+          kubectl rollout restart deployment/houdini -n automation-staging
+
+      - name: Send Discord notification
+        if: always()
+        run: |
+          echo "{ \"content\": \"" > message.json
+          echo "${{ github.event.pull_request.title }}\n" >> message.json
+          echo "✅ automation-staging has been deployed" >> message.json
+          echo "\" }" >> message.json
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+               -H "Content-Type: application/json" \
+               --data @message.json

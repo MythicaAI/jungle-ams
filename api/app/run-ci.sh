@@ -4,7 +4,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # NOTE: :memory: databases don't work with multithreaded tests
-export SQL_URL="sqlite:///${SCRIPT_DIR}/mythica.db"
+# We use async database operations throughout the server so use
+# the local sqlite+aiosqlite
+export SQL_URL="sqlite+aiosqlite:///${SCRIPT_DIR}/mythica.db"
 export DATABASE_PATH="${SCRIPT_DIR}/mythica.db"
 
 

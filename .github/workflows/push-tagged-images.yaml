@@ -4,12 +4,11 @@ on:
     types:
       - closed
     branches:
-      - main
+      - 'main'
     paths:
       - 'sites/**'
       - 'api/**'
       - 'libs/**'
-      - 'automation/**'
       - '.github/workflows/push-tagged-images.yaml'
 
   workflow_dispatch:
@@ -205,8 +204,9 @@ jobs:
       - name: Send Discord notification
         if: always()
         run: |
-          echo "{ content=\"" > message.json
-          echo "${{ github.event.pull_request.title }}" >> message.json
+          echo "{ \"content\": \"" > message.json
+          echo "${{ github.event.pull_request.title }}\n" >> message.json
+          echo "IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}\n" >> message.json
           echo IMAGE=${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }} >> $GITHUB_ENV
           if [ "${{ steps.build_push.outcome }}" == "failure" ]; then
               echo "❌ $IMAGE build failed, see: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> message.json

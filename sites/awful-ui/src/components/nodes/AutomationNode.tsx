@@ -20,8 +20,8 @@ import { JSONSchema } from '../../types/JSONSchema';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Input, Stack, Typography } from '@mui/joy';
-import { NodeDeleteButton } from '../NodeDeleteButton';
-import { NodeHeader } from '../NodeHeader';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
+import { NodeHeader } from './ux/NodeHeader';
 
 export type AutomationExecutionData = ExecutionData & {
   output: {
@@ -468,6 +468,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         {/* Input Handles */}
         {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
           <FileInputHandle
+            nodeId={node.id}
             key={paramKey}
             id={paramKey}
             left={inputPositions[index]}
@@ -535,6 +536,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         {/* Output Handles */}
         {Array.from(outputFileKeys).map((outputKey, index) => (
           <FileOutputHandle
+            nodeId={node.id}
             key={outputKey}
             id={outputKey}
             left={outputPositions[index]}

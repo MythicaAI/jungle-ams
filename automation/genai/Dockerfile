@@ -21,6 +21,9 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PATH="/usr/local/bin:$PATH"
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-genai"
+ENV TELEMETRY_ENABLE=True
+ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV TELEMETRY_INSECURE=True
 ENV K8S_CLUSTER_NAME=localhost
 
 # Default for local (docker compose) mode, override in deployment

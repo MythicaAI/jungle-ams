@@ -16,10 +16,23 @@ class TagType(str, Enum):
     file = "file"
 
 
+class TagFileReference(BaseModel):
+    """Embedded file reference in a tag content.
+
+    When creating a new asset version only the file_id and the relative path (name) are required.
+
+    When the file is resolved during the creation of the version it will receive the content
+    hash and size from the underlying file_id"""
+    file_id: str
+    file_name: Optional[str] = None
+    content_hash: Optional[str] = None
+    size: Optional[int] = None
+
+
 class TagRequest(BaseModel):
     name: str
     page_priority: Optional[int] = None
-    contents: Optional[dict[str, str | None]] = None
+    contents: Optional[dict[str, str | list[TagFileReference] | None | list[dict]]] = None
 
     @field_validator('name')
     @classmethod
@@ -28,12 +41,15 @@ class TagRequest(BaseModel):
             raise ValueError("Tag name contains inappropriate language.")
         return name
 
+class TagUpdateRequest(TagRequest):
+    name: Optional[str] = None
+
 
 class TagResponse(BaseModel):
     name: str
     tag_id: str
     page_priority: Optional[int] = None
-    contents: Optional[dict[str, str | None]] = None
+    contents: Optional[dict[str, str | None | list[TagFileReference]]] = None
 
 
 class TagTypeRequest(BaseModel):

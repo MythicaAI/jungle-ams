@@ -17,7 +17,7 @@ goto :eof
 
 :configure_environment
 rem Database settings
-set "SQL_URL=sqlite:///%SCRIPT_DIR%\mythica.db"
+set "SQL_URL=sqlite+aiosqlite:///%SCRIPT_DIR%\mythica.db"
 set "DATABASE_PATH=%SCRIPT_DIR%\mythica.db"
 
 rem Python and storage settings

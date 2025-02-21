@@ -4,7 +4,8 @@ LABEL name="mythica-job-canary"
 LABEL description="Automated canary test for the job pipeline"
 LABEL tier="automation"
 
-RUN pip install --upgrade pip requests
+RUN pip install --upgrade pip && \
+    pip install requests opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
 
 WORKDIR /api/canary
 
@@ -14,6 +15,12 @@ COPY . .
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=canary"
+ENV MYTHICA_ENVIRONMENT=dev
+ENV MYTHICA_LOCATION=localhost
+ENV TELEMETRY_ENABLE=True
+ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV TELEMETRY_INSECURE=True
+ENV K8S_CLUSTER_NAME=localhost
 
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1

@@ -27,35 +27,80 @@ spec:
             value: "5"
       serviceAccountName: "tailscale"
       hostname: aws-tailscale
+      imagePullSecrets:
+      - name: registry-secret
+      restartPolicy: Always
       containers:
-      - name: busybox
-        image: busybox:latest
-        command: ["sleep", "3600"]
-      - name: ts-sidecar
-        imagePullPolicy: Always
-        image: "ghcr.io/tailscale/tailscale:latest"
-        env:
-          - name: TS_EXTRA_ARGS
-            value: " --reset --accept-dns --accept-routes --advertise-routes=10.100.0.0/16"
-          - name: TS_KUBE_SECRET
-            value: "tailscale"
-          - name: TS_USERSPACE
-            value: "false"
-          - name: TS_DEBUG_FIREWALL_MODE
-            value: auto
-          - name: TS_AUTHKEY
-            valueFrom:
-              secretKeyRef:
-                name: tailscale
-                key: TS_AUTHKEY
-                optional: true
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: POD_UID
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.uid
-        securityContext:
-          privileged: true
+        - name: houdini
+          image: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images/mythica-auto-houdini:latest
+          imagePullPolicy: Always
+          command: [ "/bin/bash", "houdini.sh" ]
+          stdin: true
+          tty: true
+          env:
+            - name: API_BASE_URI
+              value: http://app.api-staging.svc.cluster.local/v1
+            - name: NAMESPACE
+              value: api-staging
+            - name: TELEMETRY_ENABLE
+              value: "true"
+            - name: TELEMETRY_ENDPOINT
+              value: http://otel-collector.default.svc.cluster.local:4317
+            - name: TELEMETRY_INSECURE
+              value: "true"
+            - name: NATS_ENDPOINT
+              value: nats://nats.nats.svc.cluster.local:4222
+            - name: MYTHICA_ENVIRONMENT
+              value: staging
+            - name: K8S_CLUSTER_NAME
+              value: "mythica_aws"
+            - name: APP_VERSION
+            - name: MYTHICA_LOCATION
+              value: "mythica_aws"
+            - name: SFX_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  key: SFX_CLIENT_ID
+                  name: houdini-secrets
+            - name: SFX_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: SFX_CLIENT_SECRET
+                  name: houdini-secrets
+          resources:
+            limits:
+              cpu: 2000m
+              ephemeral-storage: 8Gi
+              memory: 64Gi
+            requests:
+              cpu: 2000m
+              ephemeral-storage: 8Gi
+              memory: 64Gi
+        - name: ts-sidecar
+          imagePullPolicy: Always
+          image: "ghcr.io/tailscale/tailscale:latest"
+          env:
+            - name: TS_EXTRA_ARGS
+              value: " --reset --accept-dns --accept-routes --advertise-routes=10.100.0.0/16"
+            - name: TS_KUBE_SECRET
+              value: "tailscale"
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEBUG_FIREWALL_MODE
+              value: auto
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale
+                  key: TS_AUTHKEY
+                  optional: true
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            privileged: true

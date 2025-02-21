@@ -1,3 +1,5 @@
+# pylint: disable=broad-exception-caught
+
 """Readers API"""
 
 from json import JSONDecodeError
@@ -7,14 +9,16 @@ import json
 import logging
 from fastapi import WebSocket
 from typing import Callable, Optional, TypeVar
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import app_config
 from cryptid.cryptid import IdError, reader_id_to_seq
-from db.connection import get_session
+from db.connection import db_session_pool
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
 from ripple.client_ops import ClientOp, ReadClientOp
 from ripple.funcs import Boundary, Source
+from ripple.source_types import create_source
 from ripple.models.streaming import StreamItem
 from ripple.source_types import create_source
 from routes.readers.utils import (
@@ -49,6 +53,62 @@ class ReaderConnectionManager:
         self.default_op: tuple[self.T, Source] = self.ops.get(self.default_operation)
         self.manager_active_tasks: dict[str, asyncio.Task] = dict()
         self.loop = None
+
+    async def connect(
+            self,
+            db_session: AsyncSession,
+            websocket: WebSocket,
+            profile: Profile,
+            op_data: Optional[dict] = None,
+    ):
+        # there is no loop while async testing (Python 3.10), it should be set up on connect
+        if not self.loop:
+            self.loop = asyncio.get_event_loop()
+        await websocket.accept()
+
+        if not op_data:
+            op_data: ReadClientOp = self.default_op[0]()
+            op_data: dict = op_data.model_dump()
+        log.debug("websocket connected with op_data %s", op_data)
+
+        if op_data.get("op") and op_data["op"] in self.ops:
+            if not self.active_connections.get(profile.profile_seq):
+                self.active_connections[profile.profile_seq] = dict()
+                self.active_connections[profile.profile_seq]["websockets"] = list()
+                log.info("New profile connected to websocket %s", websocket)
+                if not op_data.get("reader_id"):
+                    readers = await select_profile_readers(db_session, profile.profile_seq)
+                else:
+                    reader_seq = reader_id_to_seq(op_data['reader_id'])
+                    reader = await self.get_reader_model(
+                        db_session, reader_seq, profile.profile_seq
+                    )
+                    readers = [reader]
+
+                if op_data.get("reader_id"):
+                    del op_data['reader_id']
+
+                log.info("websocket connected to readers %s", readers)
+                if readers is None:
+                    await websocket.send_json({'error': 'There are no readers'})
+                for reader in readers:
+                    await self.add_reader_to_profile(reader, profile, op_data)
+
+            self.active_connections[profile.profile_seq]["websockets"].append(websocket)
+
+            await self.add_all_tasks_for_new_websocket(
+                profile_seq=profile.profile_seq, websocket=websocket
+            )
+        else:
+            if not op_data.get("op"):
+                error_message = "No 'op' included in client message"
+                log.exception(error_message)
+                await websocket.send_json({'error': error_message})
+            else:
+                error_message = "Invalid 'op' included in client message"
+                log.exception(error_message)
+                await websocket.send_json({'error': error_message})
+        await self.websocket_handler(websocket, profile)
 
     async def add_all_tasks_for_new_websocket(
             self, profile_seq: str, websocket: WebSocket
@@ -86,8 +146,8 @@ class ReaderConnectionManager:
                 "Error while the creating the task for new websocket", exc_info=ex
             )
 
-    async def get_reader_model(self, session, reader_seq, profile_seq):
-        reader = select_reader(session, reader_seq, profile_seq)
+    async def get_reader_model(self, db_session, reader_seq, profile_seq):
+        reader = await select_reader(db_session, reader_seq, profile_seq)
         return reader
 
     async def add_reader_to_profile(self, reader: Reader, profile, op_data: dict):
@@ -187,6 +247,9 @@ class ReaderConnectionManager:
                 "The periodically sending the updates catch unrecognized error",
                 exc_info=ex,
             )
+        except Exception as ex:
+            log.exception("An uncaught exception occurred in periodic update", exc_info=ex)
+            await websocket.send_json({'error': str(ex)})
         finally:
             if not is_cancelled_task:
                 await websocket.send_json(
@@ -221,7 +284,6 @@ class ReaderConnectionManager:
         It should be run in a separate thread, because of the blocking operation "websocket.receive_text()".
         Once the message is taken, it changes source for the reader.
         """
-        reader_seq: Optional[int] = None
         try:
             text = await websocket.receive_text()
             msg = json.loads(text)
@@ -249,9 +311,9 @@ class ReaderConnectionManager:
                 await websocket.send_json({'error': str(ex)})
                 return
 
-            with get_session() as session:
+            async with db_session_pool(websocket.app) as session:
                 if msg.get("position"):
-                    update_reader_index(session, reader_seq, msg.get("position"))
+                    await update_reader_index(session, reader_seq, msg.get("position"))
 
                 if not self.active_connections.get(profile.profile_seq).get(reader_seq):
                     reader = await self.get_reader_model(
@@ -279,7 +341,7 @@ class ReaderConnectionManager:
 
     async def change_reader_processor(
             self,
-            profile_seq: str,
+            profile_seq: int,
             reader: Reader,
     ):
         """
@@ -316,13 +378,11 @@ class ReaderConnectionManager:
         Responds with the received data.
         """
         boundary = Boundary(position=op.position, direction=op.direction)
-        stream_items: list[StreamItem] = source(boundary)
+        item_gen = source(boundary)
+        page = [item.model_dump(mode='json') async for item in item_gen]
+        await websocket.send_json(page)
+        if len(page) > 0:
+            op.position = page[-1]['index']
 
-        if len(stream_items) > 0 and stream_items[-1].index:
-            await websocket.send_json([item.model_dump_json() for item in stream_items])
-            log.debug(
-                "Source output stream_items %s",
-                [item.model_dump_json() for item in stream_items],
-            )
-            op.position = stream_items[-1].index
+        log.debug("sent page of %s items", len(page))
         return op

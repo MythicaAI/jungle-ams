@@ -1,13 +1,18 @@
 # pylint: disable=redefined-outer-name, unused-import
 import sys
+
+import pytest
+
 print(sys.path)
 
 import itertools
 from itertools import cycle
 from uuid import uuid4
 import ripple as r
+
 print(r)
 import ripple.sources as rs
+
 print(rs)
 from ripple.sources.memory import create_memory_source
 
@@ -34,7 +39,8 @@ def generate_stream_items(item_list_length: int):
     return [next(gen_cycle)() for i in range(item_list_length)]
 
 
-def test_source_fixture():
+@pytest.mark.asyncio
+async def test_source_fixture():
     progress = Progress(
         item_type='progress',
         correlation=str(uuid4()),
@@ -43,9 +49,11 @@ def test_source_fixture():
         progress=42)
 
     source = create_memory_source([progress], {'name': 'foo', 'max_items': 1})
-    items = source(Boundary())
+    item_gen = source(Boundary())
+    items = [item async for item in item_gen]
     assert len(items) == 1
     assert type(items[0]) == Progress
     assert items[0].progress == 42
-    items = source(Boundary(position="1"))
+    item_gen = source(Boundary(position="1"))
+    items = [item async for item in item_gen]
     assert len(items) == 0

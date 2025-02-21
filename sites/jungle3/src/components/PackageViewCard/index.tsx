@@ -14,6 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AssetTopResponse } from "types/apiTypes";
 import { SxProps } from "@mui/joy/styles/types/theme";
 import { motion } from "framer-motion";
+import ImageWithSkeleton from "@components/common/ImageWithSkeleton";
 
 type Props = {
   av: AssetTopResponse;
@@ -41,11 +42,12 @@ export const PackageViewCard: React.FC<Props> = ({ av, sxStyles }) => {
       }}
     >
       <CardCover>
-        <img
-          height="200"
+        <ImageWithSkeleton
+          width="auto"
+          height="100%"
           src={getThumbnailImg(av)}
-          loading={"lazy"}
           alt={av.name}
+          sx={{ objectFit: "cover" }}
         />
       </CardCover>
       <CardContent

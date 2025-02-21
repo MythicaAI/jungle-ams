@@ -29,7 +29,7 @@ kubectl create namespace $NAMESPACE
 kubectl create serviceaccount $KSA_NAME --namespace=$NAMESPACE
 
 # kubectl create secret generic secrets \
-#     --from-literal=SQL_URL='postgresql://<user>:<pass>@<host>:5432/upload_pipeline_staging' \
+#     --from-literal=SQL_URL='postgresql+asyncpg://<user>:<pass>@<host>:5432/upload_pipeline_staging' \
 #     --namespace=$NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
 

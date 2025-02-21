@@ -11,9 +11,9 @@ import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 import { Button, Card } from '@mui/joy';
 import useMythicaApi from '../../hooks/useMythicaApi';
-import { NodeDeleteButton } from '../NodeDeleteButton';
+import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
-import { NodeHeader } from '../NodeHeader';
+import { NodeHeader } from './ux/NodeHeader';
 import { AutomationNodeProps } from './AutomationNode';
 
 type InterfaceExecutionData = ExecutionData & {
@@ -285,6 +285,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   const inputs = Array.from({ length: nodeType.inputs as number }, (_, i) => (
     <FileInputHandle
       key={i}
+      nodeId={node.id}
       id={`input${i}`}
       left={(i + 2) * (100 / (2 + (nodeType.inputs as number))) + '%'}
       isConnectable
@@ -296,6 +297,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   const outputs = Array.from({ length: nodeType.outputs as number }, (_, i) => (
     <FileOutputHandle
       key={i}
+      nodeId={node.id}
       id={`output${i}`}
       left={(i + 1) * (100 / (1 + (nodeType.outputs as number))) + '%'}
       isConnectable
@@ -320,6 +322,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       {/* Render handles for FileParameter inputs */}
       <FileInputHandle
         id={INPUT_FILE}
+        nodeId={node.id}
         left={100 / (2 + ((nodeType.inputs as number) || 0)) + '%'}
         isConnectable
         style={{ background: '#555555' }}

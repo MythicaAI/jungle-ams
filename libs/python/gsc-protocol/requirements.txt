@@ -1,0 +1,7 @@
+httpx
+httpx-ws
+fastapi
+usd-core
+pytest
+cbor2
+hexdump

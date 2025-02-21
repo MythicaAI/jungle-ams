@@ -1,15 +1,15 @@
-import os
 from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
 from ripple.automation.worker import Worker
 
-from ripple.config import configure_telemetry
+from ripple.config import configure_telemetry, ripple_config
+
 
 worker = Worker()
 
-if os.environ.get("TELEMETRY_ENABLE", False):
+if ripple_config().telemetry_enable:
     configure_telemetry(
-        os.getenv("TELEMETRY_ENDPOINT", "http://otel-collector.default:4317"),
-        os.getenv("TELEMETRY_INSECURE", "true") == "true",
+        ripple_config().telemetry_endpoint,
+        ripple_config().telemetry_insecure,
     )
 
 workers = [

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Stack } from '@mui/joy';
-import { Tabs } from '../enums';
+import { Tabs } from '../../enums';
 
 type Props = {
   tab: string;

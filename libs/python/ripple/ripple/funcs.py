@@ -1,6 +1,6 @@
 # pylint: disable=W0105:pointless-string-statement
 
-from typing import Any, Callable, Literal, NamedTuple, Optional
+from typing import Any, AsyncIterator, Callable, Literal, NamedTuple, Optional
 
 from ripple.models.streaming import StreamItem
 
@@ -29,7 +29,7 @@ max item count and returns a list of next StreamItems from the source.
 If the first 'after' parameter is not specified it is assumed to be the
 beginning of the current head of the stream items that are available.
 """
-Source = Callable[[Boundary], list[StreamItem]]
+Source = Callable[[Boundary], AsyncIterator[StreamItem]]
 
 """
 Sink is a callable that takes a stream item and returns a boolean

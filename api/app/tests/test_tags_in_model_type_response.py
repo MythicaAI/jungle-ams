@@ -5,6 +5,7 @@ import itertools
 import json
 from http import HTTPStatus
 
+import pytest
 from munch import munchify
 
 from assets.repo import AssetFileReference
@@ -21,8 +22,9 @@ test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
 test_file_content_type = "application/octet-stream"
 
 
-def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
-    test_profile = create_profile(email="test@mythica.ai", validate_email=True)
+@pytest.mark.asyncio
+async def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
     profile_id = test_profile.profile.profile_id
 
@@ -101,7 +103,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     )
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
-    response_tags = [tag.tag_name for tag in o.tags]
+    response_tags = [tag.name for tag in o.tags]
     for tag in created_tags:
         assert tag in response_tags
     package_file = [make_random_content("zip") for _ in range(1)]
@@ -118,7 +120,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            response_tags = [tag.tag_name for tag in response_asset.tags]
+            response_tags = [tag.name for tag in response_asset.tags]
             for tag in created_tags:
                 assert tag in response_tags
 
@@ -126,7 +128,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert_status_code(r, HTTPStatus.OK)
     o = munchify(r.json())
 
-    response_tags = [tag.tag_name for tag in o.tags]
+    response_tags = [tag.name for tag in o.tags]
     for tag in created_tags:
         assert tag in response_tags
 
@@ -136,7 +138,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            response_tags = [tag.tag_name for tag in response_asset.tags]
+            response_tags = [tag.name for tag in response_asset.tags]
             for tag in created_tags:
                 assert tag in response_tags
 
@@ -147,7 +149,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            response_tags = [tag.tag_name for tag in response_asset.tags]
+            response_tags = [tag.name for tag in response_asset.tags]
             for tag in created_tags:
                 assert tag in response_tags
 
@@ -157,7 +159,7 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            response_tags = [tag.tag_name for tag in response_asset.tags]
+            response_tags = [tag.name for tag in response_asset.tags]
             for tag in created_tags:
                 assert tag in response_tags
 
@@ -170,6 +172,6 @@ def test_tags_in_assets_responses(api_base, client, create_profile, uploader):
     assert "tags" in o[0].keys()
     for response_asset in o:
         if response_asset.tags and response_asset.asset_id == asset_id:
-            response_tags = [tag.tag_name for tag in response_asset.tags]
+            response_tags = [tag.name for tag in response_asset.tags]
             for tag in created_tags:
                 assert tag in response_tags

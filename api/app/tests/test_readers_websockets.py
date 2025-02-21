@@ -1,26 +1,30 @@
 # pylint: disable=redefined-outer-name, unused-import
 import itertools
-import json
 import logging
 import random
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 from itertools import cycle
 from string import ascii_lowercase
 from uuid import uuid4
 
 import main
 import pytest
+from fastapi.testclient import TestClient
+from starlette.testclient import WebSocketTestSession
+
 from cryptid.cryptid import (
     event_seq_to_id,
     file_seq_to_id,
     job_seq_to_id,
     profile_id_to_seq,
 )
-from db.connection import get_session
 from db.schema.events import Event as DbEvent
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from httpx_ws import aconnect_ws
+from ripple.client_ops import ReadClientOp
+from profiles.responses import ProfileResponse
 from ripple.client_ops import ReadClientOp
 from ripple.models.streaming import (
     Event,
@@ -32,10 +36,12 @@ from sqlmodel import insert, select
 from starlette.testclient import WebSocketTestSession
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
-from tests.shared_test import ProfileTestObj
+from tests.shared_test import ProfileTestObj, assert_status_code
 
 # prevent fixture from being optimized away
-__fixtures__ = [create_profile, use_test_source_fixture]
+__fixtures__ = [
+    create_profile,
+    use_test_source_fixture]
 
 # length of event data in test events
 test_event_info_len = 10
@@ -67,7 +73,7 @@ def generate_stream_items(item_list_length: int):
     return [next(gen_cycle)() for i in range(item_list_length)]
 
 
-def generate_events(profile_id: str, event_count: int):
+def generate_events(api_base: str, client: TestClient, profile: ProfileResponse, event_count: int):
     """Generate some random event data in the database"""
 
     def generate_test_job_data():
@@ -78,7 +84,7 @@ def generate_events(profile_id: str, event_count: int):
             )
         }
 
-    db_events = [
+    events_json = [
         {
             'event_type': 'test',
             'job_data': generate_test_job_data(),
@@ -86,30 +92,16 @@ def generate_events(profile_id: str, event_count: int):
         }
         for _ in range(event_count)
     ]
-    events = []
-    with get_session() as session:
-        for e in db_events:
-            events.append(session.exec(insert(DbEvent).values(e)))
-        session.commit()
-    return [event.inserted_primary_key[0] for event in events]
+    r = client.post(f"{api_base}/test/events", json=events_json)
+    assert_status_code(r, HTTPStatus.CREATED)
+    return r.json()
 
 
-def read_db_events(events_ids) -> list[Event]:
-    with get_session() as session:
-        statement = (
-            select(DbEvent)
-            .where(DbEvent.event_seq.in_(events_ids))  # pylint: disable=no-member
-            .order_by(DbEvent.event_seq)
-        )
-        events = session.exec(statement).all()
-    return [
-        Event(
-            index=event_seq_to_id(i.event_seq),
-            payload=i.job_data,
-        ).model_dump()
-        for i in events
-    ]
-
+def read_db_events(api_base, client, events_ids) -> list[Event]:
+    """Get database """
+    r = client.post(f"{api_base}/test/events/multiple", json={'event_ids': events_ids})
+    assert_status_code(r, HTTPStatus.OK)
+    return [Event(payload=e['job_data'], index=event_seq_to_id(e['event_seq'])) for e in r.json()]
 
 async def read_socket(
         ws: WebSocketTestSession,
@@ -135,6 +127,77 @@ async def read_socket(
             assert 'payload' in raw
             assert raw["index"] == stream_items[count_events]["index"]
             count_events += 1
+
+    assert page_sized_reads == int(
+        source_event_count / page_size
+    ), "full pages read constraint"
+    assert count_events == source_event_count, "total events read constraint"
+
+
+@asynccontextmanager
+async def local_ws_connect(api_base):
+    transport = ASGITransport(app=main.app)
+    async with AsyncClient(transport=transport, base_url='http://testserver/') as client:
+        url = f"ws://testserver{api_base}/readers/connect"
+        async with aconnect_ws(url=url, client=client) as ws:
+            yield ws
+@pytest.mark.asyncio
+async def test_websocket(
+        api_base: str,
+        client: TestClient,
+        create_profile,
+        use_test_source_fixture,  # pylint: disable=unused-argument
+):
+    test_profile: ProfileTestObj = await create_profile()
+    auth_header = test_profile.authorization_header()
+
+    item_list_length = 10
+
+    generate_event_count = 10
+    events_ids = generate_events(api_base, client, test_profile.profile, generate_event_count)
+    stream_items = get_event_dumped_models(api_base, client, events_ids)
+
+    page_size = 3
+    r = client.post(
+        f"{api_base}/readers/",
+        json={'source': 'events', 'params': {'page_size': page_size}},
+        headers=auth_header,
+    )
+    reader = r.json()
+    assert "reader_id" in reader
+    reader_id = reader["reader_id"]
+
+    client.cookies.update(auth_header)
+    with client.websocket_connect(
+            f"{api_base}/readers/connect", data={"body": {}}
+    ) as websocket:
+        websocket: WebSocketTestSession
+
+        await asyncio.sleep(0.1)
+
+        max_reads = item_list_length / page_size
+
+        def check_new_items_in_connection(
+                page_size, generate_event_count, stream_items
+        ):
+            reads = 0
+            page_sized_reads = 0
+            count_events = 0
+            while reads < max_reads:
+                reads += 1
+                output_data = websocket.receive_json()
+                assert output_data is not None
+                log.info("Received output_data %s", output_data)
+                if len(output_data) == page_size:
+                    page_sized_reads += 1
+                if 'error' in output_data:
+                    assert False, f"Error in output data: {output_data['error']}"
+                for o in output_data:
+                    log.info("expected output_data %s", stream_items[count_events])
+                    assert 'index' in o
+                    assert 'payload' in o
+                    assert o["index"] == stream_items[count_events].index
+                    count_events += 1
 
     assert page_sized_reads == int(
         source_event_count / page_size
@@ -191,8 +254,8 @@ async def test_websocket(
         old_stream_items = list(stream_items)
 
         # Trigger new events to fetch the latest data
-        events_ids = generate_events(profile_id, source_event_count)
-        stream_items = read_db_events(events_ids)
+        events_ids = generate_events(api_base, client, test_profile.profile, generate_event_count)
+        stream_items = get_event_dumped_models(api_base, client, events_ids)
 
         # get the next set
         await read_socket(ws, page_size, source_event_count, stream_items)
@@ -224,6 +287,8 @@ async def test_websocket(
                        first_item_position:
                        ]  # Start stream_items from the third quarter of all items
         item_list_length = len(stream_items)
+
+        max_reads = item_list_length / page_size
 
         send_data = ReadClientOp(
             position=new_old_stream_items[(first_item_position - 1)][
