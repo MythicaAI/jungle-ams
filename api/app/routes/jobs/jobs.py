@@ -81,12 +81,6 @@ class JobResponse(BaseModel):
     job_def_id: str
 
 
-class ExtendedJobResponse(JobResponse):
-    event_id: Optional[str] = None
-    params: dict[str, Any]
-    input_files: Optional[dict[str, Any]] = None
-
-
 class JobResultRequest(BaseModel):
     created_in: str
     result_data: dict[str, Any]
@@ -104,7 +98,14 @@ class JobResultResponse(BaseModel):
     job_def_id: Optional[str]
     created: datetime
     completed: bool
-    results: list[JobResultModel]
+    results: Optional[list[JobResultModel]]
+
+
+class ExtendedJobResultResponse(JobResultResponse):
+    job_id: str
+    completed: Optional[datetime] = None
+    params: dict[str, Any]
+    input_files: Optional[dict[str, Any]] = None
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -533,7 +534,7 @@ async def jobs_by_asset_version(
         major: int,
         minor: int,
         patch: int,
-        db_session: AsyncSession = Depends(get_db_session)) -> list[ExtendedJobResponse]:
+        db_session: AsyncSession = Depends(get_db_session)) -> list[ExtendedJobResultResponse]:
     """Get all jobs for certain version of asset"""
     asset_seq = asset_id_to_seq(asset_id)
     asset_version = await repo.get_version(db_session, asset_seq, major, minor, patch)
@@ -544,13 +545,14 @@ async def jobs_by_asset_version(
 
 async def resolve_jobs_from_job_definitions(
         db_session: AsyncSession,
-        avr: AssetVersionResult) -> list[ExtendedJobResponse]:
+        avr: AssetVersionResult) -> list[ExtendedJobResultResponse]:
     results = (await db_session.exec(
-        select(Job)
+        select(Job, JobResult)
         .select_from(JobDefinition)
         .select_from(AssetVersionEntryPoint)
         .outerjoin(AssetVersionEntryPoint, AssetVersionEntryPoint.job_def_seq == JobDefinition.job_def_seq)
         .outerjoin(Job, Job.job_def_seq == JobDefinition.job_def_seq)
+        .outerjoin(JobResult, JobResult.job_seq == Job.job_seq)
         .where(Job.job_def_seq != None)
         .where(AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id))
         .where(AssetVersionEntryPoint.major == avr.version[0])
@@ -561,13 +563,23 @@ async def resolve_jobs_from_job_definitions(
         return []
 
     jobs = []
-    for job in results:
+    for job, results in results:
         jobs.append(
-            ExtendedJobResponse(
+            ExtendedJobResultResponse(
                 job_id=job_seq_to_id(job.job_seq),
-                job_def_id=job_def_seq_to_id(job.job_def_seq),
+                created=job.created,
+                completed=job.completed,
+                job_def_id=(
+                    job_def_seq_to_id(job.job_def_seq) if job.job_def_seq else None
+                ),
                 params=job.params,
-                input_files=job.input_files,
+                results=[
+                    JobResultModel(
+                        job_result_id=job_result_seq_to_id(job_result.job_result_seq),
+                        **job_result.model_dump(),
+                    )
+                    for job_result in results
+                ] if results else None,
             )
         )
 

@@ -11,7 +11,7 @@ from munch import munchify
 from cryptid.cryptid import asset_seq_to_id
 from assets.repo import AssetVersionResult
 from db.schema.events import Event
-from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResponse
+from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
@@ -564,9 +564,12 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
     assert_status_code(r, HTTPStatus.OK)
-    jobs_res = [ExtendedJobResponse(**i) for i in r.json()]
+    jobs_res = [ExtendedJobResultResponse(**i) for i in r.json()]
 
     assert (len(jobs_res) == 2)
     for single_job in jobs_res:
         job_id = single_job.job_id
         assert single_job.job_def_id == job_ids_job_def_ids[job_id]
+        assert single_job.params['size'] == 5.0
+        assert single_job.completed == None
+        assert single_job.input_files == None
