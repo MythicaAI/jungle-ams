@@ -1,4 +1,3 @@
-#include <OP/OP_Node.h>
 #include <OP/OP_Director.h>
 #include <GU/GU_Detail.h>
 #include <SOP/SOP_Node.h>
@@ -6,8 +5,6 @@
 #include <PI/PI_ResourceManager.h>
 #include <UT/UT_Exit.h>
 #include <UT/UT_Main.h>
-#include <UT/UT_StringStream.h>
-#include <OP/OP_OTLLibrary.h>
 #include <iostream>
 
 static void
@@ -38,7 +35,7 @@ theMain(int argc, char *argv[])
     manager.installLibrary(hda_path);
 
     // Find the root /obj network
-    OP_Network* obj = (OP_Network *)boss->findNode("/obj");
+    OP_Network* obj = (OP_Network*)boss->findNode("/obj");
     if (!obj)
     {
         std::cerr << "Failed to find obj network" << std::endl;
@@ -46,7 +43,7 @@ theMain(int argc, char *argv[])
     }
 
     // Create geo node
-    OP_Network* geo_node = (OP_Network *)obj->createNode("geo", "processor_parent");
+    OP_Network* geo_node = (OP_Network*)obj->createNode("geo", "processor_parent");
     if (!geo_node || !geo_node->runCreateScript())
     {
         std::cerr << "Failed to create geo node" << std::endl;
@@ -55,39 +52,43 @@ theMain(int argc, char *argv[])
 
     // Create the SOP node
     OP_Node* node = geo_node->createNode(node_type, "processor");
-    if (!node || !node->runCreateScript()) {
+    if (!node || !node->runCreateScript())
+    {
         std::cerr << "Failed to create node of type: " << node_type << std::endl;
         return 1;
     }
 
     // Cook the node
     OP_Context context(0.0);
-    if (!node->cook(context)) {
+    if (!node->cook(context))
+    {
         std::cerr << "Failed to cook node" << std::endl;
         return 1;
     }
 
     // Get geometry from the node
     SOP_Node* sop = node->castToSOPNode();
-    if (!sop) {
+    if (!sop)
+    {
         std::cerr << "Node is not a SOP node" << std::endl;
         return 1;
     }
 
     const GU_Detail* gdp = sop->getCookedGeo(context);
-    if (!gdp) {
+    if (!gdp)
+    {
         std::cerr << "Failed to get cooked geometry" << std::endl;
         return 1;
     }
 
     // Save to bgeo
-    if (!gdp->save(output_bgeo, nullptr)) {
+    if (!gdp->save(output_bgeo, nullptr))
+    {
         std::cerr << "Failed to save bgeo file" << std::endl;
         return 1;
     }
 
     std::cout << "Successfully saved bgeo file" << std::endl;
-
     return 0;
 }
 
