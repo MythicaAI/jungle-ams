@@ -1,62 +1,98 @@
-/*
- * Copyright (c) 2024
- *	Side Effects Software Inc.  All rights reserved.
- *
- * Redistribution and use of Houdini Development Kit samples in source and
- * binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. The name of Side Effects Software may not be used to endorse or
- *    promote products derived from this software without specific prior
- *    written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY SIDE EFFECTS SOFTWARE `AS IS' AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN
- * NO EVENT SHALL SIDE EFFECTS SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
- * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *----------------------------------------------------------------------------
- */
-
+#include <OP/OP_Node.h>
+#include <OP/OP_Director.h>
 #include <GU/GU_Detail.h>
+#include <SOP/SOP_Node.h>
+#include <MOT/MOT_Director.h>
+#include <PI/PI_ResourceManager.h>
 #include <UT/UT_Exit.h>
 #include <UT/UT_Main.h>
-#include <stddef.h>
+#include <UT/UT_StringStream.h>
+#include <OP/OP_OTLLibrary.h>
+#include <iostream>
 
-namespace HDK_Sample {
-
-static float
-densityFunction(const UT_Vector3 &P, void *data)
+static void
+usage(const char *program)
 {
-    // Return the signed distance to the unit sphere
-    return 1 - P.length();
-}
-
+    std::cerr << "Usage: " << program << " [-h] <hda_path> <node_type> <output_bgeo>\n";
+    std::cerr << "Loads HDA, creates node, cooks it and saves to bgeo\n";
+    UT_Exit::fail();
 }
 
 int
 theMain(int argc, char *argv[])
 {
-    GU_Detail		gdp;
-    UT_BoundingBox	bounds;
+    if (argc != 4)
+        usage(argv[0]);
 
-    // Evaluate the iso-surface inside this bounding box
-    bounds.setBounds(-1, -1, -1, 1, 1, 1);
+    const char* hda_path = argv[1];
+    const char* node_type = argv[2];
+    const char* output_bgeo = argv[3];
 
-    // Create an iso-surface
-    gdp.polyIsoSurface(HDK_Sample::densityFunction, NULL, bounds, 20, 20, 20);
+    // Initialize Houdini
+    MOT_Director* boss = new MOT_Director("standalone");
+    OPsetDirector(boss);
+    PIcreateResourceManager();
 
-    // Save to sphere.bgeo
-    gdp.save("sphere.bgeo", NULL);
+    // Load and install the HDA
+    UT_String errors;
+    OP_OTLManager& manager = boss->getOTLManager();
+    manager.installLibrary(hda_path);
+    manager.listLibraries(std::cout);
+    manager.listOperators(hda_path, std::cout);
 
-    UT_Exit::exit(UT_Exit::EXIT_OK); // exit with proper tear down
+    // Create parent /obj network
+    OP_Network* obj = (OP_Network *)boss->findNode("/obj");
+    if (!obj)
+    {
+        std::cerr << "Failed to create obj network" << std::endl;
+        return 1;
+    }
+    std::cout << "obj: " << obj << std::endl;
+
+    // Create geo node
+    OP_Network* geo_node = (OP_Network *)obj->createNode("geo", "processor_parent");
+    if (!geo_node)
+    {
+        std::cerr << "Failed to create geo node" << std::endl;
+        return 1;
+    }
+    std::cout << "geo_node: " << geo_node << std::endl;
+
+    // Create the SOP node
+    OP_Node* node = geo_node->createNode(node_type, "processor");
+    if (!node) {
+        std::cerr << "Failed to create node of type: " << node_type << std::endl;
+        return 1;
+    }
+    std::cout << "node: " << node << std::endl;
+
+    // Cook the node
+    OP_Context context(0.0);
+    if (!node->cook(context)) {
+        std::cerr << "Failed to cook node" << std::endl;
+        return 1;
+    }
+
+    // Get geometry from the node
+    SOP_Node* sop = node->castToSOPNode();
+    if (!sop) {
+        std::cerr << "Node is not a SOP node" << std::endl;
+        return 1;
+    }
+
+    const GU_Detail* gdp = sop->getCookedGeo(context);
+    if (!gdp) {
+        std::cerr << "Failed to get cooked geometry" << std::endl;
+        return 1;
+    }
+
+    // Save to bgeo
+    if (!gdp->save(output_bgeo, nullptr)) {
+        std::cerr << "Failed to save bgeo file" << std::endl;
+        return 1;
+    }
+
     return 0;
 }
+
 UT_MAIN(theMain);

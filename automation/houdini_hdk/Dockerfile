@@ -32,6 +32,7 @@ RUN mkdir build && cd build && \
 # Create mythica directory and copy artifacts
 RUN mkdir -p /mythica
 COPY run.sh /mythica/
+COPY test_cube.hda /mythica
 RUN chmod +x /mythica/run.sh
 RUN cp build/houdini_worker /mythica/
 
