@@ -7,7 +7,7 @@ find_package(Houdini REQUIRED)
 # Add the executable
 set(executable_name houdini_worker)
 add_executable(${executable_name}
-    houdini_worker.C
+    src/houdini_worker.C
 )
 
 # Link against Houdini
