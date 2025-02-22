@@ -1,14 +1,15 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
 
 from pydantic import BaseModel
 
 
 class FileRef(BaseModel):
     """A reference to a file on the filesystem"""
-    size: int
+    size: Optional[int]
+    file_id: Optional[str]
     relative_path: Path
     content_hash: str
 

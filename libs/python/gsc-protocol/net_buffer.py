@@ -16,6 +16,10 @@ class FrameHeader:
         self.payload_length = payload_length
 
     @property
+    def partial(self):
+        return self.flags & 1 == 1
+
+    @property
     def total_length(self) -> int:
         """Total frame length including header"""
         return self.payload_length + 4  # 1 byte type + 1 byte flags + 2 bytes length
@@ -42,6 +46,11 @@ class NetBuffer:
         # for some partial messages produce the data as a stream
         self.partials: list[bytes] = []
 
+    def append_with(self, it: Iterator[bytes]):
+        """Appends buffer data with an iterator."""
+        for b in it:
+            self.buffer.extend(b)
+
     def append_bytes(self, new_data: bytes):
         """Appends new WebSocket data to the buffer efficiently."""
         self.buffer.extend(new_data)
@@ -60,11 +69,11 @@ class NetBuffer:
         """
         if len(data) < self.HEADER_SIZE:
             return None
-
+        header = bytes(data[0:4])
         try:
-            frame_type, flags, payload_length = struct.unpack("<BBH", data)
-        except struct.error:
-            raise ValueError(f"Invalid header field in frame header {data[0:4].hex()}")
+            frame_type, flags, payload_length = struct.unpack("<BBH", header)
+        except struct.error as e:
+            raise ValueError(f"failed to unpack frame header 0x{header.hex()}") from e
 
         # Validate frame type (must be ASCII letter)
         if not (65 <= frame_type <= 90):  # A-Z
@@ -122,16 +131,20 @@ class NetBuffer:
                 if not header:
                     break  # Incomplete header, wait for more data
 
-                # Payload is fully available
-                payload = self._decode_frame_payload(
-                    view[offset + self.HEADER_SIZE:],
-                    header)
-
-                if payload is None:
-                    break  # Incomplete payload, wait for more data
-
-                # Construct complete frame
-                yield header, payload
+                # Payload is partially available
+                if header.flags & self.FLAG_PARTIAL == 1:
+                    start = offset + self.HEADER_SIZE
+                    end = start + header.payload_length
+                    partial_payload = bytes(view[start:end])
+                    yield header, partial_payload
+                else:
+                    # payload should eventually be available in the stream
+                    payload = self._decode_frame_payload(
+                        view[offset + self.HEADER_SIZE:],
+                        header)
+                    if payload is None:
+                        break
+                    yield header, payload
 
                 # Move offset past complete frame
                 offset += header.total_length

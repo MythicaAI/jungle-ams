@@ -141,7 +141,8 @@ class TestPartials:
         content = "XXX"
         total_frames = 0
         partials = {}
-        for frame in encode_frames(BEGIN, content, max_payload=1):
+        encoded = list(encode_frames(BEGIN, content, max_payload=1))
+        for frame in encoded:
             if frame is None:
                 continue
             print(f"adding frame {chr(frame[0])} {len(frame)} bytes")
@@ -157,11 +158,7 @@ class TestPartials:
                 stream_id = int(payload['id'])
                 seq = int(payload['seq'])
             elif header.frame_type == BEGIN:
-                assert stream_id != 0
-                if seq == 0:
-                    assert next(reader) is None
-
-                partials.setdefault(int(payload['id']), []).append(
+                partials.setdefault(stream_id, []).append(
                     (stream_id,
                      seq,
                      header.frame_type,
@@ -170,6 +167,19 @@ class TestPartials:
                      payload,))
             else:
                 assert False, f"{header.frame_type} not expected"
-
-        assert total_frames == 6
-        assert len(partials) == 3
+        buffer = bytearray()
+        last_seq = 0
+        assert stream_id in partials
+        assert len(partials[stream_id]) > 0
+        for partial in partials[stream_id]:
+            id, seq, ft, flags, payload_len, payload = partial
+            assert id == stream_id
+            assert seq == 0 or seq == last_seq + 1
+            last_seq = seq
+            assert ft == BEGIN
+            assert flags == 1
+            assert payload_len > 0
+            buffer.extend(payload)
+        assert last_seq == 0, "seq reset to 0 for sentinel"
+        content_decoded = cbor2.loads(memoryview(buffer))
+        assert content == content_decoded
