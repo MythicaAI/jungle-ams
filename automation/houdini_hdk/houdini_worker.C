@@ -34,37 +34,31 @@ theMain(int argc, char *argv[])
     PIcreateResourceManager();
 
     // Load and install the HDA
-    UT_String errors;
     OP_OTLManager& manager = boss->getOTLManager();
     manager.installLibrary(hda_path);
-    manager.listLibraries(std::cout);
-    manager.listOperators(hda_path, std::cout);
 
-    // Create parent /obj network
+    // Find the root /obj network
     OP_Network* obj = (OP_Network *)boss->findNode("/obj");
     if (!obj)
     {
-        std::cerr << "Failed to create obj network" << std::endl;
+        std::cerr << "Failed to find obj network" << std::endl;
         return 1;
     }
-    std::cout << "obj: " << obj << std::endl;
 
     // Create geo node
     OP_Network* geo_node = (OP_Network *)obj->createNode("geo", "processor_parent");
-    if (!geo_node)
+    if (!geo_node || !geo_node->runCreateScript())
     {
         std::cerr << "Failed to create geo node" << std::endl;
         return 1;
     }
-    std::cout << "geo_node: " << geo_node << std::endl;
 
     // Create the SOP node
     OP_Node* node = geo_node->createNode(node_type, "processor");
-    if (!node) {
+    if (!node || !node->runCreateScript()) {
         std::cerr << "Failed to create node of type: " << node_type << std::endl;
         return 1;
     }
-    std::cout << "node: " << node << std::endl;
 
     // Cook the node
     OP_Context context(0.0);
@@ -91,6 +85,8 @@ theMain(int argc, char *argv[])
         std::cerr << "Failed to save bgeo file" << std::endl;
         return 1;
     }
+
+    std::cout << "Successfully saved bgeo file" << std::endl;
 
     return 0;
 }

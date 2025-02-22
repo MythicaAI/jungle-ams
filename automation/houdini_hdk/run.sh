@@ -17,7 +17,7 @@ cleanup() {
 trap cleanup TERM
 
 # Run the actual program
-./houdini_worker test_cube.hda mythica::Sop/test_cube::1.0 test_cube.bgeo
+./houdini_worker test_cube.hda test_cube test_cube.bgeo
 
 # Keep the script running to maintain the license
 while true; do
