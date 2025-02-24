@@ -6,7 +6,10 @@
 #include <UT/UT_Exit.h>
 #include <UT/UT_Interrupt.h>
 #include <UT/UT_Main.h>
+#include <chrono>
 #include <iostream>
+
+static const int COOK_TIMEOUT_SECONDS = 1;
 
 static void
 usage(const char *program)
@@ -19,6 +22,8 @@ usage(const char *program)
 class StatusHandler : public UT_InterruptHandler
 {
 public:
+    StatusHandler() : start_time(std::chrono::steady_clock::now()) {}
+
     virtual void start(UT_Interrupt *intr,
                       const UT_InterruptMessage &msg,
                       const UT_StringRef &main_optext,
@@ -33,6 +38,15 @@ public:
                      int priority) override 
     {
         std::cout << "Operation pushed: " << priority << " " << intr->getOpDepth() << " " << msg.buildMessage() << " " << main_optext << std::endl;
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
+        
+        if (elapsed >= COOK_TIMEOUT_SECONDS)
+        {
+            std::cout << "Interrupting after " << elapsed << " seconds" << std::endl;
+            intr->interrupt();
+        }
     }
     
     virtual void busyCheck(bool interrupted,
@@ -45,6 +59,9 @@ public:
     virtual void pop() override {}
     virtual void stop() override {}
     virtual void interruptAllowed(bool allowed, bool allow_ui) override {}
+
+private:
+    std::chrono::steady_clock::time_point start_time;
 };
 
 int
