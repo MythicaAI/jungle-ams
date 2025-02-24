@@ -4,6 +4,7 @@
 #include <MOT/MOT_Director.h>
 #include <PI/PI_ResourceManager.h>
 #include <UT/UT_Exit.h>
+#include <UT/UT_Interrupt.h>
 #include <UT/UT_Main.h>
 #include <iostream>
 
@@ -14,6 +15,37 @@ usage(const char *program)
     std::cerr << "Loads HDA, creates node, cooks it and saves to bgeo\n";
     UT_Exit::fail();
 }
+
+class StatusHandler : public UT_InterruptHandler
+{
+public:
+    virtual void start(UT_Interrupt *intr,
+                      const UT_InterruptMessage &msg,
+                      const UT_StringRef &main_optext,
+                      int priority) override 
+    {
+        std::cout << "Operation started: " << priority << " " << intr->getOpDepth() << " " << msg.buildMessage() << " " << main_optext << std::endl;
+    }
+    
+    virtual void push(UT_Interrupt *intr,
+                     const UT_InterruptMessage &msg,
+                     const UT_StringRef &main_optext,
+                     int priority) override 
+    {
+        std::cout << "Operation pushed: " << priority << " " << intr->getOpDepth() << " " << msg.buildMessage() << " " << main_optext << std::endl;
+    }
+    
+    virtual void busyCheck(bool interrupted,
+                          float percent,
+                          float longpercent) override 
+    {
+        std::cout << "Progress: " << interrupted << " " << percent << " " << longpercent << "%" << " " << std::endl;
+    }
+    
+    virtual void pop() override {}
+    virtual void stop() override {}
+    virtual void interruptAllowed(bool allowed, bool allow_ui) override {}
+};
 
 int
 theMain(int argc, char *argv[])
@@ -58,6 +90,12 @@ theMain(int argc, char *argv[])
         return 1;
     }
 
+    // Install status handler
+    StatusHandler status_handler;
+    UT_Interrupt* interrupt = UTgetInterrupt();
+    interrupt->setInterruptHandler(&status_handler);
+    interrupt->setEnabled(true);
+
     // Cook the node
     OP_Context context(0.0);
     if (!node->cook(context))
@@ -65,6 +103,9 @@ theMain(int argc, char *argv[])
         std::cerr << "Failed to cook node" << std::endl;
         return 1;
     }
+
+    // Remove status handler
+    interrupt->setInterruptHandler(nullptr);
 
     // Get geometry from the node
     SOP_Node* sop = node->castToSOPNode();
