@@ -129,59 +129,39 @@ def create_inputs(asset, geo, params: dict):
         # Connect the input node to the asset
         asset.setInput(input_index, input_node, 0)
 
-def generate_mesh_impl(
-        hda_path: str,
-        hda_definition_index: int,
-        format: str,
-        params: dict,
-        working_dir: str,
-        responder: ResultPublisher
-) -> list[str]:
-    log.debug("Preparing scene")
-    output_file_name = os.path.basename(hda_path)
 
-    log.debug("Clearing scene")
-    hou.hipFile.clear(suppress_save_prompt=True)
+def export_image(asset, working_dir: str, output_file_name: str):
+    log.debug("Exporting result as image")
 
-    log.debug("Intalling HDA")
-    hou.hda.installFile(hda_path, force_use_assets=True)
-    log.debug("Intalling HDA completed")
-
-    # Geometry
-    obj = hou.node('obj')
-    geo = obj.createNode('geo', 'geometry')
-    stage = hou.node('stage')
-
-    assetdef = hou.hda.definitionsInFile(hda_path)[hda_definition_index]
-    asset = geo.createNode(assetdef.nodeTypeName())
-
-    # Set parms
-    log.debug("Applying parameters")
-    apply_params(asset, params)
-    log.debug("Creating inputs")
-    create_inputs(asset, geo, params)
-    log.debug("Setting up scene completed")
-
-    log.debug("Forcing HDA cook (internal HDA cooks must happen before exporting)")
-    try:
-        asset.cook(force=True)
-    except Exception as e:
-        log.error(f"Cook failed with exception: {e}")
-
-        error_details = {
-            "errors": list(asset.errors()),
-            "warnings": list(asset.warnings()),
-            "messages": list(asset.messages())
-        }
-        log.error(f"Cook error details: {error_details}")
-        responder.result(Error(error=str(error_details)))
-        raise
-    log.debug("HDA cook completed")
-
-    # Export
     out = hou.node('out')
 
-    output_file_path = ""
+    output_file_path = os.path.join(working_dir, f"{output_file_name}.png")
+
+    out_cop = out.createNode("copnet")
+
+    sop_import = out_cop.createNode("sopimport")
+    sop_import.parm("usesoppath").set(True)
+    sop_import.parm("soppath").set(asset.path())
+
+    geo_to_layer = out_cop.createNode("geotolayer")
+    geo_to_layer.parm("signature").set("f3")
+    geo_to_layer.setInput(0, sop_import, 0)
+
+    rop_image = out_cop.createNode("rop_image")
+    rop_image.parm("coppath").set(geo_to_layer.path())
+    rop_image.parm("copoutput").set(output_file_path)
+
+    rop_image.parm("execute").pressButton()
+    log.debug("Exporting image completed")
+
+    return [ output_file_path ]
+
+
+def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str):
+    log.debug("Exporting result as mesh")
+
+    out = hou.node('out')
+
     outputs: list[str] = []
 
     if format == 'fbx':
@@ -210,9 +190,6 @@ def generate_mesh_impl(
         # Export to USD
         usd_node = geo.createNode("usdexport", "usd_node")
         usd_node.parm("authortimesamples").set("never")
-        render_node = stage.createNode("usd_rop")
-        sublayer_node = stage.createNode("sublayer")
-        attrib_node = stage.createNode("attribwrangle")
         usdz_node = out.createNode("usdzip", "usdz_node")
 
         for index in range(len(asset.outputNames())):
@@ -225,24 +202,6 @@ def generate_mesh_impl(
             usd_node.parm("execute").pressButton()
             log.debug("Exporting mesh completed")
 
-            # Bind material
-            if 'material/type' in params and 'material/source_asset' in params:
-                if params['material/type'] == "Unreal":
-                    sublayer_node.parm("num_files").set(1)
-                    sublayer_node.parm("filepath1").set(output_file_path)
-
-                    sourceAssset = params['material/source_asset']
-                    attrib_node.parm("primpattern").set("%type:Boundable")
-                    attrib_node.parm("snippet").set(f"s@unrealMaterial = '{sourceAssset}';")
-                    attrib_node.setInput(0, sublayer_node, 0)
-
-                    binded_file = os.path.join(working_dir, f"{output_file_name}_{index}_with_material.usd")
-                    render_node.parm("lopoutput").set(binded_file)
-                    render_node.setInput(0, attrib_node, 0)
-                    render_node.parm("execute").pressButton()
-
-                    output_file_path = binded_file
-
             # Convert to USDZ format
             output_zip_file_path = os.path.join(working_dir, f"{output_file_name}_{index}.usdz")
             usdz_node.parm("infile1").set(output_file_path)
@@ -253,6 +212,68 @@ def generate_mesh_impl(
             log.debug("Packaging usdz completed")
 
             outputs.append(output_zip_file_path)
+
+    return outputs
+
+
+def generate_mesh_impl(
+        hda_path: str,
+        hda_definition_index: int,
+        format: str,
+        params: dict,
+        working_dir: str,
+        responder: ResultPublisher
+) -> list[str]:
+    log.debug("Preparing scene")
+    output_file_name = os.path.basename(hda_path)
+
+    log.debug("Clearing scene")
+    hou.hipFile.clear(suppress_save_prompt=True)
+
+    log.debug("Intalling HDA")
+    hou.hda.installFile(hda_path, force_use_assets=True)
+    log.debug("Intalling HDA completed")
+
+    # Geometry
+    obj = hou.node('obj')
+    geo = obj.createNode('geo', 'geometry')
+
+    assetdef = hou.hda.definitionsInFile(hda_path)[hda_definition_index]
+    asset = geo.createNode(assetdef.nodeTypeName())
+
+    # Set parms
+    log.debug("Applying parameters")
+    apply_params(asset, params)
+    log.debug("Creating inputs")
+    create_inputs(asset, geo, params)
+    log.debug("Setting up scene completed")
+
+    log.debug("Forcing HDA cook (internal HDA cooks must happen before exporting)")
+    try:
+        asset.cook(force=True)
+    except Exception as e:
+        log.error(f"Cook failed with exception: {e}")
+
+        error_details = {
+            "errors": list(asset.errors()),
+            "warnings": list(asset.warnings()),
+            "messages": list(asset.messages())
+        }
+        log.error(f"Cook error details: {error_details}")
+        responder.result(Error(error=str(error_details)))
+        raise
+    log.debug("HDA cook completed")
+
+    # Export
+    result_geo = asset.geometry()
+    prims = result_geo.prims()
+    is_image = len(prims) == 1 and prims[0].type() == hou.primType.Volume
+
+    outputs: list[str] = []
+    if is_image:
+        outputs = export_image(asset, working_dir, output_file_name)
+    else:
+        outputs = export_mesh(asset, geo, working_dir, output_file_name, format)
 
     log.debug("Uninstalling HDA")
     hou.hda.uninstallFile(hda_path)
