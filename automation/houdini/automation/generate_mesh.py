@@ -162,10 +162,11 @@ def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str
 
     out = hou.node('out')
 
-    result_files = []
+    outputs: list[str] = []
 
     if format == 'fbx':
         output_file_path = os.path.join(working_dir, f"{output_file_name}.fbx")
+        outputs.append(output_file_path)
 
         fbx_node = out.createNode("filmboxfbx", "fbx_node")
         fbx_node.parm("sopoutput").set(output_file_path)
@@ -174,11 +175,10 @@ def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str
         log.debug("Exporting FBX %s", output_file_path)
         fbx_node.parm("execute").pressButton()
         log.debug("Exporting mesh completed")
-
-        result_files.append(output_file_path)
     elif format == 'glb':
         # gltf vs glb export is inferred from the output extension
         output_file_path = os.path.join(working_dir, f"{output_file_name}.glb")
+        outputs.append(output_file_path)
 
         gltf_node = out.createNode("gltf", "gltf_node")
         gltf_node.parm("file").set(output_file_path)
@@ -186,8 +186,6 @@ def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str
         log.debug("Exporting GLB %s", output_file_path)
         gltf_node.parm("execute").pressButton()
         log.debug("Exporting mesh completed")
-
-        result_files.append(output_file_path)
     elif format == 'usdz':
         # Export to USD
         usd_node = geo.createNode("usdexport", "usd_node")
@@ -213,9 +211,9 @@ def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str
             usdz_node.parm("execute").pressButton()
             log.debug("Packaging usdz completed")
 
-            result_files.append(output_zip_file_path)
+            outputs.append(output_zip_file_path)
 
-    return result_files
+    return outputs
 
 
 def generate_mesh_impl(
