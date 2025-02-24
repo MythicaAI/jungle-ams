@@ -55,18 +55,8 @@ class NetBuffer:
         """Appends new WebSocket data to the buffer efficiently."""
         self.buffer.extend(new_data)
 
-    def _decode_frame_header(self, data: memoryview) -> Optional[FrameHeader]:
-        """Safely decode and validate frame header.
-
-        Args:
-            data: memoryview of buffer starting at current position
-
-        Returns:
-            Optional[FrameHeader]: Validated frame header or None if incomplete
-
-        Raises:
-            ValueError: If header is invalid or indicates unsafe payload size
-        """
+    def _maybe_frame_header(self, data: memoryview) -> Optional[FrameHeader]:
+        """Tries to decode a header from the memory view if one can be extracted"""
         if len(data) < self.HEADER_SIZE:
             return None
         header = bytes(data[0:4])
@@ -85,7 +75,7 @@ class NetBuffer:
 
         return FrameHeader(frame_type, flags, payload_length)
 
-    def _decode_frame_payload(
+    def _maybe_frame_payload(
             self,
             data: memoryview,
             header: FrameHeader) -> Optional[Any]:
@@ -127,7 +117,7 @@ class NetBuffer:
         while offset < len(view):
             try:
                 # First decode and validate header
-                header = self._decode_frame_header(view[offset:])
+                header = self._maybe_frame_header(view[offset:])
                 if not header:
                     break  # Incomplete header, wait for more data
 
@@ -139,7 +129,7 @@ class NetBuffer:
                     yield header, partial_payload
                 else:
                     # payload should eventually be available in the stream
-                    payload = self._decode_frame_payload(
+                    payload = self._maybe_frame_payload(
                         view[offset + self.HEADER_SIZE:],
                         header)
                     if payload is None:

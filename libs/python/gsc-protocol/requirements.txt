@@ -4,4 +4,8 @@ fastapi
 usd-core
 pytest
 cbor2
+
+# testing
 hexdump
+euclid
+trimesh

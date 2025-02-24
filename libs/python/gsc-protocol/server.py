@@ -1,7 +1,6 @@
 import asyncio
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Awaitable, Iterator, Self
+from typing import Any, Iterator
 
 import uvicorn
 from fastapi import FastAPI, WebSocket
@@ -11,32 +10,6 @@ from encoder_cbor import BEGIN, END, HELLO, PARTIAL, PING_PONG, encode_begin, en
     encode_ping_pong
 from files import Cache, FileRef
 from net_buffer import FrameHeader, NetBuffer
-
-AsyncSceneProcessor = Callable[[Self], Awaitable[None]]
-
-
-class ProcessContext:
-    def __init__(self, base_path: Path, depth: int = 0):
-        self.args: dict[str, any]
-        self.files = Cache(
-            base_path=base_path,
-            by_relative_path={},
-            by_content_hash={})
-        self.tasks: list[asyncio.Task] = []
-        self.depth: int = 0
-        self.i = NetBuffer()
-        self.o = NetBuffer()
-
-
-class StreamContext:
-    def __init__(self, base_path: Path):
-        self.stream_id = 0
-        self.seq = 0
-        self.streams: dict[int, list[tuple[int, bytes]]] = {}
-        self.stack: list[ProcessContext] = []
-        self.processors: dict[str, AsyncSceneProcessor] = {}
-        self.base_path = base_path
-        self.depth = 0
 
 
 class ClientContext:

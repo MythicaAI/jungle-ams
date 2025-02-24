@@ -8,10 +8,10 @@ from pydantic import BaseModel
 
 class FileRef(BaseModel):
     """A reference to a file on the filesystem"""
-    size: Optional[int]
-    file_id: Optional[str]
-    relative_path: Path
-    content_hash: str
+    size: Optional[int] = 0
+    file_id: Optional[str] = None
+    relative_path: Optional[Path] = None
+    content_hash: Optional[str] = None
 
 
 class Cache(BaseModel):

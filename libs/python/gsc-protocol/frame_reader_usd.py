@@ -58,46 +58,51 @@ def convert_usd_value(value):
     # return str(value)  # Convert any unknown USD type to a string for safety
 
 
+def traverse_prim(prim, depth=0):
+    """Recursively stream a USD prim and its attributes."""
+    # Encode BEGIN
+    yield encode_begin("Prim", prim.GetName(), depth)
+
+    # Stream prim attributes
+    for attr in prim.GetAttributes():
+        value = attr.Get()
+        attr_type = str(attr.GetTypeName())  # Get USD type as string
+        if value is not None:
+            yield encode_attribute(attr.GetName(), attr_type, convert_usd_value(value))
+
+    # Stream transformation matrix (if it exists)
+    xform = UsdGeom.Xform(prim)
+    if xform:
+        transform = xform.GetLocalTransformation()
+        floats = [*convert_usd_value(transform[0]),
+                  *convert_usd_value(transform[1]),
+                  *convert_usd_value(transform[2]),
+                  *convert_usd_value(transform[3])]
+        yield encode_transform("transform", floats)  # TODO RowMajor? provide differentiator
+
+    # Recursively stream child prims
+    for child in prim.GetChildren():
+        yield from traverse_prim(child, depth + 1)
+
+    # Encode END Prim
+    yield encode_end(depth)
+
+
 def frame_reader_usd(file_path: str):
     """Reads a USD file and streams it using an encoder."""
     stage = Usd.Stage.Open(file_path)
-
-    def traverse_prim(prim, depth=0):
-        """Recursively stream a USD prim and its attributes."""
-        # Encode BEGIN
-        yield encode_begin("Prim", prim.GetName(), depth)
-
-        # Stream prim attributes
-        for attr in prim.GetAttributes():
-            value = attr.Get()
-            attr_type = str(attr.GetTypeName())  # Get USD type as string
-            if value is not None:
-                yield encode_attribute(attr.GetName(), attr_type, convert_usd_value(value))
-
-        # Stream transformation matrix (if it exists)
-        xform = UsdGeom.Xform(prim)
-        if xform:
-            transform = xform.GetLocalTransformation()
-            floats = [*convert_usd_value(transform[0]),
-                      *convert_usd_value(transform[1]),
-                      *convert_usd_value(transform[2]),
-                      *convert_usd_value(transform[3])]
-            yield encode_transform("transform", floats)  # TODO RowMajor? provide differentiator
-
-        # Recursively stream child prims
-        for child in prim.GetChildren():
-            yield from traverse_prim(child, depth + 1)
-
-        # Encode END
-        yield encode_end(depth)
+    yield from encode_begin("File", file_path, 0)
 
     # Stream the root layer first
     root_layer = stage.GetRootLayer()
-    yield encode_begin("Layer", root_layer.identifier, 0)
+    yield encode_begin("Layer", root_layer.identifier, 1)
 
     # Traverse the scene
     for prim in stage.Traverse():
         yield from traverse_prim(prim, depth=1)
 
     # Close the layer
-    yield encode_end(0)
+    yield encode_end(1)
+
+    # Close the file
+    yield from encode_end(0)

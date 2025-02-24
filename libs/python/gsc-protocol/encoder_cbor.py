@@ -2,11 +2,10 @@ import struct
 from datetime import datetime, timezone
 from itertools import count
 from random import randint
-from typing import Any, Iterator, List, Optional
+from typing import Any, Iterator, Optional
 
 import cbor2
 
-from encoder_array_cbor import encode_float64_array
 from files import FileRef
 
 """Encodes protocol frames with CBOR payloads."""
@@ -27,8 +26,11 @@ FLOW = ord('X')
 _next_stream_id = count(start=1)
 
 
-def encode_frames(frame_type: int, payload: Any, stream_id_iter=_next_stream_id, max_payload=MAX_PAYLOAD_SIZE) -> \
-        Iterator[bytes]:
+def encode_frames(
+        frame_type: int,
+        payload: Any,
+        stream_id_iter=_next_stream_id,
+        max_payload=MAX_PAYLOAD_SIZE) -> Iterator[bytes]:
     """Yield 1 or more byte array frames resulting in constructing the requested frame and payload"""
     payload_bytes = cbor2.dumps(payload)
     payload_len = len(payload_bytes)
@@ -75,25 +77,19 @@ def encode_frames(frame_type: int, payload: Any, stream_id_iter=_next_stream_id,
 
 def encode_begin(entity_type: str, name: str, depth: int) -> Iterator[bytes]:
     """Encodes a BEGIN frame."""
-    payload = [1, depth, entity_type, name]  # Version is 1
+    payload = [depth, entity_type, name]  # Version is 1
     yield from encode_frames(BEGIN, payload)
 
 
 def encode_end(depth: int) -> Iterator[bytes]:
     """Encodes an END frame."""
-    yield from encode_frames(END, [1, depth])  # Version is 1
+    yield from encode_frames(END, [depth])  # Version is 1
 
 
 def encode_attribute(name: str, attr_type: str, value: Any) -> Iterator[bytes]:
     """Encodes an attribute frame."""
     payload = {"name": name, "type": attr_type, "value": value}
     yield from encode_frames(ATTRIBUTE, payload)
-
-
-def encode_transform(name: str, matrix: List[float]) -> Iterator[bytes]:
-    """Encodes a transform attribute frame."""
-    payload = encode_float64_array(matrix)
-    yield from encode_attribute(name, "Matrix4d", payload)
 
 
 def encode_ping_pong() -> Iterator[bytes]:

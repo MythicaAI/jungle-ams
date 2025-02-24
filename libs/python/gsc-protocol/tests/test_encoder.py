@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import pytest
+from encode_attributes import encode_attr_transform
 from encoder_cbor import *
 from files import FileRef
 
 
 def test_basic_frame_encoding():
     """Test basic frame encoding with simple payload."""
-    frame = encode_frames(BEGIN, ["test"])
+    frame = next(encode_frames(BEGIN, ["test"]))
 
     # Check frame structure
     assert frame[0] == BEGIN
@@ -29,13 +30,13 @@ def test_oversized_payload():
 def test_matrix4d_encoding():
     """Test matrix encoding and validation."""
     matrix = [float(i) for i in range(16)]
-    encoded = encode_matrix4d(matrix)
+    encoded = encode_attr_transform("transform", matrix)
     assert isinstance(encoded, cbor2.CBORTag)
     assert encoded.tag == 2
 
     # Should fail with wrong size
     with pytest.raises(ValueError):
-        encode_matrix4d([1.0, 2.0, 3.0])  # Too few elements
+        encode_attr_transform("invalid", [1.0, 2.0, 3.0])  # Too few elements
 
 
 def test_begin_frame():
@@ -61,7 +62,7 @@ def test_attribute_frame():
 def test_transform_frame():
     """Test transform frame encoding."""
     matrix = [float(i) for i in range(16)]
-    frame = encode_transform("xform1", matrix)
+    frame = encode_attr_transform("xform1", matrix)
     assert frame[0] == ATTRIBUTE
 
     payload = cbor2.loads(frame[3:])
@@ -87,8 +88,8 @@ def test_file_param_frame():
         size=0,
         relative_path=Path("test.txt"),
         content_hash="abc123")
-    frame = encode_file_param(file_ref)
-    assert frame[0] == FILE_PARAM
+    frame = encode_file(file_ref)
+    assert frame[0] == FILE
 
     payload = cbor2.loads(frame[3:])
     assert FileRef(**payload) == file_ref

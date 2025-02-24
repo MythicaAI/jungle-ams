@@ -57,7 +57,10 @@ def decode_streamitem(frame: List[Any]):
     print(f"{' ' * 4}🔹 {name} ({attr_type}): {value}")
 
 
-tag_handlers
+tag_handlers = {}
+
+
+# tag_handlers.update(decoder_array_cbor.TAG_HOOKS)
 
 
 def decode_tag_hook(decoder: CBORDecoder, tag: cbor2.CBORTag):
@@ -68,6 +71,8 @@ def decode_usd_stream(encoded_frames: Iterator[bytes]):
     """Decodes a sequence of CBOR-encoded USD frames."""
     for encoded_frame in encoded_frames:
         try:
+            # needs partial handling, this is too low level -
+            # can process_frames pattern from the server be used
             frame = cbor2.loads(encoded_frame, tag_hook=decode_tag_hook)
             if isinstance(frame, list) and len(frame) > 0:
                 frame_type = chr(frame[0])  # Convert ASCII code to character
