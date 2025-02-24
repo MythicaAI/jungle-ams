@@ -77,7 +77,8 @@ def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaRespons
         0,
         'usdz',
         request.model_dump(exclude={'hda_file'}),
-        tmp_dir
+        tmp_dir,
+        responder
     )
 
     files = {}
