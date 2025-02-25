@@ -2,6 +2,11 @@ ARG HOUDINI_VERSION=20.5.370
 
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
 
+# Setup Houdini environment
+ENV SFX_CLIENT_ID=""
+ENV SFX_CLIENT_SECRET=""
+ENV HFS=/opt/houdini/build
+
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     tcsh \
@@ -13,27 +18,28 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set HDK environment variables
-ENV HFS=/opt/houdini/build
 ENV PATH=${HFS}/bin:${PATH}
 
-# Create HDK example directory
-RUN mkdir -p /src/HDK
-WORKDIR /src/HDK
+# Create worker build directory
+RUN mkdir -p /worker
+WORKDIR /worker
 
 # Copy the source and CMake files
-COPY houdini_worker.C .
+COPY src/ src/
 COPY CMakeLists.txt .
 
 # Create build directory and build
 RUN mkdir build && cd build && \
-    cmake -DCMAKE_PREFIX_PATH=${HFS}/toolkit/cmake .. && \
+    cmake .. && \
     cmake --build .
 
-# Create mythica directory and copy artifacts
-RUN mkdir -p /mythica
-COPY run.sh /mythica/
-COPY test_cube.hda /mythica
-RUN chmod +x /mythica/run.sh
-RUN cp build/houdini_worker /mythica/
+# Create directory to run the worker
+RUN mkdir -p /run
+WORKDIR /run
 
-WORKDIR /mythica
+COPY run.sh .
+COPY test_cube.hda .
+
+RUN chmod +x run.sh
+RUN cp /worker/build/houdini_worker .
+
