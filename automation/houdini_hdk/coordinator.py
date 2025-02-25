@@ -7,8 +7,11 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(name)s: %(levelname)s: %(message)s'
+)
+log = logging.getLogger("Coordinator")
 
 class HoudiniWorker:
     def __init__(self, executable_path: str, timeout: float = 60.0):
@@ -108,7 +111,8 @@ def main():
     with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
             completed = response["op"] == "cook_response"
-            log.info("Completed: %s", completed)
+            if completed:
+                log.info("Recieved completed response")
             return completed
 
         test_message = {"op": "cook", 

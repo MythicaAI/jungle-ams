@@ -154,7 +154,7 @@ theMain(int argc, char *argv[])
 
     auto send_response = [write_fd](const std::string& op, const std::string& data)
     {
-        std::cout << "Sending response: " << op << " " << data << std::endl;
+        std::cout << "Worker: Sending response: " << op << " " << data << std::endl;
         std::string response = std::string("{\"op\":\"") + op + "\",\"data\":\"" + data + "\"}\n";
         write(write_fd, response.c_str(), response.length());
     };
@@ -172,7 +172,7 @@ theMain(int argc, char *argv[])
     // Process messages from pipe
     while (true)
     {
-        std::cout << "Waiting for message" << std::endl;
+        std::cout << "Worker: Waiting for message" << std::endl;
 
         std::string buffer;
         std::string message;
@@ -189,7 +189,7 @@ theMain(int argc, char *argv[])
                 message = buffer.substr(0, newline_pos);
                 buffer.erase(0, newline_pos + 1);
 
-                std::cout << "Received message: " << message << std::endl;
+                std::cout << "Worker: Received message: " << message << std::endl;
                 break;
             }
         }
