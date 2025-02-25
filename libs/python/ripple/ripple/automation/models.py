@@ -36,8 +36,8 @@ class CropImageRequest(ParameterSet):
     image_file: FileParameter
     src_asset_id: str
     src_version: list[int]
-    crop_pos_x: Optional[IntParameterSpec]
-    crop_pos_y: Optional[IntParameterSpec]
+    crop_pos_x: Optional[IntParameterSpec] = None
+    crop_pos_y: Optional[IntParameterSpec] = None
     crop_w: IntParameterSpec
     crop_h: IntParameterSpec
 

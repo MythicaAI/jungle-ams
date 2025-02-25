@@ -106,14 +106,14 @@ class ResultPublisher:
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
         updated_headers = self.update_headers_from_context()
-        def upload_file(file_path: str, key: str, index: int) -> Optional[str]:
+        def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
             if not os.path.exists(file_path):
                 log.error("File not found: %s", file_path)
-                return None
+                return (None, None)
 
             try:
-                #if self.request.results_subject:
-                #    self._stream_file_chunks(file_path, key, index)
+                if self.request.results_subject:
+                   self._stream_file_chunks(file_path, key, index)
 
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
@@ -121,7 +121,7 @@ class ResultPublisher:
                     response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
                         headers=updated_headers
                     )
-                    file_id, file_name = (response['files'][0]['file_id'], response['files'][0]['file_name']) if response else (None, None)
+                    file_id, file_name = (response['files'][0].get("file_id"), response['files'][0].get("file_name")) if response else (None, None)
                     log.info("Uploaded response: %s", response)
                     return file_id, file_name
             finally:

@@ -1,4 +1,4 @@
-from asyncio import AbstractEventLoop, Task
+import logging
 from jwt import DecodeError
 from pydantic import ValidationError
 import pytest
@@ -12,7 +12,7 @@ from ripple.automation.worker import Worker
 from ripple.automation.models import AutomationModel, AutomationRequest, AutomationsResponse
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
-from ripple.models.streaming import JobDefinition, Message, OutputFiles, ProcessStreamItem
+from ripple.models.streaming import CropImageResponse, JobDefinition, Message, OutputFiles, ProcessStreamItem
 from ripple.models.params import ParameterSet
 
 from cryptid.cryptid import profile_seq_to_id
@@ -394,6 +394,16 @@ def job_definition_item():
         }
     )
 
+@pytest.fixture
+def cropped_image_item():
+    return CropImageResponse(
+        job_type="cropped_image",
+        src_asset_id="asset_111", 
+        src_version="1.1.1",
+        src_file_id="file_111",
+        file_path="test.txt",
+    )
+
 def test_publisher_init(publisher, test_request, mock_profile):
     assert publisher.request == test_request
     assert publisher.profile == mock_profile
@@ -485,6 +495,34 @@ async def test_publish_files(publisher, mock_rest, output_files_item):
     
     mock_rest.post_file.assert_called_once()
     assert output_files_item.files["test_key"][0] == "test-file-id"
+
+@pytest.mark.asyncio
+async def test_publish_cropped_image(publisher, mock_rest, cropped_image_item, tmp_path, caplog):
+    mock_rest.post_file.return_value = {"files": [{"file_id": "file_222", "file_name": "test.txt"}]}
+    mock_rest.post.return_value = True
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("test content")
+    cropped_image_item.file_path = str(test_file)
+
+    with caplog.at_level(logging.INFO):
+        publisher._publish_local_data(cropped_image_item, publisher.api_url)
+    mock_rest.post_file.assert_called_once()
+    mock_rest.post.assert_called_once()
+    assert any("Added cropped image to contents, item" in message for message in caplog.messages)
+    assert cropped_image_item.file_id == "file_222"
+    assert cropped_image_item.file_name == "test.txt"
+
+
+@pytest.mark.asyncio
+async def test_publish_missing_cropped_image(publisher, cropped_image_item, caplog):
+    # cropped_image_item.file_path = "test_file"
+
+    with caplog.at_level(logging.ERROR):
+        publisher._publish_local_data(cropped_image_item, publisher.api_url)
+    assert any("Failed to add cropped image to contents" in message for message in caplog.messages)
+    assert cropped_image_item.file_id == None
+    assert cropped_image_item.file_name == None
+
 
 @pytest.mark.asyncio
 async def test_publish_job_definition(publisher, mock_rest, job_definition_item):

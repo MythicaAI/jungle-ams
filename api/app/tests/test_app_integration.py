@@ -100,7 +100,6 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     
     src_file = uploaded_files_dict[uploaded_files_ids[0]]
     dependent_file = uploaded_files_dict[uploaded_files_ids[1]]
-    asset_contents_images_list = [src_file]
 
     # create org to contain assets
     org_name = 'org-' + random_str(10, digits=False)
@@ -194,7 +193,7 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
         assert len(f.content_hash) > 0
         assert f.src_file_id == None
     for f in o.contents['thumbnails']:
-        assert f.file_id in asset_contents_images_list[0]["file_id"]
+        assert f.file_id in src_file["file_id"]
         assert f.src_file_id == None
 
     test_asset_ver_content_json = {
