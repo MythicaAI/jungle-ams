@@ -10,6 +10,7 @@
 #include <iostream>
 
 static const int COOK_TIMEOUT_SECONDS = 1;
+static const int PRIORITY_THRESHOLD = 1;
 
 static void
 usage(const char *program)
@@ -22,14 +23,19 @@ usage(const char *program)
 class StatusHandler : public UT_InterruptHandler
 {
 public:
-    StatusHandler() : start_time(std::chrono::steady_clock::now()) {}
+    StatusHandler(const std::function<void(const std::string&, const std::string&)>& send_response)
+        : start_time(std::chrono::steady_clock::now()), send_response(send_response) {}
 
     virtual void start(UT_Interrupt *intr,
                       const UT_InterruptMessage &msg,
                       const UT_StringRef &main_optext,
                       int priority) override 
     {
-        std::cout << "Operation started: " << priority << " " << intr->getOpDepth() << " " << msg.buildMessage() << " " << main_optext << std::endl;
+        if (priority >= PRIORITY_THRESHOLD)
+        {
+            std::string message = msg.buildMessage().toStdString();
+            send_response("status", message);
+        }
     }
     
     virtual void push(UT_Interrupt *intr,
@@ -37,14 +43,18 @@ public:
                      const UT_StringRef &main_optext,
                      int priority) override 
     {
-        std::cout << "Operation pushed: " << priority << " " << intr->getOpDepth() << " " << msg.buildMessage() << " " << main_optext << std::endl;
+        if (priority >= PRIORITY_THRESHOLD)
+        {
+            std::string message = msg.buildMessage().toStdString();
+            send_response("status", message);
+        }
 
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
         
         if (elapsed >= COOK_TIMEOUT_SECONDS)
         {
-            std::cout << "Interrupting after " << elapsed << " seconds" << std::endl;
+            send_response("error", "Timeout");
             intr->interrupt();
         }
     }
@@ -53,7 +63,7 @@ public:
                           float percent,
                           float longpercent) override 
     {
-        std::cout << "Progress: " << interrupted << " " << percent << " " << longpercent << "%" << " " << std::endl;
+        send_response("progress", std::to_string(percent) + " " + std::to_string(longpercent));
     }
     
     virtual void pop() override {}
@@ -62,6 +72,7 @@ public:
 
 private:
     std::chrono::steady_clock::time_point start_time;
+    std::function<void(const std::string&, const std::string&)> send_response;
 };
 
 bool process_message(const std::string& message, MOT_Director* boss)
@@ -141,12 +152,19 @@ theMain(int argc, char *argv[])
     int read_fd = std::stoi(argv[1]);
     int write_fd = std::stoi(argv[2]);
 
+    auto send_response = [write_fd](const std::string& op, const std::string& data)
+    {
+        std::cout << "Sending response: " << op << " " << data << std::endl;
+        std::string response = std::string("{\"op\":\"") + op + "\",\"data\":\"" + data + "\"}\n";
+        write(write_fd, response.c_str(), response.length());
+    };
+
     // Initialize Houdini
     MOT_Director* boss = new MOT_Director("standalone");
     OPsetDirector(boss);
     PIcreateResourceManager();
 
-    StatusHandler status_handler;
+    StatusHandler status_handler(send_response);
     UT_Interrupt* interrupt = UTgetInterrupt();
     interrupt->setInterruptHandler(&status_handler);
     interrupt->setEnabled(true);
@@ -184,10 +202,7 @@ theMain(int argc, char *argv[])
         bool result = process_message(message, boss);
         message.clear();
 
-        std::string response = std::string("{\"op\":\"cook_response\",\"status\":\"") + 
-                              (result ? "success" : "failure") + 
-                              "\"}\n";
-        write(write_fd, response.c_str(), response.length());
+        send_response("cook_response", result ? "success" : "failure");
     }
 
     return 0;
