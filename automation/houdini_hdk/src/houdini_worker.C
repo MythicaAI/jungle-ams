@@ -66,7 +66,12 @@ class StatusHandler : public UT_InterruptHandler
 {
 public:
     StatusHandler(StreamWriter& writer)
-        : m_writer(writer), start_time(std::chrono::steady_clock::now()) {}
+        : m_writer(writer) {}
+
+    void reset_timeout()
+    {
+        start_time = std::chrono::steady_clock::now();
+    }
 
     virtual void start(UT_Interrupt *intr,
                       const UT_InterruptMessage &msg,
@@ -380,6 +385,7 @@ theMain(int argc, char *argv[])
 
         writer.state(StreamWriter::AutomationState::Start);
 
+        status_handler.reset_timeout();
         bool result = process_message(message, boss, writer);
         message.clear();
 
