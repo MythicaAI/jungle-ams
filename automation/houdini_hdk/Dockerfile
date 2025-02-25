@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     tcsh \
     g++ \
     cmake \
+    python3 \
     mesa-common-dev \
     libglu1-mesa-dev \
     libxi-dev \
@@ -38,6 +39,7 @@ RUN mkdir -p /run
 WORKDIR /run
 
 COPY run.sh .
+COPY coordinator.py .
 COPY test_cube.hda .
 
 RUN chmod +x run.sh

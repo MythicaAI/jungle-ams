@@ -17,7 +17,7 @@ cleanup() {
 trap cleanup TERM
 
 # Run the actual program
-./houdini_worker test_cube.hda test_cube test_cube.bgeo
+python3 coordinator.py --executable /run/houdini_worker
 
 # Keep the script running to maintain the license
 while true; do
