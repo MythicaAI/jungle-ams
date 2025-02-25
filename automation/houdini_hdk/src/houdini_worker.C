@@ -21,11 +21,52 @@ usage(const char *program)
     UT_Exit::fail();
 }
 
+class StreamWriter
+{
+public:
+    StreamWriter(int fd) : m_fd(fd) {}
+
+    enum class AutomationState
+    {
+        Start,
+        End
+    };
+    void state(AutomationState state)
+    {
+        writeToStream("automation", state == AutomationState::Start ? "start" : "end");
+    }
+
+    void status(const std::string& message)
+    {
+        writeToStream("status", message);
+    }
+
+    void error(const std::string& message)
+    {
+        writeToStream("error", message);
+    }
+
+    void file(const std::string& path)
+    {
+        writeToStream("file", path);
+    }
+
+private:
+    void writeToStream(const std::string& op, const std::string& data)
+    {
+        std::cout << "Worker: Sending response: " << op << " " << data << std::endl;
+        std::string json = "{\"op\":\"" + op + "\",\"data\":\"" + data + "\"}\n";
+        write(m_fd, json.c_str(), json.size());
+    }
+
+    int m_fd;
+};
+
 class StatusHandler : public UT_InterruptHandler
 {
 public:
-    StatusHandler(const std::function<void(const std::string&, const std::string&)>& send_response)
-        : start_time(std::chrono::steady_clock::now()), send_response(send_response) {}
+    StatusHandler(StreamWriter& writer)
+        : m_writer(writer), start_time(std::chrono::steady_clock::now()) {}
 
     virtual void start(UT_Interrupt *intr,
                       const UT_InterruptMessage &msg,
@@ -35,7 +76,7 @@ public:
         if (priority >= PRIORITY_THRESHOLD)
         {
             std::string message = msg.buildMessage().toStdString();
-            send_response("status", message);
+            m_writer.status(message);
         }
     }
     
@@ -47,7 +88,7 @@ public:
         if (priority >= PRIORITY_THRESHOLD)
         {
             std::string message = msg.buildMessage().toStdString();
-            send_response("status", message);
+            m_writer.status(message);
         }
 
         auto now = std::chrono::steady_clock::now();
@@ -55,7 +96,7 @@ public:
         
         if (elapsed >= COOK_TIMEOUT_SECONDS)
         {
-            send_response("error", "Timeout");
+            m_writer.error("Timeout");
             intr->interrupt();
         }
     }
@@ -64,7 +105,7 @@ public:
                           float percent,
                           float longpercent) override 
     {
-        send_response("progress", std::to_string(percent) + " " + std::to_string(longpercent));
+        m_writer.status("Progress: " + std::to_string(percent) + " " + std::to_string(longpercent));
     }
     
     virtual void pop() override {}
@@ -73,7 +114,7 @@ public:
 
 private:
     std::chrono::steady_clock::time_point start_time;
-    std::function<void(const std::string&, const std::string&)> send_response;
+    StreamWriter& m_writer;
 };
 
 struct Request
@@ -163,7 +204,7 @@ bool parse_request(const std::string& message, Request& request)
     return true;
 }
 
-bool process_message(const std::string& message, MOT_Director* boss)
+bool process_message(const std::string& message, MOT_Director* boss, StreamWriter& writer)
 {
     Request request;
     if (!parse_request(message, request))
@@ -279,6 +320,8 @@ bool process_message(const std::string& message, MOT_Director* boss)
         return false;
     }
 
+    writer.file(output_bgeo);
+
     std::cout << "Worker: Successfully saved bgeo file" << std::endl;
     return true;
 }
@@ -292,19 +335,14 @@ theMain(int argc, char *argv[])
     int read_fd = std::stoi(argv[1]);
     int write_fd = std::stoi(argv[2]);
 
-    auto send_response = [write_fd](const std::string& op, const std::string& data)
-    {
-        std::cout << "Worker: Sending response: " << op << " " << data << std::endl;
-        std::string response = std::string("{\"op\":\"") + op + "\",\"data\":\"" + data + "\"}\n";
-        write(write_fd, response.c_str(), response.length());
-    };
+    StreamWriter writer(write_fd);
 
     // Initialize Houdini
     MOT_Director* boss = new MOT_Director("standalone");
     OPsetDirector(boss);
     PIcreateResourceManager();
 
-    StatusHandler status_handler(send_response);
+    StatusHandler status_handler(writer);
     UT_Interrupt* interrupt = UTgetInterrupt();
     interrupt->setInterruptHandler(&status_handler);
     interrupt->setEnabled(true);
@@ -340,10 +378,12 @@ theMain(int argc, char *argv[])
             return 1;
         }
 
-        bool result = process_message(message, boss);
+        writer.state(StreamWriter::AutomationState::Start);
+
+        bool result = process_message(message, boss, writer);
         message.clear();
 
-        send_response("cook_response", result ? "success" : "failure");
+        writer.state(StreamWriter::AutomationState::End);
     }
 
     return 0;
