@@ -1,7 +1,18 @@
-from  automation.crop_image import crop_image_request, CropImageRequest, CropImageResponse
+from automation.crop_image import (
+    CropImageRequest,
+    CropImageResponse,
+    crop_image_request,
+)
 from ripple.automation.worker import Worker
+from ripple.config import configure_telemetry, ripple_config
 
 worker = Worker()
+
+if ripple_config().telemetry_enable:
+    configure_telemetry(
+        ripple_config().telemetry_endpoint,
+        ripple_config().telemetry_insecure,
+    )
 
 automations = [
     {

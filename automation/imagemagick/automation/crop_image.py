@@ -24,7 +24,7 @@ def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
 
 def crop_image_request(request: CropImageRequest, result_callback: ResultPublisher) -> CropImageResponse:
 
-    with NamedTemporaryFile(delete=False) as temp_file:
+    with NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
         output_path = temp_file.name
 
         crop_image(
@@ -34,4 +34,9 @@ def crop_image_request(request: CropImageRequest, result_callback: ResultPublish
             request.crop_pos_y.default if request.crop_pos_y else None,
             request.crop_w.default,
             request.crop_h.default)
-        return CropImageResponse(files={'cropped_image': [output_path]})
+        return CropImageResponse(
+            src_asset_id=request.src_asset_id,
+            src_version='.'.join(map(str, request.src_version)),
+            src_file_id=request.image_file.file_id,
+            file_path=output_path
+        )

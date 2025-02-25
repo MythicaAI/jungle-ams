@@ -113,6 +113,11 @@ class AssetCreateVersionRequest(BaseModel):
     contents: Optional[dict[str, list[AssetFileReference | AssetDependency | str]]] = None
 
 
+class AssetUpdateVersionContentsRequest(AssetFileReference):
+    """Update the contents of an asset version"""
+    file_type: str
+
+
 class AssetCreateResult(BaseModel):
     """Request object to create a new asset head object. This object
     is used to store multiple versions of the versioned asset and associate
@@ -390,15 +395,24 @@ async def resolve_asset_file_reference(
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f"file_id and file_name required on {str(file_reference)}")
     db_file = await locate_content_by_seq(db_session, file_id_to_seq(file_id))
-    if db_file is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND,
-                            detail=f"file '{file_id}' not found")
+    files_to_check = [(db_file, file_id)]
+
+    if file_reference.src_file_id:
+        src_file = await locate_content_by_seq(db_session, file_id_to_seq(file_reference.src_file_id))
+        files_to_check.append((src_file, file_reference.src_file_id))
+
+    for file, file_id in files_to_check:
+        if file is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND,
+                                detail=f"file '{file_id}' not found")
 
     return AssetFileReference(
         file_id=file_seq_to_id(db_file.file_seq),
         file_name=file_name or db_file.name,
         content_hash=db_file.content_hash,
-        size=db_file.size).model_dump()
+        size=db_file.size,
+        src_file_id=file_reference.src_file_id,
+    ).model_dump()
 
 
 async def resolve_asset_dependency(
@@ -472,6 +486,101 @@ async def create_root(
         asset_id=asset_seq_to_id(asset_seq),
         org_id=r.org_id,
         owner_id=profile_seq_to_id(owner_seq))
+
+
+async def update_versions_contents(
+    asset_id: str,
+    version_str: str,
+    req: AssetUpdateVersionContentsRequest,
+    profile: SessionProfile,
+    db_session: AsyncSession,
+) -> AssetVersionResult:
+    """
+    Updates the contents of a specific version of an asset.
+    Returns:
+        AssetVersionResult: The result of the asset version update.
+    Raises:
+        HTTPException: If the version ID is invalid, the asset is not found, or the update fails.
+    """
+    version_id = convert_version_input(version_str)
+    if version_id == ZERO_VERSION:
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed"
+        )
+    # Find an existing asset version
+    avr_results = await select_asset_version(db_session, asset_id, version_id)
+    avr = (
+        (await process_join_results(db_session, avr_results))[0]
+        if avr_results
+        else None
+    )
+    if avr is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
+
+    asset_instance, _ = avr_results[0]
+    scope = Scope(
+        profile=profile,
+        asset_version=AssetVersionRef.create(
+            asset_seq=asset_instance.asset_seq,
+            owner_seq=asset_instance.owner_seq,
+            org_seq=asset_instance.org_seq,
+        ),
+    )
+    validate_dict = dict(
+        role=roles.asset_update,
+        object_id=asset_id,
+        auth_roles=profile.auth_roles,
+        scope=scope,
+    )
+    validate_roles(**validate_dict)
+
+    new_content_item = await resolve_content_list(
+        db_session, req.file_type, [AssetFileReference(**req.model_dump())]
+    )
+    new_content = avr.contents.copy()
+    if new_content.get(req.file_type):
+        new_content[req.file_type].extend(new_content_item)
+    else:
+        new_content[req.file_type] = new_content_item
+
+    # Convert pydantic models to a suitable sql field content if needed
+    for category in new_content.copy().keys():
+        item_dicts = []
+        for item in new_content[category]:
+            if not isinstance(item, dict) and not isinstance(item, str):
+                item_dicts.append(item.model_dump())
+            else:
+                item_dicts.append(item)
+        new_content[category] = item_dicts
+
+    stmt = (
+        update(AssetVersion)
+        .values({AssetVersion.contents: new_content})
+        .where(AssetVersion.asset_seq == asset_id_to_seq(avr.asset_id))
+        .where(AssetVersion.major == version_id[0])
+        .where(AssetVersion.minor == version_id[1])
+        .where(AssetVersion.patch == version_id[2])
+        .where(AssetVersion.deleted == None)
+    )
+    result = await db_session.exec(stmt)
+    if result.rowcount != 1:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, detail="update failed")
+
+    await db_session.commit()
+    log.info("asset version updated %s, version %s", asset_id, version_id)
+    await db_session.commit()
+
+    avr_results = await select_asset_version(db_session, asset_id, version_id)
+    read_back = (
+        (await process_join_results(db_session, avr_results))[0]
+        if avr_results
+        else None
+    )
+    if req.file_type in {FILES_CONTENT_KEY, DEPENDENCIES_CONTENT_KEY}:
+        await add_version_packaging_event(db_session, read_back)
+        await db_session.commit()
+
+    return read_back
 
 
 async def create_version(db_session: AsyncSession,

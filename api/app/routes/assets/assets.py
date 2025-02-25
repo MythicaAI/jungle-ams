@@ -102,6 +102,25 @@ async def create_version(asset_id: str,
     return version_result
 
 
+@router.post('/{asset_id}/versions/{version_str}/contents')
+async def update_versions_contents(
+    asset_id: str,
+    version_str: str,
+    req: repo.AssetUpdateVersionContentsRequest,
+    profile: SessionProfile = Depends(session_profile),
+    db_session: AsyncSession = Depends(get_db_session),
+) -> repo.AssetVersionResult:
+    """Update the contents of a single asset version"""
+    version_result = await repo.update_versions_contents(
+        asset_id,
+        version_str,
+        req,
+        profile,
+        db_session,
+    )
+    return version_result
+
+
 @router.get('/{asset_id}/versions/{version_str}/dependencies')
 async def dependencies(
         asset_id: str,
