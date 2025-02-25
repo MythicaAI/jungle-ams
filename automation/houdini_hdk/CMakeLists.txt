@@ -4,11 +4,12 @@ project(Houdini_Worker)
 # Locate Houdini
 find_package(Houdini REQUIRED)
 
+# Gather source files
+file(GLOB SOURCES "src/*.C")
+
 # Add the executable
 set(executable_name houdini_worker)
-add_executable(${executable_name}
-    houdini_worker.C
-)
+add_executable(${executable_name} ${SOURCES})
 
 # Link against Houdini
 target_link_libraries(${executable_name} 

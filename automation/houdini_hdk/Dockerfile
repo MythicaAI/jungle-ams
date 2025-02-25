@@ -21,7 +21,7 @@ RUN mkdir -p /src/HDK
 WORKDIR /src/HDK
 
 # Copy the source and CMake files
-COPY houdini_worker.C .
+COPY src/ src/
 COPY CMakeLists.txt .
 
 # Create build directory and build
