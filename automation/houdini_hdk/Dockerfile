@@ -26,7 +26,7 @@ COPY CMakeLists.txt .
 
 # Create build directory and build
 RUN mkdir build && cd build && \
-    cmake -DCMAKE_PREFIX_PATH=${HFS}/toolkit/cmake .. && \
+    cmake .. && \
     cmake --build .
 
 # Create mythica directory and copy artifacts
