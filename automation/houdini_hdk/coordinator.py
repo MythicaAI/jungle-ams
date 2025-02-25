@@ -79,11 +79,15 @@ class HoudiniWorker:
 
                 buffer += chunk
 
-                # Process recieved messages
-                newline_idx = buffer.find('\n')
-                if newline_idx >= 0:
+                # Process all complete messages in buffer
+                while True:
+                    newline_idx = buffer.find('\n')
+                    if newline_idx < 0:
+                        break
+
                     message = buffer[:newline_idx]
                     buffer = buffer[newline_idx + 1:]
+
                     try:
                         response_data = json.loads(message)
                     except json.JSONDecodeError:
