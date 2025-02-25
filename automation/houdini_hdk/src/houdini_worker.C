@@ -75,15 +75,114 @@ private:
     std::function<void(const std::string&, const std::string&)> send_response;
 };
 
+struct Request
+{
+    std::string op;
+    std::string hda_file;
+    int64 definition_index;
+};
+
+bool parse_request(const std::string& message, Request& request)
+{
+    UT_AutoJSONParser parser(message.c_str(), message.size());
+    
+    UT_StringHolder op, hda_file;
+    int64 definition_index = -1;
+    
+    UT_JSONParser::iterator outer_it = parser->beginMap();
+    while (!outer_it.atEnd())
+    {
+        UT_StringHolder key;
+        if (!outer_it.getKey(key))
+        {
+            return false;
+        }
+
+        if (key == "op")
+        {
+            if (!parser->parseString(op))
+            {
+                return false;
+            }
+        }
+        else if (key == "data")
+        {
+            UT_JSONParser::iterator data_it = parser->beginMap();
+            while (!data_it.atEnd())
+            {
+                UT_StringHolder data_key;
+                if (!data_it.getKey(data_key))
+                {
+                    return false;
+                }
+
+                if (data_key == "hda_path")
+                {
+                    if (!parser->parseString(hda_file))
+                    {
+                        return false;
+                    }
+                }
+                else if (data_key == "definition_index")
+                {
+                    if (!parser->parseInt(definition_index))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (!parser->skipNextObject())
+                    {
+                        return false;
+                    }
+                }
+                ++data_it;
+            }
+        }
+        else
+        {
+            if (!parser->skipNextObject())
+            {
+                return false;
+            }
+        }
+        ++outer_it;
+    }
+
+    if (hda_file.isEmpty() || definition_index < 0)
+    {
+        std::cerr << "Missing required fields" << std::endl;
+        return false;
+    }    
+
+    request.op = op.toStdString();
+    request.hda_file = hda_file.toStdString();
+    request.definition_index = definition_index;
+    return true;
+}
+
 bool process_message(const std::string& message, MOT_Director* boss)
 {
-    const char* hda_path = "test_cube.hda";
-    const char* node_type = "test_cube";
-    const char* output_bgeo = "output.bgeo";
+    Request request;
+    if (!parse_request(message, request))
+    {
+        std::cerr << "Failed to parse request" << std::endl;
+        return false;
+    }
 
-    // Load and install the HDA
+    if (request.op != "cook")
+    {
+        std::cerr << "Unsupported operation: " << request.op << std::endl;
+        return false;
+    }
+
+    const char* output_bgeo = "output.bgeo";
+    const char* node_type = "test_cube";
+
+    // Use the parsed values
     OP_OTLManager& manager = boss->getOTLManager();
-    manager.installLibrary(hda_path);
+    manager.installLibrary(request.hda_file.c_str());
 
     // Find the root /obj network
     OP_Network* obj = (OP_Network*)boss->findNode("/obj");
@@ -177,7 +276,7 @@ theMain(int argc, char *argv[])
         std::string buffer;
         std::string message;
         char chunk[4096];
-        ssize_t bytes_read;
+        ssize_t bytes_read = 0;
         while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) 
         {
             buffer.append(chunk, bytes_read);
@@ -194,7 +293,8 @@ theMain(int argc, char *argv[])
             }
         }
 
-        if (bytes_read < 0) {
+        if (bytes_read <= 0)
+        {
             std::cerr << "Error reading from pipe" << std::endl;
             return 1;
         }
