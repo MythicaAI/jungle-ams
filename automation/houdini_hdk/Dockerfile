@@ -2,6 +2,11 @@ ARG HOUDINI_VERSION=20.5.370
 
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
 
+# Setup Houdini environment
+ENV SFX_CLIENT_ID=""
+ENV SFX_CLIENT_SECRET=""
+ENV HFS=/opt/houdini/build
+
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     tcsh \
@@ -13,7 +18,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set HDK environment variables
-ENV HFS=/opt/houdini/build
 ENV PATH=${HFS}/bin:${PATH}
 
 # Create worker build directory
