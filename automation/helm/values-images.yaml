@@ -1,8 +1,0 @@
-# Generated versions file - 2025-02-13 12:59:34 UTC
-images:
-  "mythica-auto-houdini": "v1.0.1"
-  "mythica-auto-blender": "latest" # No versions found
-  "mythica-auto-daemon": "latest" # No versions found
-  "mythica-auto-genai": "latest" # No versions found
-  "mythica-editor-worker": "latest" # No versions found
-  "mythica-editor-test": "latest" # No versions found
