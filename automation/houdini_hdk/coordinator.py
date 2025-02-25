@@ -114,7 +114,7 @@ def main():
 
     with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
-            completed = response["op"] == "cook_response"
+            completed = response["op"] == "automation" and response["data"] == "end"
             if completed:
                 log.info("Recieved completed response")
             return completed
