@@ -220,7 +220,7 @@ async def store_and_attach_package(
     # if a package existed, mark it as deleted
     if avr.package_id:
         try:
-            await delete_by_id(avr.package_id, profile)
+            await delete_by_id(avr.package_id, profile, db_session)
         except HTTPException:
             log.exception("cleanup of existing package %s failed", avr.package_id)
 
