@@ -1,19 +1,15 @@
-from http import HTTPStatus
-
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import and_, select, update
-from sqlmodel.ext.asyncio.session import AsyncSession
-
 from cryptid.cryptid import file_id_to_seq
 from db.connection import get_db_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
+from fastapi import APIRouter, Depends, HTTPException
 from ripple.models.contexts import FilePurpose
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
+from sqlmodel import and_, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+from routes.files.utils import delete_by_id
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -70,21 +66,9 @@ async def by_purpose(
 
 
 @router.delete('/{file_id}')
-async def delete_by_id(
+async def delete_file_by_id(
         file_id,
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)):
     """Delete a file by its ID"""
-    try:
-        file_seq = file_id_to_seq(file_id)
-        result = await db_session.exec(
-            (update(FileContent)
-             .values(deleted=sql_now(), )
-             .where(and_(FileContent.file_seq == file_seq,
-                         FileContent.owner_seq == profile.profile_seq))))
-        if result.rowcount != 1:
-            raise HTTPException(HTTPStatus.NOT_FOUND,
-                                detail="file not found, or not owned")
-        await db_session.commit()
-    except IntegrityError as e:
-        raise HTTPException(HTTPStatus.FORBIDDEN, f"file {file_id} is still referenced") from e
+    return await delete_by_id(file_id, profile, db_session)
