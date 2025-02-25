@@ -64,8 +64,7 @@ private:
     std::chrono::steady_clock::time_point start_time;
 };
 
-
-int process_message(const std::string& message, MOT_Director* boss)
+bool process_message(const std::string& message, MOT_Director* boss)
 {
     const char* hda_path = "test_cube.hda";
     const char* node_type = "test_cube";
@@ -80,7 +79,7 @@ int process_message(const std::string& message, MOT_Director* boss)
     if (!obj)
     {
         std::cerr << "Failed to find obj network" << std::endl;
-        return 1;
+        return false;
     }
 
     // Create geo node
@@ -88,7 +87,7 @@ int process_message(const std::string& message, MOT_Director* boss)
     if (!geo_node || !geo_node->runCreateScript())
     {
         std::cerr << "Failed to create geo node" << std::endl;
-        return 1;
+        return false;
     }
 
     // Create the SOP node
@@ -96,16 +95,15 @@ int process_message(const std::string& message, MOT_Director* boss)
     if (!node || !node->runCreateScript())
     {
         std::cerr << "Failed to create node of type: " << node_type << std::endl;
-        return 1;
+        return false;
     }
-
 
     // Cook the node
     OP_Context context(0.0);
     if (!node->cook(context))
     {
         std::cerr << "Failed to cook node" << std::endl;
-        return 1;
+        return false;
     }
 
     // Get geometry from the node
@@ -113,25 +111,25 @@ int process_message(const std::string& message, MOT_Director* boss)
     if (!sop)
     {
         std::cerr << "Node is not a SOP node" << std::endl;
-        return 1;
+        return false;
     }
 
     const GU_Detail* gdp = sop->getCookedGeo(context);
     if (!gdp)
     {
         std::cerr << "Failed to get cooked geometry" << std::endl;
-        return 1;
+        return false;
     }
 
     // Save to bgeo
     if (!gdp->save(output_bgeo, nullptr))
     {
         std::cerr << "Failed to save bgeo file" << std::endl;
-        return 1;
+        return false;
     }
 
     std::cout << "Successfully saved bgeo file" << std::endl;
-    return 0;
+    return true;
 }
 
 int
@@ -183,12 +181,12 @@ theMain(int argc, char *argv[])
             return 1;
         }
 
-        int result = process_message(message, boss);
-        assert(result == 0);
+        bool result = process_message(message, boss);
         message.clear();
 
-        // Send hardcoded response
-        std::string response = "{\"op\":\"cook_response\",\"status\":\"success\"}\n";
+        std::string response = std::string("{\"op\":\"cook_response\",\"status\":\"") + 
+                              (result ? "success" : "failure") + 
+                              "\"}\n";
         write(write_fd, response.c_str(), response.length());
     }
 
