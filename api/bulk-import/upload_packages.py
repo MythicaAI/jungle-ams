@@ -394,6 +394,7 @@ class PackageUploader(object):
         self.stats = Stats()
         self.ignore_spec = ignore_spec
         self.package_name_filter = None
+        self.timeout = 0
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -459,6 +460,13 @@ class PackageUploader(object):
             default=None,
             required=False,
         )
+        parser.add_argument(
+            '--timeout',
+            help='Connection timeout in seconds',
+            default=3,
+            required=False,
+            type=int
+        )
         args = parser.parse_args()
         self.endpoint = args.endpoint
         self.repo_base_dir = args.repo_base or tempdir.name
@@ -472,6 +480,7 @@ class PackageUploader(object):
             self.start_md()
         self.always_bump = args.always_bump
         self.package_name_filter = args.name_filter
+        self.timeout = args.timeout
 
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
@@ -874,7 +883,7 @@ class PackageUploader(object):
                 upload_url,
                 headers=headers,
                 data=m,
-                timeout=3)
+                timeout=self.timeout)
             response.raise_for_status()
 
             o = munchify(response.json())
