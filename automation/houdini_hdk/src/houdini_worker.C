@@ -21,16 +21,17 @@ usage(const char *program)
     UT_Exit::fail();
 }
 
+enum class AutomationState
+{
+    Start,
+    End
+};
+
 class StreamWriter
 {
 public:
     StreamWriter(int fd) : m_fd(fd) {}
 
-    enum class AutomationState
-    {
-        Start,
-        End
-    };
     void state(AutomationState state)
     {
         writeToStream("automation", state == AutomationState::Start ? "start" : "end");
@@ -383,13 +384,13 @@ theMain(int argc, char *argv[])
             return 1;
         }
 
-        writer.state(StreamWriter::AutomationState::Start);
+        writer.state(AutomationState::Start);
 
         status_handler.reset_timeout();
         bool result = process_message(message, boss, writer);
         message.clear();
 
-        writer.state(StreamWriter::AutomationState::End);
+        writer.state(AutomationState::End);
     }
 
     return 0;
