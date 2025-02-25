@@ -1,4 +1,5 @@
 #include <OP/OP_Director.h>
+#include <OP/OP_OTLLibrary.h>
 #include <GU/GU_Detail.h>
 #include <SOP/SOP_Node.h>
 #include <MOT/MOT_Director.h>
@@ -75,15 +76,154 @@ private:
     std::function<void(const std::string&, const std::string&)> send_response;
 };
 
+struct Request
+{
+    std::string op;
+    std::string hda_file;
+    int64 definition_index;
+};
+
+bool parse_request(const std::string& message, Request& request)
+{
+    UT_AutoJSONParser parser(message.c_str(), message.size());
+    
+    UT_StringHolder op, hda_file;
+    int64 definition_index = -1;
+    
+    UT_JSONParser::iterator outer_it = parser->beginMap();
+    while (!outer_it.atEnd())
+    {
+        UT_StringHolder key;
+        if (!outer_it.getKey(key))
+        {
+            return false;
+        }
+
+        if (key == "op")
+        {
+            if (!parser->parseString(op))
+            {
+                return false;
+            }
+        }
+        else if (key == "data")
+        {
+            UT_JSONParser::iterator data_it = parser->beginMap();
+            while (!data_it.atEnd())
+            {
+                UT_StringHolder data_key;
+                if (!data_it.getKey(data_key))
+                {
+                    return false;
+                }
+
+                if (data_key == "hda_path")
+                {
+                    if (!parser->parseString(hda_file))
+                    {
+                        return false;
+                    }
+                }
+                else if (data_key == "definition_index")
+                {
+                    if (!parser->parseInt(definition_index))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (!parser->skipNextObject())
+                    {
+                        return false;
+                    }
+                }
+                ++data_it;
+            }
+        }
+        else
+        {
+            if (!parser->skipNextObject())
+            {
+                return false;
+            }
+        }
+        ++outer_it;
+    }
+
+    if (hda_file.isEmpty() || definition_index < 0)
+    {
+        std::cerr << "Missing required fields" << std::endl;
+        return false;
+    }    
+
+    request.op = op.toStdString();
+    request.hda_file = hda_file.toStdString();
+    request.definition_index = definition_index;
+    return true;
+}
+
 bool process_message(const std::string& message, MOT_Director* boss)
 {
-    const char* hda_path = "test_cube.hda";
-    const char* node_type = "test_cube";
+    Request request;
+    if (!parse_request(message, request))
+    {
+        std::cerr << "Failed to parse request" << std::endl;
+        return false;
+    }
+
+    if (request.op != "cook")
+    {
+        std::cerr << "Unsupported operation: " << request.op << std::endl;
+        return false;
+    }
+
     const char* output_bgeo = "output.bgeo";
 
-    // Load and install the HDA
+    // Load the library
     OP_OTLManager& manager = boss->getOTLManager();
-    manager.installLibrary(hda_path);
+    manager.installLibrary(request.hda_file.c_str());
+
+    int library_index = manager.findLibrary(request.hda_file.c_str());
+    if (library_index < 0)
+    {
+        std::cerr << "Failed to find library: " << request.hda_file << std::endl;
+        return false;
+    }
+
+    // Get the actual library from the index
+    OP_OTLLibrary* library = manager.getLibrary(library_index);
+    if (!library)
+    {
+        std::cerr << "Failed to get library at index " << library_index << std::endl;
+        return false;
+    }
+
+    int num_definitions = library->getNumDefinitions();
+    if (request.definition_index >= num_definitions)
+    {
+        std::cerr << "Definition index out of range" << std::endl;
+        return false;
+    }
+
+    const OP_OTLDefinition& definition = library->getDefinition(request.definition_index);
+    std::string node_type = definition.getName().toStdString();
+    size_t first = node_type.find("::");
+    if (first != std::string::npos)
+    {
+        size_t last = node_type.find("::", first + 2);
+        
+        if (last != std::string::npos)
+        {
+            node_type = node_type.substr(first + 2, last - (first + 2));
+        }
+        else
+        {
+            node_type = node_type.substr(first + 2);
+        }
+    }
+
+    std::cout << "Worker: Cooking node type " << node_type << std::endl;
 
     // Find the root /obj network
     OP_Network* obj = (OP_Network*)boss->findNode("/obj");
@@ -102,7 +242,7 @@ bool process_message(const std::string& message, MOT_Director* boss)
     }
 
     // Create the SOP node
-    OP_Node* node = geo_node->createNode(node_type, "processor");
+    OP_Node* node = geo_node->createNode(node_type.c_str(), "processor");
     if (!node || !node->runCreateScript())
     {
         std::cerr << "Failed to create node of type: " << node_type << std::endl;
@@ -139,7 +279,7 @@ bool process_message(const std::string& message, MOT_Director* boss)
         return false;
     }
 
-    std::cout << "Successfully saved bgeo file" << std::endl;
+    std::cout << "Worker: Successfully saved bgeo file" << std::endl;
     return true;
 }
 
@@ -177,7 +317,7 @@ theMain(int argc, char *argv[])
         std::string buffer;
         std::string message;
         char chunk[4096];
-        ssize_t bytes_read;
+        ssize_t bytes_read = 0;
         while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) 
         {
             buffer.append(chunk, bytes_read);
@@ -194,7 +334,8 @@ theMain(int argc, char *argv[])
             }
         }
 
-        if (bytes_read < 0) {
+        if (bytes_read <= 0)
+        {
             std::cerr << "Error reading from pipe" << std::endl;
             return 1;
         }
