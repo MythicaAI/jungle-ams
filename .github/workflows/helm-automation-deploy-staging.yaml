@@ -12,7 +12,7 @@ on:
     branches:
       - main
     paths:
-      - 'api/helm/**'
+      - 'automation/helm/**'
       - '.github/workflows/helm-automation-deploy-staging.yaml'
 
 

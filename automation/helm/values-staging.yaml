@@ -14,4 +14,4 @@ serviceAccount:
 telemetry_endpoint: http://otel-collector.default:4317
 telemetry_insecure: "true"
 nats_endpoint: nats://nats.nats:4222
-app_base_url: http://app-staging.api/v1
+app_base_url: http://app.api-staging/v1
