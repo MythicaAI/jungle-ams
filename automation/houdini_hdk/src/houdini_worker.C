@@ -14,8 +14,8 @@ static const int COOK_TIMEOUT_SECONDS = 1;
 static void
 usage(const char *program)
 {
-    std::cerr << "Usage: " << program << " [-h] <hda_path> <node_type> <output_bgeo>\n";
-    std::cerr << "Loads HDA, creates node, cooks it and saves to bgeo\n";
+    std::cerr << "Usage: " << program << " <read_fd> <write_fd>\n";
+    std::cerr << "Reads JSON messages from read_fd, processes them, writes results to write_fd\n";
     UT_Exit::fail();
 }
 
@@ -64,20 +64,11 @@ private:
     std::chrono::steady_clock::time_point start_time;
 };
 
-int
-theMain(int argc, char *argv[])
+bool process_message(const std::string& message, MOT_Director* boss)
 {
-    if (argc != 4)
-        usage(argv[0]);
-
-    const char* hda_path = argv[1];
-    const char* node_type = argv[2];
-    const char* output_bgeo = argv[3];
-
-    // Initialize Houdini
-    MOT_Director* boss = new MOT_Director("standalone");
-    OPsetDirector(boss);
-    PIcreateResourceManager();
+    const char* hda_path = "test_cube.hda";
+    const char* node_type = "test_cube";
+    const char* output_bgeo = "output.bgeo";
 
     // Load and install the HDA
     OP_OTLManager& manager = boss->getOTLManager();
@@ -88,7 +79,7 @@ theMain(int argc, char *argv[])
     if (!obj)
     {
         std::cerr << "Failed to find obj network" << std::endl;
-        return 1;
+        return false;
     }
 
     // Create geo node
@@ -96,7 +87,7 @@ theMain(int argc, char *argv[])
     if (!geo_node || !geo_node->runCreateScript())
     {
         std::cerr << "Failed to create geo node" << std::endl;
-        return 1;
+        return false;
     }
 
     // Create the SOP node
@@ -104,49 +95,101 @@ theMain(int argc, char *argv[])
     if (!node || !node->runCreateScript())
     {
         std::cerr << "Failed to create node of type: " << node_type << std::endl;
-        return 1;
+        return false;
     }
-
-    // Install status handler
-    StatusHandler status_handler;
-    UT_Interrupt* interrupt = UTgetInterrupt();
-    interrupt->setInterruptHandler(&status_handler);
-    interrupt->setEnabled(true);
 
     // Cook the node
     OP_Context context(0.0);
     if (!node->cook(context))
     {
         std::cerr << "Failed to cook node" << std::endl;
-        return 1;
+        return false;
     }
-
-    // Remove status handler
-    interrupt->setInterruptHandler(nullptr);
 
     // Get geometry from the node
     SOP_Node* sop = node->castToSOPNode();
     if (!sop)
     {
         std::cerr << "Node is not a SOP node" << std::endl;
-        return 1;
+        return false;
     }
 
     const GU_Detail* gdp = sop->getCookedGeo(context);
     if (!gdp)
     {
         std::cerr << "Failed to get cooked geometry" << std::endl;
-        return 1;
+        return false;
     }
 
     // Save to bgeo
     if (!gdp->save(output_bgeo, nullptr))
     {
         std::cerr << "Failed to save bgeo file" << std::endl;
-        return 1;
+        return false;
     }
 
     std::cout << "Successfully saved bgeo file" << std::endl;
+    return true;
+}
+
+int
+theMain(int argc, char *argv[])
+{
+    if (argc != 3)
+        usage(argv[0]);
+
+    int read_fd = std::stoi(argv[1]);
+    int write_fd = std::stoi(argv[2]);
+
+    // Initialize Houdini
+    MOT_Director* boss = new MOT_Director("standalone");
+    OPsetDirector(boss);
+    PIcreateResourceManager();
+
+    StatusHandler status_handler;
+    UT_Interrupt* interrupt = UTgetInterrupt();
+    interrupt->setInterruptHandler(&status_handler);
+    interrupt->setEnabled(true);
+
+    // Process messages from pipe
+    while (true)
+    {
+        std::cout << "Waiting for message" << std::endl;
+
+        std::string buffer;
+        std::string message;
+        char chunk[4096];
+        ssize_t bytes_read;
+        while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) 
+        {
+            buffer.append(chunk, bytes_read);
+            
+            // Look for newline indicating complete message
+            size_t newline_pos = buffer.find('\n');
+            if (newline_pos != std::string::npos) {
+                // Extract message up to newline
+                message = buffer.substr(0, newline_pos);
+                buffer.erase(0, newline_pos + 1);
+
+                std::cout << "Received message: " << message << std::endl;
+                break;
+            }
+        }
+
+        if (bytes_read < 0) {
+            std::cerr << "Error reading from pipe" << std::endl;
+            return 1;
+        }
+
+        bool result = process_message(message, boss);
+        message.clear();
+
+        std::string response = std::string("{\"op\":\"cook_response\",\"status\":\"") + 
+                              (result ? "success" : "failure") + 
+                              "\"}\n";
+        write(write_fd, response.c_str(), response.length());
+    }
+
     return 0;
 }
 
