@@ -6,6 +6,10 @@ from cbor2 import CBORDecodeError
 
 FlushWebSocketCallback = Callable[[Type["memoryview"]], Awaitable[None]]
 
+MAX_PAYLOAD_SIZE = 64 * 1024  # 64KB max payload size
+HEADER_SIZE = 4  # 1 byte type + 1 byte flags + 2 bytes length
+FLAG_PARTIAL = 1
+
 
 class FrameHeader:
     """Represents a validated frame header"""
@@ -17,7 +21,7 @@ class FrameHeader:
 
     @property
     def partial(self):
-        return self.flags & 1 == 1
+        return self.flags & FLAG_PARTIAL == FLAG_PARTIAL
 
     @property
     def total_length(self) -> int:
@@ -32,19 +36,11 @@ class NetBuffer:
     """Efficiently accumulates bytes from a WebSocket stream
     and extracts complete CBOR frames with security validations."""
 
-    MAX_PAYLOAD_SIZE = 64 * 1024  # 64KB max payload size
-    HEADER_SIZE = 4  # 1 byte type + 1 byte flags + 2 bytes length
-    FLAG_PARTIAL = 1
-
     def __init__(self):
 
         # the current buffer that is being appended to, this is then
         # turned into a memoryview for the purposes of reading frames
         self.buffer = bytearray()
-
-        # partial byte arrays that are fully formed frames but only a partial message
-        # for some partial messages produce the data as a stream
-        self.partials: list[bytes] = []
 
     def append_with(self, it: Iterator[bytes]):
         """Appends buffer data with an iterator."""
@@ -57,7 +53,7 @@ class NetBuffer:
 
     def _maybe_frame_header(self, data: memoryview) -> Optional[FrameHeader]:
         """Tries to decode a header from the memory view if one can be extracted"""
-        if len(data) < self.HEADER_SIZE:
+        if len(data) < HEADER_SIZE:
             return None
         header = bytes(data[0:4])
         try:
@@ -70,7 +66,7 @@ class NetBuffer:
             raise ValueError(f"Invalid frame type: {frame_type}")
 
         # Validate payload length
-        if payload_length > self.MAX_PAYLOAD_SIZE:
+        if payload_length > MAX_PAYLOAD_SIZE:
             raise ValueError(f"Payload length {payload_length} exceeds maximum allowed size")
 
         return FrameHeader(frame_type, flags, payload_length)
@@ -110,7 +106,11 @@ class NetBuffer:
             self.buffer.clear()
 
     def read_frames(self) -> Iterator[tuple[FrameHeader, Any]]:
-        """Extracts complete frames with header validation."""
+        """
+        Extracts frame header and payloads with header validation from a byte
+        iterator. If the frame is partial the payload will remain intact as bytes
+        and must be reassembled from the partial frames that prefix that data
+        """
         view = memoryview(self.buffer)
         offset = 0
 
@@ -122,15 +122,15 @@ class NetBuffer:
                     break  # Incomplete header, wait for more data
 
                 # Payload is partially available
-                if header.flags & self.FLAG_PARTIAL == 1:
-                    start = offset + self.HEADER_SIZE
+                if header.partial:
+                    start = offset + HEADER_SIZE
                     end = start + header.payload_length
                     partial_payload = bytes(view[start:end])
                     yield header, partial_payload
                 else:
                     # payload should eventually be available in the stream
                     payload = self._maybe_frame_payload(
-                        view[offset + self.HEADER_SIZE:],
+                        view[offset + HEADER_SIZE:],
                         header)
                     if payload is None:
                         break
