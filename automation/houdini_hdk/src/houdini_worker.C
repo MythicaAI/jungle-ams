@@ -1,4 +1,5 @@
 #include <OP/OP_Director.h>
+#include <OP/OP_OTLLibrary.h>
 #include <GU/GU_Detail.h>
 #include <SOP/SOP_Node.h>
 #include <MOT/MOT_Director.h>
@@ -178,11 +179,51 @@ bool process_message(const std::string& message, MOT_Director* boss)
     }
 
     const char* output_bgeo = "output.bgeo";
-    const char* node_type = "test_cube";
 
-    // Use the parsed values
+    // Load the library
     OP_OTLManager& manager = boss->getOTLManager();
     manager.installLibrary(request.hda_file.c_str());
+
+    int library_index = manager.findLibrary(request.hda_file.c_str());
+    if (library_index < 0)
+    {
+        std::cerr << "Failed to find library: " << request.hda_file << std::endl;
+        return false;
+    }
+
+    // Get the actual library from the index
+    OP_OTLLibrary* library = manager.getLibrary(library_index);
+    if (!library)
+    {
+        std::cerr << "Failed to get library at index " << library_index << std::endl;
+        return false;
+    }
+
+    int num_definitions = library->getNumDefinitions();
+    if (request.definition_index >= num_definitions)
+    {
+        std::cerr << "Definition index out of range" << std::endl;
+        return false;
+    }
+
+    const OP_OTLDefinition& definition = library->getDefinition(request.definition_index);
+    std::string node_type = definition.getName().toStdString();
+    size_t first = node_type.find("::");
+    if (first != std::string::npos)
+    {
+        size_t last = node_type.find("::", first + 2);
+        
+        if (last != std::string::npos)
+        {
+            node_type = node_type.substr(first + 2, last - (first + 2));
+        }
+        else
+        {
+            node_type = node_type.substr(first + 2);
+        }
+    }
+
+    std::cout << "Worker: Cooking node type " << node_type << std::endl;
 
     // Find the root /obj network
     OP_Network* obj = (OP_Network*)boss->findNode("/obj");
@@ -201,7 +242,7 @@ bool process_message(const std::string& message, MOT_Director* boss)
     }
 
     // Create the SOP node
-    OP_Node* node = geo_node->createNode(node_type, "processor");
+    OP_Node* node = geo_node->createNode(node_type.c_str(), "processor");
     if (!node || !node->runCreateScript())
     {
         std::cerr << "Failed to create node of type: " << node_type << std::endl;
@@ -238,7 +279,7 @@ bool process_message(const std::string& message, MOT_Director* boss)
         return false;
     }
 
-    std::cout << "Successfully saved bgeo file" << std::endl;
+    std::cout << "Worker: Successfully saved bgeo file" << std::endl;
     return true;
 }
 
