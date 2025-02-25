@@ -1,3 +1,4 @@
+#include "interrupt.h"
 #include "streaming.h"
 
 #include <OP/OP_Director.h>
@@ -6,14 +7,10 @@
 #include <SOP/SOP_Node.h>
 #include <MOT/MOT_Director.h>
 #include <PI/PI_ResourceManager.h>
-#include <UT/UT_Exit.h>
-#include <UT/UT_Interrupt.h>
 #include <UT/UT_Main.h>
-#include <chrono>
 #include <iostream>
 
 static const int COOK_TIMEOUT_SECONDS = 1;
-static const int PRIORITY_THRESHOLD = 1;
 
 static void
 usage(const char *program)
@@ -22,66 +19,6 @@ usage(const char *program)
     std::cerr << "Reads JSON messages from read_fd, processes them, writes results to write_fd\n";
     UT_Exit::fail();
 }
-
-class StatusHandler : public UT_InterruptHandler
-{
-public:
-    StatusHandler(StreamWriter& writer)
-        : m_writer(writer) {}
-
-    void reset_timeout()
-    {
-        start_time = std::chrono::steady_clock::now();
-    }
-
-    virtual void start(UT_Interrupt *intr,
-                      const UT_InterruptMessage &msg,
-                      const UT_StringRef &main_optext,
-                      int priority) override 
-    {
-        if (priority >= PRIORITY_THRESHOLD)
-        {
-            std::string message = msg.buildMessage().toStdString();
-            m_writer.status(message);
-        }
-    }
-    
-    virtual void push(UT_Interrupt *intr,
-                     const UT_InterruptMessage &msg,
-                     const UT_StringRef &main_optext,
-                     int priority) override 
-    {
-        if (priority >= PRIORITY_THRESHOLD)
-        {
-            std::string message = msg.buildMessage().toStdString();
-            m_writer.status(message);
-        }
-
-        auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
-        
-        if (elapsed >= COOK_TIMEOUT_SECONDS)
-        {
-            m_writer.error("Timeout");
-            intr->interrupt();
-        }
-    }
-    
-    virtual void busyCheck(bool interrupted,
-                          float percent,
-                          float longpercent) override 
-    {
-        m_writer.status("Progress: " + std::to_string(percent) + " " + std::to_string(longpercent));
-    }
-    
-    virtual void pop() override {}
-    virtual void stop() override {}
-    virtual void interruptAllowed(bool allowed, bool allow_ui) override {}
-
-private:
-    std::chrono::steady_clock::time_point start_time;
-    StreamWriter& m_writer;
-};
 
 struct Request
 {
@@ -306,9 +243,9 @@ theMain(int argc, char *argv[])
     OPsetDirector(boss);
     PIcreateResourceManager();
 
-    StatusHandler status_handler(writer);
+    InterruptHandler interruptHandler(writer);
     UT_Interrupt* interrupt = UTgetInterrupt();
-    interrupt->setInterruptHandler(&status_handler);
+    interrupt->setInterruptHandler(&interruptHandler);
     interrupt->setEnabled(true);
 
     // Process messages from pipe
@@ -327,7 +264,7 @@ theMain(int argc, char *argv[])
 
         writer.state(AutomationState::Start);
 
-        status_handler.reset_timeout();
+        interruptHandler.start_timeout(COOK_TIMEOUT_SECONDS);
         bool result = process_message(message, boss, writer);
 
         writer.state(AutomationState::End);
