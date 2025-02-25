@@ -12,7 +12,7 @@ from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.propagate import inject
 from telemetry import configure_telemetry
 
-if os.getenv("TELEMETRY_ENABLE", "False") == "True":
+if os.getenv("TELEMETRY_ENABLE", "False").lower() == "true":
     configure_telemetry(
         os.getenv("TELEMETRY_ENDPOINT", "localhost:4317"),
         os.getenv("TELEMETRY_INSECURE", "False") == "True",
