@@ -34,6 +34,7 @@ class PackageModel(BaseModel):
     description: str  # a short description
     blurb: Optional[str] = None  # a short headline
     user: Optional[str] = None  # user name override
+    tags: Optional[list[str]] = None
 
 
 class ProcessedPackageModel(PackageModel):

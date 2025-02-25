@@ -36,4 +36,13 @@ poetry run python upload_packages.py \
     --mythica-api-key  ${MYTYHICA_API_KEY} \
     --github-api-token ${GITHUB_API_KEY} \
     --tag "Open Source" 
+
+poetry run python upload_packages.py \
+    --repo-base ./output/tmp \
+    --package-list test_package_list.py \
+    --license MPLv2.txt \
+    --endpoint http://127.0.0.1:15555 \
+    --mythica-api-key  ${MYTYHICA_API_KEY} \
+    --github-api-token ${GITHUB_API_KEY} \
+    --tag "Open Source"
 ```

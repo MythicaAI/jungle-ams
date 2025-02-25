@@ -386,8 +386,8 @@ class PackageUploader(object):
         self.auth_token = None
         self.repo_base_dir = ''
         self.github_api_token = None
-        self.tag = None
-        self.tag_id = None
+        self.cached_tags: dict[str, str | None] = {}
+        self.united_tag: str = None
         self.conn_pool = conn_pool
         self.markdown = None
         self.always_bump = False
@@ -466,8 +466,7 @@ class PackageUploader(object):
         self.mythica_api_key = args.mythica_api_key
         self.package_list_file = args.package_list
         self.license = args.license
-        self.tag = args.tag
-        self.tag_id = None
+        self.united_tag = args.tag
         self.markdown = open(args.markdown, "w+t") if args.markdown else None
         if self.markdown:
             self.start_md()
@@ -477,6 +476,21 @@ class PackageUploader(object):
         # prepare the base repo directory
         if not os.path.exists(self.repo_base_dir):
             os.makedirs(self.repo_base_dir)
+
+    def attach_tags_to_package(self, package: ProcessedPackageModel):
+        "Adds the specified tags, must be using an admin session"
+        package_tags = package.tags if package.tags else []
+        if self.united_tag:
+            package_tags.append(self.united_tag)
+        self.start_session()
+
+        for tag in package_tags:
+            if tag != "":
+                tag_id = self.cached_tags.get(tag)
+                if not tag_id:
+                    tag_id = self.find_or_create_tag(tag)
+                    self.cached_tags[tag] = tag_id
+                self.tag_asset(package, tag_id)
 
     def start_session(self, as_profile_id=None):
         """Create a session for the current profile"""
@@ -602,12 +616,7 @@ class PackageUploader(object):
         else:
             self.uptodate_version(package)
 
-        # always add the specified tag, must be using an admin session
-        if self.tag:
-            self.start_session()
-            if not self.tag_id:
-                self.tag_id = self.find_or_create_tag(self.tag)
-            self.tag_asset(package, self.tag_id)
+        self.attach_tags_to_package(package)
 
     def find_or_create_org(self, org_name: str) -> OrgResponse:
         """Find or create an organization object"""
