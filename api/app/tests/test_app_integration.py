@@ -6,6 +6,7 @@ import hashlib
 import json
 from http import HTTPStatus
 
+from cryptid.cryptid import file_seq_to_id
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
@@ -221,6 +222,50 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
         if f.file_id == dependent_file["file_id"]:
             assert f.src_file_id == src_file["file_id"]
 
+    # Test with missing file
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json={
+            'file_type': "thumbnails",
+            "file_name": "missing.png",
+            "file_id": file_seq_to_id(999),
+            "src_file_id": file_seq_to_id(1999),
+        },
+        headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
+
+    # Test with missing file_name
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json={
+            'file_type': "thumbnails",
+            "file_id": dependent_file["file_id"],
+            "src_file_id": src_file["file_id"],
+        },
+        headers=headers)
+    assert_status_code(r, HTTPStatus.UNPROCESSABLE_ENTITY)
+
+    # Test with zero version
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.0.0/contents",
+        json=test_asset_ver_content_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # Test with contents.files with already created version's contents
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json={
+            'file_type': "files",
+            **asset_contents[1],
+        },
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    for f in o.contents['thumbnails']:
+        if f.file_id == dependent_file["file_id"]:
+            assert f.src_file_id == src_file["file_id"]
+    assert any(asset_contents[1]["file_id"] == __file.file_id for __file in o.contents['files'])
 
     # query asset versions
     r = client.get(f"{api_base}/assets/{asset_id}").json()

@@ -251,7 +251,7 @@ async def select_asset_version(db_session: AsyncSession,
                                asset_id: str,
                                version: tuple[int, ...]) -> Iterable[tuple[Asset, AssetVersion]] | None:
     """Execute a select against the asset versions table"""
-    if version == ZERO_VERSION:
+    if list(version) == ZERO_VERSION:
         asset = (await db_session.exec(select(Asset).where(
             Asset.asset_seq == asset_id_to_seq(asset_id))
                                        .where(Asset.deleted == None))).first()
@@ -503,10 +503,11 @@ async def update_versions_contents(
         HTTPException: If the version ID is invalid, the asset is not found, or the update fails.
     """
     version_id = convert_version_input(version_str)
-    if version_id == ZERO_VERSION:
+    if list(version_id) == ZERO_VERSION:
         raise HTTPException(
             HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed"
         )
+    print(version_id)
     # Find an existing asset version
     avr_results = await select_asset_version(db_session, asset_id, version_id)
     avr = (
@@ -591,7 +592,7 @@ async def create_version(db_session: AsyncSession,
                          owner_seq: int,
                          author_seq: int) -> tuple[CreateOrUpdate, AssetVersionResult]:
     version_id = convert_version_input(version_str)
-    if version_id == ZERO_VERSION:
+    if list(version_id) == ZERO_VERSION:
         raise HTTPException(HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed")
 
     # Find an existing asset version
