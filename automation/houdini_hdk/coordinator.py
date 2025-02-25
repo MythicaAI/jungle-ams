@@ -107,15 +107,19 @@ def main():
     
     with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
-            return response["op"] == "cook_response"
+            completed = response["op"] == "cook_response"
+            log.info("Completed: %s", completed)
+            return completed
 
         test_message = {"op": "cook", 
                         "data": {
                             "hda_path": "test_cube.hda", 
                             "definition_index": 0
                         }}
-        success = worker.send_message(test_message, process_response)
-        log.info("Success: %s", success)
+        for _ in range(3):
+            log.info("Starting test")
+            success = worker.send_message(test_message, process_response)
+            log.info("Success: %s", success)
 
 if __name__ == "__main__":
     main()

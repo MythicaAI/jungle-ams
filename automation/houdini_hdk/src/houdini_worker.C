@@ -64,55 +64,12 @@ private:
     std::chrono::steady_clock::time_point start_time;
 };
 
-int
-theMain(int argc, char *argv[])
+
+int process_message(const std::string& message, MOT_Director* boss)
 {
-    // Set up file descriptors
-    if (argc != 3)
-        usage(argv[0]);
-
-    int read_fd = std::stoi(argv[1]);
-    int write_fd = std::stoi(argv[2]);
-
-    // Read ndjson message from pipe
-    std::string buffer;
-    char chunk[4096];
-    ssize_t bytes_read;
-    while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) {
-        buffer.append(chunk, bytes_read);
-        
-        // Look for newline indicating complete message
-        size_t newline_pos = buffer.find('\n');
-        if (newline_pos != std::string::npos) {
-            // Extract message up to newline
-            std::string message = buffer.substr(0, newline_pos);
-            buffer.erase(0, newline_pos + 1);
-
-            std::cout << "Received message: " << message << std::endl;
-
-            // Send hardcoded response
-            std::string response = "{\"op\":\"cook_response\",\"status\":\"success\"}\n";
-            write(write_fd, response.c_str(), response.length());
-            
-            break;
-        }
-    }
-
-    if (bytes_read < 0) {
-        std::cerr << "Error reading from pipe" << std::endl;
-        return 1;
-    }
-
-    return 0;
-
     const char* hda_path = "test_cube.hda";
     const char* node_type = "test_cube";
     const char* output_bgeo = "output.bgeo";
-
-    // Initialize Houdini
-    MOT_Director* boss = new MOT_Director("standalone");
-    OPsetDirector(boss);
-    PIcreateResourceManager();
 
     // Load and install the HDA
     OP_OTLManager& manager = boss->getOTLManager();
@@ -142,11 +99,6 @@ theMain(int argc, char *argv[])
         return 1;
     }
 
-    // Install status handler
-    StatusHandler status_handler;
-    UT_Interrupt* interrupt = UTgetInterrupt();
-    interrupt->setInterruptHandler(&status_handler);
-    interrupt->setEnabled(true);
 
     // Cook the node
     OP_Context context(0.0);
@@ -155,9 +107,6 @@ theMain(int argc, char *argv[])
         std::cerr << "Failed to cook node" << std::endl;
         return 1;
     }
-
-    // Remove status handler
-    interrupt->setInterruptHandler(nullptr);
 
     // Get geometry from the node
     SOP_Node* sop = node->castToSOPNode();
@@ -182,6 +131,65 @@ theMain(int argc, char *argv[])
     }
 
     std::cout << "Successfully saved bgeo file" << std::endl;
+    return 0;
+}
+
+int
+theMain(int argc, char *argv[])
+{
+    if (argc != 3)
+        usage(argv[0]);
+
+    int read_fd = std::stoi(argv[1]);
+    int write_fd = std::stoi(argv[2]);
+
+    // Initialize Houdini
+    MOT_Director* boss = new MOT_Director("standalone");
+    OPsetDirector(boss);
+    PIcreateResourceManager();
+
+    StatusHandler status_handler;
+    UT_Interrupt* interrupt = UTgetInterrupt();
+    interrupt->setInterruptHandler(&status_handler);
+    interrupt->setEnabled(true);
+
+    // Process messages from pipe
+    while (true)
+    {
+        std::string buffer;
+        std::string message;
+        char chunk[4096];
+        ssize_t bytes_read;
+        while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) 
+        {
+            buffer.append(chunk, bytes_read);
+            
+            // Look for newline indicating complete message
+            size_t newline_pos = buffer.find('\n');
+            if (newline_pos != std::string::npos) {
+                // Extract message up to newline
+                message = buffer.substr(0, newline_pos);
+                buffer.erase(0, newline_pos + 1);
+
+                std::cout << "Received message: " << message << std::endl;                
+                break;
+            }
+        }
+
+        if (bytes_read < 0) {
+            std::cerr << "Error reading from pipe" << std::endl;
+            return 1;
+        }
+
+        int result = process_message(message, boss);
+        assert(result == 0);
+        message.clear();
+
+        // Send hardcoded response
+        std::string response = "{\"op\":\"cook_response\",\"status\":\"success\"}\n";
+        write(write_fd, response.c_str(), response.length());
+    }
+
     return 0;
 }
 
