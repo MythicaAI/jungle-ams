@@ -16,9 +16,9 @@ RUN apt-get update && apt-get install -y \
 ENV HFS=/opt/houdini/build
 ENV PATH=${HFS}/bin:${PATH}
 
-# Create HDK example directory
-RUN mkdir -p /src/HDK
-WORKDIR /src/HDK
+# Create worker build directory
+RUN mkdir -p /worker
+WORKDIR /worker
 
 # Copy the source and CMake files
 COPY src/ src/
@@ -29,11 +29,13 @@ RUN mkdir build && cd build && \
     cmake .. && \
     cmake --build .
 
-# Create mythica directory and copy artifacts
-RUN mkdir -p /mythica
-COPY run.sh /mythica/
-COPY test_cube.hda /mythica
-RUN chmod +x /mythica/run.sh
-RUN cp build/houdini_worker /mythica/
+# Create directory to run the worker
+RUN mkdir -p /run
+WORKDIR /run
 
-WORKDIR /mythica
+COPY run.sh .
+COPY test_cube.hda .
+
+RUN chmod +x run.sh
+RUN cp /worker/build/houdini_worker .
+
