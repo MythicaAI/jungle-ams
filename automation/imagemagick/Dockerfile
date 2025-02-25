@@ -41,6 +41,25 @@ RUN mkdir -p /etc/ImageMagick-7 && \
 
 # Create directories for input and output files
 USER 0
+
+# Copy monorepo dependencies
+COPY --from=libs-python-image /libs/python /libs/python
+
+WORKDIR /python-install
+
+COPY pyproject.toml .
+COPY poetry.lock .
+
+# Install updated bootstrapping packages for poetry and pip 
+RUN python -m pip install \
+    --root-user-action=ignore \
+    --upgrade \
+    --no-cache-dir pip poetry
+
+# Install the poetry dependencies into the local python site-packages
+RUN poetry config --local virtualenvs.create false
+RUN poetry install --only main,infra --no-root --no-cache
+
 RUN mkdir -p /app/input /app/output
 
 # Create and set working directory
@@ -64,19 +83,6 @@ ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
 ENV TELEMETRY_INSECURE=True
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-imagemagick"
 ENV K8S_CLUSTER_NAME=localhost
-
-# Setup python bootstrap environment
-RUN python -m pip install \
-    --root-user-action=ignore \
-    --upgrade \
-    --no-cache-dir pip poetry
-
-# Copy monorepo dependencies
-COPY --from=libs-python-image /libs/python /libs/python
-
-# Install the poetry dependencies into the local python site-packages
-RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main,infra --no-root --no-cache
 
 # Command to run the worker
 CMD ["python3", "workers.py"]

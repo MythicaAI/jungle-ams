@@ -1,21 +1,25 @@
-from  automation.crop_image import crop_image, CropImageRequest, CropImageResponse
-from  automation.clip_video import clip_video, ClipVideoRequest, ClipVideoResponse
+from automation.crop_image import (
+    CropImageRequest,
+    CropImageResponse,
+    crop_image_request,
+)
 from ripple.automation.worker import Worker
+from ripple.config import configure_telemetry, ripple_config
 
 worker = Worker()
+
+if ripple_config().telemetry_enable:
+    configure_telemetry(
+        ripple_config().telemetry_endpoint,
+        ripple_config().telemetry_insecure,
+    )
 
 automations = [
     {
         "path": '/mythica/crop_image',
-        "provider": crop_image,
+        "provider": crop_image_request,
         "inputModel": CropImageRequest,
         "outputModel": CropImageResponse,
-    },
-    {
-        "path": '/mythica/clip_video',
-        "provider": crop_image,
-        "inputModel": ClipVideoRequest,
-        "outputModel": ClipVideoResponse,
     },
 ]
 

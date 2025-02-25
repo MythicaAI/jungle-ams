@@ -222,7 +222,7 @@ class Worker:
             except Exception as e:
                 log.error(f"Automation failed: {format_exception(e)}")
                 return JSONResponse(
-                    content={"correlation": auto_request.correlation, "result": {"error": f"Invalid input data: {format_exception(e)}"}},
+                    content={"correlation": auto_request.correlation, "result": {"error": auto_request.data}},
                     status_code=422,
                     headers=headers,
                 )

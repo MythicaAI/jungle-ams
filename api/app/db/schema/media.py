@@ -44,6 +44,7 @@ class FileContent(SQLModel, table=True):
     lifetime: int | None = Field(sa_column=Column('lifetime',Integer,default=0))
     content_hash: str | None = Field(default=None)
     locators: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
+    src_file_seq: int | None = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
 
 # sequences for table file_tags
 

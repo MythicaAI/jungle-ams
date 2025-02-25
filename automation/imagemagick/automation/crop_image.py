@@ -1,43 +1,42 @@
 from tempfile import NamedTemporaryFile
+from typing import Optional
 
-from ripple.models.streaming import Message
-from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
-from ripple.models.streaming import OutputFiles
+from ripple.automation.models import CropImageRequest
+from ripple.automation.publishers import ResultPublisher
+from ripple.models.streaming import CropImageResponse
 from wand.image import Image
-from pydantic import Field
 
-class CropImageRequest(ParameterSet):
-    image_file: FileParameter
-    crop_pos_x: IntParameterSpec
-    crop_pos_y: IntParameterSpec
-    crop_w: IntParameterSpec
-    crop_y: IntParameterSpec
 
-class CropImageResponse(OutputFiles):
-    files: dict[str, list[str]] = Field(default={"mesh": []})
+def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
 
-def crop_image(infile, outfile, x, y, w, h):
     with Image(filename=infile) as img:
+        original_width, original_height = img.width, img.height
+        crop_pos_x = (original_width - w) // 2 if not crop_h else crop_h
+        crop_pos_y = (original_height - h) // 2 if not crop_w else crop_w
         img.crop(
-            left=x,
-            top=y,
+            left=crop_pos_x,
+            top=crop_pos_y,
             width=w,
             height=h
         )
         img.save(filename=outfile)
 
 
-def crop_image_request(request: CropImageRequest, result_callback) -> CropImageResponse:
-    result_callback(Message(message=f"Received message: {request.message}"))
+def crop_image_request(request: CropImageRequest, result_callback: ResultPublisher) -> CropImageResponse:
 
     with NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
         output_path = temp_file.name
 
         crop_image(
-            request.image_file.path,
+            request.image_file.file_path,
             output_path,
-            request.crop_pos_x.x,
-            request.crop_pos_y.y,
-            request.crop_w,
-            request.crop_h)
-        return CropImageResponse(files = {'cropped_image': [output_path]})
+            request.crop_pos_x.default if request.crop_pos_x else None,
+            request.crop_pos_y.default if request.crop_pos_y else None,
+            request.crop_w.default,
+            request.crop_h.default)
+        return CropImageResponse(
+            src_asset_id=request.src_asset_id,
+            src_version='.'.join(map(str, request.src_version)),
+            src_file_id=request.image_file.file_id,
+            file_path=output_path
+        )

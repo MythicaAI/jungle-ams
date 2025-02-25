@@ -11,7 +11,7 @@ from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.utils import error_handler
 from ripple.config import ripple_config
-from ripple.models.streaming import JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
+from ripple.models.streaming import CropImageResponse, JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
 
 NATS_FILE_CHUNK_SIZE = 64 * 1024
 
@@ -106,13 +106,14 @@ class ResultPublisher:
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
         updated_headers = self.update_headers_from_context()
-        def upload_file(file_path: str, key: str, index: int) -> Optional[str]:
+        def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
             if not os.path.exists(file_path):
-                return None
+                log.error("File not found: %s", file_path)
+                return (None, None)
 
             try:
-                #if self.request.results_subject:
-                #    self._stream_file_chunks(file_path, key, index)
+                if self.request.results_subject:
+                   self._stream_file_chunks(file_path, key, index)
 
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
@@ -120,8 +121,9 @@ class ResultPublisher:
                     response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
                         headers=updated_headers
                     )
-                    file_id = response['files'][0]['file_id'] if response else None
-                    return file_id
+                    file_id, file_name = (response['files'][0].get("file_id"), response['files'][0].get("file_name")) if response else (None, None)
+                    log.info("Uploaded response: %s", response)
+                    return file_id, file_name
             finally:
                 os.remove(file_path)
 
@@ -138,17 +140,46 @@ class ResultPublisher:
             )
             return response['job_def_id'] if response else None
 
+
+        def add_cropped_image_to_contents(item: CropImageResponse) -> bool:
+            """
+            Add the cropped image to the contents of the source asset.
+            """
+            cropped_req = {
+                'file_id': item.file_id,
+                'file_name': item.file_name,
+                'src_file_id': item.src_file_id,
+                'file_type': "thumbnails",
+            }
+            response = self.rest.post(
+                f"{api_url}/assets/{item.src_asset_id}/versions/{item.src_version}/contents",
+                cropped_req, self.request.auth_token,
+                headers=updated_headers,
+            )
+            return True if response else False
+
         #TODO: Report errors
         if isinstance(item, OutputFiles):
             for key, files in item.files.items():
                 for index, file in enumerate(files):
-                    file_id = upload_file(file, key, index)
+                    file_id, _ = upload_file(file, key, index)
                     files[index] = file_id
 
         elif isinstance(item, JobDefinition):
             job_def_id = upload_job_def(item)
             if job_def_id is not None:
                 item.job_def_id = job_def_id
+
+        elif isinstance(item, CropImageResponse):
+            file_id, file_name = upload_file(item.file_path, "cropped_image", 0)
+            if file_id is not None and file_name is not None:
+                item.file_id = file_id
+                item.file_name = file_name
+                processed = add_cropped_image_to_contents(item)
+                if processed:
+                    log.info("Added cropped image to contents, item: %s", item)
+                    return
+            log.error("Failed to add cropped image to contents, item: %s", item)
 
     def _stream_file_chunks(self, file_path: str, key: str, index: int) -> None:
         """Stream a file's contents as base64-encoded chunks via NATS"""

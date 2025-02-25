@@ -106,11 +106,25 @@ class Event(StreamItem):
     completed: Optional[datetime] = None
 
 
+class CropImageResponse(ProcessStreamItem):
+    """
+    A cropped image response with the source file id and the
+    cropped file id.
+    """
+    item_type: Literal["cropped_image"] = "cropped_image"
+    src_asset_id: str
+    src_version: str
+    src_file_id: str
+    file_id: Optional[str] = None
+    file_name: Optional[str] = None
+    file_path: str
+
+
 # Build the set of models for verification
 StreamModelTypes = {Progress, Message, OutputFiles, Event, FileContentChunk}
 
 # Define a Union type with a discriminator for proper serialization
 StreamItemUnion = Annotated[
-    Union[Progress, Message, OutputFiles, Event, FileContentChunk],
+    Union[Progress, Message, OutputFiles, Event, FileContentChunk, CropImageResponse],
     Field(discriminator='item_type')
 ]

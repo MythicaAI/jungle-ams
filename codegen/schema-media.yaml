@@ -49,6 +49,10 @@ tables:
       - name: locators
         type: JSON
         description: Array of content locators
+      - name: src_file_seq
+        type: BIGINT
+        foreign_key: files.file_seq
+        nullable: true
   # Cross table relation between file and tags
   - name: FileTag
     table_name: file_tags

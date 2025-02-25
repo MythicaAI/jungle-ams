@@ -2,17 +2,21 @@
 
 # pylint: disable=redefined-outer-name, unused-import
 
+import hashlib
 import json
 from http import HTTPStatus
 
+from cryptid.cryptid import file_seq_to_id
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
 from assets.repo import AssetFileReference
+from routes.file_uploads import FileUploadResponse
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import assert_status_code, make_random_content, random_str, refresh_auth_token
+from tests.shared_test import FileContentTestObj, assert_status_code, make_random_content, random_str, refresh_auth_token
+from tests.fixtures.uploader import request_to_upload_files
 
 test_profile_name = "test-profile"
 test_profile_full_name = "test-profile-full-name"
@@ -25,6 +29,9 @@ test_asset_name = 'test-asset'
 test_asset_description = 'test-asset-description'
 test_asset_collection_name = 'test-collection'
 test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
+test_file_name = "test-file.png"
+test_file_contents = b"test contents"
+test_file_content_type = "application/octet-stream"
 
 # reference imported fixtures to prevent tooling auto-removal
 __fixtures__ = [
@@ -35,7 +42,7 @@ __fixtures__ = [
 
 # see http://localhost:8080/docs for examples
 @pytest.mark.asyncio
-async def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader):
+async def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader, request_to_upload_files):
     test_profile = await create_profile(name=test_profile_name,
                                         email=test_profile_email,
                                         full_name=test_profile_full_name,
@@ -65,10 +72,35 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     # upload content, index FileUploadResponses to AssetVersionContent JSON entries
     # the AssetVersionContent is pre-serialized to JSON to remove issues with ID conversion
     files = [make_random_content("hda") for _ in range(2)]
-    response_files = uploader(profile_id, headers, files)
+    response_files: dict[str, FileUploadResponse] = uploader(profile_id, headers, files)
     asset_contents = list(map(
         lambda x: json.loads(AssetFileReference(**x.model_dump()).model_dump_json()),
         response_files.values()))
+    
+    
+    uploaded_files = [
+        FileContentTestObj(
+            file_name=test_file_name + str(_file_id),
+            file_id=str(_file_id),
+            contents=test_file_contents,
+            content_hash=hashlib.sha1(test_file_contents).hexdigest(),
+            content_type=test_file_content_type,
+            size=len(test_file_contents),
+        )
+        for _file_id in range(2)
+    ]
+    uploaded_files_ids: tuple[str] = request_to_upload_files(headers, uploaded_files)
+    uploaded_files_dict = {_file_id: None for _file_id in uploaded_files_ids}
+
+    for _file_id in uploaded_files_ids:
+        # Get download info
+        info_response = client.get(
+            f"{api_base}/download/info/{_file_id}", headers=headers
+        )
+        uploaded_files_dict[_file_id] = info_response.json()
+    
+    src_file = uploaded_files_dict[uploaded_files_ids[0]]
+    dependent_file = uploaded_files_dict[uploaded_files_ids[1]]
 
     # create org to contain assets
     org_name = 'org-' + random_str(10, digits=False)
@@ -130,7 +162,17 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     test_asset_ver_json = {
         'asset_id': asset_id,
         'commit_ref': test_commit_ref,
-        'contents': {"files": asset_contents},
+        'contents': {
+            "files": asset_contents,
+            "thumbnails": [{
+                "file_id": src_file['file_id'],
+                "file_name": src_file['name'],
+                "size": src_file['size'],
+                "content_hash": src_file[
+                    'content_hash'
+                ],
+            }],
+        },
         'name': test_asset_name,
         'description': test_asset_description,
         'author_id': profile_id,
@@ -145,10 +187,85 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     assert o.org_id == org_id
     assert o.name == test_asset_name
     assert o.version == [0, 1, 0]
+
     for f in o.contents['files']:
         assert f.file_id in response_files
         assert f.size == response_files[f.file_id].size
         assert len(f.content_hash) > 0
+        assert f.src_file_id == None
+    for f in o.contents['thumbnails']:
+        assert f.file_id in src_file["file_id"]
+        assert f.src_file_id == None
+
+    test_asset_ver_content_json = {
+        'file_type': "thumbnails",
+        "file_name": dependent_file['name'],
+        "file_id": dependent_file["file_id"],
+        "src_file_id": src_file["file_id"],
+    }
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json=test_asset_ver_content_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert o.asset_id == asset_id
+    assert o.org_id == org_id
+    assert o.name == test_asset_name
+    assert o.version == [0, 1, 0]
+    for f in o.contents['files']:
+        assert f.file_id in response_files
+        assert f.size == response_files[f.file_id].size
+        assert len(f.content_hash) > 0
+        assert f.src_file_id == None
+    for f in o.contents['thumbnails']:
+        if f.file_id == dependent_file["file_id"]:
+            assert f.src_file_id == src_file["file_id"]
+
+    # Test with missing file
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json={
+            'file_type': "thumbnails",
+            "file_name": "missing.png",
+            "file_id": file_seq_to_id(999),
+            "src_file_id": file_seq_to_id(1999),
+        },
+        headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)
+
+    # Test with missing file_name
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json={
+            'file_type': "thumbnails",
+            "file_id": dependent_file["file_id"],
+            "src_file_id": src_file["file_id"],
+        },
+        headers=headers)
+    assert_status_code(r, HTTPStatus.UNPROCESSABLE_ENTITY)
+
+    # Test with zero version
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.0.0/contents",
+        json=test_asset_ver_content_json,
+        headers=headers)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+
+    # Test with contents.files with already created version's contents
+    r = client.post(
+        f"{api_base}/assets/{asset_id}/versions/0.1.0/contents",
+        json={
+            'file_type': "files",
+            **asset_contents[1],
+        },
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    for f in o.contents['thumbnails']:
+        if f.file_id == dependent_file["file_id"]:
+            assert f.src_file_id == src_file["file_id"]
+    assert any(asset_contents[1]["file_id"] == __file.file_id for __file in o.contents['files'])
 
     # query asset versions
     r = client.get(f"{api_base}/assets/{asset_id}").json()
