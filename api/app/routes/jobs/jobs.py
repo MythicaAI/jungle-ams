@@ -98,7 +98,14 @@ class JobResultResponse(BaseModel):
     job_def_id: Optional[str]
     created: datetime
     completed: bool
-    results: list[JobResultModel]
+    results: Optional[list[JobResultModel]]
+
+
+class ExtendedJobResultResponse(JobResultResponse):
+    job_id: str
+    completed: Optional[datetime] = None
+    params: dict[str, Any]
+    input_files: Optional[dict[str, Any]] = None
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -519,3 +526,61 @@ async def delete_canary_jobs_def(
     return {
         "message": f"Successfully deleted JobDefinition for profile:{profile.profile_id} and nullified references in Jobs"
     }
+
+
+@router.get('/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
+async def jobs_by_asset_version(
+        asset_id: str,
+        major: int,
+        minor: int,
+        patch: int,
+        db_session: AsyncSession = Depends(get_db_session)) -> list[ExtendedJobResultResponse]:
+    """Get all jobs for certain version of asset"""
+    asset_seq = asset_id_to_seq(asset_id)
+    asset_version = await repo.get_version(db_session, asset_seq, major, minor, patch)
+    if asset_version is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"asset {asset_id}-{major}.{minor}.{patch} not found")
+    return await resolve_jobs_from_job_definitions(db_session, asset_version)
+
+
+async def resolve_jobs_from_job_definitions(
+        db_session: AsyncSession,
+        avr: AssetVersionResult) -> list[ExtendedJobResultResponse]:
+    results = (await db_session.exec(
+        select(Job, JobResult)
+        .select_from(JobDefinition)
+        .select_from(AssetVersionEntryPoint)
+        .outerjoin(AssetVersionEntryPoint, AssetVersionEntryPoint.job_def_seq == JobDefinition.job_def_seq)
+        .outerjoin(Job, Job.job_def_seq == JobDefinition.job_def_seq)
+        .outerjoin(JobResult, JobResult.job_seq == Job.job_seq)
+        .where(Job.job_def_seq != None)
+        .where(AssetVersionEntryPoint.asset_seq == asset_id_to_seq(avr.asset_id))
+        .where(AssetVersionEntryPoint.major == avr.version[0])
+        .where(AssetVersionEntryPoint.minor == avr.version[1])
+        .where(AssetVersionEntryPoint.patch == avr.version[2])
+    )).all()
+    if not results:
+        return []
+
+    jobs = []
+    for job, results in results:
+        jobs.append(
+            ExtendedJobResultResponse(
+                job_id=job_seq_to_id(job.job_seq),
+                created=job.created,
+                completed=job.completed,
+                job_def_id=(
+                    job_def_seq_to_id(job.job_def_seq) if job.job_def_seq else None
+                ),
+                params=job.params,
+                results=[
+                    JobResultModel(
+                        job_result_id=job_result_seq_to_id(job_result.job_result_seq),
+                        **job_result.model_dump(),
+                    )
+                    for job_result in results
+                ] if results else None,
+            )
+        )
+
+    return jobs
