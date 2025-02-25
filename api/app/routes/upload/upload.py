@@ -27,7 +27,7 @@ from ripple.models.contexts import FilePurpose
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
-from routes.files.files import delete_by_id
+from routes.files.utils import delete_by_id
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
@@ -220,7 +220,7 @@ async def store_and_attach_package(
     # if a package existed, mark it as deleted
     if avr.package_id:
         try:
-            await delete_by_id(avr.package_id, profile)
+            await delete_by_id(avr.package_id, profile, db_session)
         except HTTPException:
             log.exception("cleanup of existing package %s failed", avr.package_id)
 
