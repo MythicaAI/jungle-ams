@@ -14,8 +14,8 @@ static const int COOK_TIMEOUT_SECONDS = 1;
 static void
 usage(const char *program)
 {
-    std::cerr << "Usage: " << program << " [-h] <hda_path> <node_type> <output_bgeo>\n";
-    std::cerr << "Loads HDA, creates node, cooks it and saves to bgeo\n";
+    std::cerr << "Usage: " << program << " <read_fd> <write_fd>\n";
+    std::cerr << "Reads JSON messages from read_fd, processes them, writes results to write_fd\n";
     UT_Exit::fail();
 }
 
@@ -67,12 +67,47 @@ private:
 int
 theMain(int argc, char *argv[])
 {
-    if (argc != 4)
+    // Set up file descriptors
+    if (argc != 3)
         usage(argv[0]);
 
-    const char* hda_path = argv[1];
-    const char* node_type = argv[2];
-    const char* output_bgeo = argv[3];
+    int read_fd = std::stoi(argv[1]);
+    int write_fd = std::stoi(argv[2]);
+
+    // Read ndjson message from pipe
+    std::string buffer;
+    char chunk[4096];
+    ssize_t bytes_read;
+    while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) {
+        buffer.append(chunk, bytes_read);
+        
+        // Look for newline indicating complete message
+        size_t newline_pos = buffer.find('\n');
+        if (newline_pos != std::string::npos) {
+            // Extract message up to newline
+            std::string message = buffer.substr(0, newline_pos);
+            buffer.erase(0, newline_pos + 1);
+
+            std::cout << "Received message: " << message << std::endl;
+
+            // Send hardcoded response
+            std::string response = "{\"op\":\"cook_response\",\"status\":\"success\"}\n";
+            write(write_fd, response.c_str(), response.length());
+            
+            break;
+        }
+    }
+
+    if (bytes_read < 0) {
+        std::cerr << "Error reading from pipe" << std::endl;
+        return 1;
+    }
+
+    return 0;
+
+    const char* hda_path = "test_cube.hda";
+    const char* node_type = "test_cube";
+    const char* output_bgeo = "output.bgeo";
 
     // Initialize Houdini
     MOT_Director* boss = new MOT_Director("standalone");

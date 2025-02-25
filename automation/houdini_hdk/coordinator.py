@@ -57,6 +57,7 @@ class HoudiniWorker:
         """Sends and receives a message with ndjson format to subprocess"""
         try:
             # Send message to subprocess
+            log.debug("Sending message: %s", data)
             message = json.dumps(data) + "\n"
             os.write(self.parent_to_child_write, message.encode())
                         
@@ -106,7 +107,6 @@ def main():
     
     with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
-            log.info("Response: %s", response)
             return response["op"] == "cook_response"
 
         test_message = {"op": "cook", 
