@@ -156,6 +156,8 @@ theMain(int argc, char *argv[])
     // Process messages from pipe
     while (true)
     {
+        std::cout << "Waiting for message" << std::endl;
+
         std::string buffer;
         std::string message;
         char chunk[4096];
@@ -171,7 +173,7 @@ theMain(int argc, char *argv[])
                 message = buffer.substr(0, newline_pos);
                 buffer.erase(0, newline_pos + 1);
 
-                std::cout << "Received message: " << message << std::endl;                
+                std::cout << "Received message: " << message << std::endl;
                 break;
             }
         }

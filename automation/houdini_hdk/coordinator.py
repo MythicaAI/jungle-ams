@@ -60,7 +60,7 @@ class HoudiniWorker:
             log.debug("Sending message: %s", data)
             message = json.dumps(data) + "\n"
             os.write(self.parent_to_child_write, message.encode())
-                        
+
             # Read response stream until response is received
             buffer = ""
             while True:
@@ -68,12 +68,12 @@ class HoudiniWorker:
                 if not ready:
                     log.error("Read timeout while waiting for data")
                     return False
-                
+
                 chunk = os.read(self.child_to_parent_read, 4096).decode()
                 if not chunk:
                     log.error("Connection closed")
                     return False
-                
+
                 buffer += chunk
 
                 # Process recieved messages
@@ -86,13 +86,13 @@ class HoudiniWorker:
                     except json.JSONDecodeError:
                         log.error("Invalid JSON response")
                         return False
-                    
+
                     log.debug("Received response: %s", response_data)
                     completed = process_response(response_data)
                     if completed:
                         assert(len(buffer) == 0)
                         return True
-            
+
         except (OSError, IOError) as e:
             log.error("Communication error: %s", e)
             return False
@@ -104,7 +104,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    
+
     with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
             completed = response["op"] == "cook_response"
@@ -116,8 +116,8 @@ def main():
                             "hda_path": "test_cube.hda", 
                             "definition_index": 0
                         }}
-        for _ in range(3):
-            log.info("Starting test")
+        for i in range(3):
+            log.info("Starting test %d", i)
             success = worker.send_message(test_message, process_response)
             log.info("Success: %s", success)
 
