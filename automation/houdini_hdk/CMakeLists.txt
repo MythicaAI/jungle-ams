@@ -8,7 +8,7 @@ set(CMAKE_PREFIX_PATH $ENV{HFS}/toolkit/cmake)
 find_package(Houdini REQUIRED)
 
 # Gather source files
-file(GLOB SOURCES "src/*.C")
+file(GLOB SOURCES "src/*.cpp")
 
 # Add the executable
 set(executable_name houdini_worker)

@@ -1,3 +1,5 @@
+#include "streaming.h"
+
 #include <OP/OP_Director.h>
 #include <OP/OP_OTLLibrary.h>
 #include <GU/GU_Detail.h>
@@ -20,48 +22,6 @@ usage(const char *program)
     std::cerr << "Reads JSON messages from read_fd, processes them, writes results to write_fd\n";
     UT_Exit::fail();
 }
-
-enum class AutomationState
-{
-    Start,
-    End
-};
-
-class StreamWriter
-{
-public:
-    StreamWriter(int fd) : m_fd(fd) {}
-
-    void state(AutomationState state)
-    {
-        writeToStream("automation", state == AutomationState::Start ? "start" : "end");
-    }
-
-    void status(const std::string& message)
-    {
-        writeToStream("status", message);
-    }
-
-    void error(const std::string& message)
-    {
-        writeToStream("error", message);
-    }
-
-    void file(const std::string& path)
-    {
-        writeToStream("file", path);
-    }
-
-private:
-    void writeToStream(const std::string& op, const std::string& data)
-    {
-        std::cout << "Worker: Sending response: " << op << " " << data << std::endl;
-        std::string json = "{\"op\":\"" + op + "\",\"data\":\"" + data + "\"}\n";
-        write(m_fd, json.c_str(), json.size());
-    }
-
-    int m_fd;
-};
 
 class StatusHandler : public UT_InterruptHandler
 {
@@ -338,10 +298,8 @@ theMain(int argc, char *argv[])
     if (argc != 3)
         usage(argv[0]);
 
-    int read_fd = std::stoi(argv[1]);
-    int write_fd = std::stoi(argv[2]);
-
-    StreamWriter writer(write_fd);
+    StreamReader reader(std::stoi(argv[1]));
+    StreamWriter writer(std::stoi(argv[2]));
 
     // Initialize Houdini
     MOT_Director* boss = new MOT_Director("standalone");
@@ -358,37 +316,19 @@ theMain(int argc, char *argv[])
     {
         std::cout << "Worker: Waiting for message" << std::endl;
 
-        std::string buffer;
         std::string message;
-        char chunk[4096];
-        ssize_t bytes_read = 0;
-        while ((bytes_read = read(read_fd, chunk, sizeof(chunk))) > 0) 
+        if (!reader.readMessage(message))
         {
-            buffer.append(chunk, bytes_read);
-            
-            // Look for newline indicating complete message
-            size_t newline_pos = buffer.find('\n');
-            if (newline_pos != std::string::npos) {
-                // Extract message up to newline
-                message = buffer.substr(0, newline_pos);
-                buffer.erase(0, newline_pos + 1);
-
-                std::cout << "Worker: Received message: " << message << std::endl;
-                break;
-            }
-        }
-
-        if (bytes_read <= 0)
-        {
-            std::cerr << "Error reading from pipe" << std::endl;
+            std::cerr << "Failed to read message" << std::endl;
             return 1;
         }
+
+        std::cout << "Worker: Received message: " << message << std::endl;
 
         writer.state(AutomationState::Start);
 
         status_handler.reset_timeout();
         bool result = process_message(message, boss, writer);
-        message.clear();
 
         writer.state(AutomationState::End);
     }
