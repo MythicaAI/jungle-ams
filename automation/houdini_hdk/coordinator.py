@@ -7,8 +7,11 @@ import argparse
 from pathlib import Path
 from typing import Any
 
-logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(name)s: %(levelname)s: %(message)s'
+)
+log = logging.getLogger("Coordinator")
 
 class HoudiniWorker:
     def __init__(self, executable_path: str, timeout: float = 60.0):
@@ -76,11 +79,15 @@ class HoudiniWorker:
 
                 buffer += chunk
 
-                # Process recieved messages
-                newline_idx = buffer.find('\n')
-                if newline_idx >= 0:
+                # Process all complete messages in buffer
+                while True:
+                    newline_idx = buffer.find('\n')
+                    if newline_idx < 0:
+                        break
+
                     message = buffer[:newline_idx]
                     buffer = buffer[newline_idx + 1:]
+
                     try:
                         response_data = json.loads(message)
                     except json.JSONDecodeError:
@@ -108,7 +115,8 @@ def main():
     with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
             completed = response["op"] == "cook_response"
-            log.info("Completed: %s", completed)
+            if completed:
+                log.info("Recieved completed response")
             return completed
 
         test_message = {"op": "cook", 
