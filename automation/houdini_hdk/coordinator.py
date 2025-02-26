@@ -122,9 +122,13 @@ def main():
         test_message = {"op": "cook", 
                         "data": {
                             "hda_path": "test_cube.hda", 
-                            "definition_index": 0
+                            "definition_index": 0,
+                            "test_int": 5,
+                            "test_float": 2.0,
+                            "test_string": "test",
+                            "test_bool": True,
                         }}
-        for i in range(3):
+        for i in range(1):
             log.info("Starting test %d", i)
             success = worker.send_message(test_message, process_response)
             log.info("Success: %s", success)

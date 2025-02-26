@@ -12,16 +12,10 @@ static const int COOK_TIMEOUT_SECONDS = 1;
 
 static bool process_message(const std::string& message, MOT_Director* boss, StreamWriter& writer)
 {
-    Request request;
+    CookRequest request;
     if (!util::parse_request(message, request))
     {
         writer.error("Failed to parse request");
-        return false;
-    }
-
-    if (request.op != "cook")
-    {
-        writer.error("Unsupported operation: " + request.op);
         return false;
     }
 
