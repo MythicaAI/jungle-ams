@@ -7,10 +7,102 @@
 #include <GU/GU_Detail.h>
 #include <SOP/SOP_Node.h>
 #include <MOT/MOT_Director.h>
+#include <filesystem>
 #include <iostream>
 
 namespace util
 {
+
+static OP_Node* create_input_node(OP_Network* parent, const std::string& path, StreamWriter& writer)
+{ 
+    if (!std::filesystem::exists(path))
+    {
+        return nullptr;
+    }
+
+    std::string ext = std::filesystem::path(path).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+    if (ext == ".usd" || ext == ".usdz") 
+    {
+        OP_Node* input_node = parent->createNode("usdimport");
+        if (!input_node || !input_node->runCreateScript())
+        {
+            writer.error("Failed to create usdimport node for " + path);
+            return nullptr;
+        }
+
+        input_node->setString(path.c_str(), CH_STRING_LITERAL, "filepath1", 0, 0.0f);
+        input_node->setInt("input_unpack", 0, 0.0f, 1);
+        input_node->setInt("unpack_geomtype", 0, 0.0f, 1);
+        return input_node;
+    }
+    else if (ext == ".obj")
+    {
+        OP_Node* input_node = parent->createNode("obj_importer");
+        if (!input_node || !input_node->runCreateScript())
+        {
+            writer.error("Failed to create obj_importer node for " + path);
+            return nullptr;
+        }
+
+        input_node->setString(path.c_str(), CH_STRING_LITERAL, "sObjFile", 0, 0.0f);
+        return input_node;
+    }
+    else if (ext == ".fbx")
+    {
+        OP_Node* input_node = parent->createNode("fbx_archive_import");
+        if (!input_node || !input_node->runCreateScript())
+        {
+            writer.error("Failed to create fbx_archive_import node for " + path);
+            return nullptr;
+        }
+
+        input_node->setString(path.c_str(), CH_STRING_LITERAL, "sFBXFile", 0, 0.0f);
+        input_node->setInt("bConvertUnits", 0, 0.0f, 1);
+        input_node->setInt("bImportAnimation", 0, 0.0f, 1);
+        input_node->setInt("bImportBoneSkin", 0, 0.0f, 1);
+        input_node->setInt("bConvertYUp", 0, 0.0f, 1);
+        input_node->setInt("bUnlockGeo", 0, 0.0f, 1);
+        input_node->setInt("pack", 0, 0.0f, 1);
+        return input_node;
+    }
+    else if (ext == ".gltf" || ext == ".glb")
+    {
+        OP_Node* input_node = parent->createNode("gltf");
+        if (!input_node || !input_node->runCreateScript())
+        {
+            writer.error("Failed to create gltf node for " + path);
+            return nullptr;
+        }
+
+        input_node->setString(path.c_str(), CH_STRING_LITERAL, "filename", 0, 0.0f);
+        return input_node;
+    }
+    
+    return nullptr;
+}
+
+static void set_inputs(OP_Node* node, const std::map<int, std::string>& inputs, StreamWriter& writer)
+{
+    OP_Network* parent = node->getParent();
+
+    for (const auto& [index, path] : inputs)
+    {
+        OP_Node* input_node = create_input_node(parent, path, writer);
+        if (!input_node)
+        {
+            input_node = parent->createNode("null");
+            if (!input_node || !input_node->runCreateScript())
+            {
+                writer.error("Failed to create null node for " + path);
+                continue;
+            }
+        }
+
+        node->setInput(index, input_node);
+    }
+}
 
 static void set_parameters(OP_Node* node, const ParameterSet& parameters)
 {
@@ -107,6 +199,7 @@ bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
     }
 
     // Set the parameters
+    set_inputs(node, request.inputs, writer);
     set_parameters(node, request.parameters);
 
     // Cook the node

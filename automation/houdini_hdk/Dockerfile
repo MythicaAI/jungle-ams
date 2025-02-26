@@ -40,6 +40,7 @@ WORKDIR /run
 
 COPY run.sh .
 COPY coordinator.py .
+COPY cube.usdz .
 COPY test_cube.hda .
 
 RUN chmod +x run.sh

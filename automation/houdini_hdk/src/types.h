@@ -9,7 +9,7 @@
 struct FileParameter
 {
     std::string file_id;
-    std::optional<std::string> file_path;
+    std::string file_path;
 };
 
 using Parameter = std::variant<

@@ -2,6 +2,7 @@
 
 #include <UT/UT_JSONValue.h>
 #include <iostream>
+#include <regex>
 
 namespace util
 {
@@ -46,10 +47,21 @@ bool parse_request(const std::string& message, CookRequest& request)
             case UT_JSONValue::JSON_BOOL:
                 paramSet[key.toStdString()] = Parameter(value.getB());
                 break;
-            /*
             case UT_JSONValue::JSON_MAP:
-                paramSet[key.toStdString()] = Parameter(value.getMap());
+            {
+                const UT_JSONValue* file_id = value.get("file_id");
+                const UT_JSONValue* file_path = value.get("file_path");
+                if (!file_id || file_id->getType() != UT_JSONValue::JSON_STRING || 
+                    !file_path || file_path->getType() != UT_JSONValue::JSON_STRING)
+                {
+                    std::cerr << "Worker: Failed to parse file parameter: " << key.toStdString() << std::endl;
+                    break;
+                }
+
+                paramSet[key.toStdString()] = Parameter(FileParameter{file_id->getS(), file_path->getS()});
                 break;
+            }
+            /*
             case UT_JSONValue::JSON_ARRAY:
                 paramSet[key.toStdString()] = Parameter(value.getArray());
                 break;
@@ -57,9 +69,9 @@ bool parse_request(const std::string& message, CookRequest& request)
         }
     }
 
-    // Bind to cook request
+    // Bind cook request parameters
     auto hda_path_iter = paramSet.find("hda_path");
-    if (hda_path_iter == paramSet.end() || !std::holds_alternative<std::string>(hda_path_iter->second))
+    if (hda_path_iter == paramSet.end() || !std::holds_alternative<FileParameter>(hda_path_iter->second))
     {
         std::cerr << "Worker: Request missing required field: hda_path" << std::endl;
         return false;
@@ -72,16 +84,42 @@ bool parse_request(const std::string& message, CookRequest& request)
         return false;
     }
 
-    request.hda_file = std::get<std::string>(hda_path_iter->second);
+    request.hda_file = std::get<FileParameter>(hda_path_iter->second).file_path;
     request.definition_index = std::get<int64_t>(definition_index_iter->second);
-
     paramSet.erase("hda_path");
     paramSet.erase("definition_index");
+
+    // Bind input parameters
+    std::regex input_pattern("^input(\\d+)$");
+    std::smatch match;
+    
+    auto iter = paramSet.begin();
+    while (iter != paramSet.end())
+    {
+        if (!std::regex_match(iter->first, match, input_pattern))
+        {
+            ++iter;
+            continue;
+        }
+
+        if (!std::holds_alternative<FileParameter>(iter->second))
+        {
+            std::cerr << "Worker: Input parameter is not a file parameter: " << iter->first << std::endl;
+            ++iter;
+            continue;
+        }
+
+        int input_index = std::stoi(match[1]);
+        request.inputs[input_index] = std::get<FileParameter>(iter->second).file_path;
+        iter = paramSet.erase(iter);
+    }
+
     request.parameters = paramSet;
 
     std::cerr << "Worker: Parsed cook request " 
               << "HDA: " << request.hda_file << " " 
               << "Definition index: " << request.definition_index << " "
+              << "Inputs: " << request.inputs.size() << " "
               << "Parameters: " << request.parameters.size() << std::endl;
 
     return true;
