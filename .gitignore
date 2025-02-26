@@ -65,5 +65,5 @@ testing/mnt/*.env
 testing/mnt/.env
 testing/.env
 api/helm/aws/registry-access-key.json
-api/app/report.html
 automation/helm/values-images.yaml
+api/app/sql-reports/*

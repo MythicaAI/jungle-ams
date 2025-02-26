@@ -1,19 +1,25 @@
 # pylint: disable=no-member,broad-exception-caught
 
 import asyncio
+import functools
+import inspect
 import logging
+import os
 from collections.abc import AsyncGenerator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from typing import Callable
 from zoneinfo import ZoneInfo
 
+import sqltap
+from config import app_config
 from fastapi import FastAPI, Request
-from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, async_sessionmaker, create_async_engine
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+from ripple.config import ripple_config
+from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.sql import text
 from sqlmodel.ext.asyncio.session import AsyncSession
-
-from config import app_config
-from ripple.config import ripple_config
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +52,9 @@ async def db_connection_lifespan(app: FastAPI):
         echo=False,
         future=True,
         connect_args=connect_args)
+    if app_config().telemetry_enable:
+        SQLAlchemyInstrumentor().instrument(engine=db_engine.sync_engine)
+
 
     log.info("database engine %s, driver: %s",
              db_engine.dialect.name, db_engine.dialect.driver)
@@ -115,20 +124,50 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
     async with db_session_pool(request.app) as db_session:
         yield db_session
 
+def sql_profiler_decorator(func: Callable):
+    """Decorator to profile SQL queries for FastAPI route handlers"""
+    folder_for_reports = "sql-reports/"
+    # Ensure the folder exists
+    if not os.path.exists(folder_for_reports):
+        os.makedirs(folder_for_reports)
 
-def sql_profiler_decorator(func, report_name="report.html"):
-    "Focusing on the SQL profiling aspect"
-    import sqltap
-    def wrapper(*args, **kwargs):
+    @functools.wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        # Start the SQL profiler
         if not ripple_config().mythica_environment == "debug":
-            return func(*args, **kwargs)
+            return await func(*args, **kwargs)
+        profiler = sqltap.start()
         try:
-            profiler = sqltap.start()
-            result = func(*args, **kwargs)
+            # Call the original function
+            result = await func(*args, **kwargs)
+        finally:
+            # Collect and report the SQL statistics
             statistics = profiler.collect()
-            sqltap.report(statistics, report_name)
-        except PermissionError:
-            result = func(*args, **kwargs)
+            try:
+                sqltap.report(statistics, f"{folder_for_reports}{func.__module__}.{func.__name__}.html")
+            except PermissionError:
+                log.error("SQL-query Profiler failed to write report")
         return result
 
-    return wrapper
+    @functools.wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        # Start the SQL profiler
+        if not ripple_config().mythica_environment == "debug":
+            return func(*args, **kwargs)
+        profiler = sqltap.start()
+        try:
+            # Call the original function
+            result = func(*args, **kwargs)
+        finally:
+            # Collect and report the SQL statistics
+            statistics = profiler.collect()
+            try:
+                sqltap.report(statistics, f"{folder_for_reports}{func.__module__}.{func.__name__}.html")
+            except PermissionError:
+                log.error("SQL-query Profiler failed to write report")
+        return result
+
+    if inspect.iscoroutinefunction(func):
+        return async_wrapper
+    else:
+        return sync_wrapper
