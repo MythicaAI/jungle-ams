@@ -1,87 +1,89 @@
 #include "types.h"
 
-#include <UT/UT_JSONParser.h>
+#include <UT/UT_JSONValue.h>
 #include <iostream>
 
 namespace util
 {
 
-bool parse_request(const std::string& message, Request& request)
+bool parse_request(const std::string& message, CookRequest& request)
 {
-    UT_AutoJSONParser parser(message.c_str(), message.size());
-    
-    UT_StringHolder op, hda_file;
-    int64 definition_index = -1;
-    
-    UT_JSONParser::iterator outer_it = parser->beginMap();
-    while (!outer_it.atEnd())
+    // Parse message type
+    UT_JSONValue root;
+    if (!root.parseValue(message) || !root.isMap())
     {
-        UT_StringHolder key;
-        if (!outer_it.getKey(key))
-        {
-            return false;
-        }
-
-        if (key == "op")
-        {
-            if (!parser->parseString(op))
-            {
-                return false;
-            }
-        }
-        else if (key == "data")
-        {
-            UT_JSONParser::iterator data_it = parser->beginMap();
-            while (!data_it.atEnd())
-            {
-                UT_StringHolder data_key;
-                if (!data_it.getKey(data_key))
-                {
-                    return false;
-                }
-
-                if (data_key == "hda_path")
-                {
-                    if (!parser->parseString(hda_file))
-                    {
-                        return false;
-                    }
-                }
-                else if (data_key == "definition_index")
-                {
-                    if (!parser->parseInt(definition_index))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (!parser->skipNextObject())
-                    {
-                        return false;
-                    }
-                }
-                ++data_it;
-            }
-        }
-        else
-        {
-            if (!parser->skipNextObject())
-            {
-                return false;
-            }
-        }
-        ++outer_it;
-    }
-
-    if (hda_file.isEmpty() || definition_index < 0)
-    {
+        std::cerr << "Worker: Failed to parse JSON message" << std::endl;
         return false;
     }
 
-    request.op = op.toStdString();
-    request.hda_file = hda_file.toStdString();
-    request.definition_index = definition_index;
+    const UT_JSONValue* op = root.get("op");
+    if (!op || op->getType() != UT_JSONValue::JSON_STRING || op->getString().toStdString() != "cook")
+    {
+        std::cerr << "Worker: Operation is not cook" << std::endl;
+        return false;
+    }
+
+    const UT_JSONValue* data = root.get("data");
+    if (!data || data->getType() != UT_JSONValue::JSON_MAP)
+    {
+        std::cerr << "Worker: Data is not a map" << std::endl;
+        return false;
+    }
+
+    // Parse parameter set
+    ParameterSet paramSet;
+    for (const auto& [idx, key, value] : data->enumerateMap()) {
+        switch (value.getType()) {
+            case UT_JSONValue::JSON_INT:
+                paramSet[key.toStdString()] = Parameter((int)value.getI());
+                break;
+            case UT_JSONValue::JSON_REAL:
+                paramSet[key.toStdString()] = Parameter((float)value.getF());
+                break;
+            case UT_JSONValue::JSON_STRING:
+                paramSet[key.toStdString()] = Parameter(value.getString().toStdString());
+                break;
+            case UT_JSONValue::JSON_BOOL:
+                paramSet[key.toStdString()] = Parameter(value.getB());
+                break;
+            /*
+            case UT_JSONValue::JSON_MAP:
+                paramSet[key.toStdString()] = Parameter(value.getMap());
+                break;
+            case UT_JSONValue::JSON_ARRAY:
+                paramSet[key.toStdString()] = Parameter(value.getArray());
+                break;
+            */
+        }
+    }
+
+    // Bind to cook request
+    auto hda_path_iter = paramSet.find("hda_path");
+    if (hda_path_iter == paramSet.end() || !std::holds_alternative<std::string>(hda_path_iter->second))
+    {
+        std::cerr << "Worker: Request missing required field: hda_path" << std::endl;
+        return false;
+    }
+
+    auto definition_index_iter = paramSet.find("definition_index");
+    if (definition_index_iter == paramSet.end() || !std::holds_alternative<int>(definition_index_iter->second))
+    {
+        std::cerr << "Worker: Request missing required field: definition_index" << std::endl;
+        return false;
+    }
+
+    request.hda_file = std::get<std::string>(hda_path_iter->second);
+    request.definition_index = std::get<int>(definition_index_iter->second);
+
+    paramSet.erase("hda_path");
+    paramSet.erase("definition_index");
+    request.parameters = paramSet;
+
+    std::cerr << "Worker: Parsed cook request " 
+              << request.hda_file << " " 
+              << request.definition_index << " "
+              << request.parameters.size() << std::endl;
+
     return true;
 }
 

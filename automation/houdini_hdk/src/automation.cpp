@@ -12,7 +12,7 @@
 namespace util
 {
 
-bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
+bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
 {
     const char* output_file = "output.bgeo";
 
