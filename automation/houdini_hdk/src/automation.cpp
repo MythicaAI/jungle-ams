@@ -181,6 +181,7 @@ bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
         writer.error("Failed to find obj network");
         return false;
     }
+    assert(obj->getNchildren() == 0);
 
     // Create geo node
     OP_Network* geo_node = (OP_Network*)obj->createNode("geo", "processor_parent");
@@ -234,6 +235,18 @@ bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
 
     writer.file(output_file);
     return true;
+}
+
+void cleanup_session(MOT_Director* boss)
+{
+    for (int i = boss->getNchildren() - 1; i >= 0; i--)
+    {
+        OP_Network* subnetwork = (OP_Network*)boss->getChild(i);
+        for (int j = subnetwork->getNchildren() - 1; j >= 0; j--)
+        {
+            subnetwork->destroyNode(subnetwork->getChild(j));
+        }
+    }
 }
 
 }
