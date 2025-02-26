@@ -13,7 +13,7 @@
 namespace util
 {
 
-static OP_Node* create_input_node(OP_Network* parent, const std::string& path)
+static OP_Node* create_input_node(OP_Network* parent, const std::string& path, StreamWriter& writer)
 { 
     if (!std::filesystem::exists(path))
     {
@@ -28,7 +28,7 @@ static OP_Node* create_input_node(OP_Network* parent, const std::string& path)
         OP_Node* input_node = parent->createNode("usdimport");
         if (!input_node || !input_node->runCreateScript())
         {
-            std::cerr << "Worker: Failed to create usdimport node for " << path << std::endl;
+            writer.error("Failed to create usdimport node for " + path);
             return nullptr;
         }
 
@@ -42,7 +42,7 @@ static OP_Node* create_input_node(OP_Network* parent, const std::string& path)
         OP_Node* input_node = parent->createNode("obj_importer");
         if (!input_node || !input_node->runCreateScript())
         {
-            std::cerr << "Worker: Failed to create obj_importer node for " << path << std::endl;
+            writer.error("Failed to create obj_importer node for " + path);
             return nullptr;
         }
 
@@ -54,7 +54,7 @@ static OP_Node* create_input_node(OP_Network* parent, const std::string& path)
         OP_Node* input_node = parent->createNode("fbx_archive_import");
         if (!input_node || !input_node->runCreateScript())
         {
-            std::cerr << "Worker: Failed to create fbx_archive_import node for " << path << std::endl;
+            writer.error("Failed to create fbx_archive_import node for " + path);
             return nullptr;
         }
 
@@ -72,7 +72,7 @@ static OP_Node* create_input_node(OP_Network* parent, const std::string& path)
         OP_Node* input_node = parent->createNode("gltf");
         if (!input_node || !input_node->runCreateScript())
         {
-            std::cerr << "Worker: Failed to create gltf node for " << path << std::endl;
+            writer.error("Failed to create gltf node for " + path);
             return nullptr;
         }
 
@@ -83,19 +83,19 @@ static OP_Node* create_input_node(OP_Network* parent, const std::string& path)
     return nullptr;
 }
 
-static void set_inputs(OP_Node* node, const std::map<int, std::string>& inputs)
+static void set_inputs(OP_Node* node, const std::map<int, std::string>& inputs, StreamWriter& writer)
 {
     OP_Network* parent = node->getParent();
 
     for (const auto& [index, path] : inputs)
     {
-        OP_Node* input_node = create_input_node(parent, path);
+        OP_Node* input_node = create_input_node(parent, path, writer);
         if (!input_node)
         {
             input_node = parent->createNode("null");
             if (!input_node || !input_node->runCreateScript())
             {
-                std::cerr << "Worker: Failed to create null node for " << path << std::endl;
+                writer.error("Failed to create null node for " + path);
                 continue;
             }
         }
@@ -199,7 +199,7 @@ bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
     }
 
     // Set the parameters
-    set_inputs(node, request.inputs);
+    set_inputs(node, request.inputs, writer);
     set_parameters(node, request.parameters);
 
     // Cook the node
