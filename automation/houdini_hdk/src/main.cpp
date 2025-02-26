@@ -64,6 +64,8 @@ int theMain(int argc, char *argv[])
         bool result = process_message(message, boss, writer);
 
         writer.state(AutomationState::End);
+
+        util::cleanup_session(boss);
     }
 
     return 0;
