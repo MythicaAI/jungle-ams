@@ -14,7 +14,7 @@ namespace util
 
 bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
 {
-    const char* output_bgeo = "output.bgeo";
+    const char* output_file = "output.bgeo";
 
     // Load the library
     OP_OTLManager& manager = boss->getOTLManager();
@@ -23,7 +23,7 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     int library_index = manager.findLibrary(request.hda_file.c_str());
     if (library_index < 0)
     {
-        std::cerr << "Failed to find library: " << request.hda_file << std::endl;
+        writer.error("Failed to find library: " + request.hda_file);
         return false;
     }
 
@@ -31,14 +31,14 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     OP_OTLLibrary* library = manager.getLibrary(library_index);
     if (!library)
     {
-        std::cerr << "Failed to get library at index " << library_index << std::endl;
+        writer.error("Failed to get library at index " + std::to_string(library_index));
         return false;
     }
 
     int num_definitions = library->getNumDefinitions();
     if (request.definition_index >= num_definitions)
     {
-        std::cerr << "Definition index out of range" << std::endl;
+        writer.error("Definition index out of range: " + std::to_string(request.definition_index));
         return false;
     }
 
@@ -59,13 +59,11 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
         }
     }
 
-    std::cout << "Worker: Cooking node type " << node_type << std::endl;
-
     // Find the root /obj network
     OP_Network* obj = (OP_Network*)boss->findNode("/obj");
     if (!obj)
     {
-        std::cerr << "Failed to find obj network" << std::endl;
+        writer.error("Failed to find obj network");
         return false;
     }
 
@@ -73,7 +71,7 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     OP_Network* geo_node = (OP_Network*)obj->createNode("geo", "processor_parent");
     if (!geo_node || !geo_node->runCreateScript())
     {
-        std::cerr << "Failed to create geo node" << std::endl;
+        writer.error("Failed to create geo node");
         return false;
     }
 
@@ -81,7 +79,7 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     OP_Node* node = geo_node->createNode(node_type.c_str(), "processor");
     if (!node || !node->runCreateScript())
     {
-        std::cerr << "Failed to create node of type: " << node_type << std::endl;
+        writer.error("Failed to create node of type: " + node_type);
         return false;
     }
 
@@ -89,7 +87,7 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     OP_Context context(0.0);
     if (!node->cook(context))
     {
-        std::cerr << "Failed to cook node" << std::endl;
+        writer.error("Failed to cook node");
         return false;
     }
 
@@ -97,27 +95,25 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     SOP_Node* sop = node->castToSOPNode();
     if (!sop)
     {
-        std::cerr << "Node is not a SOP node" << std::endl;
+        writer.error("Node is not a SOP node");
         return false;
     }
 
     const GU_Detail* gdp = sop->getCookedGeo(context);
     if (!gdp)
     {
-        std::cerr << "Failed to get cooked geometry" << std::endl;
+        writer.error("Failed to get cooked geometry");
         return false;
     }
 
     // Save to bgeo
-    if (!gdp->save(output_bgeo, nullptr))
+    if (!gdp->save(output_file, nullptr))
     {
-        std::cerr << "Failed to save bgeo file" << std::endl;
+        writer.error("Failed to save bgeo file");
         return false;
     }
 
-    writer.file(output_bgeo);
-
-    std::cout << "Worker: Successfully saved bgeo file" << std::endl;
+    writer.file(output_file);
 }
 
 }

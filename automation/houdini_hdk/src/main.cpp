@@ -10,15 +10,14 @@
 
 static const int COOK_TIMEOUT_SECONDS = 1;
 
-static void
-usage(const char *program)
+static void usage(const char *program)
 {
     std::cerr << "Usage: " << program << " <read_fd> <write_fd>\n";
-    std::cerr << "Reads JSON messages from read_fd, processes them, writes results to write_fd\n";
+    std::cerr << "Reads requests from read_fd, processes them, streams results to write_fd\n";
     UT_Exit::fail();
 }
 
-bool process_message(const std::string& message, MOT_Director* boss, StreamWriter& writer)
+static bool process_message(const std::string& message, MOT_Director* boss, StreamWriter& writer)
 {
     Request request;
     if (!util::parse_request(message, request))
@@ -36,8 +35,7 @@ bool process_message(const std::string& message, MOT_Director* boss, StreamWrite
     return util::cook(boss, request, writer);
 }
 
-int
-theMain(int argc, char *argv[])
+int theMain(int argc, char *argv[])
 {
     if (argc != 3)
         usage(argv[0]);
