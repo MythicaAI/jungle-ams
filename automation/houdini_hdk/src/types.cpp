@@ -80,9 +80,9 @@ bool parse_request(const std::string& message, CookRequest& request)
     request.parameters = paramSet;
 
     std::cerr << "Worker: Parsed cook request " 
-              << request.hda_file << " " 
-              << request.definition_index << " "
-              << request.parameters.size() << std::endl;
+              << "HDA: " << request.hda_file << " " 
+              << "Definition index: " << request.definition_index << " "
+              << "Parameters: " << request.parameters.size() << std::endl;
 
     return true;
 }

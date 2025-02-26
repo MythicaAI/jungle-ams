@@ -122,7 +122,11 @@ def main():
         test_message = {"op": "cook", 
                         "data": {
                             "hda_path": "test_cube.hda", 
-                            "definition_index": 0
+                            "definition_index": 0,
+                            "test_int": 1,
+                            "test_float": 2.0,
+                            "test_string": "test",
+                            "test_bool": True,
                         }}
         for i in range(3):
             log.info("Starting test %d", i)
