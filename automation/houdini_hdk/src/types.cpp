@@ -76,9 +76,8 @@ bool parse_request(const std::string& message, Request& request)
 
     if (hda_file.isEmpty() || definition_index < 0)
     {
-        std::cerr << "Missing required fields" << std::endl;
         return false;
-    }    
+    }
 
     request.op = op.toStdString();
     request.hda_file = hda_file.toStdString();

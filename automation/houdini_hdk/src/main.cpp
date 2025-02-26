@@ -22,13 +22,13 @@ static bool process_message(const std::string& message, MOT_Director* boss, Stre
     Request request;
     if (!util::parse_request(message, request))
     {
-        std::cerr << "Failed to parse request" << std::endl;
+        writer.error("Failed to parse request");
         return false;
     }
 
     if (request.op != "cook")
     {
-        std::cerr << "Unsupported operation: " << request.op << std::endl;
+        writer.error("Unsupported operation: " + request.op);
         return false;
     }
 
