@@ -114,6 +114,7 @@ bool cook(MOT_Director* boss, Request& request, StreamWriter& writer)
     }
 
     writer.file(output_file);
+    return true;
 }
 
 }
