@@ -15,7 +15,7 @@ from telemetry import configure_telemetry
 if os.getenv("TELEMETRY_ENABLE", "False").lower() == "true":
     configure_telemetry(
         os.getenv("TELEMETRY_ENDPOINT", "localhost:4317"),
-        os.getenv("TELEMETRY_INSECURE", "False") == "True",
+        os.getenv("TELEMETRY_INSECURE", "False").lower() == "true",
     )
 else:
     logging.basicConfig(
