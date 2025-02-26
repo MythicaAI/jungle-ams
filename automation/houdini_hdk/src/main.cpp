@@ -10,13 +10,6 @@
 
 static const int COOK_TIMEOUT_SECONDS = 1;
 
-static void usage(const char *program)
-{
-    std::cerr << "Usage: " << program << " <read_fd> <write_fd>\n";
-    std::cerr << "Reads requests from read_fd, processes them, streams results to write_fd\n";
-    UT_Exit::fail();
-}
-
 static bool process_message(const std::string& message, MOT_Director* boss, StreamWriter& writer)
 {
     Request request;
@@ -38,7 +31,11 @@ static bool process_message(const std::string& message, MOT_Director* boss, Stre
 int theMain(int argc, char *argv[])
 {
     if (argc != 3)
-        usage(argv[0]);
+    {
+        std::cerr << "Usage: " << argv[0] << " <read_fd> <write_fd>\n";
+        std::cerr << "Reads requests from read_fd, processes them, streams results to write_fd\n";
+        return 1;
+    }
 
     StreamReader reader(std::stoi(argv[1]));
     StreamWriter writer(std::stoi(argv[2]));
