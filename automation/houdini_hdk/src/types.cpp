@@ -35,10 +35,10 @@ bool parse_request(const std::string& message, CookRequest& request)
     for (const auto& [idx, key, value] : data->enumerateMap()) {
         switch (value.getType()) {
             case UT_JSONValue::JSON_INT:
-                paramSet[key.toStdString()] = Parameter((int)value.getI());
+                paramSet[key.toStdString()] = Parameter(value.getI());
                 break;
             case UT_JSONValue::JSON_REAL:
-                paramSet[key.toStdString()] = Parameter((float)value.getF());
+                paramSet[key.toStdString()] = Parameter((double)value.getF());
                 break;
             case UT_JSONValue::JSON_STRING:
                 paramSet[key.toStdString()] = Parameter(value.getString().toStdString());
@@ -66,14 +66,14 @@ bool parse_request(const std::string& message, CookRequest& request)
     }
 
     auto definition_index_iter = paramSet.find("definition_index");
-    if (definition_index_iter == paramSet.end() || !std::holds_alternative<int>(definition_index_iter->second))
+    if (definition_index_iter == paramSet.end() || !std::holds_alternative<int64_t>(definition_index_iter->second))
     {
         std::cerr << "Worker: Request missing required field: definition_index" << std::endl;
         return false;
     }
 
     request.hda_file = std::get<std::string>(hda_path_iter->second);
-    request.definition_index = std::get<int>(definition_index_iter->second);
+    request.definition_index = std::get<int64_t>(definition_index_iter->second);
 
     paramSet.erase("hda_path");
     paramSet.erase("definition_index");

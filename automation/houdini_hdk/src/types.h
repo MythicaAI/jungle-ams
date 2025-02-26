@@ -13,13 +13,13 @@ struct FileParameter
 };
 
 using Parameter = std::variant<
-    int,
-    float,
+    int64_t,
+    double,
     std::string,
     bool,
     FileParameter,
-    std::vector<int>,
-    std::vector<float>,
+    std::vector<int64_t>,
+    std::vector<double>,
     std::vector<std::string>,
     std::vector<FileParameter>
 >;
@@ -28,7 +28,7 @@ using ParameterSet = std::map<std::string, Parameter>;
 struct CookRequest
 {
     std::string hda_file;
-    int definition_index;
+    int64_t definition_index;
     std::map<int, std::string> inputs;
     ParameterSet parameters;
 };

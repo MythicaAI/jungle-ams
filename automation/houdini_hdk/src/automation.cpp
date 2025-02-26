@@ -12,6 +12,29 @@
 namespace util
 {
 
+static void set_parameters(OP_Node* node, const ParameterSet& parameters)
+{
+    for (const auto& [key, value] : parameters)
+    {
+        if (std::holds_alternative<int64_t>(value))
+        {
+            node->setInt(key.c_str(), 0, 0.0f, std::get<int64_t>(value));
+        }
+        else if (std::holds_alternative<double>(value))
+        {
+            node->setFloat(key.c_str(), 0, 0.0f, std::get<double>(value));
+        }
+        else if (std::holds_alternative<std::string>(value))
+        {
+            node->setString(std::get<std::string>(value).c_str(), CH_STRING_LITERAL, key.c_str(), 0, 0.0f);
+        }
+        else if (std::holds_alternative<bool>(value))
+        {
+            node->setInt(key.c_str(), 0, 0.0f, std::get<bool>(value) ? 1 : 0);
+        }
+    }
+}
+
 bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
 {
     const char* output_file = "output.bgeo";
@@ -82,6 +105,9 @@ bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
         writer.error("Failed to create node of type: " + node_type);
         return false;
     }
+
+    // Set the parameters
+    set_parameters(node, request.parameters);
 
     // Cook the node
     OP_Context context(0.0);
