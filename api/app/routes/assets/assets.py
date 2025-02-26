@@ -25,6 +25,7 @@ async def log_request_headers(r: Request):
     print(f"{header_str}")
     return "LOGGED"
 
+from db.connection import sql_profiler_decorator
 
 @router.get('/all')
 async def list_all(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
@@ -35,6 +36,7 @@ async def list_all(db_session: AsyncSession = Depends(get_db_session)) -> list[r
 
 
 @router.get('/top')
+@sql_profiler_decorator
 async def list_top(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
     return await repo.top(db_session)
