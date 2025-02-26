@@ -121,7 +121,7 @@ def main():
 
         test_message = {"op": "cook", 
                         "data": {
-                            "hda_path": "test_cube.hda", 
+                            "hda_path": {"file_id": "file_xxx", "file_path": "test_cube.hda"},
                             "definition_index": 0,
                             "test_int": 5,
                             "test_float": 2.0,
