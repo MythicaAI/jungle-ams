@@ -123,6 +123,7 @@ def main():
                         "data": {
                             "hda_path": {"file_id": "file_xxx", "file_path": "test_cube.hda"},
                             "definition_index": 0,
+                            "input0": {"file_id": "file_xxx", "file_path": "cube.usdz"},
                             "test_int": 5,
                             "test_float": 2.0,
                             "test_string": "test",

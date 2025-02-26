@@ -12,6 +12,14 @@
 namespace util
 {
 
+static void set_inputs(OP_Node* node, const std::map<int, std::string>& inputs)
+{
+    for (const auto& [index, path] : inputs)
+    {
+        std::cerr << "Worker: Setting input " << index << " to " << path << std::endl;
+    }
+}
+
 static void set_parameters(OP_Node* node, const ParameterSet& parameters)
 {
     for (const auto& [key, value] : parameters)
@@ -107,6 +115,7 @@ bool cook(MOT_Director* boss, const CookRequest& request, StreamWriter& writer)
     }
 
     // Set the parameters
+    set_inputs(node, request.inputs);
     set_parameters(node, request.parameters);
 
     // Cook the node
