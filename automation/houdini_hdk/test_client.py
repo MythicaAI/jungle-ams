@@ -74,11 +74,12 @@ class HoudiniWorker:
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--executable", required=True, help="Path to executable to run")
+    parser.add_argument("--port", type=int, default=8765, help="Port number for WebSocket connection")
     return parser.parse_args()
 
 async def main():
-    async with HoudiniWorker() as worker:
+    args = parse_args()
+    async with HoudiniWorker(port=args.port) as worker:
         def process_response(response: Any) -> bool:
             completed = response["op"] == "automation" and response["data"] == "end"
             return completed
