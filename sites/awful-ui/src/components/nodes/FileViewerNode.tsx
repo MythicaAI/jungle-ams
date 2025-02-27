@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React,
+{ useState, useEffect, useRef, useCallback, memo } from 'react';
 
 import Split from 'react-split';
 
@@ -21,6 +22,8 @@ import FilePickerModal from '../ux/FilePickerModal'; // <-- The new component
 import { useReactFlow } from '@xyflow/react';
 import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { NodeHeader } from './ux/NodeHeader';
+import BabylonViewer from './viewers/BabylonViewer';
+import O3dViewer from './viewers/O3dViewer';
 interface FileViewerNodeProps {
   id: string;
   selected?: boolean;
@@ -352,6 +355,45 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                         <USDViewer
                           src={fileInfo.url}
                           alt={fileInfo.name}
+                          style={{
+                            height: '100vh',
+                            width: '100vh',
+                            minHeight: '480px',
+                            minWidth: '640px',
+                          }}
+                        />
+                      ) : [
+                          '3dm',
+                          '3ds',
+                          '3mf',
+                          'amf',
+                          'bim',
+                          'brep',
+                          'dae',
+                          'fbx',
+                          'fcstd',
+                          'ifc',
+                          'iges',
+                          'step',
+                          'stl',
+                          'obj',
+                          'off',
+                          'ply',
+                          'wrl'
+                      ].includes(fileInfo.content_type.split('/')[1]) ? (
+                        <O3dViewer
+                          model={[fileInfo.url]}
+                          style={{
+                            height: '100vh',
+                            width: '100vh',
+                            minHeight: '480px',
+                            minWidth: '640px',
+                          }}
+                        />
+                      ) : fileInfo.content_type === 'application/gltf' ||
+                        fileInfo.content_type === 'application/glb' ? (
+                        <BabylonViewer
+                          src={fileInfo.url}
                           style={{
                             height: '100vh',
                             width: '100vh',
