@@ -27,6 +27,7 @@ WORKDIR /worker
 
 # Copy the source and CMake files
 COPY src/ src/
+COPY third_party/ third_party/
 COPY CMakeLists.txt .
 
 # Create build directory and build

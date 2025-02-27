@@ -1,23 +1,30 @@
 cmake_minimum_required(VERSION 3.10)
 project(houdini_worker)
 
-# Set Houdini toolkit path from environment variable
+# Mongoose library
+add_library(mongoose STATIC
+    third_party/mongoose/mongoose.c
+)
+
+target_include_directories(mongoose PUBLIC
+    third_party/mongoose
+)
+
+# Houdini library
 set(CMAKE_PREFIX_PATH $ENV{HFS}/toolkit/cmake)
 
-# Locate Houdini
 find_package(Houdini REQUIRED)
 
-# Gather source files
+# Main executable
 file(GLOB SOURCES "src/*.cpp")
 
-# Add the executable
 set(executable_name houdini_worker)
 add_executable(${executable_name} ${SOURCES})
 
-# Link against Houdini
 target_link_libraries(${executable_name} 
     Houdini 
     HoudiniThirdParty
+    mongoose
 )
 
 # Configure target properties
