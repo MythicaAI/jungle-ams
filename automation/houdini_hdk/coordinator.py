@@ -77,7 +77,7 @@ class HoudiniWorker:
                     completed = process_response(response_data)
                     if completed:
                         return True
-                        
+
                 except asyncio.TimeoutError:
                     log.error("Read timeout while waiting for data")
                     return False
@@ -111,10 +111,11 @@ async def main():
                             "test_string": "test",
                             "test_bool": True,
                         }}
-        
-        log.info("Starting test")
-        success = await worker.send_message(test_message, process_response)
-        log.info("Success: %s", success)
+
+        for i in range(3):
+            log.info("Starting test %d", i)
+            success = await worker.send_message(test_message, process_response)
+            log.info("Success: %s", success)
 
 if __name__ == "__main__":
     asyncio.run(main())

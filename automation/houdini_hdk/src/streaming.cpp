@@ -2,34 +2,6 @@
 #include "streaming.h"
 
 #include <iostream>
-#include <unistd.h>
-
-bool StreamReader::readMessage(std::string& message)
-{
-    message.clear();
-
-    while (true)
-    {
-        size_t newline_pos = m_buffer.find('\n');
-        if (newline_pos != std::string::npos)
-        {
-            message = m_buffer.substr(0, newline_pos);
-            m_buffer.erase(0, newline_pos + 1);
-            return true;
-        }
-
-        char chunk[4096];
-        ssize_t bytes_read = read(m_fd, chunk, sizeof(chunk));
-        if (bytes_read <= 0)
-        {
-            return false;
-        }
-
-        m_buffer.append(chunk, bytes_read);
-    }
-
-    return false;
-}
 
 void StreamWriter::state(AutomationState state)
 {

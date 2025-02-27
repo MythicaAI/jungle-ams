@@ -54,7 +54,7 @@ static void fn_ws(struct mg_connection* c, int ev, void* ev_data)
 
         // Execute automation
         writer.state(AutomationState::Start);
-                
+
         bool result = process_message(message, ctx->boss, writer);
 
         writer.state(AutomationState::End);

@@ -2,18 +2,6 @@
 
 #include <string>
 
-class StreamReader
-{
-public:
-    StreamReader(int fd) : m_fd(fd) {}
-
-    bool readMessage(std::string& message);
-
-private:
-    int m_fd;
-    std::string m_buffer;
-};
-
 enum class AutomationState
 {
     Start,
