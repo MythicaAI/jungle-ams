@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     cmake \
     python3 \
+    python3-websocket \
     mesa-common-dev \
     libglu1-mesa-dev \
     libxi-dev \
