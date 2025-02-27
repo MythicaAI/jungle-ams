@@ -17,6 +17,8 @@ services:
   houdini-worker:
     container_name: houdini
     image: mythica-auto-houdini:latest
+    extra_hosts: 
+      - "host.docker.internal:host-gateway"
     networks:
       - web
       - storage
@@ -30,6 +32,8 @@ services:
   blender-worker:
     container_name: blender
     image: mythica-auto-blender:latest
+    extra_hosts: 
+      - "host.docker.internal:host-gateway"
     networks:
       - web
       - storage
@@ -41,6 +45,8 @@ services:
   workflow-worker:
     container_name: workflow
     image: mythica-auto-workflow:latest
+    extra_hosts: 
+      - "host.docker.internal:host-gateway"
     networks:
       - web
       - storage
