@@ -1,58 +1,44 @@
-import os
-import subprocess
-import select
-import logging
-import json
 import argparse
 import asyncio
+import json
+import logging
+import os
 import websocket
-from pathlib import Path
 from typing import Any
+import random
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(name)s: %(levelname)s: %(message)s'
+    format='%(asctime)s.%(msecs)03d %(name)s(%(process)d): %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S'
 )
 log = logging.getLogger("Coordinator")
 
 class HoudiniWorker:
-    def __init__(self, executable_path: str, port: int = 8765, timeout: float = 60.0):
-        self.executable_path = Path(executable_path)
+    def __init__(self, port: int = 8765, timeout: float = 60.0):
         self.port = port
         self.timeout = timeout
-        self.process = None
         self.websocket = None
 
     async def __aenter__(self):
-        await self._start_process()
+        await self._connect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self._stop_process()
+        await self._disconnect()
         return False
 
-    async def _start_process(self):
-        log.info("Starting subprocess: %s", self.executable_path)
-        self.process = subprocess.Popen(
-            [str(self.executable_path), str(self.port)],
-        )
-        # Wait for server to start
-        await asyncio.sleep(4)
-        log.info("Connecting to websocket")
+    async def _connect(self):
+        log.info("Connecting to worker")
         self.websocket = await asyncio.get_event_loop().run_in_executor(
             None, 
             lambda: websocket.create_connection(f"ws://localhost:{self.port}")
         )
-        log.info("Connected to websocket")
+        log.info("Connection successful")
 
-    async def _stop_process(self):
-        log.info("Shutting down subprocess")
+    async def _disconnect(self):
         if self.websocket:
             await self.websocket.close()
-        if self.process:
-            self.process.terminate()
-            self.process.wait()
-            self.process = None
 
     async def send_message(self, data: Any, process_response) -> bool:
         try:
@@ -92,13 +78,9 @@ def parse_args():
     return parser.parse_args()
 
 async def main():
-    args = parse_args()
-
-    async with HoudiniWorker(args.executable) as worker:
+    async with HoudiniWorker() as worker:
         def process_response(response: Any) -> bool:
             completed = response["op"] == "automation" and response["data"] == "end"
-            if completed:
-                log.info("Received completed response")
             return completed
 
         test_message = {"op": "cook", 
@@ -112,10 +94,11 @@ async def main():
                             "test_bool": True,
                         }}
 
-        for i in range(3):
-            log.info("Starting test %d", i)
+        while True:
+            log.info("Requesting automation")
             success = await worker.send_message(test_message, process_response)
-            log.info("Success: %s", success)
+            log.info("Automation completed")
+            await asyncio.sleep(random.uniform(3, 5))
 
 if __name__ == "__main__":
     asyncio.run(main())

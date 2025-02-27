@@ -16,8 +16,10 @@ cleanup() {
 
 trap cleanup TERM
 
-# Run the actual program
-python3 coordinator.py --executable /run/houdini_worker
+/run/houdini_worker 8765 &
+sleep 5
+python3 test_client.py &
+python3 test_client.py &
 
 # Keep the script running to maintain the license
 while true; do
