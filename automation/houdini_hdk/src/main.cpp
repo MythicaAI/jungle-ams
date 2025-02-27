@@ -26,14 +26,13 @@ static bool process_message(const std::string& message, MOT_Director* boss, Stre
 struct AppContext
 {
     MOT_Director* boss;
-    StreamWriter* writer;
 };
 
-// Mongoose event handler
 static void fn_ws(struct mg_connection* c, int ev, void* ev_data)
 {
     if (ev == MG_EV_HTTP_MSG)
     {
+        std::cout << "Worker: Received new connection" << std::endl;
         struct mg_http_message* hm = (struct mg_http_message*)ev_data;
         mg_ws_upgrade(c, hm, NULL);
     }
@@ -46,15 +45,28 @@ static void fn_ws(struct mg_connection* c, int ev, void* ev_data)
 
         AppContext* ctx = (AppContext*)c->fn_data;
 
-        ctx->writer->state(AutomationState::Start);
-                
-        bool result = process_message(message, ctx->boss, *ctx->writer);
+        // Setup interrupt handler
+        StreamWriter writer(c);
+        InterruptHandler interruptHandler(writer);
+        UT_Interrupt* interrupt = UTgetInterrupt();
+        interrupt->setInterruptHandler(&interruptHandler);
+        interrupt->setEnabled(true);
 
-        ctx->writer->state(AutomationState::End);
+        // Execute automation
+        writer.state(AutomationState::Start);
+                
+        bool result = process_message(message, ctx->boss, writer);
+
+        writer.state(AutomationState::End);
         
+        // Cleanup
+        interrupt->setEnabled(false);
+        interrupt->setInterruptHandler(nullptr);
+
         util::cleanup_session(ctx->boss);
     }
 }
+
 
 int theMain(int argc, char *argv[])
 {
@@ -71,17 +83,11 @@ int theMain(int argc, char *argv[])
     OPsetDirector(boss);
     PIcreateResourceManager();
 
-    StreamWriter writer;
-    InterruptHandler interruptHandler(writer);
-    UT_Interrupt* interrupt = UTgetInterrupt();
-    interrupt->setInterruptHandler(&interruptHandler);
-    interrupt->setEnabled(true);
-
     // Initialize websocket server
     struct mg_mgr mgr;
     mg_mgr_init(&mgr);
     
-    AppContext ctx = { boss, &writer };
+    AppContext ctx = { boss };
 
     std::string listen_addr = std::string("ws://0.0.0.0:") + std::to_string(port);
     mg_http_listen(&mgr, listen_addr.c_str(), fn_ws, &ctx);

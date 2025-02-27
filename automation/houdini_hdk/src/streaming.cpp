@@ -1,3 +1,4 @@
+#include "mongoose.h"
 #include "streaming.h"
 
 #include <iostream>
@@ -54,5 +55,5 @@ void StreamWriter::writeToStream(const std::string& op, const std::string& data)
 {
     std::cout << "Worker: Sending response: " << op << " " << data << std::endl;
     std::string json = "{\"op\":\"" + op + "\",\"data\":\"" + data + "\"}\n";
-    write(m_fd, json.c_str(), json.size());
+    mg_ws_send(m_conn, json.c_str(), json.size(), WEBSOCKET_OP_TEXT);
 }
