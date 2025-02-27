@@ -1,28 +1,14 @@
-from typing import Any, Awaitable, Callable, Iterator
+"""Functions used on server to process messages from the client"""
+from typing import Any, Callable, Iterator
 
 from encoder_cbor import ATTRIBUTE, BEGIN, END, FILE, FLOW, HELLO, LOG, PING_PONG
+from files import FileRef
 from net_buffer import FrameHeader
+from server.automation import ProcessContext
 from server.client import Client
-from files import FileRef, Cache
 
 server_ver_string = "1.0.0"
-
-
-
-def process_generate(client: Client, payload: dict) -> Iterator[bytes]:
-    encoder = client.encoder
-    name = payload.get('process')
-    if not name:
-        yield from encoder.error("missing process name")
-        return
-    gen = c.processors.get(name)
-    if gen is None:
-        yield from encoder.error(f"no process matching {name}")
-        return
-
-    c.depth = c.depth + 1
-    process_context = ProcessContext(base_path=c.base_path, depth=c.depth)
-    client.stack.append(process_context)
+valid_actions = {'commit', 'rollback'}
 
 
 def process_generate_end(client: Client, payload: dict) -> Iterator[bytes]:
@@ -31,17 +17,22 @@ def process_generate_end(client: Client, payload: dict) -> Iterator[bytes]:
     After a BEGIN ATTRIB/FILE . END the processor stack can be evaluated - it
     may be that some fetches are still in process from the block. Allow
     the stream context to finish all fetches that were part of the context before
-    begninng the processor.
+    beginning the processor.
     """
-    g = c.stack[-1]
-    g.depth = 0
-    g.tasks = []
-    g.files.clear()
-    g.args = payload.get('args', {})
-    g.tasks.append(asyncio.create_task(g.fn(g)))
-    c.stack.pop()
-    c.depth = c.depth - 1
-    assert c.depth >= 0
+    if len(client.stack) == 0:
+        yield from client.encoder.error("no context to end")
+        return
+
+    action = payload.get('action')
+    if not action or action not in valid_actions:
+        yield from client.encoder.error(f"end context must have action={valid_actions}")
+        return
+
+    top = client.stack[-1]
+    top.depth = 0
+    top.commit()
+
+    client.stack.pop()
     yield from client.encoder.info("generator end")
 
 
@@ -66,47 +57,71 @@ def process_file(client: Client, payload: dict) -> Iterator[bytes]:
     # yield from encode_file()
 
 
-
 def process_hello(client: Client, payload: Any) -> Iterator[bytes]:
     auth_token = payload.get('auth_token')
     if auth_token:
         client.authorize(auth_token)
     yield from client.encoder.hello(client=f'server-{server_ver_string}')
 
-def process_ping_pong(client: Client, payload: Any) -> Iterator[bytes]
+
+def process_ping_pong(client: Client, payload: Any) -> Iterator[bytes]:
+    time_ms = payload.get('time_ms')
+    client.last_time_ms = time_ms
     yield from client.encoder.ping_pong()
+
 
 def process_begin(client: Client, payload: Any) -> Iterator[bytes]:
     """Process a BEGIN frame"""
     if type(payload) != dict:
-        print("process_generate: from client:", payload)
+        print("client:", client, "begin:", payload)
+    type_name = payload.get('type')
+    factory = client.server.on_begin.get(type_name)
+    if factory:
+        context = factory(client, payload)
+        context.depth = len(client.stack)
+        client.stack.append(context)
+    yield bytes()
 
-    client.server.automations = {
-        'foo': gen_foo,
-        'bar': gen_bar,
-    }
-
-    if 'generate' in payload:
-        yield from process_generate(c.stream_context, payload)
 
 def process_attr(client: Client, payload: Any) -> Iterator[bytes]:
-    yield from client.encoder.info(payload)
+    if not client.stack:
+        yield from client.encoder.error("no context to store attribute")
+        return
+    top: ProcessContext = client.stack[-1]
+    attr_name = payload.get('name')
+    attr_type = payload.get('type')
+    attr_value = payload.get('value')
+    # TODO: validate attribute type and value
+    top.attributes[attr_name] = (attr_type, attr_value)
+    yield bytes()
+
 
 def process_end(client: Client, payload: Any) -> Iterator[bytes]:
     if not client.stack:
-        yield from client.encoder.error("no generator running")
+        yield from client.encoder.error("no active context")
     else:
-        yield from process_generate_end(server, client, payload)
+        yield from process_generate_end(client, payload)
 
-def process_log(client: Client, payload: Any) -> Iterator[bytes]:
+
+def process_log(_: Client, payload: Any) -> Iterator[bytes]:
     print(payload)
-    yield from client.encoder.info(payload)
+    yield bytes()
 
 
-async def process_flow(client: Client, payload: Any) -> Iterator[bytes]:
-    pass
+def process_flow(client: Client, payload: Any) -> Iterator[bytes]:
+    # set the flow control value of the client
+    if payload.get('amount'):
+        flow = int(payload.get('amount', 0))
+        flow = max(flow, 0)
+        flow = min(flow, 100)
+        # only allow the client to increase flow control
+        if flow > client.flow:
+            client.flow = flow
+            # TODO-jrepp: add task to reduce flow
+    yield from client.encoder.flow_control(client.flow, client.flow)
 
 
+# Registered frame type processors
 FrameProcessor = Callable[[Client, Any], Iterator[bytes]]
 frame_processors: dict[int, FrameProcessor] = {
     HELLO: process_hello,
@@ -118,6 +133,7 @@ frame_processors: dict[int, FrameProcessor] = {
     FILE: process_file,
     FLOW: process_flow,
 }
+
 
 def process_frames(
         client: Client,

@@ -76,7 +76,7 @@ class Encoder:
 
     def begin(self, entity_type: str, name: str, depth: int) -> Iterator[bytes]:
         """Encodes a BEGIN frame."""
-        payload = [depth, entity_type, name]  # Version is 1
+        payload = {'depth': depth, 'type': entity_type, 'name': name}  # Version is 1
         yield from self.frames(BEGIN, payload)
 
     def end(self, depth: int) -> Iterator[bytes]:
@@ -85,7 +85,7 @@ class Encoder:
 
     def attr(self, name: str, attr_type: str, value: Any) -> Iterator[bytes]:
         """Encodes an attribute frame."""
-        payload = {"name": name, "type": attr_type, "value": value}
+        payload = {'type': attr_type, 'name': name, 'value': value}
         yield from self.frames(ATTRIBUTE, payload)
 
     def ping_pong(self) -> Iterator[bytes]:
