@@ -23,7 +23,7 @@ enum class AutomationState
 class StreamWriter
 {
 public:
-    StreamWriter(int fd) : m_fd(fd) {}
+    StreamWriter() : m_fd(0) {}
 
     void state(AutomationState state);
     void status(const std::string& message);

@@ -37,12 +37,13 @@ class HoudiniWorker:
             [str(self.executable_path), str(self.port)],
         )
         # Wait for server to start
-        await asyncio.sleep(1)
+        await asyncio.sleep(4)
         # websocket-client is synchronous, need to wrap in asyncio
         self.websocket = await asyncio.get_event_loop().run_in_executor(
             None, 
             lambda: websocket.create_connection(f"ws://localhost:{self.port}")
         )
+        log.info("Connected to websocket")
 
     async def _stop_process(self):
         log.info("Shutting down subprocess")
