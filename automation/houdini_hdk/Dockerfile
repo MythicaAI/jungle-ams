@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     cmake \
     python3 \
+    python3-websocket \
     mesa-common-dev \
     libglu1-mesa-dev \
     libxi-dev \
@@ -27,6 +28,7 @@ WORKDIR /worker
 
 # Copy the source and CMake files
 COPY src/ src/
+COPY third_party/ third_party/
 COPY CMakeLists.txt .
 
 # Create build directory and build

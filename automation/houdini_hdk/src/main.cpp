@@ -1,5 +1,6 @@
 #include "automation.h"
 #include "interrupt.h"
+#include "mongoose.h"
 #include "streaming.h"
 #include "types.h"
 
@@ -22,52 +23,83 @@ static bool process_message(const std::string& message, MOT_Director* boss, Stre
     return util::cook(boss, request, writer);
 }
 
+struct AppContext
+{
+    MOT_Director* boss;
+};
+
+static void fn_ws(struct mg_connection* c, int ev, void* ev_data)
+{
+    if (ev == MG_EV_HTTP_MSG)
+    {
+        std::cout << "Worker: Received new connection" << std::endl;
+        struct mg_http_message* hm = (struct mg_http_message*)ev_data;
+        mg_ws_upgrade(c, hm, NULL);
+    }
+    else if (ev == MG_EV_WS_MSG)
+    {
+        struct mg_ws_message* wm = (struct mg_ws_message*) ev_data;
+        
+        std::string message(wm->data.buf, wm->data.len);
+        std::cout << "Worker: Received message: " << message << std::endl;
+
+        AppContext* ctx = (AppContext*)c->fn_data;
+
+        // Setup interrupt handler
+        StreamWriter writer(c);
+        InterruptHandler interruptHandler(writer);
+        UT_Interrupt* interrupt = UTgetInterrupt();
+        interrupt->setInterruptHandler(&interruptHandler);
+        interrupt->setEnabled(true);
+
+        // Execute automation
+        writer.state(AutomationState::Start);
+
+        bool result = process_message(message, ctx->boss, writer);
+
+        writer.state(AutomationState::End);
+        
+        // Cleanup
+        interrupt->setEnabled(false);
+        interrupt->setInterruptHandler(nullptr);
+
+        util::cleanup_session(ctx->boss);
+    }
+}
+
+
 int theMain(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc != 2)
     {
-        std::cerr << "Usage: " << argv[0] << " <read_fd> <write_fd>\n";
-        std::cerr << "Reads requests from read_fd, processes them, streams results to write_fd\n";
+        std::cerr << "Usage: " << argv[0] << " <port>\n";
         return 1;
     }
 
-    StreamReader reader(std::stoi(argv[1]));
-    StreamWriter writer(std::stoi(argv[2]));
-
+    const int port = std::stoi(argv[1]);
+    
     // Initialize Houdini
     MOT_Director* boss = new MOT_Director("standalone");
     OPsetDirector(boss);
     PIcreateResourceManager();
 
-    InterruptHandler interruptHandler(writer);
-    UT_Interrupt* interrupt = UTgetInterrupt();
-    interrupt->setInterruptHandler(&interruptHandler);
-    interrupt->setEnabled(true);
+    // Initialize websocket server
+    struct mg_mgr mgr;
+    mg_mgr_init(&mgr);
+    
+    AppContext ctx = { boss };
 
-    // Process messages from pipe
+    std::string listen_addr = std::string("ws://0.0.0.0:") + std::to_string(port);
+    mg_http_listen(&mgr, listen_addr.c_str(), fn_ws, &ctx);
+
+    // Event loop
+    std::cout << "Worker: Listening on port " << port << std::endl;
     while (true)
     {
-        std::cout << "Worker: Waiting for message" << std::endl;
-
-        std::string message;
-        if (!reader.readMessage(message))
-        {
-            std::cerr << "Failed to read message" << std::endl;
-            return 1;
-        }
-
-        std::cout << "Worker: Received message: " << message << std::endl;
-
-        writer.state(AutomationState::Start);
-
-        interruptHandler.start_timeout(COOK_TIMEOUT_SECONDS);
-        bool result = process_message(message, boss, writer);
-
-        writer.state(AutomationState::End);
-
-        util::cleanup_session(boss);
+        mg_mgr_poll(&mgr, 1000);
     }
 
+    mg_mgr_free(&mgr);
     return 0;
 }
 

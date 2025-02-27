@@ -4,6 +4,8 @@ import select
 import logging
 import json
 import argparse
+import asyncio
+import websocket
 from pathlib import Path
 from typing import Any
 
@@ -14,93 +16,73 @@ logging.basicConfig(
 log = logging.getLogger("Coordinator")
 
 class HoudiniWorker:
-    def __init__(self, executable_path: str, timeout: float = 60.0):
+    def __init__(self, executable_path: str, port: int = 8765, timeout: float = 60.0):
         self.executable_path = Path(executable_path)
+        self.port = port
         self.timeout = timeout
         self.process = None
-        self.parent_to_child_read = None
-        self.parent_to_child_write = None
-        self.child_to_parent_read = None
-        self.child_to_parent_write = None
+        self.websocket = None
 
-    def __enter__(self):
-        self._start_process()
+    async def __aenter__(self):
+        await self._start_process()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._stop_process()
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self._stop_process()
         return False
 
-    def _start_process(self):
+    async def _start_process(self):
         log.info("Starting subprocess: %s", self.executable_path)
-        
-        self.parent_to_child_read, self.parent_to_child_write = os.pipe()
-        self.child_to_parent_read, self.child_to_parent_write = os.pipe()
-
         self.process = subprocess.Popen(
-            [str(self.executable_path),
-             str(self.parent_to_child_read),
-             str(self.child_to_parent_write)],
-            pass_fds=(self.parent_to_child_read, self.child_to_parent_write)
+            [str(self.executable_path), str(self.port)],
         )
+        # Wait for server to start
+        await asyncio.sleep(4)
+        log.info("Connecting to websocket")
+        self.websocket = await asyncio.get_event_loop().run_in_executor(
+            None, 
+            lambda: websocket.create_connection(f"ws://localhost:{self.port}")
+        )
+        log.info("Connected to websocket")
 
-        os.close(self.parent_to_child_read)
-        os.close(self.child_to_parent_write)
-
-    def _stop_process(self):
+    async def _stop_process(self):
         log.info("Shutting down subprocess")
-        os.close(self.parent_to_child_write)
-        os.close(self.child_to_parent_read)
+        if self.websocket:
+            await self.websocket.close()
         if self.process:
             self.process.terminate()
             self.process.wait()
             self.process = None
 
-    def send_message(self, data: Any, process_response) -> bool:
-        """Sends and receives a message with ndjson format to subprocess"""
+    async def send_message(self, data: Any, process_response) -> bool:
         try:
-            # Send message to subprocess
             log.debug("Sending message: %s", data)
-            message = json.dumps(data) + "\n"
-            os.write(self.parent_to_child_write, message.encode())
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: self.websocket.send(json.dumps(data))
+            )
 
-            # Read response stream until response is received
-            buffer = ""
             while True:
-                ready, _, _ = select.select([self.child_to_parent_read], [], [], self.timeout)
-                if not ready:
+                try:
+                    message = await asyncio.wait_for(
+                        asyncio.get_event_loop().run_in_executor(
+                            None,
+                            self.websocket.recv
+                        ),
+                        timeout=self.timeout
+                    )
+                    response_data = json.loads(message)
+                    log.debug("Received response: %s", response_data)
+                    
+                    completed = process_response(response_data)
+                    if completed:
+                        return True
+
+                except asyncio.TimeoutError:
                     log.error("Read timeout while waiting for data")
                     return False
 
-                chunk = os.read(self.child_to_parent_read, 4096).decode()
-                if not chunk:
-                    log.error("Connection closed")
-                    return False
-
-                buffer += chunk
-
-                # Process all complete messages in buffer
-                while True:
-                    newline_idx = buffer.find('\n')
-                    if newline_idx < 0:
-                        break
-
-                    message = buffer[:newline_idx]
-                    buffer = buffer[newline_idx + 1:]
-
-                    try:
-                        response_data = json.loads(message)
-                    except json.JSONDecodeError:
-                        log.error("Invalid JSON response")
-                        return False
-
-                    log.debug("Received response: %s", response_data)
-                    completed = process_response(response_data)
-                    if completed:
-                        assert(len(buffer) == 0)
-                        return True
-
-        except (OSError, IOError) as e:
+        except Exception as e:
             log.error("Communication error: %s", e)
             return False
 
@@ -109,14 +91,14 @@ def parse_args():
     parser.add_argument("--executable", required=True, help="Path to executable to run")
     return parser.parse_args()
 
-def main():
+async def main():
     args = parse_args()
 
-    with HoudiniWorker(args.executable) as worker:
+    async with HoudiniWorker(args.executable) as worker:
         def process_response(response: Any) -> bool:
             completed = response["op"] == "automation" and response["data"] == "end"
             if completed:
-                log.info("Recieved completed response")
+                log.info("Received completed response")
             return completed
 
         test_message = {"op": "cook", 
@@ -129,10 +111,11 @@ def main():
                             "test_string": "test",
                             "test_bool": True,
                         }}
-        for i in range(1):
+
+        for i in range(3):
             log.info("Starting test %d", i)
-            success = worker.send_message(test_message, process_response)
+            success = await worker.send_message(test_message, process_response)
             log.info("Success: %s", success)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
