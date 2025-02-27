@@ -56,7 +56,7 @@ async def send_periodic_updates(
     This demonstrates using a background task that keeps running
     until the client disconnects.
     """
-    while not client.closed:
+    while not client.stopped:
         try:
             client.o.append_with(client.encoder.info("periodic update"))
             await asyncio.sleep(interval)

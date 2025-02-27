@@ -69,6 +69,11 @@ class Client:
             if self.tasks and asyncio.current_task() in self.tasks:
                 self.tasks.remove(asyncio.current_task())
 
+    @property
+    def stopped(self):
+        """Check if this client is stopped."""
+        return self._stopped
+
     async def stop(self):
         """Close the client connection and cancel all tasks."""
         if self._stopped:

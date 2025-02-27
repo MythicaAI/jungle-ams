@@ -1,0 +1,27 @@
+[project]
+name = "scenetalk"
+version = "0.1.0"
+description = "Protocol library for communicating the SceneTalk protocol"
+authors = [
+    { name = "Jacob Repp", email = "jacobrepp@gmail.com" }
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.poetry.dependencies]
+cbor2 = "^5.6.5"
+pathspec = "^0.12.1"
+httpx-ws = "^0.7.1"
+fastapi = "^0.115.9"
+httpx = "^0.28.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+hexdump = "^3.3"
+euclid = "^1.2"
+trimesh = "^4.6.4"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
