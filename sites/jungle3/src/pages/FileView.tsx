@@ -8,6 +8,7 @@ import { useParams } from "react-router-dom";
 import { useStatusStore } from "@store/statusStore";
 import LitegraphViewer from "@components/LitegraphViewer";
 import { useGetFile } from "@queries/files";
+import BabylonViewer from "@components/BabylonViewer/BabylonViewer";
 
 interface FileViewProps {
   file_id?: string;
@@ -36,12 +37,27 @@ export const FileView = (props: FileViewProps) => {
     ""
   );
 
-  const isSpecialFile = file?.name && /^.*\.litegraph\.json$/.test(file.name);
 
-  const specialFileView = isSpecialFile ? (
+  const specialFileView = file ? (
     <Box style={{ height: "100%", width: "100%" }}>
-      <h2>Network: {file.name}</h2>
-      <LitegraphViewer url={file.url} />
+      {file?.name && /^.*\.litegraph\.json$/.test(file.name) ? (
+        <>
+        <h2>Network: {file.name}</h2>
+        <LitegraphViewer url={file.url} />
+      </>
+      ) : file.content_type === 'application/gltf' ||
+        file.content_type === 'application/glb' ? (
+        <BabylonViewer
+          src={file.url}
+          style={{
+            height: '100vh',
+            width: '100vh',
+            minHeight: '480px',
+            minWidth: '640px',
+          }}
+        />
+      ):<></>}
+    
     </Box>
   ) : (
     <Box>{fileHeader}</Box>
