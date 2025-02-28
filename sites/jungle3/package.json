@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
+    "@babylonjs/core": "^7.51.1",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@fontsource/inter": "^5.0.18",
@@ -56,6 +57,7 @@
     "@babel/preset-env": "^7.24.7",
     "@babel/preset-react": "^7.24.7",
     "@babel/preset-typescript": "^7.24.7",
+    "@babylonjs/viewer": "^7.51.1",
     "@chromatic-com/storybook": "^1.6.1",
     "@storybook/addon-actions": "^8.2.1",
     "@storybook/addon-essentials": "^8.2.1",
