@@ -48,8 +48,6 @@ jobs:
               - 'api/canary/**'
             sites/jungle3/:
               - 'sites/jungle3/**'
-            sites/editor/:
-              - 'sites/editor/**'
             sites/awful-ui/:
               - 'sites/awful-ui/**'
 
