@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo } from 'react';
 import { JSONSchema, JSONSchemaProperty } from '../../../types/JSONSchema';
-import { dictionary, FileParamType } from '../../../types/Automation';
+import { FileParamType, dictionary } from '../../../types/Automation';
 import { Input } from '@mui/joy';
 
 interface AutomationInputProps {

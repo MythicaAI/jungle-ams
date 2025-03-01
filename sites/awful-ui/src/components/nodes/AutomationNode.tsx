@@ -11,9 +11,9 @@ import AutomationOutputs from './automationParms/AutomationOutputs';
 
 import {
   AutomationScript,
-  dictionary,
   ExecutionData,
   FileParamType,
+  dictionary
 } from '../../types/Automation';
 import { NodeState } from '../../types/AwfulFlow';
 import { JSONSchema } from '../../types/JSONSchema';

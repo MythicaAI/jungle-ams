@@ -2,6 +2,11 @@ import { JSONSchema } from './JSONSchema';
 import { NodeState } from "./AwfulFlow";
 import { GetFileResponse } from './MythicaApi';
 
+
+export type dictionary = {
+    [key: string]: unknown;
+};
+
 export type ScriptAutomationTask = AutomationTask & {
     script: string
 }
@@ -30,10 +35,6 @@ export type AutomationSpec = {
 
 export type WorkerAutomations = {
     [worker: string]: AutomationTask[];
-};
-
-export type dictionary = {
-    [key: string]: unknown;
 };
 
 export type ExecutionData = {

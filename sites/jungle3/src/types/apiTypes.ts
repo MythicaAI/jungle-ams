@@ -1,3 +1,5 @@
+import { dictionary } from "houdini-ui";
+
 export type API_ID = string;
 export type ISOTime = string;
 
@@ -186,4 +188,38 @@ export interface DownloadInfoResponse {
 export interface SessionStartAuth0Request {
   access_token: string;
   user_id: string;
+}
+
+export type AutomationRunRequest = {
+  correlation: string;
+  channel: string;
+  path: string;
+  auth_token: string;
+  data: dictionary
+}
+
+export type AutomationResponse = {
+  result: dictionary;
+}
+
+export type HDAInterfaceResponse = AutomationResponse & {
+  result: {
+    node_types: [
+      {
+        root: boolean;
+        subnet: string;
+        help: string;
+        inputs: number;
+        outputs: number;
+        code: string;
+        category: string;
+        namespace: string;
+        name: string;
+        version: string;
+        type: string;
+        description: string;
+      }
+    ];
+    [key: string]: unknown;
+  };
 }
