@@ -78,11 +78,6 @@ IMAGES = {
             'NODE_ENV': NODE_ENV,
         }
     },
-    'sites/editor': {
-        'buildargs': {
-            'NODE_ENV': NODE_ENV,
-        }
-    },
     'sites/awful-ui': {
         'buildargs': {
             'NODE_ENV': NODE_ENV,
@@ -119,7 +114,6 @@ IMAGES = {
 SITE_DATA = {
     'sites/jungle3',
     'sites/awful-ui',
-    'sites/editor',
 }
 
 WEB_SERVING = {
