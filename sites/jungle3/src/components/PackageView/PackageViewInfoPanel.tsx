@@ -10,18 +10,22 @@ import {
   AccordionDetails,
   AccordionGroup,
   AccordionSummary,
+  Button,
 } from "@mui/joy";
 import {
   LucideGitCommitVertical,
   LucidePackage,
   LucideFile,
+  LucideChevronRight,
 } from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
 ) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const convertCommitRefToLink = (ref: string) => {
     if (ref && ref.startsWith("git@github.com")) {
       const site_user_path = ref.split(":");
@@ -76,6 +80,17 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
 
   return (
     <Stack gap="10px">
+      <Button
+        variant="outlined"
+        color="neutral"
+        sx={{ width: "fit-content", alignSelf: "end", pr: "10px" }}
+        endDecorator={<LucideChevronRight width="20px" height="20px" />}
+        onClick={() => {
+          navigate(`${location.pathname}/jobs`);
+        }}
+      >
+        Visit automations
+      </Button>
       <Card>
         <Stack>
           <Stack direction={"row"} alignItems={"center"} gap={"8px"}>

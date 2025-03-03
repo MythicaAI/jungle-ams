@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@services/api";
 import { PackagesApiPath, PackagesQuery } from "./enums";
 import { AssetCreateRequest, AssetVersionResponse } from "types/apiTypes";
+import type { JobDefinition, JobDetails } from "./types";
 
 export const useGetOwnedPackages = () => {
   return useQuery<AssetVersionResponse[]>({
@@ -101,6 +102,66 @@ export const useDeleteAsset = () => {
     },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: [PackagesQuery.OWNED] });
+    },
+  });
+};
+
+export const useGetJobDefinition = (assetId: string, version: string[]) => {
+  return useQuery<JobDefinition[]>({
+    queryKey: [PackagesQuery.JOBS, `${assetId}-${version}`],
+    queryFn: async () =>
+      await api.get({
+        path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}${PackagesApiPath.BY_ASSET}/${assetId}${PackagesApiPath.VERSIONS}/${version[0]}/${version[1]}/${version[2]}`,
+      }),
+    enabled: !!(assetId && version),
+  });
+};
+
+export const useGetJobsDetailsByAsset = (
+  assetId: string,
+  version: string[],
+) => {
+  return useQuery<JobDetails[]>({
+    queryKey: [PackagesQuery.JOBS_DETAILS, `${assetId}-${version}`],
+    queryFn: async () =>
+      await api.get({
+        path: `${PackagesApiPath.JOBS}${PackagesApiPath.BY_ASSET}/${assetId}${PackagesApiPath.VERSIONS}/${version[0]}/${version[1]}/${version[2]}`,
+      }),
+    enabled: !!(assetId && version),
+    refetchInterval: 10000,
+  });
+};
+
+export const useGetJobDefinitionById = (jobDefId: string) => {
+  return useQuery<JobDefinition>({
+    queryKey: [PackagesQuery.JOB_DEFS, jobDefId],
+    queryFn: async () =>
+      await api.get({
+        path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}/${jobDefId}`,
+      }),
+    enabled: !!jobDefId,
+  });
+};
+
+export const useRunJob = (assetId: string, version: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (form: {
+      job_def_id: string;
+      params: {
+        [key: string]: any;
+      };
+    }) => {
+      return await api.post({
+        path: `${PackagesApiPath.JOBS}`,
+        body: form,
+      });
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({
+        queryKey: [PackagesQuery.JOBS_DETAILS, `${assetId}-${version}`],
+      });
     },
   });
 };
