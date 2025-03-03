@@ -2,15 +2,16 @@ import logging
 import os
 import re
 import tempfile
+from typing import Optional
 
 import hou
 from mythica.network import RampBasis
 from opentelemetry import trace
 from pydantic import Field
+
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import FileParameter, ParameterSet
-from ripple.models.streaming import OutputFiles, Error
-from typing import Optional
+from ripple.models.streaming import Error, OutputFiles
 
 tracer = trace.get_tracer(__name__)
 logging.basicConfig(
@@ -104,7 +105,7 @@ def create_inputs(asset, geo, params: dict):
             # Handle OBJ files
             input_node = geo.createNode('obj_importer')
             input_node.parm('sObjFile').set(input_file)
-            
+
         elif file_ext == '.fbx':
             # Handle FBX files
             input_node = geo.createNode('fbx_archive_import')
@@ -154,7 +155,7 @@ def export_image(asset, working_dir: str, output_file_name: str):
     rop_image.parm("execute").pressButton()
     log.debug("Exporting image completed")
 
-    return [ output_file_path ]
+    return [output_file_path]
 
 
 def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str):
@@ -243,7 +244,13 @@ def generate_mesh_impl(
 
     # Set parms
     log.debug("Applying parameters")
-    apply_params(asset, params)
+    try:
+        apply_params(asset, params)
+    except hou.Error as e:
+        log.exception("Parameter application failed", exc_info=e)
+        responder.result(Error(error=str(e)))
+        raise
+
     log.debug("Creating inputs")
     create_inputs(asset, geo, params)
     log.debug("Setting up scene completed")
