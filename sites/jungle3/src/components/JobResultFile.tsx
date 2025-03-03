@@ -19,13 +19,15 @@ const JobResultFile: React.FC<{
     <Stack direction="row" alignItems="center" gap="8px" mb="8px">
       {isFinished && <Typography>{data?.name}</Typography>}
       {isError && <Typography>Error</Typography>}
-      {progress < 100 && !isError && <Typography>In progress</Typography>}
-      {!isError &&
-        (isFinished ? (
-          <DownloadButton icon={<LucideDownload />} file_id={id} />
-        ) : (
+      {progress < 100 && !isError && (
+        <>
+          <Typography>In progress</Typography>
           <CircularProgress size="sm" determinate value={progress} />
-        ))}
+        </>
+      )}
+      {!isError && isFinished && (
+        <DownloadButton icon={<LucideDownload />} file_id={id} />
+      )}
     </Stack>
   );
 };

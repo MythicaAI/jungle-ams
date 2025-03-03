@@ -79,6 +79,11 @@ export const RenderAutomationParam = ({
             sx={{ width: "100%" }}
             type="number"
             defaultValue={defaultValue}
+            slotProps={{
+              input: {
+                step: 0.01,
+              },
+            }}
             {...formState.register(id, {
               min: {
                 value: min as number,
