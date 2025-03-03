@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 import sys
 from datetime import datetime, timezone
@@ -425,7 +426,7 @@ async def create_result(
     if req_data.result_data:
         span.set_attributes(req_data.result_data)
     span.set_attribute("job.result.time", datetime.now(timezone.utc).isoformat())
-    job_result_seq = job_result.inserted_primary_key[0]
+    job_result_seq = job_result.inserted_primary_key[1]
     await db_session.commit()
     return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
 
@@ -562,8 +563,13 @@ async def resolve_jobs_from_job_definitions(
     if not results:
         return []
 
+    jobs_dict = defaultdict(list)
+    for job, job_result in results:
+        jobs_dict[job.job_seq].append(job_result)
+
     jobs = []
-    for job, results in results:
+    for job_seq, job_results in jobs_dict.items():
+        job = next(job for job, _ in results if job.job_seq == job_seq)
         jobs.append(
             ExtendedJobResultResponse(
                 job_id=job_seq_to_id(job.job_seq),
@@ -578,8 +584,8 @@ async def resolve_jobs_from_job_definitions(
                         job_result_id=job_result_seq_to_id(job_result.job_result_seq),
                         **job_result.model_dump(),
                     )
-                    for job_result in results
-                ] if results else None,
+                    for job_result in job_results if job_result is not None
+                ] if job_results else None,
             )
         )
 

@@ -560,6 +560,34 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
         assert single_definition.job_def_id in job_ids_job_def_ids.values()
         assert single_definition.source.asset_id == asset_id
 
+    # Add two results for each job
+    job_result_ids_by_job = {}
+    for job_id in job_ids_job_def_ids.keys():
+        r = client.post(f'{api_base}/jobs/results/{job_id}',
+                        json={
+                            'created_in': 'houdini-worker',
+                            'result_data': {
+                                'progress': 0,
+                            }
+                        },
+                        headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+        o = munchify(r.json())
+        assert 'job_result_id' in o
+        job_result_ids_by_job[job_id] = [o.job_result_id]
+        r = client.post(f'{api_base}/jobs/results/{job_id}',
+                        json={
+                            'created_in': 'houdini-worker',
+                            'result_data': {
+                                'progress': 100,
+                            }
+                        },
+                        headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+        o = munchify(r.json())
+        assert 'job_result_id' in o
+        job_result_ids_by_job[job_id].append(o.job_result_id)
+    
     # Test job list for asset version
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
@@ -573,3 +601,5 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
         assert single_job.params['size'] == 5.0
         assert single_job.completed == None
         assert single_job.input_files == None
+        for jor_res in single_job.results:
+            assert jor_res.job_result_id in job_result_ids_by_job[job_id]
