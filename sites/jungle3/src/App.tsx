@@ -8,6 +8,7 @@ import { CookieConsentBanner } from "@components/CookieConsentBanner";
 import { useOnboarding } from "@hooks/useOnboarding";
 import { ProductTour } from "@components/ProductTour";
 import { PrivateRoute } from "@components/PrivateRoute";
+import { PackageJobs } from "@pages/PackageJobs";
 import "./styles/App.css";
 
 const Dashboard = lazy(() => lazyRetry(() => import("@pages/Dashboard")));
@@ -69,12 +70,17 @@ const App: React.FC = () => {
             path="assets/:asset_id/versions/:version"
             element={<AssetEditWrapper />}
           />
+
           <Route path="orgs" element={<PrivateRoute component={OrgsList} />} />
           <Route path="logout" element={<Logout />} />
           <Route path="files/:file_id" element={<FileViewWrapper />} />
           <Route
             path="package-view/:asset_id/versions/:version_id"
             element={<PackageViewWrapper />}
+          />
+          <Route
+            path="package-view/:asset_id/versions/:version_id/jobs"
+            element={<PackageJobs />}
           />
           <Route path="quick-setup" element={<QuickSetup />} />
           <Route path="welcome" element={<Welcome />} />

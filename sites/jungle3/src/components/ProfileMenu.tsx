@@ -82,11 +82,12 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ name }) => {
         />
       </MenuButton>
       <Menu placement="bottom-end">
-        {NAV_LINKS.map((navItem) => (
+        {NAV_LINKS.map((navItem, idx) => (
           <LinkMenuItem
             handleNavigate={handleNavigate}
             to={navItem.to}
             isActive={location.pathname === navItem.to}
+            key={idx}
           >
             {navItem.icon}
             {t(navItem.translation)}
