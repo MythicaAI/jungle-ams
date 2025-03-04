@@ -6,52 +6,6 @@ settings:
 
 importers:
 
-  ../libs/typescript/houdini-ui:
-    dependencies:
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
-      uuid:
-        specifier: ^11.1.0
-        version: 11.1.0
-      vite-plugin-dts:
-        specifier: ^4.5.1
-        version: 4.5.1(@types/node@20.17.21)(rollup@4.34.8)(typescript@5.7.3)(vite@6.2.0(@types/node@20.17.21))
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.21.0
-        version: 9.21.0
-      '@types/react':
-        specifier: ^19.0.10
-        version: 19.0.10
-      '@types/react-dom':
-        specifier: ^19.0.4
-        version: 19.0.4(@types/react@19.0.10)
-      '@vitejs/plugin-react':
-        specifier: ^4.3.4
-        version: 4.3.4(vite@6.2.0(@types/node@20.17.21))
-      eslint-plugin-react-hooks:
-        specifier: ^5.1.0
-        version: 5.2.0(eslint@8.57.1)
-      eslint-plugin-react-refresh:
-        specifier: ^0.4.19
-        version: 0.4.19(eslint@8.57.1)
-      globals:
-        specifier: ^15.15.0
-        version: 15.15.0
-      typescript:
-        specifier: ~5.7.2
-        version: 5.7.3
-      typescript-eslint:
-        specifier: ^8.24.1
-        version: 8.25.0(eslint@8.57.1)(typescript@5.7.3)
-      vite:
-        specifier: ^6.2.0
-        version: 6.2.0(@types/node@20.17.21)
-
   awful-ui:
     dependencies:
       '@babylonjs/core':
@@ -80,7 +34,7 @@ importers:
         version: 1.8.1
       houdini-ui:
         specifier: workspace:*
-        version: link:../../libs/typescript/houdini-ui
+        version: link:../libs/houdini-ui
       jwt-decode:
         specifier: ^4.0.0
         version: 4.0.0
@@ -207,7 +161,7 @@ importers:
         version: 11.18.2(@emotion/is-prop-valid@1.3.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       houdini-ui:
         specifier: workspace:*
-        version: link:../../libs/typescript/houdini-ui
+        version: link:../libs/houdini-ui
       i18next:
         specifier: ^23.16.0
         version: 23.16.8
@@ -422,6 +376,52 @@ importers:
       vite-tsconfig-paths:
         specifier: ^5.0.1
         version: 5.1.4(typescript@5.7.3)(vite@5.4.14(@types/node@20.17.21))
+
+  libs/houdini-ui:
+    dependencies:
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
+      vite-plugin-dts:
+        specifier: ^4.5.1
+        version: 4.5.1(@types/node@20.17.21)(rollup@4.34.8)(typescript@5.7.3)(vite@6.2.0(@types/node@20.17.21))
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.21.0
+        version: 9.21.0
+      '@types/react':
+        specifier: ^19.0.10
+        version: 19.0.10
+      '@types/react-dom':
+        specifier: ^19.0.4
+        version: 19.0.4(@types/react@19.0.10)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.4
+        version: 4.3.4(vite@6.2.0(@types/node@20.17.21))
+      eslint-plugin-react-hooks:
+        specifier: ^5.1.0
+        version: 5.2.0(eslint@8.57.1)
+      eslint-plugin-react-refresh:
+        specifier: ^0.4.19
+        version: 0.4.19(eslint@8.57.1)
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
+      typescript:
+        specifier: ~5.7.2
+        version: 5.7.3
+      typescript-eslint:
+        specifier: ^8.24.1
+        version: 8.25.0(eslint@8.57.1)(typescript@5.7.3)
+      vite:
+        specifier: ^6.2.0
+        version: 6.2.0(@types/node@20.17.21)
 
 packages:
 
