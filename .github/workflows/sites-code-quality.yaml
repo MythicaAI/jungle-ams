@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'sites/**'
+      - '.github/workflows/sites-code-quality.yaml'
 
 defaults:
   run:
