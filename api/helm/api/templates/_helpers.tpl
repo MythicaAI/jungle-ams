@@ -1,4 +1,4 @@
-{{/*
+j{{/*
 Expand the name of the chart.
 */}}
 {{- define "api.name" -}}

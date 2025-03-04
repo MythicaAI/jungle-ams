@@ -4,11 +4,11 @@ import axios from 'axios';
 import { NodeState } from '../types/AwfulFlow';
 import useMythicaApi from '../hooks/useMythicaApi'; // Import AuthContext to access apiKey
 import {
-  dictionary,
   WorkerAutomations,
   ExecutionData,
   AutomationTask,
   AutomationSpec,
+  dictionary
 } from '../types/Automation';
 import { AutomationContext } from '../hooks/useAutomation';
 import { AutomationScript } from '../types/Automation';

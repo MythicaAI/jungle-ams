@@ -6,6 +6,8 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
+    "baseUrl": ".",
+
     "paths": {
       "@components/*": ["./src/components/*"],
       "@lib/*": ["./src/lib/*"],
@@ -15,7 +17,8 @@
       "@services/*": ["./src/services/*"],
       "@store/*": ["./src/stores/*"],
       "@assets/*": ["./src/assets/*"],
-      "types/*": ["./src/types/*"]
+      "types/*": ["./src/types/*"],
+      "houdini-ui": ["../libs/houdini-ui/src"]
     },
 
     /* Bundler mode */

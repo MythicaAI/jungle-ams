@@ -1,0 +1,43 @@
+name: sites-code-quality
+
+on:
+  push:
+    paths:
+      - 'sites/**'
+      - '.github/workflows/sites-code-quality.yaml'
+
+defaults:
+  run:
+    working-directory: sites/
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'pnpm'
+          cache-dependency-path: sites/pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install
+
+      - name: Lint awful-ui
+        working-directory: sites/awful-ui
+        run: pnpm run lint
+
+      - name: Lint jungle3
+        working-directory: sites/jungle3
+        run: pnpm run lint
+
+      - name: Test jungle3
+        working-directory: sites/jungle3
+        run: pnpm run test

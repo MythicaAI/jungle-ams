@@ -5,38 +5,29 @@ name: web
 # storage tier services. You can run this compose set with -d (--detach)
 #
 services:
-  jungle3:
-    container_name: jungle3
-    image: mythica-jungle3-build:latest
+  sites:
+    container_name: sites
+    image: mythica-sites-build:latest
     volumes:
       - site-shared-publish:/mnt/publish
     environment:
-      PUBLISH_PATH: /mnt/publish/jungle3
+      PUBLISH_PATH: /mnt/publish
       VITE_API_BASE_URL: http://localhost:15555/v1
       VITE_IMAGES_BASE_URL: http://localhost:8080/images
       VITE_AUTH0_DOMAIN: dev-dtvqj0iuc5rnb6x2.us.auth0.com
       VITE_AUTH0_CLIENT_ID: 4CZhQWoNm1WH8l8042LeF38qHrUTR2ax
       VITE_AUTH0_AUDIENCE: http://localhost:15555/v1
       VITE_AUTH0_REDIRECT_URL: http://localhost:8080
-
-  awful:
-    container_name: awful
-    image: mythica-awful-ui-build:latest
-    volumes:
-      - site-shared-publish:/mnt/publish
-    environment:
-      PUBLISH_PATH: /mnt/publish/awful
+      VITE_MYTHICA_API_URL: http://localhost:8080/v1
       VITE_AWFUL_WORKERS: houdini,blender,workflow
       VITE_AWFUL_SCRIPT_PATH: /mythica/script
       VITE_AWFUL_SCRIPT_INTERFACE_PATH: /mythica/script/interface
-      VITE_MYTHICA_API_URL: http://localhost:8080/v1
       VITE_AWFUL_REST_URL: http://localhost:8080/v1/automation/run
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
     depends_on:
-      - jungle3
-      - awful
+      - sites
       - app
       - otel-collector
     ports:

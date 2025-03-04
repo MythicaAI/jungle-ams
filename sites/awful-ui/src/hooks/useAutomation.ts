@@ -1,6 +1,7 @@
 // src/context/AutomationContext.tsx
 import { useContext } from 'react';
-import { AutomationTask, dictionary, ExecutionData, WorkerAutomations, AutomationSpec, AutomationScript } from '../types/Automation';
+import { AutomationTask, ExecutionData, WorkerAutomations, AutomationSpec, AutomationScript } from '../types/Automation';
+import { dictionary } from '../types/Automation';
 import { createContext } from 'react';
 
 type AutomationContextType = {

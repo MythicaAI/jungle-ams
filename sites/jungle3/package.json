@@ -51,7 +51,8 @@
     "sortablejs": "^1.15.2",
     "universal-cookie": "^7.1.4",
     "uuid": "^9.0.1",
-    "zustand": "^4.5.4"
+    "zustand": "^4.5.4",
+    "houdini-ui": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",
