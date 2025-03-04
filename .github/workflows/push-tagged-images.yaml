@@ -46,7 +46,7 @@ jobs:
               - 'api/packager/**'
             api/canary/:
               - 'api/canary/**'
-            sites/
+            sites/:
               - 'sites/**'
 
   build-base:
