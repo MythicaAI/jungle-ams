@@ -55,8 +55,7 @@ IMAGES="lets-encrypt \
   mythica-job-canary \
   mythica-editor-build \
   mythica-gcs-proxy \
-  mythica-jungle3-build \
-  mythica-awful-ui-build \
+  mythica-sites-build \
   mythica-packager \
   mythica-web-front"
 for image_name in $IMAGES; do
