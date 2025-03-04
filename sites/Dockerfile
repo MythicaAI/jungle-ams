@@ -55,5 +55,4 @@ COPY --from=build /build/awful-ui/dist .
 RUN mv index.html index.html.template
 
 WORKDIR /dist
-RUN ls -laR
 ENTRYPOINT ["/dist/docker-entrypoint.sh"]
