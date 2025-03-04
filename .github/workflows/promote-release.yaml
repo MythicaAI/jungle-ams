@@ -14,8 +14,7 @@ on:
           - lets-encrypt
           - mythica-app
           - mythica-job-canary
-          - mythica-editor-build
-          - mythica-jungle3-build
+          - mythica-sites-build
           - mythica-packager
           - mythica-web-front
 
