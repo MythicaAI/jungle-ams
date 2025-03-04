@@ -50,6 +50,16 @@ def parse_automation_field(automation: str) -> tuple[str, str]:
         path = "/mythica/hda_run"   
     return worker, path
 
+def is_executable(node) -> bool:
+    """
+    Returns True if the node has been executed.
+    For executable nodes (e.g. type "hdaWorker" or "worker"),
+    we expect node.data["executionData"]["state"] == "done".
+    For non-executable nodes, we simply return True.
+    """
+    if node.type in ["hdaWorker", "worker"]:
+        return True
+    return False
 
 def is_executed(node) -> bool:
     """
@@ -58,7 +68,7 @@ def is_executed(node) -> bool:
     we expect node.data["executionData"]["state"] == "done".
     For non-executable nodes, we simply return True.
     """
-    if node.type in ["hdaWorker", "worker"]:
+    if is_executable(node):
         ed = node.data.get("executionData")
         return ed is not None and ed.get("state") == "done"
     return True
@@ -89,8 +99,8 @@ async def _runAutomation_async(request: 'RequestModel', reporter: ResultPublishe
 
     # Process nodes until no more executable nodes are ready.
     nodes_to_execute = [
-        node for node in workflow.nodes.values()
-        if node.type == "hdaWorker" and not is_executed(node) and is_ready(node)
+        node for node in workflow.get_start_nodes()
+        if is_executable(node) and not is_executed(node) and is_ready(node)
     ]
     try:
         while nodes_to_execute:
@@ -125,10 +135,12 @@ async def _runAutomation_async(request: 'RequestModel', reporter: ResultPublishe
 
                 reporter.publish(f"Node {node.id} executed", result)
 
-            nodes_to_execute = [
-                node for node in workflow.nodes.values()
-                if node.type == "hdaWorker" and not is_executed(node) and is_ready(node)
-            ]
+            for node in nodes_to_execute:
+                if is_executed(node):
+                    nodes_to_execute.remove(node)
+                    for child in node.children:
+                        if is_executable(child) and is_ready(child):
+                            nodes_to_execute.append(child)
     except Exception as exc:
         log.error("Error executing workflow %s", exc)
         
