@@ -46,10 +46,8 @@ jobs:
               - 'api/packager/**'
             api/canary/:
               - 'api/canary/**'
-            sites/jungle3/:
-              - 'sites/jungle3/**'
-            sites/awful-ui/:
-              - 'sites/awful-ui/**'
+            sites/
+              - 'sites/**'
 
   build-base:
     runs-on: ubuntu-latest
