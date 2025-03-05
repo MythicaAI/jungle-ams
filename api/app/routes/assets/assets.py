@@ -3,14 +3,14 @@
 import logging
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlmodel.ext.asyncio.session import AsyncSession
-
 import assets.repo as repo
+from assets import queries as asset_q
 from db.connection import get_db_session
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.storage_client import storage_client
+from sqlmodel.ext.asyncio.session import AsyncSession
 from storage.storage_client import StorageClient
 
 log = logging.getLogger(__name__)
@@ -25,18 +25,15 @@ async def log_request_headers(r: Request):
     print(f"{header_str}")
     return "LOGGED"
 
-from db.connection import sql_profiler_decorator
 
 @router.get('/all')
 async def list_all(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
     """Get all asset versions"""
-    join_results = (await db_session.exec(
-        repo.asset_join_select)).all()
-    return await repo.process_join_results(db_session, join_results)
+    join_results = await asset_q.get_list_all_assets_query(db_session)
+    return await repo.process_join_results(join_results)
 
 
 @router.get('/top')
-@sql_profiler_decorator
 async def list_top(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
     return await repo.top(db_session)
@@ -159,7 +156,7 @@ async def by_version(
     """Get the asset version for a given asset and version"""
     version_id = repo.convert_version_input(version_str)
     avr_results = await repo.select_asset_version(db_session, asset_id, version_id)
-    version = (await repo.process_join_results(db_session, avr_results))[0] if avr_results else None
+    version = (await repo.process_join_results(avr_results))[0] if avr_results else None
     if version is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset '{asset_id}', version {version_id} not found")
     return version

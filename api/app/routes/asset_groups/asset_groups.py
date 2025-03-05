@@ -4,21 +4,20 @@
 """
 import re
 from http import HTTPStatus
-from typing import Optional
+from typing import Iterable, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import delete, insert, select
-from sqlmodel.ext.asyncio.session import AsyncSession
-
+from assets import queries as asset_q
 from assets import repo
 from assets.repo import AssetVersionResult, convert_version_input
 from cryptid.cryptid import asset_id_to_seq
 from db.connection import get_db_session
 from db.schema.assets import Asset, AssetVersion
-from db.schema.media import FileContent
 from db.schema.profiles import ProfileAsset
+from fastapi import APIRouter, Depends, HTTPException
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
+from sqlmodel import delete, insert
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 router = APIRouter(prefix="/assets/g", tags=["assets", "groups"])
 
@@ -28,11 +27,11 @@ MAX_CATEGORY_LEN = 63
 URL_SAFE_REGEX = re.compile(r"^[a-zA-Z0-9\-_\.]+$")
 
 
-def filter_profile_assets(results):
-    reduced = {}
+def filter_profile_assets(results: Iterable[tuple[Asset, AssetVersion, ProfileAsset]]) -> list[tuple]:
+    reduced: dict[int, tuple[Asset, AssetVersion, ProfileAsset]] = {}
     for r in results:
         asset_version = r[1]
-        profile_asset = r[3]
+        profile_asset = r[2]
         # select the latest version
         if profile_asset.major == 0 and profile_asset.minor == 0 and profile_asset.patch == 0:
             top_r = reduced.get(asset_version.asset_seq, None)
@@ -71,26 +70,11 @@ def validate_category(category: str) -> None:
 async def select_filtered_g_assets(
         db_session: AsyncSession,
         profile: SessionProfile,
-        category: Optional[str]) -> list[AssetVersionResult]:
-    stmt = select(Asset, AssetVersion, FileContent, ProfileAsset) \
-        .select_from(Asset) \
-        .outerjoin(
-        AssetVersion,
-        (Asset.asset_seq == AssetVersion.asset_seq)) \
-        .outerjoin(
-        FileContent,
-        (AssetVersion.package_seq == FileContent.file_seq)) \
-        .outerjoin(
-        ProfileAsset,
-        (Asset.asset_seq == ProfileAsset.asset_seq)).where(
-        (ProfileAsset.profile_seq == profile.profile_seq) \
-        & (ProfileAsset.category == category) if category else \
-            (ProfileAsset.profile_seq == profile.profile_seq))
-
-    db_results = (await db_session.exec(stmt)).all()
-    avr_results = await repo.process_join_results(db_session, filter_profile_assets(db_results))
+        category: Optional[str]
+) -> list[AssetVersionResult]:
+    db_results = await asset_q.exec_query_select_assets_by_profile_asset_category(db_session, profile.profile_seq, category)
+    avr_results = await repo.process_join_results(db_results)
     return avr_results
-
 
 @router.get('/{category}')
 async def for_profile(
@@ -131,8 +115,8 @@ async def add(
 
     # read back
     avr_results = await repo.select_asset_version(db_session, asset_id, tuple(version_id))
-    avr = await repo.process_join_results(db_session, avr_results)
-    return avr[0]
+    avr = await repo.process_join_results(avr_results)
+    return avr[0] if avr else None
 
 
 @router.delete('/{category}/{asset_id}/versions/{version}')

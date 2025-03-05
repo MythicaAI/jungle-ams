@@ -2,27 +2,36 @@
 
 import logging
 from http import HTTPStatus
-from typing import Optional
+from typing import Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import col, delete, insert, select
-from sqlmodel.ext.asyncio.session import AsyncSession
-
+import assets.repo as assets_repo
+from assets import queries as asset_q
 from cryptid.cryptid import (
     tag_id_to_seq,
     tag_seq_to_id,
 )
 from db.connection import get_db_session
+from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from db.schema.tags import Tag
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from ripple.auth import roles
 from ripple.auth.authorization import validate_roles
 from routes.authorization import maybe_session_profile, session_profile
-from tags.repo import process_type_model_result
-from tags.tag_models import (TagResponse, TagType, TagTypeRequest, get_model_of_model_type, get_model_type,
-                             get_model_type_seq_col, get_type_id_to_seq)
+from routes.file_uploads import FileUploadResponse, enrich_files
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import col, delete, insert, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+from tags.tag_models import (
+    TagResponse,
+    TagType,
+    TagTypeRequest,
+    get_model_of_model_type,
+    get_model_type,
+    get_model_type_seq_col,
+    get_type_id_to_seq,
+)
 
 log = logging.getLogger(__name__)
 
@@ -225,52 +234,20 @@ async def get_filtered_model_types_by_tags(
         include: list[str] = Query(None),
         exclude: list[str] = Query(None),
         db_session: AsyncSession = Depends(get_db_session)
-):
+) -> Union[list[assets_repo.AssetVersionResult] | list[FileUploadResponse]]:
     if tag_type == TagType.file:
         if not profile:
             raise HTTPException(
                 HTTPStatus.FORBIDDEN,
                 detail="You must be logged into the system to enrich files."
             )
+    main_query = await asset_q.get_tag_name_filter_query(db_session, include, exclude, tag_type)
 
-    type_model = get_model_type(tag_type)
-    model_of_type_model = get_model_of_model_type(tag_type)
-    model_type_seq_col = get_model_type_seq_col(tag_type)
-
-    query = select(model_of_type_model)
-
-    if include:
-        include_assets_subquery = (
-            select(col(model_type_seq_col).distinct().label("asset_seq"))
-            .join(type_model, type_model.type_seq == model_type_seq_col)
-            .join(Tag, type_model.tag_seq == Tag.tag_seq)
-            .where(Tag.name.in_(include))  # pylint: disable=no-member
-        ).subquery()
-
-        query = query.join(
-            include_assets_subquery,
-            model_type_seq_col == include_assets_subquery.c.asset_seq,
-        )
-
-    if exclude:
-        exclude_assets_subquery = (
-            select(
-                col(model_type_seq_col)  # pylint: disable=no-member
-                .distinct()  # pylint: disable=no-member
-                .label("asset_seq")
-            )
-            .join(type_model, type_model.type_seq == model_type_seq_col)
-            .join(Tag, type_model.tag_seq == Tag.tag_seq)
-            .where(Tag.name.in_(exclude))  # pylint: disable=no-member
-        ).subquery()
-
-        query = query.outerjoin(
-            exclude_assets_subquery,
-            model_type_seq_col == exclude_assets_subquery.c.asset_seq,
-        )
-        query = query.where(exclude_assets_subquery.c.asset_seq == None)
-
-    query = query.order_by(
-        model_type_seq_col.desc()  # pylint: disable=no-member
-    )
-    return await process_type_model_result(tag_type, db_session, query, profile, limit, offset)
+    if tag_type == TagType.asset:
+        results = await asset_q.get_filtered_assets_by_tags_query(db_session, main_query.subquery(), limit, offset)
+        return await assets_repo.process_join_results(results)
+    elif tag_type == TagType.file:
+        files = (await db_session.exec(main_query.where(FileContent.deleted == None).limit(limit)
+            .offset(offset))).all()
+        return await enrich_files(db_session, files, profile)
+    return []

@@ -11,17 +11,16 @@ from fastapi import HTTPException
 from pydantic import AnyHttpUrl, BaseModel, Field, StrictInt, ValidationError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import col, delete as sql_delete, desc, insert, or_, select, update
+from sqlmodel import delete as sql_delete, insert, or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from assets.queries import get_top_published_assets_metadata_query, resolve_assets_tag
+from assets import queries as asset_q
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
 from content.validate_filename import validate_filename
 from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
     org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from cryptid.location import location
-from db.connection import sql_profiler_decorator
 from db.schema.assets import Asset, AssetVersion, AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.profiles import Org, Profile
@@ -197,7 +196,7 @@ async def resolve_org_name(db_session: AsyncSession, org_seq: int) -> str:
     return ""
 
 
-async def process_join_results(
+async def old_process_join_results(
         db_session: AsyncSession,
         join_results: Iterable[tuple[Asset, AssetVersion]]) \
         -> list[AssetVersionResult]:
@@ -234,6 +233,39 @@ async def process_join_results(
     return results
 
 
+async def process_join_results(
+        join_results: Iterable[tuple[Asset, AssetVersion, dict[str, Union[int, str]]]] \
+) -> list[AssetVersionResult]:
+    """Process the join result of Asset, AssetVersion and FileContent tables"""
+    
+    results = list()
+    for asset, ver, tag_to_asset, owner_name, author_name, org_name  in join_results:
+        if ver is None:
+            # outer join or joined load didn't find a version
+            ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
+        asset_id = asset_seq_to_id(asset.asset_seq)
+        avr = AssetVersionResult(
+            asset_id=asset_id,
+            org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
+            org_name=org_name if org_name else "",
+            owner_id=profile_seq_to_id(asset.owner_seq),
+            owner_name=owner_name or "",
+            package_id=file_seq_to_id(ver.package_seq) if ver.package_seq else None,
+            author_id=profile_seq_to_id(ver.author_seq) if ver.author_seq else None,
+            author_name=author_name or "",
+            name=ver.name,
+            description=ver.description,
+            blurb=ver.blurb,
+            published=ver.published,
+            version=[ver.major, ver.minor, ver.patch],
+            commit_ref=ver.commit_ref,
+            created=ver.created,
+            contents=asset_contents_json_to_model(asset_id, ver.contents),
+            tags=asset_q.resolve_assets_tag(tag_to_asset),
+        )
+        results.append(avr)
+    return results
+
 def convert_version_input(version: str) -> tuple[int, ...]:
     """Convert a raw version string to a 3 part number tuple"""
     try:
@@ -251,7 +283,7 @@ async def select_asset_version(db_session: AsyncSession,
                                asset_id: str,
                                version: tuple[int, ...]) -> Iterable[tuple[Asset, AssetVersion]] | None:
     """Execute a select against the asset versions table"""
-    if list(version) == ZERO_VERSION:
+    if version == ZERO_VERSION:
         asset = (await db_session.exec(select(Asset).where(
             Asset.asset_seq == asset_id_to_seq(asset_id))
                                        .where(Asset.deleted == None))).first()
@@ -265,16 +297,7 @@ async def select_asset_version(db_session: AsyncSession,
             contents={}))]
     else:
         asset_seq = asset_id_to_seq(asset_id)
-        stmt = select(Asset, AssetVersion).outerjoin(
-            AssetVersion,
-            (Asset.asset_seq == AssetVersion.asset_seq) &
-            (AssetVersion.major == version[0]) &
-            (AssetVersion.minor == version[1]) &
-            (AssetVersion.patch == version[2])
-        ).where(
-            Asset.asset_seq == asset_seq
-        ).where(Asset.deleted == None, AssetVersion.deleted == None)
-        results = (await db_session.exec(stmt)).all()
+        results = await asset_q.exec_query_select_asset_version(db_session, asset_seq, version)
     if not results:
         return None
     return results
@@ -295,7 +318,7 @@ async def select_asset_dependencies(
         # download information
         asset_id, version_id = ctx.visit.pop()
         avr_results = await select_asset_version(db_session, asset_id, version_id)
-        avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
+        avr = (await process_join_results(avr_results))[0] if avr_results else None
         if avr is None or avr.published is False:
             ctx.missing.append(
                 MissingDependencyResult(
@@ -424,7 +447,7 @@ async def resolve_asset_dependency(
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f'asset_id and version required on {str(dep)}')
     avr_results = await select_asset_version(db_session, asset_id, tuple(version))
-    avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
+    avr = (await process_join_results(avr_results))[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
                             f'asset {asset_id} {version} not found')
@@ -507,18 +530,17 @@ async def update_versions_contents(
         raise HTTPException(
             HTTPStatus.BAD_REQUEST, detail="versions with all zeros are not allowed"
         )
-    print(version_id)
     # Find an existing asset version
     avr_results = await select_asset_version(db_session, asset_id, version_id)
     avr = (
-        (await process_join_results(db_session, avr_results))[0]
+        (await process_join_results(avr_results))[0]
         if avr_results
         else None
     )
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
 
-    asset_instance, _ = avr_results[0]
+    asset_instance, *_ = avr_results[0]
     scope = Scope(
         profile=profile,
         asset_version=AssetVersionRef.create(
@@ -573,7 +595,7 @@ async def update_versions_contents(
 
     avr_results = await select_asset_version(db_session, asset_id, version_id)
     read_back = (
-        (await process_join_results(db_session, avr_results))[0]
+        (await process_join_results(avr_results))[0]
         if avr_results
         else None
     )
@@ -597,11 +619,11 @@ async def create_version(db_session: AsyncSession,
 
     # Find an existing asset version
     avr_results = await select_asset_version(db_session, asset_id, version_id)
-    avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
+    avr = (await process_join_results(avr_results))[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail=f"asset {asset_id} not found")
 
-    asset_instance, _ = avr_results[0]
+    asset_instance, *_ = avr_results[0]
     scope = Scope(profile=profile,
                   asset_version=AssetVersionRef.create(
                       asset_seq=asset_instance.asset_seq,
@@ -699,7 +721,7 @@ async def create_version(db_session: AsyncSession,
 
         # read back the join result, add and commit the event back
         avr_results = await select_asset_version(db_session, asset_id, version_id)
-        read_back = (await process_join_results(db_session, avr_results))[0] if avr_results else None
+        read_back = (await process_join_results(avr_results))[0] if avr_results else None
         await add_version_packaging_event(db_session, read_back)
         await db_session.commit()
 
@@ -785,12 +807,16 @@ async def delete_asset_and_versions(db_session: AsyncSession, asset_id: str, pro
     await db_session.commit()
 
 
-@sql_profiler_decorator
-async def top(db_session: AsyncSession):
-    results = await get_top_published_assets_metadata_query(db_session)
+async def top(db_session: AsyncSession) -> list[AssetTopResult]:
+    results = await asset_q.get_top_published_assets_metadata_query(db_session)
 
     def avf_to_top(
-            asset, ver, downloads, sorted_versions, tag_to_asset, owner_name, author_name, org_name
+            asset: Asset,
+            ver: AssetVersion,
+            downloads: int,
+            sorted_versions: list[list[int]],
+            tag_to_asset: list[dict[str, Union[int, str]]],
+            owner_name: str, author_name: str, org_name: str
     ):
         asset_id = asset_seq_to_id(asset.asset_seq)
         return AssetTopResult(
@@ -812,15 +838,15 @@ async def top(db_session: AsyncSession):
             contents=asset_contents_json_to_model(asset_id, ver.contents),
             versions=sorted_versions,
             downloads=downloads,
-            tags=resolve_assets_tag(tag_to_asset),
+            tags=asset_q.resolve_assets_tag(tag_to_asset),
         )
 
-    reduced = {}
+    reduced: dict[int, AssetTopResult] = {}
     for result in results:
         asset, ver, file, tag_to_asset, owner_name, author_name, org_name = result
         if ver is None or file is None:
             continue
-        atr = reduced.get(asset.asset_seq, None)
+        atr: Optional[AssetTopResult] = reduced.get(asset.asset_seq, None)
         version_id = [ver.major, ver.minor, ver.patch]
         if atr is None:
             reduced[asset.asset_seq] = avf_to_top(
@@ -848,10 +874,9 @@ async def latest_version(db_session: AsyncSession, asset_seq: int) -> Optional[A
     )).all()
     if not results:
         return None
-
-    results = await process_join_results(db_session, results)
-    sorted_results = sorted(results, key=lambda x: x.version, reverse=True)
-    return sorted_results[0]
+    results = await asset_q.exec_query_select_asset_latest_version(db_session, asset_seq)
+    query_results = await process_join_results([results])
+    return query_results[0] if query_results else None
 
 
 async def get_version(
@@ -861,56 +886,32 @@ async def get_version(
         minor: int,
         patch: int) -> Optional[AssetVersionResult]:
     """Query a specific asset version"""
-    results = (await db_session.exec(
-        select(Asset, AssetVersion)
-        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-        .where(Asset.deleted == None, AssetVersion.deleted == None)
-        .where(Asset.asset_seq == asset_seq)
-        .where(AssetVersion.major == major)
-        .where(AssetVersion.minor == minor)
-        .where(AssetVersion.patch == patch)
-    )).all()
+    results = await asset_q.exec_query_select_asset_by_version(db_session, asset_seq, major, minor, patch)
     if not results:
         return None
-
-    results = await process_join_results(db_session, results)
+    results = await process_join_results(results)
     return results[0]
 
 
 async def owned_versions(db_session: AsyncSession, profile_seq: int) -> list[AssetVersionResult]:
     """Return versions owned by the specified profile"""
-    results = (await db_session.exec(
-        select(Asset, AssetVersion)
-        .outerjoin(AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-        .where(Asset.owner_seq == profile_seq)
-        .where(Asset.deleted == None, AssetVersion.deleted == None)
-        .order_by(Asset.asset_seq))).all()
-    return await process_join_results(db_session, results)
+    join_results = await asset_q.exec_query_owned_versions(db_session, profile_seq)
+    return await process_join_results(join_results)
 
 
 async def versions_by_name(db_session: AsyncSession, asset_name: str) -> list[AssetVersionResult]:
     """Return all assets with the same name"""
-    results = await db_session.exec(
-        asset_join_select.where(
-            Asset.asset_seq == AssetVersion.asset_seq,
-            AssetVersion.name == asset_name))
-    return await process_join_results(db_session, results)
+    join_results = await asset_q.exec_query_assets_by_asset_name(db_session, asset_name)
+    return await process_join_results(join_results)
 
 
 async def version_by_asset_id(db_session: AsyncSession, asset_id: str) -> list[AssetVersionResult]:
     """Return a list of versions for the specified asset"""
-    results = await db_session.exec(select(Asset, AssetVersion).outerjoin(
-        AssetVersion, Asset.asset_seq == AssetVersion.asset_seq)
-    .where(Asset.deleted == None, AssetVersion.deleted == None).where(
-        Asset.asset_seq == asset_id_to_seq(asset_id)).order_by(
-        desc(AssetVersion.major),
-        desc(AssetVersion.minor),
-        desc(AssetVersion.patch)))
-    return await process_join_results(db_session, results)
+    asset_seq = asset_id_to_seq(asset_id)
+    join_results = await asset_q.exec_query_assets_by_asset_seq(db_session, asset_seq)
+    return await process_join_results(join_results)
 
 
 async def versions_by_commit_ref(db_session: AsyncSession, commit_ref: str) -> list[AssetVersionResult]:
-    results = (await (db_session.exec(
-        asset_join_select.where(Asset.asset_seq == AssetVersion.asset_seq).where(
-            col(AssetVersion.commit_ref).contains(commit_ref))))).all()
-    return await process_join_results(db_session, results)  # pylint: disable=no-member
+    join_results = await asset_q.exec_query_assets_by_commit_ref(db_session, commit_ref)
+    return await process_join_results(join_results)  # pylint: disable=no-member

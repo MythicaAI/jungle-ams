@@ -1,51 +1,14 @@
 """Utils for models types"""
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Dict, Union
 
-from fastapi import HTTPException
-from sqlalchemy import Select, desc
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-import assets.repo as assets_repo
 from content.locate_content import locate_content_by_seq
 from cryptid.cryptid import file_id_to_seq, file_seq_to_id
-from db.schema.assets import Asset, AssetVersion
-from db.schema.media import FileContent
-from db.schema.profiles import Profile
-from routes.file_uploads import enrich_files
-from tags.tag_models import TagFileReference, TagType
+from fastapi import HTTPException
+from sqlmodel.ext.asyncio.session import AsyncSession
+from tags.tag_models import TagFileReference
 
 THUMBNAILS_CONTENT_KEY = 'thumbnails'
-
-
-async def process_type_model_result(
-        tag_type: TagType,
-        db_session: AsyncSession,
-        type_model_query: Optional[Select],
-        profile: Optional[Profile],
-        limit: int,
-        offset: int,
-) -> Callable:
-    "Dynamically return the type_model response"
-    if tag_type == TagType.asset:
-        subquery = type_model_query.subquery()
-        query = (
-            assets_repo.asset_join_select.where(AssetVersion.published == True)
-            .join(subquery, Asset.asset_seq == subquery.c.asset_seq)
-            .order_by(
-                desc(AssetVersion.major),
-                desc(AssetVersion.minor),
-                desc(AssetVersion.patch),
-            )
-            .limit(limit)
-            .offset(offset)
-        )
-        results = await db_session.exec(query)
-        return await assets_repo.process_join_results(db_session, results)
-    elif tag_type == TagType.file:
-
-        files = (await db_session.exec(type_model_query.where(FileContent.deleted == None))).all()
-        return await enrich_files(db_session, files, profile)
 
 
 async def resolve_contents_as_json(

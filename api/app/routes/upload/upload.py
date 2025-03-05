@@ -194,7 +194,7 @@ async def store_and_attach_package(
 
     # do the upload
     avr_results = await select_asset_version(db_session, asset_id, version_id)
-    avr = (await process_join_results(db_session, avr_results))[0] if avr_results else None
+    avr = (await process_join_results(avr_results))[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, f"asset: {asset_id}/{version_id} not found")
 
