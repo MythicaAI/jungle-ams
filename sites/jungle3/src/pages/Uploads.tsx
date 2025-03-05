@@ -19,6 +19,7 @@ import {
   LucideFile,
   LucideFiles,
   LucideImage,
+  LucidePlus,
   LucideTrash,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -32,7 +33,7 @@ import { useStatusStore } from "@store/statusStore";
 import { FileUploadStatus, useUploadStore } from "@store/uploadStore";
 import { DownloadButton } from "@components/common/DownloadButton";
 import { UploadsSubmitList } from "@components/Uploads/UploadsSubmitList";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDeleteUpload, useGetPendingUploads } from "@queries/uploads";
 import { DeleteModal } from "@components/common/DeleteModal";
 import { useTranslation } from "react-i18next";
@@ -45,6 +46,7 @@ import {
 import { useGlobalStore } from "@store/globalStore";
 import { TAGS_ROLE } from "@components/AssetEdit/AssetEditDetailControls";
 import { FileTagModal } from "@components/common/FileTagModal";
+import { useCreateAsset } from "@queries/packages";
 
 interface Sort {
   icon: JSX.Element;
@@ -72,6 +74,8 @@ const Uploads = () => {
   const { mutate: deleteUpload, error: deleteError } = useDeleteUpload();
   const { t } = useTranslation();
   const { data: allTags } = useGetAllTags();
+  const { mutate: createAsset } = useCreateAsset();
+  const navigate = useNavigate();
 
   const { mutate: removeTagFromFile } = useRemoveTagFromFile();
   const { mutate: assignTagToFile } = useAssignTagToFile();
@@ -341,10 +345,47 @@ const Uploads = () => {
                   </Typography>
                   <Stack direction="row" alignItems="center" gap="8px">
                     {value.tags && value.tags.length > 0 && (
-                      <Button disabled variant="outlined">
+                      <Button disabled variant="outlined" size="sm">
                         {value.tags[0].name}
                       </Button>
                     )}
+                    {(value.content_type === "application/hda" ||
+                      value.content_type === "application/blend") && (
+                      <Button
+                        size="sm"
+                        variant="plain"
+                        onClick={() => {
+                          createAsset(
+                            {},
+                            {
+                              onSuccess: (res) => {
+                                const fileData = {
+                                  content_hash: value.content_hash,
+                                  size: value.size,
+                                  file_name: value.file_name,
+                                  file_id: value.file_id,
+                                };
+                                localStorage.setItem(
+                                  "assetFromHdaPayload",
+                                  JSON.stringify(fileData),
+                                );
+                                navigate(
+                                  `/assets/${res.asset_id}/versions/1.0.0`,
+                                );
+                              },
+                            },
+                          );
+                        }}
+                      >
+                        Create package{" "}
+                        <LucidePlus
+                          width="16px"
+                          height="16px"
+                          style={{ marginLeft: "4px" }}
+                        />
+                      </Button>
+                    )}
+
                     <Button
                       variant="plain"
                       size="sm"
@@ -352,7 +393,7 @@ const Uploads = () => {
                         handleOpenTagModal(value);
                       }}
                     >
-                      <Typography>Edit tag</Typography>
+                      Edit tag
                     </Button>
                   </Stack>
                 </ListItemContent>

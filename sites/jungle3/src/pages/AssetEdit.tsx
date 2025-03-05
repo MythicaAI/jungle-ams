@@ -129,6 +129,11 @@ const AssetEdit: React.FC<AssetEditProps> = ({
   const loadAssetVersionResponse = (r: AssetVersionResponse) => {
     console.log(`loading asset version ${r.asset_id} ${r.version.join(".")}`);
 
+    const hdaData = JSON.parse(
+      localStorage.getItem("assetFromHdaPayload") ?? "null",
+    );
+    const isHda = hdaData?.file_name.includes(".hda");
+
     const sanitized = sanitizeVersion(r.version);
 
     // clear files and replace with version response
@@ -137,8 +142,13 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       org_id: r.org_id || "",
       author_id: r.author_id || "",
       package_id: r.package_id || "",
-      name: r.name || "",
-      description: r.description || "",
+      name:
+        hdaData?.file_name.split(hdaData && isHda ? ".hda" : ".blend")[0] ||
+        r.name ||
+        "",
+      description: hdaData?.file_name
+        ? `${hdaData && isHda ? "Houdini" : "Blender"} Automation`
+        : r.description || "",
       version: sanitized,
       commit_ref: r.commit_ref || "",
       created: r.created || "",
@@ -151,6 +161,10 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       dependencies: [],
       links: [],
     });
+
+    if (hdaData) {
+      addFiles([hdaData]);
+    }
 
     if (r.contents) {
       const contentMap: AssetVersionContentListMap = r.contents;
@@ -173,6 +187,8 @@ const AssetEdit: React.FC<AssetEditProps> = ({
         setDeps(contentMap["dependencies"]);
       }
     }
+
+    localStorage.removeItem("assetFromHdaPayload");
   };
 
   // handle form submit for the specified version
