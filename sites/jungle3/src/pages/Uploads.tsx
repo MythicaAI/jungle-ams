@@ -349,7 +349,8 @@ const Uploads = () => {
                         {value.tags[0].name}
                       </Button>
                     )}
-                    {value.content_type === "application/hda" && (
+                    {(value.content_type === "application/hda" ||
+                      value.content_type === "application/blend") && (
                       <Button
                         size="sm"
                         variant="plain"

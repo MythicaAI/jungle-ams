@@ -132,6 +132,7 @@ const AssetEdit: React.FC<AssetEditProps> = ({
     const hdaData = JSON.parse(
       localStorage.getItem("assetFromHdaPayload") ?? "null",
     );
+    const isHda = hdaData?.file_name.includes(".hda");
 
     const sanitized = sanitizeVersion(r.version);
 
@@ -141,9 +142,12 @@ const AssetEdit: React.FC<AssetEditProps> = ({
       org_id: r.org_id || "",
       author_id: r.author_id || "",
       package_id: r.package_id || "",
-      name: hdaData?.file_name.split(".hda")[0] || r.name || "",
+      name:
+        hdaData?.file_name.split(hdaData && isHda ? ".hda" : ".blend")[0] ||
+        r.name ||
+        "",
       description: hdaData?.file_name
-        ? "(Houdini | Blender) Automation"
+        ? `${hdaData && isHda ? "Houdini" : "Blender"} Automation`
         : r.description || "",
       version: sanitized,
       commit_ref: r.commit_ref || "",
