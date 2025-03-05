@@ -137,6 +137,7 @@ def sql_profiler_decorator(func: Callable):
         if not ripple_config().mythica_environment == "debug":
             return await func(*args, **kwargs)
         profiler = sqltap.start()
+        log.error("SQL-query Profiler has written report")
         try:
             # Call the original function
             result = await func(*args, **kwargs)
@@ -144,7 +145,9 @@ def sql_profiler_decorator(func: Callable):
             # Collect and report the SQL statistics
             statistics = profiler.collect()
             try:
-                sqltap.report(statistics, f"{folder_for_reports}{func.__module__}.{func.__name__}.html")
+                file_name = f"{folder_for_reports}{func.__module__}.{func.__name__}.html"
+                sqltap.report(statistics, file_name)
+                log.info("SQL-query Profiler has written report %s", file_name)
             except PermissionError:
                 log.error("SQL-query Profiler failed to write report")
         return result
@@ -162,7 +165,9 @@ def sql_profiler_decorator(func: Callable):
             # Collect and report the SQL statistics
             statistics = profiler.collect()
             try:
-                sqltap.report(statistics, f"{folder_for_reports}{func.__module__}.{func.__name__}.html")
+                file_name = f"{folder_for_reports}{func.__module__}.{func.__name__}.html"
+                sqltap.report(statistics, file_name)
+                log.info("SQL-query Profiler has written report %s", file_name)
             except PermissionError:
                 log.error("SQL-query Profiler failed to write report")
         return result
