@@ -22,8 +22,7 @@ from sqlalchemy import (
     or_,
 )
 from sqlalchemy.orm import aliased
-from sqlalchemy.sql import cast, func
-from sqlmodel import Session, col, func, select
+from sqlmodel import Session, col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tags.tag_models import TagResponse, TagType, get_model_type, get_model_type_seq_col
 
