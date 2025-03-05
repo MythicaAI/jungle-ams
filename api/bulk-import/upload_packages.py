@@ -618,10 +618,11 @@ class PackageUploader(object):
                      package.name, package.latest_version)
 
         # create the version if it has been updated
+        desired_published_state = not package.draft
         if last_known_version != package.latest_version:
             self.create_version(package, package.asset_contents)
-        elif not package.published:
-            self.publish_version(package)
+        elif desired_published_state != package.published:
+            self.update_published_flag(package)
         else:
             self.uptodate_version(package)
 
@@ -913,12 +914,12 @@ class PackageUploader(object):
         self.emit_md(package, "no changes detected")
         self.stats.versions_uptodate += 1
 
-    def publish_version(self,
-                        package: ProcessedPackageModel):
+    def update_published_flag(self,
+                              package: ProcessedPackageModel):
         """Set the published flag of an existing version. For cleaning up old versions a valid workflow is to
         mark all known versions as un-published then re-run this process"""
-
-        asset_ver_json = {'published': True, }
+        new_publish_state = not package.draft
+        asset_ver_json = {'published': new_publish_state, }
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = self.conn_pool.post(assets_url,
@@ -926,7 +927,11 @@ class PackageUploader(object):
                                        headers=self.auth_header())
         response.raise_for_status()
 
-        log.info("PUBLISHED: %s %s", package.name, package.latest_version)
+        log.info("%s -> %s: %s %s",
+                 package.published,
+                 new_publish_state,
+                 package.name,
+                 package.latest_version)
 
         self.emit_md(package, f"published version: {package.name}-{package.latest_version}")
         self.stats.versions_published += 1
@@ -948,7 +953,7 @@ class PackageUploader(object):
             'description': package.description,
             'blurb': package.blurb or '',
             'author': package.profile_id,
-            'published': True,
+            'published': not package.draft,
         }
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"

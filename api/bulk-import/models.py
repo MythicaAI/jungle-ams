@@ -35,12 +35,12 @@ class PackageModel(BaseModel):
     blurb: Optional[str] = None  # a short headline
     user: Optional[str] = None  # user name override
     tags: Optional[list[str]] = None
-
+    draft: Optional[bool] = False
 
 class ProcessedPackageModel(PackageModel):
     """Instance info filled out by resolving repo and assets"""
     asset_id: str = ''  # asset_id matching package name
-    published: bool = False  # true when the published flag is set
+    published: bool = False  # true when the published flag has been set
     profile_id: str = ''  # profile_id for the GitHub username
     profile_name: str = ''
     profile_email: str = ''
