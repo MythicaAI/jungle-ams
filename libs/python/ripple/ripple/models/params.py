@@ -2,7 +2,7 @@ from itertools import starmap
 
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Annotated, Literal, Optional, Union, Any
-
+from ripple.models  import houTypes as hou
 from uuid import uuid4
 
 
@@ -12,7 +12,16 @@ class ParameterSpecModel(BaseModel):
     category_label: Optional[str] = None
     constant: bool = False
 
+class RampPointSpec(BaseModel):
+    pos: float
+    c: Optional[list[float]] = None
+    value: Optional[float] = None
+    interp: hou.rampBasis = hou.rampBasis.Linear
 
+
+####################################################################################################
+# Standard Parameter Specs
+####################################################################################################
 class IntParameterSpec(ParameterSpecModel):
     param_type: Literal['int'] = 'int'
     default: int | list[int]
@@ -42,6 +51,10 @@ class EnumValueSpec(BaseModel):
     label: str
 
 
+class RampParameterSpec(ParameterSpecModel):
+    param_type: Literal['ramp'] = 'ramp'
+    default: list[RampPointSpec]
+
 class EnumParameterSpec(ParameterSpecModel):
     param_type: Literal['enum'] = 'enum'
     values: list[EnumValueSpec]
@@ -53,6 +66,126 @@ class FileParameterSpec(ParameterSpecModel):
     default: str | list[str]
 
 
+####################################################################################################
+# Houdini Parameter Specs
+####################################################################################################
+
+class ParmTemplateSpec(ParameterSpecModel):
+    param_type: Literal['base'] = 'base'
+    name: str
+    is_hidden: bool = False
+    is_label_hidden: bool = False
+    help: str = ""
+    join_with_next: bool = False
+    #### Fields below for future use
+    #conditionals: dict[hou.parmCondType, str] = {}
+    #script_callback: str = ""
+    #script_callback_language: hou.scriptLanguage = hou.scriptLanguage.Hscript
+    #tab_conditionals: dict[hou.parmCondType, str] = {}
+    #tags: dict[str, str] = {}
+    #disable_when: str = ""
+    #default_expression: list[str] = []
+    #default_expression_language: list[hou.scriptLanguage] = []
+
+class SeparatorParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Separator] = hou.parmTemplateType.Separator
+
+class ButtonParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Button] = hou.parmTemplateType.Button
+
+class IntParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Int] = hou.parmTemplateType.Int
+    num_components: int = 1
+    default_value: list[int]
+    min: int = 0
+    max: int = 10
+    min_is_strict: bool = False
+    max_is_strict: bool = False
+
+class FloatParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Float] = hou.parmTemplateType.Float
+    num_components: int = 1
+    default_value: list[float]
+    min: float = 0.0
+    max: float = 10.0
+    min_is_strict: bool = False
+    max_is_strict: bool = False
+
+class StringParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.String] = hou.parmTemplateType.String
+    num_components: int = 1
+    default_value: list[str] = []
+    string_type: hou.stringParmType = hou.stringParmType.Regular
+    file_type: hou.fileType = hou.fileType.Any
+    icon_names: list[str] = []
+    menu_items: list[str] = []
+    menu_labels: list[str] = []
+    menu_type: hou.menuType = hou.menuType.Normal
+
+class ToggleParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Toggle] = hou.parmTemplateType.Toggle
+    default_value: bool = False
+
+class MenuParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Menu] = hou.parmTemplateType.Menu
+    default_value: int = 0
+    menu_items: list[str] = []
+    menu_labels: list[str] = []
+    menu_type: hou.menuType = hou.menuType.Normal
+    store_default_value_as_string: bool = False    
+    is_menu: bool = False
+    is_button_strip: bool = False
+    strip_uses_icons: bool = False
+
+class LabelParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Label] = hou.parmTemplateType.Label
+    column_labels: list[str] = []
+
+
+class RampParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Ramp] = hou.parmTemplateType.Ramp
+    ramp_parm_type: hou.rampParmType = hou.rampParmType.Float
+    default_value: int = 2
+    default_basis: Optional[hou.rampBasis] = hou.rampBasis.Linear
+    color_type: Optional[hou.colorType] = hou.colorType.RGB
+    default_points: list[RampPointSpec] = []
+    
+class DataParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Data] = hou.parmTemplateType.Data
+    num_components: int = 1
+
+
+class FolderParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.Folder] = hou.parmTemplateType.Folder
+    level: int = 0
+    params: list["HoudiniParmTemplateSpecType"] = []
+    folder_type: hou.folderType = hou.folderType.Tabs
+    default_value: int = 0
+    ends_tab_group: bool = False
+
+class FolderSetParmTemplateSpec(ParmTemplateSpec):
+    param_type: Literal[hou.parmTemplateType.FolderSet] = hou.parmTemplateType.FolderSet
+    params: list[FolderParmTemplateSpec] = []
+
+HoudiniParmTemplateSpecType = Annotated[
+    Union[
+        SeparatorParmTemplateSpec,
+        ButtonParmTemplateSpec,
+        IntParmTemplateSpec,
+        FloatParmTemplateSpec,
+        StringParmTemplateSpec,
+        ToggleParmTemplateSpec,
+        MenuParmTemplateSpec,
+        LabelParmTemplateSpec,
+        RampParmTemplateSpec,
+        DataParmTemplateSpec,
+        FolderParmTemplateSpec,
+        FolderSetParmTemplateSpec,
+    ],
+    Field(discriminator='param_type')
+]
+
+
 ParameterSpecType = Annotated[
     Union[
         IntParameterSpec,
@@ -60,7 +193,9 @@ ParameterSpecType = Annotated[
         StringParameterSpec,
         BoolParameterSpec,
         EnumParameterSpec,
-        FileParameterSpec
+        FileParameterSpec,
+        RampParameterSpec,
+        "HoudiniParmTemplateSpecType" 
     ],
     Field(discriminator='param_type')
 ]
@@ -69,7 +204,7 @@ class ParameterSpec(BaseModel):
     """ 
     Specification of parameters a job expects as input
     """
-    params: dict[str, ParameterSpecType]
+    params: dict[str, ParameterSpecType | dict[str,ParameterSpecType]]
 
 
 class FileParameter(BaseModel):
