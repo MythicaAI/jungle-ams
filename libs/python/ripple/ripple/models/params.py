@@ -53,6 +53,7 @@ class EnumValueSpec(BaseModel):
 
 class RampParameterSpec(ParameterSpecModel):
     param_type: Literal['ramp'] = 'ramp'
+    ramp_parm_type: hou.rampParmType = hou.rampParmType.Float
     default: list[RampPointSpec]
 
 class EnumParameterSpec(ParameterSpecModel):
