@@ -195,12 +195,14 @@ export type AutomationRunRequest = {
   channel: string;
   path: string;
   auth_token: string;
-  data: dictionary
-}
+  data: dictionary;
+  asset_id?: string;
+  file_id?: string;
+};
 
 export type AutomationResponse = {
   result: dictionary;
-}
+};
 
 export type HDAInterfaceResponse = AutomationResponse & {
   result: {
@@ -218,8 +220,8 @@ export type HDAInterfaceResponse = AutomationResponse & {
         version: string;
         type: string;
         description: string;
-      }
+      },
     ];
     [key: string]: unknown;
   };
-}
+};

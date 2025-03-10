@@ -4,6 +4,7 @@ import { api } from "@services/api";
 import { PackagesApiPath, PackagesQuery } from "./enums";
 import { AssetCreateRequest, AssetVersionResponse } from "types/apiTypes";
 import type { JobDefinition, JobDetails } from "./types";
+import { useStatusStore } from "@store/statusStore";
 
 export const useGetOwnedPackages = () => {
   return useQuery<AssetVersionResponse[]>({
@@ -145,6 +146,7 @@ export const useGetJobDefinitionById = (jobDefId: string) => {
 
 export const useRunJob = (assetId: string, version: string) => {
   const queryClient = useQueryClient();
+  const { setSuccess, addError } = useStatusStore();
 
   return useMutation({
     mutationFn: async (form: {
@@ -158,10 +160,14 @@ export const useRunJob = (assetId: string, version: string) => {
         body: form,
       });
     },
-    onSuccess: async () => {
+    onSuccess: () => {
+      setSuccess("Automation created");
       queryClient.invalidateQueries({
         queryKey: [PackagesQuery.JOBS_DETAILS, `${assetId}-${version}`],
       });
+    },
+    onError: (err: any) => {
+      addError(err?.detail);
     },
   });
 };

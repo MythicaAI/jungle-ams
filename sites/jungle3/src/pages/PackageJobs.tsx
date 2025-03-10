@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Chip,
@@ -21,31 +21,99 @@ import {
   useRunJob,
 } from "@queries/packages";
 import { useNavigate, useParams } from "react-router-dom";
-import { FormContainer } from "@components/common/FormContainer";
-import { AutomationParamsForm } from "@components/AutomationParamsForm";
 import JobResultCard from "@components/JobResultCard";
 import { LucideChevronLeft } from "lucide-react";
 import { useStatusStore } from "@store/statusStore";
+import { useRunAutomation } from "@queries/automation";
+import { v4 } from "uuid";
+import Cookies from "universal-cookie";
+import { HDAInterfaceResponse } from "types/apiTypes";
+import { dictionary, hou, ParmGroup } from "houdini-ui";
+import {
+  extractValidationErrors,
+  translateError,
+} from "@services/backendCommon";
 
 const TabStyle = { ":focus": { outline: "none" } };
 const TabPanelStyle = { padding: "12px 0 0" };
 
+const cookies = new Cookies();
+
 export const PackageJobs = () => {
   const { asset_id, version_id } = useParams();
-  const { setSuccess } = useStatusStore();
   const { data: jobDefinitions, isLoading: isJobDefinitionsLoading } =
     useGetJobDefinition(asset_id as string, (version_id as string)?.split("."));
   const { data: assetData, isLoading: isAssetLoading } = useGetAssetByVersion(
     asset_id,
     version_id,
   );
+  const [parmTemplateGroup, setParmTemplateGroup] =
+    useState<hou.ParmTemplateGroup>();
+  const [inputData, setInputData] = useState<dictionary>({});
+  const [selectedHdaId, setSelectedHdaId] = React.useState<null | string>(null);
+  const { addError, addWarning } = useStatusStore();
+
+  const hdaFiles = assetData?.contents?.files.filter((file) =>
+    file.file_name.includes(".hda"),
+  );
+  const selectedHdaData = hdaFiles?.find(
+    (hda) => hda.file_id === selectedHdaId,
+  );
+  const selectedJobData = jobDefinitions?.find(
+    (definition) => definition.source.file_id === selectedHdaId,
+  );
+
+  const handleParmChange = useCallback(
+    (formData: dictionary) => {
+      setInputData((prev) => ({ ...prev, ...formData }));
+    },
+    [setInputData],
+  );
+
+  const {
+    data: autoResp,
+    isLoading: isAutomationLoading,
+    error: automationError,
+  } = useRunAutomation(
+    {
+      correlation: v4(),
+      channel: "houdini",
+      path: "/mythica/hda",
+      file_id: selectedHdaData?.file_id,
+      asset_id,
+      auth_token: cookies.get("auth_token"),
+      data: { hdas: [selectedHdaData] },
+    },
+    !!selectedHdaData,
+  );
+
   const { mutate: runJob } = useRunJob(
     asset_id as string,
     version_id as string,
   );
-  const [selectedJobId, setSelectedJobId] = React.useState<null | string>(null);
-  const [formReloading, setFormReloading] = React.useState(false);
   const navigate = useNavigate();
+
+  const hdaInterface = autoResp as HDAInterfaceResponse;
+  useEffect(() => {
+    if (hdaInterface && selectedHdaId) {
+      const strPt = hdaInterface.result?.node_types?.[0].code || "";
+      const getParmTemplateGroup = eval(strPt);
+      const ptg = getParmTemplateGroup(hou) as hou.ParmTemplateGroup;
+      setParmTemplateGroup(ptg);
+      ptg.draw();
+    }
+  }, [selectedHdaId, hdaInterface]);
+
+  const handleError = (err: any) => {
+    addError(translateError(err));
+    extractValidationErrors(err).map((msg) => addWarning(msg));
+  };
+
+  useEffect(() => {
+    if (automationError) {
+      handleError(automationError);
+    }
+  }, [automationError]);
 
   const { data: jobResultsHistory, isLoading: isJobResultsLoading } =
     useGetJobsDetailsByAsset(
@@ -53,20 +121,19 @@ export const PackageJobs = () => {
       version_id?.split(".") as string[],
     );
 
-  const selectedJobData = jobDefinitions?.find(
-    (job) => job.job_def_id === selectedJobId,
-  );
-
   React.useEffect(() => {
-    if (jobDefinitions && jobDefinitions.length > 0) {
-      setSelectedJobId(jobDefinitions[0].job_def_id);
+    if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
+      setSelectedHdaId(hdaFiles[0].file_id);
     }
-  }, [jobDefinitions]);
+  }, [hdaFiles]);
 
-  const onSubmit = (formData: { [key: string]: string | boolean | number }) => {
-    console.log("formData: ", formData);
-    runJob({ job_def_id: selectedJobId as string, params: { ...formData } });
-    setSuccess("Automation created");
+  const onSubmit = (formData: dictionary) => {
+    runJob({
+      job_def_id: jobDefinitions?.find(
+        (definition) => definition.source.file_id === selectedHdaId,
+      )?.job_def_id as string,
+      params: { ...formData, hda_file: selectedHdaId },
+    });
   };
 
   if (isAssetLoading || isJobDefinitionsLoading || isJobResultsLoading)
@@ -113,7 +180,7 @@ export const PackageJobs = () => {
     );
   }
 
-  if (!selectedJobId) return null;
+  if (!selectedHdaId) return null;
 
   return (
     <Stack alignItems="start" padding="0 16px">
@@ -175,26 +242,44 @@ export const PackageJobs = () => {
         </TabList>
 
         <TabPanel value={0} sx={TabPanelStyle}>
-          <Stack alignItems="flex-start">
+          <Stack
+            alignItems="flex-start"
+            sx={{
+              [`& .parm-group`]: {
+                width: "550px",
+                'input:not([type="checkbox"])': {
+                  width: "100%",
+                  boxSizing: "border-box",
+                },
+                label: {
+                  textAlign: "left",
+                },
+              },
+              ["& .field"]: {
+                width: "100%",
+              },
+            }}
+          >
             <Stack direction="row" gap="12px" alignItems="center" mb="24px">
-              {jobDefinitions && jobDefinitions?.length > 1 ? (
+              {hdaFiles && hdaFiles?.length > 1 ? (
                 <Select
                   variant="soft"
                   name="org_id"
                   placeholder={""}
-                  value={selectedJobId}
+                  value={selectedHdaId}
                   multiple={false}
                   onChange={(_, newValue) => {
-                    setSelectedJobId(newValue);
-                    setFormReloading(true);
-                    setTimeout(() => {
-                      setFormReloading(false);
-                    }, 500);
+                    setSelectedHdaId(newValue);
                   }}
                 >
-                  {jobDefinitions.map((job) => (
-                    <Option key={job.job_def_id} value={job.job_def_id}>
-                      {job.name}
+                  {hdaFiles.map((hda) => (
+                    <Option key={hda.file_id} value={hda.file_id}>
+                      {
+                        jobDefinitions?.find(
+                          (definition) =>
+                            definition.source.file_id === hda.file_id,
+                        )?.name
+                      }
                     </Option>
                   ))}
                 </Select>
@@ -202,34 +287,25 @@ export const PackageJobs = () => {
                 <Typography level="h3">{selectedJobData?.name}</Typography>
               )}
               <Divider orientation="vertical" />
-              <Typography level="h3">{selectedJobData?.job_type}</Typography>
+              <Typography level="h3">{selectedJobData?.description}</Typography>
             </Stack>
             <Typography fontSize={20} level="h3" mb="12px">
               Params
             </Typography>
-            <FormContainer<{ bebra?: string }>
-              {...{ onSubmit }}
-              id="addSourceForm"
+            {isAutomationLoading && <CircularProgress />}
+            {!isAutomationLoading && parmTemplateGroup && (
+              <ParmGroup
+                data={inputData}
+                group={parmTemplateGroup as hou.ParmTemplateGroup}
+                onChange={handleParmChange}
+              />
+            )}
+            <Button
+              sx={{ width: "fit-content", mt: "12px", bgcolor: "#367c64" }}
+              onClick={() => onSubmit(inputData)}
             >
-              {() => (
-                <Stack gap="12px" width="100%" maxWidth="550px">
-                  {formReloading ? (
-                    <CircularProgress />
-                  ) : (
-                    <AutomationParamsForm
-                      params={selectedJobData?.params_schema.params}
-                    />
-                  )}
-
-                  <Button
-                    sx={{ width: "fit-content", mt: "12px" }}
-                    type="submit"
-                  >
-                    Run automation
-                  </Button>
-                </Stack>
-              )}
-            </FormContainer>
+              Run automation
+            </Button>
           </Stack>
         </TabPanel>
 
