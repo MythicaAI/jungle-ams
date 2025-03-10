@@ -234,7 +234,7 @@ async def get_filtered_model_types_by_tags(
         include: list[str] = Query(None),
         exclude: list[str] = Query(None),
         db_session: AsyncSession = Depends(get_db_session)
-) -> Union[list[assets_repo.AssetVersionResult] | list[FileUploadResponse]]:
+) -> Union[list[assets_repo.AssetTopVersionsResult] | list[FileUploadResponse]]:
     if tag_type == TagType.file:
         if not profile:
             raise HTTPException(
@@ -245,7 +245,7 @@ async def get_filtered_model_types_by_tags(
 
     if tag_type == TagType.asset:
         results = await asset_q.get_filtered_assets_by_tags_query(db_session, main_query.subquery(), limit, offset)
-        return await assets_repo.process_join_results(results)
+        return await assets_repo.process_filtered_tags(results)
     elif tag_type == TagType.file:
         files = (await db_session.exec(main_query.where(FileContent.deleted == None).limit(limit)
             .offset(offset))).all()

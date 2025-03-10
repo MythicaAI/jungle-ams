@@ -14,6 +14,7 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import delete as sql_delete, insert, or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from api.default_values import LATEST_GREATEST_VERSIONS_ASSET_NUM
 from assets import queries as asset_q
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
@@ -148,11 +149,15 @@ class AssetVersionResult(BaseModel):
     tags: Optional[list[TagResponse]] = Field(default_factory=list)
 
 
-class AssetTopResult(AssetVersionResult):
+class AssetTopVersionsResult(AssetVersionResult):
+    """Asset response with latest version and versions array"""
+    versions: list[list[int]] = Field(default_factory=list)  # Previously available versions
+
+
+class AssetTopResult(AssetTopVersionsResult):
     """Result object for a specific asset version or the asset head object
     when no version has been created. In this case the """
     downloads: int = 0  # Sum of all downloads
-    versions: list[list[int]] = Field(default_factory=list)  # Previously available versions
 
 
 class MissingDependencyResult(BaseModel):
@@ -234,7 +239,7 @@ async def old_process_join_results(
 
 
 async def process_join_results(
-        join_results: Iterable[tuple[Asset, AssetVersion, dict[str, Union[int, str]]]] \
+        join_results: Iterable[tuple[Asset, AssetVersion, dict[str, Union[int, str], str, str, str]]] \
 ) -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
     
@@ -265,6 +270,61 @@ async def process_join_results(
         )
         results.append(avr)
     return results
+
+
+async def process_filtered_tags(
+    join_results: Iterable[
+        tuple[Asset, AssetVersion, dict[str, Union[int, str]], str, str, str]
+    ]
+):
+    def filtered_avt(
+            asset: Asset,
+            ver: AssetVersion,
+            sorted_versions: list[list[int]],
+            tag_to_asset: list[dict[str, Union[int, str]]],
+            owner_name: str, author_name: str, org_name: str
+    ):
+        asset_id = asset_seq_to_id(asset.asset_seq)
+        return AssetTopVersionsResult(
+            asset_id=asset_id,
+            org_id=org_seq_to_id(asset.org_seq) if asset.org_seq else None,
+            org_name=org_name if org_name else "",
+            owner_id=profile_seq_to_id(asset.owner_seq),
+            owner_name=owner_name or "",
+            package_id=file_seq_to_id(ver.package_seq) if ver.package_seq else None,
+            author_id=profile_seq_to_id(ver.author_seq) if ver.author_seq else None,
+            author_name=author_name or "",
+            name=ver.name,
+            description=ver.description,
+            blurb=ver.blurb,
+            published=ver.published,
+            version=(ver.major, ver.minor, ver.patch),
+            commit_ref=ver.commit_ref,
+            created=ver.created,
+            contents=asset_contents_json_to_model(asset_id, ver.contents),
+            versions=sorted_versions,
+            tags=asset_q.resolve_assets_tag(tag_to_asset),
+        )
+    reduced: dict[int, AssetTopResult] = {}
+    for result in join_results:
+        asset, ver, tag_to_asset, owner_name, author_name, org_name = result
+        if ver is None:
+            continue
+        atr: Optional[AssetTopResult] = reduced.get(asset.asset_seq, None)
+        version_id = [ver.major, ver.minor, ver.patch]
+        if atr is None:
+            reduced[asset.asset_seq] = filtered_avt(
+                asset, ver, [version_id], tag_to_asset, owner_name, author_name, org_name)
+        else:
+            versions = atr.versions
+            versions.append(version_id)
+            atr.versions = sorted(atr.versions, reverse=True)[:LATEST_GREATEST_VERSIONS_ASSET_NUM]
+            if version_id > atr.version:
+                reduced[asset.asset_seq] = filtered_avt(
+                    asset, ver, atr.versions, tag_to_asset, owner_name, author_name, org_name)
+
+    return reduced.values()
+
 
 def convert_version_input(version: str) -> tuple[int, ...]:
     """Convert a raw version string to a 3 part number tuple"""
@@ -854,7 +914,7 @@ async def top(db_session: AsyncSession) -> list[AssetTopResult]:
         else:
             versions = atr.versions
             versions.append(version_id)
-            atr.versions = sorted(atr.versions, reverse=True)[0:4]
+            atr.versions = sorted(atr.versions, reverse=True)[0:LATEST_GREATEST_VERSIONS_ASSET_NUM]
             atr.downloads += file.downloads
             if version_id > atr.version:
                 reduced[asset.asset_seq] = avf_to_top(
