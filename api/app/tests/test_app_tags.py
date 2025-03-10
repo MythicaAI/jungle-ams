@@ -4,11 +4,14 @@ import hashlib
 import itertools
 from http import HTTPStatus
 
+from fastapi.testclient import TestClient
 import pytest
 from munch import munchify
 
 from cryptid.cryptid import file_seq_to_id
 from ripple.auth import roles
+from api.default_values import LATEST_GREATEST_VERSIONS_ASSET_NUM
+from assets.repo import AssetTopVersionsResult
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
 from tests.shared_test import (
@@ -26,6 +29,8 @@ test_file_name = "test-file.hda"
 test_file_contents = b"test contents"
 test_file_content_hash = hashlib.sha1(test_file_contents).hexdigest()
 test_file_content_type = "application/octet-stream"
+test_asset_name = 'test-asset'
+test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
 def unauthorized_create_type_tag(
@@ -617,3 +622,163 @@ async def test_tag_files_operations(
         delete_type_tag("file", file_id, new_tag_id)
 
     delete_all_created_tags(tag__type_ids[0] for tag__type_ids in created_tag__type_ids)
+
+
+@pytest.mark.asyncio
+async def test_tags_filtered_and_ordered_by_latest_versions(api_base, client: TestClient, create_profile, request_to_upload_files):
+
+    test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
+    headers = test_profile.authorization_header()
+
+    # create org to contain assets
+    org_name = 'org-' + random_str(10, digits=False)
+    r = client.post(f"{api_base}/orgs/", json={'name': org_name}, headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    org_id = o.org_id
+
+    def create_asset(headers):
+        # create asset in org
+        r = client.post(f"{api_base}/assets", json={'org_id': org_id}, headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+        o = munchify(r.json())
+        return o.asset_id
+
+    asset_id_1 = create_asset(headers)
+    asset_id_2 = create_asset(headers)
+    created_asset_ids = [asset_id_1, asset_id_2]
+
+    def create_tag(page_priority=1):
+        # create tag
+        tag_name = "tag_" + random_str(10, digits=False)
+        thumbnail_obj = make_random_content("png")
+        thumbnail_id = list(request_to_upload_files(headers, [thumbnail_obj]))[0]
+        blurb = "text"
+        data = {
+            'name': tag_name,
+            "page_priority": page_priority,
+            "contents": {
+                "thumbnails": [{"file_id": thumbnail_id}],
+                "blurb": blurb,
+            },
+        }
+        r = client.post(f"{api_base}/tags", json=data, headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+        tag_obj = munchify(r.json())
+        assert tag_obj.name == tag_name
+        assert tag_obj.page_priority == page_priority
+        assert tag_obj.contents is not None
+        assert len(tag_obj.contents.thumbnails)
+        assert tag_obj.contents.thumbnails[0].file_id == thumbnail_id
+        assert tag_obj.contents.blurb == blurb
+        return tag_obj
+
+    def create_type_tag(type_model_name, type_id, tag_id):
+        # create tag for type_model
+        r = client.post(
+            f"{api_base}/tags/types/{type_model_name}",
+            json={'tag_id': tag_id, "type_id": type_id},
+            headers=headers,
+        )
+        assert_status_code(r, HTTPStatus.CREATED)
+        o = munchify(r.json())
+        assert o.tag_id == tag_id
+        assert o.type_id == type_id
+        return tag_id
+
+    def delete_type_tag(type_model_name, type_id, tag_id):
+        # create tag for type_model
+        r = client.delete(
+            f"{api_base}/tags/types/{type_model_name}/{tag_id}/{type_id}",
+            headers=headers,
+        )
+        assert_status_code(r, HTTPStatus.OK)
+
+    def delete_all_created_type_tags(created_asset_ids, tag_id):
+        # delete all model-type tags
+        for asset_id in created_asset_ids:
+            delete_type_tag("asset", asset_id, tag_id)
+
+    tag_obj1 = create_tag()
+    tag_name1 = tag_obj1.name
+    create_type_tag("asset", asset_id_1, tag_obj1.tag_id)
+    create_type_tag("asset", asset_id_2, tag_obj1.tag_id)
+
+    tag_obj2 = create_tag()
+    tag_name2 = tag_obj2.name
+    create_type_tag("asset", asset_id_1, tag_obj2.tag_id)
+
+    test_link_update1 = "https://test.test/foo"
+    test_link_update2 = "https://test.test/bar"
+    test_asset_ver_json = {
+        'commit_ref': test_commit_ref + '-updated-2',
+        'name': test_asset_name + '-updated-2',
+        'contents': {'files': [],
+                     'links': [test_link_update1, test_link_update2]},
+        'author_id': test_profile.profile.profile_id,
+    }
+    versions1 = sorted(["2.1.0", "1.8.0", "1.1.0", "1.0.7", "1.0.0"], reverse=True)
+    for version in sorted(versions1):
+        r = client.post(
+            f"{api_base}/assets/{asset_id_1}/versions/{version}",
+            json=test_asset_ver_json,
+            headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+
+    versions2 = sorted(["0.1.0", "0.0.13"], reverse=True)
+    for version in sorted(versions2):
+        r = client.post(
+            f"{api_base}/assets/{asset_id_2}/versions/{version}",
+            json=test_asset_ver_json,
+            headers=headers)
+        assert_status_code(r, HTTPStatus.CREATED)
+
+    # Get all assets with common tag
+    r = client.get(
+        f"{api_base}/tags/types/asset/filter",
+        params={"include": [tag_name1, tag_name2], "limit": 10},
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.OK)
+    o: list[AssetTopVersionsResult] = munchify(r.json())
+    assert len(o) == 2
+    assert o[0].asset_id == asset_id_1
+    for asset in o:
+        if asset.asset_id == asset_id_1:
+            assert asset.version == list(map(int, versions1[0].split(".")))
+            assert asset.versions == list(
+                [int(x) for x in i]
+                for i in list(map(lambda x: x.split("."), versions1))
+            )[:LATEST_GREATEST_VERSIONS_ASSET_NUM]
+        elif asset.asset_id == asset_id_2:
+            assert asset.version == list(map(int, versions2[0].split(".")))
+            assert asset.versions == list(
+                [int(x) for x in i]
+                for i in list(map(lambda x: x.split("."), versions2))
+            )[:LATEST_GREATEST_VERSIONS_ASSET_NUM]
+
+    # Get second asset that has been assigned with one tag
+    r = client.get(
+        f"{api_base}/tags/types/asset/filter",
+        params={"include": [tag_name1], "exclude": [tag_name2], "limit": 10},
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.OK)
+    o: list[AssetTopVersionsResult] = munchify(r.json())
+    assert len(o) == 1
+    assert o[0].asset_id == asset_id_2
+    
+    # Get first asset that has unique tag
+    r = client.get(
+        f"{api_base}/tags/types/asset/filter",
+        params={"include": [tag_name2], "limit": 10},
+        headers=headers,
+    )
+    assert_status_code(r, HTTPStatus.OK)
+    o: list[AssetTopVersionsResult] = munchify(r.json())
+    assert len(o) == 1
+    assert o[0].asset_id == asset_id_1
+    
+    
+    delete_all_created_type_tags(created_asset_ids, tag_obj1.tag_id)
+    delete_all_created_type_tags([asset_id_1], tag_obj2.tag_id)
