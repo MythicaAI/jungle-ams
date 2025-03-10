@@ -31,6 +31,7 @@ const PackageViewWrapper = lazy(() =>
 const QuickSetup = lazy(() => lazyRetry(() => import("@pages/QuickSetup")));
 const Welcome = lazy(() => lazyRetry(() => import("@pages/Welcome")));
 const ErrorPage = lazy(() => lazyRetry(() => import("@pages/ErrorPage")));
+const BabylonScenePage = lazy(() => lazyRetry(() => import("@pages/BabylonScenePage")));
 
 const App: React.FC = () => {
   useOnboarding();
@@ -84,6 +85,7 @@ const App: React.FC = () => {
           />
           <Route path="quick-setup" element={<QuickSetup />} />
           <Route path="welcome" element={<Welcome />} />
+          <Route path="demo" element={<BabylonScenePage />} />
         </Route>
       </Routes>
       <Notification />
