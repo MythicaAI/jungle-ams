@@ -253,9 +253,9 @@ class FolderParmTemplate(ParmTemplate):
     type: parmTemplateType = parmTemplateType.Folder
     level: int
     parm_templates: list[ParmTemplate]
-    folder_type: folderType
-    default_value: int
-    ends_tab_group: bool
+    folder_type: folderType = folderType.Tabs
+    default_value: int = 0
+    ends_tab_group: bool = False
     
     def __init__(self, name, label, num_components = None, **kwargs):
         self.parm_templates = []
@@ -310,7 +310,7 @@ class FolderParmTemplate(ParmTemplate):
             
             def wrapFolderset(pt: FolderParmTemplate):
                 fs = FolderSetParmTemplate()
-                fs.name = f"FolderSet Level {self.level + 1}"        
+                fs.name = f"FolderSet {self.id}"        
                 
                 self.parm_templates.append(fs)
                 fs.addFolderParmTemplate(pt,self.level + 1)
@@ -430,7 +430,7 @@ class ParmTemplateGroup():
             
             def wrapFolderset(pt: FolderParmTemplate):
                 fs = FolderSetParmTemplate()
-                fs.name = f"FolderSet Level 1"        
+                fs.name = f"FolderSet {fs.id}"        
                 self.parm_templates.append(fs)
                 fs.addFolderParmTemplate(pt)
 
