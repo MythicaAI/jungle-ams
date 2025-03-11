@@ -71,10 +71,10 @@ importers:
     devDependencies:
       '@babylonjs/loaders':
         specifier: ^7.51.0
-        version: 7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.51.1)
+        version: 7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.52.2)
       '@babylonjs/viewer':
         specifier: ^7.51.0
-        version: 7.51.1(@babylonjs/core@7.51.1)(@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.51.1))
+        version: 7.51.1(@babylonjs/core@7.51.1)(@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.52.2))
       '@eslint/js':
         specifier: ^9.17.0
         version: 9.21.0
@@ -153,6 +153,9 @@ importers:
       axios:
         specifier: ^1.7.2
         version: 1.8.1
+      babylonjs-loaders:
+        specifier: ^7.52.2
+        version: 7.52.2
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
@@ -252,7 +255,7 @@ importers:
         version: 7.26.0(@babel/core@7.26.9)
       '@babylonjs/viewer':
         specifier: ^7.51.1
-        version: 7.51.1(@babylonjs/core@7.51.1)(@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.51.1))
+        version: 7.51.1(@babylonjs/core@7.51.1)(@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.52.2))
       '@chromatic-com/storybook':
         specifier: ^1.6.1
         version: 1.9.0(react@18.3.1)
@@ -2794,8 +2797,14 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0
 
-  babylonjs-gltf2interface@7.51.1:
-    resolution: {integrity: sha512-JwBQfdlGdz6gyFeIrCnzvf/YnWeSMk9UUJVtGIxXpBKuB1R38zmL8AEhEgpwxfRZfYgCP/iwLnd0p1LzVhfE6g==}
+  babylonjs-gltf2interface@7.52.2:
+    resolution: {integrity: sha512-3DxWX44Oy0W5fGOYeWrWXuUnguhnV31lFbrNrG5eEH3xs1rMOq9KrcG94LDL/ZlbaB+1YF1L58H7Thi1dZ/2HA==}
+
+  babylonjs-loaders@7.52.2:
+    resolution: {integrity: sha512-723BmMAVM2BTWjHX3JRxOKCiRX6W7f98vI/PM5ku8hnrYnX4pZmYtlBxrIw9x6cT/G4Zn+hN62Q+5aGSuToyIA==}
+
+  babylonjs@7.52.2:
+    resolution: {integrity: sha512-fmNem6HtyQzoSpGLzrLex8JTalo+/rNIaylsYOqT1GWM5c3LXZXjTlB+ZThWy2HxcUImFeUAhNK1r+83orVRqQ==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -6272,15 +6281,15 @@ snapshots:
 
   '@babylonjs/core@7.51.1': {}
 
-  '@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.51.1)':
+  '@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.52.2)':
     dependencies:
       '@babylonjs/core': 7.51.1
-      babylonjs-gltf2interface: 7.51.1
+      babylonjs-gltf2interface: 7.52.2
 
-  '@babylonjs/viewer@7.51.1(@babylonjs/core@7.51.1)(@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.51.1))':
+  '@babylonjs/viewer@7.51.1(@babylonjs/core@7.51.1)(@babylonjs/loaders@7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.52.2))':
     dependencies:
       '@babylonjs/core': 7.51.1
-      '@babylonjs/loaders': 7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.51.1)
+      '@babylonjs/loaders': 7.51.1(@babylonjs/core@7.51.1)(babylonjs-gltf2interface@7.52.2)
       lit: 3.2.1
 
   '@bcoe/v8-coverage@0.2.3': {}
@@ -8262,7 +8271,14 @@ snapshots:
       babel-plugin-jest-hoist: 29.6.3
       babel-preset-current-node-syntax: 1.1.0(@babel/core@7.26.9)
 
-  babylonjs-gltf2interface@7.51.1: {}
+  babylonjs-gltf2interface@7.52.2: {}
+
+  babylonjs-loaders@7.52.2:
+    dependencies:
+      babylonjs: 7.52.2
+      babylonjs-gltf2interface: 7.52.2
+
+  babylonjs@7.52.2: {}
 
   balanced-match@1.0.2: {}
 

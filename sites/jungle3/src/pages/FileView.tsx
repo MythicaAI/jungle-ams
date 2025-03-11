@@ -12,9 +12,8 @@ import { useGetFile } from "@queries/files";
 import { useRunAutomation } from '@queries/automation';
 import { HDAInterfaceResponse } from 'types/apiTypes';
 import Cookies from "universal-cookie";
-import BabylonViewer from "@components/BabylonViewer/BabylonViewer";
+import SceneViewerFile from "@components/BabylonViewer/SceneViewerFile.tsx";
 import { v4 } from 'uuid';
-import 'houdini-ui/houdini-ui.css';
 interface FileViewProps {
   file_id?: string;
 }
@@ -28,7 +27,7 @@ export const FileView = (props: FileViewProps) => {
   const [parmTemplateGroup, setParmTemplateGroup] =useState<hou.ParmTemplateGroup>();
   const isHDA = file?.content_type === 'application/hda';
 
-  
+
   const { data: autoResp, isLoading: isAutomationLoading, error: automationError } = useRunAutomation({
     correlation: v4(),
     channel: 'houdini',
@@ -36,7 +35,7 @@ export const FileView = (props: FileViewProps) => {
     auth_token: cookies.get("auth_token"),
     data: { hdas: [file] }
   }, isHDA);
-  
+
   const hdaInterface = autoResp as HDAInterfaceResponse;
   useEffect(() => {
     if (hdaInterface) {
@@ -44,11 +43,11 @@ export const FileView = (props: FileViewProps) => {
       const getParmTemplateGroup = eval(strPt);
       const ptg = getParmTemplateGroup(hou) as hou.ParmTemplateGroup;
       setParmTemplateGroup(ptg);
-      ptg.draw();  
+      ptg.draw();
     }
   }, [hdaInterface]);
 
-  
+
   const handleError = (err: any ) => {
     addError(translateError(err));
     extractValidationErrors(err).forEach((msg) => addWarning(msg));
@@ -93,17 +92,10 @@ export const FileView = (props: FileViewProps) => {
         </>
       ) : file.content_type === 'application/gltf' ||
         file.content_type === 'application/glb' ? (
-        <BabylonViewer
-          src={file.url}
-          style={{
-            height: '100vh',
-            width: '100vh',
-            minHeight: '480px',
-            minWidth: '640px',
-          }}
-        />
+        <SceneViewerFile
+          src={file.url} />
       ) : file.content_type === 'application/hda' && parmTemplateGroup ? (
-        
+
         <ParmGroup
           data={inputData}
           group={parmTemplateGroup}
