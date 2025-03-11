@@ -95,18 +95,74 @@ export class SceneTalkConnection {
     this.requestInFlight = true;
     this.requestStartTime = performance.now();
 
+    const crystalParamValues = {
+      "length": params.length,
+      "radius": params.radius,
+      "numsides": params.numsides
+    };
+    const rockifyParamValues = {
+      Stage: {
+        type: 'slider',
+        label: 'Stage',
+        min: 0,
+        max: 3,
+        step: 1,
+        default: 1,
+      },
+      base_rangemax: {
+        type: 'slider',
+        label: 'Base Noise',
+        min: 0.0,
+        max: 10.0,
+        step: 0.5,
+        default: 6.5
+      },
+      mid_rangemax: {
+        type: 'slider',
+        label: 'Mid Noise',
+        min: 0.0,
+        max: 3,
+        step: 0.25,
+        default: 0.25
+      },
+      top_rangemax: {
+        type: 'slider',
+        label: 'Top Noise',
+        min: 0.0,
+        max: 5.0,
+        step: 0.5,
+        default: 0.5
+      },
+      smoothingiterations: {
+        type: 'hidden',
+        default: 0
+      },
+      vertDensity: {
+        type: 'hidden',
+        default: 0.1
+      },
+      size: {
+        type: 'hidden',
+        default: 512
+      },
+      input0: {
+        type: 'hidden',
+        default: {
+          file_id: "file_xxx",
+          file_path: "assets/SM_Shape_04_a.usd"
+        }
+      },
+    }
     const cookMessage: CookMessage = {
       "op": "cook",
       "data": {
         "hda_path": {
           "file_id": "file_xxx",
-          "file_path": "assets/mythica.crystal.1.0.hda"
+          "file_path": "assets/Mythica.Rockify.1.0.hda"
         },
         "definition_index": 0,
         "format": format,
-        "length": params.length,
-        "radius": params.radius,
-        "numsides": params.numsides
+        ...paramValues
       }
     };
 

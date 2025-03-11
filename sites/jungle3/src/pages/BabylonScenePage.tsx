@@ -30,7 +30,8 @@ const BabylonScenePage = () => {
 
   // Initialize WebSocket service
   useEffect(() => {
-    const wsService = new SceneTalkConnection();
+    const sceneTalkUrl = import.meta.env.VITE_SCENE_TALK_URL;
+    const wsService = new SceneTalkConnection(sceneTalkUrl);
     connRef.current = wsService;
 
     // Set up event handlers
@@ -40,6 +41,13 @@ const BabylonScenePage = () => {
         if (status === "connected") {
           // Send initial cook request when connected
           regenerateMesh();
+        }
+        else if (status === "disconnected") {
+          // Reschedule a connection
+          console.log("disconnected, retrying in 3 seconds");
+          setTimeout(() => {
+            wsService.connect();
+          }, 3000);
         }
       },
       onStatusLog: (log) => {
