@@ -1,35 +1,24 @@
-import { SceneParams } from "../stores/sceneStore";
 
-interface CookMessage {
-  op: string;
-  data: {
-    hda_path: {
-      file_id: string;
-      file_path: string;
-    };
-    definition_index: number;
-    format: string;
-    length: number;
-    radius: number;
-    numsides: number;
-  };
-}
 
-// WebSocket connection service
+// SceneTalk WebSocket Service
 export class SceneTalkConnection {
   private ws: WebSocket | null = null;
   private requestInFlight = false;
   private pendingRequest = false;
   private requestStartTime = 0;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private isReconnecting = false;
   private handlers: {
-    onStatusChange?: (status: "connected" | "disconnected") => void;
+    onStatusChange?: (status: "connected" | "disconnected" | "reconnecting") => void;
     onStatusLog?: (log: string) => void;
     onGeometryData?: (data: any) => void;
     onFileDownload?: (fileName: string, base64Content: string) => void;
     onRequestComplete?: (elapsedTime: number) => void;
   } = {};
 
-  constructor(private wsUrl: string = "ws://scenetalk.mythica.gg:8765") {}
+  constructor(private wsUrl: string = "ws://localhost:8765") {}
 
   // Set event handlers
   setHandlers(handlers: typeof this.handlers) {
@@ -42,12 +31,23 @@ export class SceneTalkConnection {
       return;
     }
 
+    // Clear any existing reconnect timeout
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
     this.ws = new WebSocket(this.wsUrl);
 
     this.ws.onopen = () => {
       console.log("Connected to WebSocket server");
+      this.reconnectAttempts = 0;
+      this.isReconnecting = false;
       if (this.handlers.onStatusChange) {
         this.handlers.onStatusChange("connected");
+      }
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Connected to server");
       }
     };
 
@@ -56,6 +56,10 @@ export class SceneTalkConnection {
       if (this.handlers.onStatusChange) {
         this.handlers.onStatusChange("disconnected");
       }
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Disconnected from server");
+      }
+      this.attemptReconnect();
     };
 
     this.ws.onmessage = (event) => {
@@ -69,11 +73,51 @@ export class SceneTalkConnection {
 
     this.ws.onerror = (error) => {
       console.error("WebSocket error:", error);
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("WebSocket connection error");
+      }
     };
+  }
+
+  // Attempt to reconnect with exponential backoff
+  private attemptReconnect() {
+    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
+      return;
+    }
+
+    this.isReconnecting = true;
+
+    if (this.handlers.onStatusChange) {
+      this.handlers.onStatusChange("reconnecting");
+    }
+
+    if (this.handlers.onStatusLog) {
+      this.handlers.onStatusLog(`Attempting to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
+    }
+
+    // Calculate backoff time: 1s, 2s, 4s, 8s, 16s
+    const backoffTime = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 5000);
+
+    this.reconnectTimeout = setTimeout(() => {
+      this.reconnectAttempts++;
+      this.isReconnecting = false;
+      this.connect();
+    }, backoffTime);
+  }
+
+  // Reset reconnection attempts
+  resetReconnect() {
+    this.reconnectAttempts = 0;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    this.isReconnecting = false;
   }
 
   // Disconnect from the WebSocket server
   disconnect() {
+    this.resetReconnect();
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -81,9 +125,13 @@ export class SceneTalkConnection {
   }
 
   // Send a cook request to generate a mesh
-  sendCookRequest(params: SceneParams, format: string = "raw") {
+  sendCookRequest(hdaFilePath: string, params: {[key: string]: any}, format: string = "raw") {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Failed to send request: Connection not open");
+      }
+      this.attemptReconnect();
       return false;
     }
 
@@ -95,82 +143,31 @@ export class SceneTalkConnection {
     this.requestInFlight = true;
     this.requestStartTime = performance.now();
 
-    const crystalParamValues = {
-      "length": params.length,
-      "radius": params.radius,
-      "numsides": params.numsides
-    };
-    const rockifyParamValues = {
-      Stage: {
-        type: 'slider',
-        label: 'Stage',
-        min: 0,
-        max: 3,
-        step: 1,
-        default: 1,
-      },
-      base_rangemax: {
-        type: 'slider',
-        label: 'Base Noise',
-        min: 0.0,
-        max: 10.0,
-        step: 0.5,
-        default: 6.5
-      },
-      mid_rangemax: {
-        type: 'slider',
-        label: 'Mid Noise',
-        min: 0.0,
-        max: 3,
-        step: 0.25,
-        default: 0.25
-      },
-      top_rangemax: {
-        type: 'slider',
-        label: 'Top Noise',
-        min: 0.0,
-        max: 5.0,
-        step: 0.5,
-        default: 0.5
-      },
-      smoothingiterations: {
-        type: 'hidden',
-        default: 0
-      },
-      vertDensity: {
-        type: 'hidden',
-        default: 0.1
-      },
-      size: {
-        type: 'hidden',
-        default: 512
-      },
-      input0: {
-        type: 'hidden',
-        default: {
-          file_id: "file_xxx",
-          file_path: "assets/SM_Shape_04_a.usd"
-        }
-      },
-    }
-    const cookMessage: CookMessage = {
+    // Create cook message with dynamic parameters
+    const cookMessage = {
       "op": "cook",
       "data": {
         "hda_path": {
           "file_id": "file_xxx",
-          "file_path": "assets/Mythica.Rockify.1.0.hda"
+          "file_path": hdaFilePath
         },
         "definition_index": 0,
         "format": format,
-        ...paramValues
+        ...params  // Spread all parameters
       }
     };
 
     try {
       this.ws.send(JSON.stringify(cookMessage));
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Sent cook request to server");
+      }
       return true;
     } catch (error) {
       console.error("Error sending cook message:", error);
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog(`Error sending request: ${error}`);
+      }
       this.requestInFlight = false;
       return false;
     }
@@ -216,7 +213,12 @@ export class SceneTalkConnection {
     }
   }
 
-  // Download helper function for file data
+  // Check if connection is active
+  isConnected(): boolean {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  // Static helper function for file downloads
   static downloadFileFromBase64(fileName: string, base64Content: string) {
     try {
       // Decode the Base64 string into a binary string
@@ -245,3 +247,73 @@ export class SceneTalkConnection {
     }
   }
 }
+
+// Helper utility functions for mesh creation and WebSocket handling
+
+/**
+ * Create WebSocket connection with simplified callback interface
+ */
+export const createWebSocketConnection = (url: string, callbacks: {
+  onOpen?: () => void;
+  onClose?: () => void;
+  onMessage?: (data: any) => void;
+  onError?: (error: Event) => void;
+}) => {
+  const ws = new WebSocket(url);
+
+  if (callbacks.onOpen) {
+    ws.onopen = callbacks.onOpen;
+  }
+
+  if (callbacks.onClose) {
+    ws.onclose = callbacks.onClose;
+  }
+
+  if (callbacks.onMessage) {
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        callbacks.onMessage?.(data);
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+  }
+
+  if (callbacks.onError) {
+    ws.onerror = callbacks.onError;
+  }
+
+  return ws;
+};
+
+/**
+ * Send a simple cook message without requiring the full service class
+ */
+export const sendSimpleCookMessage = (ws: WebSocket, hdaFilePath: string, params: {[key: string]: any}, format: string = "raw") => {
+  if (ws.readyState !== WebSocket.OPEN) {
+    console.error("WebSocket is not connected");
+    return false;
+  }
+
+  const cookMessage = {
+    "op": "cook",
+    "data": {
+      "hda_path": {
+        "file_id": "file_xxx",
+        "file_path": hdaFilePath
+      },
+      "definition_index": 0,
+      "format": format,
+      ...params
+    }
+  };
+
+  try {
+    ws.send(JSON.stringify(cookMessage));
+    return true;
+  } catch (error) {
+    console.error("Error sending cook message:", error);
+    return false;
+  }
+};

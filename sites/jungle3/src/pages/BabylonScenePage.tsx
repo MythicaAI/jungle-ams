@@ -2,20 +2,23 @@ import { useEffect, useState, useRef } from "react";
 import { Box, CircularProgress } from "@mui/joy";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
-import SceneViewer from "@components/BabylonViewer/SceneViewer.tsx"
-import SceneControls from "@components/BabylonViewer/SceneControls.tsx";
-import { useSceneStore } from "../stores/sceneStore";
-import { SceneTalkConnection } from "../services/sceneTalkConnection.ts";
+import SceneViewer from "@components/BabylonViewer/SceneViewer";
+import SceneControls from "@components/BabylonViewer/SceneControls";
+import { useSceneStore } from "@store/sceneStore";
+import { SceneTalkConnection } from "../services/sceneTalkConnection";
 
 const BabylonScenePage = () => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
-  const connRef = useRef<SceneTalkConnection | null>(null);
+  const wsServiceRef = useRef<SceneTalkConnection | null>(null);
 
   // Get state and actions from the store
   const {
+    wsStatus,
     setWsStatus,
-    params,
+    hdaSchemas,
+    selectedHdaIndex,
+    paramValues,
     setMeshData,
     addStatusLog,
     clearStatusLog,
@@ -28,11 +31,13 @@ const BabylonScenePage = () => {
     setExportFormat
   } = useSceneStore();
 
+  // Get current HDA schema
+  const currentSchema = hdaSchemas[selectedHdaIndex];
+
   // Initialize WebSocket service
   useEffect(() => {
-    const sceneTalkUrl = import.meta.env.VITE_SCENE_TALK_URL;
-    const wsService = new SceneTalkConnection(sceneTalkUrl);
-    connRef.current = wsService;
+    const wsService = new SceneTalkConnection("ws://localhost:8765");
+    wsServiceRef.current = wsService;
 
     // Set up event handlers
     wsService.setHandlers({
@@ -41,13 +46,6 @@ const BabylonScenePage = () => {
         if (status === "connected") {
           // Send initial cook request when connected
           regenerateMesh();
-        }
-        else if (status === "disconnected") {
-          // Reschedule a connection
-          console.log("disconnected, retrying in 3 seconds");
-          setTimeout(() => {
-            wsService.connect();
-          }, 3000);
         }
       },
       onStatusLog: (log) => {
@@ -91,8 +89,8 @@ const BabylonScenePage = () => {
 
   // Function to send a regenerate mesh request
   const regenerateMesh = (format = "raw") => {
-    if (!connRef.current) {
-      console.error("SceneTalk connection not initialized");
+    if (!wsServiceRef.current) {
+      console.error("WebSocket service not initialized");
       return;
     }
 
@@ -107,8 +105,11 @@ const BabylonScenePage = () => {
     // Set request in flight
     setRequestInFlight(true);
 
-    // Send the cook request
-    connRef.current.sendCookRequest(params, format);
+    // Get the file path for the current HDA
+    const hdaFilePath = currentSchema.file_path;
+
+    // Send the cook request with all parameters for the current HDA
+    wsServiceRef.current.sendCookRequest(hdaFilePath, paramValues, format);
   };
 
   // Watch for export format changes
@@ -117,6 +118,13 @@ const BabylonScenePage = () => {
       regenerateMesh(exportFormat);
     }
   }, [exportFormat]);
+
+  // Re-generate mesh when HDA or parameters change
+  useEffect(() => {
+    if (wsStatus === "connected" && !requestInFlight) {
+      regenerateMesh();
+    }
+  }, [selectedHdaIndex, paramValues]);
 
   // Set loading to false after initial setup
   useEffect(() => {
@@ -130,11 +138,11 @@ const BabylonScenePage = () => {
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
       <Helmet>
-        <title>Mythica • {t("common.babylonScene")}</title>
+        <title>Mythica • {t("common.sceneViewer")}</title>
       </Helmet>
 
       <SceneControls />
-      <SceneViewer isWireframe={false} />
+      <SceneViewer />
     </Box>
   );
 };

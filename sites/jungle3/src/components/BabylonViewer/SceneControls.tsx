@@ -1,12 +1,16 @@
-import { Box, Button, Typography } from "@mui/joy";
-import { useState, ChangeEvent } from "react";
-import { useSceneStore } from "@store/sceneStore";
+import { Box, Button, Typography, Select, Option, FormControl, FormLabel } from "@mui/joy";
+import { useState, ChangeEvent, useEffect } from "react";
+import { useSceneStore, ParameterSlider } from "@store/sceneStore";
 
 const SceneControls = () => {
   // Get state and actions from the store
   const {
-    params,
+    hdaSchemas,
+    selectedHdaIndex,
+    setSelectedHdaIndex,
+    paramValues,
     updateParam,
+    resetParams,
     wsStatus,
     generateTime,
     isWireframe,
@@ -16,19 +20,35 @@ const SceneControls = () => {
     setExportFormat
   } = useSceneStore();
 
-  // Local state for slider values to prevent immediate regeneration
-  const [lengthValue, setLengthValue] = useState(params.length);
-  const [radiusValue, setRadiusValue] = useState(params.radius);
-  const [numsidesValue, setNumsidesValue] = useState(params.numsides);
+  // Get the current HDA schema
+  const currentSchema = hdaSchemas[selectedHdaIndex];
 
-  // Handle changes with debouncing to avoid too many WebSocket requests
-  const handleSliderChange = (_: string, setter: (value: number) => void) => (e: ChangeEvent<HTMLInputElement>) => {
+  // Local state for slider values to prevent immediate regeneration
+  const [localParamValues, setLocalParamValues] = useState<{[key: string]: number}>(paramValues);
+
+  // Update local parameter values when selected HDA changes
+  useEffect(() => {
+    setLocalParamValues(paramValues);
+  }, [paramValues, selectedHdaIndex]);
+
+  // Handle HDA selection change
+  const handleHdaChange = (_event: any, value: number | null) => {
+    if (value !== null) {
+      setSelectedHdaIndex(value);
+    }
+  };
+
+  // Handle slider change
+  const handleSliderChange = (key: string) => (e: ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
-    setter(value);
+    setLocalParamValues(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   // Update actual parameters on slider release
-  const handleSliderCommit = (key: keyof typeof params, value: number) => {
+  const handleSliderCommit = (key: string, value: number) => {
     updateParam(key, value);
   };
 
@@ -59,11 +79,13 @@ const SceneControls = () => {
           borderRadius: "4px",
           fontWeight: "bold",
           textAlign: "center",
-          backgroundColor: wsStatus === "connected" ? "#4CAF50" : "#f44336",
+          backgroundColor: wsStatus === "connected" ? "#4CAF50" :
+            wsStatus === "reconnecting" ? "#FFA500" : "#f44336",
           color: "white"
         }}
       >
-        {wsStatus === "connected" ? "Connected" : "Disconnected"}
+        {wsStatus === "connected" ? "Connected" :
+          wsStatus === "reconnecting" ? "Reconnecting..." : "Disconnected"}
       </Box>
 
       {/* Generate Time */}
@@ -102,12 +124,33 @@ const SceneControls = () => {
         <Box sx={{ clear: "both" }}></Box>
       </Box>
 
+      {/* HDA Selection */}
+      <FormControl sx={{ mb: 3 }}>
+        <FormLabel sx={{ color: '#e0e0e0' }}>Select Generator</FormLabel>
+        <Select
+          value={selectedHdaIndex}
+          onChange={handleHdaChange}
+          variant="outlined"
+          color="neutral"
+          sx={{
+            bgcolor: '#333',
+            '& .MuiSelect-indicator': { color: '#e0e0e0' }
+          }}
+        >
+          {hdaSchemas.map((schema, index) => (
+            <Option key={index} value={index}>
+              {schema.name}
+            </Option>
+          ))}
+        </Select>
+      </FormControl>
+
       {/* Parameters Section Header */}
       <Box
         sx={{
           backgroundColor: "#2d2d2d",
           padding: "8px",
-          margin: "-15px -15px 15px -15px",
+          margin: "0 -15px 15px -15px",
           borderBottom: "1px solid #333"
         }}
       >
@@ -119,67 +162,56 @@ const SceneControls = () => {
         </Typography>
       </Box>
 
-      {/* Length Slider */}
-      <Box sx={{ marginBottom: "20px" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ width: "80px" }}>Length:</span>
-          <input
-            type="range"
-            min="0.5"
-            max="5"
-            step="0.1"
-            value={lengthValue}
-            onChange={handleSliderChange("length", setLengthValue)}
-            onMouseUp={() => handleSliderCommit("length", lengthValue)}
-            onTouchEnd={() => handleSliderCommit("length", lengthValue)}
-            style={{ flex: 1, width: "150px" }}
-          />
-          <span style={{ width: "40px", textAlign: "right" }}>
-            {lengthValue.toFixed(1)}
-          </span>
-        </Box>
-      </Box>
+      {/* Dynamic Parameter Sliders */}
+      <Box sx={{ mb: 3 }}>
+        {Object.entries(currentSchema.parameters).map(([key, config]) => {
+          if (config.type === 'hidden') return null;
 
-      {/* Radius Slider */}
-      <Box sx={{ marginBottom: "20px" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ width: "80px" }}>Radius:</span>
-          <input
-            type="range"
-            min="0.1"
-            max="2"
-            step="0.1"
-            value={radiusValue}
-            onChange={handleSliderChange("radius", setRadiusValue)}
-            onMouseUp={() => handleSliderCommit("radius", radiusValue)}
-            onTouchEnd={() => handleSliderCommit("radius", radiusValue)}
-            style={{ flex: 1, width: "150px" }}
-          />
-          <span style={{ width: "40px", textAlign: "right" }}>
-            {radiusValue.toFixed(1)}
-          </span>
-        </Box>
-      </Box>
+          const sliderConfig = config as ParameterSlider;
 
-      {/* Sides Slider */}
-      <Box sx={{ marginBottom: "20px" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ width: "80px" }}>Sides:</span>
-          <input
-            type="range"
-            min="3"
-            max="12"
-            step="1"
-            value={numsidesValue}
-            onChange={handleSliderChange("numsides", setNumsidesValue)}
-            onMouseUp={() => handleSliderCommit("numsides", numsidesValue)}
-            onTouchEnd={() => handleSliderCommit("numsides", numsidesValue)}
-            style={{ flex: 1, width: "150px" }}
-          />
-          <span style={{ width: "40px", textAlign: "right" }}>
-            {numsidesValue}
-          </span>
-        </Box>
+          return (
+            <Box key={key} sx={{ marginBottom: "20px" }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ width: "100px" }}>{sliderConfig.label}:</span>
+                <input
+                  type="range"
+                  min={sliderConfig.min}
+                  max={sliderConfig.max}
+                  step={sliderConfig.step}
+                  value={localParamValues[key] !== undefined ? localParamValues[key] : sliderConfig.default}
+                  onChange={handleSliderChange(key)}
+                  onMouseUp={() => handleSliderCommit(key, localParamValues[key])}
+                  onTouchEnd={() => handleSliderCommit(key, localParamValues[key])}
+                  style={{ flex: 1, width: "100px" }}
+                />
+                <span style={{ width: "40px", textAlign: "right" }}>
+                  {localParamValues[key]?.toFixed(
+                    sliderConfig.step < 1 ? 1 : 0
+                  )}
+                </span>
+              </Box>
+            </Box>
+          );
+        })}
+
+        <Button
+          onClick={resetParams}
+          fullWidth
+          size="sm"
+          variant="outlined"
+          color="neutral"
+          sx={{
+            mb: 2,
+            padding: "6px",
+            backgroundColor: "#333",
+            border: "1px solid #555",
+            color: "#e0e0e0",
+            cursor: "pointer",
+            borderRadius: "4px"
+          }}
+        >
+          Reset Parameters
+        </Button>
       </Box>
 
       {/* Wireframe Toggle */}
@@ -243,7 +275,7 @@ const SceneControls = () => {
           sx={{
             backgroundColor: "#2d2d2d",
             padding: "8px",
-            margin: "-15px -15px 15px -15px",
+            margin: "0 -15px 15px -15px",
             borderBottom: "1px solid #333"
           }}
         >
