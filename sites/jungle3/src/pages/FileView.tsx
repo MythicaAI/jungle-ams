@@ -93,14 +93,7 @@ export const FileView = (props: FileViewProps) => {
       ) : file.content_type === 'application/gltf' ||
         file.content_type === 'application/glb' ? (
         <SceneViewerFile
-          src={file.url}
-          style={{
-            height: '100vh',
-            width: '100vh',
-            minHeight: '480px',
-            minWidth: '640px',
-          }}
-        />
+          src={file.url} />
       ) : file.content_type === 'application/hda' && parmTemplateGroup ? (
 
         <ParmGroup

@@ -22,7 +22,7 @@ const SceneControls = () => {
   const [numsidesValue, setNumsidesValue] = useState(params.numsides);
 
   // Handle changes with debouncing to avoid too many WebSocket requests
-  const handleSliderChange = (key: string, setter: (value: number) => void) => (e: ChangeEvent<HTMLInputElement>) => {
+  const handleSliderChange = (_: string, setter: (value: number) => void) => (e: ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setter(value);
   };

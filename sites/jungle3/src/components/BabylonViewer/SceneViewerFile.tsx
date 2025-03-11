@@ -15,8 +15,8 @@ interface SceneViewFileProps {
 
 const SceneViewerFile = ({
                          src,
-                         width = '100%',
-                         height = '100%',
+                         width = '100vh',
+                         height = '100vh',
                          backgroundColor = '#303030',
                          rotationSpeed = 0.005,
                          showWireframe = false,
@@ -124,7 +124,7 @@ const SceneViewerFile = ({
         camera.radius = 5;
 
         if (autoRotate) {
-          // Add auto-rotation animation
+          // Add autorotation animation
           scene.registerBeforeRender(() => {
             rootMesh.rotate(
               BABYLON.Vector3.Up(),
@@ -135,7 +135,7 @@ const SceneViewerFile = ({
         }
       },
       null,
-      (scene, message, exception) => {
+      (_, message, exception) => {
         // Error callback
         console.error("Error loading model:", message, exception);
         setIsLoading(false);
@@ -216,7 +216,7 @@ const SceneViewerFile = ({
           }
         },
         null,
-        (scene, message) => {
+        (_, message) => {
           setIsLoading(false);
           setLoadingError(`Failed to load 3D model: ${message}`);
         }
@@ -225,7 +225,7 @@ const SceneViewerFile = ({
   }, [src]);
 
   return (
-    <Box sx={{ position: 'relative', width, height }}>
+    <Box sx={{ position: 'relative', minHeight: '480x', minWidth: '640px', width, height }}>
   <canvas
     ref={canvasRef}
   style={{

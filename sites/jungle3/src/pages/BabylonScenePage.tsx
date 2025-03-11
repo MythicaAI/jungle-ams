@@ -14,7 +14,6 @@ const BabylonScenePage = () => {
 
   // Get state and actions from the store
   const {
-    wsStatus,
     setWsStatus,
     params,
     setMeshData,
@@ -127,7 +126,7 @@ const BabylonScenePage = () => {
       </Helmet>
 
       <SceneControls />
-      <SceneViewer />
+      <SceneViewer isWireframe={false} />
     </Box>
   );
 };

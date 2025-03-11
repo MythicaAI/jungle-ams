@@ -1,4 +1,4 @@
-import * as BABYLON from 'babylonjs';
+import * as BABYLON from '@babylonjs/core';
 import 'babylonjs-loaders';
 
 interface ModelLoaderOptions {
@@ -31,9 +31,6 @@ export const loadModelIntoScene = (
     onProgress,
     rootUrl = ''
   } = options;
-
-  // Determine file extension to handle different formats
-  const fileExtension = fileUrl.split('.').pop()?.toLowerCase() || '';
 
   return new Promise((resolve, reject) => {
     // When loading from a URL, we need to extract the file name
