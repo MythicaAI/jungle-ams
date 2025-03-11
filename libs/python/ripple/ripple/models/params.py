@@ -137,6 +137,8 @@ class MenuParmTemplateSpec(ParmTemplateSpec):
     is_menu: bool = False
     is_button_strip: bool = False
     strip_uses_icons: bool = False
+    menu_use_token: bool = False
+    
 
 class LabelParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.Label] = hou.parmTemplateType.Label
@@ -182,6 +184,7 @@ HoudiniParmTemplateSpecType = Annotated[
         DataParmTemplateSpec,
         FolderParmTemplateSpec,
         FolderSetParmTemplateSpec,
+        FileParameterSpec,
     ],
     Field(discriminator='param_type')
 ]
@@ -196,7 +199,7 @@ ParameterSpecType = Annotated[
         EnumParameterSpec,
         FileParameterSpec,
         RampParameterSpec,
-        "HoudiniParmTemplateSpecType" 
+        HoudiniParmTemplateSpecType
     ],
     Field(discriminator='param_type')
 ]
@@ -205,8 +208,8 @@ class ParameterSpec(BaseModel):
     """ 
     Specification of parameters a job expects as input
     """
-    params: dict[str, ParameterSpecType | dict[str,ParameterSpecType]]
-
+    params: dict[str, ParameterSpecType]
+    params_v2: Optional[dict[str,HoudiniParmTemplateSpecType]] = None
 
 class FileParameter(BaseModel):
     file_id: str
