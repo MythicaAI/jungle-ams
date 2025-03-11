@@ -1,13 +1,14 @@
 from typing import Optional
 import uuid
 import re
+from ripple.compile.rpsc import parse_index_menu_parameter, parse_string_menu_parameter
+
 from ripple.models.params import (
     BoolParameterSpec,
     EnumParameterSpec,
     FloatParameterSpec,
     IntParameterSpec,
     ParameterSpec,
-    ParameterSpecModel,
     ParameterSpecType,
     ParmTemplateSpec,
     RampParameterSpec,
@@ -137,16 +138,29 @@ class FloatParmTemplate(ParmTemplate):
     
 class StringParmTemplate(ParmTemplate):
     type: parmTemplateType = parmTemplateType.String
+    menu_items: list[str] = []
+    menu_labels: list[str] = []
+    menu_use_token: bool = False
 
     def getParmTemplateSpec(self) -> StringParmTemplateSpec:
         return StringParmTemplateSpec(**self.__dict__)
 
     def getParameterSpec(self) -> list[StringParameterSpec]:
-        default_value = self.default_value
-        if isinstance(default_value, list) and self.num_components == 1:
-            default_value = default_value[0]
+        if self.menu_items and len(self.menu_items) > 0:
+            value = {
+                "menu_items": self.menu_items,
+                "menu_labels": self.menu_labels,
+                "default": self.default_value[0],
+                "label": self.label,
+                "menu_use_tokens": self.menu_use_token
+            }
+            return [parse_string_menu_parameter(value)]        
+        else:
+            default_value = self.default_value
+            if isinstance(default_value, list) and self.num_components == 1:
+                default_value = default_value[0]
 
-        return [StringParameterSpec(default=default_value, **self.__dict__)]
+            return [StringParameterSpec(default=default_value, **self.__dict__)]
 
 class ToggleParmTemplate(ParmTemplate):
     type: parmTemplateType = parmTemplateType.Toggle
@@ -159,12 +173,23 @@ class ToggleParmTemplate(ParmTemplate):
 
 class MenuParmTemplate(ParmTemplate):
     type: parmTemplateType = parmTemplateType.Menu
+    menu_items: list[str] = []
+    menu_labels: list[str] = []
+    menu_use_token: bool = False
+    default_value: int = 0
 
     def getParmTemplateSpec(self) -> MenuParmTemplateSpec:
         return MenuParmTemplateSpec(**self.__dict__)
    
-    def getParameterSpec(self) -> list[ParameterSpecType]:
-        return []
+    def getParameterSpec(self) -> list[EnumParameterSpec]:
+        value = {
+            "menu_items": self.menu_items,
+            "menu_labels": self.menu_labels,
+            "default": self.default_value,
+            "label": self.label,
+            "menu_use_tokens": self.menu_use_token
+        }
+        return [parse_index_menu_parameter(value)]
     
 class LabelParmTemplate(ParmTemplate):
     type: parmTemplateType = parmTemplateType.Label
@@ -387,7 +412,9 @@ class ParmTemplateGroup():
         return self.parm_templates
 
     def getParmTemplateSpec(self) -> ParameterSpec:
-        params: dict[str, HoudiniParmTemplateSpecType] = {}
+        params: dict[str,ParameterSpecType] = {}
+        params_v2: dict[str, HoudiniParmTemplateSpecType] = {}
+    
 
         for tmpl in self.parm_templates:
             
@@ -397,29 +424,18 @@ class ParmTemplateGroup():
                 ButtonParmTemplate, FloatParmTemplate, IntParmTemplate, StringParmTemplate, 
                 ToggleParmTemplate, MenuParmTemplate, LabelParmTemplate, DataParmTemplate)
             ):
-                spec: HoudiniParmTemplateSpecType = tmpl.getParmTemplateSpec()  # Explicit type hinting
-                params[tmpl.name if tmpl.name else tmpl.id] = spec
-
-        return ParameterSpec(params=params)
-
-    def getParameterSpec(self) -> ParameterSpec:
-        parameterSpecs: dict[str,ParameterSpecType] = {}
-
-        for pt in self.parm_templates:
-            
-            if isinstance(
-                pt, 
-                (FolderSetParmTemplate, FolderParmTemplate, RampParmTemplate, SeparatorParmTemplate, 
-                ButtonParmTemplate, FloatParmTemplate, IntParmTemplate, StringParmTemplate, 
-                ToggleParmTemplate, MenuParmTemplate, LabelParmTemplate, DataParmTemplate)
-            ):
-                spec: list[ParameterSpecType]= pt.getParameterSpec()  # Explicit type casting
+                spec: list[ParameterSpecType]= tmpl.getParameterSpec()  # Explicit type casting
                 if spec is not None:
                     for s in spec:
-                        parameterSpecs[s.label] = s
-                        
-        return ParameterSpec(params=parameterSpecs)
+                        params[s.label] = s
 
+                specv2: HoudiniParmTemplateSpecType = tmpl.getParmTemplateSpec()  # Explicit type hinting
+                params_v2[tmpl.name if tmpl.name else tmpl.id] = specv2         
+
+        return ParameterSpec(
+            params=params,
+            params_v2=params_v2
+        )
 
     def append(self, parm_template: ParmTemplate):
         self.addParmTemplate(parm_template)

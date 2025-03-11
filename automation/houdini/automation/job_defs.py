@@ -61,9 +61,12 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
             continue
         
         #Parse inputs and convert them to FileParameterSpec
-        files: dict[str, FileParameterSpec] = {}
+        in_files: dict[str, FileParameterSpec] = {}
         for index, name in enumerate(type_info['inputLabels']):
-            files[f'input{index}'] = FileParameterSpec(label=name, default='')
+            in_files[f'input{index}'] = FileParameterSpec(label=name, default='')
+        out_files: dict[str, FileParameterSpec] = {}
+        for index, name in enumerate(type_info['outputLabels']):
+            out_files[f'output{index}'] = FileParameterSpec(label=name, default='')
 
         #Get parmTemplate definition script
         nt_python = type_info['code']
@@ -94,20 +97,20 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
                 entry_point=type_info['name']
             )
         
-        base = group.getParameterSpec().params
-        houdini = group.getParmTemplateSpec().params
-        base.update(files)
-        houdini.update(files)
+        all = group.getParmTemplateSpec()
+        params = all.params
+        params_v2 = all.params_v2
+        params.update(in_files)
+        params_v2.update(in_files)
+        params_v2.update(out_files)
 
         res = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
             name=f"Generate {type_info['name']}",
             description=type_info['description'],
             parameter_spec= ParameterSpec(
-                params={
-                    "base": base,
-                    "houdini": houdini
-                }
+                params= params,
+                params_v2=params_v2
             ),
             source=source
         )

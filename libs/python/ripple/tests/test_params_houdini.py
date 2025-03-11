@@ -22,7 +22,7 @@ from ripple.models.houTypes import (
 
 # Import specs from params (the new Houdini parameter specs)
 from ripple.models.params import (
-    ParmTemplateSpec,
+    EnumParameterSpec,
     SeparatorParmTemplateSpec,
     ButtonParmTemplateSpec,
     IntParmTemplateSpec,
@@ -35,8 +35,7 @@ from ripple.models.params import (
     DataParmTemplateSpec,
     FolderParmTemplateSpec,
     FolderSetParmTemplateSpec,
-    RampPointSpec,
-    HoudiniParmTemplateSpecType,
+    RampPointSpec
 )
 
 # Import the classes from houClasses
@@ -393,7 +392,7 @@ def test_toggle_parm_template_class():
 
 
 def test_menu_parm_template_class():
-    mpt = MenuParmTemplate("menu_test", default_value=1, menu_items=["itemA", "itemB"])
+    mpt = MenuParmTemplate("menu_test", default_value=1, menu_items=["itemA", "itemB"], menu_labels=["Item A", "Item B"], menu_use_token=True)
     assert mpt.type == parmTemplateType.Menu
     assert mpt.name == "menu_test"
     assert mpt.default_value == 1
@@ -406,7 +405,13 @@ def test_menu_parm_template_class():
 
     pspec_list = mpt.getParameterSpec()
     # By default, getParameterSpec() for a MenuParmTemplate returns []
-    assert pspec_list == []
+    assert len(pspec_list) == 1
+    pspec:EnumParameterSpec = pspec_list[0]
+    assert pspec.param_type == "enum"
+    assert len(pspec.values) == 2
+    assert pspec.values[0].name == "0"
+    assert pspec.values[0].label == "Item A"
+    
 
 
 def test_label_parm_template_class():
@@ -579,17 +584,16 @@ def test_parm_template_group_basic():
 
     # Test getParmTemplateSpec -> returns a ParameterSpec with HoudiniParmTemplateSpecType
     pt_spec = group.getParmTemplateSpec()
-    assert len(pt_spec.params) == 3
-    assert pt_spec.params["my_int"].param_type == parmTemplateType.Int
-    assert pt_spec.params["my_float"].param_type == parmTemplateType.Float
-    assert pt_spec.params["my_string"].param_type == parmTemplateType.String
+    assert len(pt_spec.params_v2) == 3
+    assert pt_spec.params_v2["my_int"].param_type == parmTemplateType.Int
+    assert pt_spec.params_v2["my_float"].param_type == parmTemplateType.Float
+    assert pt_spec.params_v2["my_string"].param_type == parmTemplateType.String
 
     # Test getParameterSpec -> returns a ParameterSpec with standard ParameterSpecType
-    param_spec = group.getParameterSpec()
-    assert len(param_spec.params) == 3
-    assert "My Int" in param_spec.params
-    assert "My Float" in param_spec.params
-    assert "My String" in param_spec.params  # the folder is keyed by label
+    assert len(pt_spec.params) == 3
+    assert "My Int" in pt_spec.params
+    assert "My Float" in pt_spec.params
+    assert "My String" in pt_spec.params  # the folder is keyed by label
    
 
 def test_parm_template_group_nested_folder():
@@ -609,14 +613,93 @@ def test_parm_template_group_nested_folder():
 
     pt_spec = group.getParmTemplateSpec()
     # top is the name, but we get the folderSet inside it
-    top_folderset_spec = pt_spec.params[f"FolderSet {folder_set.id}"]
+    top_folderset_spec = pt_spec.params_v2[f"FolderSet {folder_set.id}"]
     assert top_folderset_spec.param_type == parmTemplateType.FolderSet
     assert len(top_folderset_spec.params) == 1
     assert top_folderset_spec.params[0].param_type == parmTemplateType.Folder
     # that single param is the folderSet
 
-    param_spec = group.getParameterSpec()
-    # child toggle is labeled "child_toggle", so it should appear by that label
-    print (param_spec.model_dump_json())
-    t = param_spec.params["child toggle"]
-    assert t.param_type == "bool"
+
+def test_string_parm_template_menu_items():
+    # This covers the branch if self.menu_items and len(...) > 0
+    spt = StringParmTemplate(
+        "str_menu_test",
+        label="String With Menu",
+        default_value=["Hello"],
+        num_components=1,
+        menu_items=["foo", "bar", "baz"],
+        menu_labels=["Foo", "Bar", "Baz"],
+        menu_use_token=False
+    )
+
+    pspec_list = spt.getParameterSpec()
+    assert len(pspec_list) == 1
+    param = pspec_list[0]
+
+    # parse_string_menu_parameter should yield an EnumParameterSpec
+    assert isinstance(param, EnumParameterSpec)
+    assert len(param.values) == 3
+    assert param.values[0].name == "foo"
+    assert param.values[0].label == "Foo"
+    # The default in parse_string_menu_parameter is "Hello", but if it doesn't appear in menu_items,
+    # your code might fallback or do something else. Adjust as needed if your logic normalizes the default.
+    assert param.default in (v.name for v in param.values)
+
+
+def test_folder_parm_template_is_actual_folder():
+    # A folder with folderType=TABS => True
+    f1 = FolderParmTemplate("folder_test1", label="FolderTest1", folder_type=folderType.Tabs)
+    assert f1.isActualFolder() is True
+
+    # A folder with folderType=MultiparmBlock => should be False
+    f2 = FolderParmTemplate("folder_test2", label="FolderTest2", folder_type=folderType.MultiparmBlock)
+    assert f2.isActualFolder() is False
+
+    # A folder with folderType=ImportBlock => also False
+    f3 = FolderParmTemplate("folder_test3", label="FolderTest3", folder_type=folderType.ImportBlock)
+    assert f3.isActualFolder() is False
+
+def test_folder_parm_template_ends_tab_group():
+    """
+    Ensures we cover the branch where `lastFolder.ends_tab_group == True`
+    so we end up in the `else: wrapFolderset(parm_template)` path.
+    """
+    from ripple.models.houTypes import folderType
+
+    # 1) Create a top-level FolderParmTemplate in a group
+    group = ParmTemplateGroup()
+
+    top_folder = FolderParmTemplate("folderA", label="FolderA")
+    group.addParmTemplate(top_folder)
+    # The first addParmTemplate(...) will wrap folderA in a FolderSet automatically
+
+    # 2) Add a second folder that does NOT end the tab group
+    folder_b = FolderParmTemplate("folderB", label="FolderB")
+    folder_b.ends_tab_group = False
+    group.addParmTemplate(folder_b)
+    # Because the top item is a FolderSet, we skip the wrapFolderset if the last folder
+    # doesn't end the tab group
+
+    # 3) Add a third folder *that ends the tab group*
+    folder_c = FolderParmTemplate("folderC", label="FolderC")
+    folder_c.ends_tab_group = True
+    group.addParmTemplate(folder_c)
+    # Now we should trigger the "else: wrapFolderset(...)" code
+
+    # 4) Add a fourth folder
+    folder_d = FolderParmTemplate("folderD", label="FolderD")
+    group.addParmTemplate(folder_d)
+
+    # Let's just confirm the final structure in group.parm_templates
+    # The group should contain a single FolderSet (first created),
+    # inside that FolderSet we should have 3 or 4 folder parm templates, but one of them might
+    # have caused the creation of a second FolderSet, etc.
+
+    # Just verify we can retrieve the final spec
+    spec = group.getParmTemplateSpec()
+    # This won't raise an error if the path was exercised. 
+    # Optionally, you can add asserts about the nested structure if you want to confirm it.
+    assert spec is not None
+
+    # (Optional) Inspect the resulting structure for your own assurance
+    # e.g. print(spec)

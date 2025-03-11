@@ -34,17 +34,10 @@ automations = [
         "hidden": True
     },
     {
-        "path": '/mythica/houdini_job_defs',
+        "path": '/mythica/generate_job_defs',
         "provider": job_defs,
         "inputModel": JobDefRequest,
         "outputModel": JobDefResponse,
-        "hidden": True
-    },
-    {
-        "path": '/mythica/generate_job_defs',
-        "provider": generate_job_defs,
-        "inputModel": GenerateJobDefRequest,
-        "outputModel": GenerateJobDefResponse,
         "hidden": True
     },
     {
