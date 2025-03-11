@@ -1,8 +1,20 @@
-import { Box, Button, Typography, Select, Option, FormControl, FormLabel } from "@mui/joy";
-import { useState, ChangeEvent, useEffect } from "react";
+import {
+  Box,
+  Button,
+  Typography,
+  Select,
+  Option,
+  FormControl,
+  FormLabel,
+} from "@mui/joy";
+import { FC, useState, ChangeEvent, useEffect } from "react";
 import { useSceneStore, ParameterSlider } from "@store/sceneStore";
 
-const SceneControls = () => {
+type Props = {
+  width?: number;
+};
+
+const SceneControls: FC<Props> = ({ width }) => {
   // Get state and actions from the store
   const {
     hdaSchemas,
@@ -17,14 +29,16 @@ const SceneControls = () => {
     toggleWireframe,
     showLogWindow,
     toggleLogWindow,
-    setExportFormat
+    setExportFormat,
   } = useSceneStore();
 
   // Get the current HDA schema
   const currentSchema = hdaSchemas[selectedHdaIndex];
 
   // Local state for slider values to prevent immediate regeneration
-  const [localParamValues, setLocalParamValues] = useState<{[key: string]: number}>(paramValues);
+  const [localParamValues, setLocalParamValues] = useState<{
+    [key: string]: number;
+  }>(paramValues);
 
   // Update local parameter values when selected HDA changes
   useEffect(() => {
@@ -39,13 +53,14 @@ const SceneControls = () => {
   };
 
   // Handle slider change
-  const handleSliderChange = (key: string) => (e: ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    setLocalParamValues(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
+  const handleSliderChange =
+    (key: string) => (e: ChangeEvent<HTMLInputElement>) => {
+      const value = parseFloat(e.target.value);
+      setLocalParamValues((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
+    };
 
   // Update actual parameters on slider release
   const handleSliderCommit = (key: string, value: number) => {
@@ -60,14 +75,15 @@ const SceneControls = () => {
   return (
     <Box
       sx={{
-        width: 250,
+        width: width ?? 250,
+        height: "100%",
         padding: "15px",
         backgroundColor: "#1e1e1e",
         borderRight: "1px solid #333",
         overflowY: "auto",
         color: "#e0e0e0",
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
       }}
     >
       {/* Connection Status */}
@@ -79,13 +95,20 @@ const SceneControls = () => {
           borderRadius: "4px",
           fontWeight: "bold",
           textAlign: "center",
-          backgroundColor: wsStatus === "connected" ? "#4CAF50" :
-            wsStatus === "reconnecting" ? "#FFA500" : "#f44336",
-          color: "white"
+          backgroundColor:
+            wsStatus === "connected"
+              ? "#4CAF50"
+              : wsStatus === "reconnecting"
+                ? "#FFA500"
+                : "#f44336",
+          color: "white",
         }}
       >
-        {wsStatus === "connected" ? "Connected" :
-          wsStatus === "reconnecting" ? "Reconnecting..." : "Disconnected"}
+        {wsStatus === "connected"
+          ? "Connected"
+          : wsStatus === "reconnecting"
+            ? "Reconnecting..."
+            : "Disconnected"}
       </Box>
 
       {/* Generate Time */}
@@ -94,7 +117,7 @@ const SceneControls = () => {
           textAlign: "center",
           marginBottom: "25px",
           fontSize: "0.9em",
-          color: "#888"
+          color: "#888",
         }}
       >
         <span>
@@ -115,7 +138,7 @@ const SceneControls = () => {
               border: "1px solid #555",
               color: "#e0e0e0",
               cursor: "pointer",
-              borderRadius: "3px"
+              borderRadius: "3px",
             }}
           >
             {showLogWindow ? "Hide Log" : "Show Log"}
@@ -126,15 +149,15 @@ const SceneControls = () => {
 
       {/* HDA Selection */}
       <FormControl sx={{ mb: 3 }}>
-        <FormLabel sx={{ color: '#e0e0e0' }}>Select Generator</FormLabel>
+        <FormLabel sx={{ color: "#e0e0e0" }}>Select Generator</FormLabel>
         <Select
           value={selectedHdaIndex}
           onChange={handleHdaChange}
           variant="outlined"
           color="neutral"
           sx={{
-            bgcolor: '#333',
-            '& .MuiSelect-indicator': { color: '#e0e0e0' }
+            bgcolor: "#333",
+            "& .MuiSelect-indicator": { color: "#e0e0e0" },
           }}
         >
           {hdaSchemas.map((schema, index) => (
@@ -151,7 +174,7 @@ const SceneControls = () => {
           backgroundColor: "#2d2d2d",
           padding: "8px",
           margin: "0 -15px 15px -15px",
-          borderBottom: "1px solid #333"
+          borderBottom: "1px solid #333",
         }}
       >
         <Typography
@@ -165,7 +188,7 @@ const SceneControls = () => {
       {/* Dynamic Parameter Sliders */}
       <Box sx={{ mb: 3 }}>
         {Object.entries(currentSchema.parameters).map(([key, config]) => {
-          if (config.type === 'hidden') return null;
+          if (config.type === "hidden") return null;
 
           const sliderConfig = config as ParameterSlider;
 
@@ -178,15 +201,23 @@ const SceneControls = () => {
                   min={sliderConfig.min}
                   max={sliderConfig.max}
                   step={sliderConfig.step}
-                  value={localParamValues[key] !== undefined ? localParamValues[key] : sliderConfig.default}
+                  value={
+                    localParamValues[key] !== undefined
+                      ? localParamValues[key]
+                      : sliderConfig.default
+                  }
                   onChange={handleSliderChange(key)}
-                  onMouseUp={() => handleSliderCommit(key, localParamValues[key])}
-                  onTouchEnd={() => handleSliderCommit(key, localParamValues[key])}
+                  onMouseUp={() =>
+                    handleSliderCommit(key, localParamValues[key])
+                  }
+                  onTouchEnd={() =>
+                    handleSliderCommit(key, localParamValues[key])
+                  }
                   style={{ flex: 1, width: "100px" }}
                 />
                 <span style={{ width: "40px", textAlign: "right" }}>
                   {localParamValues[key]?.toFixed(
-                    sliderConfig.step < 1 ? 1 : 0
+                    sliderConfig.step < 1 ? 1 : 0,
                   )}
                 </span>
               </Box>
@@ -207,7 +238,7 @@ const SceneControls = () => {
             border: "1px solid #555",
             color: "#e0e0e0",
             cursor: "pointer",
-            borderRadius: "4px"
+            borderRadius: "4px",
           }}
         >
           Reset Parameters
@@ -220,7 +251,7 @@ const SceneControls = () => {
           marginTop: "20px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
+          justifyContent: "center",
         }}
       >
         <input
@@ -236,7 +267,7 @@ const SceneControls = () => {
             display: "flex",
             alignItems: "center",
             cursor: "pointer",
-            color: "#e0e0e0"
+            color: "#e0e0e0",
           }}
         >
           <span
@@ -248,7 +279,7 @@ const SceneControls = () => {
               backgroundColor: isWireframe ? "#4CAF50" : "#484848",
               borderRadius: "20px",
               marginRight: "10px",
-              transition: "background-color 0.3s"
+              transition: "background-color 0.3s",
             }}
           >
             <span
@@ -261,7 +292,7 @@ const SceneControls = () => {
                 backgroundColor: "white",
                 top: "2px",
                 left: isWireframe ? "22px" : "2px",
-                transition: "transform 0.3s"
+                transition: "transform 0.3s",
               }}
             ></span>
           </span>
@@ -276,7 +307,7 @@ const SceneControls = () => {
             backgroundColor: "#2d2d2d",
             padding: "8px",
             margin: "0 -15px 15px -15px",
-            borderBottom: "1px solid #333"
+            borderBottom: "1px solid #333",
           }}
         >
           <Typography
@@ -300,8 +331,8 @@ const SceneControls = () => {
             fontSize: "14px",
             transition: "background-color 0.2s",
             "&:hover": {
-              background: "#444"
-            }
+              background: "#444",
+            },
           }}
         >
           Download OBJ
