@@ -98,7 +98,7 @@ jobs:
           echo "${{ steps.deployed_yaml.outputs.images }}"
       - name: Discord notification
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_INFRA_NOTIFICATIONS_WEBOOK }}
         uses: Ilshidur/action-discord@master
         with:
           args: 'Production updated ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'

@@ -210,6 +210,6 @@ jobs:
               echo "✅ $IMAGE is now available for testing at https://api-staging.mythica.gg" >> message.json
           fi
           echo "\" }" >> message.json
-          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+          curl -X POST ${{ secrets.DISCORD_INFRA_NOTIFICATIONS_WEBOOK }} \
                -H "Content-Type: application/json" \
                --data @message.json

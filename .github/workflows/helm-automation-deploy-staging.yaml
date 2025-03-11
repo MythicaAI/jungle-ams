@@ -101,6 +101,6 @@ jobs:
           echo "${{ github.event.pull_request.title }}\n" >> message.json
           echo "✅ automation-staging has been deployed" >> message.json
           echo "\" }" >> message.json
-          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+          curl -X POST ${{ secrets.DISCORD_INFRA_NOTIFICATIONS_WEBOOK }} \
                -H "Content-Type: application/json" \
                --data @message.json
