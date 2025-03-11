@@ -1,16 +1,28 @@
 import { useEffect, useState, useRef } from "react";
-import { Box, CircularProgress } from "@mui/joy";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  DialogContent,
+  DialogTitle,
+  Modal,
+  ModalClose,
+  ModalDialog,
+} from "@mui/joy";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import SceneViewer from "@components/BabylonViewer/SceneViewer";
 import SceneControls from "@components/BabylonViewer/SceneControls";
 import { useSceneStore } from "@store/sceneStore";
 import { SceneTalkConnection } from "../services/sceneTalkConnection";
+import { useWindowSize } from "@hooks/useWindowSize";
 
 const BabylonScenePage = () => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const wsServiceRef = useRef<SceneTalkConnection | null>(null);
+  const { currentWidth } = useWindowSize();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Get state and actions from the store
   const {
@@ -28,7 +40,7 @@ const BabylonScenePage = () => {
     pendingRequest,
     setPendingRequest,
     exportFormat,
-    setExportFormat
+    setExportFormat,
   } = useSceneStore();
 
   // Get current HDA schema
@@ -57,7 +69,7 @@ const BabylonScenePage = () => {
             points: data.points,
             indices: data.indices,
             normals: data.normals,
-            uvs: data.uvs
+            uvs: data.uvs,
           });
         }
       },
@@ -75,7 +87,7 @@ const BabylonScenePage = () => {
 
         // Reset export format after completion
         setExportFormat(null);
-      }
+      },
     });
 
     // Connect to WebSocket server
@@ -86,6 +98,12 @@ const BabylonScenePage = () => {
       wsService.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (currentWidth > 700 && isModalOpen) {
+      setIsModalOpen(false);
+    }
+  }, [currentWidth]);
 
   // Function to send a regenerate mesh request
   const regenerateMesh = (format = "raw") => {
@@ -136,12 +154,39 @@ const BabylonScenePage = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <Box sx={{ display: "flex", height: "100vh", position: "relative" }}>
       <Helmet>
         <title>Mythica • {t("common.sceneViewer")}</title>
       </Helmet>
 
-      <SceneControls />
+      {currentWidth > 700 ? (
+        <SceneControls />
+      ) : (
+        <Button
+          color="neutral"
+          sx={{
+            position: "absolute",
+            right: 5,
+            top: 5,
+            zIndex: 1,
+          }}
+          onClick={() => setIsModalOpen(true)}
+        >
+          Open Controls
+        </Button>
+      )}
+      {isModalOpen && (
+        <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <ModalDialog layout="fullscreen">
+            <ModalClose />
+            <DialogTitle>Controls</DialogTitle>
+            <DialogContent>
+              <SceneControls width={currentWidth - 40} />
+            </DialogContent>
+          </ModalDialog>
+        </Modal>
+      )}
+
       <SceneViewer />
     </Box>
   );
