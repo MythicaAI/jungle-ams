@@ -2,15 +2,16 @@ import logging
 import os
 import re
 import tempfile
+from typing import Optional
 
 import hou
 from mythica.network import RampBasis
 from opentelemetry import trace
 from pydantic import Field
+
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import FileParameter, ParameterSet
-from ripple.models.streaming import OutputFiles, Error
-from typing import Optional
+from ripple.models.streaming import Error, OutputFiles
 
 tracer = trace.get_tracer(__name__)
 logging.basicConfig(
@@ -28,41 +29,51 @@ def is_ramp_param(param):
     return False
 
 
-def apply_params(asset, params: dict):
-    for k, v in params.items():
-        if k == 'nonce':
-            continue
+def apply_single_param(asset, key, value):
+    if key == 'nonce':
+        return
 
-        if is_ramp_param(v):
-            basis = []
-            keys = []
-            values = []
+    if is_ramp_param(value):
+        basis = []
+        keys = []
+        values = []
 
-            # Transpose the dicts into arrays
-            for point in v:
-                try:
-                    basis.append(RampBasis[point["interp"]].value)
-                    keys.append(float(point["x"]))
-                    if isinstance(point["y"], (float, int)):
-                        values.append(float(point["y"]))
-                    else:
-                        values.append(hou.Vector3(point["y"]))
-                except KeyError as e:
-                    raise ValueError(f"Invalid key in ramp parameter: {e}") from e
-                except Exception as e:
-                    raise ValueError(f"Unexpected error processing ramp parameter: {e}") from e
-
-            # Create and set the ramp
-            ramp = hou.Ramp(basis, keys, values)
-            asset.parm(k).set(ramp)
-        else:
-            parm = asset.parmTuple(k)
-            if parm:
-                if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
-                    parm.set([int(v)])
+        # Transpose the dicts into arrays
+        for point in value:
+            try:
+                basis.append(RampBasis[point["interp"]].value)
+                keys.append(float(point["x"]))
+                if isinstance(point["y"], (float, int)):
+                    values.append(float(point["y"]))
                 else:
-                    val = [v] if not isinstance(v, (tuple, list)) else v
-                    parm.set(val)
+                    values.append(hou.Vector3(point["y"]))
+            except KeyError as e:
+                raise ValueError(f"Invalid key in ramp parameter: {e}") from e
+            except Exception as e:
+                raise ValueError(f"Unexpected error processing ramp parameter: {e}") from e
+
+        # Create and set the ramp
+        ramp = hou.Ramp(basis, keys, values)
+        asset.parm(key).set(ramp)
+    else:
+        parm = asset.parmTuple(key)
+        if parm:
+            if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
+                parm.set([int(value)])
+            else:
+                val = [value] if not isinstance(v, (tuple, list)) else value
+                parm.set(val)
+
+
+def apply_params(responder, asset, params: dict):
+    """Apply all parameters to the graph, raise an error if there is a problem"""
+    for key, value in params.items():
+        try:
+            apply_single_param(asset, key, value)
+        except hou.Error as e:
+            error_msg = f"Parameter: {key} failed to set: {str(e)}"
+            responder.result(Error(error=error_msg))
+            raise ValueError(error_msg) from e
 
 
 def create_inputs(asset, geo, params: dict):
@@ -104,7 +115,7 @@ def create_inputs(asset, geo, params: dict):
             # Handle OBJ files
             input_node = geo.createNode('obj_importer')
             input_node.parm('sObjFile').set(input_file)
-            
+
         elif file_ext == '.fbx':
             # Handle FBX files
             input_node = geo.createNode('fbx_archive_import')
@@ -154,7 +165,7 @@ def export_image(asset, working_dir: str, output_file_name: str):
     rop_image.parm("execute").pressButton()
     log.debug("Exporting image completed")
 
-    return [ output_file_path ]
+    return [output_file_path]
 
 
 def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str):
@@ -243,7 +254,8 @@ def generate_mesh_impl(
 
     # Set parms
     log.debug("Applying parameters")
-    apply_params(asset, params)
+    apply_params(responder, asset, params)
+
     log.debug("Creating inputs")
     create_inputs(asset, geo, params)
     log.debug("Setting up scene completed")
