@@ -52,24 +52,33 @@ jobs:
 
       # Set matrix based on filter results or use all images for manual trigger
       - id: post_filter
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            # For manual workflow trigger, use all images
-            IMAGES_JSON='["api/app/", "api/nginx/", "api/gcs-proxy/", "api/lets-encrypt/", "api/packager/", "api/canary/", "sites/"]'
-            echo "changes=$IMAGES_JSON" >> $GITHUB_OUTPUT
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          else
-            # Post process changes
-            CHANGES="${{ steps.filter.outputs.changes }}"
-            if [[ -z "$CHANGES" || "$CHANGES" == "[]" ]]; then
-              echo "No changes detected that require building images"
-              echo "changes='[]'" >> $GITHUB_OUTPUT
-              echo "has_changes=false" >> $GITHUB_OUTPUT
-            else
-              echo "changes='$CHANGES'" >> $GITHUB_OUTPUT
-              echo "has_changes=true" >> $GITHUB_OUTPUT
-            fi
-          fi
+        uses: actions/github-script@v6
+        with:
+          script: |
+              const isManualTrigger = context.eventName === 'workflow_dispatch';
+              const allImages = ["api/app/", "api/nginx/", "api/gcs-proxy/", "api/lets-encrypt/", "api/packager/", "api/canary/", "sites/"];
+              
+              let changes;
+              try {
+                changes = JSON.parse('${{ steps.filter.outputs.changes }}');
+              } catch (e) {
+                changes = [];
+                console.log('Error parsing changes or empty changes array:', e);
+              }
+              
+              if (isManualTrigger) {
+                // For manual trigger, use all images
+                console.log('Manual trigger detected, building all images');
+                core.setOutput('matrix', JSON.stringify(allImages));
+                core.setOutput('has_changes', 'true');
+              } else {
+                // For automatic trigger, use filtered changes
+                const hasChanges = Array.isArray(changes) && changes.length > 0;
+              
+                console.log('Changes detected:', hasChanges ? 'yes' : 'no');
+                core.setOutput('matrix', JSON.stringify(changes));
+                core.setOutput('has_changes', hasChanges ? 'true' : 'false');
+              }
 
   build-base:
     runs-on: ubuntu-latest
