@@ -63,10 +63,10 @@ jobs:
             CHANGES="${{ steps.filter.outputs.changes }}"
             if [[ -z "$CHANGES" || "$CHANGES" == "[]" ]]; then
               echo "No changes detected that require building images"
-              echo "changes=[]" >> $GITHUB_OUTPUT
+              echo "changes='[]'" >> $GITHUB_OUTPUT
               echo "has_changes=false" >> $GITHUB_OUTPUT
             else
-              echo "changes=$CHANGES" >> $GITHUB_OUTPUT
+              echo "changes='$CHANGES'" >> $GITHUB_OUTPUT
               echo "has_changes=true" >> $GITHUB_OUTPUT
             fi
           fi
