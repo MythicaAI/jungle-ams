@@ -48,7 +48,7 @@ const BabylonScenePage = () => {
 
   // Initialize WebSocket service
   useEffect(() => {
-    const wsService = new SceneTalkConnection("ws://localhost:8765");
+    const wsService = new SceneTalkConnection("ws://scenetalk.mythica.gg:8765");
     wsServiceRef.current = wsService;
 
     // Set up event handlers
