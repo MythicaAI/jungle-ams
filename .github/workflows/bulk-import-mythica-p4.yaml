@@ -21,7 +21,7 @@ on:
       changelist:
         description: 'Perforce changelist ID'
         required: false
-        type: integer
+        type: number
         default: 0
       environment:
         description: 'Environment to run against'
