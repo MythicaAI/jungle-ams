@@ -202,7 +202,6 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       const getParmTemplateGroup = eval(strPt);
       const ptg = getParmTemplateGroup(hou) as hou.ParmTemplateGroup;
       setParmTemplateGroup(ptg);
-      ptg.draw();
       myInterfaceData.state = NodeState.Done;
     } catch (e) {
       console.error('Error parsing worker output', e);

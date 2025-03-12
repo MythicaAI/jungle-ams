@@ -101,8 +101,8 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         params = all.params
         params_v2 = all.params_v2
         params.update(in_files)
-        params_v2.update(in_files)
-        params_v2.update(out_files)
+        params_v2.extend(in_files.values())
+        params_v2.extend(out_files.values())
 
         res = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',

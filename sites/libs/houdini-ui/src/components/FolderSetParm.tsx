@@ -24,7 +24,7 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({ template, data, on
                     <div
                         key={index}
                         className={`folder-tab ${activeFolder === folder.name ? 'active' : ''}`}
-                        onClick={() => handleFolderActivation(folder.name)}
+                        onClick={() => handleFolderActivation(folder.name || '')}
                     >
                         {folder.label}
                     </div>

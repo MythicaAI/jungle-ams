@@ -238,7 +238,7 @@ def test_folder_parm_template_spec():
         level=2,
         ends_tab_group=True,
         folder_type=folderType.RadioButtons,
-        params=[],
+        parm_templates=[],
         default_value=1
     )
     assert folder.param_type == parmTemplateType.Folder
@@ -246,16 +246,16 @@ def test_folder_parm_template_spec():
     assert folder.ends_tab_group is True
     assert folder.folder_type == folderType.RadioButtons
     assert folder.default_value == 1
-    assert folder.params == []
+    assert folder.parm_templates == []
 
 def test_folderset_parm_template_spec():
     fs = FolderSetParmTemplateSpec(
         label="FolderSet Label",
         name="fs1",
-        params=[]
+        parm_templates=[]
     )
     assert fs.param_type == parmTemplateType.FolderSet
-    assert fs.params == []
+    assert fs.parm_templates == []
 
 
 # -----------------------------------------------------------------------------
@@ -518,9 +518,9 @@ def test_folder_parm_template_class():
 
     folder_spec = folder.getParmTemplateSpec()
     assert isinstance(folder_spec, FolderParmTemplateSpec)
-    assert len(folder_spec.params) == 1
+    assert len(folder_spec.parm_templates) == 1
     # that single param is IntParmTemplateSpec
-    assert folder_spec.params[0].param_type == parmTemplateType.Int
+    assert folder_spec.parm_templates[0].param_type == parmTemplateType.Int
 
     param_specs = folder.getParameterSpec()
     # child param => 1 spec
@@ -542,8 +542,8 @@ def test_folder_set_parm_template_class():
 
     folder_set_spec = folder_set.getParmTemplateSpec()
     assert isinstance(folder_set_spec, FolderSetParmTemplateSpec)
-    assert len(folder_set_spec.params) == 1
-    assert folder_set_spec.params[0].param_type == parmTemplateType.Folder
+    assert len(folder_set_spec.parm_templates) == 1
+    assert folder_set_spec.parm_templates[0].param_type == parmTemplateType.Folder
 
     param_specs = folder_set.getParameterSpec()
     # The single folder's children are empty by default
@@ -585,9 +585,9 @@ def test_parm_template_group_basic():
     # Test getParmTemplateSpec -> returns a ParameterSpec with HoudiniParmTemplateSpecType
     pt_spec = group.getParmTemplateSpec()
     assert len(pt_spec.params_v2) == 3
-    assert pt_spec.params_v2["my_int"].param_type == parmTemplateType.Int
-    assert pt_spec.params_v2["my_float"].param_type == parmTemplateType.Float
-    assert pt_spec.params_v2["my_string"].param_type == parmTemplateType.String
+    assert pt_spec.params_v2[0].param_type == parmTemplateType.Int
+    assert pt_spec.params_v2[1].param_type == parmTemplateType.Float
+    assert pt_spec.params_v2[2].param_type == parmTemplateType.String
 
     # Test getParameterSpec -> returns a ParameterSpec with standard ParameterSpecType
     assert len(pt_spec.params) == 3
@@ -613,10 +613,10 @@ def test_parm_template_group_nested_folder():
 
     pt_spec = group.getParmTemplateSpec()
     # top is the name, but we get the folderSet inside it
-    top_folderset_spec = pt_spec.params_v2[f"FolderSet {folder_set.id}"]
+    top_folderset_spec = pt_spec.params_v2[0]
     assert top_folderset_spec.param_type == parmTemplateType.FolderSet
-    assert len(top_folderset_spec.params) == 1
-    assert top_folderset_spec.params[0].param_type == parmTemplateType.Folder
+    assert len(top_folderset_spec.parm_templates) == 1
+    assert top_folderset_spec.parm_templates[0].param_type == parmTemplateType.Folder
     # that single param is the folderSet
 
 
