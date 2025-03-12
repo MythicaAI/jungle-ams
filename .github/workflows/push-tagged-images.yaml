@@ -69,14 +69,14 @@ jobs:
               if (isManualTrigger) {
                 // For manual trigger, use all images
                 console.log('Manual trigger detected, building all images');
-                core.setOutput('matrix', JSON.stringify(allImages));
+                core.setOutput('changes', JSON.stringify(allImages));
                 core.setOutput('has_changes', 'true');
               } else {
                 // For automatic trigger, use filtered changes
                 const hasChanges = Array.isArray(changes) && changes.length > 0;
               
                 console.log('Changes detected:', hasChanges ? 'yes' : 'no');
-                core.setOutput('matrix', JSON.stringify(changes));
+                core.setOutput('changes', JSON.stringify(changes));
                 core.setOutput('has_changes', hasChanges ? 'true' : 'false');
               }
 
