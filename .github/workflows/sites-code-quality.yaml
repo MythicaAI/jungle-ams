@@ -30,6 +30,10 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install
 
+      - name: Build Houdini UI Lib
+        working-directory: sites/libs/houdini-ui
+        run: pnpm run build
+
       - name: Lint awful-ui
         working-directory: sites/awful-ui
         run: pnpm run lint
