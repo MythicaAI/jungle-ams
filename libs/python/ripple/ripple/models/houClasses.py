@@ -308,7 +308,7 @@ class FolderParmTemplate(ParmTemplate):
             folder_type=self.folder_type,
             default_value=self.default_value,
             ends_tab_group=self.ends_tab_group,
-            params=parmTemplateSpecs
+            parm_templates=parmTemplateSpecs
         )
 
     def getParameterSpec(self) -> list[ParameterSpecType]:
@@ -372,7 +372,7 @@ class FolderSetParmTemplate(ParmTemplate):
         return FolderSetParmTemplateSpec(
             name="",
             label="",
-            params=parmTemplateSpecs
+            parm_templates=parmTemplateSpecs
         )
 
     def getParameterSpec(self) -> list[ParameterSpecType]:
@@ -413,7 +413,7 @@ class ParmTemplateGroup():
 
     def getParmTemplateSpec(self) -> ParameterSpec:
         params: dict[str,ParameterSpecType] = {}
-        params_v2: dict[str, HoudiniParmTemplateSpecType] = {}
+        params_v2: list[HoudiniParmTemplateSpecType] = []
     
 
         for tmpl in self.parm_templates:
@@ -430,7 +430,7 @@ class ParmTemplateGroup():
                         params[s.label] = s
 
                 specv2: HoudiniParmTemplateSpecType = tmpl.getParmTemplateSpec()  # Explicit type hinting
-                params_v2[tmpl.name if tmpl.name else tmpl.id] = specv2         
+                params_v2.append(specv2)         
 
         return ParameterSpec(
             params=params,

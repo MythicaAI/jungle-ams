@@ -391,7 +391,7 @@ def job_definition_item():
             "type": "object",
             "properties": {},
             "params": {},  # Adding required params field
-            "params_v2": {}  # Adding required params field
+            "params_v2": []  # Adding required params field
         }
     )
 
