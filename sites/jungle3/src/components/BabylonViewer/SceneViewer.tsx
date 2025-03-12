@@ -55,7 +55,9 @@ const SceneViewer = () => {
 
     const sky = new BABYLON.BackgroundMaterial("skyMaterial", scene);
     sky.reflectionTexture = scene.environmentTexture.clone();
-    sky.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+    if (sky.reflectionTexture) {
+      sky.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+    }
     sky.alpha = 0.5;
     skydome.material = sky;
 
@@ -110,12 +112,14 @@ const SceneViewer = () => {
     ground.receiveShadows = true;
 
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
-    groundMaterial.diffuseTexture = new BABYLON.Texture(
+    const groundTexture = new BABYLON.Texture(
       "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/granite_tile/granite_tile_ao_1k.png",
       scene
     );
-    groundMaterial.diffuseTexture.uScale = 2;
-    groundMaterial.diffuseTexture.vScale = 2;
+    groundTexture.uScale = 2;
+    groundTexture.vScale = 2;
+
+    groundMaterial.diffuseTexture = groundTexture;
     groundMaterial.specularColor = new BABYLON.Color3(0.0, 0.0, 0.0);
     ground.material = groundMaterial;
 
