@@ -7,6 +7,8 @@ LABEL verison="1.0.0"
 LABEL tier="web"
 LABEL description="Build container for websites"
 
+ENV NODE_OPTIONS="--max-old-space-size=8192"
+
 # Set the working directory
 WORKDIR /build
 
