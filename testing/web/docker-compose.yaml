@@ -23,6 +23,7 @@ services:
       VITE_AWFUL_SCRIPT_PATH: /mythica/script
       VITE_AWFUL_SCRIPT_INTERFACE_PATH: /mythica/script/interface
       VITE_AWFUL_REST_URL: http://localhost:8080/v1/automation/run
+      VITE_SCENE_TALK_URL: ws://localhost:8765
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
