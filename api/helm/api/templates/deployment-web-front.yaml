@@ -56,7 +56,7 @@ spec:
             - name: VITE_AWFUL_REST_URL
               value: http://localhost:8080/v1/automation/run
             - name: VITE_SCENE_TALK_URL
-              value: wss://scenetalk.mythica.gg/ws
+              value: wss://scenetalk.mythica.gg/ws/
           volumeMounts:
             - name: dist-publish
               mountPath: "/publish"
