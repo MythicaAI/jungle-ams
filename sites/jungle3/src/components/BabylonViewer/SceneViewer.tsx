@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Box } from '@mui/joy';
 import * as BABYLON from '@babylonjs/core';
+import "@babylonjs/inspector";
+import "@babylonjs/node-geometry-editor";
 import { useSceneStore } from '@store/sceneStore';
 
 // Material names
@@ -8,7 +10,21 @@ const ROCK = "rock";
 const ROCKFACE = "rockface";
 const CRYSTAL = "crystal";
 
-const SceneViewer = () => {
+import {
+  NodeGeometry,
+  BoxBlock,
+  SphereBlock,
+  CylinderBlock,
+} from "@babylonjs/core";
+
+interface SceneViewerProps {
+  onSceneCreated?: (scene: BABYLON.Scene) => void;
+  onMeshSelected?: (mesh: BABYLON.Mesh) => void;
+}
+const SceneViewer: React.FC<SceneViewerProps> = ({
+  onSceneCreated,
+  onMeshSelected,
+}) => {
   // Get state from the store
   const {
     selectedHdaIndex,
@@ -43,6 +59,14 @@ const SceneViewer = () => {
 
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene;
+    
+    // Enable inspector
+    scene.debugLayer.show({
+      overlay: true,
+      embedMode: true,
+      enableClose: false,
+      enablePopup: false,
+    });
 
     // Set environment
     scene.environmentTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
@@ -228,11 +252,34 @@ const SceneViewer = () => {
 
     window.addEventListener("resize", handleResize);
 
-    // Cleanup
+    // Notify parent that scene is ready
+    if (onSceneCreated) {
+      onSceneCreated(scene);
+    }
+
+    // Pointer observable for mesh selection
+    scene.onPointerObservable.add((pointerInfo) => {
+      if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+        const event = pointerInfo.event;
+        const canvasRect = canvasRef.current?.getBoundingClientRect();
+        if (canvasRect) {
+          const x = event.clientX - canvasRect.left;
+          const y = event.clientY - canvasRect.top;
+          const pickResult = scene.pick(x, y);
+          if (pickResult && pickResult.hit && pickResult.pickedMesh) {
+            onMeshSelected && onMeshSelected(pickResult.pickedMesh as BABYLON.Mesh);
+          }
+        }
+      }
+    });
+
     return () => {
       window.removeEventListener("resize", handleResize);
+      scene.dispose();
       engine.dispose();
     };
+    // Only run once (no dependencies)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateWireframe = (_meshName: string, isWireframe: boolean) => {
@@ -252,7 +299,9 @@ const SceneViewer = () => {
     }
   }, [isWireframe]);
 
-  // Handle changes to mesh data
+  /**
+   * Create or update custom mesh whenever the meshData changes
+   */
   useEffect(() => {
     if (meshData && meshData.points && meshData.indices && sceneRef.current) {
       createMeshFromData(
@@ -297,8 +346,65 @@ const SceneViewer = () => {
     }
   };
 
+  /**
+   * Handle dropping geometry from the sidebar
+   */
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!sceneRef.current || !canvasRef.current) return;
+
+    const scene = sceneRef.current;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const pickResult = scene.pick(x, y);
+    if (pickResult && pickResult.hit && pickResult.pickedPoint) {
+      const geometryType = e.dataTransfer.getData("geometryType");
+    
+      const nodeGeo = new NodeGeometry("myBoxGeometry");
+      const output = new BABYLON.GeometryOutputBlock("geometryout");
+      nodeGeo.outputBlock = output;
+      switch (geometryType) {
+        case "box": {
+          const block: BoxBlock = new BoxBlock("boxBlock");
+          block.geometry.connectTo(output.geometry);
+          break;
+        }
+
+        case "sphere": {
+          const block = new SphereBlock("sphereBlock");
+          block.geometry.connectTo(output.geometry);
+          break;
+        }
+
+        case "cylinder": {
+          const block = new CylinderBlock("cylinderBlock");
+          block.geometry.connectTo(output.geometry);
+          break;
+        }
+
+      }
+
+      nodeGeo.build();
+      const mesh = nodeGeo.createMesh("nodegeomesh");
+      if (mesh && pickResult.pickedPoint) {
+        mesh.position.copyFrom(pickResult.pickedPoint);
+      }
+    }
+
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <Box
+      sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }}></canvas>
 
       {/* Generation Log Overlay */}
