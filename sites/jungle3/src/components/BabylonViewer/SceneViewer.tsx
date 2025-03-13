@@ -279,7 +279,6 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       engine.dispose();
     };
     // Only run once (no dependencies)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateWireframe = (_meshName: string, isWireframe: boolean) => {
