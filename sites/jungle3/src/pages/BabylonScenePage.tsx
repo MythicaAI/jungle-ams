@@ -106,7 +106,7 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
         setExportFormat(null);
       },
     });
-  }, [currentSchema]);
+  }, [currentSchema, paramValues]);
 
   useEffect(() => {
     if (currentWidth > 700 && isModalOpen) {
