@@ -17,7 +17,11 @@ import { useSceneStore } from "@store/sceneStore";
 import { SceneTalkConnection } from "../services/sceneTalkConnection";
 import { useWindowSize } from "@hooks/useWindowSize";
 
-const BabylonScenePage = () => {
+type Props = {
+  schemaName?: string;
+};
+
+const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const wsServiceRef = useRef<SceneTalkConnection | null>(null);
@@ -44,7 +48,9 @@ const BabylonScenePage = () => {
   } = useSceneStore();
 
   // Get current HDA schema
-  const currentSchema = hdaSchemas[selectedHdaIndex];
+  const currentSchema = schemaName
+    ? hdaSchemas.find((schema) => schema.name === schemaName)
+    : hdaSchemas[selectedHdaIndex];
 
   // Initialize WebSocket service
   useEffect(() => {
@@ -124,10 +130,14 @@ const BabylonScenePage = () => {
     setRequestInFlight(true);
 
     // Get the file path for the current HDA
-    const hdaFilePath = currentSchema.file_path;
+    const hdaFilePath = currentSchema?.file_path;
 
     // Send the cook request with all parameters for the current HDA
-    wsServiceRef.current.sendCookRequest(hdaFilePath, paramValues, format);
+    wsServiceRef.current.sendCookRequest(
+      hdaFilePath as string,
+      paramValues,
+      format,
+    );
   };
 
   // Watch for export format changes
@@ -160,7 +170,7 @@ const BabylonScenePage = () => {
       </Helmet>
 
       {currentWidth > 700 ? (
-        <SceneControls />
+        <SceneControls isAssetPage={!!schemaName} />
       ) : (
         <Button
           color="neutral"
@@ -181,7 +191,10 @@ const BabylonScenePage = () => {
             <ModalClose />
             <DialogTitle>Controls</DialogTitle>
             <DialogContent>
-              <SceneControls width={currentWidth - 40} />
+              <SceneControls
+                isAssetPage={!!schemaName}
+                width={currentWidth - 40}
+              />
             </DialogContent>
           </ModalDialog>
         </Modal>
