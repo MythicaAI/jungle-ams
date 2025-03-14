@@ -14,13 +14,7 @@ import "@babylonjs/node-geometry-editor";
 
 const getScene = () => Engine.LastCreatedScene
 
-// Dragging geometry
-const handleDragStart = (
-  e: React.DragEvent<HTMLDivElement>,
-  geometryType: string
-) => {
-  e.dataTransfer.setData("geometryType", geometryType);
-};
+
 
 type Props = {
   width?: number;
@@ -105,6 +99,15 @@ const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
     setExportFormat(format);
   };
 
+  // Dragging geometry
+  {/*
+  const handleDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    geometryType: string
+  ) => {
+    e.dataTransfer.setData("geometryType", geometryType);
+  };
+  */}
   return (
     <Box
       sx={{
@@ -178,7 +181,27 @@ const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
           </Button>
         </Box>
         <Box sx={{ clear: "both" }}></Box>
+        <Box sx={{paddingTop: "10px"}}>
+          <Button
+            onClick={toggleInpector}
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            sx={{
+              padding: "2px 8px",
+              backgroundColor: "#333",
+              border: "1px solid #555",
+              color: "#e0e0e0",
+              cursor: "pointer",
+              borderRadius: "3px",
+            }}
+          >
+            Toggle Inspector
+          </Button>
+        </Box>
+
       </Box>
+      {/*
       <Box
         sx={{
           backgroundColor: "#2d2d2d",
@@ -193,24 +216,6 @@ const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
         >
           Geometries
         </Typography>
-      </Box>
-      <Box sx={{ float: "right" }}>
-        <Button
-          onClick={toggleInpector}
-          size="sm"
-          variant="outlined"
-          color="neutral"
-          sx={{
-            padding: "2px 8px",
-            backgroundColor: "#333",
-            border: "1px solid #555",
-            color: "#e0e0e0",
-            cursor: "pointer",
-            borderRadius: "3px",
-          }}
-        >
-          Toggle Inspector
-        </Button>
       </Box>
       <Box sx={{ mb: 3 }}>
         <div
@@ -236,7 +241,7 @@ const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
         </div>
 
       </Box>
-  
+      */}
       {/* HDA Selection */}
       {!isAssetPage && (
         <FormControl sx={{ mb: 3 }}>

@@ -59,14 +59,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
 
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene;
-    
-    // Enable inspector
-    scene.debugLayer.show({
-      overlay: true,
-      embedMode: true,
-      enableClose: false,
-      enablePopup: false,
-    });
+
 
     // Set environment
     scene.environmentTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
