@@ -1,8 +1,8 @@
-from typing import Any, Callable, Dict, Literal, Optional, Type
+from typing import Any, Callable, Dict, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
-from ripple.models.streaming import ProcessStreamItem
+from ripple.models.streaming import CropImageResponse, Error, ProcessStreamItem, JobDefinition
 
 
 class AutomationsResponse(ProcessStreamItem):
@@ -31,6 +31,29 @@ class AutomationRequest(BaseModel):
     path: str
     data: Dict
     telemetry_context: Optional[Dict] = {}
+    event_id: Optional[str] = None
+
+
+class BulkAutomationRequest(BaseModel):
+    """Bulk automation-jobs in one requests"""
+    is_bulk_processing: Literal[True] = True
+    requests: list[AutomationRequest] = []
+    event_id: Optional[str] = None
+    telemetry_context: Optional[Dict] = {}
+
+
+class AutomationResult(BaseModel):
+    processed: Literal[False, True] = False
+    request: Optional[AutomationRequest] = None
+    result: Optional[Union[CropImageResponse, JobDefinition, Error]] = None
+
+
+class EventAutomationResponse(BaseModel):
+    """Bulk automation-jobs in one requests"""
+    is_bulk_processing: Literal[True, False] = False
+    processed: Literal[False, True] = False
+    request_result: list[AutomationResult] = []
+
 
 class CropImageRequest(ParameterSet):
     image_file: FileParameter

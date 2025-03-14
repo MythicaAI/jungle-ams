@@ -32,3 +32,6 @@ tables:
       - name: affinity
         description: Affinity for event processing
         type: TEXT
+      - name: job_result_data
+        type: JSON
+        nullable: true

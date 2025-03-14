@@ -9,6 +9,7 @@ import argparse
 import asyncio
 import logging
 import os
+from cryptid.cryptid import event_seq_to_id
 import requests
 import tempfile
 import zipfile
@@ -17,9 +18,9 @@ from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
 from pythonjsonlogger import jsonlogger
 from ripple.automation.adapters import NatsAdapter
-from ripple.automation.models import AutomationRequest, CropImageRequest
+from ripple.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
 from ripple.automation.worker import process_guid
-from ripple.models.params import FileParameter, ParameterSet
+from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
 from typing import Optional
 from uuid import uuid4
 
@@ -147,7 +148,60 @@ def is_houdini_file(content: DownloadInfoResponse) -> bool:
     return extension in ('hda', 'hdalc')
 
 
-async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str) -> bool:
+async def generate_several_thumbnails(avr: AssetVersionResult, contents: list[DownloadInfoResponse], token: str, event_id: str) -> bool:
+    """Request to generate several thumbnails"""
+    
+    bulk_req = BulkAutomationRequest(event_id=event_id, telemetry_context=get_telemetry_headers())
+    for content in contents:
+        parameter_set = CropImageRequest(
+            src_asset_id=avr.asset_id,
+            src_version=avr.version,
+            image_file=FileParameter(file_id=content.file_id),
+            crop_pos_x=None,
+            crop_pos_y=None,
+            crop_w=IntParameterSpec(default=320, label="crop_w"),
+            crop_h=IntParameterSpec(default=180, label="crop_h"),
+        )
+        bulk_req.requests.append(AutomationRequest(
+            process_guid=process_guid,
+            correlation=str(uuid4()),
+            auth_token=token,
+            path='/mythica/crop_image',
+            data=parameter_set.model_dump(),
+            telemetry_context=get_telemetry_headers(),
+            event_id=event_id,
+        ))
+
+    nats = NatsAdapter()
+    log.info("Sent NATS imagemagick task. Request: %s", bulk_req.model_dump())
+    await nats.post("imagemagick", bulk_req.model_dump())
+
+async def generate_several_houdini_job_defs(avr: AssetVersionResult, contents: list[DownloadInfoResponse], token: str, event_id: str) -> bool:
+    """Request to generate several job_def"""
+    bulk_req = BulkAutomationRequest(event_id=event_id, telemetry_context=get_telemetry_headers())
+    for content in contents:
+        parameter_set = ParameterSet(
+            hda_file=FileParameter(file_id=content.file_id),
+            src_asset_id=avr.asset_id,
+            src_version=avr.version
+        )
+        bulk_req.requests.append(AutomationRequest(
+            process_guid=process_guid,
+            correlation=str(uuid4()),
+            auth_token=token,
+            path='/mythica/generate_job_defs',
+            data=parameter_set.model_dump(),
+            telemetry_context=get_telemetry_headers(),
+            event_id=event_id,
+        ))
+
+    nats = NatsAdapter()
+    log.info("Sent NATS houdini task. Request: %s", bulk_req.model_dump())
+    await nats.post("houdini", bulk_req.model_dump())
+
+
+async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str, event_id: str) -> bool:
+    """Request to generate one job_def"""
     parameter_set = ParameterSet(
         hda_file=FileParameter(file_id=content.file_id),
         src_asset_id=avr.asset_id,
@@ -161,6 +215,7 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
         path='/mythica/generate_job_defs',
         data=parameter_set.model_dump(),
         telemetry_context=get_telemetry_headers(),
+        event_id=event_id,
     )
 
     nats = NatsAdapter()
@@ -168,15 +223,15 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
     await nats.post("houdini", event.model_dump())
 
 
-async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse, token: str) -> bool:
+async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse, token: str, event_id: str) -> bool:
     parameter_set = CropImageRequest(
         src_asset_id=avr.asset_id,
         src_version=avr.version,
         image_file=FileParameter(file_id=content.file_id),
         crop_pos_x=None,
         crop_pos_y=None,
-        crop_w=320,
-        crop_h=180,
+        crop_w=IntParameterSpec(default=320, label="crop_w"),
+        crop_h=IntParameterSpec(default=180, label="crop_h"),
     )
 
     event = AutomationRequest(
@@ -186,6 +241,7 @@ async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse,
         path='/mythica/crop_image',
         data=parameter_set.model_dump(),
         telemetry_context=get_telemetry_headers(),
+        event_id=event_id,
     )
 
     nats = NatsAdapter()
@@ -211,7 +267,9 @@ async def create_zip_from_asset(
         api_key: str,
         asset_id: str,
         profile_id: Optional[str],
-        version: tuple[int, ...]):
+        version: tuple[int, ...],
+        event_seq: int,
+):
     """Given an output zip file name, resolve all the content of the asset_id and create a zip file"""
 
     token = start_session(endpoint, api_key, profile_id)
@@ -242,11 +300,13 @@ async def create_zip_from_asset(
         await upload_package(endpoint, headers, asset_id, version_str, zip_filename)
 
         # Trigger job_def generation for package contents
-        for content in contents:
-            if is_houdini_file(content):
-                await generate_houdini_job_defs(v, content, token)
-            if is_image_file(content):
-                await crop_thumbnail(v, content, token)
+        event_id = event_seq_to_id(event_seq)
+        worker_job_defs = [c for c in contents if is_houdini_file(c)]
+        if worker_job_defs:
+            await generate_several_houdini_job_defs(v, worker_job_defs, token, event_id)
+        worker_thumbnails = [c for c in contents if is_image_file(c)]
+        if worker_thumbnails:
+            await generate_several_thumbnails(v, worker_thumbnails, token, event_id)
 
 
 async def upload_package(
@@ -289,7 +349,7 @@ async def console_main(
         version)
 
 
-async def exec_job(endpoint: str, api_key: str, job_data):
+async def exec_job(endpoint: str, api_key: str, job_data, event_seq: int):
     """Given the job data from the event, create the ZIP package"""
     asset_id = job_data.get('asset_id')
     if asset_id is None:
@@ -306,7 +366,7 @@ async def exec_job(endpoint: str, api_key: str, job_data):
 
     assert type(version) is list or type(version) is tuple
     with tempfile.TemporaryDirectory() as tmp_dir:
-        await create_zip_from_asset(Path(tmp_dir), endpoint, api_key, asset_id, profile_id, version)
+        await create_zip_from_asset(Path(tmp_dir), endpoint, api_key, asset_id, profile_id, version, event_seq)
 
 
 async def worker_main(endpoint: str, api_key: str):
@@ -330,8 +390,9 @@ async def worker_main(endpoint: str, api_key: str):
         async for event_seq, _, job_data in session.ack_next():
             log.info("event: %s, %s", event_seq, job_data)
             try:
-                await exec_job(endpoint, api_key, job_data)
-                await session.complete(event_seq)
+                await exec_job(endpoint, api_key, job_data, event_seq)
+                # NOTE: logic of session.complete is moved to automation worker 
+                # await session.complete(event_seq)
             except allowed_job_exceptions:
                 log.exception("job failed")
 

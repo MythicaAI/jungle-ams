@@ -2,9 +2,7 @@ import logging
 import sys
 
 from config import app_config
-from opentelemetry.context import get_current
-from opentelemetry.propagate import inject
-from ripple.config import configure_telemetry
+from ripple.config import configure_telemetry, update_headers_from_context
 
 
 def configure_logging():
@@ -23,8 +21,5 @@ def configure_logging():
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
-
 def get_telemetry_headers() -> dict:
-    trace_context = {}
-    inject(trace_context, get_current())
-    return trace_context
+    return update_headers_from_context()

@@ -6,18 +6,20 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 
-from ripple.automation.models import AutomationModel, AutomationRequest, AutomationsResponse
+from pydantic import ValidationError
+from ripple.automation.models import AutomationModel, AutomationRequest, AutomationResult, AutomationsResponse, BulkAutomationRequest, EventAutomationResponse
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
 from ripple.automation.utils import format_exception, error_handler
-from ripple.models.streaming import Error, Progress, StreamItemUnion
+from ripple.models.streaming import CropImageResponse, Error, JobDefinition, ProcessStreamItem, Progress, StreamItemUnion
+from opentelemetry.context.context import Context
 
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.automations import get_default_automations
 
-from ripple.config import ripple_config
+from ripple.config import ripple_config, update_headers_from_context
 from ripple.runtime.params import resolve_params
 
-from typing import Callable
+from typing import Callable, Optional
 from ripple.models.params import ParameterSet
 
 # Set up logging
@@ -31,13 +33,13 @@ from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import \
     TraceContextTextMapPropagator
 
-from opentelemetry.trace import status as opentelemetry_status
 tracer = trace.get_tracer(__name__)
 
 
 process_guid = str(uuid4())
 
-
+class CoordinatorException(Exception):
+    pass
 
 
 
@@ -114,12 +116,8 @@ class Worker:
         reporting status
         """
         doer=self
-        async def implementation(json_payload: dict):
-            headers: dict = json_payload.get("telemetry_context", {})
-            # Init telemetry_context before root trace
-            telemetry_context = TraceContextTextMapPropagator().extract(carrier=headers)
-            log.info('auto/ telemetry_context: %s', telemetry_context)
-            with tracer.start_as_current_span("worker.execution", context=telemetry_context) as span:
+        async def implementation(json_payload: dict) -> tuple[bool, ProcessStreamItem]:
+            with tracer.start_as_current_span("worker.execution") as span:
                 ret_data = None
                 span.set_attribute("worker.started", datetime.now(timezone.utc).isoformat())
                 try:
@@ -138,7 +136,7 @@ class Worker:
                     msg=f'Validation error - {json_payload} - {format_exception(e)}'
                     log.error(msg)
                     await doer.nats.post("result", Error(error=msg).model_dump())
-                    return 
+                    return False, Error(error=msg)
 
                 #Run the worker
                 publisher = None
@@ -150,28 +148,130 @@ class Worker:
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
                         api_url = ripple_config().api_base_uri
-                        resolve_params(api_url, tmpdir, inputs, headers=auto_request.telemetry_context)
-                        with tracer.start_as_current_span("job.execution", context=telemetry_context) as job_span:
+                        resolve_params(api_url, tmpdir, inputs, headers=update_headers_from_context())
+                        with tracer.start_as_current_span("job.execution") as job_span:
                             job_span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
-                            ret_data: StreamItemUnion = worker.provider(inputs, publisher)
+                            ret_data: ProcessStreamItem = worker.provider(inputs, publisher)
                             job_span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
 
                         publisher.result(ret_data)
                     publisher.result(Progress(progress=100), complete=True)
+                    return True, ret_data
                 except Exception as e:
                     msg=f"Executor error - {log_str} - {format_exception(e)}"
                     if publisher:
                         publisher.result(Error(error=msg), complete=True)
                     log.error(msg)
                     span.record_exception(e)
+                    return False, Error(error=msg)
                 finally:
                     span.set_attribute("worker.completed", datetime.now(timezone.utc).isoformat())
                     if ret_data and ret_data.job_id:
                         span.set_attribute("job_id", ret_data.job_id)
                     log.info("Job finished %s", auto_request.correlation)
 
-        return implementation
+        async def coordinator(json_payload: dict):
+            headers: dict = json_payload.get("telemetry_context", {})
+            # Init telemetry_context before root trace
+            telemetry_context = TraceContextTextMapPropagator().extract(carrier=headers)
+            api_url = ripple_config().api_base_uri
+            auth_token = None
+            event_id = json_payload.get("event_id", None)
 
+            with tracer.start_as_current_span(
+                "coordinator", context=telemetry_context
+            ) as span:
+                job_res = EventAutomationResponse()
+                try:
+                    if json_payload.get("is_bulk_processing", False):
+                        requests: list[dict] = json_payload["requests"]
+                        job_res.is_bulk_processing = True
+                    else:
+                        requests: list[dict] = [json_payload]
+
+                    if job_res.is_bulk_processing:
+                        # validate request for the bulk processing
+                        BulkAutomationRequest(**json_payload)
+
+                    auth_token = requests[0].get("auth_token", None)
+
+                    for job_request in requests:
+                        processed, result = await implementation(job_request)
+                        job_res.request_result.append(
+                            AutomationResult(
+                                processed=processed,
+                                request=AutomationRequest(**job_request),
+                                result=result,
+                            )
+                        )
+                    log.info(
+                        "All jobs processed, job_res: %s, event_id: %s",
+                        job_res.model_dump(),
+                        event_id,
+                    )
+                    await self.process_items_result(
+                        job_res=job_res,
+                        api_url=api_url,
+                        auth_token=auth_token,
+                        event_id=event_id,
+                    )
+                except (CoordinatorException, ValidationError) as ex:
+                    job_res.request_result.append(
+                        AutomationResult(
+                            processed=False, result=Error(error=ex.__str__())
+                        )
+                    )
+                    await self.process_items_result(
+                        job_res=job_res,
+                        api_url=api_url,
+                        auth_token=auth_token,
+                        event_id=event_id,
+                    )
+                    log.exception(ex)
+                    span.record_exception(ex)
+                    return
+
+        return coordinator
+
+    async def process_items_result(
+        self,
+        job_res: EventAutomationResponse,
+        api_url: str,
+        auth_token: str,
+        event_id: Optional[str] = None,
+    ) -> None:
+        updated_headers = update_headers_from_context()
+        log.info("processing items result, event_id: %s", event_id)
+
+        success = True
+        if event_id:
+            for res in job_res.request_result:
+                item = res.result
+                if not res.processed:
+                    success = False
+                elif isinstance(item, Error):
+                    success = False
+                elif isinstance(item, JobDefinition) and item.job_def_id is None:
+                    success = False
+                elif isinstance(item, CropImageResponse) and item.file_id is None:
+                    success = False
+
+                if not success:
+                    break
+
+            job_res.processed = success
+            response = self.rest.post(
+                f"{api_url}/events/processed/{event_id}",
+                job_res.model_dump(),
+                auth_token,
+                headers=updated_headers,
+            )
+            log.info("Event status saved: item-%s", item.item_type)
+            if not response:
+                log.error(
+                    "The event status request failed: item_data-%s", item.model_dump()
+                )
+ 
     def _get_web_executor(self):
         """
         Start a FastAPI app dynamically based on the workers list.

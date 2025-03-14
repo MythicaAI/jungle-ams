@@ -88,6 +88,7 @@ def bind_routes(app):
     """Bind all the FastAPI routes, this prevents writing boilerplate
     and pylint errors"""
     route_names = [
+        'events',
         'upload',
         'download',
         'profiles',

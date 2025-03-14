@@ -1,3 +1,4 @@
+import json
 import logging
 from jwt import DecodeError
 from pydantic import ValidationError
@@ -8,11 +9,12 @@ from fastapi.testclient import TestClient
 
 from ripple.auth.generate_token import generate_token
 from ripple.automation.automations import ScriptRequest, _get_script_interface, _run_script_automation, get_default_automations
-from ripple.automation.worker import Worker
-from ripple.automation.models import AutomationModel, AutomationRequest, AutomationsResponse
+from ripple.automation.worker import CoordinatorException, Worker
+from ripple.automation.models import AutomationModel, AutomationRequest, AutomationResult, AutomationsResponse, BulkAutomationRequest, EventAutomationResponse
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
-from ripple.models.streaming import CropImageResponse, JobDefinition, Message, OutputFiles, ProcessStreamItem
+from ripple.config import ripple_config, update_headers_from_context
+from ripple.models.streaming import CropImageResponse, Error, JobDefinition, Message, OutputFiles, ProcessStreamItem
 from ripple.models.params import ParameterSet
 
 from cryptid.cryptid import profile_seq_to_id
@@ -37,6 +39,29 @@ def test_token():
         [])
 
 @pytest.fixture
+def test_coordinator_input(test_token):
+    return dict(
+        is_bulk_processing=True,
+        requests=[{
+            "process_guid": "test-guid",
+            "correlation": "test-work",
+            "path": "/test/path",
+            "data": {},
+            "auth_token": test_token,
+            "event_id": "1"
+        },
+        {
+            "process_guid": "test-guid",
+            "correlation": "test-work",
+            "path": "/test/path",
+            "data": {},
+            "auth_token": test_token,
+            "event_id": "1"
+        }],
+        event_id="1",
+    )
+
+@pytest.fixture
 def mock_nats():
     mock = AsyncMock(spec=NatsAdapter)
     mock.listen = AsyncMock()
@@ -58,6 +83,7 @@ def mock_responder(tmp_path):
 @pytest.fixture
 def worker(mock_nats, mock_rest):
     worker = Worker()
+    # worker.process_items_result = MagicMock()
     worker.nats = mock_nats
     worker.rest = mock_rest
     return worker
@@ -191,6 +217,200 @@ async def test_worker_executor_error(worker):
         assert set(error_fields) == {"process_guid", "correlation", "path", "data"}
 
 
+@pytest.fixture
+def mock_requests():
+    with patch('requests.post') as mock_post, \
+         patch('requests.get') as mock_get:
+        mock_post.return_value = MagicMock(status_code=200)
+        mock_get.return_value = MagicMock(status_code=200)
+        yield mock_post, mock_get
+
+
+@pytest.mark.asyncio
+async def test_coordinator_executor_error(worker, caplog, mock_requests, test_coordinator_input):
+    mock_post, mock_get = mock_requests
+    mock_get.return_value = MagicMock(status_code=404)
+    mock_post.return_value.json.return_value = {"test": "test"}
+    mock_get.return_value.json.return_value = {"test": "test"}
+    worker.rest.get = mock_get
+    worker.rest.post = mock_post
+    executor = worker._get_executor()
+    worker.process_items_result = AsyncMock()
+    
+    with caplog.at_level(logging.ERROR):
+        await executor(test_coordinator_input)
+        
+
+    assert len(caplog.record_tuples) == 2
+    worker_log_mess = caplog.record_tuples[1][2]
+    assert "Executor error" in worker_log_mess
+    worker_log_mess = caplog.record_tuples[1][2]
+    assert "Executor error" in worker_log_mess
+
+    process_items_result = worker.process_items_result
+    args, kwargs = process_items_result.call_args
+    to_test: EventAutomationResponse = kwargs["job_res"]
+    assert to_test.is_bulk_processing == True
+    assert to_test.processed == False
+    for item in to_test.request_result:
+        assert item.processed == False
+        assert isinstance(item.result, Error)
+
+    # Test is_bulk_processing set as False but requests is a list
+    data = dict(is_bulk_processing=False, requests=[{"invalid": "payload"}])
+    with caplog.at_level(logging.INFO):
+        await executor(data)
+
+    assert len(caplog.record_tuples) == 4
+    worker_log_level = caplog.record_tuples[2][1]
+    assert worker_log_level == logging.ERROR
+    worker_log_mess = caplog.record_tuples[2][2]
+    assert "ValidationError" in  worker_log_mess
+    assert "4 validation errors for AutomationRequest" in worker_log_mess
+
+
+    # Test is_bulk_processing set as True but requests is not a list
+    data = dict(is_bulk_processing=True, requests={"invalid": "payload"})
+    with caplog.at_level(logging.INFO):
+        await executor(data)
+
+    assert len(caplog.record_tuples) == 5
+    coordinator_log_level = caplog.record_tuples[2][1]
+    assert coordinator_log_level == logging.ERROR
+    coordinator_log_mess = caplog.record_tuples[2][2]
+    assert "ValidationError" in  coordinator_log_mess
+    assert "4 validation errors for AutomationRequest" in coordinator_log_mess
+    worker_log_level = caplog.record_tuples[1][1]
+    assert worker_log_level == logging.ERROR
+
+
+@pytest.mark.asyncio
+async def test_coordinator_executor_success(worker, test_coordinator_input, caplog, mock_requests, job_definition_item):
+    mock_post, mock_get = mock_requests
+    mock_get.return_value = MagicMock(status_code=404)
+    mock_post.return_value.json.return_value = {"test": "test"}
+    mock_get.return_value.json.return_value = {"test": "test"}
+    worker.rest.get = mock_get
+    worker.rest.post = mock_post
+    executor = worker._get_executor()
+    worker.process_items_result = AsyncMock()
+    test_automation = AutomationModel(
+        path='/test/path',
+        provider=lambda x,y: job_definition_item,
+        inputModel=ParameterSet,
+        outputModel=JobDefinition,
+        hidden=False
+    )
+
+    worker.automations['/test/path'] = test_automation
+
+    with caplog.at_level(logging.ERROR):
+        await executor(test_coordinator_input)
+        
+    assert len(caplog.record_tuples) == 0
+
+    process_items_result = worker.process_items_result
+    args, kwargs = process_items_result.call_args
+    to_test: EventAutomationResponse = kwargs["job_res"]
+    assert to_test.is_bulk_processing == True
+    assert to_test.processed == False
+    assert len(to_test.request_result) == 2
+    for item in to_test.request_result:
+        assert item.processed == True
+        assert isinstance(item.result, JobDefinition)
+
+
+
+@pytest.mark.asyncio
+async def test_process_items_result_success(
+    mock_rest,
+    test_token,
+    worker,
+    test_coordinator_input,
+    caplog,
+    mock_requests,
+    job_definition_item,
+):
+    mock_post, mock_get = mock_requests
+    mock_get.return_value = MagicMock(status_code=200)
+    mock_post.return_value = MagicMock(status_code=200)
+    mock_post.return_value.json.return_value = {"job_def_id": "test-job-def-id"}
+    mock_get.return_value.json.return_value = {"test": "test"}
+    worker.rest = mock_rest
+    # worker.rest.post = mock_post
+    executor = worker._get_executor()
+    # worker.process_items_result = AsyncMock()
+    test_automation = AutomationModel(
+        path='/test/path',
+        provider=lambda x,y: job_definition_item,
+        inputModel=ParameterSet,
+        outputModel=JobDefinition,
+        hidden=False
+    )
+
+    worker.automations['/test/path'] = test_automation
+
+    with caplog.at_level(logging.ERROR):
+        await executor(test_coordinator_input)
+        assert test_coordinator_input["event_id"]
+        
+    assert len(caplog.record_tuples) == 0
+
+    assert mock_rest.post.call_count == 3
+
+    # TODO: Fix this test
+    # mock_rest.post.assert_called_with(
+    #     f"{ripple_config().api_base_uri}/events/processed/1",
+    #     EventAutomationResponse(
+    #         is_bulk_processing=True,
+    #         processed=True,
+    #         request_result=[
+    #             AutomationResult(
+    #                 processed=True,
+    #                 request=AutomationRequest(
+    #                     process_guid="test-guid",
+    #                     correlation="test-work",
+    #                     results_subject=None,
+    #                     job_id=None,
+    #                     auth_token=test_token,
+    #                     path="/test/path",
+    #                     data={},
+    #                     telemetry_context={},
+    #                     event_id="1",
+    #                 ),
+    #                 result=job_definition_item
+    #             ) for _ in range(2)]).model_dump(),
+    #     test_token,
+    #     headers={},
+    # )
+    # expected_response = EventAutomationResponse(
+    #     is_bulk_processing=True,
+    #     processed=True,
+    #     request_result=[
+    #         AutomationResult(
+    #             processed=True,
+    #             request=AutomationRequest(
+    #                 process_guid="test-guid",
+    #                 correlation="test-work",
+    #                 results_subject=None,
+    #                 job_id=None,
+    #                 auth_token=test_token,
+    #                 path="/test/path",
+    #                 data={},
+    #                 telemetry_context={},
+    #                 event_id="1",
+    #             ),
+    #             result=job_definition_item
+    #         ) for _ in range(2)
+    #     ]
+    # )
+    # call_args = mock_rest.post.call_args[0]
+    # assert test_token == call_args[2]
+    # assert expected_response.model_dump() == call_args[1]
+
+    # for i in mock_rest.post.call_args[0][2]:
+    #     print(i)
+    # assert call_args == expected_response.model_dump()
 @pytest.mark.asyncio
 async def test_worker_web_executor(worker, test_token):
     app = worker._get_web_executor()

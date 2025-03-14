@@ -39,3 +39,4 @@ class Event(SQLModel, table=True):
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
     created_in: str | None = Field(default=None)
     affinity: str | None = Field(default=None)
+    job_result_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
