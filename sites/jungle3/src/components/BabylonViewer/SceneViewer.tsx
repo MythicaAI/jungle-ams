@@ -182,28 +182,31 @@ const SceneViewer = () => {
      if (mesh.name === loadingMeshRef.current) {
        console.log("starting mesh swap " + mesh.name);
 
+       const loadingMesh = scene.getMeshByName(loadingMeshRef.current);
+       if (loadingMesh) {
+         console.log("enabling and swapping in loading mesh " + loadingMeshRef.current) ;
+         loadingMesh.isVisible = true;
+       } else {
+         console.log("loading mesh not found " + loadingMeshRef.current);
+       }
+
        // Remove current mesh
        if (currentMeshRef.current && currentMeshRef.current !== loadingMeshRef.current) {
          console.log("removing current mesh " + currentMeshRef.current);
          const mesh = scene.getMeshByName(currentMeshRef.current);
          if (mesh) {
            scene.removeMesh(mesh, true);
+           mesh.isVisible = false;
            mesh.dispose();
-           currentMeshRef.current = null;
          }
          else {
            console.log("mesh not found " + currentMeshRef.current);
          }
        }
 
-       const loadingMesh = scene.getMeshByName(loadingMeshRef.current);
-       if (loadingMesh) {
-         console.log("enabling and swapping in loading mesh " + loadingMeshRef.current) ;
-         loadingMesh.isVisible = true;
-         currentMeshRef.current = loadingMeshRef.current;
-       } else {
-         console.log("loading mesh not found " + loadingMeshRef.current);
-       }
+       // Update the refs
+       currentMeshRef.current = loadingMeshRef.current;
+       loadingMeshRef.current = null;
      }
     });
     scene.onMeshImportedObservable.add(function (mesh) {
@@ -277,7 +280,6 @@ const SceneViewer = () => {
     // Create a new mesh and swap to it once it's ready
     const newMesh = new BABYLON.Mesh(newMeshName, sceneRef.current);
     vertexData.applyToMesh(newMesh);
-    newMesh.isVisible = false;
 
     // Get the appropriate material for this HDA and set it on the mesh
     const material = sceneRef.current.getMaterialByName(currentSchema.material_name);
