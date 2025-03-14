@@ -35,6 +35,8 @@ const SceneViewer = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    console.info("creating new Babylon scene")
+
     // Create engine and scene
     const engine = new BABYLON.Engine(canvasRef.current, true);
     engineRef.current = engine;
@@ -173,38 +175,34 @@ const SceneViewer = () => {
     scene.onNewMeshAddedObservable.add(function (mesh) {
      console.log("on new mesh added observable " + mesh.name);
      if (!loadingMeshRef.current) {
-       console.log("no loading mesh") ;
        return;
      }
 
      // Do mesh swap
      if (mesh.name === loadingMeshRef.current) {
-       console.log("mesh swap") ;
+       console.log("starting mesh swap " + mesh.name);
+
        // Remove current mesh
-       if (currentMeshRef.current) {
-         console.log("remove current mesh " + currentMeshRef.current);
+       if (currentMeshRef.current && currentMeshRef.current !== loadingMeshRef.current) {
+         console.log("removing current mesh " + currentMeshRef.current);
          const mesh = scene.getMeshByName(currentMeshRef.current);
          if (mesh) {
            scene.removeMesh(mesh, true);
+           mesh.dispose();
+           currentMeshRef.current = null;
          }
          else {
-           console.log("no current mesh");
+           console.log("mesh not found " + currentMeshRef.current);
          }
        }
+
        const loadingMesh = scene.getMeshByName(loadingMeshRef.current);
        if (loadingMesh) {
-         const mat = scene.getMaterialById(currentSchema.material_name);
-         if (!mat) {
-          console.log('material missing ' + currentSchema.material_name)  ;
-         } else {
-           loadingMesh.material = mat
-         }
-         console.log("show loading mesh " + loadingMeshRef.current) ;
+         console.log("enabling and swapping in loading mesh " + loadingMeshRef.current) ;
          loadingMesh.isVisible = true;
          currentMeshRef.current = loadingMeshRef.current;
-         loadingMeshRef.current = null;
        } else {
-         console.log("no loading mesh");
+         console.log("loading mesh not found " + loadingMeshRef.current);
        }
      }
     });
@@ -278,12 +276,13 @@ const SceneViewer = () => {
 
     // Create a new mesh and swap to it once it's ready
     const newMesh = new BABYLON.Mesh(newMeshName, sceneRef.current);
-    vertexData.applyToMesh(newMesh, true);
+    vertexData.applyToMesh(newMesh);
     newMesh.isVisible = false;
 
     // Get the appropriate material for this HDA and set it on the mesh
-    const material = sceneRef.current.getMaterialById(currentSchema.material_name);
+    const material = sceneRef.current.getMaterialByName(currentSchema.material_name);
     if (material) {
+      console.info("setting material " + currentSchema.material_name + " on mesh " + newMesh.name);
       newMesh.material = material;
       newMesh.material.wireframe = isWireframe;
     } else {
