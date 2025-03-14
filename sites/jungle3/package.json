@@ -17,6 +17,8 @@
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
     "@babylonjs/core": "^7.51.1",
+    "@babylonjs/inspector": "^7.52.3",
+    "@babylonjs/node-geometry-editor": "^7.52.3",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@fontsource/inter": "^5.0.18",
