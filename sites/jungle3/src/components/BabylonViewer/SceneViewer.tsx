@@ -219,17 +219,6 @@ const SceneViewer = () => {
     vertexData.normals = normals;
     vertexData.uvs = uvs;
 
-    // Fast path to update existing mesh if vertex count matches
-    if (customMeshRef.current) {
-      const currentVertexCount = customMeshRef.current.getTotalVertices();
-      const newVertexCount = vertices.length / 3;
-
-      if (currentVertexCount === newVertexCount) {
-        vertexData.applyToMesh(customMeshRef.current);
-        return;
-      }
-    }
-
     // Create a new mesh and swap to it once it's ready
     const newMesh = new BABYLON.Mesh("customMesh_new", sceneRef.current);
 
@@ -240,7 +229,7 @@ const SceneViewer = () => {
       newMesh.material.wireframe = isWireframe;
     }
 
-    vertexData.applyToMesh(newMesh, true);
+    vertexData.applyToMesh(newMesh);
 
     // Add to shadow generator
     if (shadowGeneratorRef.current) {
