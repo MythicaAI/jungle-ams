@@ -92,6 +92,10 @@ interface SceneState {
   reset: () => void;
 }
 
+// Create a buffer outside the store
+let pendingLogs: string[] = [];
+let flushTimeout: NodeJS.Timeout | null = null;
+
 // Define the parameter schemas from the test client
 const parameterSchemas: HDASchema[] = [
   {
@@ -279,11 +283,23 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   // Status logs
   statusLog: [],
-  addStatusLog: (log) =>
-    set((state) => ({
-      statusLog: [...state.statusLog, log],
-    })),
-  clearStatusLog: () => set({ statusLog: [] }),
+  addStatusLog: (log) => {
+    pendingLogs.push(log);
+
+    // Debounce the update
+    if (flushTimeout) clearTimeout(flushTimeout);
+    flushTimeout = setTimeout(() => {
+      set(state => ({
+        statusLog: [...state.statusLog, ...pendingLogs]
+      }));
+      pendingLogs = [];
+    }, 50);
+  },
+  clearStatusLog: () => {
+    pendingLogs = [];
+    if (flushTimeout) clearTimeout(flushTimeout);
+    set({ statusLog: [] });
+  },
 
   // Export functions
   exportFormat: null,
