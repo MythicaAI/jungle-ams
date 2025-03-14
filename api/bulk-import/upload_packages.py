@@ -535,7 +535,7 @@ class PackageUploader(object):
         """Main entry point for each package definition being processed"""
         package = ProcessedPackageModel(**const_package.model_dump())
 
-        if package.name == "":
+        if package.name is None:
             package.name = os.path.basename(package.repo)
 
         if self.package_name_filter and not self.package_name_filter in package.name:
