@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Button,
   Chip,
@@ -23,23 +23,13 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import JobResultCard from "@components/JobResultCard";
 import { LucideChevronLeft } from "lucide-react";
-import { useStatusStore } from "@store/statusStore";
-import { useRunAutomation } from "@queries/automation";
-import { v4 } from "uuid";
-import Cookies from "universal-cookie";
-import { HDAInterfaceResponse } from "types/apiTypes";
 import { dictionary, hou, ParmGroup } from "houdini-ui";
-import {
-  extractValidationErrors,
-  translateError,
-} from "@services/backendCommon";
 import { useSceneStore } from "@store/sceneStore";
 import BabylonScenePage from "./BabylonScenePage";
 
 const TabStyle = { ":focus": { outline: "none" } };
 const TabPanelStyle = { padding: "12px 0 0" };
 
-const cookies = new Cookies();
 
 export const PackageJobs = () => {
   const { asset_id, version_id } = useParams();
@@ -49,11 +39,10 @@ export const PackageJobs = () => {
     asset_id,
     version_id,
   );
-  const [parmTemplateGroup, setParmTemplateGroup] =
-    useState<hou.ParmTemplateGroup>();
+
+  const parmTemplateGroup = new hou.ParmTemplateGroup(jobDefinitions?.[0]?.params_schema.params_v2 as dictionary[]);
   const [inputData, setInputData] = useState<dictionary>({});
   const [selectedHdaId, setSelectedHdaId] = React.useState<null | string>(null);
-  const { addError, addWarning } = useStatusStore();
   const { hdaSchemas } = useSceneStore();
 
   const matchesHdaSchema = hdaSchemas.find(
@@ -63,9 +52,7 @@ export const PackageJobs = () => {
   const hdaFiles = assetData?.contents?.files.filter((file) =>
     file.file_name.includes(".hda"),
   );
-  const selectedHdaData = hdaFiles?.find(
-    (hda) => hda.file_id === selectedHdaId,
-  );
+
   const selectedJobData = jobDefinitions?.find(
     (definition) => definition.source.file_id === selectedHdaId,
   );
@@ -77,6 +64,12 @@ export const PackageJobs = () => {
     [setInputData],
   );
 
+  /*
+  const { addError, addWarning } = useStatusStore();
+
+  const selectedHdaData = hdaFiles?.find(
+    (hda) => hda.file_id === selectedHdaId,
+  );
   const {
     data: autoResp,
     isLoading: isAutomationLoading,
@@ -93,13 +86,14 @@ export const PackageJobs = () => {
     },
     !!selectedHdaData,
   );
-
+  */
   const { mutate: runJob } = useRunJob(
     asset_id as string,
     version_id as string,
   );
   const navigate = useNavigate();
 
+  /*
   const hdaInterface = autoResp as HDAInterfaceResponse;
   useEffect(() => {
     if (hdaInterface && selectedHdaId) {
@@ -110,7 +104,6 @@ export const PackageJobs = () => {
       ptg.draw();
     }
   }, [selectedHdaId, hdaInterface]);
-
   const handleError = (err: any) => {
     addError(translateError(err));
     extractValidationErrors(err).map((msg) => addWarning(msg));
@@ -121,6 +114,7 @@ export const PackageJobs = () => {
       handleError(automationError);
     }
   }, [automationError]);
+  */
 
   const { data: jobResultsHistory, isLoading: isJobResultsLoading } =
     useGetJobsDetailsByAsset(
@@ -333,14 +327,11 @@ export const PackageJobs = () => {
             <Typography fontSize={20} level="h3" mb="12px">
               Params
             </Typography>
-            {isAutomationLoading && <CircularProgress />}
-            {!isAutomationLoading && parmTemplateGroup && (
               <ParmGroup
                 data={inputData}
                 group={parmTemplateGroup as hou.ParmTemplateGroup}
                 onChange={handleParmChange}
               />
-            )}
             <Button
               sx={{ width: "fit-content", mt: "12px", bgcolor: "#367c64" }}
               onClick={() => onSubmit(inputData)}
