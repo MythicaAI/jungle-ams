@@ -207,7 +207,7 @@ const SceneViewer = () => {
         meshData.uvs || []
       );
     }
-  }, [meshData, currentSchema.material_name]);
+  }, [meshData]);
 
   // Create mesh from data received via WebSocket
   const createMeshFromData = (vertices: number[], indices: number[], normals: number[], uvs: number[]) => {
