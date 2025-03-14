@@ -31,7 +31,7 @@ class PackageModel(BaseModel):
     docs: Optional[list[str]] = None  # path patterns for docs, extra files for full distribution
     thumbnails: Optional[list[str]] = None  # input patterns, file names or paths in order
     name: str  # the friendly name of the package
-    description: str  # a short description
+    description: Optional[str] = None  # the package description
     blurb: Optional[str] = None  # a short headline
     user: Optional[str] = None  # user name override
     tags: Optional[list[str]] = None

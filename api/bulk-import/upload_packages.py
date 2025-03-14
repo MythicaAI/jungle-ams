@@ -366,13 +366,17 @@ def bump_package_version(package: ProcessedPackageModel):
         package.latest_version[2] += 1
 
 
-def get_description_from_readme(package: ProcessedPackageModel):
+def load_description_from_readme(package: ProcessedPackageModel):
     readme_path = os.path.join(package.root_disk_path, "readme.txt")
     description = ""
     if os.path.exists(readme_path):
         with open(readme_path, 'r') as f:
             description = f.read()
-    return description
+            if len(description) == 0:
+                raise ValueError(f"{readme_path} did not contain a description")
+    else:
+        raise ValueError(f"unable to load description from {readme_path}")
+
 
 
 class PackageUploader(object):
@@ -565,8 +569,8 @@ class PackageUploader(object):
         if package.user is not None:
             user = package.user
 
-        if package.description == "":
-            package.description = get_description_from_readme(package)
+        if package.description is None:
+            package.description = load_description_from_readme(package)
 
         profile = self.find_or_create_profile(user, user_description)
         package.profile_id = profile.profile_id
