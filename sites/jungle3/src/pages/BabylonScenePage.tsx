@@ -57,8 +57,18 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
     const sceneTalkUrl = import.meta.env.VITE_SCENE_TALK_URL;
     const wsService = new SceneTalkConnection(sceneTalkUrl);
     wsServiceRef.current = wsService;
+    wsService.connect();
 
-    // Set up event handlers
+    return () => {
+      wsService.disconnect();
+    };
+  }, []);
+
+  // Update handlers when schema changes
+  useEffect(() => {
+    const wsService = wsServiceRef.current;
+    if (!wsService) return;
+
     wsService.setHandlers({
       onStatusChange: (status) => {
         setWsStatus(status);
@@ -96,15 +106,7 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
         setExportFormat(null);
       },
     });
-
-    // Connect to WebSocket server
-    wsService.connect();
-
-    // Cleanup on unmount
-    return () => {
-      wsService.disconnect();
-    };
-  }, []);
+  }, [currentSchema, paramValues]);
 
   useEffect(() => {
     if (currentWidth > 700 && isModalOpen) {
