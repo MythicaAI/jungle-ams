@@ -12,9 +12,10 @@ import { useSceneStore, ParameterSlider } from "@store/sceneStore";
 
 type Props = {
   width?: number;
+  isAssetPage?: boolean;
 };
 
-const SceneControls: FC<Props> = ({ width }) => {
+const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
   // Get state and actions from the store
   const {
     hdaSchemas,
@@ -148,25 +149,27 @@ const SceneControls: FC<Props> = ({ width }) => {
       </Box>
 
       {/* HDA Selection */}
-      <FormControl sx={{ mb: 3 }}>
-        <FormLabel sx={{ color: "#e0e0e0" }}>Select Generator</FormLabel>
-        <Select
-          value={selectedHdaIndex}
-          onChange={handleHdaChange}
-          variant="outlined"
-          color="neutral"
-          sx={{
-            bgcolor: "#333",
-            "& .MuiSelect-indicator": { color: "#e0e0e0" },
-          }}
-        >
-          {hdaSchemas.map((schema, index) => (
-            <Option key={index} value={index}>
-              {schema.name}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
+      {!isAssetPage && (
+        <FormControl sx={{ mb: 3 }}>
+          <FormLabel sx={{ color: "#e0e0e0" }}>Select Generator</FormLabel>
+          <Select
+            value={selectedHdaIndex}
+            onChange={handleHdaChange}
+            variant="outlined"
+            color="neutral"
+            sx={{
+              bgcolor: "#333",
+              "& .MuiSelect-indicator": { color: "#e0e0e0" },
+            }}
+          >
+            {hdaSchemas.map((schema, index) => (
+              <Option key={index} value={index}>
+                {schema.name}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+      )}
 
       {/* Parameters Section Header */}
       <Box

@@ -33,6 +33,8 @@ import {
   extractValidationErrors,
   translateError,
 } from "@services/backendCommon";
+import { useSceneStore } from "@store/sceneStore";
+import BabylonScenePage from "./BabylonScenePage";
 
 const TabStyle = { ":focus": { outline: "none" } };
 const TabPanelStyle = { padding: "12px 0 0" };
@@ -52,6 +54,11 @@ export const PackageJobs = () => {
   const [inputData, setInputData] = useState<dictionary>({});
   const [selectedHdaId, setSelectedHdaId] = React.useState<null | string>(null);
   const { addError, addWarning } = useStatusStore();
+  const { hdaSchemas } = useSceneStore();
+
+  const matchesHdaSchema = hdaSchemas.find(
+    (schema) => schema.name === assetData?.name,
+  );
 
   const hdaFiles = assetData?.contents?.files.filter((file) =>
     file.file_name.includes(".hda"),
@@ -173,9 +180,38 @@ export const PackageJobs = () => {
             Back to Package view
           </Button>
         </Stack>
-        <Typography level="h4" textAlign="start" mt="24px">
-          No automation definitions found for this package.
-        </Typography>
+        {matchesHdaSchema ? (
+          <Tabs
+            aria-label="tabs"
+            defaultValue={0}
+            sx={{ width: "100%", bgcolor: "transparent" }}
+          >
+            <TabList
+              disableUnderline
+              sx={{
+                p: 0.5,
+                gap: 0.5,
+                borderRadius: "8px",
+                bgcolor: "background.level1",
+                [`& .${tabClasses.root}[aria-selected="true"]`]: {
+                  boxShadow: "sm",
+                  bgcolor: "background.surface",
+                },
+              }}
+            >
+              <Tab sx={TabStyle} disableIndicator>
+                3D Live Preview
+              </Tab>
+            </TabList>
+            <TabPanel value={0}>
+              <BabylonScenePage schemaName={assetData?.name} />
+            </TabPanel>
+          </Tabs>
+        ) : (
+          <Typography level="h4" textAlign="start" mt="24px">
+            No automation definitions found for this package.
+          </Typography>
+        )}
       </Stack>
     );
   }
@@ -236,6 +272,11 @@ export const PackageJobs = () => {
           <Tab sx={TabStyle} disableIndicator>
             Run automation
           </Tab>
+          {matchesHdaSchema && (
+            <Tab sx={TabStyle} disableIndicator>
+              3D Live Preview
+            </Tab>
+          )}
           <Tab sx={TabStyle} disableIndicator>
             Automation history
           </Tab>
@@ -309,7 +350,13 @@ export const PackageJobs = () => {
           </Stack>
         </TabPanel>
 
-        <TabPanel value={1} sx={TabPanelStyle}>
+        {matchesHdaSchema && (
+          <TabPanel value={1}>
+            <BabylonScenePage schemaName={assetData?.name} />
+          </TabPanel>
+        )}
+
+        <TabPanel value={matchesHdaSchema ? 2 : 1} sx={TabPanelStyle}>
           {jobResultsHistory && jobResultsHistory.length > 0 ? (
             <Stack gap="12px">
               {jobResultsHistory

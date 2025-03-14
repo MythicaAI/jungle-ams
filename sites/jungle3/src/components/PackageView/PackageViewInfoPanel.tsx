@@ -20,12 +20,18 @@ import {
 } from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSceneStore } from "@store/sceneStore";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
 ) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hdaSchemas } = useSceneStore();
+  const matchesHdaSchema = hdaSchemas.find(
+    (schema) => schema.name === av?.name,
+  );
+
   const convertCommitRefToLink = (ref: string) => {
     if (ref && ref.startsWith("git@github.com")) {
       const site_user_path = ref.split(":");
@@ -80,17 +86,19 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
 
   return (
     <Stack gap="10px">
-      <Button
-        variant="outlined"
-        color="neutral"
-        sx={{ width: "fit-content", alignSelf: "end", pr: "10px" }}
-        endDecorator={<LucideChevronRight width="20px" height="20px" />}
-        onClick={() => {
-          navigate(`${location.pathname}/jobs`);
-        }}
-      >
-        Visit automations
-      </Button>
+      {matchesHdaSchema && (
+        <Button
+          variant="outlined"
+          color="neutral"
+          sx={{ width: "fit-content", alignSelf: "end", pr: "10px" }}
+          endDecorator={<LucideChevronRight width="20px" height="20px" />}
+          onClick={() => {
+            navigate(`${location.pathname}/jobs`);
+          }}
+        >
+          Visit automations
+        </Button>
+      )}
       <Card>
         <Stack>
           <Stack direction={"row"} alignItems={"center"} gap={"8px"}>
