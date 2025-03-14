@@ -1,3 +1,5 @@
+import { dictionary } from 'houdini-ui';
+
 export type JobDefinition = {
   description: string;
   job_def_id: string;
@@ -20,6 +22,7 @@ export type JobDefinition = {
         }[];
       };
     };
+    params_v2: dictionary[];
   };
   source: {
     asset_id: string;
