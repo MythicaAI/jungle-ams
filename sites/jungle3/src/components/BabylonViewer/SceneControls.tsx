@@ -61,6 +61,7 @@ const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
         ...prev,
         [key]: value,
       }));
+      updateParam(key, value);
     };
 
   // Update actual parameters on slider release
