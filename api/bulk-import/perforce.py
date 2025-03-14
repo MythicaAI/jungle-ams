@@ -116,4 +116,4 @@ def parse_perforce_change(change_desc) -> Dict[str, str]:
                 'workspace': workspace,
                 'description': description}
     else:
-        raise ValueError("Invalid change description format")
+        raise ValueError(f"Invalid change description format {change_desc}")
