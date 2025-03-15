@@ -41,6 +41,8 @@ export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onCh
             return <MenuParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.MenuParmTemplate} />;
         case hou.parmTemplateType.Ramp:
             return <RampParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.RampParmTemplate} />;        
+        case hou.parmTemplateType.File:
+            return <></>
         default:
             return <div key={parmTemplate.id} >Not Implemented: {parmTemplate.param_type}</div>
     }

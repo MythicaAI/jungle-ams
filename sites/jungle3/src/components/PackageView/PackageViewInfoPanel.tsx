@@ -84,9 +84,10 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
     }, 0),
   );
 
+  const env = import.meta.env.VITE_MYTHICA_ENVIRONMENT || "prod";
   return (
     <Stack gap="10px">
-      {matchesHdaSchema && (
+      {(matchesHdaSchema || env==="dev") && (
         <Button
           variant="outlined"
           color="neutral"

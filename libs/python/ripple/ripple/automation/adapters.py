@@ -51,11 +51,15 @@ class NatsAdapter():
 
     async def _internal_post(self, subject: str, data: dict) -> None:
         await self._connect()
+        p_data = data
         try:
             await self.nc.publish(subject, json.dumps(data).encode())
-            log.info(f"Posted: {subject} - {data}")
+            #Remove encoded data from the log
+            if p_data.get('encoded_data'): 
+                p_data['encoded_data'] = '...'
+            log.info(f"Posted: {subject} - {p_data}")
         except Exception as e:
-            log.error(f"Sending to NATS failed: {subject} - {data} - {format_exception(e)}")
+            log.error(f"Sending to NATS failed: {subject} - {p_data} - {format_exception(e)}")
         finally:
             if not self.listeners:
                 await self._disconnect()

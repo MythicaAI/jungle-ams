@@ -25,6 +25,7 @@ export namespace hou {
     Label = 'Label',
     Ramp = 'Ramp',
     Data = 'Data',
+    File = 'file',
     None = 'None',
   }
 
