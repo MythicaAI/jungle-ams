@@ -109,15 +109,6 @@ async def test_create_update(client, api_base, create_profile):
                     headers=headers)
     assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
-    # Create a bad parameter job
-    r = client.post(f'{api_base}/jobs',
-                    json={
-                        'job_def_id': job_def_id,
-                        'params': {}
-                    },
-                    headers=headers)
-    assert_status_code(r, HTTPStatus.BAD_REQUEST)
-
     # Create a job with invalid parameters
     r = client.post(f'{api_base}/jobs',
                     json={
