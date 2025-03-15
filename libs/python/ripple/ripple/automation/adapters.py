@@ -51,10 +51,10 @@ class NatsAdapter():
 
     async def _internal_post(self, subject: str, data: dict) -> None:
         await self._connect()
+        p_data = data
         try:
             await self.nc.publish(subject, json.dumps(data).encode())
             #Remove encoded data from the log
-            p_data = data
             if p_data.get('encoded_data'): 
                 p_data['encoded_data'] = '...'
             log.info(f"Posted: {subject} - {p_data}")
