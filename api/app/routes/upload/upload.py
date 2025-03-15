@@ -90,7 +90,7 @@ async def upload_internal(
         log.info('%s saved to %s', filename, ctx.local_filepath)
     except Exception as e:  
         log.error('Error saving file %s to %s: %s', filename, ctx.local_filepath, e)
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, 'Error saving file')
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, 'Error saving file') from e    
     
     page_size = 64 * 1024
     file_size = 0
