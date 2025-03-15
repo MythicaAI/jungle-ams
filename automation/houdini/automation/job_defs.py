@@ -62,11 +62,13 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         
         #Parse inputs and convert them to FileParameterSpec
         in_files: dict[str, FileParameterSpec] = {}
-        for index, name in enumerate(type_info['inputLabels']):
-            in_files[f'input{index}'] = FileParameterSpec(label=name, default='')
+        for index, label in enumerate(type_info['inputLabels']):
+            name = f'input{index}'
+            in_files[name] = FileParameterSpec(label=label, name=name, default='')
         out_files: dict[str, FileParameterSpec] = {}
-        for index, name in enumerate(type_info['outputLabels']):
-            out_files[f'output{index}'] = FileParameterSpec(label=name, default='')
+        for index, label in enumerate(type_info['outputLabels']):
+            name = f'output{index}'
+            out_files[name] = FileParameterSpec(label=label, name=name, default='')
 
         #Get parmTemplate definition script
         nt_python = type_info['code']

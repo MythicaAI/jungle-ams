@@ -42,8 +42,7 @@ export type JobDetails = {
     {
       created_in: string;
       result_data: {
-        file: string;
-        progress: number;
+        [key: string]: any;
         item_type: string;
       };
       job_result_id: string;
