@@ -10,6 +10,7 @@ const ROCK = "rock";
 const ROCKFACE = "rockface";
 const CRYSTAL = "crystal";
 const PLANT = "plant";
+const CACTUS = "cactus";
 
 import {
   NodeGeometry,
@@ -201,6 +202,11 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/moss_wood/moss_wood_bump_1k.png",
       scene
     );
+
+    // Cactus material
+    const cactusMaterial = new BABYLON.StandardMaterial(CACTUS, scene);
+    cactusMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.6, 0.4);
+    cactusMaterial.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 
     // Handle scene ready events
     scene.onNewMeshAddedObservable.add(function (mesh) {

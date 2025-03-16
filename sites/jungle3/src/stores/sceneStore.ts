@@ -244,6 +244,61 @@ const parameterSchemas: HDASchema[] = [
         default: 50
       }
     },
+  },
+  {
+    name: 'Cactus',
+    file_path: 'assets/mythica.saguaro_cactus.1.1.hda',
+    material_name: 'cactus',
+    parameters: {
+      seed: {
+        type: 'slider',
+        label: 'Randomize',
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 0,
+      },
+      trunkheight: {
+        type: 'slider',
+        label: 'Height',
+        min: 4,
+        max: 7,
+        step: 0.1,
+        default: 5.5
+      },
+      armscount: {
+        type: 'slider',
+        label: 'Max Arms',
+        min: 0,
+        max: 4,
+        step: 1,
+        default: 2
+      },
+      armsbendangle: {
+        type: 'slider',
+        label: 'Bend Angle',
+        min: 75,
+        max: 90,
+        step: 1,
+        default: 82
+      },
+      trunknumsides: {
+        type: 'hidden',
+        default: 15
+      },
+      usespines: {
+        type: 'hidden',
+        default: false
+      },
+      usebuds: {
+        type: 'hidden',
+        default: false
+      },
+      useflowers: {
+        type: 'hidden',
+        default: false
+      },
+    },
   }
 ];
 
