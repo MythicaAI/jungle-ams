@@ -178,7 +178,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     );
 
     // Rockface material
-    BABYLON.NodeMaterial.ParseFromFileAsync(ROCKFACE, "/demo/rockifyMaterial.json", scene);
+    BABYLON.NodeMaterial.ParseFromFileAsync(ROCKFACE, "/demo_assets/rockifyMaterial.json", scene);
 
     // Plant material
     const plantMaterial = new BABYLON.PBRMaterial(PLANT, scene);

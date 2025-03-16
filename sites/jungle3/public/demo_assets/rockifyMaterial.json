@@ -596,7 +596,7 @@
       "disableLevelMultiplication": false,
       "texture": {
         "tags": null,
-        "url": "demo/T_RockyCliffs_02_a_BRA.png",
+        "url": "demo_assets/T_RockyCliffs_02_a_BRA.png",
         "uOffset": 0,
         "vOffset": 0,
         "uScale": 1,
@@ -609,7 +609,7 @@
         "wRotationCenter": 0.5,
         "homogeneousRotationInUVTransform": false,
         "isBlocking": true,
-        "name": "demo/T_RockyCliffs_02_a_BRA.png",
+        "name": "demo_assets/T_RockyCliffs_02_a_BRA.png",
         "hasAlpha": false,
         "getAlphaFromRGB": false,
         "level": 1,
@@ -634,7 +634,7 @@
         "invertY": false,
         "samplingMode": 3,
         "_useSRGBBuffer": false,
-        "internalTextureLabel": "demo/T_RockyCliffs_02_a_BRA.png",
+        "internalTextureLabel": "demo_assets/T_RockyCliffs_02_a_BRA.png",
         "noMipmap": false
       }
     },
