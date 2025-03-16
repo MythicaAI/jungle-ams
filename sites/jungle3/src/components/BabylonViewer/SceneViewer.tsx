@@ -9,6 +9,7 @@ import { useSceneStore } from '@store/sceneStore';
 const ROCK = "rock";
 const ROCKFACE = "rockface";
 const CRYSTAL = "crystal";
+const PLANT = "plant";
 
 import {
   NodeGeometry,
@@ -188,6 +189,19 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       scene
     );
 
+    // Plant material
+    const plantMaterial = new BABYLON.PBRMaterial(PLANT, scene);
+    plantMaterial.metallic = 0.0;
+    plantMaterial.roughness = 0.8;
+    plantMaterial.albedoTexture = new BABYLON.Texture(
+      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/moss_wood/moss_wood_diff_1k.png",
+      scene
+    );
+    plantMaterial.bumpTexture = new BABYLON.Texture(
+      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/moss_wood/moss_wood_bump_1k.png",
+      scene
+    );
+
     // Handle scene ready events
     scene.onNewMeshAddedObservable.add(function (mesh) {
      console.log("on new mesh added observable " + mesh.name);
@@ -353,7 +367,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     const pickResult = scene.pick(x, y);
     if (pickResult && pickResult.hit && pickResult.pickedPoint) {
       const geometryType = e.dataTransfer.getData("geometryType");
-    
+
       const nodeGeo = new NodeGeometry("myBoxGeometry");
       const output = new BABYLON.GeometryOutputBlock("geometryout");
       nodeGeo.outputBlock = output;
