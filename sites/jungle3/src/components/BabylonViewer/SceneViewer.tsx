@@ -178,17 +178,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     );
 
     // Rockface material
-    const rockfaceMaterial = new BABYLON.PBRMaterial(ROCKFACE, scene);
-    rockfaceMaterial.metallic = 0.0;
-    rockfaceMaterial.roughness = 0.8;
-    rockfaceMaterial.albedoTexture = new BABYLON.Texture(
-      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cliff_side/cliff_side_diff_1k.png",
-      scene
-    );
-    rockfaceMaterial.bumpTexture = new BABYLON.Texture(
-      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cliff_side/cliff_side_disp_1k.png",
-      scene
-    );
+    BABYLON.NodeMaterial.ParseFromFileAsync(ROCKFACE, "/demo/rockifyMaterial.json", scene);
 
     // Plant material
     const plantMaterial = new BABYLON.PBRMaterial(PLANT, scene);
