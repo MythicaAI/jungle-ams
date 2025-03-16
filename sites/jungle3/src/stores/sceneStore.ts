@@ -222,6 +222,29 @@ const parameterSchemas: HDASchema[] = [
       },
     },
   },
+  {
+    name: 'Agave Plant',
+    file_path: 'assets/mythica.agave_plant.1.0.hda',
+    material_name: 'plant',
+    parameters: {
+      leafcount: {
+        type: 'slider',
+        label: 'Leaf Count',
+        min: 15,
+        max: 30,
+        step: 1,
+        default: 25
+      },
+      Angle: {
+        type: 'slider',
+        label: 'Angle',
+        min: 30,
+        max: 60,
+        step: 1,
+        default: 50
+      }
+    },
+  }
 ];
 
 // Initialize default parameter values
