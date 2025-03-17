@@ -14,6 +14,7 @@ on:
     paths:
       - 'automation/helm/**'
       - '.github/workflows/helm-automation-deploy-staging.yaml'
+      - 'libs/python/ripple/ripple/automation/**'
 
 
 concurrency:
