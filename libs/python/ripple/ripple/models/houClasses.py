@@ -255,7 +255,7 @@ class RampParmTemplate(ParmTemplate):
         points = []
         for match in pattern.finditer(ramp_str):
             pos = float(match.group(2).strip())
-            interp_str = match.group(4).strip().lower()
+            interp_str = match.group(4).strip().lower().replace("-","").replace(" ","")
             interp = rampBasis.Constant
             for b in rampBasis:
                 # b.value is the string value in the enum, e.g. "MonotoneCubic"

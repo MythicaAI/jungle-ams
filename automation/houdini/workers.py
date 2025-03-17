@@ -16,6 +16,9 @@ from automation.helloworld import hello_world_api, HelloWorldRequest, HelloWorld
 from ripple.automation.worker import Worker
 from ripple.config import configure_telemetry, ripple_config
 
+# Get environment from MYTHICA_ENVIRONMENT env var
+mythica_environment = os.environ.get("MYTHICA_ENVIRONMENT", "prod")
+debug = mythica_environment == "debug"
 
 worker = Worker()
 
@@ -38,7 +41,7 @@ automations = [
         "provider": job_defs,
         "inputModel": JobDefRequest,
         "outputModel": JobDefResponse,
-        "hidden": True
+        "hidden": not debug
     },
     {
         "path": '/mythica/generate_mesh',
