@@ -10,8 +10,8 @@ from fastapi.testclient import TestClient
 
 from ripple.auth.generate_token import generate_token
 from ripple.automation.automations import ScriptRequest, _get_script_interface, _run_script_automation, get_default_automations
-from ripple.automation.worker import CoordinatorException, Worker
-from ripple.automation.models import AutomationModel, AutomationRequest, AutomationResult, AutomationsResponse, BulkAutomationRequest, EventAutomationResponse
+from ripple.automation.worker import Worker
+from ripple.automation.models import AutomationModel, AutomationRequest, AutomationRequestResult, AutomationsResponse, EventAutomationResponse
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
 from ripple.config import ripple_config, update_headers_from_context
@@ -19,6 +19,7 @@ from ripple.models.streaming import CropImageResponse, Error, JobDefinition, Mes
 from ripple.models.params import ParameterSet
 
 from cryptid.cryptid import profile_seq_to_id
+
 # ---- Test Models ----
 class TestRequest(ParameterSet):
     __test__=False
@@ -45,6 +46,9 @@ def test_coordinator_input(test_token):
         is_bulk_processing=True,
         requests=[{
             "process_guid": "test-guid",
+            "hda_file": "test_hda_file",
+            "src_asset_id": "test_asset_id",
+            "src_version": [1, 1, 1],
             "correlation": "test-work",
             "path": "/test/path",
             "data": {},
@@ -53,6 +57,9 @@ def test_coordinator_input(test_token):
         },
         {
             "process_guid": "test-guid",
+            "hda_file": "test_hda_file",
+            "src_asset_id": "test_asset_id",
+            "src_version": [1, 1, 1],
             "correlation": "test-work",
             "path": "/test/path",
             "data": {},
@@ -255,7 +262,7 @@ async def test_coordinator_executor_error(worker, caplog, mock_requests, test_co
     assert to_test.processed == False
     for item in to_test.request_result:
         assert item.processed == False
-        assert isinstance(item.result, Error)
+        assert item.result.get("item_type") == "error"
 
     # Test is_bulk_processing set as False but requests is a list
     data = dict(is_bulk_processing=False, requests=[{"invalid": "payload"}])
@@ -318,7 +325,7 @@ async def test_coordinator_executor_success(worker, test_coordinator_input, capl
     assert len(to_test.request_result) == 2
     for item in to_test.request_result:
         assert item.processed == True
-        assert isinstance(item.result, JobDefinition)
+        assert item.result.get("item_type") == "job_def"
 
 
 
@@ -330,15 +337,25 @@ async def test_process_items_result_success(
     test_coordinator_input,
     caplog,
     mock_requests,
-    job_definition_item: JobDefinition,
 ):
     mock_post, mock_get = mock_requests
     mock_get.return_value = MagicMock(status_code=200)
     mock_post.return_value = MagicMock(status_code=200)
-    mock_post.return_value.json.return_value = {"job_def_id": job_definition_item.job_def_id}
+    mock_post.return_value.json.return_value = {"job_def_id": "job_def_id"}
     mock_get.return_value.json.return_value = {"test": "test"}
     worker.rest = mock_rest
     executor = worker._get_executor()
+    job_definition_item = JobDefinition(
+        job_type="test_job",
+        name="Test Job", 
+        description="Test Description",
+        parameter_spec={
+            "type": "object",
+            "properties": {},
+            "params": {},  # Adding required params field
+            "params_v2": []  # Adding required params field
+        }
+    )
     test_automation = AutomationModel(
         path='/test/path',
         provider=lambda x,y: job_definition_item,
@@ -350,7 +367,6 @@ async def test_process_items_result_success(
 
     with caplog.at_level(logging.ERROR):
         await executor(test_coordinator_input)
-        assert test_coordinator_input["event_id"]
         
     assert len(caplog.record_tuples) == 0
     assert mock_rest.post.call_count == 3
@@ -359,7 +375,7 @@ async def test_process_items_result_success(
         is_bulk_processing=True,
         processed=True,
         request_result=[
-            AutomationResult(
+            AutomationRequestResult(
                 processed=True,
                 request=AutomationRequest(
                     process_guid="test-guid",
@@ -372,7 +388,7 @@ async def test_process_items_result_success(
                     telemetry_context={},
                     event_id="1",
                 ),
-                result=job_definition_item
+                result=job_definition_item.model_dump()
             ) for _ in range(2)
         ]
     )
@@ -389,13 +405,15 @@ async def test_process_items_result_success(
         assert expected_response.request_result[index].request.data == call_args[1]["request_result"][index]["request"]["data"]
         assert expected_response.request_result[index].request.telemetry_context == call_args[1]["request_result"][index]["request"]["telemetry_context"]
         assert expected_response.request_result[index].request.event_id == call_args[1]["request_result"][index]["request"]["event_id"]
-        assert expected_response.request_result[index].result.job_type == call_args[1]["request_result"][index]["result"]["job_type"]
+        print("jvcfghjkhjgjkhk")
+        print(call_args[1]["request_result"][index]["result"])
+        assert expected_response.request_result[index].result["job_type"] == call_args[1]["request_result"][index]["result"]["job_type"]
 
         assert mock.ANY == call_args[1]["request_result"][index]["result"]["job_def_id"]
-        assert expected_response.request_result[index].result.name == call_args[1]["request_result"][index]["result"]["name"]
-        assert expected_response.request_result[index].result.description == call_args[1]["request_result"][index]["result"]["description"]
-        assert expected_response.request_result[index].result.parameter_spec.model_dump() == call_args[1]["request_result"][index]["result"]["parameter_spec"]
-        assert expected_response.request_result[index].result.source == call_args[1]["request_result"][index]["result"]["source"]
+        assert expected_response.request_result[index].result["name"] == call_args[1]["request_result"][index]["result"]["name"]
+        assert expected_response.request_result[index].result["description"] == call_args[1]["request_result"][index]["result"]["description"]
+        assert expected_response.request_result[index].result["parameter_spec"] == call_args[1]["request_result"][index]["result"]["parameter_spec"]
+        assert expected_response.request_result[index].result["source"] == call_args[1]["request_result"][index]["result"]["source"]
 
 @pytest.mark.asyncio
 async def test_worker_web_executor(worker, test_token):

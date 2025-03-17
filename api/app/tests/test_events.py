@@ -12,7 +12,7 @@ from munch import munchify
 from profiles.responses import ProfileResponse
 from ripple.automation.models import (
     AutomationRequest,
-    AutomationResult,
+    AutomationRequestResult,
     CropImageRequest,
     EventAutomationResponse,
 )
@@ -90,7 +90,7 @@ async def test_update_events_result_data(
         is_bulk_processing=True,
         processed=True,
         request_result=[
-            AutomationResult(
+            AutomationRequestResult(
                 processed=True,
                 request=AutomationRequest(
                     process_guid="test-guid",
@@ -113,7 +113,7 @@ async def test_update_events_result_data(
                     name="Test Job",
                     description="Test Description",
                     parameter_spec=ParameterSpec(params={}),
-                ),
+                ).model_dump(),
             )
             for i in range(2)
         ],
@@ -207,12 +207,12 @@ async def test_update_events_result_data(
     data.request_result[0].processed = False
     data.request_result[1].processed = False
     data.request_result[0].request = cropped_image_req_data
-    data.request_result[0].result = cropped_image_response
+    data.request_result[0].result = cropped_image_response.model_dump()
     second_image_response = cropped_image_response.model_copy()
     second_image_req_data = cropped_image_req_data.model_copy()
     second_image_req_data.data["image_file"] = "file_id_2"
     data.request_result[1].request = second_image_req_data
-    data.request_result[1].result = second_image_response
+    data.request_result[1].result = second_image_response.model_dump()
     r = client.post(
         f"{api_base}/events/processed/{event_id}",
         json=data.model_dump(),
