@@ -1,37 +1,37 @@
-from datetime import datetime, timezone
-import logging
 import asyncio
+import logging
 import tempfile
+from datetime import datetime, timezone
+from typing import Callable, Optional
+from uuid import uuid4
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-
-
+from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from pydantic import ValidationError
-from ripple.automation.models import AutomationModel, AutomationRequest, AutomationResult, AutomationsResponse, BulkAutomationRequest, EventAutomationResponse
-from ripple.automation.publishers import ResultPublisher, SlimPublisher
-from ripple.automation.utils import format_exception, error_handler
-from ripple.models.streaming import CropImageResponse, Error, JobDefinition, ProcessStreamItem, Progress, StreamItemUnion
-from opentelemetry.context.context import Context
-
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.automations import get_default_automations
-
+from ripple.automation.models import (
+    AutomationModel,
+    AutomationRequest,
+    AutomationRequestResult,
+    AutomationsResponse,
+    BulkAutomationRequest,
+    EventAutomationResponse,
+)
+from ripple.automation.publishers import ResultPublisher, SlimPublisher
+from ripple.automation.utils import error_handler, format_exception
 from ripple.config import ripple_config, update_headers_from_context
-from ripple.runtime.params import resolve_params
-
-from typing import Callable, Optional
 from ripple.models.params import ParameterSet
+from ripple.models.streaming import Error, ProcessStreamItem, Progress
+from ripple.runtime.params import resolve_params
 
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
-
-from uuid import uuid4
-from opentelemetry import trace
-from opentelemetry.trace.propagation.tracecontext import \
-    TraceContextTextMapPropagator
 
 tracer = trace.get_tracer(__name__)
 
@@ -198,38 +198,36 @@ class Worker:
                     for job_request in requests:
                         processed, result = await implementation(job_request)
                         job_res.request_result.append(
-                            AutomationResult(
+                            AutomationRequestResult(
                                 processed=processed,
                                 request=AutomationRequest(**job_request),
-                                result=result,
+                                result=result.model_dump() if result else None,
                             )
                         )
                     log.info(
-                        "All jobs processed, job_res: %s, event_id: %s",
-                        job_res.model_dump(),
+                        "All jobs processed for event_id: %s, job.request_result: %s",
                         event_id,
-                    )
-                    await self.process_items_result(
-                        job_res=job_res,
-                        api_url=api_url,
-                        auth_token=auth_token,
-                        event_id=event_id,
+                        [
+                            f"correlation: {i.request.correlation}, is_processed: {i.processed}"
+                            for i in job_res.request_result
+                        ],
                     )
                 except (CoordinatorException, ValidationError) as ex:
                     job_res.request_result.append(
-                        AutomationResult(
-                            processed=False, result=Error(error=ex.__str__())
+                        AutomationRequestResult(
+                            processed=False, result=Error(error=ex.__str__()).model_dump()
                         )
-                    )
-                    await self.process_items_result(
-                        job_res=job_res,
-                        api_url=api_url,
-                        auth_token=auth_token,
-                        event_id=event_id,
                     )
                     log.exception(ex)
                     span.record_exception(ex)
                     return
+                finally:
+                    await self.process_items_result(
+                        job_res=job_res,
+                        api_url=api_url,
+                        auth_token=auth_token,
+                        event_id=event_id,
+                    )
 
         return coordinator
 
@@ -241,19 +239,25 @@ class Worker:
         event_id: Optional[str] = None,
     ) -> None:
         updated_headers = update_headers_from_context()
-        log.info("processing items result, event_id: %s", event_id)
 
         success = True
         if event_id:
             for res in job_res.request_result:
+                log.info("Item type: %s", res.result.get("item_type", ""))
                 item = res.result
                 if not res.processed:
                     success = False
-                elif isinstance(item, Error):
+                elif item.get("item_type", "") == "error":
                     success = False
-                elif isinstance(item, JobDefinition) and item.job_def_id is None:
+                elif item.get("item_type", "") == "job_def" and item.get("job_def_id") is None:
                     success = False
-                elif isinstance(item, CropImageResponse) and item.file_id is None:
+                elif item.get("item_type", "") == "job_defs":
+                    if item.get("job_definitions") is None:
+                        success = False
+                    for job_definition in item.get("job_definitions", []):
+                        if job_definition.get("job_def_id") is None:
+                            success = False
+                elif item.get("item_type", "") == "cropped_image" and item.get("file_id") is None:
                     success = False
 
                 if not success:
@@ -262,11 +266,10 @@ class Worker:
             job_res.processed = success
             response = self.rest.post(
                 f"{api_url}/events/processed/{event_id}",
-                job_res.model_dump(),
+                job_res.model_dump(by_alias=True, exclude_none=False),
                 auth_token,
                 headers=updated_headers,
             )
-            log.info("Event status saved: item-%s", item.item_type)
             if not response:
                 log.error(
                     "The event status request failed: item_data-%s", item.model_dump()

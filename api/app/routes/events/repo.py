@@ -5,7 +5,7 @@ from ripple.models.params import ParameterSet
 from db.schema.events import Event
 from opentelemetry import trace
 from ripple.automation.models import (
-    AutomationResult,
+    AutomationRequestResult,
     EventAutomationResponse,
 )
 
@@ -24,10 +24,10 @@ def update_or_create_event_automation(
         else None
     )
 
-    def is_definition_incoming(item: AutomationResult):
+    def is_definition_requested(item: AutomationRequestResult):
         return hasattr(ParameterSet(**item.request.data), "hda_file")
 
-    def is_cropped_incoming(item: AutomationResult):
+    def is_cropped_requested(item: AutomationRequestResult):
         return hasattr(ParameterSet(**item.request.data), "image_file")
 
     is_bulk_processing = (
@@ -43,21 +43,21 @@ def update_or_create_event_automation(
             # Find old item
             old_item = None
             index_of_old_item = None
-            if is_definition_incoming(new_item) and new_item.processed is True:
+            if is_definition_requested(new_item) and new_item.processed is True:
                 old_item = next(
                     (
                         item
                         for item in old_job_result_data.request_result
-                        if item.result.job_def_id == new_item.result.job_def_id
+                        if item.result.get("job_def_id") == new_item.result.get("job_def_id")
                     ),
                     None,
                 )
-            elif is_cropped_incoming(new_item) and new_item.processed is True:
+            elif is_cropped_requested(new_item) and new_item.processed is True:
                 old_item = next(
                     (
                         item
                         for item in old_job_result_data.request_result
-                        if item.result.file_id == new_item.result.file_id
+                        if item.result.get("file_id") == new_item.result.get("file_id")
                     ),
                     None,
                 )
@@ -69,30 +69,23 @@ def update_or_create_event_automation(
                 old_job_result_data.request_result[index_of_old_item] = new_item
     event_processed = True
     is_there_job_definition = any(
-        [is_definition_incoming(item) for item in old_job_result_data.request_result]
+        [is_definition_requested(item) for item in old_job_result_data.request_result]
     )
     for item in old_job_result_data.request_result:
         if is_there_job_definition:
             # TODO: Currently only JobDefinition result fully affects on event processed status
             # or if there is no JobDefinition request
-            if is_definition_incoming(item):
+            if is_definition_requested(item):
                 if item.processed is False:
                     event_processed = False
                     break
         else:
-            if is_cropped_incoming(item):
+            if is_cropped_requested(item):
                 if item.processed is False:
                     event_processed = False
                     break
 
-    log.error(
-        list(
-            (item.processed is True, is_definition_incoming(item))
-            for item in old_job_result_data.request_result
-            # TODO: Currently only JobDefinition result affects on event processed status
-        )
-    )
-    log.error(
+    log.info(
         "Event automation updated. event_seq-%s, processed-%s, is_bulk_processing-%s, is_there_job_definition-%s",
         event.event_seq,
         event_processed,
