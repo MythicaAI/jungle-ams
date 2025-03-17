@@ -23,6 +23,7 @@ class NodeType(BaseModel):
     icon: str
     inputs: int
     outputs: int
+    python: str
     code: str
     category: str
     namespace: str
@@ -49,7 +50,8 @@ def hda(request: HdaRequest, responder: ResultPublisher) -> HdaResponse:
         for assetdef in hou.hda.definitionsInFile(hda.file_path):
             # Get the node type for the asset
             nodeType = mnet.get_node_type(assetdef.nodeType())
-
+            nodeType['python'] = nodeType['code']
+            
             # Generate litegraph class in the temp directory
             nodeType['code'] = mpt.transpiler(nodeType['code'])
             del(nodeType['defaults'])
