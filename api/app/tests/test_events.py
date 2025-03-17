@@ -9,13 +9,18 @@ import pytest
 from cryptid.cryptid import event_seq_to_id, job_seq_to_id, profile_id_to_seq
 from fastapi.testclient import TestClient
 from munch import munchify
-from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
 from profiles.responses import ProfileResponse
 from ripple.automation.models import (
     AutomationRequest,
     AutomationResult,
     CropImageRequest,
     EventAutomationResponse,
+)
+from ripple.models.params import (
+    FileParameter,
+    IntParameterSpec,
+    ParameterSet,
+    ParameterSpec,
 )
 from ripple.models.streaming import CropImageResponse, JobDefinition
 from routes.events.models import EventUpdateResponse
@@ -107,36 +112,31 @@ async def test_update_events_result_data(
                     job_def_id=job_seq_to_id(i),
                     name="Test Job",
                     description="Test Description",
-                    parameter_spec={
-                        "type": "object",
-                        "properties": {},
-                        "params": {},  # Adding required params field
-                        "params_v2": {},  # Adding required params field
-                    },
+                    parameter_spec=ParameterSpec(params={}),
                 ),
             )
             for i in range(2)
         ],
     )
     cropped_image_req_data = AutomationRequest(
-                    process_guid="test-guid",
-                    correlation="test-work",
-                    results_subject=None,
-                    job_id=None,
-                    auth_token=test_profile.auth_token,
-                    path="/test/path",
-                    data=CropImageRequest(
-                        src_asset_id="asset_id",
-                        src_version=[1, 1, 1],
-                        image_file=FileParameter(file_id="file_id"),
-                        crop_pos_x=None,
-                        crop_pos_y=None,
-                        crop_w=IntParameterSpec(default=320, label="crop_w"),
-                        crop_h=IntParameterSpec(default=180, label="crop_h"),
-                    ).model_dump(),
-                    telemetry_context={},
-                    event_id="1",
-                )
+        process_guid="test-guid",
+        correlation="test-work",
+        results_subject=None,
+        job_id=None,
+        auth_token=test_profile.auth_token,
+        path="/test/path",
+        data=CropImageRequest(
+            src_asset_id="asset_id",
+            src_version=[1, 1, 1],
+            image_file=FileParameter(file_id="file_id"),
+            crop_pos_x=None,
+            crop_pos_y=None,
+            crop_w=IntParameterSpec(default=320, label="crop_w"),
+            crop_h=IntParameterSpec(default=180, label="crop_h"),
+        ).model_dump(),
+        telemetry_context={},
+        event_id="1",
+    )
     cropped_image_response = CropImageResponse(
         src_asset_id="asset_id",
         src_file_id="file_id",
