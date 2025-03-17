@@ -47,6 +47,7 @@ jobs:
               - 'api/lets-encrypt/**'
             api/packager/:
               - 'api/packager/**'
+              - 'libs/python/**'
             api/canary/:
               - 'api/canary/**'
             sites/:
