@@ -43,7 +43,11 @@ export const PackageJobs = () => {
   );
 
   
-  const parmTemplateGroup = new hou.ParmTemplateGroup(jobDefinitions?.[0]?.params_schema.params_v2 as dictionary[]);
+  const parmTemplateGroup = React.useMemo(
+    () => new hou.ParmTemplateGroup(jobDefinitions?.[0]?.params_schema.params_v2 as dictionary[]),
+    [jobDefinitions],
+  );
+
   const inputFileParms = parmTemplateGroup.parm_templates.filter((parm) => 
     parm.param_type === hou.parmTemplateType.File && parm.name.startsWith("input"));
   
@@ -361,7 +365,7 @@ export const PackageJobs = () => {
                 Params
               </Typography>
                 <ParmGroup
-                  data={inputData}
+                  data={{inputData}}
                   group={parmTemplateGroup as hou.ParmTemplateGroup}
                   onChange={handleParmChange}
                 />
