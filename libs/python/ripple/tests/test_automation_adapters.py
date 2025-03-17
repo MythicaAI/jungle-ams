@@ -93,6 +93,7 @@ def test_rest_post(mock_requests):
     mock_post.assert_called_with(
         "http://test",
         json={"data": "test"},
+        params={},
         headers={
             "traceparent": None,
             "Content-Type": "application/json",

@@ -7,9 +7,11 @@ from typing import Optional
 
 from opentelemetry import metrics
 from opentelemetry._logs import set_logger_provider
+from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.propagate import inject
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import (
     BatchLogRecordProcessor,
@@ -40,6 +42,12 @@ class RippleConfig(BaseSettings):
 def ripple_config() -> RippleConfig:
     """Get the current cached application config"""
     return RippleConfig()
+
+
+def update_headers_from_context() -> dict:
+    updated_headers = {}
+    inject(updated_headers, get_current_telemetry_context())
+    return updated_headers
 
 
 def get_telemetry_resource() -> Resource:

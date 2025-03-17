@@ -4,14 +4,18 @@ import logging
 import os
 from typing import Optional
 
-from opentelemetry.context import get_current as get_current_telemetry_context
-from opentelemetry.propagate import inject
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
 from ripple.automation.utils import error_handler
-from ripple.config import ripple_config
-from ripple.models.streaming import CropImageResponse, JobDefinition, OutputFiles, ProcessStreamItem, FileContentChunk
+from ripple.config import ripple_config, update_headers_from_context
+from ripple.models.streaming import (
+    CropImageResponse,
+    FileContentChunk,
+    JobDefinition,
+    OutputFiles,
+    ProcessStreamItem,
+)
 
 NATS_FILE_CHUNK_SIZE = 64 * 1024
 
@@ -42,11 +46,6 @@ class ResultPublisher:
         self.rest = rest
         self.api_url = ripple_config().api_base_uri
 
-    def update_headers_from_context(self) -> dict:
-        updated_headers = {}
-        inject(updated_headers, get_current_telemetry_context())
-        return updated_headers
-
     #Callback for reporting back. 
     def result(self, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = self.request.process_guid
@@ -71,7 +70,7 @@ class ResultPublisher:
             task.add_done_callback(error_handler(log))
 
         if self.request.job_id:
-            updated_headers = self.update_headers_from_context()
+            updated_headers = update_headers_from_context()
             data = {
                 "created_in": "automation-worker",
                 "result_data": item.model_dump()
@@ -105,7 +104,7 @@ class ResultPublisher:
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
-        updated_headers = self.update_headers_from_context()
+        updated_headers = update_headers_from_context()
         def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
             if not os.path.exists(file_path):
                 log.error("File not found: %s", file_path)
@@ -139,7 +138,6 @@ class ResultPublisher:
                 headers=updated_headers
             )
             return response['job_def_id'] if response else None
-
 
         def add_cropped_image_to_contents(item: CropImageResponse) -> bool:
             """
