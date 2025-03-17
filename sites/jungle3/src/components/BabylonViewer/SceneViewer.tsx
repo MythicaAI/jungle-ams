@@ -1,9 +1,32 @@
 import { useEffect, useRef } from 'react';
 import { Box } from '@mui/joy';
 import * as BABYLON from '@babylonjs/core';
+import "@babylonjs/inspector";
+import "@babylonjs/node-geometry-editor";
 import { useSceneStore } from '@store/sceneStore';
 
-const SceneViewer = () => {
+// Material names
+const ROCK = "rock";
+const ROCKFACE = "rockface";
+const CRYSTAL = "crystal";
+const PLANT = "plant";
+const CACTUS = "cactus";
+
+import {
+  NodeGeometry,
+  BoxBlock,
+  SphereBlock,
+  CylinderBlock,
+} from "@babylonjs/core";
+
+interface SceneViewerProps {
+  onSceneCreated?: (scene: BABYLON.Scene) => void;
+  onMeshSelected?: (mesh: BABYLON.Mesh) => void;
+}
+const SceneViewer: React.FC<SceneViewerProps> = ({
+  onSceneCreated,
+  onMeshSelected,
+}) => {
   // Get state from the store
   const {
     selectedHdaIndex,
@@ -22,13 +45,15 @@ const SceneViewer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<BABYLON.Engine | null>(null);
   const sceneRef = useRef<BABYLON.Scene | null>(null);
-  const customMeshRef = useRef<BABYLON.Mesh | null>(null);
-  const materialsRef = useRef<{[key: string]: BABYLON.Material}>({});
   const shadowGeneratorRef = useRef<BABYLON.ShadowGenerator | null>(null);
+  const currentMeshRef = useRef<string | null>(null);
+  const loadingMeshRef = useRef<string | null>(null);
 
   // Initialize Babylon scene with enhanced environment
   useEffect(() => {
     if (!canvasRef.current) return;
+
+    console.info("creating new Babylon scene")
 
     // Create engine and scene
     const engine = new BABYLON.Engine(canvasRef.current, true);
@@ -36,6 +61,7 @@ const SceneViewer = () => {
 
     const scene = new BABYLON.Scene(engine);
     sceneRef.current = scene;
+
 
     // Set environment
     scene.environmentTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
@@ -125,7 +151,7 @@ const SceneViewer = () => {
 
     // Create materials for each HDA type
     // Crystal material
-    const crystalMaterial = new BABYLON.PBRMaterial("crystal", scene);
+    const crystalMaterial = new BABYLON.PBRMaterial(CRYSTAL, scene);
     crystalMaterial.metallic = 1.0;
     crystalMaterial.roughness = 0.06;
     crystalMaterial.subSurface.isRefractionEnabled = true;
@@ -139,7 +165,7 @@ const SceneViewer = () => {
     );
 
     // Rock material
-    const rockMaterial = new BABYLON.PBRMaterial("rock", scene);
+    const rockMaterial = new BABYLON.PBRMaterial(ROCK, scene);
     rockMaterial.metallic = 0.0;
     rockMaterial.roughness = 0.8;
     rockMaterial.albedoTexture = new BABYLON.Texture(
@@ -152,24 +178,70 @@ const SceneViewer = () => {
     );
 
     // Rockface material
-    const rockfaceMaterial = new BABYLON.PBRMaterial("rockface", scene);
-    rockfaceMaterial.metallic = 0.0;
-    rockfaceMaterial.roughness = 0.8;
-    rockfaceMaterial.albedoTexture = new BABYLON.Texture(
-      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cliff_side/cliff_side_diff_1k.png",
+    BABYLON.NodeMaterial.ParseFromFileAsync(ROCKFACE, "/demo_assets/rockifyMaterial.json", scene);
+
+    // Plant material
+    const plantMaterial = new BABYLON.PBRMaterial(PLANT, scene);
+    plantMaterial.metallic = 0.0;
+    plantMaterial.roughness = 0.8;
+    plantMaterial.albedoTexture = new BABYLON.Texture(
+      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/moss_wood/moss_wood_diff_1k.png",
       scene
     );
-    rockfaceMaterial.bumpTexture = new BABYLON.Texture(
-      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/cliff_side/cliff_side_disp_1k.png",
+    plantMaterial.bumpTexture = new BABYLON.Texture(
+      "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/moss_wood/moss_wood_bump_1k.png",
       scene
     );
 
-    // Store materials for later use
-    materialsRef.current = {
-      crystal: crystalMaterial,
-      rock: rockMaterial,
-      rockface: rockfaceMaterial
-    };
+    // Cactus material
+    const cactusMaterial = new BABYLON.StandardMaterial(CACTUS, scene);
+    cactusMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.6, 0.4);
+    cactusMaterial.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+
+    // Handle scene ready events
+    scene.onNewMeshAddedObservable.add(function (mesh) {
+     console.log("on new mesh added observable " + mesh.name);
+     if (!loadingMeshRef.current) {
+       return;
+     }
+
+     // Do mesh swap
+     if (mesh.name === loadingMeshRef.current) {
+       console.log("starting mesh swap " + mesh.name);
+
+       const loadingMesh = scene.getMeshByName(loadingMeshRef.current);
+       if (loadingMesh) {
+         console.log("enabling and swapping in loading mesh " + loadingMeshRef.current) ;
+         loadingMesh.isVisible = true;
+       } else {
+         console.log("loading mesh not found " + loadingMeshRef.current);
+       }
+
+       // Remove current mesh
+       if (currentMeshRef.current && currentMeshRef.current !== loadingMeshRef.current) {
+         console.log("removing current mesh " + currentMeshRef.current);
+         const mesh = scene.getMeshByName(currentMeshRef.current);
+         if (mesh) {
+           scene.removeMesh(mesh, true);
+           mesh.isVisible = false;
+           mesh.dispose();
+         }
+         else {
+           console.log("mesh not found " + currentMeshRef.current);
+         }
+       }
+
+       // Update the refs
+       currentMeshRef.current = loadingMeshRef.current;
+       loadingMeshRef.current = null;
+     }
+    });
+    scene.onMeshImportedObservable.add(function (mesh) {
+     console.log("mesh imported " + mesh.name) ;
+    });
+    scene.onReadyObservable.add(function() {
+      console.log("ready observable")
+    });
 
     // Begin rendering loop
     engine.runRenderLoop(() => {
@@ -183,21 +255,55 @@ const SceneViewer = () => {
 
     window.addEventListener("resize", handleResize);
 
-    // Cleanup
+    // Notify parent that scene is ready
+    if (onSceneCreated) {
+      onSceneCreated(scene);
+    }
+
+    // Pointer observable for mesh selection
+    scene.onPointerObservable.add((pointerInfo) => {
+      if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+        const event = pointerInfo.event;
+        const canvasRect = canvasRef.current?.getBoundingClientRect();
+        if (canvasRect) {
+          const x = event.clientX - canvasRect.left;
+          const y = event.clientY - canvasRect.top;
+          const pickResult = scene.pick(x, y);
+          if (pickResult && pickResult.hit && pickResult.pickedMesh) {
+            onMeshSelected && onMeshSelected(pickResult.pickedMesh as BABYLON.Mesh);
+          }
+        }
+      }
+    });
+
     return () => {
       window.removeEventListener("resize", handleResize);
+      scene.dispose();
       engine.dispose();
     };
+    // Only run once (no dependencies)
   }, []);
+
+  const updateWireframe = (_meshName: string, isWireframe: boolean) => {
+      const mesh = sceneRef.current?.getMeshByName(_meshName);
+      if (mesh?.material) {
+        mesh.material.wireframe = isWireframe;
+      }
+  };
 
   // Update wireframe mode when state changes
   useEffect(() => {
-    if (customMeshRef.current && customMeshRef.current.material) {
-      customMeshRef.current.material.wireframe = isWireframe;
+    if (currentMeshRef.current) {
+      updateWireframe(currentMeshRef.current, isWireframe);
+    }
+    if (loadingMeshRef.current) {
+      updateWireframe(loadingMeshRef.current, isWireframe);
     }
   }, [isWireframe]);
 
-  // Handle changes to mesh data
+  /**
+   * Create or update custom mesh whenever the meshData changes
+   */
   useEffect(() => {
     if (meshData && meshData.points && meshData.indices && sceneRef.current) {
       createMeshFromData(
@@ -207,7 +313,7 @@ const SceneViewer = () => {
         meshData.uvs || []
       );
     }
-  }, [meshData, currentSchema.material_name]);
+  }, [meshData]);
 
   // Create mesh from data received via WebSocket
   const createMeshFromData = (vertices: number[], indices: number[], normals: number[], uvs: number[]) => {
@@ -219,52 +325,88 @@ const SceneViewer = () => {
     vertexData.normals = normals;
     vertexData.uvs = uvs;
 
-    // Fast path to update existing mesh if vertex count matches
-    if (customMeshRef.current) {
-      const currentVertexCount = customMeshRef.current.getTotalVertices();
-      const newVertexCount = vertices.length / 3;
-
-      if (currentVertexCount === newVertexCount) {
-        vertexData.applyToMesh(customMeshRef.current);
-        return;
-      }
-    }
+    const newMeshName = `mesh_${Math.random().toString(36).substring(2, 10)}`;
+    loadingMeshRef.current = newMeshName;
 
     // Create a new mesh and swap to it once it's ready
-    const newMesh = new BABYLON.Mesh("customMesh_new", sceneRef.current);
+    const newMesh = new BABYLON.Mesh(newMeshName, sceneRef.current);
+    vertexData.applyToMesh(newMesh);
 
-    // Get the appropriate material for this HDA
-    const material = materialsRef.current[currentSchema.material_name];
+    // Get the appropriate material for this HDA and set it on the mesh
+    const material = sceneRef.current.getMaterialByName(currentSchema.material_name);
     if (material) {
+      console.info("setting material " + currentSchema.material_name + " on mesh " + newMesh.name);
       newMesh.material = material;
       newMesh.material.wireframe = isWireframe;
+    } else {
+      console.error(`material ${currentSchema.material_name} not found`);
     }
-
-    vertexData.applyToMesh(newMesh, true);
 
     // Add to shadow generator
     if (shadowGeneratorRef.current) {
       shadowGeneratorRef.current.addShadowCaster(newMesh);
     }
+  };
 
-    // Poll until the mesh is ready
-    const pollMeshReady = (mesh: BABYLON.Mesh) => {
-      if (mesh.isReady(true)) {
-        // Dispose of the old mesh if it exists
-        if (customMeshRef.current) {
-          customMeshRef.current.dispose();
+  /**
+   * Handle dropping geometry from the sidebar
+   */
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!sceneRef.current || !canvasRef.current) return;
+
+    const scene = sceneRef.current;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const pickResult = scene.pick(x, y);
+    if (pickResult && pickResult.hit && pickResult.pickedPoint) {
+      const geometryType = e.dataTransfer.getData("geometryType");
+
+      const nodeGeo = new NodeGeometry("myBoxGeometry");
+      const output = new BABYLON.GeometryOutputBlock("geometryout");
+      nodeGeo.outputBlock = output;
+      switch (geometryType) {
+        case "box": {
+          const block: BoxBlock = new BoxBlock("boxBlock");
+          block.geometry.connectTo(output.geometry);
+          break;
         }
-        customMeshRef.current = mesh;
-      } else {
-        requestAnimationFrame(() => pollMeshReady(mesh));
-      }
-    };
 
-    pollMeshReady(newMesh);
+        case "sphere": {
+          const block = new SphereBlock("sphereBlock");
+          block.geometry.connectTo(output.geometry);
+          break;
+        }
+
+        case "cylinder": {
+          const block = new CylinderBlock("cylinderBlock");
+          block.geometry.connectTo(output.geometry);
+          break;
+        }
+
+      }
+
+      nodeGeo.build();
+      const mesh = nodeGeo.createMesh("nodegeomesh");
+      if (mesh && pickResult.pickedPoint) {
+        mesh.position.copyFrom(pickResult.pickedPoint);
+      }
+    }
+
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   return (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <Box
+      sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }}></canvas>
 
       {/* Generation Log Overlay */}

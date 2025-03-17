@@ -70,13 +70,15 @@ def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> None:
             expectedType(**param)
 
 
-def validate_params(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
+def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
     """Validate all parameters in the paramSpec using the provided paramSet"""
     params = paramSet.model_dump()
 
-    for name, paramSpec in paramSpec.params.items():
-        if name not in params:
+    for name, paramSpec in paramSpecs.params.items():
+        if paramSpec.param_type=='file' and name not in params:
             raise ParamError(paramSpec.label, "param not provided")
+        elif name not in params:
+            continue
 
         param = params[name]
 

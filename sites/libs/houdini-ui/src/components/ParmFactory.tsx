@@ -20,8 +20,7 @@ export interface ParmFactoryProps {
 }
 
 export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onChange}) => {
-    
-    switch (parmTemplate.type) {
+    switch (parmTemplate.param_type) {
         case hou.parmTemplateType.Folder:
             return <FolderParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FolderParmTemplate} />;
         case hou.parmTemplateType.FolderSet:
@@ -42,8 +41,10 @@ export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onCh
             return <MenuParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.MenuParmTemplate} />;
         case hou.parmTemplateType.Ramp:
             return <RampParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.RampParmTemplate} />;        
+        case hou.parmTemplateType.File:
+            return <></>
         default:
-            return <div key={parmTemplate.id} >Not Implemented: {parmTemplate.type}</div>
+            return <div key={parmTemplate.id} >Not Implemented: {parmTemplate.param_type}</div>
     }
 
 };

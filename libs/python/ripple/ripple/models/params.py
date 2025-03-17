@@ -64,6 +64,7 @@ class EnumParameterSpec(ParameterSpecModel):
 
 class FileParameterSpec(ParameterSpecModel):
     param_type: Literal['file'] = 'file'
+    name: Optional[str] = ""
     default: str | list[str]
 
 
@@ -161,14 +162,14 @@ class DataParmTemplateSpec(ParmTemplateSpec):
 class FolderParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.Folder] = hou.parmTemplateType.Folder
     level: int = 0
-    params: list["HoudiniParmTemplateSpecType"] = []
+    parm_templates: list["HoudiniParmTemplateSpecType"] = []
     folder_type: hou.folderType = hou.folderType.Tabs
     default_value: int = 0
     ends_tab_group: bool = False
 
 class FolderSetParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.FolderSet] = hou.parmTemplateType.FolderSet
-    params: list[FolderParmTemplateSpec] = []
+    parm_templates: list[FolderParmTemplateSpec] = []
 
 HoudiniParmTemplateSpecType = Annotated[
     Union[
@@ -209,7 +210,7 @@ class ParameterSpec(BaseModel):
     Specification of parameters a job expects as input
     """
     params: dict[str, ParameterSpecType]
-    params_v2: Optional[dict[str,HoudiniParmTemplateSpecType]] = None
+    params_v2: Optional[list[HoudiniParmTemplateSpecType]] = None
 
 class FileParameter(BaseModel):
     file_id: str

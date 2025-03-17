@@ -84,11 +84,14 @@ async def upload_internal(
     random_filename = ''.join(random.choice(string.ascii_letters + string.digits)
                               for _ in range(20))
     ctx.local_filepath = os.path.join(cfg.upload_folder, random_filename)
-
-    with open(ctx.local_filepath, 'wb') as f:
-        shutil.copyfileobj(upload_file.file, f)
-    log.info('%s saved to %s', filename, ctx.local_filepath)
-
+    try:
+        with open(ctx.local_filepath, 'wb') as f:
+            shutil.copyfileobj(upload_file.file, f)
+        log.info('%s saved to %s', filename, ctx.local_filepath)
+    except Exception as e:  
+        log.error('Error saving file %s to %s: %s', filename, ctx.local_filepath, e)
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, 'Error saving file') from e    
+    
     page_size = 64 * 1024
     file_size = 0
     sha1 = hashlib.sha1()

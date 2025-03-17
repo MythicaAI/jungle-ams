@@ -1,8 +1,6 @@
 name: push-tagged-images
 on:
-  pull_request:
-    types:
-      - closed
+  push: # only run when PR merged to main
     branches:
       - 'main'
     paths:
@@ -14,6 +12,10 @@ on:
   workflow_dispatch:
 jobs:
   changes:
+    concurrency:
+      group: push-tagged-images
+      cancel-in-progress: false
+
     runs-on: ubuntu-latest
     permissions:
       contents: write

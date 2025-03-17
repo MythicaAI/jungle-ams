@@ -25,6 +25,7 @@ export namespace hou {
     Label = 'Label',
     Ramp = 'Ramp',
     Data = 'Data',
+    File = 'file',
     None = 'None',
   }
 
@@ -194,10 +195,10 @@ export namespace hou {
   }
 
   type ParmTemplateProps = {
-    id: string;
+    id?: string;
     name?: string;
     label?: string;
-    type?: parmTemplateType;
+    param_type?: parmTemplateType;
     is_hidden?: boolean;
     is_label_hidden?: boolean;
     conditionals?: Partial<Record<parmCondType, string>>;
@@ -212,9 +213,52 @@ export namespace hou {
     default_expression_language?: scriptLanguage[];
   };
 
+  const parmTemplateFactory = (params: ParmTemplateProps[]): ParmTemplate[] => {
+    const ret: ParmTemplate[] = [];
+    (Array.isArray(params) ? params : []).forEach((param) => {
+      let template: ParmTemplate;
+      switch (param.param_type) {
+        case hou.parmTemplateType.Folder:
+          template = new FolderParmTemplate(param);
+          break;
+        case hou.parmTemplateType.FolderSet:
+          template = new FolderSetParmTemplate(param);
+          break;
+        case hou.parmTemplateType.String:
+          template = new StringParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Float:
+          template = new FloatParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Int:
+          template = new IntParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Toggle:
+          template = new ToggleParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Separator:
+          template = new SeparatorParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Label:
+          template = new LabelParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Menu:
+          template = new MenuParmTemplate(param);
+          break;
+        case hou.parmTemplateType.Ramp:
+          template = new RampParmTemplate(param);
+          break;
+        default:
+          template = new ParmTemplate(param);
+          break;
+      }
+      ret.push(template);
+    });
+    return ret;
+  }
   export class ParmTemplate {
     id: string = uuidv4();
-    type: parmTemplateType = parmTemplateType.None;
+    param_type: parmTemplateType = parmTemplateType.None;
     name: string = '_parm_template_';
     label: string = '';
     is_hidden: boolean = false;
@@ -230,8 +274,13 @@ export namespace hou {
     default_expression: string[] = [];
     default_expression_language: scriptLanguage[] = [];
 
-    runtime_data: { [key: string]: unknown } = {};
-
+    
+    constructor(data: dictionary) {
+      this.param_type = data.param_type as hou.parmTemplateType;
+      this.label = data.label as string || "";
+      this.name = data.name as string || "";
+    }
+    
     extractConfig = (config: ParmTemplateProps) => {
       const {
         name,
@@ -298,25 +347,17 @@ export namespace hou {
       this.tags = tags;
     }
 
-    //"abstract" method
-    addParmTemplate = (parm_template: ParmTemplate) => {
-      console.assert(parm_template instanceof ParmTemplate || !parm_template);
-    };
 
-    //"link our component"
-    setRuntimeData = (data: { [key: string]: unknown }) => {
-      this.runtime_data = data;
-    };
   }
 
   type SeparatorParmTemplateProps = ParmTemplateProps;
 
   export class SeparatorParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Separator;
+    param_type: parmTemplateType = parmTemplateType.Separator;
     name: string = 'separator';
 
     constructor(config: SeparatorParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -324,12 +365,12 @@ export namespace hou {
   type ButtonParmTemplateProps = ParmTemplateProps;
 
   export class ButtonParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Button;
+    param_type: parmTemplateType = parmTemplateType.Button;
     name: string = 'button';
     label: string = 'Button';
 
     constructor(config: ButtonParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -346,7 +387,7 @@ export namespace hou {
   };
 
   export class FloatParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Float;
+    param_type: parmTemplateType = parmTemplateType.Float;
     name: string = 'float';
     label: string = 'Float';
     num_components: number = 1;
@@ -359,7 +400,7 @@ export namespace hou {
     naming_scheme: parmNamingScheme = parmNamingScheme.XYZW;
 
     constructor(config: FloatParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -367,7 +408,7 @@ export namespace hou {
   type IntParmTemplateProps = FloatParmTemplateProps;
 
   export class IntParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Int;
+    param_type: parmTemplateType = parmTemplateType.Int;
     name: string = 'int';
     label: string = 'Int';
     num_components: number = 1;
@@ -380,7 +421,7 @@ export namespace hou {
     naming_scheme: parmNamingScheme = parmNamingScheme.XYZW;
 
     constructor(config: IntParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -400,7 +441,7 @@ export namespace hou {
   };
 
   export class StringParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.String;
+    param_type: parmTemplateType = parmTemplateType.String;
     name: string = 'string';
     label: string = 'String';
     num_components: number = 1;
@@ -416,7 +457,7 @@ export namespace hou {
     menu_type: menuType = menuType.Normal;
 
     constructor(config: StringParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -426,13 +467,13 @@ export namespace hou {
   };
 
   export class ToggleParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Toggle;
+    param_type: parmTemplateType = parmTemplateType.Toggle;
     name: string = 'toggle';
     label: string = 'Toggle';
     default_value: boolean = false;
 
     constructor(config: ToggleParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -452,7 +493,7 @@ export namespace hou {
   };
 
   export class MenuParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Menu;
+    param_type: parmTemplateType = parmTemplateType.Menu;
     name: string = 'menu';
     label: string = 'Menu';
     menu_items: string[] = [];
@@ -468,7 +509,7 @@ export namespace hou {
     strip_uses_icons: boolean = false;
 
     constructor(config: MenuParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -478,13 +519,13 @@ export namespace hou {
   };
 
   export class LabelParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Label;
+    param_type: parmTemplateType = parmTemplateType.Label;
     name: string = 'label';
     label: string = 'Label';
     column_labels: string[] = [];
 
     constructor(config: LabelParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -497,7 +538,7 @@ export namespace hou {
     color_type?: colorType;
   };
   export class RampParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Ramp;
+    param_type: parmTemplateType = parmTemplateType.Ramp;
     name: string = 'ramp';
     label: string = 'Ramp';
     default_value: number = 2;
@@ -513,7 +554,7 @@ export namespace hou {
     color_type: colorType = colorType.RGB;
 
     constructor(config: RampParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
     setTags = (tags: { [key: string]: string }) => {
@@ -611,7 +652,7 @@ export namespace hou {
   };
 
   export class DataParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Data;
+    param_type: parmTemplateType = parmTemplateType.Data;
     name: string = 'data';
     label: string = 'Data';
     num_components: number = 1;
@@ -619,7 +660,7 @@ export namespace hou {
     naming_scheme: parmNamingScheme = parmNamingScheme.XYZW;
 
     constructor(config: DataParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
     }
   }
@@ -630,7 +671,7 @@ export namespace hou {
     ends_tab_group?: boolean;
   };
   export class FolderParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.Folder;
+    param_type: parmTemplateType = parmTemplateType.Folder;
     level = 1;
 
     name: string = 'folder';
@@ -639,10 +680,14 @@ export namespace hou {
     folder_type: folderType = folderType.Tabs;
     ends_tab_group: boolean = false;
     folder_set: FolderSetParmTemplate | null = null;
+    runtime_data: { [key: string]: unknown } = {};
 
     constructor(config: FolderParmTemplateProps) {
-      super();
+      super(config);
       Object.assign(this, this.extractConfig(config));
+      
+      this.runtime_data.isActive = false;
+      this.parm_templates = parmTemplateFactory(config.parm_templates || []);
     }
 
     /**
@@ -657,14 +702,15 @@ export namespace hou {
         ) {
           prev.addFolderParmTemplate(parm_template, this.level + 1);
         } else {
-          const fs = new FolderSetParmTemplate();
+          const fs = new FolderSetParmTemplate({});
           this.parm_templates.push(fs);
           fs.addFolderParmTemplate(parm_template, this.level + 1);
         }
       } else {
         this.parm_templates.push(parm_template);
       }
-    };
+    }
+  
 
     /**
      * Return whether or not this parm template corresponds to an actual folder, as opposed to a multiparm or import block.
@@ -677,10 +723,19 @@ export namespace hou {
     };
   }
 
+  type FolderSetParmTemplateProps = ParmTemplateProps & {
+    parm_templates?: ParmTemplate[];
+  };
+
   export class FolderSetParmTemplate extends ParmTemplate {
-    type: parmTemplateType = parmTemplateType.FolderSet;
+    param_type: parmTemplateType = parmTemplateType.FolderSet;
     parm_templates: FolderParmTemplate[] = [];
 
+    constructor(config: FolderSetParmTemplateProps) {
+      super(config);
+      Object.assign(this, this.extractConfig(config));
+      this.parm_templates = parmTemplateFactory(config.parm_templates || []) as FolderParmTemplate[] ;
+    } 
     /**
      * Append a parm template to the end of the list of parm templates inside the folder.
      */
@@ -697,6 +752,12 @@ export namespace hou {
   export class ParmTemplateGroup {
     parm_templates: ParmTemplate[] = [];
 
+    constructor(params_v2: dictionary[]) {
+      this.parm_templates = parmTemplateFactory(params_v2);
+    }
+
+
+    
     parmTemplates = () => this.parm_templates;
     entries = () => this.parm_templates;
     append = (parm_template: ParmTemplate) => {
@@ -714,7 +775,7 @@ export namespace hou {
         ) {
           prev.addFolderParmTemplate(parm_template);
         } else {
-          const fs = new FolderSetParmTemplate();
+          const fs = new FolderSetParmTemplate({});
           this.parm_templates.push(fs);
           fs.addFolderParmTemplate(parm_template);
         }

@@ -5,16 +5,23 @@ import {
   Select,
   Option,
   FormControl,
-  FormLabel,
+  FormLabel
 } from "@mui/joy";
 import { FC, useState, ChangeEvent, useEffect } from "react";
 import { useSceneStore, ParameterSlider } from "@store/sceneStore";
+import { Engine } from "@babylonjs/core"
+import "@babylonjs/node-geometry-editor";
+
+const getScene = () => Engine.LastCreatedScene
+
+
 
 type Props = {
   width?: number;
+  isAssetPage?: boolean;
 };
 
-const SceneControls: FC<Props> = ({ width }) => {
+const SceneControls: FC<Props> = ({ width, isAssetPage }) => {
   // Get state and actions from the store
   const {
     hdaSchemas,
@@ -31,6 +38,24 @@ const SceneControls: FC<Props> = ({ width }) => {
     toggleLogWindow,
     setExportFormat,
   } = useSceneStore();
+  const scene = getScene()
+  const inspector = scene?.debugLayer 
+    
+  
+  const toggleInpector = () => {
+    if (inspector) {
+      if (inspector.isVisible()) {
+        inspector.hide()
+       } else {
+        inspector.show({
+          overlay: true,
+          embedMode: true,
+          enableClose: false,
+          enablePopup: false,
+        });
+      }
+    }
+  }
 
   // Get the current HDA schema
   const currentSchema = hdaSchemas[selectedHdaIndex];
@@ -45,6 +70,7 @@ const SceneControls: FC<Props> = ({ width }) => {
     setLocalParamValues(paramValues);
   }, [paramValues, selectedHdaIndex]);
 
+      
   // Handle HDA selection change
   const handleHdaChange = (_event: any, value: number | null) => {
     if (value !== null) {
@@ -60,6 +86,7 @@ const SceneControls: FC<Props> = ({ width }) => {
         ...prev,
         [key]: value,
       }));
+      updateParam(key, value);
     };
 
   // Update actual parameters on slider release
@@ -72,6 +99,15 @@ const SceneControls: FC<Props> = ({ width }) => {
     setExportFormat(format);
   };
 
+  // Dragging geometry
+  {/*
+  const handleDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    geometryType: string
+  ) => {
+    e.dataTransfer.setData("geometryType", geometryType);
+  };
+  */}
   return (
     <Box
       sx={{
@@ -145,28 +181,89 @@ const SceneControls: FC<Props> = ({ width }) => {
           </Button>
         </Box>
         <Box sx={{ clear: "both" }}></Box>
-      </Box>
+        <Box sx={{paddingTop: "10px"}}>
+          <Button
+            onClick={toggleInpector}
+            size="sm"
+            variant="outlined"
+            color="neutral"
+            sx={{
+              padding: "2px 8px",
+              backgroundColor: "#333",
+              border: "1px solid #555",
+              color: "#e0e0e0",
+              cursor: "pointer",
+              borderRadius: "3px",
+            }}
+          >
+            Toggle Inspector
+          </Button>
+        </Box>
 
-      {/* HDA Selection */}
-      <FormControl sx={{ mb: 3 }}>
-        <FormLabel sx={{ color: "#e0e0e0" }}>Select Generator</FormLabel>
-        <Select
-          value={selectedHdaIndex}
-          onChange={handleHdaChange}
-          variant="outlined"
-          color="neutral"
-          sx={{
-            bgcolor: "#333",
-            "& .MuiSelect-indicator": { color: "#e0e0e0" },
-          }}
+      </Box>
+      {/*
+      <Box
+        sx={{
+          backgroundColor: "#2d2d2d",
+          padding: "8px",
+          margin: "0 -15px 15px -15px",
+          borderBottom: "1px solid #333",
+        }}
+      >
+        <Typography
+          level="h4"
+          sx={{ margin: 0, textAlign: "center", color: "#e0e0e0" }}
         >
-          {hdaSchemas.map((schema, index) => (
-            <Option key={index} value={index}>
-              {schema.name}
-            </Option>
-          ))}
-        </Select>
-      </FormControl>
+          Geometries
+        </Typography>
+      </Box>
+      <Box sx={{ mb: 3 }}>
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, "box")}
+          style={{ cursor: "grab", marginBottom: "5px" }}
+        >
+          Add Box
+        </div>
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, "sphere")}
+          style={{ cursor: "grab", marginBottom: "5px" }}
+        >
+          Add Sphere
+        </div>
+        <div
+          draggable
+          onDragStart={(e) => handleDragStart(e, "cylinder")}
+          style={{ cursor: "grab", marginBottom: "5px" }}
+        >
+          Add Cylinder
+        </div>
+
+      </Box>
+      */}
+      {/* HDA Selection */}
+      {!isAssetPage && (
+        <FormControl sx={{ mb: 3 }}>
+          <FormLabel sx={{ color: "#e0e0e0" }}>Select Generator</FormLabel>
+          <Select
+            value={selectedHdaIndex}
+            onChange={handleHdaChange}
+            variant="outlined"
+            color="neutral"
+            sx={{
+              bgcolor: "#333",
+              "& .MuiSelect-indicator": { color: "#e0e0e0" },
+            }}
+          >
+            {hdaSchemas.map((schema, index) => (
+              <Option key={index} value={index}>
+                {schema.name}
+              </Option>
+            ))}
+          </Select>
+        </FormControl>
+      )}
 
       {/* Parameters Section Header */}
       <Box
@@ -178,7 +275,7 @@ const SceneControls: FC<Props> = ({ width }) => {
         }}
       >
         <Typography
-          level="h3"
+          level="h4"
           sx={{ margin: 0, textAlign: "center", color: "#e0e0e0" }}
         >
           Parameters

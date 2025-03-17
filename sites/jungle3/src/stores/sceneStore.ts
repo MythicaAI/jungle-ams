@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 // Parameter Schema Types
 export interface ParameterSlider {
-  type: 'slider';
+  type: "slider";
   label: string;
   min: number;
   max: number;
@@ -11,7 +11,7 @@ export interface ParameterSlider {
 }
 
 export interface ParameterHidden {
-  type: 'hidden';
+  type: "hidden";
   default: any;
 }
 
@@ -46,7 +46,7 @@ interface SceneState {
   setSelectedHdaIndex: (index: number) => void;
 
   // Parameter values
-  paramValues: {[key: string]: any};
+  paramValues: { [key: string]: any };
   updateParam: (key: string, value: any) => void;
   resetParams: () => void;
 
@@ -92,43 +92,163 @@ interface SceneState {
   reset: () => void;
 }
 
+// Create a buffer outside the store
+let pendingLogs: string[] = [];
+let flushTimeout: NodeJS.Timeout | null = null;
+
 // Define the parameter schemas from the test client
 const parameterSchemas: HDASchema[] = [
   {
-    name: 'Crystal',
-    file_path: 'assets/mythica.crystal.1.0.hda',
-    material_name: 'crystal',
+    name: "Crystals",
+    file_path: "assets/mythica.crystal.1.0.hda",
+    material_name: "crystal",
     parameters: {
       length: {
-        type: 'slider',
-        label: 'Length',
+        type: "slider",
+        label: "Length",
         min: 0.5,
         max: 5,
         step: 0.1,
-        default: 2.5
+        default: 2.5,
       },
       radius: {
-        type: 'slider',
-        label: 'Radius',
+        type: "slider",
+        label: "Radius",
         min: 0.1,
         max: 2,
         step: 0.1,
-        default: 0.6
+        default: 0.6,
       },
       numsides: {
-        type: 'slider',
-        label: 'Sides',
+        type: "slider",
+        label: "Sides",
         min: 3,
         max: 12,
         step: 1,
-        default: 6
-      }
-    }
+        default: 6,
+      },
+    },
   },
   {
-    name: 'Rock Generator',
-    file_path: 'assets/Mythica.RockGenerator.1.0.hda',
-    material_name: 'rock',
+    name: "RockGenerator",
+    file_path: "assets/Mythica.RockGenerator.1.0.hda",
+    material_name: "rock",
+    parameters: {
+      seed: {
+        type: "slider",
+        label: "Randomize",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 0,
+      },
+      smoothing: {
+        type: "slider",
+        label: "Smoothing",
+        min: 0,
+        max: 50,
+        step: 1,
+        default: 25,
+      },
+      flatten: {
+        type: "slider",
+        label: "Flatten",
+        min: 0,
+        max: 1,
+        step: 0.1,
+        default: 0.3,
+      },
+      npts: {
+        type: "hidden",
+        default: 5,
+      },
+    },
+  },
+  {
+    name: "Rockify",
+    file_path: "assets/Mythica.Rockify.1.0.hda",
+    material_name: "rockface",
+    parameters: {
+      Stage: {
+        type: "slider",
+        label: "Stage",
+        min: 0,
+        max: 3,
+        step: 1,
+        default: 1,
+      },
+      base_rangemax: {
+        type: "slider",
+        label: "Base Noise",
+        min: 0.0,
+        max: 10.0,
+        step: 0.5,
+        default: 6.5,
+      },
+      mid_rangemax: {
+        type: "slider",
+        label: "Mid Noise",
+        min: 0.0,
+        max: 3,
+        step: 0.25,
+        default: 0.25,
+      },
+      top_rangemax: {
+        type: "slider",
+        label: "Top Noise",
+        min: 0.0,
+        max: 5.0,
+        step: 0.5,
+        default: 0.5,
+      },
+      smoothingiterations: {
+        type: "hidden",
+        default: 0,
+      },
+      vertDensity: {
+        type: "hidden",
+        default: 0.1,
+      },
+      size: {
+        type: "hidden",
+        default: 512,
+      },
+      input0: {
+        type: "hidden",
+        default: {
+          file_id: "file_xxx",
+          file_path: "assets/SM_Shape_04_a.usd",
+        },
+      },
+    },
+  },
+  {
+    name: 'Agave Plant',
+    file_path: 'assets/mythica.agave_plant.1.0.hda',
+    material_name: 'plant',
+    parameters: {
+      leafcount: {
+        type: 'slider',
+        label: 'Leaf Count',
+        min: 15,
+        max: 30,
+        step: 1,
+        default: 25
+      },
+      Angle: {
+        type: 'slider',
+        label: 'Angle',
+        min: 30,
+        max: 60,
+        step: 1,
+        default: 50
+      }
+    },
+  },
+  {
+    name: 'Cactus',
+    file_path: 'assets/mythica.saguaro_cactus.1.1.hda',
+    material_name: 'cactus',
     parameters: {
       seed: {
         type: 'slider',
@@ -138,91 +258,53 @@ const parameterSchemas: HDASchema[] = [
         step: 1,
         default: 0,
       },
-      smoothing: {
+      trunkheight: {
         type: 'slider',
-        label: 'Smoothing',
-        min: 0,
-        max: 50,
-        step: 1,
-        default: 25
-      },
-      flatten: {
-        type: 'slider',
-        label: 'Flatten',
-        min: 0,
-        max: 1,
+        label: 'Height',
+        min: 4,
+        max: 7,
         step: 0.1,
-        default: 0.3
+        default: 5.5
       },
-      npts: {
-        type: 'hidden',
-        default: 5
-      }
-    },
-  },
-  {
-    name: 'Rockify',
-    file_path: 'assets/Mythica.Rockify.1.0.hda',
-    material_name: 'rockface',
-    parameters: {
-      Stage: {
+      armscount: {
         type: 'slider',
-        label: 'Stage',
+        label: 'Max Arms',
         min: 0,
-        max: 3,
+        max: 4,
         step: 1,
-        default: 1,
+        default: 2
       },
-      base_rangemax: {
+      armsbendangle: {
         type: 'slider',
-        label: 'Base Noise',
-        min: 0.0,
-        max: 10.0,
-        step: 0.5,
-        default: 6.5
+        label: 'Bend Angle',
+        min: 75,
+        max: 90,
+        step: 1,
+        default: 82
       },
-      mid_rangemax: {
-        type: 'slider',
-        label: 'Mid Noise',
-        min: 0.0,
-        max: 3,
-        step: 0.25,
-        default: 0.25
-      },
-      top_rangemax: {
-        type: 'slider',
-        label: 'Top Noise',
-        min: 0.0,
-        max: 5.0,
-        step: 0.5,
-        default: 0.5
-      },
-      smoothingiterations: {
+      trunknumsides: {
         type: 'hidden',
-        default: 0
+        default: 15
       },
-      vertDensity: {
+      usespines: {
         type: 'hidden',
-        default: 0.1
+        default: false
       },
-      size: {
+      usebuds: {
         type: 'hidden',
-        default: 512
+        default: false
       },
-      input0: {
+      useflowers: {
         type: 'hidden',
-        default: {
-          file_id: "file_xxx",
-          file_path: "assets/SM_Shape_04_a.usd"
-        }
+        default: false
       },
-    }
+    },
   }
 ];
 
 // Initialize default parameter values
 const initParamValues = (schemaIndex: number) => {
-  const params: {[key: string]: any} = {};
+  const params: { [key: string]: any } = {};
   const schema = parameterSchemas[schemaIndex];
 
   Object.entries(schema.parameters).forEach(([key, config]) => {
@@ -239,18 +321,20 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   setSelectedHdaIndex: (index) => {
     set({
       selectedHdaIndex: index,
-      paramValues: initParamValues(index)
+      paramValues: initParamValues(index),
     });
   },
 
   // Parameter values
   paramValues: initParamValues(2), // Initialize with Rockify parameters
-  updateParam: (key, value) => set((state) => ({
-    paramValues: { ...state.paramValues, [key]: value }
-  })),
-  resetParams: () => set((state) => ({
-    paramValues: initParamValues(state.selectedHdaIndex)
-  })),
+  updateParam: (key, value) =>
+    set((state) => ({
+      paramValues: { ...state.paramValues, [key]: value },
+    })),
+  resetParams: () =>
+    set((state) => ({
+      paramValues: initParamValues(state.selectedHdaIndex),
+    })),
 
   // WebSocket state
   wsStatus: "disconnected",
@@ -267,7 +351,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   // Log state
   showLogWindow: false,
-  toggleLogWindow: () => set((state) => ({ showLogWindow: !state.showLogWindow })),
+  toggleLogWindow: () =>
+    set((state) => ({ showLogWindow: !state.showLogWindow })),
   setShowLogWindow: (value) => set({ showLogWindow: value }),
 
   // Generation metrics
@@ -276,10 +361,23 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   // Status logs
   statusLog: [],
-  addStatusLog: (log) => set((state) => ({
-    statusLog: [...state.statusLog, log]
-  })),
-  clearStatusLog: () => set({ statusLog: [] }),
+  addStatusLog: (log) => {
+    pendingLogs.push(log);
+
+    // Debounce the update
+    if (flushTimeout) clearTimeout(flushTimeout);
+    flushTimeout = setTimeout(() => {
+      set(state => ({
+        statusLog: [...state.statusLog, ...pendingLogs]
+      }));
+      pendingLogs = [];
+    }, 50);
+  },
+  clearStatusLog: () => {
+    pendingLogs = [];
+    if (flushTimeout) clearTimeout(flushTimeout);
+    set({ statusLog: [] });
+  },
 
   // Export functions
   exportFormat: null,
@@ -304,7 +402,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       statusLog: [],
       exportFormat: null,
       requestInFlight: false,
-      pendingRequest: false
+      pendingRequest: false,
     });
-  }
+  },
 }));
