@@ -3,6 +3,7 @@ import logging
 from jwt import DecodeError
 from pydantic import ValidationError
 import pytest
+from unittest import mock
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -329,17 +330,15 @@ async def test_process_items_result_success(
     test_coordinator_input,
     caplog,
     mock_requests,
-    job_definition_item,
+    job_definition_item: JobDefinition,
 ):
     mock_post, mock_get = mock_requests
     mock_get.return_value = MagicMock(status_code=200)
     mock_post.return_value = MagicMock(status_code=200)
-    mock_post.return_value.json.return_value = {"job_def_id": "test-job-def-id"}
+    mock_post.return_value.json.return_value = {"job_def_id": job_definition_item.job_def_id}
     mock_get.return_value.json.return_value = {"test": "test"}
     worker.rest = mock_rest
-    # worker.rest.post = mock_post
     executor = worker._get_executor()
-    # worker.process_items_result = AsyncMock()
     test_automation = AutomationModel(
         path='/test/path',
         provider=lambda x,y: job_definition_item,
@@ -347,7 +346,6 @@ async def test_process_items_result_success(
         outputModel=JobDefinition,
         hidden=False
     )
-
     worker.automations['/test/path'] = test_automation
 
     with caplog.at_level(logging.ERROR):
@@ -355,62 +353,50 @@ async def test_process_items_result_success(
         assert test_coordinator_input["event_id"]
         
     assert len(caplog.record_tuples) == 0
-
     assert mock_rest.post.call_count == 3
 
-    # TODO: Fix this test
-    # mock_rest.post.assert_called_with(
-    #     f"{ripple_config().api_base_uri}/events/processed/1",
-    #     EventAutomationResponse(
-    #         is_bulk_processing=True,
-    #         processed=True,
-    #         request_result=[
-    #             AutomationResult(
-    #                 processed=True,
-    #                 request=AutomationRequest(
-    #                     process_guid="test-guid",
-    #                     correlation="test-work",
-    #                     results_subject=None,
-    #                     job_id=None,
-    #                     auth_token=test_token,
-    #                     path="/test/path",
-    #                     data={},
-    #                     telemetry_context={},
-    #                     event_id="1",
-    #                 ),
-    #                 result=job_definition_item
-    #             ) for _ in range(2)]).model_dump(),
-    #     test_token,
-    #     headers={},
-    # )
-    # expected_response = EventAutomationResponse(
-    #     is_bulk_processing=True,
-    #     processed=True,
-    #     request_result=[
-    #         AutomationResult(
-    #             processed=True,
-    #             request=AutomationRequest(
-    #                 process_guid="test-guid",
-    #                 correlation="test-work",
-    #                 results_subject=None,
-    #                 job_id=None,
-    #                 auth_token=test_token,
-    #                 path="/test/path",
-    #                 data={},
-    #                 telemetry_context={},
-    #                 event_id="1",
-    #             ),
-    #             result=job_definition_item
-    #         ) for _ in range(2)
-    #     ]
-    # )
-    # call_args = mock_rest.post.call_args[0]
-    # assert test_token == call_args[2]
-    # assert expected_response.model_dump() == call_args[1]
+    expected_response = EventAutomationResponse(
+        is_bulk_processing=True,
+        processed=True,
+        request_result=[
+            AutomationResult(
+                processed=True,
+                request=AutomationRequest(
+                    process_guid="test-guid",
+                    correlation="test-work",
+                    results_subject=None,
+                    job_id=None,
+                    auth_token=test_token,
+                    path="/test/path",
+                    data={},
+                    telemetry_context={},
+                    event_id="1",
+                ),
+                result=job_definition_item
+            ) for _ in range(2)
+        ]
+    )
+    call_args = mock_rest.post.call_args[0]
+    assert test_token == call_args[2]
+    assert f"{ripple_config().api_base_uri}/events/processed/1" == call_args[0]
+    assert expected_response.is_bulk_processing == call_args[1]["is_bulk_processing"]
+    assert expected_response.processed == call_args[1]["processed"]
+    for index in range(len(expected_response.request_result)):
+        assert expected_response.request_result[index].processed == call_args[1]["request_result"][index]["processed"]
+        assert expected_response.request_result[index].request.process_guid == call_args[1]["request_result"][index]["request"]["process_guid"]
+        assert expected_response.request_result[index].request.correlation == call_args[1]["request_result"][index]["request"]["correlation"]
+        assert expected_response.request_result[index].request.path == call_args[1]["request_result"][index]["request"]["path"]
+        assert expected_response.request_result[index].request.data == call_args[1]["request_result"][index]["request"]["data"]
+        assert expected_response.request_result[index].request.telemetry_context == call_args[1]["request_result"][index]["request"]["telemetry_context"]
+        assert expected_response.request_result[index].request.event_id == call_args[1]["request_result"][index]["request"]["event_id"]
+        assert expected_response.request_result[index].result.job_type == call_args[1]["request_result"][index]["result"]["job_type"]
 
-    # for i in mock_rest.post.call_args[0][2]:
-    #     print(i)
-    # assert call_args == expected_response.model_dump()
+        assert mock.ANY == call_args[1]["request_result"][index]["result"]["job_def_id"]
+        assert expected_response.request_result[index].result.name == call_args[1]["request_result"][index]["result"]["name"]
+        assert expected_response.request_result[index].result.description == call_args[1]["request_result"][index]["result"]["description"]
+        assert expected_response.request_result[index].result.parameter_spec.model_dump() == call_args[1]["request_result"][index]["result"]["parameter_spec"]
+        assert expected_response.request_result[index].result.source == call_args[1]["request_result"][index]["result"]["source"]
+
 @pytest.mark.asyncio
 async def test_worker_web_executor(worker, test_token):
     app = worker._get_web_executor()
