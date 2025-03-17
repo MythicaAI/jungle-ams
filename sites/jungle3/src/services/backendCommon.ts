@@ -95,8 +95,16 @@ export const translateError = (
     // @ts-expect-error: ts2339
     // Server responded with a status other than 2xx, try to extract a detail message
     const detail = err.response.data?.detail;
+    const data = err.response.data;
     if (detail && typeof detail === "string") {
       return `${err.response.status} ${detail}`;
+    }
+    if (data && typeof data === "string") {
+      const parsed = JSON.parse(data)?.[0];
+      if (parsed && parsed?.msg) {
+        return `${err.response.status} ${parsed.msg}`;
+      }
+      return `Error: ${err.response.status}`;
     }
     return `Error: ${err.response.status}`;
   } else if (Array.isArray(err.detail)) {
