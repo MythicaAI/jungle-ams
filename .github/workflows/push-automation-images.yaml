@@ -1,10 +1,14 @@
 name: push-automation-images
 on:
+  push:
+    paths:
+      - '.github/workflows/push-automation-images.yaml'
   pull_request:
     types:
       - closed
     paths:
       - 'automation/**'
+      - 'libs/python/**'
       - '.github/workflows/push-automation-images.yaml'
 jobs:
   changes:
@@ -39,10 +43,35 @@ jobs:
               - 'libs/python/**'
               - 'automation/imagemagick/**'
 
+  build_libs_python:
+    needs:
+      - changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build libs-python image
+        uses: docker/build-push-action@v5
+        with:
+          context: libs/python
+          tags: libs-python:${{ github.sha }}
+          load: true
+
+      - name: Save libs-python to tar
+        run: |
+          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
+
+      - name: Upload libs-python image
+        uses: actions/upload-artifact@v4
+        with:
+          name: libs-python-${{ github.sha }}
+          path: /tmp/libs-python-${{ github.sha }}.tar
+          retention-days: 1
+          overwrite: true
+
   build:
     runs-on: ubuntu-latest
     needs:
       - changes
+      - build_libs_python
     permissions:
       repository-projects: read
       pull-requests: write
@@ -107,24 +136,7 @@ jobs:
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
-      - name: Build libs-python image
-        uses: docker/build-push-action@v5
-        with:
-          context: libs/python
-          tags: libs-python:${{ github.sha }}
-          load: true
-      - name: Save libs-python to tar
-        run: |
-          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
-      - name: Upload libs-python image
-        uses: actions/upload-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp/libs-python-${{ github.sha }}.tar
-          retention-days: 1
-          overwrite: true
-
-      - name: Load images
+      - name: Load libs-python image
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
 
