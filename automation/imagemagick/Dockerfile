@@ -76,6 +76,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"
 ENV MYTHICA_ENVIRONMENT="dev"
+ENV DISCORD_INFRA_ALERTS_WEBHOOK=localhost
 ENV CRYPTID_LOCATION="localhost"
 ENV API_BASE_URI=http://app/v1
 ENV TELEMETRY_ENABLE=True

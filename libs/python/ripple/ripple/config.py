@@ -36,6 +36,7 @@ class RippleConfig(BaseSettings):
     telemetry_enable: bool = False
     telemetry_insecure: bool = True
     telemetry_endpoint: str = "otel-sidecar:4317"
+    discord_infra_alerts_webhook: str = "localhost"
 
 
 @functools.lru_cache

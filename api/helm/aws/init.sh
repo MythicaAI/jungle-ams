@@ -10,10 +10,14 @@ export TS_ROUTES="10.100.0.0/16"
 export HOUDINI_SECRET_NAME=houdini-secrets
 export SFX_CLIENT_ID=""  # Replace with actual
 export SFX_CLIENT_SECRET=""  # Replace with actual
+export DISCORD_INFRA_ALERTS_WEBHOOK="" # Replace with actual
 
+kubectl delete secret/$HOUDINI_SECRET_NAME -n default
 kubectl create secret generic $HOUDINI_SECRET_NAME \
   --from-literal=SFX_CLIENT_ID=$SFX_CLIENT_ID \
   --from-literal=SFX_CLIENT_SECRET=$SFX_CLIENT_SECRET \
+  --from-literal=DISCORD_INFRA_ALERTS_WEBHOOK=$DISCORD_INFRA_ALERTS_WEBHOOK \
+  --namespace=default \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl delete pod router

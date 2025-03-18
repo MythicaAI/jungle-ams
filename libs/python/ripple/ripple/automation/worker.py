@@ -26,6 +26,7 @@ from ripple.config import ripple_config, update_headers_from_context
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import Error, ProcessStreamItem, Progress
 from ripple.runtime.params import resolve_params
+from ripple.runtime.alerts import AlertSeverity, send_alert
 
 # Set up logging
 logging.basicConfig(
@@ -220,6 +221,10 @@ class Worker:
                     )
                     log.exception(ex)
                     span.record_exception(ex)
+                    send_alert(
+                        f"Event automation failed for event_id: {event_id}",
+                        AlertSeverity.CRITICAL,
+                    )
                     return
                 finally:
                     await self.process_items_result(
@@ -261,6 +266,7 @@ class Worker:
                     success = False
 
                 if not success:
+                    log.error("The event status request failed: item_data-%s", item)
                     break
 
             job_res.processed = success

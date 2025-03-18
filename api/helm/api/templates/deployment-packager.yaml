@@ -36,6 +36,11 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_ASYNC_URL
+            - name: DISCORD_INFRA_ALERTS_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: DISCORD_INFRA_ALERTS_WEBHOOK
             - name: MYTHICA_ENDPOINT
               value: "http://app.{{ .Values.namespace }}:80"
             - name: APP_VERSION

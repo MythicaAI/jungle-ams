@@ -12,6 +12,7 @@ services:
       - storage
     environment:
       MYTHICA_ENVIRONMENT: debug
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       MYTHICA_ENDPOINT: http://app:5555
       MYTHICA_API_KEY: ${MYTHICA_API_KEY}
   houdini-worker:
@@ -26,6 +27,7 @@ services:
       TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
       SFX_CLIENT_ID: ${SFX_CLIENT_ID}
       SFX_CLIENT_SECRET: ${SFX_CLIENT_SECRET}
@@ -41,6 +43,7 @@ services:
       TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
   workflow-worker:
     container_name: workflow
@@ -54,6 +57,7 @@ services:
       TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
 networks:
   storage:

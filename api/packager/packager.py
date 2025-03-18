@@ -20,6 +20,7 @@ from pythonjsonlogger import jsonlogger
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
 from ripple.automation.worker import process_guid
+from ripple.runtime.alerts import AlertSeverity, send_alert
 from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
 from typing import Optional
 from uuid import uuid4
@@ -394,6 +395,10 @@ async def worker_main(endpoint: str, api_key: str):
                 # NOTE: logic of session.complete is moved to automation worker 
                 # await session.complete(event_seq)
             except allowed_job_exceptions:
+                send_alert(
+                    f"Packager failed for event_seq: {event_seq}",
+                    AlertSeverity.CRITICAL,
+                )
                 log.exception("job failed")
 
 
