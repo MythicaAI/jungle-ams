@@ -36,18 +36,28 @@ jobs:
             automation/houdini/:
               - 'libs/python/**'
               - 'automation/houdini/**'
+              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
             automation/blender/:
               - 'libs/python/**'
               - 'automation/blender/**'
+              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
             automation/imagemagick/:
               - 'libs/python/**'
               - 'automation/imagemagick/**'
+              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
 
   build_libs_python:
     needs:
       - changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Build libs-python image
         uses: docker/build-push-action@v5
         with:
@@ -135,6 +145,12 @@ jobs:
             git tag ${{ steps.generate_tag.outputs.new_tag }}
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
+
+      - name: Download libs-python image
+        uses: actions/download-artifact@v4
+        with:
+          name: libs-python-${{ github.sha }}
+          path: /tmp
 
       - name: Load libs-python image
         run: |
