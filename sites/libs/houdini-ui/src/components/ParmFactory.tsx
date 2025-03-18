@@ -17,9 +17,10 @@ export interface ParmFactoryProps {
     parmTemplate: hou.ParmTemplate;
     data: dictionary;
     onChange: (formData: dictionary) => void; // Callback for value changes
+    useSlidersOnMobile?: boolean;
 }
 
-export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onChange}) => {
+export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onChange, useSlidersOnMobile}) => {
     switch (parmTemplate.param_type) {
         case hou.parmTemplateType.Folder:
             return <FolderParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FolderParmTemplate} />;
@@ -28,9 +29,9 @@ export const ParmFactory:React.FC<ParmFactoryProps> = ({parmTemplate, data, onCh
         case hou.parmTemplateType.String:
             return <StringParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.StringParmTemplate} />;        
         case hou.parmTemplateType.Float:
-            return <FloatParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FloatParmTemplate} />;        
+            return <FloatParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.FloatParmTemplate} useSlidersOnMobile={useSlidersOnMobile} />;        
         case hou.parmTemplateType.Int:
-            return <IntParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.IntParmTemplate} />;        
+            return <IntParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.IntParmTemplate} useSlidersOnMobile={useSlidersOnMobile} />;        
         case hou.parmTemplateType.Toggle:
             return <ToggleParm key={parmTemplate.id} data={data} onChange={onChange} template={parmTemplate as hou.ToggleParmTemplate} />;        
         case hou.parmTemplateType.Separator:
