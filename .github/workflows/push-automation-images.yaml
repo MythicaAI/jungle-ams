@@ -47,7 +47,14 @@ jobs:
     needs:
       - changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # pull-requests: write
+      # repository-projects: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Build libs-python image
         uses: docker/build-push-action@v5
         with:
