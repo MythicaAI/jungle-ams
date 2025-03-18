@@ -1,8 +1,5 @@
 name: push-automation-images
 on:
-  push:
-    paths:
-      - '.github/workflows/push-automation-images.yaml'
   pull_request:
     types:
       - closed
@@ -36,15 +33,12 @@ jobs:
             automation/houdini/:
               - 'libs/python/**'
               - 'automation/houdini/**'
-              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
             automation/blender/:
               - 'libs/python/**'
               - 'automation/blender/**'
-              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
             automation/imagemagick/:
               - 'libs/python/**'
               - 'automation/imagemagick/**'
-              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
 
   build_libs_python:
     needs:
