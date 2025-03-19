@@ -541,26 +541,10 @@
                                 "parm_templates": [
                                     {
                                         "param_type": "Folder",
-                                        "label": "Folder Collapse",
-                                        "category_label": null,
-                                        "constant": false,
-                                        "name": "folder_collapse0",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "level": 2,
-                                        "parm_templates": [],
-                                        "folder_type": "Collapsible",
-                                        "default_value": 0,
-                                        "ends_tab_group": false
-                                    },
-                                    {
-                                        "param_type": "Folder",
                                         "label": "Folder Collapse 0",
                                         "category_label": null,
                                         "constant": false,
-                                        "name": "folder_collapse2",
+                                        "name": "folder_collapse0",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
