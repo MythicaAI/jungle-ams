@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import { BaseEdge, getBezierPath, type EdgeProps, EdgeLabelRenderer } from '@xyflow/react';
 import { GetFileResponse } from '../../types/MythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
@@ -9,7 +9,7 @@ type FileEdgeProps = EdgeProps & {
   };
 };
 
-export const FileEdge: React.FC<FileEdgeProps> = (edge: FileEdgeProps) => {
+const FileEdge: React.FC<FileEdgeProps> = (edge: FileEdgeProps) => {
   const { getFlowData, setFlowData } = useAwfulFlow();
   const myFlowData = getFlowData(edge.source)[edge.sourceHandleId as string];
 
@@ -57,7 +57,7 @@ export const FileEdge: React.FC<FileEdgeProps> = (edge: FileEdgeProps) => {
   return (
     <>
       <BaseEdge id={edge.id} path={edgePath} />
-      <EdgeLabelRenderer>
+      <EdgeLabelRenderer key={edge.id}>
         <div
           className="nodrag nopan"
           style={{
@@ -112,3 +112,5 @@ export const FileEdge: React.FC<FileEdgeProps> = (edge: FileEdgeProps) => {
     </>
   );
 };
+
+export default memo(FileEdge);
