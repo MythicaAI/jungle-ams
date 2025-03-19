@@ -206,3 +206,13 @@
   .folder-content {
     padding: 5px;
   }
+
+  .slider-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .input-slider {
+    accent-color: #367c64;
+  }
