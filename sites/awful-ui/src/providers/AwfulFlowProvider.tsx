@@ -8,7 +8,6 @@ import {
   Node,
   Connection,
   Edge,
-  addEdge,
   useEdgesState,
   ReactFlowInstance,
   NodeResizeControl,
@@ -29,11 +28,8 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   const [nodeType, setNodeType] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChangeImpl] = useEdgesState<Edge>([]);
-  const { screenToFlowPosition } = useReactFlow();
-  const [rfInstance, setRfInstance] = useState<
-    ReactFlowInstance<Node, Edge> | undefined
-  >(undefined);
-  const { setViewport, deleteElements } = useReactFlow();
+  const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge>>();
+  const { screenToFlowPosition, setViewport, deleteElements } = useReactFlow();
 
   const { uploadFile, getFiles, getDownloadInfo, deleteFile, authToken } =
     useMythicaApi();
@@ -132,6 +128,30 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       onSaveSession();
     }
   }, [rfInstance?.toObject()]);
+
+
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+    /* Because the Automation node handles are not updated immediately after 
+  a refresh event, we need to wait a bit before updating the edges */
+
+  useEffect(() => {
+    if (refreshEdgeData.length > 0) {
+      sleep(2000).then(() => {
+        setEdges(refreshEdgeData);
+        const edgeMapData: EdgeMap = {};
+
+        refreshEdgeData.forEach((edge) => {
+          if (!edgeMapData[edge.source]) edgeMapData[edge.source] = {};
+          if (!edgeMapData[edge.source][edge.sourceHandle as string])
+            edgeMapData[edge.source][edge.sourceHandle as string] = [];
+          edgeMapData[edge.source][edge.sourceHandle as string].push(edge);
+        });
+        setEdgeMap(edgeMapData);
+        setRefreshEdgeData([]);
+      });
+    }
+  }, [refreshEdgeData, setEdges]);
   /***************************************************************************
    * End Session Save Handling
    **************************************************************************/
@@ -226,8 +246,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const sleep = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
   const deleteFlowData = async () => {
     setNodes([]);
     setEdges([]);
@@ -264,25 +282,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchAwfuls();
   }, [authToken, fetchAwfuls]);
 
-  /* Because the Automation node handles are not updated immediately after 
-  a refresh event, we need to wait a bit before updating the edges */
-  useEffect(() => {
-    if (refreshEdgeData.length > 0) {
-      sleep(2000).then(() => {
-        setEdges(refreshEdgeData);
-        const edgeMapData: EdgeMap = {};
 
-        refreshEdgeData.forEach((edge) => {
-          if (!edgeMapData[edge.source]) edgeMapData[edge.source] = {};
-          if (!edgeMapData[edge.source][edge.sourceHandle as string])
-            edgeMapData[edge.source][edge.sourceHandle as string] = [];
-          edgeMapData[edge.source][edge.sourceHandle as string].push(edge);
-        });
-        setEdgeMap(edgeMapData);
-        setRefreshEdgeData([]);
-      });
-    }
-  }, [refreshEdgeData, setEdges]);
   /***************************************************************************
    * End Awful Save Handling
    **************************************************************************/
@@ -383,14 +383,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
    **************************************************************************/
   const setFlowData = useCallback(
     (nodeId: string, key: string, value: GetFileResponse[]) => {
-      setFlowDataState((prevData) => {
-        const updatedData = { ...prevData };
-        updatedData[nodeId] = {
-          ...updatedData[nodeId],
-          [key]: value,
-        };
-        return updatedData;
-      });  
+      setFlowDataState((prevData) => ({
+        ...prevData,
+        [nodeId]: { 
+          ...prevData[nodeId], 
+          [key]: value 
+        },
+      }));
         
       const handleEdges = edgeMap[nodeId]?.[key];
       if (handleEdges) {
@@ -531,45 +530,31 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const edgeData =
         flowData[connection.source]?.[connection.sourceHandle] || [];
-      let newEdge = {
+      const newEdge = {
+        id: `edge_${connection.source}_${connection.sourceHandle}_${connection.target}_${connection.targetHandle}`,
         ...connection,
         type: 'fileEdge',
       } as Edge;
 
-      const edgeExists = edges.some(
-        (edge) =>
-          edge.source === connection.source &&
-          edge.sourceHandle === connection.sourceHandle &&
-          edge.target === connection.target &&
-          edge.targetHandle === connection.targetHandle
-      );
 
-      if (!edgeExists) {
-        // Add the new edge if it doesn't already exist
-        const newEdges =  addEdge(newEdge, edges);
-        setEdges(newEdges);
+      setEdges((prevEdges) => [newEdge, ...prevEdges]);
 
-        newEdge = newEdges.find((edge) => 
-          edge.source === connection.source &&
-          edge.sourceHandle === connection.sourceHandle &&
-          edge.target === connection.target &&
-          edge.targetHandle === connection.targetHandle) as Edge;
-
-        setEdgeMap((prevEdgeMap) => {
-          if (!prevEdgeMap[newEdge.source])
-            prevEdgeMap[newEdge.source] = {};
-          return {
-            ...prevEdgeMap,
-            [newEdge.source]: {
-              ...prevEdgeMap[newEdge.source],
-              [newEdge.sourceHandle as string]: [
-                ...(prevEdgeMap[newEdge.source][newEdge.sourceHandle as string] || []),
-                newEdge,
-              ],
-            },
-          };
-        });
-      }
+      setEdgeMap((prevEdgeMap) => {
+        if (!prevEdgeMap[newEdge.source])
+          prevEdgeMap[newEdge.source] = {};
+        if ((newEdge.sourceHandle as string in prevEdgeMap[newEdge.source])) 
+          return prevEdgeMap;
+        return {
+          ...prevEdgeMap,
+          [newEdge.source]: {
+            ...prevEdgeMap[newEdge.source],
+            [newEdge.sourceHandle as string]: [
+              ...(prevEdgeMap[newEdge.source][newEdge.sourceHandle as string] || []),
+              newEdge,
+            ],
+          },
+        };
+      });
 
 
 
@@ -595,9 +580,24 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       edgesToRemove.forEach((edge) => {
         if (edge.source && edge.sourceHandle) {
-          if (edge.source in edgeMap)
-            edgeMap[edge.source][edge.sourceHandle] = 
-              edgeMap[edge.source][edge.sourceHandle].filter((e) => e.id !== edge.id);
+          if (edge.source in edgeMap) {
+            if (Object.keys(edgeMap[edge.source]).length === 1 && edge.sourceHandle in edgeMap[edge.source]) {
+              setEdgeMap((prevEdgeMap) => {
+                const updated = { ...prevEdgeMap };
+                delete updated[edge.source];
+                return updated;
+              });
+            }else {
+              setEdgeMap((prevEdgeMap) => ({
+                ...prevEdgeMap,
+                [edge.source]: {
+                  ...prevEdgeMap[edge.source],
+                  [edge.sourceHandle as string]: 
+                    prevEdgeMap[edge.source][edge.sourceHandle as string].filter((e) => e.id !== edge.id)
+                },
+              }));
+            }
+          }
         }
       });
     },
