@@ -21,10 +21,12 @@ import {
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSceneStore } from "@store/sceneStore";
+import { useTranslation } from "react-i18next";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
 ) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { hdaSchemas } = useSceneStore();
@@ -87,7 +89,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   const env = import.meta.env.VITE_MYTHICA_ENVIRONMENT || "prod";
   return (
     <Stack gap="10px">
-      {(matchesHdaSchema || env==="dev") && (
+      {(matchesHdaSchema || env === "dev") && (
         <Button
           variant="outlined"
           color="neutral"
@@ -97,7 +99,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
             navigate(`${location.pathname}/jobs`);
           }}
         >
-          Visit automations
+          {t("packageView.visitAuto")}
         </Button>
       )}
       <Card>
@@ -141,7 +143,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           <DownloadButton
             file_id={av.package_id}
             icon={<LucidePackage />}
-            text="Download"
+            text={t("packageView.download")}
           />
 
           <Chip
@@ -182,7 +184,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
                 width="100%"
               >
                 <Typography fontSize={18} fontWeight={600}>
-                  Bundle size
+                  {t("packageView.bundleSize")}
                 </Typography>
 
                 <Typography>{bundleSize}</Typography>

@@ -30,6 +30,8 @@ import { JobDetails } from "@queries/packages/types";
 import SceneViewerFile from "@components/BabylonViewer/SceneViewerFile";
 import { useGetFile } from "@queries/files";
 import { useWindowSize } from "@hooks/useWindowSize";
+import { useTranslation } from "react-i18next";
+import { Helmet } from "react-helmet-async";
 
 const TabStyle = { ":focus": { outline: "none" } };
 const TabPanelStyle = { padding: "12px 0 0" };
@@ -43,6 +45,7 @@ export const PackageJobs = () => {
     version_id,
   );
   const { currentWidth } = useWindowSize();
+  const { t } = useTranslation();
   const mobileSize = currentWidth < 700;
 
   const parmTemplateGroup = React.useMemo(
@@ -158,6 +161,9 @@ export const PackageJobs = () => {
   if (jobDefinitions && jobDefinitions?.length === 0) {
     return (
       <Stack padding="0 16px">
+        <Helmet>
+          <title>Mythica • {t("automationPage.title")}</title>
+        </Helmet>
         <Stack
           direction="row"
           width="100%"
@@ -186,7 +192,7 @@ export const PackageJobs = () => {
               navigate(`/package-view/${asset_id}/versions/${version_id}`);
             }}
           >
-            Back to Package view
+            {t("automationPage.backToPackageView")}
           </Button>
         </Stack>
         {matchesHdaSchema ? (
@@ -209,7 +215,7 @@ export const PackageJobs = () => {
               }}
             >
               <Tab sx={TabStyle} disableIndicator>
-                3D Live Preview
+                {t("automationPage.livePreview")}
               </Tab>
             </TabList>
             <TabPanel value={0}>
@@ -218,7 +224,7 @@ export const PackageJobs = () => {
           </Tabs>
         ) : (
           <Typography level="h4" textAlign="start" mt="24px">
-            No automation definitions found for this package.
+            {t("automationPage.noDefinitions")}
           </Typography>
         )}
       </Stack>
@@ -229,6 +235,9 @@ export const PackageJobs = () => {
 
   return (
     <Stack alignItems="start" padding="0 16px">
+      <Helmet>
+        <title>Mythica • {t("automationPage.title")}</title>
+      </Helmet>
       <Stack
         direction="row"
         width="100%"
@@ -257,7 +266,7 @@ export const PackageJobs = () => {
             navigate(`/package-view/${asset_id}/versions/${version_id}`);
           }}
         >
-          Back to Package view
+          {t("automationPage.backToPackageView")}
         </Button>
       </Stack>
       <Tabs
@@ -279,15 +288,15 @@ export const PackageJobs = () => {
           }}
         >
           <Tab sx={TabStyle} disableIndicator>
-            Run automation
+            {t("automationPage.runAutomation")}
           </Tab>
           {matchesHdaSchema && (
             <Tab sx={TabStyle} disableIndicator>
-              3D Live Preview
+              {t("automationPage.livePreview")}
             </Tab>
           )}
           <Tab sx={TabStyle} disableIndicator>
-            Automation history
+            {t("automationPage.history")}
           </Tab>
         </TabList>
 
@@ -395,10 +404,16 @@ export const PackageJobs = () => {
                 onChange={handleParmChange}
               />
               <Button
-                sx={{ width: "fit-content", mt: "12px", bgcolor: "#367c64", transition: '0.2s', ":hover": {bgcolor: '#367c64', opacity: 0.8} }}
+                sx={{
+                  width: "fit-content",
+                  mt: "12px",
+                  bgcolor: "#367c64",
+                  transition: "0.2s",
+                  ":hover": { bgcolor: "#367c64", opacity: 0.8 },
+                }}
                 onClick={() => onSubmit(inputData)}
               >
-                Run automation
+                {t("automationPage.runAutomation")}
               </Button>
             </Stack>
             {file?.url && (
@@ -426,7 +441,9 @@ export const PackageJobs = () => {
             </Stack>
           ) : (
             <Stack padding="0 0 12px" justifyContent="start" alignItems="start">
-              <Typography level="h3">Automation history missing</Typography>
+              <Typography level="h3">
+                {t("automationPage.historyMissing")}
+              </Typography>
             </Stack>
           )}
         </TabPanel>
