@@ -396,7 +396,7 @@ export const PackageJobs = () => {
                 </>
               )}
               <Typography fontSize={20} level="h3" mb="12px">
-                Params
+                {t("automationPage.params")}
               </Typography>
               <ParmGroup
                 data={{ inputData }}
