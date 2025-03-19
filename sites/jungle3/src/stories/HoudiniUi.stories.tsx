@@ -4,81 +4,6 @@ import 'houdini-ui/houdini-ui.css';
 
 const parmTemplates = [
     {
-        "param_type": "String",
-        "label": "Previous Path",
-        "category_label": null,
-        "constant": false,
-        "name": "prev_path",
-        "is_hidden": true,
-        "is_label_hidden": false,
-        "help": "",
-        "join_with_next": false,
-        "num_components": 1,
-        "default_value": [
-            "2"
-        ],
-        "string_type": "Regular",
-        "file_type": "Any",
-        "icon_names": [],
-        "menu_items": [],
-        "menu_labels": [],
-        "menu_type": "normal"
-    },
-    {
-        "param_type": "Menu",
-        "label": "Visual Stage",
-        "category_label": null,
-        "constant": false,
-        "name": "Stage",
-        "is_hidden": false,
-        "is_label_hidden": false,
-        "help": "",
-        "join_with_next": true,
-        "default_value": 0,
-        "menu_items": [
-            "0",
-            "1",
-            "2",
-            "3"
-        ],
-        "menu_labels": [
-            "Base Shape",
-            "Raw Noise",
-            "Stylized",
-            "Final"
-        ],
-        "menu_type": "normal",
-        "store_default_value_as_string": false,
-        "is_menu": false,
-        "is_button_strip": false,
-        "strip_uses_icons": false,
-        "menu_use_token": false
-    },
-    {
-        "param_type": "Toggle",
-        "label": "Preview Mesh",
-        "category_label": null,
-        "constant": false,
-        "name": "previewMesh",
-        "is_hidden": false,
-        "is_label_hidden": false,
-        "help": "",
-        "join_with_next": false,
-        "default_value": false
-    },
-    {
-        "param_type": "Toggle",
-        "label": "Enable Collision",
-        "category_label": null,
-        "constant": false,
-        "name": "collision",
-        "is_hidden": false,
-        "is_label_hidden": false,
-        "help": "",
-        "join_with_next": false,
-        "default_value": true
-    },
-    {
         "param_type": "FolderSet",
         "label": "",
         "category_label": null,
@@ -91,65 +16,10 @@ const parmTemplates = [
         "parm_templates": [
             {
                 "param_type": "Folder",
-                "label": "Base Shape",
+                "label": "Folders",
                 "category_label": null,
                 "constant": false,
-                "name": "folder1",
-                "is_hidden": false,
-                "is_label_hidden": false,
-                "help": "",
-                "join_with_next": false,
-                "level": 1,
-                "parm_templates": [
-                    {
-                        "param_type": "Float",
-                        "label": "Vertex Density",
-                        "category_label": "Base Shape",
-                        "constant": false,
-                        "name": "vertDensity",
-                        "is_hidden": false,
-                        "is_label_hidden": false,
-                        "help": "",
-                        "join_with_next": false,
-                        "num_components": 1,
-                        "default_value": [
-                            0.15
-                        ],
-                        "min": 0.0,
-                        "max": 1.0,
-                        "min_is_strict": false,
-                        "max_is_strict": false
-                    },
-                    {
-                        "param_type": "Int",
-                        "label": "Smoothing Iterations",
-                        "category_label": "Base Shape",
-                        "constant": false,
-                        "name": "smoothingiterations",
-                        "is_hidden": false,
-                        "is_label_hidden": false,
-                        "help": "",
-                        "join_with_next": false,
-                        "num_components": 1,
-                        "default_value": [
-                            2
-                        ],
-                        "min": 0,
-                        "max": 10,
-                        "min_is_strict": false,
-                        "max_is_strict": false
-                    }
-                ],
-                "folder_type": "Tabs",
-                "default_value": 0,
-                "ends_tab_group": false
-            },
-            {
-                "param_type": "Folder",
-                "label": "Style",
-                "category_label": null,
-                "constant": false,
-                "name": "folder1_1",
+                "name": "folder_types",
                 "is_hidden": false,
                 "is_label_hidden": false,
                 "help": "",
@@ -169,7 +39,265 @@ const parmTemplates = [
                         "parm_templates": [
                             {
                                 "param_type": "Folder",
-                                "label": "Base",
+                                "label": "Folder Collapse 0",
+                                "category_label": null,
+                                "constant": false,
+                                "name": "folder_collapse0",
+                                "is_hidden": false,
+                                "is_label_hidden": false,
+                                "help": "",
+                                "join_with_next": false,
+                                "level": 2,
+                                "parm_templates": [
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Label in Collapse 0",
+                                        "category_label": "Folder Collapse 0",
+                                        "constant": false,
+                                        "name": "label",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            ""
+                                        ]
+                                    }
+                                ],
+                                "folder_type": "Collapsible",
+                                "default_value": 0,
+                                "ends_tab_group": false
+                            },
+                            {
+                                "param_type": "Folder",
+                                "label": "Folder Collapse 1",
+                                "category_label": null,
+                                "constant": false,
+                                "name": "folder_collapse1",
+                                "is_hidden": false,
+                                "is_label_hidden": false,
+                                "help": "",
+                                "join_with_next": false,
+                                "level": 2,
+                                "parm_templates": [
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Heading",
+                                        "category_label": "Folder Collapse 1",
+                                        "constant": false,
+                                        "name": "labelparm",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            "Heading Label in Collapse 1"
+                                        ]
+                                    }
+                                ],
+                                "folder_type": "Collapsible",
+                                "default_value": 0,
+                                "ends_tab_group": false
+                            }
+                        ]
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Folders",
+                        "constant": false,
+                        "name": "sepparm13",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "FolderSet",
+                        "label": "",
+                        "category_label": null,
+                        "constant": false,
+                        "name": "",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "parm_templates": [
+                            {
+                                "param_type": "Folder",
+                                "label": "Folder Simple",
+                                "category_label": null,
+                                "constant": false,
+                                "name": "folder_simple",
+                                "is_hidden": false,
+                                "is_label_hidden": false,
+                                "help": "",
+                                "join_with_next": false,
+                                "level": 2,
+                                "parm_templates": [
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Label in Simple Folder",
+                                        "category_label": "Folder Simple",
+                                        "constant": false,
+                                        "name": "labelparm2",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            ""
+                                        ]
+                                    }
+                                ],
+                                "folder_type": "Simple",
+                                "default_value": 0,
+                                "ends_tab_group": false
+                            }
+                        ]
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Folders",
+                        "constant": false,
+                        "name": "sepparm15",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "FolderSet",
+                        "label": "",
+                        "category_label": null,
+                        "constant": false,
+                        "name": "",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "parm_templates": [
+                            {
+                                "param_type": "Folder",
+                                "label": "Folder Radio 0",
+                                "category_label": null,
+                                "constant": false,
+                                "name": "folder_radio0",
+                                "is_hidden": false,
+                                "is_label_hidden": false,
+                                "help": "",
+                                "join_with_next": false,
+                                "level": 2,
+                                "parm_templates": [
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Message",
+                                        "category_label": "Folder Radio 0",
+                                        "constant": false,
+                                        "name": "labelparm9",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit,\nsed do eiusmod tempor incididunt ut labore et dolore magna\naliqua. Ut enim ad minim veniam, quis nostrud exercitation\nullamco laboris nisi ut aliquip ex ea commodo consequat. \nDuis aute irure dolor in reprehenderit in voluptate velit \nesse cillum dolore eu fugiat nulla pariatur. Excepteur sint \noccaecat cupidatat non proident, sunt in culpa qui officia \ndeserunt mollit anim id est laborum."
+                                        ]
+                                    }
+                                ],
+                                "folder_type": "RadioButtons",
+                                "default_value": 0,
+                                "ends_tab_group": false
+                            },
+                            {
+                                "param_type": "Folder",
+                                "label": "Folder Radio 1",
+                                "category_label": null,
+                                "constant": false,
+                                "name": "folder_radio0_1",
+                                "is_hidden": false,
+                                "is_label_hidden": false,
+                                "help": "",
+                                "join_with_next": false,
+                                "level": 2,
+                                "parm_templates": [
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Message",
+                                        "category_label": "Folder Radio 1",
+                                        "constant": false,
+                                        "name": "labelparm10",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit,\nsed do eiusmod tempor incididunt ut labore et dolore magna\naliqua. Ut enim ad minim veniam, quis nostrud exercitation\nullamco laboris nisi ut aliquip ex ea commodo consequat. \nDuis aute irure dolor in reprehenderit in voluptate velit \nesse cillum dolore eu fugiat nulla pariatur. Excepteur sint \noccaecat cupidatat non proident, sunt in culpa qui officia \ndeserunt mollit anim id est laborum."
+                                        ]
+                                    }
+                                ],
+                                "folder_type": "RadioButtons",
+                                "default_value": 0,
+                                "ends_tab_group": false
+                            },
+                            {
+                                "param_type": "Folder",
+                                "label": "Folder Radio 2 - Last",
+                                "category_label": null,
+                                "constant": false,
+                                "name": "folder_radio0_2",
+                                "is_hidden": false,
+                                "is_label_hidden": false,
+                                "help": "",
+                                "join_with_next": false,
+                                "level": 2,
+                                "parm_templates": [
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Message",
+                                        "category_label": "Folder Radio 2 - Last",
+                                        "constant": false,
+                                        "name": "labelparm11",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit,\nsed do eiusmod tempor incididunt ut labore et dolore magna\naliqua. Ut enim ad minim veniam, quis nostrud exercitation\nullamco laboris nisi ut aliquip ex ea commodo consequat. \nDuis aute irure dolor in reprehenderit in voluptate velit \nesse cillum dolore eu fugiat nulla pariatur. Excepteur sint \noccaecat cupidatat non proident, sunt in culpa qui officia \ndeserunt mollit anim id est laborum."
+                                        ]
+                                    }
+                                ],
+                                "folder_type": "RadioButtons",
+                                "default_value": 0,
+                                "ends_tab_group": false
+                            }
+                        ]
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Folders",
+                        "constant": false,
+                        "name": "sepparm14",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "FolderSet",
+                        "label": "",
+                        "category_label": null,
+                        "constant": false,
+                        "name": "",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "parm_templates": [
+                            {
+                                "param_type": "Folder",
+                                "label": "Folder Multi Block List",
                                 "category_label": null,
                                 "constant": false,
                                 "name": "folder0",
@@ -180,722 +308,42 @@ const parmTemplates = [
                                 "level": 2,
                                 "parm_templates": [
                                     {
-                                        "param_type": "Menu",
-                                        "label": "Noise Type",
-                                        "category_label": "Base",
+                                        "param_type": "Int",
+                                        "label": "Int Multi Block List",
+                                        "category_label": "Folder Multi Block List",
                                         "constant": false,
-                                        "name": "base_noise",
+                                        "name": "int_multi_block_list#",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
                                         "join_with_next": false,
-                                        "default_value": 11,
-                                        "menu_items": [
-                                            "value_fast",
-                                            "sparse",
-                                            "alligator",
-                                            "perlin",
-                                            "flow",
-                                            "simplex",
-                                            "worleyFA",
-                                            "worleyFB",
-                                            "mworleyFA",
-                                            "mworleyFB",
-                                            "cworleyFA",
-                                            "cworleyFB",
-                                            "pcloud",
-                                            "scloud",
-                                            "fscloud"
-                                        ],
-                                        "menu_labels": [
-                                            "Fast",
-                                            "Sparse Convolution",
-                                            "Alligator",
-                                            "Perlin",
-                                            "Perlin Flow",
-                                            "Simplex",
-                                            "Worley Cellular F1",
-                                            "Worley Cellular F2-F1",
-                                            "Manhattan Cellular F1",
-                                            "Manhattan Cellular F2-F1",
-                                            "Chebyshev Cellular F1",
-                                            "Chebyshev Cellular F2-F1",
-                                            "Perlin Cloud",
-                                            "Simplex Cloud",
-                                            "Fast Simplex Cloud"
-                                        ],
-                                        "menu_type": "normal",
-                                        "store_default_value_as_string": false,
-                                        "is_menu": false,
-                                        "is_button_strip": false,
-                                        "strip_uses_icons": false,
-                                        "menu_use_token": false
-                                    },
-                                    {
-                                        "param_type": "Separator",
-                                        "label": "",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "sepparm2",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Min Value",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "base_rangemin",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
+                                        "num_components": 2,
                                         "default_value": [
-                                            0.0
+                                            0,
+                                            0
                                         ],
-                                        "min": -10.0,
-                                        "max": 10.0,
+                                        "min": -1,
+                                        "max": 1,
                                         "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Max Value",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "base_rangemax",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            6.36
-                                        ],
-                                        "min": -10.0,
-                                        "max": 10.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Ramp",
-                                        "label": "Ramp",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "base_ramp",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "ramp_parm_type": "Float",
-                                        "default_value": 2,
-                                        "default_basis": null,
-                                        "color_type": null,
-                                        "default_points": [
-                                            {
-                                                "pos": 0.0,
-                                                "c": null,
-                                                "value": 0.0,
-                                                "interp": "Linear"
-                                            },
-                                            {
-                                                "pos": 1.0,
-                                                "c": null,
-                                                "value": 1.0,
-                                                "interp": "Linear"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "param_type": "Separator",
-                                        "label": "",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "sepparm",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Element Size",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "base_size",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            7.31
-                                        ],
-                                        "min": 0.0,
-                                        "max": 10.0,
-                                        "min_is_strict": true,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Element Scale",
-                                        "category_label": "Base",
-                                        "constant": false,
-                                        "name": "base_scale",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 3,
-                                        "default_value": [
-                                            1.0,
-                                            6.6,
-                                            1.0
-                                        ],
-                                        "min": 0.0,
-                                        "max": 10.0,
-                                        "min_is_strict": true,
                                         "max_is_strict": false
                                     }
                                 ],
-                                "folder_type": "Tabs",
-                                "default_value": 0,
-                                "ends_tab_group": false
-                            },
-                            {
-                                "param_type": "Folder",
-                                "label": "Mid",
-                                "category_label": null,
-                                "constant": false,
-                                "name": "folder0_1",
-                                "is_hidden": false,
-                                "is_label_hidden": false,
-                                "help": "",
-                                "join_with_next": false,
-                                "level": 2,
-                                "parm_templates": [
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Blend",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_blend",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            0.522
-                                        ],
-                                        "min": 0.0,
-                                        "max": 1.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Ramp",
-                                        "label": "Mid Area",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_areaRamp",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "ramp_parm_type": "Float",
-                                        "default_value": 4,
-                                        "default_basis": null,
-                                        "color_type": null,
-                                        "default_points": [
-                                            {
-                                                "pos": 0.0,
-                                                "c": null,
-                                                "value": 0.0,
-                                                "interp": "MonotoneCubic"
-                                            },
-                                            {
-                                                "pos": 0.6022380590438843,
-                                                "c": null,
-                                                "value": 1.0,
-                                                "interp": "MonotoneCubic"
-                                            },
-                                            {
-                                                "pos": 0.6836215853691101,
-                                                "c": null,
-                                                "value": 1.0,
-                                                "interp": "MonotoneCubic"
-                                            },
-                                            {
-                                                "pos": 1.0,
-                                                "c": null,
-                                                "value": 0.0,
-                                                "interp": "MonotoneCubic"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "param_type": "Menu",
-                                        "label": "Noise Type",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_noise",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "default_value": 11,
-                                        "menu_items": [
-                                            "value_fast",
-                                            "sparse",
-                                            "alligator",
-                                            "perlin",
-                                            "flow",
-                                            "simplex",
-                                            "worleyFA",
-                                            "worleyFB",
-                                            "mworleyFA",
-                                            "mworleyFB",
-                                            "cworleyFA",
-                                            "cworleyFB",
-                                            "pcloud",
-                                            "scloud",
-                                            "fscloud"
-                                        ],
-                                        "menu_labels": [
-                                            "Fast",
-                                            "Sparse Convolution",
-                                            "Alligator",
-                                            "Perlin",
-                                            "Perlin Flow",
-                                            "Simplex",
-                                            "Worley Cellular F1",
-                                            "Worley Cellular F2-F1",
-                                            "Manhattan Cellular F1",
-                                            "Manhattan Cellular F2-F1",
-                                            "Chebyshev Cellular F1",
-                                            "Chebyshev Cellular F2-F1",
-                                            "Perlin Cloud",
-                                            "Simplex Cloud",
-                                            "Fast Simplex Cloud"
-                                        ],
-                                        "menu_type": "normal",
-                                        "store_default_value_as_string": false,
-                                        "is_menu": false,
-                                        "is_button_strip": false,
-                                        "strip_uses_icons": false,
-                                        "menu_use_token": false
-                                    },
-                                    {
-                                        "param_type": "Separator",
-                                        "label": "",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "sepparm3",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Min Value",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_rangemin",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            -1.0
-                                        ],
-                                        "min": -10.0,
-                                        "max": 10.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Max Value",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_rangemax",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            0.2
-                                        ],
-                                        "min": -10.0,
-                                        "max": 10.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Ramp",
-                                        "label": "Ramp",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_ramp",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "ramp_parm_type": "Float",
-                                        "default_value": 2,
-                                        "default_basis": null,
-                                        "color_type": null,
-                                        "default_points": [
-                                            {
-                                                "pos": 0.5240274667739868,
-                                                "c": null,
-                                                "value": 0.0,
-                                                "interp": "Linear"
-                                            },
-                                            {
-                                                "pos": 0.6636155843734741,
-                                                "c": null,
-                                                "value": 1.0,
-                                                "interp": "Linear"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "param_type": "Separator",
-                                        "label": "",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "sepparm4",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Element Size",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_size",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            5.7
-                                        ],
-                                        "min": 0.0,
-                                        "max": 10.0,
-                                        "min_is_strict": true,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Element Scale",
-                                        "category_label": "Mid",
-                                        "constant": false,
-                                        "name": "mid_scale",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 3,
-                                        "default_value": [
-                                            4.0,
-                                            0.5,
-                                            4.0
-                                        ],
-                                        "min": 0.0,
-                                        "max": 10.0,
-                                        "min_is_strict": true,
-                                        "max_is_strict": false
-                                    }
-                                ],
-                                "folder_type": "Tabs",
-                                "default_value": 0,
-                                "ends_tab_group": false
-                            },
-                            {
-                                "param_type": "Folder",
-                                "label": "Top",
-                                "category_label": null,
-                                "constant": false,
-                                "name": "folder0_2",
-                                "is_hidden": false,
-                                "is_label_hidden": false,
-                                "help": "",
-                                "join_with_next": false,
-                                "level": 2,
-                                "parm_templates": [
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Blend",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_blend",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            0.446
-                                        ],
-                                        "min": 0.0,
-                                        "max": 1.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Menu",
-                                        "label": "Noise Type",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_noise",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "default_value": 11,
-                                        "menu_items": [
-                                            "value_fast",
-                                            "sparse",
-                                            "alligator",
-                                            "perlin",
-                                            "flow",
-                                            "simplex",
-                                            "worleyFA",
-                                            "worleyFB",
-                                            "mworleyFA",
-                                            "mworleyFB",
-                                            "cworleyFA",
-                                            "cworleyFB",
-                                            "pcloud",
-                                            "scloud",
-                                            "fscloud"
-                                        ],
-                                        "menu_labels": [
-                                            "Fast",
-                                            "Sparse Convolution",
-                                            "Alligator",
-                                            "Perlin",
-                                            "Perlin Flow",
-                                            "Simplex",
-                                            "Worley Cellular F1",
-                                            "Worley Cellular F2-F1",
-                                            "Manhattan Cellular F1",
-                                            "Manhattan Cellular F2-F1",
-                                            "Chebyshev Cellular F1",
-                                            "Chebyshev Cellular F2-F1",
-                                            "Perlin Cloud",
-                                            "Simplex Cloud",
-                                            "Fast Simplex Cloud"
-                                        ],
-                                        "menu_type": "normal",
-                                        "store_default_value_as_string": false,
-                                        "is_menu": false,
-                                        "is_button_strip": false,
-                                        "strip_uses_icons": false,
-                                        "menu_use_token": false
-                                    },
-                                    {
-                                        "param_type": "Separator",
-                                        "label": "",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "sepparm5",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Min Value",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_rangemin",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            0.0
-                                        ],
-                                        "min": -10.0,
-                                        "max": 10.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Max Value",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_rangemax",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            1.36
-                                        ],
-                                        "min": -10.0,
-                                        "max": 10.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Ramp",
-                                        "label": "Ramp",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_ramp",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "ramp_parm_type": "Float",
-                                        "default_value": 2,
-                                        "default_basis": null,
-                                        "color_type": null,
-                                        "default_points": [
-                                            {
-                                                "pos": 0.0,
-                                                "c": null,
-                                                "value": 0.0,
-                                                "interp": "Linear"
-                                            },
-                                            {
-                                                "pos": 0.34648188948631287,
-                                                "c": null,
-                                                "value": 1.0,
-                                                "interp": "Linear"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "param_type": "Separator",
-                                        "label": "",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "sepparm6",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Element Size",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_size",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 1,
-                                        "default_value": [
-                                            10.0
-                                        ],
-                                        "min": 0.0,
-                                        "max": 10.0,
-                                        "min_is_strict": true,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Float",
-                                        "label": "Element Scale",
-                                        "category_label": "Top",
-                                        "constant": false,
-                                        "name": "top_scale",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 3,
-                                        "default_value": [
-                                            1.0,
-                                            2.0,
-                                            1.0
-                                        ],
-                                        "min": 0.0,
-                                        "max": 10.0,
-                                        "min_is_strict": true,
-                                        "max_is_strict": false
-                                    }
-                                ],
-                                "folder_type": "Tabs",
-                                "default_value": 0,
+                                "folder_type": "MultiparmBlock",
+                                "default_value": 3,
                                 "ends_tab_group": false
                             }
                         ]
                     },
                     {
-                        "param_type": "Float",
-                        "label": "Mask Angle",
-                        "category_label": "Style",
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Folders",
                         "constant": false,
-                        "name": "maxangle",
+                        "name": "sepparm16",
                         "is_hidden": false,
                         "is_label_hidden": false,
                         "help": "",
-                        "join_with_next": false,
-                        "num_components": 1,
-                        "default_value": [
-                            45.0
-                        ],
-                        "min": 0.0,
-                        "max": 90.0,
-                        "min_is_strict": false,
-                        "max_is_strict": false
-                    }
-                ],
-                "folder_type": "Tabs",
-                "default_value": 0,
-                "ends_tab_group": false
-            },
-            {
-                "param_type": "Folder",
-                "label": "Post",
-                "category_label": null,
-                "constant": false,
-                "name": "folder1_2",
-                "is_hidden": false,
-                "is_label_hidden": false,
-                "help": "",
-                "join_with_next": false,
-                "level": 1,
-                "parm_templates": [
-                    {
-                        "param_type": "Float",
-                        "label": "Post Density Reduction %",
-                        "category_label": "Post",
-                        "constant": false,
-                        "name": "targetDensity",
-                        "is_hidden": false,
-                        "is_label_hidden": false,
-                        "help": "",
-                        "join_with_next": false,
-                        "num_components": 1,
-                        "default_value": [
-                            50.0
-                        ],
-                        "min": 0.0,
-                        "max": 100.0,
-                        "min_is_strict": true,
-                        "max_is_strict": true
+                        "join_with_next": false
                     },
                     {
                         "param_type": "FolderSet",
@@ -910,10 +358,10 @@ const parmTemplates = [
                         "parm_templates": [
                             {
                                 "param_type": "Folder",
-                                "label": "Vertex Colors",
+                                "label": "Folder Multi Block Scroll",
                                 "category_label": null,
                                 "constant": false,
-                                "name": "folder3",
+                                "name": "folder_multi_block_scroll",
                                 "is_hidden": false,
                                 "is_label_hidden": false,
                                 "help": "",
@@ -921,738 +369,74 @@ const parmTemplates = [
                                 "level": 2,
                                 "parm_templates": [
                                     {
-                                        "param_type": "Menu",
-                                        "label": "Channel",
-                                        "category_label": "Vertex Colors",
+                                        "param_type": "Int",
+                                        "label": "Int Multi Block Scroll",
+                                        "category_label": "Folder Multi Block Scroll",
                                         "constant": false,
-                                        "name": "vertChannelPreview",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": true,
-                                        "default_value": 0,
-                                        "menu_items": [
-                                            "0",
-                                            "1",
-                                            "2",
-                                            "3"
-                                        ],
-                                        "menu_labels": [
-                                            "Combined",
-                                            "Red",
-                                            "Green",
-                                            "Blue"
-                                        ],
-                                        "menu_type": "normal",
-                                        "store_default_value_as_string": false,
-                                        "is_menu": false,
-                                        "is_button_strip": false,
-                                        "strip_uses_icons": false,
-                                        "menu_use_token": false
-                                    },
-                                    {
-                                        "param_type": "Toggle",
-                                        "label": "Preview",
-                                        "category_label": "Vertex Colors",
-                                        "constant": false,
-                                        "name": "vertPreview",
+                                        "name": "int_multi_block_scroll#_2",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
                                         "join_with_next": false,
-                                        "default_value": false
+                                        "num_components": 2,
+                                        "default_value": [
+                                            0,
+                                            0
+                                        ],
+                                        "min": -1,
+                                        "max": 1,
+                                        "min_is_strict": false,
+                                        "max_is_strict": false
                                     },
                                     {
-                                        "param_type": "FolderSet",
-                                        "label": "",
-                                        "category_label": null,
+                                        "param_type": "Label",
+                                        "label": "Random Label",
+                                        "category_label": "Folder Multi Block Scroll",
                                         "constant": false,
-                                        "name": "",
+                                        "name": "labelparm3_#",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
                                         "join_with_next": false,
-                                        "parm_templates": [
-                                            {
-                                                "param_type": "Folder",
-                                                "label": "Combine Vertex Colors",
-                                                "category_label": null,
-                                                "constant": false,
-                                                "name": "folder2",
-                                                "is_hidden": false,
-                                                "is_label_hidden": false,
-                                                "help": "",
-                                                "join_with_next": false,
-                                                "level": 2,
-                                                "parm_templates": [
-                                                    {
-                                                        "param_type": "FolderSet",
-                                                        "label": "",
-                                                        "category_label": null,
-                                                        "constant": false,
-                                                        "name": "",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "parm_templates": [
-                                                            {
-                                                                "param_type": "Folder",
-                                                                "label": "Red Channel",
-                                                                "category_label": null,
-                                                                "constant": false,
-                                                                "name": "redChannel",
-                                                                "is_hidden": false,
-                                                                "is_label_hidden": false,
-                                                                "help": "",
-                                                                "join_with_next": false,
-                                                                "level": 2,
-                                                                "parm_templates": [
-                                                                    {
-                                                                        "param_type": "Menu",
-                                                                        "label": "Math",
-                                                                        "category_label": "Red Channel",
-                                                                        "constant": false,
-                                                                        "name": "math_R#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": true,
-                                                                        "help": "",
-                                                                        "join_with_next": true,
-                                                                        "default_value": 0,
-                                                                        "menu_items": [
-                                                                            "0",
-                                                                            "1",
-                                                                            "2"
-                                                                        ],
-                                                                        "menu_labels": [
-                                                                            "Add",
-                                                                            "Subtract",
-                                                                            "Multiply"
-                                                                        ],
-                                                                        "menu_type": "normal",
-                                                                        "store_default_value_as_string": false,
-                                                                        "is_menu": false,
-                                                                        "is_button_strip": false,
-                                                                        "strip_uses_icons": false,
-                                                                        "menu_use_token": false
-                                                                    },
-                                                                    {
-                                                                        "param_type": "Menu",
-                                                                        "label": "Mask",
-                                                                        "category_label": "Red Channel",
-                                                                        "constant": false,
-                                                                        "name": "mask_R#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": true,
-                                                                        "help": "",
-                                                                        "join_with_next": true,
-                                                                        "default_value": 0,
-                                                                        "menu_items": [
-                                                                            "0",
-                                                                            "1",
-                                                                            "2",
-                                                                            "3"
-                                                                        ],
-                                                                        "menu_labels": [
-                                                                            "Ao",
-                                                                            "Convexity",
-                                                                            "Concavity",
-                                                                            "UV Seam"
-                                                                        ],
-                                                                        "menu_type": "normal",
-                                                                        "store_default_value_as_string": false,
-                                                                        "is_menu": false,
-                                                                        "is_button_strip": false,
-                                                                        "strip_uses_icons": false,
-                                                                        "menu_use_token": false
-                                                                    },
-                                                                    {
-                                                                        "param_type": "Float",
-                                                                        "label": "Using Strength",
-                                                                        "category_label": "Red Channel",
-                                                                        "constant": false,
-                                                                        "name": "strength_R#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": false,
-                                                                        "help": "",
-                                                                        "join_with_next": false,
-                                                                        "num_components": 1,
-                                                                        "default_value": [
-                                                                            1.0
-                                                                        ],
-                                                                        "min": -1.0,
-                                                                        "max": 1.0,
-                                                                        "min_is_strict": false,
-                                                                        "max_is_strict": false
-                                                                    }
-                                                                ],
-                                                                "folder_type": "MultiparmBlock",
-                                                                "default_value": 1,
-                                                                "ends_tab_group": false
-                                                            },
-                                                            {
-                                                                "param_type": "Folder",
-                                                                "label": "Green Channel",
-                                                                "category_label": null,
-                                                                "constant": false,
-                                                                "name": "greenChannel",
-                                                                "is_hidden": false,
-                                                                "is_label_hidden": false,
-                                                                "help": "",
-                                                                "join_with_next": false,
-                                                                "level": 2,
-                                                                "parm_templates": [
-                                                                    {
-                                                                        "param_type": "Menu",
-                                                                        "label": "Math",
-                                                                        "category_label": "Green Channel",
-                                                                        "constant": false,
-                                                                        "name": "math_G#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": true,
-                                                                        "help": "",
-                                                                        "join_with_next": true,
-                                                                        "default_value": 0,
-                                                                        "menu_items": [
-                                                                            "0",
-                                                                            "1",
-                                                                            "2"
-                                                                        ],
-                                                                        "menu_labels": [
-                                                                            "Add",
-                                                                            "Subtract",
-                                                                            "Multiply"
-                                                                        ],
-                                                                        "menu_type": "normal",
-                                                                        "store_default_value_as_string": false,
-                                                                        "is_menu": false,
-                                                                        "is_button_strip": false,
-                                                                        "strip_uses_icons": false,
-                                                                        "menu_use_token": false
-                                                                    },
-                                                                    {
-                                                                        "param_type": "Menu",
-                                                                        "label": "Mask",
-                                                                        "category_label": "Green Channel",
-                                                                        "constant": false,
-                                                                        "name": "mask_G#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": true,
-                                                                        "help": "",
-                                                                        "join_with_next": true,
-                                                                        "default_value": 1,
-                                                                        "menu_items": [
-                                                                            "0",
-                                                                            "1",
-                                                                            "2",
-                                                                            "3"
-                                                                        ],
-                                                                        "menu_labels": [
-                                                                            "Ao",
-                                                                            "Convexity",
-                                                                            "Concavity",
-                                                                            "UV Seam"
-                                                                        ],
-                                                                        "menu_type": "normal",
-                                                                        "store_default_value_as_string": false,
-                                                                        "is_menu": false,
-                                                                        "is_button_strip": false,
-                                                                        "strip_uses_icons": false,
-                                                                        "menu_use_token": false
-                                                                    },
-                                                                    {
-                                                                        "param_type": "Float",
-                                                                        "label": "Using Strength",
-                                                                        "category_label": "Green Channel",
-                                                                        "constant": false,
-                                                                        "name": "strength_G#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": false,
-                                                                        "help": "",
-                                                                        "join_with_next": false,
-                                                                        "num_components": 1,
-                                                                        "default_value": [
-                                                                            1.0
-                                                                        ],
-                                                                        "min": -1.0,
-                                                                        "max": 1.0,
-                                                                        "min_is_strict": false,
-                                                                        "max_is_strict": false
-                                                                    }
-                                                                ],
-                                                                "folder_type": "MultiparmBlock",
-                                                                "default_value": 1,
-                                                                "ends_tab_group": false
-                                                            },
-                                                            {
-                                                                "param_type": "Folder",
-                                                                "label": "Blue Channel",
-                                                                "category_label": null,
-                                                                "constant": false,
-                                                                "name": "blueChannel",
-                                                                "is_hidden": false,
-                                                                "is_label_hidden": false,
-                                                                "help": "",
-                                                                "join_with_next": false,
-                                                                "level": 2,
-                                                                "parm_templates": [
-                                                                    {
-                                                                        "param_type": "Menu",
-                                                                        "label": "Math",
-                                                                        "category_label": "Blue Channel",
-                                                                        "constant": false,
-                                                                        "name": "math_B#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": true,
-                                                                        "help": "",
-                                                                        "join_with_next": true,
-                                                                        "default_value": 0,
-                                                                        "menu_items": [
-                                                                            "0",
-                                                                            "1",
-                                                                            "2"
-                                                                        ],
-                                                                        "menu_labels": [
-                                                                            "Add",
-                                                                            "Subtract",
-                                                                            "Multiply"
-                                                                        ],
-                                                                        "menu_type": "normal",
-                                                                        "store_default_value_as_string": false,
-                                                                        "is_menu": false,
-                                                                        "is_button_strip": false,
-                                                                        "strip_uses_icons": false,
-                                                                        "menu_use_token": false
-                                                                    },
-                                                                    {
-                                                                        "param_type": "Menu",
-                                                                        "label": "Mask",
-                                                                        "category_label": "Blue Channel",
-                                                                        "constant": false,
-                                                                        "name": "mask_B#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": true,
-                                                                        "help": "",
-                                                                        "join_with_next": true,
-                                                                        "default_value": 3,
-                                                                        "menu_items": [
-                                                                            "0",
-                                                                            "1",
-                                                                            "2",
-                                                                            "3"
-                                                                        ],
-                                                                        "menu_labels": [
-                                                                            "Ao",
-                                                                            "Convexity",
-                                                                            "Concavity",
-                                                                            "UV Seam"
-                                                                        ],
-                                                                        "menu_type": "normal",
-                                                                        "store_default_value_as_string": false,
-                                                                        "is_menu": false,
-                                                                        "is_button_strip": false,
-                                                                        "strip_uses_icons": false,
-                                                                        "menu_use_token": false
-                                                                    },
-                                                                    {
-                                                                        "param_type": "Float",
-                                                                        "label": "Using Strength",
-                                                                        "category_label": "Blue Channel",
-                                                                        "constant": false,
-                                                                        "name": "strength_B#",
-                                                                        "is_hidden": false,
-                                                                        "is_label_hidden": false,
-                                                                        "help": "",
-                                                                        "join_with_next": false,
-                                                                        "num_components": 1,
-                                                                        "default_value": [
-                                                                            1.0
-                                                                        ],
-                                                                        "min": -1.0,
-                                                                        "max": 1.0,
-                                                                        "min_is_strict": false,
-                                                                        "max_is_strict": false
-                                                                    }
-                                                                ],
-                                                                "folder_type": "MultiparmBlock",
-                                                                "default_value": 1,
-                                                                "ends_tab_group": false
-                                                            }
-                                                        ]
-                                                    }
-                                                ],
-                                                "folder_type": "Tabs",
-                                                "default_value": 0,
-                                                "ends_tab_group": false
-                                            },
-                                            {
-                                                "param_type": "Folder",
-                                                "label": "AO",
-                                                "category_label": null,
-                                                "constant": false,
-                                                "name": "folder2_1",
-                                                "is_hidden": false,
-                                                "is_label_hidden": false,
-                                                "help": "",
-                                                "join_with_next": false,
-                                                "level": 2,
-                                                "parm_templates": [
-                                                    {
-                                                        "param_type": "Int",
-                                                        "label": "Number of Samples",
-                                                        "category_label": "AO",
-                                                        "constant": false,
-                                                        "name": "aosamples",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            32
-                                                        ],
-                                                        "min": 1,
-                                                        "max": 100,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Bias",
-                                                        "category_label": "AO",
-                                                        "constant": false,
-                                                        "name": "aobias",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            0.1
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 1.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Int",
-                                                        "label": "Blurring Iterations",
-                                                        "category_label": "AO",
-                                                        "constant": false,
-                                                        "name": "aobluriterations",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            12
-                                                        ],
-                                                        "min": 0,
-                                                        "max": 50,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Maximum Ray Distance",
-                                                        "category_label": "AO",
-                                                        "constant": false,
-                                                        "name": "aomaxraydist",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            1.0
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 10.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Ramp",
-                                                        "label": "Remap Range",
-                                                        "category_label": "AO",
-                                                        "constant": false,
-                                                        "name": "aoramp",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "ramp_parm_type": "Float",
-                                                        "default_value": 2,
-                                                        "default_basis": null,
-                                                        "color_type": null,
-                                                        "default_points": [
-                                                            {
-                                                                "pos": 0.0,
-                                                                "c": null,
-                                                                "value": 0.0,
-                                                                "interp": "MonotoneCubic"
-                                                            },
-                                                            {
-                                                                "pos": 1.0,
-                                                                "c": null,
-                                                                "value": 1.0,
-                                                                "interp": "MonotoneCubic"
-                                                            }
-                                                        ]
-                                                    }
-                                                ],
-                                                "folder_type": "Tabs",
-                                                "default_value": 0,
-                                                "ends_tab_group": false
-                                            },
-                                            {
-                                                "param_type": "Folder",
-                                                "label": "Convexity",
-                                                "category_label": null,
-                                                "constant": false,
-                                                "name": "folder2_2",
-                                                "is_hidden": false,
-                                                "is_label_hidden": false,
-                                                "help": "",
-                                                "join_with_next": false,
-                                                "level": 2,
-                                                "parm_templates": [
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Multiplier",
-                                                        "category_label": "Convexity",
-                                                        "constant": false,
-                                                        "name": "convexitymult",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            10.0
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 10.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Blur Amount",
-                                                        "category_label": "Convexity",
-                                                        "constant": false,
-                                                        "name": "convexityblur",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            55.0
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 100.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Ramp",
-                                                        "label": "Remap Range",
-                                                        "category_label": "Convexity",
-                                                        "constant": false,
-                                                        "name": "convexityramp",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "ramp_parm_type": "Float",
-                                                        "default_value": 2,
-                                                        "default_basis": null,
-                                                        "color_type": null,
-                                                        "default_points": [
-                                                            {
-                                                                "pos": 0.0,
-                                                                "c": null,
-                                                                "value": 0.0,
-                                                                "interp": "MonotoneCubic"
-                                                            },
-                                                            {
-                                                                "pos": 1.0,
-                                                                "c": null,
-                                                                "value": 1.0,
-                                                                "interp": "MonotoneCubic"
-                                                            }
-                                                        ]
-                                                    }
-                                                ],
-                                                "folder_type": "Tabs",
-                                                "default_value": 0,
-                                                "ends_tab_group": false
-                                            },
-                                            {
-                                                "param_type": "Folder",
-                                                "label": "Concavity",
-                                                "category_label": null,
-                                                "constant": false,
-                                                "name": "folder2_3",
-                                                "is_hidden": false,
-                                                "is_label_hidden": false,
-                                                "help": "",
-                                                "join_with_next": false,
-                                                "level": 2,
-                                                "parm_templates": [
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Multiplier",
-                                                        "category_label": "Concavity",
-                                                        "constant": false,
-                                                        "name": "concavitymult",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            10.0
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 10.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Blur Amount",
-                                                        "category_label": "Concavity",
-                                                        "constant": false,
-                                                        "name": "concavityblur",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            34.22
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 100.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Ramp",
-                                                        "label": "Remap Range",
-                                                        "category_label": "Concavity",
-                                                        "constant": false,
-                                                        "name": "concavityramp",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "ramp_parm_type": "Float",
-                                                        "default_value": 2,
-                                                        "default_basis": null,
-                                                        "color_type": null,
-                                                        "default_points": [
-                                                            {
-                                                                "pos": 0.0,
-                                                                "c": null,
-                                                                "value": 0.0,
-                                                                "interp": "Linear"
-                                                            },
-                                                            {
-                                                                "pos": 1.0,
-                                                                "c": null,
-                                                                "value": 1.0,
-                                                                "interp": "Linear"
-                                                            }
-                                                        ]
-                                                    }
-                                                ],
-                                                "folder_type": "Tabs",
-                                                "default_value": 0,
-                                                "ends_tab_group": false
-                                            },
-                                            {
-                                                "param_type": "Folder",
-                                                "label": "Uv Seams",
-                                                "category_label": null,
-                                                "constant": false,
-                                                "name": "folder2_4",
-                                                "is_hidden": false,
-                                                "is_label_hidden": false,
-                                                "help": "",
-                                                "join_with_next": false,
-                                                "level": 2,
-                                                "parm_templates": [
-                                                    {
-                                                        "param_type": "Float",
-                                                        "label": "Radius",
-                                                        "category_label": "Uv Seams",
-                                                        "constant": false,
-                                                        "name": "uvrad",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "num_components": 1,
-                                                        "default_value": [
-                                                            0.5
-                                                        ],
-                                                        "min": 0.0,
-                                                        "max": 10.0,
-                                                        "min_is_strict": false,
-                                                        "max_is_strict": false
-                                                    },
-                                                    {
-                                                        "param_type": "Ramp",
-                                                        "label": "Remap Range",
-                                                        "category_label": "Uv Seams",
-                                                        "constant": false,
-                                                        "name": "uvramp",
-                                                        "is_hidden": false,
-                                                        "is_label_hidden": false,
-                                                        "help": "",
-                                                        "join_with_next": false,
-                                                        "ramp_parm_type": "Float",
-                                                        "default_value": 2,
-                                                        "default_basis": null,
-                                                        "color_type": null,
-                                                        "default_points": [
-                                                            {
-                                                                "pos": 0.0,
-                                                                "c": null,
-                                                                "value": 1.0,
-                                                                "interp": "MonotoneCubic"
-                                                            },
-                                                            {
-                                                                "pos": 1.0,
-                                                                "c": null,
-                                                                "value": 0.0,
-                                                                "interp": "MonotoneCubic"
-                                                            }
-                                                        ]
-                                                    }
-                                                ],
-                                                "folder_type": "Tabs",
-                                                "default_value": 0,
-                                                "ends_tab_group": false
-                                            }
+                                        "column_labels": [
+                                            ""
                                         ]
                                     }
                                 ],
-                                "folder_type": "Tabs",
-                                "default_value": 0,
+                                "folder_type": "ScrollingMultiparmBlock",
+                                "default_value": 3,
                                 "ends_tab_group": false
-                            },
+                            }
+                        ]
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Folders",
+                        "constant": false,
+                        "name": "sepparm17",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "FolderSet",
+                        "label": "",
+                        "category_label": null,
+                        "constant": false,
+                        "name": "",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "parm_templates": [
                             {
                                 "param_type": "Folder",
-                                "label": "Uvs",
+                                "label": "Folder Multi Block Tabs",
                                 "category_label": null,
                                 "constant": false,
-                                "name": "folder3_1",
+                                "name": "folder_multi_block_tabs",
                                 "is_hidden": false,
                                 "is_label_hidden": false,
                                 "help": "",
@@ -1660,83 +444,1050 @@ const parmTemplates = [
                                 "level": 2,
                                 "parm_templates": [
                                     {
-                                        "param_type": "Float",
-                                        "label": "UV Alignment",
-                                        "category_label": "Uvs",
-                                        "constant": false,
-                                        "name": "dir_vector",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "num_components": 3,
-                                        "default_value": [
-                                            0.0,
-                                            1.0,
-                                            0.0
-                                        ],
-                                        "min": 0.0,
-                                        "max": 1.0,
-                                        "min_is_strict": false,
-                                        "max_is_strict": false
-                                    },
-                                    {
-                                        "param_type": "Menu",
-                                        "label": "Texture Res",
-                                        "category_label": "Uvs",
-                                        "constant": false,
-                                        "name": "texture",
-                                        "is_hidden": false,
-                                        "is_label_hidden": false,
-                                        "help": "",
-                                        "join_with_next": false,
-                                        "default_value": 5,
-                                        "menu_items": [
-                                            "128",
-                                            "256",
-                                            "512",
-                                            "1024",
-                                            "2048",
-                                            "4096"
-                                        ],
-                                        "menu_labels": [
-                                            "128",
-                                            "256",
-                                            "512",
-                                            "1024",
-                                            "2048",
-                                            "4096"
-                                        ],
-                                        "menu_type": "normal",
-                                        "store_default_value_as_string": false,
-                                        "is_menu": false,
-                                        "is_button_strip": false,
-                                        "strip_uses_icons": false,
-                                        "menu_use_token": true
-                                    },
-                                    {
                                         "param_type": "Int",
-                                        "label": "Pixels Per Meter",
-                                        "category_label": "Uvs",
+                                        "label": "Int Multi Block Scroll",
+                                        "category_label": "Folder Multi Block Tabs",
                                         "constant": false,
-                                        "name": "size",
+                                        "name": "int_multi_block_scroll#_3",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
                                         "join_with_next": false,
-                                        "num_components": 1,
+                                        "num_components": 2,
                                         "default_value": [
-                                            128
+                                            0,
+                                            0
                                         ],
-                                        "min": 16,
-                                        "max": 1024,
+                                        "min": -1,
+                                        "max": 1,
                                         "min_is_strict": false,
                                         "max_is_strict": false
+                                    },
+                                    {
+                                        "param_type": "Label",
+                                        "label": "Message",
+                                        "category_label": "Folder Multi Block Tabs",
+                                        "constant": false,
+                                        "name": "labelparm12_#",
+                                        "is_hidden": false,
+                                        "is_label_hidden": false,
+                                        "help": "",
+                                        "join_with_next": false,
+                                        "column_labels": [
+                                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit,\nsed do eiusmod tempor incididunt ut labore et dolore magna\naliqua. Ut enim ad minim veniam, quis nostrud exercitation\nullamco laboris nisi ut aliquip ex ea commodo consequat. \nDuis aute irure dolor in reprehenderit in voluptate velit \nesse cillum dolore eu fugiat nulla pariatur. Excepteur sint \noccaecat cupidatat non proident, sunt in culpa qui officia \ndeserunt mollit anim id est laborum."
+                                        ]
                                     }
                                 ],
-                                "folder_type": "Tabs",
-                                "default_value": 0,
+                                "folder_type": "TabbedMultiparmBlock",
+                                "default_value": 3,
                                 "ends_tab_group": false
+                            }
+                        ]
+                    }
+                ],
+                "folder_type": "Tabs",
+                "default_value": 0,
+                "ends_tab_group": false
+            },
+            {
+                "param_type": "Folder",
+                "label": "Strings",
+                "category_label": null,
+                "constant": false,
+                "name": "folder_types_1",
+                "is_hidden": false,
+                "is_label_hidden": false,
+                "help": "",
+                "join_with_next": false,
+                "level": 1,
+                "parm_templates": [
+                    {
+                        "param_type": "String",
+                        "label": "String",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "Regular",
+                        "file_type": "Any",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "normal"
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "sepparm7",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "String",
+                        "label": "String File",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string_file",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "FileReference",
+                        "file_type": "Any",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "stringReplace"
+                    },
+                    {
+                        "param_type": "String",
+                        "label": "String File Directory",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string_file_dir",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "FileReference",
+                        "file_type": "Directory",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "stringReplace"
+                    },
+                    {
+                        "param_type": "String",
+                        "label": "String File Geometry",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string_file_geometry",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "FileReference",
+                        "file_type": "Geometry",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "stringReplace"
+                    },
+                    {
+                        "param_type": "String",
+                        "label": "String File Image",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string_file_image",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "FileReference",
+                        "file_type": "Image",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "stringReplace"
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "sepparm8",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "String",
+                        "label": "String Operator List",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string_op_list",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "NodeReferenceList",
+                        "file_type": "Any",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "normal"
+                    },
+                    {
+                        "param_type": "String",
+                        "label": "Sting Operation Path",
+                        "category_label": "Strings",
+                        "constant": false,
+                        "name": "string_op_path",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            ""
+                        ],
+                        "string_type": "NodeReference",
+                        "file_type": "Any",
+                        "icon_names": [],
+                        "menu_items": [],
+                        "menu_labels": [],
+                        "menu_type": "normal"
+                    }
+                ],
+                "folder_type": "Tabs",
+                "default_value": 0,
+                "ends_tab_group": false
+            },
+            {
+                "param_type": "Folder",
+                "label": "Ints",
+                "category_label": null,
+                "constant": false,
+                "name": "folder_types_2",
+                "is_hidden": false,
+                "is_label_hidden": false,
+                "help": "",
+                "join_with_next": false,
+                "level": 1,
+                "parm_templates": [
+                    {
+                        "param_type": "Int",
+                        "label": "Int",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "int",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            0
+                        ],
+                        "min": 0,
+                        "max": 10,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Int",
+                        "label": "Int Vector2",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "int_vector2",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 2,
+                        "default_value": [
+                            0,
+                            0
+                        ],
+                        "min": -1,
+                        "max": 1,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Int",
+                        "label": "Int Vector3",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "int_vector3",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 3,
+                        "default_value": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "min": -1,
+                        "max": 1,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Int",
+                        "label": "Int Vector4",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "int_vector4",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 4,
+                        "default_value": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "min": -1,
+                        "max": 1,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "sepparm5",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Int",
+                        "label": "Int ColorMask",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "int_colorMask",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            15
+                        ],
+                        "min": 0,
+                        "max": 10,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "sepparm6",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Int",
+                        "label": "Int Logarithm",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "int_logarithm",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            1
+                        ],
+                        "min": 1,
+                        "max": 1000,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Ints",
+                        "constant": false,
+                        "name": "sepparm9",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    }
+                ],
+                "folder_type": "Tabs",
+                "default_value": 0,
+                "ends_tab_group": false
+            },
+            {
+                "param_type": "Folder",
+                "label": "Floats",
+                "category_label": null,
+                "constant": false,
+                "name": "folder_types_3",
+                "is_hidden": false,
+                "is_label_hidden": false,
+                "help": "",
+                "join_with_next": false,
+                "level": 1,
+                "parm_templates": [
+                    {
+                        "param_type": "Float",
+                        "label": "Float",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            0.0
+                        ],
+                        "min": 0.0,
+                        "max": 10.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector2",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector2",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 2,
+                        "default_value": [
+                            0.0,
+                            0.0
+                        ],
+                        "min": -1.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector3",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector3",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 3,
+                        "default_value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "min": -1.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector4",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector4",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 4,
+                        "default_value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "min": -1.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "sepparm2",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float ColorSquare",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_colorSquare",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            1.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector3 ColorSquare ",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector3_colorSquare",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 3,
+                        "default_value": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector4 ColorSquare",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector4_colorSqaure",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 4,
+                        "default_value": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector4 HueCircle",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector4_hueCircle",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 4,
+                        "default_value": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "sepparm3",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Logarithm",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_logarithm",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            1.0
+                        ],
+                        "min": 0.01,
+                        "max": 10.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "sepparm",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Angle",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_angle",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1,
+                        "default_value": [
+                            293.9
+                        ],
+                        "min": 0.0,
+                        "max": 360.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector 3 Direction",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector3_direction",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 3,
+                        "default_value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "sepparm4",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector2 UV",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector2_uv",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 2,
+                        "default_value": [
+                            0.0,
+                            0.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    },
+                    {
+                        "param_type": "Float",
+                        "label": "Float Vector3 UVW",
+                        "category_label": "Floats",
+                        "constant": false,
+                        "name": "float_vector3_uvw",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 3,
+                        "default_value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "min": 0.0,
+                        "max": 1.0,
+                        "min_is_strict": false,
+                        "max_is_strict": false
+                    }
+                ],
+                "folder_type": "Tabs",
+                "default_value": 0,
+                "ends_tab_group": false
+            },
+            {
+                "param_type": "Folder",
+                "label": "Miscellaneous",
+                "category_label": null,
+                "constant": false,
+                "name": "folder_types_4",
+                "is_hidden": false,
+                "is_label_hidden": false,
+                "help": "",
+                "join_with_next": false,
+                "level": 1,
+                "parm_templates": [
+                    {
+                        "param_type": "Toggle",
+                        "label": "Toggle",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "toggle",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "default_value": false
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "sepparm10",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Data",
+                        "label": "Data",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "data",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1
+                    },
+                    {
+                        "param_type": "Data",
+                        "label": "Data Geometry",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "data_geometry",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1
+                    },
+                    {
+                        "param_type": "Data",
+                        "label": "Data Dictionary",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "data_dictionary",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "num_components": 1
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "sepparm11",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Menu",
+                        "label": "Menu Icon Strip",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "menu_iconStrip",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "default_value": 0,
+                        "menu_items": [
+                            "0"
+                        ],
+                        "menu_labels": [
+                            "Option 0"
+                        ],
+                        "menu_type": "stringToggle",
+                        "store_default_value_as_string": false,
+                        "is_menu": false,
+                        "is_button_strip": true,
+                        "strip_uses_icons": true,
+                        "menu_use_token": false
+                    },
+                    {
+                        "param_type": "Menu",
+                        "label": "Menu Ordered",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "menu_ordered",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "default_value": 1,
+                        "menu_items": [
+                            "1",
+                            "2",
+                            "3"
+                        ],
+                        "menu_labels": [
+                            "Option 1",
+                            "Option 2",
+                            "Option 3"
+                        ],
+                        "menu_type": "normal",
+                        "store_default_value_as_string": false,
+                        "is_menu": false,
+                        "is_button_strip": false,
+                        "strip_uses_icons": false,
+                        "menu_use_token": false
+                    },
+                    {
+                        "param_type": "Menu",
+                        "label": "Menu Ordered Token Val",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "menu_ordered_tokenAsVal",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "default_value": 0,
+                        "menu_items": [
+                            "1",
+                            "2",
+                            "3"
+                        ],
+                        "menu_labels": [
+                            "Option 1",
+                            "Option 2",
+                            "Option 3"
+                        ],
+                        "menu_type": "normal",
+                        "store_default_value_as_string": false,
+                        "is_menu": false,
+                        "is_button_strip": false,
+                        "strip_uses_icons": false,
+                        "menu_use_token": true
+                    },
+                    {
+                        "param_type": "Separator",
+                        "label": "",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "sepparm12",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false
+                    },
+                    {
+                        "param_type": "Ramp",
+                        "label": "Ramp Color",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "ramp_color",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "ramp_parm_type": "Color",
+                        "default_value": 7,
+                        "default_basis": null,
+                        "color_type": null,
+                        "default_points": [
+                            {
+                                "pos": 0.0,
+                                "c": [
+                                    0.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 0.16666666666666666,
+                                "c": [
+                                    0.16666666666666666,
+                                    0.16666666666666666,
+                                    0.16666666666666666
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 0.3333333333333333,
+                                "c": [
+                                    0.3333333333333333,
+                                    0.3333333333333333,
+                                    0.3333333333333333
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 0.5,
+                                "c": [
+                                    0.5,
+                                    0.5,
+                                    0.5
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 0.6666666666666666,
+                                "c": [
+                                    0.6666666666666666,
+                                    0.6666666666666666,
+                                    0.6666666666666666
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 0.8333333333333334,
+                                "c": [
+                                    0.8333333333333334,
+                                    0.8333333333333334,
+                                    0.8333333333333334
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 1.0,
+                                "c": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "value": null,
+                                "interp": "Linear"
+                            }
+                        ]
+                    },
+                    {
+                        "param_type": "Ramp",
+                        "label": "Ramp Float",
+                        "category_label": "Miscellaneous",
+                        "constant": false,
+                        "name": "ramp_float",
+                        "is_hidden": false,
+                        "is_label_hidden": false,
+                        "help": "",
+                        "join_with_next": false,
+                        "ramp_parm_type": "Float",
+                        "default_value": 7,
+                        "default_basis": null,
+                        "color_type": null,
+                        "default_points": [
+                            {
+                                "pos": 0.0,
+                                "c": null,
+                                "value": 0.0,
+                                "interp": "Constant"
+                            },
+                            {
+                                "pos": 0.15708275139331818,
+                                "c": null,
+                                "value": 0.24657534062862396,
+                                "interp": "Linear"
+                            },
+                            {
+                                "pos": 0.32258063554763794,
+                                "c": null,
+                                "value": 0.534246563911438,
+                                "interp": "CatmullRom"
+                            },
+                            {
+                                "pos": 0.5091164112091064,
+                                "c": null,
+                                "value": 0.31506848335266113,
+                                "interp": "MonotoneCubic"
+                            },
+                            {
+                                "pos": 0.6591865420341492,
+                                "c": null,
+                                "value": 0.7260273694992065,
+                                "interp": "Bezier"
+                            },
+                            {
+                                "pos": 0.8316970467567444,
+                                "c": null,
+                                "value": 0.39726027846336365,
+                                "interp": "BSpline"
+                            },
+                            {
+                                "pos": 1.0,
+                                "c": null,
+                                "value": 0.5890411138534546,
+                                "interp": "Hermite"
                             }
                         ]
                     }
@@ -1746,22 +1497,6 @@ const parmTemplates = [
                 "ends_tab_group": false
             }
         ]
-    },
-    {
-        "param_type": "file",
-        "label": "world mesh",
-        "category_label": null,
-        "constant": false,
-        "name": "",
-        "default": ""
-    },
-    {
-        "param_type": "file",
-        "label": "rockified Mesh",
-        "category_label": null,
-        "constant": false,
-        "name": "",
-        "default": ""
     }
 ]
 
