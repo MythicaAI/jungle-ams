@@ -24,6 +24,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "lucide-react": "^0.483.0",
     "uuid": "^11.1.0",
     "vite-plugin-dts": "^4.5.1"
   },
