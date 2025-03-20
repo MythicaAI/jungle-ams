@@ -9,6 +9,7 @@ import { useOnboarding } from "@hooks/useOnboarding";
 import { ProductTour } from "@components/ProductTour";
 import { PrivateRoute } from "@components/PrivateRoute";
 import { PackageJobs } from "@pages/PackageJobs";
+import { PackageScene } from "@pages/PackageScene";
 import "./styles/App.css";
 
 const Dashboard = lazy(() => lazyRetry(() => import("@pages/Dashboard")));
@@ -81,7 +82,7 @@ const App: React.FC = () => {
           />
           <Route
             path="package-view/:asset_id/versions/:version_id/jobs"
-            element={<PackageJobs />}
+            element={(import.meta.env.VITE_MYTHICA_ENVIRONMENT==="dev")?<PackageScene />:<PackageJobs />}
           />
           <Route path="quick-setup" element={<QuickSetup />} />
           <Route path="welcome" element={<Welcome />} />

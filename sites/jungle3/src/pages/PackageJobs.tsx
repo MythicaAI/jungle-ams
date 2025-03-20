@@ -24,7 +24,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import JobResultCard from "@components/JobResultCard";
 import { LucideChevronLeft } from "lucide-react";
 import { dictionary, hou, ParmGroup } from "houdini-ui";
-import { useSceneStore } from "@store/sceneStore";
+import { useSceneStore } from "@store/sceneStoreEmbedded";
 import BabylonScenePage from "./BabylonScenePage";
 import { JobDetails } from "@queries/packages/types";
 import SceneViewerFile from "@components/BabylonViewer/SceneViewerFile";

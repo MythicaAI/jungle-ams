@@ -3,8 +3,8 @@ import hou,{ dictionary } from '../types/Houdini';
 
 
 interface ColorRampPoint {
-    x: number;
-    y: number[]; // RGB values in range [0,1]
+    pos: number;
+    c: number[]; // RGB values in range [0,1]
     interp?: hou.rampBasis;
 }
 
@@ -23,16 +23,16 @@ function getDefaultColorPoints(template: hou.RampParmTemplate,data:dictionary): 
     }
     if (template.default_points && template.default_points.length > 0) {
         const pts =  template.default_points.map(p => ({
-            x: p.pos,
-            y: p.c ? p.c : [0, 0, 0],
+            pos: p.pos,
+            c: p.c ? p.c : [0, 0, 0],
             interp: p.interp || hou.rampBasis.Linear
         }));
         return pts;
     }
     // Default two points: black to white
     return [
-        { x: 0, y: [0,0,0], interp: hou.rampBasis.Linear },
-        { x: 1, y: [1,1,1], interp: hou.rampBasis.Linear }
+        { pos: 0, c: [0,0,0], interp: hou.rampBasis.Linear },
+        { pos: 1, c: [1,1,1], interp: hou.rampBasis.Linear }
     ];
 }
 
@@ -54,7 +54,7 @@ function hexToRgb(hex: string): number[] {
 
 export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasSize = { width: 360, height: 50 };
+    const canvasSize = { width: 300, height: 50 };
 
     const [points, setPoints] = useState<ColorRampPoint[]>(() => getDefaultColorPoints(template,data));
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -79,7 +79,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
         const margin = 10;
         const innerWidth = width - margin * 2;
 
-        const sorted = [...points].sort((a, b) => a.x - b.x);
+        const sorted = [...points].sort((a, b) => a.pos - b.pos);
 
         // If there are points
         if (sorted.length > 0) {
@@ -87,9 +87,9 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             const lastPoint = sorted[sorted.length - 1];
 
             // Fill from 0 to first.x with first point's color if first.x > 0
-            if (firstPoint.x > 0) {
-                const xEnd = firstPoint.x * innerWidth + margin;
-                ctx.fillStyle = `rgb(${firstPoint.y[0]*255}, ${firstPoint.y[1]*255}, ${firstPoint.y[2]*255})`;
+            if (firstPoint.pos > 0) {
+                const xEnd = firstPoint.pos * innerWidth + margin;
+                ctx.fillStyle = `rgb(${firstPoint.c[0]*255}, ${firstPoint.c[1]*255}, ${firstPoint.c[2]*255})`;
                 ctx.fillRect(margin, margin, xEnd - margin, height - margin*2);
             }
 
@@ -98,12 +98,12 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
                 const p1 = sorted[i];
                 const p2 = sorted[i + 1];
 
-                const x1 = p1.x * innerWidth + margin;
-                const x2 = p2.x * innerWidth + margin;
+                const x1 = p1.pos * innerWidth + margin;
+                const x2 = p2.pos * innerWidth + margin;
 
                 const grad = ctx.createLinearGradient(x1, height/2, x2, height/2);
-                const c1 = `rgb(${p1.y[0]*255}, ${p1.y[1]*255}, ${p1.y[2]*255})`;
-                const c2 = `rgb(${p2.y[0]*255}, ${p2.y[1]*255}, ${p2.y[2]*255})`;
+                const c1 = `rgb(${p1.c[0]*255}, ${p1.c[1]*255}, ${p1.c[2]*255})`;
+                const c2 = `rgb(${p2.c[0]*255}, ${p2.c[1]*255}, ${p2.c[2]*255})`;
                 grad.addColorStop(0, c1);
                 grad.addColorStop(1, c2);
 
@@ -112,10 +112,10 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             }
 
             // If the last point is not at x=1, continue with its color
-            if (lastPoint.x < 1) {
-                const xStart = lastPoint.x * innerWidth + margin;
+            if (lastPoint.pos < 1) {
+                const xStart = lastPoint.pos * innerWidth + margin;
                 const xEnd = margin + innerWidth; // end of the ramp area
-                ctx.fillStyle = `rgb(${lastPoint.y[0]*255}, ${lastPoint.y[1]*255}, ${lastPoint.y[2]*255})`;
+                ctx.fillStyle = `rgb(${lastPoint.c[0]*255}, ${lastPoint.c[1]*255}, ${lastPoint.c[2]*255})`;
                 ctx.fillRect(xStart, margin, xEnd - xStart, height - margin*2);
             }
 
@@ -125,7 +125,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             // total handle height = handleHeightAbove + handleHeightBelow
             
             sorted.forEach((p, i) => {
-                const x = p.x * innerWidth + margin;
+                const x = p.pos * innerWidth + margin;
                 const lineY = height - margin;
                 
                 ctx.beginPath();
@@ -136,7 +136,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
                 ctx.lineTo(x + handleWidth/2, lineY);
                 ctx.closePath();
             
-                ctx.fillStyle = `rgb(${p.y[0]*255}, ${p.y[1]*255}, ${p.y[2]*255})`;
+                ctx.fillStyle = `rgb(${p.c[0]*255}, ${p.c[1]*255}, ${p.c[2]*255})`;
                 ctx.fill();
             
                 if (i === selectedIndex) {
@@ -177,7 +177,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
         const innerWidth = width - margin*2;
         const innerHeight = height - margin*2;
 
-        const sorted = [...points].sort((a,b) => a.x - b.x);
+        const sorted = [...points].sort((a,b) => a.pos - b.pos);
 
         // Define handle shape metrics
         const handleWidth = 10;
@@ -187,7 +187,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
 
         // Hit test points by checking if click is inside the bounding box of the handle
         const hitIndex = sorted.findIndex(p => {
-            const x = p.x * innerWidth + margin;
+            const x = p.pos * innerWidth + margin;
 
             // Calculate bounding box of the handle for this point
             const left = x - handleWidth/2;
@@ -207,7 +207,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             // If right-click and more than two points, remove
             if (e.button === 2 && points.length > 2) {
                 e.preventDefault();
-                const newPoints = [...points].sort((a,b) => a.x - b.x);
+                const newPoints = [...points].sort((a,b) => a.pos - b.pos);
                 newPoints.splice(hitIndex, 1);
                 commitChange(newPoints);
                 setSelectedIndex(null);
@@ -225,8 +225,8 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             const nx = (pos.x - margin) / innerWidth;
             if (nx >= 0 && nx <= 1) {
                 // Default new point color is mid gray
-                const newPoint = { x: nx, y: [0.5, 0.5, 0.5] as [number,number,number], interp: hou.rampBasis.Linear };
-                const newPoints = [...points, newPoint].sort((a,b) => a.x - b.x);
+                const newPoint = { pos: nx, c: [0.5, 0.5, 0.5] as [number,number,number], interp: hou.rampBasis.Linear };
+                const newPoints = [...points, newPoint].sort((a,b) => a.pos - b.pos);
                 commitChange(newPoints);
 
                 const idx = newPoints.indexOf(newPoint);
@@ -251,7 +251,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
 
         const newPoints = [...points];
         // Keep same color, just move position
-        newPoints[draggingIndex] = { ...newPoints[draggingIndex], x: nx };
+        newPoints[draggingIndex] = { ...newPoints[draggingIndex], pos: nx };
         setPoints(newPoints);
     };
 
@@ -271,7 +271,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
         if (selectedIndex === null) return;
         const newColor = hexToRgb(e.target.value); // Convert hex to [r,g,b]
         const newPoints = [...points];
-        newPoints[selectedIndex] = { ...newPoints[selectedIndex], y: newColor };
+        newPoints[selectedIndex] = { ...newPoints[selectedIndex], c: newColor };
         commitChange(newPoints);
     };
 
@@ -311,7 +311,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
                             <label>Point Color:</label>
                             <input
                                 type="color"
-                                value={rgbToHex(points[selectedIndex].y)}
+                                value={rgbToHex(points[selectedIndex].c)}
                                 onChange={handleColorChange}
                             />
                             <label>Interpolation:</label>
