@@ -19,19 +19,27 @@ import {
   LucideChevronRight,
 } from "lucide-react";
 import { DownloadButton } from "@components/common/DownloadButton";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useSceneStore } from "@store/sceneStore";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useGetJobDefinition } from "@queries/packages";
+import { useSceneStore } from "@store/sceneStoreEmbedded";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
 ) => {
+  const { asset_id, version_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { hdaSchemas } = useSceneStore();
-  const matchesHdaSchema = hdaSchemas.find(
-    (schema) => schema.name === av?.name,
-  );
+  
+  const { data: jobDefinitions } =
+    useGetJobDefinition(
+      asset_id as string, 
+      (version_id as string)?.split("."));
 
+  const { hdaSchemas } = useSceneStore();
+    const matchesHdaSchema = hdaSchemas.find(
+      (schema) => schema.name === av?.name,
+    );
+    
   const convertCommitRefToLink = (ref: string) => {
     if (ref && ref.startsWith("git@github.com")) {
       const site_user_path = ref.split(":");
@@ -84,10 +92,13 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
     }, 0),
   );
 
-  const env = import.meta.env.VITE_MYTHICA_ENVIRONMENT || "prod";
+  const showAutomations = 
+    (jobDefinitions && import.meta.env.VITE_MYTHICA_ENVIRONMENT === "dev")||
+    matchesHdaSchema;
+
   return (
     <Stack gap="10px">
-      {(matchesHdaSchema || env==="dev") && (
+      {(showAutomations) && (
         <Button
           variant="outlined"
           color="neutral"

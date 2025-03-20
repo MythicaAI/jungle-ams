@@ -1,3 +1,4 @@
+import { AssetVersionContent } from "types/apiTypes";
 
 
 // SceneTalk WebSocket Service
@@ -124,6 +125,59 @@ export class SceneTalkConnection {
     }
   }
 
+  sendCookRequestById(hdaFileId: string, params: {[key: string]: any}, inputFiles: {[key:string]: AssetVersionContent}, format: string = "raw") {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket is not connected");
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Failed to send request: Connection not open");
+      }
+      this.attemptReconnect();
+      return false;
+    }
+
+    if (this.requestInFlight) {
+      this.pendingRequest = true;
+      return false;
+    }
+
+    this.requestInFlight = true;
+    this.requestStartTime = performance.now();
+
+    const files: { [key: string]: { file_id: string } } = {};
+    Object.entries(inputFiles).forEach(([key, file]) => {
+      files[key] = {
+        "file_id": file.file_id
+      };
+    });
+     
+    const cookMessage = {
+      "op": "cook",
+      "data": {
+        "hda_path": {
+          "file_id": hdaFileId,
+        },
+        "definition_index": 0,
+        "format": format,
+        ...files,
+        ...params
+      }
+    };
+
+    try {
+      this.ws.send(JSON.stringify(cookMessage));
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Sent cook request to server");
+      }
+      return true;
+    } catch (error) {
+      console.error("Error sending cook message:", error);
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog(`Error sending request: ${error}`);
+      }
+      this.requestInFlight = false;
+      return false;
+    }
+  }
   // Send a cook request to generate a mesh
   sendCookRequest(hdaFilePath: string, params: {[key: string]: any}, format: string = "raw") {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -177,6 +231,11 @@ export class SceneTalkConnection {
   private handleMessage(data: any) {
     if (data.op === "status" && this.handlers.onStatusLog) {
       this.handlers.onStatusLog(data.data);
+    }
+
+    if (data.op === "error" && this.handlers.onStatusLog) {
+      this.handlers.onStatusLog(data.data);
+      this.handleRequestComplete();
     }
 
     if (data.op === "geometry" && this.handlers.onGeometryData) {

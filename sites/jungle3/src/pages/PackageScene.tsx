@@ -2,26 +2,30 @@ import { useEffect, useState, useRef } from "react";
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   DialogContent,
   DialogTitle,
   Modal,
   ModalClose,
   ModalDialog,
+  Stack,
+  Typography,
 } from "@mui/joy";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
-import SceneViewerEmbedded from "@components/BabylonViewer/SceneViewerEmbedded";
-import SceneControlsEmbedded from "@components/BabylonViewer/SceneControlsEmbedded";
-import { useSceneStore } from "@store/sceneStoreEmbedded";
+import SceneViewer from "@components/BabylonViewer/SceneViewer";
+import SceneControls from "@components/BabylonViewer/SceneControls";
+import { useSceneStore } from "@store/sceneStore";
 import { SceneTalkConnection } from "../services/sceneTalkConnection";
 import { useWindowSize } from "@hooks/useWindowSize";
+import { useNavigate, useParams } from "react-router-dom";
+import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
+import { LucideChevronLeft } from "lucide-react";
 
-type Props = {
-  schemaName?: string;
-};
 
-const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
+export const PackageScene: React.FC = () => {
+  const { asset_id, version_id } = useParams();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const wsServiceRef = useRef<SceneTalkConnection | null>(null);
@@ -32,9 +36,11 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
   const {
     wsStatus,
     setWsStatus,
-    hdaSchemas,
-    selectedHdaIndex,
+    setAssetVersion,
+    setJobDefinitions,
+    selectedHdaId,
     paramValues,
+    inputFiles,
     setMeshData,
     addStatusLog,
     clearStatusLog,
@@ -47,10 +53,26 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
     setExportFormat,
   } = useSceneStore();
 
-  // Get current HDA schema
-  const currentSchema = schemaName
-    ? hdaSchemas.find((schema) => schema.name === schemaName)
-    : hdaSchemas[selectedHdaIndex];
+  const navigate = useNavigate();
+  
+  const { data: jobDefinitions } =
+    useGetJobDefinition(asset_id as string, (version_id as string)?.split("."));
+  
+  useEffect(() => {
+    if (jobDefinitions)
+      setJobDefinitions(jobDefinitions);
+  }
+  , [jobDefinitions]);
+
+  const { data: assetVersion } = 
+    useGetAssetByVersion(asset_id as string, version_id as string);
+
+  useEffect(() => {
+    if (assetVersion)
+      setAssetVersion(assetVersion);
+  }
+  , [assetVersion]);
+
 
   // Initialize WebSocket service
   useEffect(() => {
@@ -64,7 +86,7 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
     };
   }, []);
 
-  // Update handlers when schema changes
+  // Update handlers when hda changes
   useEffect(() => {
     const wsService = wsServiceRef.current;
     if (!wsService) return;
@@ -106,7 +128,7 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
         setExportFormat(null);
       },
     });
-  }, [currentSchema, paramValues]);
+  }, [selectedHdaId]);
 
   useEffect(() => {
     if (currentWidth > 700 && isModalOpen) {
@@ -121,6 +143,11 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
       return;
     }
 
+    if (!selectedHdaId) {
+      console.error("No HDA selected");
+      return;
+    }
+
     if (requestInFlight) {
       setPendingRequest(true);
       return;
@@ -132,13 +159,12 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
     // Set request in flight
     setRequestInFlight(true);
 
-    // Get the file path for the current HDA
-    const hdaFilePath = currentSchema?.file_path;
 
     // Send the cook request with all parameters for the current HDA
-    wsServiceRef.current.sendCookRequest(
-      hdaFilePath as string,
+    wsServiceRef.current.sendCookRequestById(
+      selectedHdaId as string,
       paramValues,
+      inputFiles,
       format,
     );
   };
@@ -155,25 +181,58 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
     if (wsStatus === "connected" && !requestInFlight) {
       regenerateMesh();
     }
-  }, [selectedHdaIndex, paramValues]);
+  }, [selectedHdaId, paramValues, inputFiles]);
 
   // Set loading to false after initial setup
   useEffect(() => {
     setIsLoading(false);
   }, []);
 
-  if (isLoading) {
+  if (isLoading || !assetVersion) {
     return <CircularProgress />;
   }
 
   return (
+    <>
+        <Stack
+          direction="row"
+          width="100%"
+          justifyContent="space-between"
+          alignItems="center"
+          mb="12px"
+        >
+          <Stack direction="row" alignItems="center" gap="12px">
+            <Typography level="h2">{assetVersion?.name}</Typography>
+            <Chip
+              key={assetVersion?.version.join(".")}
+              variant="soft"
+              color="primary"
+              size="lg"
+              sx={{ borderRadius: "xl" }}
+            >
+              {assetVersion?.version.join(".")}
+            </Chip>
+          </Stack>
+          <Button
+            variant="outlined"
+            color="neutral"
+            startDecorator={<LucideChevronLeft height="20px" width="20px" />}
+            sx={{ pl: "10px" }}
+            onClick={() => {
+              navigate(`/package-view/${asset_id}/versions/${version_id}`);
+            }}
+          >
+            Back to Package view
+          </Button>
+        </Stack>
     <Box sx={{ display: "flex", height: "100vh", position: "relative" }}>
       <Helmet>
         <title>Mythica • {t("common.sceneViewer")}</title>
       </Helmet>
 
       {currentWidth > 700 ? (
-        <SceneControlsEmbedded isAssetPage={!!schemaName} />
+        <SceneControls 
+            width={390} />
       ) : (
         <Button
           color="neutral"
@@ -194,8 +253,7 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
             <ModalClose />
             <DialogTitle>Controls</DialogTitle>
             <DialogContent>
-              <SceneControlsEmbedded
-                isAssetPage={!!schemaName}
+              <SceneControls
                 width={currentWidth - 40}
               />
             </DialogContent>
@@ -203,9 +261,8 @@ const BabylonScenePage: React.FC<Props> = ({ schemaName }) => {
         </Modal>
       )}
 
-      <SceneViewerEmbedded />
+      <SceneViewer packageName={assetVersion?.name as string}/>
     </Box>
+    </>
   );
 };
-
-export default BabylonScenePage;
