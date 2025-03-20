@@ -90,5 +90,21 @@
     "expires": "Expira en, días",
     "submit": "Enviar",
     "copyId": "Copiar el ID del perfil de Mythica"
+  },
+  "packageView": {
+    "by": "por",
+    "download": "Descargar",
+    "bundleSize": "Tamaño del paquete",
+    "visitAuto": "Visitar automatizaciones"
+  },
+  "automationPage": {
+    "title": "Automatizaciones",
+    "runAutomation": "Ejecutar automatización",
+    "livePreview": "Vista previa 3D en vivo",
+    "history": "Historial de automatización",
+    "params": "Parámetros",
+    "historyMissing": "No hay historial disponible",
+    "backToPackageView": "Volver a la vista del paquete",
+    "noDefinitions": "No se encontraron definiciones de automatización para este paquete"
   }
 }

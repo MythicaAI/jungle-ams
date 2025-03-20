@@ -22,10 +22,12 @@ import { DownloadButton } from "@components/common/DownloadButton";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useGetJobDefinition } from "@queries/packages";
 import { useSceneStore } from "@store/sceneStoreEmbedded";
+import { useTranslation } from "react-i18next";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
   av: AssetVersionResponse,
 ) => {
+  const { t } = useTranslation();
   const { asset_id, version_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,7 +110,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
             navigate(`${location.pathname}/jobs`);
           }}
         >
-          Visit automations
+          {t("packageView.visitAuto")}
         </Button>
       )}
       <Card>
@@ -152,7 +154,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
           <DownloadButton
             file_id={av.package_id}
             icon={<LucidePackage />}
-            text="Download"
+            text={t("packageView.download")}
           />
 
           <Chip
@@ -193,7 +195,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
                 width="100%"
               >
                 <Typography fontSize={18} fontWeight={600}>
-                  Bundle size
+                  {t("packageView.bundleSize")}
                 </Typography>
 
                 <Typography>{bundleSize}</Typography>
