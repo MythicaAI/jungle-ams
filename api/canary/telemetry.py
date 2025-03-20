@@ -52,8 +52,8 @@ def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, heade
         telemetry_endpoint,
         telemetry_insecure,
     )
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger.handlers.clear()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     #
     # Metadata and access configuration

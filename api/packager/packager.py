@@ -20,12 +20,15 @@ from pythonjsonlogger import jsonlogger
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
 from ripple.automation.worker import process_guid
+from ripple.config import configure_telemetry, ripple_config
 from ripple.runtime.alerts import AlertSeverity, send_alert
 from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
-from typing import Optional
+from typing import Optional, Union
 from uuid import uuid4
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
 
-from assets.repo import AssetFileReference, AssetVersionResult
+from assets.repo import AssetDependency, AssetFileReference, AssetVersionResult
 from events.events import EventsSession
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
@@ -33,6 +36,11 @@ from sanitize_filename import sanitize_filename
 from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
+
+
+class PackagerBaseException(Exception):
+    pass
 
 
 class Settings(BaseSettings):
@@ -149,7 +157,12 @@ def is_houdini_file(content: DownloadInfoResponse) -> bool:
     return extension in ('hda', 'hdalc')
 
 
-async def generate_several_thumbnails(avr: AssetVersionResult, contents: list[DownloadInfoResponse], token: str, event_id: str) -> bool:
+async def generate_several_thumbnails(
+    avr: AssetVersionResult,
+    contents: list[AssetFileReference | AssetDependency | str],
+    token: str,
+    event_id: str,
+) -> bool:
     """Request to generate several thumbnails"""
     
     bulk_req = BulkAutomationRequest(event_id=event_id, telemetry_context=get_telemetry_headers())
@@ -251,9 +264,17 @@ async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse,
 
 
 
-def is_image_file(content: DownloadInfoResponse) -> bool:
-    extension = content.name.rpartition(".")[-1].lower()
-    return extension in image_extensions
+def is_image_file(content: Union[AssetFileReference | AssetDependency | str]) -> bool:
+    if not isinstance(content, AssetFileReference):
+        return False
+    try:
+        extension = content.file_name.rpartition(".")[-1].lower()
+        return extension in image_extensions
+    except PackagerBaseException as ex:
+        log.exception(ex)
+        span = trace.get_current_span(context=get_current_telemetry_context())
+        span.record_exception(ex)
+        return False
 
 
 def build_asset_url(endpoint: str, asset_id: str, version: tuple[int]) -> str:
@@ -305,7 +326,7 @@ async def create_zip_from_asset(
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
         if worker_job_defs:
             await generate_several_houdini_job_defs(v, worker_job_defs, token, event_id)
-        worker_thumbnails = [c for c in contents if is_image_file(c)]
+        worker_thumbnails = [c for c in v.contents.get('thumbnails', []) if is_image_file(c)]
         if worker_thumbnails:
             await generate_several_thumbnails(v, worker_thumbnails, token, event_id)
 
@@ -389,29 +410,30 @@ async def worker_main(endpoint: str, api_key: str):
         ValueError)
     async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['asset_version_updated']) as session:
         async for event_seq, _, job_data in session.ack_next():
-            log.info("event: %s, %s", event_seq, job_data)
-            try:
-                await exec_job(endpoint, api_key, job_data, event_seq)
-                # NOTE: logic of session.complete is moved to automation worker 
-                # await session.complete(event_seq)
-            except allowed_job_exceptions:
-                send_alert(
-                    f"Packager failed for event_seq: {event_seq}",
-                    AlertSeverity.CRITICAL,
-                )
-                log.exception("job failed")
+            with tracer.start_as_current_span("packager.main") as span:
+                log.info("event: %s, %s", event_seq, job_data)
+                try:
+                    await exec_job(endpoint, api_key, job_data, event_seq)
+                    # NOTE: logic of session.complete is moved to automation worker 
+                    # await session.complete(event_seq)
+                except allowed_job_exceptions as ex:
+                    send_alert(
+                        f"Packager failed for event_seq: {event_seq}",
+                        AlertSeverity.CRITICAL,
+                    )
+                    log.exception("job failed")
+                    span.record_exception(ex)
 
 
 def setup_logging():
-    """Setup a JSON console logger"""
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    if ripple_config().telemetry_enable:
+        configure_telemetry(
+            ripple_config().telemetry_endpoint,
+            ripple_config().telemetry_insecure,
+        )
+    else:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    # Create a StreamHandler for console output
-    handler = logging.StreamHandler()
-    formatter = jsonlogger.JsonFormatter()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
 
 def main():
