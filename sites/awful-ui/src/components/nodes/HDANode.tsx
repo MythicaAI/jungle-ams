@@ -60,18 +60,23 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   const [executionFlowData, setExecutionFlowData] = useState<{
     [key: string]: GetFileResponse[];
   }>({});
-  const { deleteElements } = useReactFlow();
 
+  const { deleteElements } = useReactFlow();
   const { getFlowData, setFlowData } = useAwfulFlow();
 
   const myFlowData = getFlowData(node.id);
 
   const { initAutomation, runAutomation, allAutomations } = useAutomation();
   const automationTask = allAutomations[node.data.automation];
-  
+
+  //Execution data for the interface of the automation
+  //This returns a javascript spec used to isntantiate houdini controls
   const [myInterfaceData, setMyInterfaceData] = useState<ExecutionData>(
     initAutomation(automationTask)
   );
+
+  //Execution data for the automation
+  //This returns the results (files and values) of running the HDA
   const [myExecutionData, setMyExecutionData] = useState<ExecutionData>(
     node.data.executionData || initAutomation(automationTask)
   );
@@ -80,6 +85,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
 
   const [flowExecutionMessage, setFlowExecutionMessage] = useState<string>('');
 
+  //The ParmTemplateGroup instantiated from the Script in myInterfaceData
   const [parmTemplateGroup, setParmTemplateGroup] =
     useState<hou.ParmTemplateGroup>();
   const [nodeType, setNodeType] = useState<dictionary>({});
@@ -91,6 +97,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
 
+  // Handler for when ParmGroup or subcomponents update
   const handleParmChange = useCallback(
     (formData: dictionary) => {
       setInputData((prev) => ({ ...prev, ...formData }));
@@ -134,6 +141,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     }
   }, [myFlowData, nodeType]);
 
+  //Handling of execution messages coming from the HDA cook 
   const processOutputMessage = useCallback(() => {
     const automationOutput = myExecutionData.output;
     if (automationOutput && automationOutput.message) {
@@ -145,7 +153,9 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     }
   }, [myExecutionData]);
 
+  //Handling the execution of the HDA cook
   const processAutomationOutput = useCallback(async () => {
+    // Method to fetch and resolve files from the API
     const fetchAndResolveFiles = async (fileIds: string[]) => {
       const resolvedFiles = [];
       for (const file_id of fileIds) {
@@ -159,7 +169,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       }
       return resolvedFiles;
     };
-
+    // Method to update AwfulFlow Data with the resolved files
     const updateFlowData = () => {
       const automationOutput = (myExecutionData as AutomationExecutionData)
         .output;
@@ -181,6 +191,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       }
     };
 
+    // Update flowData and process output message when myExecutionData changes
     try {
       updateFlowData();
       processOutputMessage();
@@ -189,6 +200,9 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       myExecutionData.state = NodeState.Error;
     }
   }, [myExecutionData, node.id, setFlowData, getFile, processOutputMessage]);
+
+  // Update ParmTemplateGroup when  interfaceFlowData is updated.
+  // This callback is triggered by the useEffect hook below.
   const updateInterface = useCallback(() => {
     if (myInterfaceData.state !== NodeState.Executed) return;
 
@@ -208,7 +222,10 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       myInterfaceData.state = NodeState.Error;
     }
   }, [myInterfaceData]);
-
+  
+  // Call the automation that processed an HDA File and passing the 
+  // myInterfaceData state handler as the result callback.
+  // This triggers the useEffect hook below
   const updateHdaDef = useCallback(() => {
     if (interfaceFlowData && interfaceFlowData.length > 0)
       runAutomation(
@@ -276,13 +293,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     }
   }, [executionFlowData, myExecutionData, processAutomationOutput]);
 
-  /*
-  const inputPositions = Array.from(Object.keys(inputFileKeys))
-    .map((_, index) => `${(index + 1) * (100 / (Object.keys(inputFileKeys).length + 1))}%`);
-  const outputPositions = Array.from(outputFileKeys)
-    .map((_, index, array) => `${(index + 1) * (100 / (array.length + 1))}%`);
-*/
-  
+  //Dynamic inputs generated from the input (FileParameters) in the InterfaceSpec 
   const inputs = useMemo(() => {
     return Array.from({ length: nodeType.inputs as number }, (_, i) => (
       <FileInputHandle
@@ -297,6 +308,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     ));
   }, [node.id, nodeType.inputs]);
 
+  //Dynamic outputs generated from the output (FileParameters) in the InterfaceSpec
   const outputs = useMemo(() => {
     return Array.from({ length: nodeType.outputs as number }, (_, i) => (
       <FileOutputHandle
