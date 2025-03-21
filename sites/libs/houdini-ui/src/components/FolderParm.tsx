@@ -1,7 +1,8 @@
 import React from 'react';
 import hou, { dictionary } from '../types/Houdini';
 import { ParmFactory } from './ParmFactory'; // Reuse the view controller for nested templates
-import { LucideChevronDown, LucideChevronRight } from 'lucide-react';
+import ChevronRight from '../assets/chevron-right.svg';
+import ChevronDown from '../assets/chevron-down.svg';
 
 export interface FolderParmProps {
   template: hou.FolderParmTemplate;
@@ -51,9 +52,14 @@ export const FolderParm: React.FC<FolderParmProps> = ({
       >
         <summary className="cursor-pointer align-center justify-start gap-4">
           {isOpen ? (
-            <LucideChevronDown size={16} />
+            <img width="16" height="16" src={ChevronDown} alt="chevron down" />
           ) : (
-            <LucideChevronRight size={16} />
+            <img
+              width="16"
+              height="16"
+              src={ChevronRight}
+              alt="chevron right"
+            />
           )}
           {template.label}
         </summary>
