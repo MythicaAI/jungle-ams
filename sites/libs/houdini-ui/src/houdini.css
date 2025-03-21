@@ -1,218 +1,282 @@
-
+* {
+  box-sizing: border-box;
+}
 
 /* FolderParm styling */
 .folder-parm {
-    margin: 2px 0;
+  margin: 2px 0;
 }
 
 .folder-label {
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #333;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #333;
 }
 
 .folder-content .parm-item {
-    margin: 1px 0;
+  margin: 1px 0;
 }
 
-
-
 .menu-parm {
-    margin: 2px 0;
+  margin: 2px 0;
 }
 
 .menu-label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 5px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
 }
 
 .menu-content {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .menu-select {
-    padding: 5px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
 }
 
 .menu-button-strip {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 .menu-button-item {
-    padding: 5px 5px;
-    border: 1px solid #ccc;
-    background: #f9f9f9;
-    border-radius: 4px;
-    cursor: pointer;
+  padding: 5px 5px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .menu-button-item.active {
-    background: #e0e0ff;
-    border-color: #007bff;
+  background: #e0e0ff;
+  border-color: #007bff;
 }
 
-
 .label-parm {
-    margin: 10px 0;
+  margin: 10px 0;
+}
+
+.parm-item label {
+  color: #b3b3b3;
 }
 
 .label-text {
-    font-weight: bold;
-    margin-bottom: 5px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #b3b3b3;
 }
 
 .column-labels {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 .column-label {
-    font-style: italic;
-    color: #666;
+  font-style: italic;
+  color: #666;
 }
-
 
 .separator-parm {
-    border: none;
-    border-top: 1px solid #ccc;
-    margin: 10px 0;
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 10px 0;
 }
 
-
 .toggle-parm {
-    margin: 10px 0;
-    display: flex;
-    align-items: center;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
 }
 
 .toggle-parm label {
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.toggle-parm input[type="checkbox"] {
-    transform: scale(1.2);
+.toggle-parm input[type='checkbox'] {
+  transform: scale(1.2);
 }
-
 
 .string-parm {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 .string-parm label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 5px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
 }
-
 
 .string-parm select {
-    margin-top: 10px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  margin-top: 10px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-
 .int-parm {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 .int-parm label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 5px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
 }
 
 .float-parm {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 .float-parm label {
-    font-weight: bold;
-    display: block;
-    margin-bottom: 5px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
 }
 
 .fields {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 .field input {
-    width: 100px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  width: 100px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-
 .folder-container {
-    border: 1px solid #32383e;
-    border-radius: 4px;
-    font-family: sans-serif;
-    overflow: hidden;
-    width: 100%;
-  }
-  
-  /* Container for the tab buttons */
-  .folder-tabs {
-    display: flex;
-  }
-  
-  /* Each tab */
-  .folder-tab {
-    padding: 6px 10px;
-    cursor: pointer;
-    font-weight: 500;
-    color: #fff;
-    user-select: none;
-    border-right: 1px solid #32383e;
-    border-bottom: 1px solid #32383e;
-    transition: background-color 0.2s ease;
-    overflow: clip;
-  }
-  
-  /* Hover state */
-  .folder-tab:hover {
-    opacity: 0.8;
-  }
-  
-  /* Active tab styling */
-  .folder-tab.active {
-    background-color: #367c64;
-    color: #fff;
-    font-weight: 500;
-  }
-  
-  .folder-tabs.vertical {
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  .folder-tabs.vertical .folder-tab {
-    border-right: 1px solid #32383e !important;
-  }
-  
-  /* Content area */
-  .folder-content {
-    padding: 5px;
-  }
+  border: 1px solid #6a6c6f;
+  border-radius: 4px;
+  font-family: sans-serif;
+  overflow: hidden;
+  width: 100%;
+  background: #363636;
+}
 
-  .slider-field {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .input-slider {
-    accent-color: #367c64;
-  }
+/* Container for the tab buttons */
+.folder-tabs {
+  display: flex;
+}
+
+/* Each tab */
+.folder-tab {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #fff;
+  user-select: none;
+  border-right: 1px solid #6a6c6f;
+  border-bottom: 1px solid #6a6c6f;
+  transition: background-color 0.2s ease;
+  overflow: clip;
+}
+
+/* Hover state */
+.folder-tab:hover {
+  opacity: 0.8;
+}
+
+/* Active tab styling */
+.folder-tab.active {
+  background-color: #367c64;
+  color: #fff;
+  font-weight: 500;
+}
+
+.folder-tabs.vertical {
+  display: flex !important;
+  flex-direction: column !important;
+}
+.folder-tabs.vertical .folder-tab {
+  border-right: 1px solid #6a6c6f !important;
+}
+
+/* Content area */
+.folder-content {
+  padding: 5px;
+}
+
+.slider-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.input-slider {
+  accent-color: #367c64;
+}
+
+.collapsible-folder-container {
+  background: #363636;
+  color: #b3b3b3;
+}
+
+.collapsible-folder {
+  padding: 4px;
+  border-radius: 2px;
+}
+
+.collapsible-folder:hover {
+  background: #4d4d4d;
+}
+
+.simple-folder-container {
+  background: #363636;
+  color: #b3b3b3;
+}
+
+.folder-tab.simple-folder-tab {
+  width: 100%;
+  cursor: default;
+  border: none;
+}
+
+details > summary::marker {
+  display: none;
+  content: '';
+}
+
+/* general */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.align-center {
+  display: flex;
+  align-items: center;
+}
+
+.justify-start {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.justify-center {
+  display: flex;
+  justify-content: center;
+}
+
+.justify-between {
+  display: flex;
+  justify-content: space-between;
+}
+
+.justify-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.gap-4 {
+  gap: 4px;
+}
