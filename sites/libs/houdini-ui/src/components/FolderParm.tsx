@@ -51,9 +51,9 @@ export const FolderParm: React.FC<FolderParmProps> = ({
       >
         <summary className="cursor-pointer align-center justify-start gap-4">
           {isOpen ? (
-            <LucideChevronRight size={16} />
-          ) : (
             <LucideChevronDown size={16} />
+          ) : (
+            <LucideChevronRight size={16} />
           )}
           {template.label}
         </summary>
