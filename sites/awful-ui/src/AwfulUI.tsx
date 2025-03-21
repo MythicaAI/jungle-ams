@@ -13,7 +13,7 @@ import HDANode from './components/nodes/HDANode';
 import { Stack } from '@mui/joy';
 import { Header } from './components/ux/Header';
 import { TabValues } from './enums';
-import { FileEdge } from './components/edges/FileEdge';
+import FileEdge from './components/edges/FileEdge';
 import useCopyPaste from './hooks/useCopyPaste';
 import useUndoRedo from './hooks/useUndoRedo';
 import { UndoRedoPanel } from './components/utils/UndoRedoPanel';

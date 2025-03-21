@@ -4,7 +4,7 @@ FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 FROM python:3.12-alpine AS base
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-imagemagick"
+LABEL name="mythica-auto-imagemagick"
 LABEL description="Automation for mythica automation test image"
 LABEL version="1.0.0"
 LABEL tier="auto"

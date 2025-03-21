@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import useAutomation from '../../hooks/useAutomation';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
@@ -282,29 +282,35 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   const outputPositions = Array.from(outputFileKeys)
     .map((_, index, array) => `${(index + 1) * (100 / (array.length + 1))}%`);
 */
-  const inputs = Array.from({ length: nodeType.inputs as number }, (_, i) => (
-    <FileInputHandle
-      key={i}
-      nodeId={node.id}
-      id={`input${i}`}
-      left={(i + 2) * (100 / (2 + (nodeType.inputs as number))) + '%'}
-      isConnectable
-      style={{ background: '#555555' }}
-      label={`Input ${i}`}
-    />
-  ));
+  
+  const inputs = useMemo(() => {
+    return Array.from({ length: nodeType.inputs as number }, (_, i) => (
+      <FileInputHandle
+        key={`input${i}`}
+        nodeId={node.id}
+        id={`input${i}`}
+        left={(i + 2) * (100 / (2 + (nodeType.inputs as number))) + '%'}
+        isConnectable
+        style={{ background: '#555555' }}
+        label={`Input ${i}`}
+      />
+    ));
+  }, [node.id, nodeType.inputs]);
 
-  const outputs = Array.from({ length: nodeType.outputs as number }, (_, i) => (
-    <FileOutputHandle
-      key={i}
-      nodeId={node.id}
-      id={`output${i}`}
-      left={(i + 1) * (100 / (1 + (nodeType.outputs as number))) + '%'}
-      isConnectable
-      style={{ background: '#555555' }}
-      label={`Output ${i}`}
-    />
-  ));
+  const outputs = useMemo(() => {
+    return Array.from({ length: nodeType.outputs as number }, (_, i) => (
+      <FileOutputHandle
+        key={`output${i}`}
+        nodeId={node.id}
+        id={`output${i}`}
+        left={(i + 1) * (100 / (1 + (nodeType.outputs as number))) + '%'}
+        isConnectable
+        style={{ background: '#555555' }}
+        label={`Output ${i}`}
+      />
+    ));
+  }, [node.id, nodeType.outputs]);
+  
   return (
     <Card className={`mythica-node worker ${node.selected && 'selected'}`}>
       <NodeDeleteButton

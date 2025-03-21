@@ -127,6 +127,7 @@ IMAGE_SETS = {
         'testing/storage/minio-config'},
     'auto': {
         'automation/houdini',
+        'automation/imagemagick',
         # 'automation/genai',
         'automation/test',
         'automation/workflow',
@@ -137,7 +138,7 @@ IMAGE_SETS = {
 
 LOCAL_MOUNT_POINTS = {
     'objstore': 'testing/mnt/objstore',
-    'pgdata': 'testing/mnt/pgdata',
+    'pgdata': 'testing/mnt/pgdata/data',
     'static': 'testing/mnt/static',
     'nats': 'testing/mnt/nats',
     'tailscale': 'testing/mnt/tailscale',

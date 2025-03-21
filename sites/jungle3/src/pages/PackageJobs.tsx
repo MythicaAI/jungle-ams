@@ -24,11 +24,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import JobResultCard from "@components/JobResultCard";
 import { LucideChevronLeft } from "lucide-react";
 import { dictionary, hou, ParmGroup } from "houdini-ui";
-import { useSceneStore } from "@store/sceneStore";
+import { useSceneStore } from "@store/sceneStoreEmbedded";
 import BabylonScenePage from "./BabylonScenePage";
 import { JobDetails } from "@queries/packages/types";
 import SceneViewerFile from "@components/BabylonViewer/SceneViewerFile";
 import { useGetFile } from "@queries/files";
+import { useWindowSize } from "@hooks/useWindowSize";
+import { useTranslation } from "react-i18next";
+import { Helmet } from "react-helmet-async";
 
 const TabStyle = { ":focus": { outline: "none" } };
 const TabPanelStyle = { padding: "12px 0 0" };
@@ -41,16 +44,24 @@ export const PackageJobs = () => {
     asset_id,
     version_id,
   );
+  const { currentWidth } = useWindowSize();
+  const { t } = useTranslation();
+  const mobileSize = currentWidth < 700;
 
-  
   const parmTemplateGroup = React.useMemo(
-    () => new hou.ParmTemplateGroup(jobDefinitions?.[0]?.params_schema.params_v2 as dictionary[]),
+    () =>
+      new hou.ParmTemplateGroup(
+        jobDefinitions?.[0]?.params_schema.params_v2 as dictionary[],
+      ),
     [jobDefinitions],
   );
 
-  const inputFileParms = parmTemplateGroup.parm_templates.filter((parm) => 
-    parm.param_type === hou.parmTemplateType.File && parm.name.startsWith("input"));
-  
+  const inputFileParms = parmTemplateGroup.parm_templates.filter(
+    (parm) =>
+      parm.param_type === hou.parmTemplateType.File &&
+      parm.name.startsWith("input"),
+  );
+
   const [inputData, setInputData] = useState<dictionary>({});
   const [selectedHdaId, setSelectedHdaId] = React.useState<null | string>(null);
   const { hdaSchemas } = useSceneStore();
@@ -63,14 +74,16 @@ export const PackageJobs = () => {
     file.file_name.includes(".hda"),
   );
 
-  const inputFiles = assetData?.contents?.files.filter((file) =>
-    file.file_name.endsWith(".usd") || 
-    file.file_name.endsWith(".usz") || 
-    file.file_name.includes(".glb") ||
-    file.file_name.includes(".gltf") ||
-    file.file_name.includes(".fbx") ||
-    file.file_name.includes(".obj")
-  ) || [];
+  const inputFiles =
+    assetData?.contents?.files.filter(
+      (file) =>
+        file.file_name.endsWith(".usd") ||
+        file.file_name.endsWith(".usz") ||
+        file.file_name.includes(".glb") ||
+        file.file_name.includes(".gltf") ||
+        file.file_name.includes(".fbx") ||
+        file.file_name.includes(".obj"),
+    ) || [];
 
   const selectedJobData = jobDefinitions?.find(
     (definition) => definition.source.file_id === selectedHdaId,
@@ -89,7 +102,6 @@ export const PackageJobs = () => {
   );
   const navigate = useNavigate();
 
-
   const { data: jobResultsHistory, isLoading: isJobResultsLoading } =
     useGetJobsDetailsByAsset(
       asset_id as string,
@@ -103,27 +115,24 @@ export const PackageJobs = () => {
 
   const getFileResult = (job: JobDetails) => {
     const fileResult = job.results.find((result) => result.result_data.files);
-    const file_id=  fileResult?.result_data.files?.mesh[0];
+    const file_id = fileResult?.result_data.files?.mesh[0];
     if (file_id) {
       setFileId(file_id);
-      return true
+      return true;
     }
     return false;
-  }
+  };
 
   React.useEffect(() => {
     if (executedRun && jobResultsHistory && jobResultsHistory.length > 0) {
       const lastJob = jobResultsHistory[0];
       const fileResult = getFileResult(lastJob);
-      if (
-        lastJob.job_id !== lastJobResult?.job_id
-        && fileResult
-      ) {
+      if (lastJob.job_id !== lastJobResult?.job_id && fileResult) {
         setLastJobResult(lastJob);
         setExecutedRun(false);
       }
     }
-  }  , [jobResultsHistory]);
+  }, [jobResultsHistory]);
 
   React.useEffect(() => {
     if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
@@ -136,8 +145,12 @@ export const PackageJobs = () => {
       job_def_id: jobDefinitions?.find(
         (definition) => definition.source.file_id === selectedHdaId,
       )?.job_def_id as string,
-      params: { ...formData, hda_file: {file_id:selectedHdaId}, hda_definition_index: 0,
-      format: "glb" },
+      params: {
+        ...formData,
+        hda_file: { file_id: selectedHdaId },
+        hda_definition_index: 0,
+        format: "glb",
+      },
     });
     setExecutedRun(true);
   };
@@ -148,6 +161,9 @@ export const PackageJobs = () => {
   if (jobDefinitions && jobDefinitions?.length === 0) {
     return (
       <Stack padding="0 16px">
+        <Helmet>
+          <title>Mythica • {t("automationPage.title")}</title>
+        </Helmet>
         <Stack
           direction="row"
           width="100%"
@@ -176,7 +192,7 @@ export const PackageJobs = () => {
               navigate(`/package-view/${asset_id}/versions/${version_id}`);
             }}
           >
-            Back to Package view
+            {t("automationPage.backToPackageView")}
           </Button>
         </Stack>
         {matchesHdaSchema ? (
@@ -199,7 +215,7 @@ export const PackageJobs = () => {
               }}
             >
               <Tab sx={TabStyle} disableIndicator>
-                3D Live Preview
+                {t("automationPage.livePreview")}
               </Tab>
             </TabList>
             <TabPanel value={0}>
@@ -208,7 +224,7 @@ export const PackageJobs = () => {
           </Tabs>
         ) : (
           <Typography level="h4" textAlign="start" mt="24px">
-            No automation definitions found for this package.
+            {t("automationPage.noDefinitions")}
           </Typography>
         )}
       </Stack>
@@ -219,6 +235,9 @@ export const PackageJobs = () => {
 
   return (
     <Stack alignItems="start" padding="0 16px">
+      <Helmet>
+        <title>Mythica • {t("automationPage.title")}</title>
+      </Helmet>
       <Stack
         direction="row"
         width="100%"
@@ -247,7 +266,7 @@ export const PackageJobs = () => {
             navigate(`/package-view/${asset_id}/versions/${version_id}`);
           }}
         >
-          Back to Package view
+          {t("automationPage.backToPackageView")}
         </Button>
       </Stack>
       <Tabs
@@ -269,15 +288,15 @@ export const PackageJobs = () => {
           }}
         >
           <Tab sx={TabStyle} disableIndicator>
-            Run automation
+            {t("automationPage.runAutomation")}
           </Tab>
           {matchesHdaSchema && (
             <Tab sx={TabStyle} disableIndicator>
-              3D Live Preview
+              {t("automationPage.livePreview")}
             </Tab>
           )}
           <Tab sx={TabStyle} disableIndicator>
-            Automation history
+            {t("automationPage.history")}
           </Tab>
         </TabList>
 
@@ -290,9 +309,11 @@ export const PackageJobs = () => {
           >
             <Stack
               alignItems="flex-start"
+              width="100%"
               sx={{
                 [`& .parm-group`]: {
-                  width: "550px",
+                  width: "100%",
+                  maxWidth: "550px",
                   'input:not([type="checkbox"])': {
                     width: "100%",
                     boxSizing: "border-box",
@@ -306,7 +327,13 @@ export const PackageJobs = () => {
                 },
               }}
             >
-              <Stack direction="row" gap="12px" alignItems="center" mb="24px">
+              <Stack
+                direction={mobileSize ? "column" : "row"}
+                gap={mobileSize ? "6px" : "12px"}
+                alignItems={mobileSize ? "start" : "center"}
+                width="100%"
+                mb="24px"
+              >
                 {hdaFiles && hdaFiles?.length > 1 ? (
                   <Select
                     variant="soft"
@@ -330,56 +357,69 @@ export const PackageJobs = () => {
                     ))}
                   </Select>
                 ) : (
-                  <Typography level="h3">{selectedJobData?.name}</Typography>
+                  <Typography level={mobileSize ? "h4" : "h3"}>
+                    {selectedJobData?.name}
+                  </Typography>
                 )}
-                <Divider orientation="vertical" />
-                <Typography level="h3">{selectedJobData?.description}</Typography>
+                <Divider orientation={mobileSize ? "horizontal" : "vertical"} />
+                <Typography level={mobileSize ? "h4" : "h3"}>
+                  {selectedJobData?.description}
+                </Typography>
               </Stack>
               {inputFiles.length > 0 && (
                 <>
-                <Typography fontSize={20} level="h3" mb="12px">
-                  Input Files
-                </Typography>
-                {inputFileParms.map((parm) => (
-                  <Select
-                    key={parm.name}
-                    variant="soft"
-                    name={parm.name}
-                    placeholder={parm.label}
-                    multiple={false}
-                    onChange={(_, newValue) => {
-                      setInputData((prev) => ({ ...prev, [parm.name]: {file_id:newValue} }));
-                    }}
-                  >
-                    {inputFiles.map((file) => (
-                      <Option key={file.file_id} value={file.file_id}>
-                        {file.file_name}
-                      </Option>
-                    ))}
-                  </Select>
-                ))}
-                <Stack sx={{ paddingBottom: "12px" }}/>
-                </>  
+                  <Typography fontSize={20} level="h3" mb="12px">
+                    Input Files
+                  </Typography>
+                  {inputFileParms.map((parm) => (
+                    <Select
+                      key={parm.name}
+                      variant="soft"
+                      name={parm.name}
+                      placeholder={parm.label}
+                      multiple={false}
+                      onChange={(_, newValue) => {
+                        setInputData((prev) => ({
+                          ...prev,
+                          [parm.name]: { file_id: newValue },
+                        }));
+                      }}
+                    >
+                      {inputFiles.map((file) => (
+                        <Option key={file.file_id} value={file.file_id}>
+                          {file.file_name}
+                        </Option>
+                      ))}
+                    </Select>
+                  ))}
+                  <Stack sx={{ paddingBottom: "12px" }} />
+                </>
               )}
               <Typography fontSize={20} level="h3" mb="12px">
-                Params
+                {t("automationPage.params")}
               </Typography>
-                <ParmGroup
-                  data={{inputData}}
-                  group={parmTemplateGroup as hou.ParmTemplateGroup}
-                  onChange={handleParmChange}
-                />
+              <ParmGroup
+                data={{ inputData }}
+                group={parmTemplateGroup as hou.ParmTemplateGroup}
+                onChange={handleParmChange}
+              />
               <Button
-                sx={{ width: "fit-content", mt: "12px", bgcolor: "#367c64" }}
+                sx={{
+                  width: "fit-content",
+                  mt: "12px",
+                  bgcolor: "#367c64",
+                  transition: "0.2s",
+                  ":hover": { bgcolor: "#367c64", opacity: 0.8 },
+                }}
                 onClick={() => onSubmit(inputData)}
               >
-                Run automation
+                {t("automationPage.runAutomation")}
               </Button>
             </Stack>
             {file?.url && (
-                <Stack width="50%" height="100%" overflow="hidden">
+              <Stack width="50%" height="100%" overflow="hidden">
                 <SceneViewerFile src={file?.url} width="100%" />
-                </Stack>
+              </Stack>
             )}
           </Stack>
         </TabPanel>
@@ -401,7 +441,9 @@ export const PackageJobs = () => {
             </Stack>
           ) : (
             <Stack padding="0 0 12px" justifyContent="start" alignItems="start">
-              <Typography level="h3">Automation history missing</Typography>
+              <Typography level="h3">
+                {t("automationPage.historyMissing")}
+              </Typography>
             </Stack>
           )}
         </TabPanel>
