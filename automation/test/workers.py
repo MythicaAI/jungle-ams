@@ -1,3 +1,4 @@
+import logging
 from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
 from ripple.automation.worker import Worker
 
@@ -11,6 +12,8 @@ if ripple_config().telemetry_enable:
         ripple_config().telemetry_endpoint,
         ripple_config().telemetry_insecure,
     )
+else:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 workers = [
     {

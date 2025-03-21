@@ -33,6 +33,11 @@ spec:
           stdin: true
           tty: true
           env:
+            - name: DISCORD_INFRA_ALERTS_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: houdini-secrets
+                  key: DISCORD_INFRA_ALERTS_WEBHOOK
             - name: NAMESPACE
               value: automation
             - name: TELEMETRY_ENDPOINT

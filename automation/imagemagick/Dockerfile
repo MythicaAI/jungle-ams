@@ -4,7 +4,7 @@ FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 FROM python:3.12-alpine AS base
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-imagemagick"
+LABEL name="mythica-auto-imagemagick"
 LABEL description="Automation for mythica automation test image"
 LABEL version="1.0.0"
 LABEL tier="auto"
@@ -76,6 +76,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"
 ENV MYTHICA_ENVIRONMENT="dev"
+ENV DISCORD_INFRA_ALERTS_WEBHOOK=localhost
 ENV CRYPTID_LOCATION="localhost"
 ENV API_BASE_URI=http://app/v1
 ENV TELEMETRY_ENABLE=True

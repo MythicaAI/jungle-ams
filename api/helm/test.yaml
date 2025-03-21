@@ -189,6 +189,11 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_URL
+            - name: DISCORD_INFRA_ALERTS_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: DISCORD_INFRA_ALERTS_WEBHOOK
             - name: APP_VERSION
               value: {{ include "api.imageVersion" (list . "mythica-app") }}
             - name: MYTHICA_LOCATION

@@ -27,6 +27,7 @@ AUTH0_DOMAIN=$(op read op://Infrastructure/api-staging-secrets/auth0-domain)
 CANARY_API_KEY=$(op read op://Infrastructure/api-staging-secrets/canary-api-key)
 PACKAGER_API_KEY=$(op read op://Infrastructure/api-staging-secrets/packager-api-key)
 SENDGRID_API_KEY=$(op read op://Infrastructure/api-staging-secrets/sendgrid-api-key)
+DISCORD_INFRA_ALERTS_WEBHOOK=$(op read op://Infrastructure/api-staging-secrets/discord-alerts-webhook)
 
 kubectl delete secret/secrets -n api-staging
 kubectl create secret generic secrets \
@@ -37,6 +38,7 @@ kubectl create secret generic secrets \
   --from-literal=AUTH0_CLIENT_SECRET=$AUTH0_CLIENT_SECRET \
   --from-literal=AUTH0_DOMAIN=$AUTH0_DOMAIN \
   --from-literal=SENDGRID_API_KEY=$SENDGRID_API_KEY \
+  --from-literal=DISCORD_INFRA_ALERTS_WEBHOOK=$DISCORD_INFRA_ALERTS_WEBHOOK \
   --namespace=api-staging
 
 kubectl delete secret/canary-secrets -n api-staging

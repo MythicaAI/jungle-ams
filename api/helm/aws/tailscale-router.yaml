@@ -67,6 +67,11 @@ spec:
                 secretKeyRef:
                   key: SFX_CLIENT_SECRET
                   name: houdini-secrets
+            - name: DISCORD_INFRA_ALERTS_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: houdini-secrets
+                  key: DISCORD_INFRA_ALERTS_WEBHOOK
           resources:
             limits:
               cpu: 2000m

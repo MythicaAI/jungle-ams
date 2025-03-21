@@ -1,3 +1,4 @@
+import logging
 from automation.crop_image import (
     CropImageRequest,
     CropImageResponse,
@@ -13,6 +14,8 @@ if ripple_config().telemetry_enable:
         ripple_config().telemetry_endpoint,
         ripple_config().telemetry_insecure,
     )
+else:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 automations = [
     {

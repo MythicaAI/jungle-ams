@@ -127,6 +127,7 @@ IMAGE_SETS = {
         'testing/storage/minio-config'},
     'auto': {
         'automation/houdini',
+        'automation/imagemagick',
         # 'automation/genai',
         'automation/test',
         'automation/workflow',

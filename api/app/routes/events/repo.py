@@ -1,6 +1,7 @@
 import logging
 
 from ripple.models.params import ParameterSet
+from ripple.runtime.alerts import AlertSeverity, send_alert
 
 from db.schema.events import Event
 from opentelemetry import trace
@@ -48,7 +49,8 @@ def update_or_create_event_automation(
                     (
                         item
                         for item in old_job_result_data.request_result
-                        if item.result.get("job_def_id") == new_item.result.get("job_def_id")
+                        if item.result.get("job_def_id")
+                        == new_item.result.get("job_def_id")
                     ),
                     None,
                 )
@@ -78,11 +80,23 @@ def update_or_create_event_automation(
             if is_definition_requested(item):
                 if item.processed is False:
                     event_processed = False
+                    alert_message = (
+                        f"Event automation failed for event_seq: {event.event_seq}\n"
+                        f"There are unprocessed JobDefinition"
+                    )
+                    send_alert(alert_message, AlertSeverity.CRITICAL)
+                    log.error("%s", alert_message)
                     break
         else:
             if is_cropped_requested(item):
                 if item.processed is False:
                     event_processed = False
+                    alert_message = (
+                        f"Event automation failed for event_seq: {event.event_seq}\n"
+                        f"There are only unprocessed CroppedImages"
+                    )
+                    send_alert(alert_message, AlertSeverity.WARNING)
+                    log.error("%s", alert_message)
                     break
 
     log.info(
@@ -93,6 +107,15 @@ def update_or_create_event_automation(
         is_there_job_definition,
     )
     if event_processed:
+        if not old_job_result_data.processed:
+            alert_message = (
+                "Event automation has been successfully processed for event_seq:"
+            )
+            send_alert(
+                (f"{alert_message} {event.event_seq}"),
+                AlertSeverity.SUCCESS,
+            )
+            log.info("%s %s", alert_message, event.event_seq)
         old_job_result_data.processed = True
     else:
         old_job_result_data.processed = False
