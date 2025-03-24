@@ -111,8 +111,8 @@ class ResultPublisher:
                 return (None, None)
 
             try:
-                if self.request.results_subject:
-                   self._stream_file_chunks(file_path, key, index)
+                #if self.request.results_subject:
+                #   self._stream_file_chunks(file_path, key, index)
 
                 with open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
