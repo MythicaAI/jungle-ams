@@ -16,6 +16,7 @@ jax = {extras = ["cuda12"], version = "^0.5.0"}
 numpy = "<2.0"
 
 # use this group to install without dev redirects
+aiofiles = "24.1.0"
 [tool.poetry.group.infra.dependencies]
 ripple = { path = "../../libs/python/ripple" }
 cryptid = { path = "../../libs/python/cryptid" }

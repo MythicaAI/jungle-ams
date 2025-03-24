@@ -535,11 +535,11 @@ def test_param_implicit_cast_to_float():
     validate_params(spec, set)
 
 
-def test_param_resolve():
+async def test_param_resolve():
     # Identity test
     with tempfile.TemporaryDirectory() as tmp_dir:
         set = ParameterSet(test_int=5)
-        success = resolve_params("", tmp_dir, set)
+        success = await resolve_params("", tmp_dir, set)
         assert success
         assert isinstance(set.test_int, int)
         assert set.test_int == 5

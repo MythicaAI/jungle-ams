@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Optional
 
+import aiofiles
 from ripple.auth.generate_token import decode_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
 from ripple.automation.models import AutomationRequest
@@ -47,13 +48,13 @@ class ResultPublisher:
         self.api_url = ripple_config().api_base_uri
 
     #Callback for reporting back. 
-    def result(self, item: ProcessStreamItem, complete: bool=False):
+    async def result(self, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = self.request.process_guid
         item.correlation = self.request.correlation
         item.job_id = self.request.job_id or ""
 
         # Upload any references to local data
-        self._publish_local_data(item, self.api_url)
+        await self._publish_local_data(item, self.api_url)
 
         job_result_endpoint=f"{self.api_url}/jobs/results"
         job_complete_endpoint=f"{self.api_url}/jobs/complete"
@@ -75,7 +76,7 @@ class ResultPublisher:
                 "created_in": "automation-worker",
                 "result_data": item.model_dump()
             }
-            self.rest.post(
+            await self.rest.post(
                 f"{job_result_endpoint}/{self.request.job_id}",
                 json_data=data,
                 token=self.request.auth_token,
@@ -89,7 +90,7 @@ class ResultPublisher:
                 data,
             )
             if complete:
-                self.rest.post(
+                await self.rest.post(
                     f"{job_complete_endpoint}/{self.request.job_id}",
                     json_data={},
                     token=self.request.auth_token,
@@ -102,22 +103,23 @@ class ResultPublisher:
                     updated_headers,
                 )
 
-    def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
+    async def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
 
         updated_headers = update_headers_from_context()
-        def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
+        async def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
             if not os.path.exists(file_path):
                 log.error("File not found: %s", file_path)
                 return (None, None)
 
             try:
                 if self.request.results_subject:
-                   self._stream_file_chunks(file_path, key, index)
+                   await self._stream_file_chunks(file_path, key, index)
 
-                with open(file_path, 'rb') as file:
+                async with aiofiles.open(file_path, 'rb') as file:
                     file_name = os.path.basename(file_path)
-                    file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
+                    file_content = await file.read()
+                    file_data = [('files', (file_name, file_content, 'application/octet-stream'))]
+                    response = await self.rest.post_file(f"{api_url}/upload/store",  file_data, self.request.auth_token,
                         headers=updated_headers
                     )
                     file_id, file_name = (response['files'][0].get("file_id"), response['files'][0].get("file_name")) if response else (None, None)
@@ -126,7 +128,7 @@ class ResultPublisher:
             finally:
                 os.remove(file_path)
 
-        def upload_job_def(job_def: JobDefinition) -> Optional[str]:
+        async def upload_job_def(job_def: JobDefinition) -> Optional[str]:
             definition = {
                 'job_type': job_def.job_type,
                 'name': job_def.name,
@@ -134,12 +136,12 @@ class ResultPublisher:
                 'params_schema': job_def.parameter_spec.model_dump(),
                 'source': job_def.source.model_dump() if job_def.source else None,
             }
-            response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
+            response = await self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
                 headers=updated_headers
             )
             return response['job_def_id'] if response else None
 
-        def add_cropped_image_to_contents(item: CropImageResponse) -> bool:
+        async def add_cropped_image_to_contents(item: CropImageResponse) -> bool:
             """
             Add the cropped image to the contents of the source asset.
             """
@@ -149,7 +151,7 @@ class ResultPublisher:
                 'src_file_id': item.src_file_id,
                 'file_type': "thumbnails",
             }
-            response = self.rest.post(
+            response = await self.rest.post(
                 f"{api_url}/assets/{item.src_asset_id}/versions/{item.src_version}/contents",
                 cropped_req, self.request.auth_token,
                 headers=updated_headers,
@@ -160,33 +162,33 @@ class ResultPublisher:
         if isinstance(item, OutputFiles):
             for key, files in item.files.items():
                 for index, file in enumerate(files):
-                    file_id, _ = upload_file(file, key, index)
+                    file_id, _ = await upload_file(file, key, index)
                     files[index] = file_id
 
         elif isinstance(item, JobDefinition):
-            job_def_id = upload_job_def(item)
+            job_def_id = await upload_job_def(item)
             if job_def_id is not None:
                 item.job_def_id = job_def_id
 
         elif isinstance(item, CropImageResponse):
-            file_id, file_name = upload_file(item.file_path, "cropped_image", 0)
+            file_id, file_name = await upload_file(item.file_path, "cropped_image", 0)
             if file_id is not None and file_name is not None:
                 item.file_id = file_id
                 item.file_name = file_name
-                processed = add_cropped_image_to_contents(item)
+                processed = await add_cropped_image_to_contents(item)
                 if processed:
                     log.info("Added cropped image to contents, item: %s", item)
                     return
             log.error("Failed to add cropped image to contents, item: %s", item)
 
-    def _stream_file_chunks(self, file_path: str, key: str, index: int) -> None:
-        """Stream a file's contents as base64-encoded chunks via NATS"""
-        with open(file_path, 'rb') as file:
+    async def _stream_file_chunks(self, file_path: str, key: str, index: int) -> None:
+        """Stream a file's contents as base64-encoded chunks via NATS (Asynchronous version)"""
+        async with aiofiles.open(file_path, 'rb') as file:
             file_size = os.path.getsize(file_path)
             total_chunks = (file_size + NATS_FILE_CHUNK_SIZE - 1) // NATS_FILE_CHUNK_SIZE
             chunk_index = 0
             
-            while chunk := file.read(NATS_FILE_CHUNK_SIZE):
+            while chunk := await file.read(NATS_FILE_CHUNK_SIZE):
                 encoded_data = base64.b64encode(chunk).decode('utf-8')
                 chunk_item = FileContentChunk(
                     process_guid=self.request.process_guid,
@@ -199,7 +201,7 @@ class ResultPublisher:
                     file_size=file_size,
                     encoded_data=encoded_data
                 )
-                
+
                 task = asyncio.create_task(
                     self.nats.post_to(
                         "result",
@@ -207,7 +209,7 @@ class ResultPublisher:
                         chunk_item.model_dump()))
                 task.add_done_callback(error_handler(log))
                 chunk_index += 1
-            
+
             assert chunk_index == total_chunks
 
 
@@ -218,11 +220,11 @@ class SlimPublisher(ResultPublisher):
         myself.directory = directory
         myself.request = request
 
-    def result(myself, item: ProcessStreamItem, complete: bool=False):
+    async def result(myself, item: ProcessStreamItem, complete: bool=False):
         item.process_guid = myself.request.process_guid
         item.correlation = myself.request.correlation
         item.job_id = ""
 
         # Upload any references to local data
-        myself._publish_local_data(item, ripple_config().api_base_uri)
+        await myself._publish_local_data(item, ripple_config().api_base_uri)
         log.info(f"Job {'Result' if not complete else 'Complete'} -> {item}")

@@ -65,14 +65,14 @@ def apply_single_param(asset, key, value):
                 parm.set(val)
 
 
-def apply_params(responder, asset, params: dict):
+async def apply_params(responder: ResultPublisher, asset, params: dict):
     """Apply all parameters to the graph, raise an error if there is a problem"""
     for key, value in params.items():
         try:
             apply_single_param(asset, key, value)
         except hou.Error as e:
             error_msg = f"Parameter: {key} failed to set: {str(e)}"
-            responder.result(Error(error=error_msg))
+            await responder.result(Error(error=error_msg))
             raise ValueError(error_msg) from e
 
 
@@ -227,7 +227,7 @@ def export_mesh(asset, geo, working_dir: str, output_file_name: str, format: str
     return outputs
 
 
-def generate_mesh_impl(
+async def generate_mesh_impl(
         hda_path: str,
         hda_definition_index: int,
         format: str,
@@ -254,7 +254,7 @@ def generate_mesh_impl(
 
     # Set parms
     log.debug("Applying parameters")
-    apply_params(responder, asset, params)
+    await apply_params(responder, asset, params)
 
     log.debug("Creating inputs")
     create_inputs(asset, geo, params)
@@ -272,7 +272,7 @@ def generate_mesh_impl(
             "messages": list(asset.messages())
         }
         log.error(f"Cook error details: {error_details}")
-        responder.result(Error(error=str(error_details)))
+        await responder.result(Error(error=str(error_details)))
         raise
     log.debug("HDA cook completed")
 
@@ -305,14 +305,14 @@ class ExportMeshResponse(OutputFiles):
     files: dict[str, list[str]] = Field(default={"mesh": []})
 
 
-def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
+async def generate_mesh(model: ExportMeshRequest, responder: ResultPublisher) -> ExportMeshResponse:
     log.info(f"Starting generate_mesh: {model}")
 
     if model.record_profile:
         profile = hou.perfMon.startProfile("Generate Mesh Profile")
 
     tmp_dir = tempfile.mkdtemp()
-    result_file_paths = generate_mesh_impl(
+    result_file_paths = await generate_mesh_impl(
         model.hda_file.file_path,
         model.hda_definition_index,
         model.format,

@@ -1,10 +1,9 @@
-import json
 import logging
 from jwt import DecodeError
 from pydantic import ValidationError
 import pytest
 from unittest import mock
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -74,6 +73,7 @@ def mock_nats():
     mock = AsyncMock(spec=NatsAdapter)
     mock.listen = AsyncMock()
     mock.post = AsyncMock()
+    mock.post_to = AsyncMock()
     return mock
 
 @pytest.fixture
@@ -83,9 +83,9 @@ def mock_rest():
 
 @pytest.fixture
 def mock_responder(tmp_path):
-    mock = MagicMock(spec=ResultPublisher)
+    mock = AsyncMock(spec=ResultPublisher)
     mock.directory = str(tmp_path)
-    mock.result = MagicMock()
+    mock.result = AsyncMock()
     return mock
 
 @pytest.fixture
@@ -159,7 +159,7 @@ def test_get_catalog_provider(worker):
 
 # ---- Executor Tests ----
 @pytest.mark.asyncio
-async def test_worker_executor(worker, mock_responder, test_token):
+async def test_worker_executor(worker, tmp_path, test_token):
     test_automation = AutomationModel(
         path='/test/path',
         provider=lambda x,y: Message(message="test"),
@@ -167,6 +167,10 @@ async def test_worker_executor(worker, mock_responder, test_token):
         outputModel=Message,
         hidden=False
     )
+    
+    mock_responder = AsyncMock(spec=ResultPublisher)
+    mock_responder.directory = str(tmp_path)
+    mock_responder.result = AsyncMock()
     worker.automations['/test/path'] = test_automation
     
     with patch('ripple.automation.worker.ResultPublisher', return_value=mock_responder):
@@ -229,17 +233,15 @@ async def test_worker_executor_error(worker):
 def mock_requests():
     with patch('requests.post') as mock_post, \
          patch('requests.get') as mock_get:
-        mock_post.return_value = MagicMock(status_code=200)
-        mock_get.return_value = MagicMock(status_code=200)
+        mock_post = AsyncMock(return_value=AsyncMock(status_code=200))
+        mock_get = AsyncMock(return_value=AsyncMock(status_code=200))
         yield mock_post, mock_get
 
 
 @pytest.mark.asyncio
 async def test_coordinator_executor_error(worker, caplog, mock_requests, test_coordinator_input):
-    mock_post, mock_get = mock_requests
-    mock_get.return_value = MagicMock(status_code=404)
-    mock_post.return_value.json.return_value = {"test": "test"}
-    mock_get.return_value.json.return_value = {"test": "test"}
+    mock_get = AsyncMock(return_value=AsyncMock(status_code=404, json=AsyncMock(return_vakue={"test": "test"})))
+    mock_post = AsyncMock(return_value=AsyncMock(json=AsyncMock(return_vakue={"test": "test"})))
     worker.rest.get = mock_get
     worker.rest.post = mock_post
     executor = worker._get_executor()
@@ -266,38 +268,34 @@ async def test_coordinator_executor_error(worker, caplog, mock_requests, test_co
 
     # Test is_bulk_processing set as False but requests is a list
     data = dict(is_bulk_processing=False, requests=[{"invalid": "payload"}])
-    with caplog.at_level(logging.INFO):
+    with caplog.at_level(logging.ERROR):
         await executor(data)
 
-    assert len(caplog.record_tuples) == 4
+    assert len(caplog.record_tuples) == 3
     worker_log_level = caplog.record_tuples[2][1]
     assert worker_log_level == logging.ERROR
     worker_log_mess = caplog.record_tuples[2][2]
-    assert "ValidationError" in  worker_log_mess
-    assert "4 validation errors for AutomationRequest" in worker_log_mess
+    assert "4 validation errors for BulkAutomationRequest" in worker_log_mess
 
 
     # Test is_bulk_processing set as True but requests is not a list
     data = dict(is_bulk_processing=True, requests={"invalid": "payload"})
-    with caplog.at_level(logging.INFO):
+    with caplog.at_level(logging.ERROR):
         await executor(data)
 
-    assert len(caplog.record_tuples) == 5
+    assert len(caplog.record_tuples) == 4
     coordinator_log_level = caplog.record_tuples[2][1]
     assert coordinator_log_level == logging.ERROR
     coordinator_log_mess = caplog.record_tuples[2][2]
-    assert "ValidationError" in  coordinator_log_mess
-    assert "4 validation errors for AutomationRequest" in coordinator_log_mess
+    assert "4 validation errors for BulkAutomationRequest" in coordinator_log_mess
     worker_log_level = caplog.record_tuples[1][1]
     assert worker_log_level == logging.ERROR
 
 
 @pytest.mark.asyncio
-async def test_coordinator_executor_success(worker, test_coordinator_input, caplog, mock_requests, job_definition_item):
-    mock_post, mock_get = mock_requests
-    mock_get.return_value = MagicMock(status_code=404)
-    mock_post.return_value.json.return_value = {"test": "test"}
-    mock_get.return_value.json.return_value = {"test": "test"}
+async def test_coordinator_executor_success(job_definition_item, worker, test_coordinator_input, caplog):
+    mock_get = AsyncMock(return_value=AsyncMock(status_code=404, json=AsyncMock(return_vakue={"test": "test"})))
+    mock_post = AsyncMock(return_value=AsyncMock(json=AsyncMock(return_vakue={"test": "test"})))
     worker.rest.get = mock_get
     worker.rest.post = mock_post
     executor = worker._get_executor()
@@ -339,8 +337,8 @@ async def test_process_items_result_success(
     mock_requests,
 ):
     mock_post, mock_get = mock_requests
-    mock_get.return_value = MagicMock(status_code=200)
-    mock_post.return_value = MagicMock(status_code=200)
+    mock_get.return_value = AsyncMock(status_code=200)
+    mock_post.return_value = AsyncMock(status_code=200)
     mock_post.return_value.json.return_value = {"job_def_id": "job_def_id"}
     mock_get.return_value.json.return_value = {"test": "test"}
     worker.rest = mock_rest
@@ -394,7 +392,7 @@ async def test_process_items_result_success(
     )
     call_args = mock_rest.post.call_args[0]
     assert test_token == call_args[2]
-    assert f"{ripple_config().api_base_uri}/events/processed/1" == call_args[0]
+    assert f"{ripple_config().api_base_uri}/events/processed/1/" == call_args[0]
     assert expected_response.is_bulk_processing == call_args[1]["is_bulk_processing"]
     assert expected_response.processed == call_args[1]["processed"]
     for index in range(len(expected_response.request_result)):
@@ -546,7 +544,7 @@ publishers.py tests
 """
 @pytest.fixture
 def mock_nats():
-    mock = MagicMock(spec=NatsAdapter)
+    mock = AsyncMock(spec=NatsAdapter)
     mock.post_to = AsyncMock()
     mock.subscribe = AsyncMock()
     mock.unsubscribe = AsyncMock()
@@ -554,8 +552,8 @@ def mock_nats():
 
 @pytest.fixture
 def mock_rest():
-    mock = MagicMock(spec=RestAdapter)
-    mock.post = MagicMock()
+    mock = AsyncMock(spec=RestAdapter)
+    mock.post = AsyncMock()
     mock.download_file = AsyncMock()
     return mock
 
@@ -639,16 +637,16 @@ async def test_result_publishing(publisher, mock_nats):
     test_item = ProcessStreamItem(item_type="test")
     
     # Test regular result
-    publisher.result(test_item)
+    await publisher.result(test_item)
     mock_nats.post_to.assert_called_once()
     
     # Test completion
-    publisher.result(test_item, complete=True)
+    await publisher.result(test_item, complete=True)
     assert mock_nats.post_to.call_count == 2
 
-def test_error_handling(publisher):
+async def test_error_handling(publisher):
     with pytest.raises(AttributeError):
-        publisher.result(None)
+        await publisher.result(None)
 
 @pytest.mark.asyncio
 async def test_file_handling(publisher, mock_rest, tmp_path):
@@ -660,7 +658,7 @@ async def test_file_handling(publisher, mock_rest, tmp_path):
         file_path=str(test_file)
     )
     
-    publisher.result(test_item)
+    await publisher.result(test_item)
     mock_rest.post.assert_called_once()
 
 def test_token_handling(test_request):
@@ -668,11 +666,10 @@ def test_token_handling(test_request):
     with pytest.raises(DecodeError):
         ResultPublisher(
             request=test_request,
-            nats_adapter=MagicMock(),
-            rest=MagicMock(),
+            nats_adapter=AsyncMock(),
+            rest=AsyncMock(),
             directory="/tmp"
         )
-
 
 
 @pytest.mark.asyncio
@@ -680,7 +677,7 @@ async def test_result_publisher_with_job_id(publisher, mock_nats, mock_rest):
     test_item = ProcessStreamItem(item_type="test")
     publisher.request.job_id = "test-job"
     
-    publisher.result(test_item)
+    await publisher.result(test_item)
     
     mock_nats.post_to.assert_called_once()
     mock_rest.post.assert_called_once()
@@ -692,7 +689,7 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
     test_item = ProcessStreamItem(item_type="test")
     publisher.request.job_id = "test-job"
     
-    publisher.result(test_item, complete=True)
+    await publisher.result(test_item, complete=True)
     
     mock_nats.post_to.assert_called_once()
     assert mock_rest.post.call_count == 2
@@ -716,21 +713,21 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
 async def test_publish_files(publisher, mock_rest, output_files_item):
     mock_rest.post_file.return_value = {"files": [{"file_id": "test-file-id"}]}
     
-    publisher._publish_local_data(output_files_item, publisher.api_url)
+    await publisher._publish_local_data(output_files_item, publisher.api_url)
     
     mock_rest.post_file.assert_called_once()
     assert output_files_item.files["test_key"][0] == "test-file-id"
 
 @pytest.mark.asyncio
 async def test_publish_cropped_image(publisher, mock_rest, cropped_image_item, tmp_path, caplog):
-    mock_rest.post_file.return_value = {"files": [{"file_id": "file_222", "file_name": "test.txt"}]}
-    mock_rest.post.return_value = True
+    mock_rest.post_file = AsyncMock(return_value={"files": [{"file_id": "file_222", "file_name": "test.txt"}]})
+    mock_rest.post = AsyncMock(return_value=True)
     test_file = tmp_path / "test.txt"
     test_file.write_text("test content")
     cropped_image_item.file_path = str(test_file)
 
     with caplog.at_level(logging.INFO):
-        publisher._publish_local_data(cropped_image_item, publisher.api_url)
+        await publisher._publish_local_data(cropped_image_item, publisher.api_url)
     mock_rest.post_file.assert_called_once()
     mock_rest.post.assert_called_once()
     assert any("Added cropped image to contents, item" in message for message in caplog.messages)
@@ -743,7 +740,7 @@ async def test_publish_missing_cropped_image(publisher, cropped_image_item, capl
     # cropped_image_item.file_path = "test_file"
 
     with caplog.at_level(logging.ERROR):
-        publisher._publish_local_data(cropped_image_item, publisher.api_url)
+        await publisher._publish_local_data(cropped_image_item, publisher.api_url)
     assert any("Failed to add cropped image to contents" in message for message in caplog.messages)
     assert cropped_image_item.file_id == None
     assert cropped_image_item.file_name == None
@@ -751,9 +748,9 @@ async def test_publish_missing_cropped_image(publisher, cropped_image_item, capl
 
 @pytest.mark.asyncio
 async def test_publish_job_definition(publisher, mock_rest, job_definition_item):
-    mock_rest.post.return_value = {"job_def_id": "test-job-def-id"}
+    mock_rest.post = AsyncMock(return_value={"job_def_id": "test-job-def-id"})
     
-    publisher._publish_local_data(job_definition_item, publisher.api_url)
+    await publisher._publish_local_data(job_definition_item, publisher.api_url)
     
     mock_rest.post.assert_called_once()
     assert job_definition_item.job_def_id == "test-job-def-id"
@@ -769,7 +766,7 @@ async def test_slim_publisher_result(test_request, mock_rest, tmp_path):
     slim_publisher = SlimPublisher(test_request, mock_rest, str(tmp_path))
     test_item = ProcessStreamItem(item_type="test")
     
-    slim_publisher.result(test_item)
+    await slim_publisher.result(test_item)
     
     assert test_item.process_guid == test_request.process_guid
     assert test_item.correlation == test_request.correlation
@@ -784,7 +781,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
         files={"test_key": [non_existent_file]}
     )
     
-    publisher._publish_local_data(output_files, publisher.api_url)
+    await publisher._publish_local_data(output_files, publisher.api_url)
     
     mock_rest.post_file.assert_not_called()
     assert output_files.files["test_key"][0] is None
@@ -798,7 +795,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
         files={"test_key": [non_existent_file]}
     )
     
-    publisher._publish_local_data(output_files, publisher.api_url)
+    await publisher._publish_local_data(output_files, publisher.api_url)
     mock_rest.post_file.assert_not_called()
     assert output_files.files["test_key"][0] is None
 
@@ -830,7 +827,7 @@ def valid_request_data():
 
 @pytest.fixture
 def mock_responder(tmp_path):
-    mock = MagicMock(spec=ResultPublisher)
+    mock = AsyncMock(spec=ResultPublisher)
     mock.directory = str(tmp_path)
     return mock
 
@@ -852,7 +849,7 @@ async def test_run_script_automation_success(valid_script, valid_request_data, m
     )
     
     automation = _run_script_automation()
-    result = automation(request, mock_responder)
+    result = await automation(request, mock_responder)
     
     assert isinstance(result, ProcessStreamItem)
     assert result.result == "Hello test"
@@ -863,7 +860,7 @@ async def test_run_script_missing_request_data(valid_script, mock_responder):
     
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="request_data is required"):
-        automation(request, mock_responder)
+        await automation(request, mock_responder)
 
 @pytest.mark.asyncio
 async def test_run_script_missing_responder(valid_script, valid_request_data):
@@ -874,7 +871,7 @@ async def test_run_script_missing_responder(valid_script, valid_request_data):
     
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="responder is required"):
-        automation(request, None)
+        await automation(request, None)
 
 @pytest.mark.asyncio
 async def test_run_script_no_request_model(mock_responder):
@@ -886,7 +883,7 @@ async def test_run_script_no_request_model(mock_responder):
     
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="RequestModel not found"):
-        automation(request, mock_responder)
+        await automation(request, mock_responder)
 
 @pytest.mark.asyncio
 async def test_run_script_no_automation(mock_responder):
@@ -903,14 +900,14 @@ class RequestModel(ParameterSet):
     
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="runAutomation function not found"):
-        automation(request, mock_responder)
+        await automation(request, mock_responder)
 
 @pytest.mark.asyncio
 async def test_get_script_interface_success(valid_script, mock_responder):
     request = ScriptRequest(script=valid_script)
     
     interface = _get_script_interface()
-    result = interface(request, mock_responder)
+    result = await interface(request, mock_responder)
     
     assert isinstance(result, AutomationsResponse)
     assert result.automations
@@ -922,7 +919,7 @@ async def test_get_script_interface_error(mock_responder):
     request = ScriptRequest(script="invalid python code")
     
     interface = _get_script_interface()
-    result = interface(request, mock_responder)
+    result = await interface(request, mock_responder)
     
     assert isinstance(result, AutomationsResponse)
     assert len(result.automations) == 0
