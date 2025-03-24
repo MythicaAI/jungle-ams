@@ -61,7 +61,7 @@ def apply_single_param(asset, key, value):
             if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
                 parm.set([int(value)])
             else:
-                val = [value] if not isinstance(v, (tuple, list)) else value
+                val = [value] if not isinstance(value, (tuple, list)) else value
                 parm.set(val)
 
 
