@@ -49,6 +49,8 @@ class ParmTemplate:
     tags: dict[str, str] = {}
     default_expression: list[str] = []
     default_expression_language: list[scriptLanguage] = []
+    is_hidden: bool = False
+    is_label_hidden: bool = False
 
     def __init__(self, name: str, label: str = "", num_components: Optional[int] = None, **kwargs):
         self.name = name
@@ -117,6 +119,9 @@ class IntParmTemplate(ParmTemplate):
         return IntParmTemplateSpec(**self.__dict__)
     
     def getParameterSpec(self) -> list[IntParameterSpec]:
+        if self.is_hidden:
+            return []
+        
         default_value = self.default_value
         if isinstance(default_value, list) and self.num_components == 1:
             default_value = default_value[0]  # Convert list to scalar if num_components == 1
@@ -130,6 +135,9 @@ class FloatParmTemplate(ParmTemplate):
         return FloatParmTemplateSpec(**self.__dict__)
 
     def getParameterSpec(self) -> list[FloatParameterSpec]:
+        if self.is_hidden:
+            return []
+                
         default_value = self.default_value
         if isinstance(default_value, list) and self.num_components == 1:
             default_value = default_value[0]  # Convert list to scalar if num_components == 1
@@ -146,6 +154,9 @@ class StringParmTemplate(ParmTemplate):
         return StringParmTemplateSpec(**self.__dict__)
 
     def getParameterSpec(self) -> list[StringParameterSpec]:
+        if self.is_hidden:
+            return []
+        
         if self.menu_items and len(self.menu_items) > 0:
             value = {
                 "menu_items": self.menu_items,
@@ -169,8 +180,11 @@ class ToggleParmTemplate(ParmTemplate):
         return ToggleParmTemplateSpec(**self.__dict__)
 
     def getParameterSpec(self) -> list[BoolParameterSpec]:
+        if self.is_hidden:
+            return []
+        
         return [BoolParameterSpec(default=self.default_value, **self.__dict__)]
-
+        
 class MenuParmTemplate(ParmTemplate):
     type: parmTemplateType = parmTemplateType.Menu
     menu_items: list[str] = []
@@ -182,6 +196,9 @@ class MenuParmTemplate(ParmTemplate):
         return MenuParmTemplateSpec(**self.__dict__)
    
     def getParameterSpec(self) -> list[EnumParameterSpec]:
+        if self.is_hidden:
+            return []
+        
         value = {
             "menu_items": self.menu_items,
             "menu_labels": self.menu_labels,
@@ -224,6 +241,9 @@ class RampParmTemplate(ParmTemplate):
         return ret
 
     def getParameterSpec(self) -> list[RampParameterSpec]:
+        if self.is_hidden:
+            return []
+        
         default = self.default_points
 
         return [RampParameterSpec(default=default, **self.__dict__)]
@@ -312,6 +332,9 @@ class FolderParmTemplate(ParmTemplate):
         )
 
     def getParameterSpec(self) -> list[ParameterSpecType]:
+        if self.is_hidden:
+            return None
+        
         parameterSpecs: list[ParameterSpecType] = []
 
         for pt in self.parm_templates:

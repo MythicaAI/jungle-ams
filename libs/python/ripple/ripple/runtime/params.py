@@ -4,9 +4,9 @@ from http import HTTPStatus
 import requests
 
 from ripple.models.params import (BoolParameterSpec, EnumParameterSpec, FileParameter, FileParameterSpec,
-                                  FloatParameterSpec, IntParameterSpec, ParameterSet, ParameterSpec, ParameterSpecModel,
+                                  FloatParameterSpec, IntParameterSpec, ParameterSet, ParameterSpec, ParameterSpecModel, RampParameterSpec,
                                   StringParameterSpec)
-
+from ripple.models.houTypes import (rampParmType, rampBasis)
 class ParamError(ValueError):
     def __init__(self, label, message):
         super().__init__(f"`{label}`: {message}")
@@ -54,8 +54,40 @@ def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> None:
     """Validate the parameter against the spec and expected type"""
     if not expectedType:
         raise ParamError(paramSpec.label, f"invalid type validation")
+    
+    if isinstance(paramSpec, RampParameterSpec):
+        #Check that param is a list of expectedType
+        if not isinstance(param, list):
+            raise ParamError(paramSpec.label, f"ramp params must be list of dict, got {type(param).__name__}")
+        for item in param:
+            rampType = paramSpec.ramp_parm_type
+            if rampType == rampParmType.Color:
+                vals = 'c'
+            else:
+                vals = 'value'
 
-    if isinstance(param, (list, tuple, set, frozenset)):
+            if not isinstance(item, expectedType):
+                raise ParamError(paramSpec.label, f"ramp point must be of type dict, got {type(item).__name__}")
+            if 'pos' not in item or vals not in item or 'interp' not in item:
+                raise ParamError(paramSpec.label, f"ramp point must contain 'pos' and 'value|c' and 'interp' keys")
+            if not isinstance(item['pos'],float):
+                raise ParamError(paramSpec.label, f"ramp point 'pos' must be of type float")
+            if rampType == rampParmType.Color:
+                if not isinstance(item[vals],list):
+                    raise ParamError(paramSpec.label, f"ramp point color 'c' must be of type list")
+                if (len(item[vals]) != 3):
+                    raise ParamError(paramSpec.label, f"ramp point color 'c' must be of length 3")
+                for c in item[vals]:
+                    if not isinstance(c,float):
+                        raise ParamError(paramSpec.label, f"ramp point color 'c' must be of type list of floats")
+            else:
+                if not isinstance(item[vals],float):
+                    raise ParamError(paramSpec.label, f"ramp point 'value' must be of type float")
+            #check that interp is a valid value from rampBasis
+            if item['interp'] not in [basis.name for basis in rampBasis]:
+                raise ParamError(paramSpec.label, f"ramp point 'interp' must be a valid value from hou.rampBasis")
+
+    elif isinstance(param, (list, tuple, set, frozenset)):
         if len(param) != len(paramSpec.default):
             raise ParamError(paramSpec.label, f"length mismatch {len(param)} != expected: {len(paramSpec.default)}")
         for item in param:
@@ -94,6 +126,8 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
             use_type = bool
         elif isinstance(paramSpec, FileParameterSpec):
             use_type = FileParameter
+        elif isinstance(paramSpec, RampParameterSpec):
+            use_type = dict
         validate_param(paramSpec, param, use_type)
 
         # Validate enum
