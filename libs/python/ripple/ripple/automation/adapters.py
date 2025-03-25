@@ -158,18 +158,6 @@ class RestAdapter():
             if response.status_code in [200,201]:
                 log.debug(f"Endpoint Response: {response.status_code}")
                 return response.json()
-            elif 300 <= response.status_code < 400:
-                reditrect_location = response.headers.get("Location")
-                if reditrect_location:
-                    log.debug(f"Redirecting to: {reditrect_location}")
-                    return await self.post(
-                        endpoint=reditrect_location,
-                        json_data=json_data,
-                        token=token,
-                        headers=headers,
-                        query_params=query_params,
-                    )
-                return response.json()
             else:
                 log.error(f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}")
                 return None

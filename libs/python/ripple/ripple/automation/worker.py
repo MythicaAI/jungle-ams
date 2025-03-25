@@ -302,12 +302,6 @@ class Worker:
                     and item.get("job_def_id") is None
                 ):
                     success = False
-                elif item.get("item_type", "") == "job_defs":
-                    if item.get("job_definitions") is None:
-                        success = False
-                    for job_definition in item.get("job_definitions", []):
-                        if job_definition.get("job_def_id") is None:
-                            success = False
                 elif (
                     item.get("item_type", "") == "cropped_image"
                     and item.get("file_id") is None

@@ -8,7 +8,7 @@ from ripple.models.params import (
     ParameterSet,
     IntParameterSpec,
     FloatParameterSpec,
-    ParameterSpecModel, StringParameterSpec,
+    StringParameterSpec,
     BoolParameterSpec,
     EnumValueSpec,
     EnumParameterSpec,
@@ -535,6 +535,7 @@ def test_param_implicit_cast_to_float():
     validate_params(spec, set)
 
 
+@pytest.mark.asyncio
 async def test_param_resolve():
     # Identity test
     with tempfile.TemporaryDirectory() as tmp_dir:
