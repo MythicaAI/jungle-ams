@@ -549,6 +549,24 @@ def test_folder_set_parm_template_class():
     # The single folder's children are empty by default
     assert param_specs == []
 
+def test_hidden_params():
+    #For each parameter type that generates a ParameterSpec
+    #Test that the is_hidden attribute is respected
+    folder=FolderParmTemplate("folder_test", label="FolderTest", folder_type=folderType.Tabs, is_hidden=True)
+    intTemp=IntParmTemplate("int_test", label="IntTest", default_value=[1], num_components=1, is_hidden=True)
+    floatTemp=FloatParmTemplate("float_test", label="FloatTest", default_value=[1.0], num_components=1, is_hidden=True)
+    stringTemp=StringParmTemplate("string_test", label="StringTest", default_value=["Hello"], num_components=1, is_hidden=True)
+    toggleTemp=ToggleParmTemplate("toggle_test", label="ToggleTest", default_value=True, is_hidden=True)
+    menuTemp=MenuParmTemplate("menu_test", label="MenuTest", default_value=1, menu_items=["itemA", "itemB"], menu_labels=["Item A", "Item B"], is_hidden=True)
+    rampTemp=RampParmTemplate("ramp_test", label="RampTest", ramp_part_type=classRampParmType.Float, default_points=[RampPointSpec(pos=0.0, value=0.2)], is_hidden=True)
+
+    assert folder.getParameterSpec()==None
+    assert intTemp.getParameterSpec()==[]
+    assert floatTemp.getParameterSpec()==[]
+    assert stringTemp.getParameterSpec()==[]
+    assert toggleTemp.getParameterSpec()==[]
+    assert menuTemp.getParameterSpec()==[]
+    assert rampTemp.getParameterSpec()==[]
 
 def test_folder_parm_auto_folderset_insertion():
     """
