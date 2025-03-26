@@ -1,21 +1,29 @@
 # pylint: disable=redefined-outer-name, unused-import
-import pytest
 import tempfile
 
+import pytest
 from ripple.compile.rpsc import compile_interface
+from ripple.models.houTypes import rampBasis, rampParmType
 from ripple.models.params import (
-    ParameterSpec,
-    ParameterSet,
-    IntParameterSpec,
-    FloatParameterSpec,
-    StringParameterSpec,
     BoolParameterSpec,
-    EnumValueSpec,
     EnumParameterSpec,
-    FileParameterSpec,
+    EnumValueSpec,
     FileParameter,
+    FileParameterSpec,
+    FloatParameterSpec,
+    IntParameterSpec,
+    ParameterSet,
+    ParameterSpec,
+    RampParameterSpec,
+    StringParameterSpec,
 )
-from ripple.runtime.params import validate_param, validate_params, resolve_params, repair_parameters, ParamError
+from ripple.runtime.params import (
+    ParamError,
+    repair_parameters,
+    resolve_params,
+    validate_param,
+    validate_params,
+)
 
 
 class UnknownTestType:
@@ -384,7 +392,15 @@ def test_param_validation_all_types():
         'test_str': StringParameterSpec(label='test_str', default=''),
         'test_bool': BoolParameterSpec(label='test_bool', default=True),
         'test_enum': EnumParameterSpec(label='test_enum', default='a', values=[EnumValueSpec(name='a', label='A')]),
-        'test_file': FileParameterSpec(label='test_file', default='')
+        'test_file': FileParameterSpec(label='test_file', default=''),
+        'test_ramp_float': RampParameterSpec(
+            label='test_ramp_value', 
+            ramp_parm_type=rampParmType.Float,
+            default=[{'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear}]),
+        'test_ramp_color': RampParameterSpec(
+            label='test_ramp_color', 
+            ramp_parm_type=rampParmType.Color,
+            default=[{'pos': 0.0, 'c': [1.0, 1.0, 1.0], 'interp': rampBasis.Linear}]),
     })
     set = ParameterSet(
         test_int=5,
@@ -392,7 +408,9 @@ def test_param_validation_all_types():
         test_str='test',
         test_bool=False,
         test_enum="a",
-        test_file=FileParameter(file_id='file_qfJSVuWRJvq5PmueFPxSjXsEcST')
+        test_file=FileParameter(file_id='file_qfJSVuWRJvq5PmueFPxSjXsEcST'),
+        test_ramp_float=[{'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear}, {'pos': 1.0, 'value': 1.0, 'interp': rampBasis.Linear}],
+        test_ramp_color=[{'pos': 0.0, 'c': [1.0, 1.0, 1.0], 'interp': rampBasis.Linear}, {'pos': 1.0, 'c': [0.0, 0.0, 0.0], 'interp': rampBasis.Linear}],
     )
     validate_params(spec, set)
 
@@ -416,6 +434,86 @@ def test_param_validation_type_mismatch():
     with pytest.raises(ParamError) as exc_info:
         validate_params(spec, set_bad)
     assert_validation(exc_info.value, "did not match expected type")
+
+def test_param_validation_ramp():
+    spec = ParameterSpec(params={
+        'test_ramp': RampParameterSpec(
+            label='test', 
+            ramp_parm_type=rampParmType.Float, 
+            default=[{'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear}])})
+    set_bad_outer = ParameterSet(test_ramp={'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear})
+    set_bad_inner = ParameterSet(test_ramp=[0.0, 1.0])
+    set_bad_miss_pos = ParameterSet(test_ramp=[{'value': 0.0, 'interp': rampBasis.Linear}, {'pos': 1.0, 'value': 1.0, 'interp': rampBasis.Linear}])
+    set_bad_miss_value = ParameterSet(test_ramp=[{'pos': 0.0, 'interp': rampBasis.Linear}, {'pos': 1.0, 'value': 1.0, 'interp': rampBasis.Linear}])
+    set_bad_miss_interp = ParameterSet(test_ramp=[{'pos': 0.0, 'value': 0.0}, {'pos': 1.0, 'value': 1.0, 'interp': rampBasis.Linear}])
+    
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_outer)
+    assert_validation(exc_info.value, "ramp params must be list of dict")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_inner)
+    assert_validation(exc_info.value, "ramp point must be of type dict")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_miss_pos)
+    assert_validation(exc_info.value, "ramp point must contain 'pos' and 'value|c' and 'interp' keys")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_miss_value)
+    assert_validation(exc_info.value, "ramp point must contain 'pos' and 'value|c' and 'interp' keys")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_miss_interp)
+    assert_validation(exc_info.value, "ramp point must contain 'pos' and 'value|c' and 'interp' keys")
+
+def test_param_validation_ramp_float():
+    # Ramp float test
+    spec = ParameterSpec(params={
+        'test_ramp': RampParameterSpec(
+            label='test', 
+            ramp_parm_type=rampParmType.Float, 
+            default=[{'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear}])})
+    set_good = ParameterSet(test_ramp=[{'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear}, {'pos': 1.0, 'value': 1.0, 'interp': rampBasis.Linear}])
+    set_bad_pos = ParameterSet(test_ramp=[{'pos': 'd', 'value': 0.0, 'interp': rampBasis.Linear}, {'pos': 'd', 'value': 0.0, 'interp': rampBasis.Linear}])
+    set_bad_value = ParameterSet(test_ramp=[{'pos': 0.0, 'value': 'f', 'interp': rampBasis.Linear}, {'pos': 1.0, 'value': 'bad', 'interp': rampBasis.Linear}])
+    set_bad_interp = ParameterSet(test_ramp=[{'pos': 0.0, 'value': 0.0, 'interp': 'foo'}, {'pos': 1.0, 'value': 0.0, 'interp': 'foo'}])
+    validate_params(spec, set_good)
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_pos)
+    assert_validation(exc_info.value, "ramp point 'pos' must be of type float")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_value)
+    assert_validation(exc_info.value, "ramp point 'value' must be of type float")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_interp)
+    assert_validation(exc_info.value, "ramp point 'interp' must be a valid value from hou.rampBasis")
+
+def test_param_validation_ramp_color():
+    #Ramp color test
+    spec = ParameterSpec(params={
+        'test_ramp': RampParameterSpec(
+            label='test',
+            ramp_parm_type=rampParmType.Color,
+            default=[{'pos': 0.0, 'c': [1.0, 1.0, 1.0], 'interp': rampBasis.Linear}])})
+    set_good = ParameterSet(test_ramp=[{'pos': 0.0, 'c': [1.0, 1.0, 1.0], 'interp': rampBasis.Linear}, {'pos': 1.0, 'c': [0.0, 0.0, 0.0], 'interp': rampBasis.Linear}])
+    set_bad_pos = ParameterSet(test_ramp=[{'pos': 'd', 'c': [1.0, 1.0, 1.0], 'interp': rampBasis.Linear}, {'pos': 'd', 'c': [1.0, 1.0, 1.0], 'interp': rampBasis.Linear}])
+    set_bad_c_outer = ParameterSet(test_ramp=[{'pos': 0.0, 'c': 'f', 'interp': rampBasis.Linear}, {'pos': 1.0, 'c': 'bad', 'interp': rampBasis.Linear}])
+    set_bad_c_inner_type = ParameterSet(test_ramp=[{'pos': 0.0, 'c': ['d','d','d'], 'interp': rampBasis.Linear}, {'pos': 1.0, 'c': ['d','d','d'], 'interp': rampBasis.Linear}])
+    set_bad_c_inner_count = ParameterSet(test_ramp=[{'pos': 0.0, 'c': [0.0, 0.0], 'interp': rampBasis.Linear}, {'pos': 1.0, 'c': [0.0, 0.0], 'interp': rampBasis.Linear}])    
+    set_bad_interp = ParameterSet(test_ramp=[{'pos': 0.0, 'c': [1.0, 1.0, 1.0], 'interp': 'foo'}, {'pos': 1.0, 'c': [0.0, 0.0, 0.0], 'interp': 'foo'}])
+    validate_params(spec, set_good)
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_pos)
+    assert_validation(exc_info.value, "ramp point 'pos' must be of type float")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_c_outer)
+    assert_validation(exc_info.value, "ramp point color 'c' must be of type list")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_c_inner_type)
+    assert_validation(exc_info.value, "ramp point color 'c' must be of type list of floats")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_c_inner_count)
+    assert_validation(exc_info.value, "ramp point color 'c' must be of length 3")
+    with pytest.raises(ParamError) as exc_info:
+        validate_params(spec, set_bad_interp)
+    assert_validation(exc_info.value, "ramp point 'interp' must be a valid value from hou.rampBasis")
 
 def test_param_validation_booleans():
     # Bool parameter test
