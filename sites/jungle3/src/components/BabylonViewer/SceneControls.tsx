@@ -80,9 +80,12 @@ const SceneControls: React.FC<Props> = ({ width }) => {
 
     const handleParmChange = useCallback(
         (formData: dictionary) => {
-        setParamValues(formData);
+        setParamValues({
+            ...paramValues,
+            ...formData
+        });
         },
-        [setParamValues],
+        [paramValues,setParamValues],
     );        
 
     useEffect(() => {
@@ -285,7 +288,7 @@ const SceneControls: React.FC<Props> = ({ width }) => {
                         Params
                     </Typography>
                     <ParmGroup
-                        data={{ paramValues }}
+                        data={ paramValues }
                         group={parmTemplateGroup as hou.ParmTemplateGroup}
                         onChange={handleParmChange}
                     />
