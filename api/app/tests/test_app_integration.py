@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
-from assets.repo import AssetFileReference
+from repos.assets import AssetFileReference
 from routes.file_uploads import FileUploadResponse
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader

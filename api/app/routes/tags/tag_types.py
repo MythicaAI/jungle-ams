@@ -4,8 +4,8 @@ import logging
 from http import HTTPStatus
 from typing import Optional, Union
 
-import assets.repo as assets_repo
-from assets import queries as asset_q
+from repos import assets as assets_repo
+from queries import assets as asset_q
 from cryptid.cryptid import (
     tag_id_to_seq,
     tag_seq_to_id,

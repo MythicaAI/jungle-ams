@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from munch import munchify
 
 from cryptid.cryptid import asset_seq_to_id
-from assets.repo import AssetVersionResult
+from repos.assets import AssetVersionResult
 from db.schema.events import Event
 from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
 from tests.fixtures.create_asset_versions import create_asset_versions

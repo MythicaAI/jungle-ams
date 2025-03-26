@@ -14,7 +14,7 @@ from sqlmodel import and_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 import db.index as db_index
-from assets.repo import convert_version_input, process_join_results, select_asset_version
+from repos.assets import convert_version_input, process_join_results, select_asset_version
 from config import app_config
 from content.validate_filename import validate_filename
 from context import UploadContext
@@ -27,7 +27,7 @@ from ripple.models.contexts import FilePurpose
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_files
-from routes.files.utils import delete_by_id
+from queries.files import delete_by_id
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient

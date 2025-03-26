@@ -6,7 +6,7 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from assets.repo import AssetDependency, AssetFileReference, AssetVersionResult, \
+from repos.assets import AssetDependency, AssetFileReference, AssetVersionResult, \
     DEPENDENCIES_CONTENT_KEY, \
     FILES_CONTENT_KEY, \
     LINKS_CONTENT_KEY, THUMBNAILS_CONTENT_KEY

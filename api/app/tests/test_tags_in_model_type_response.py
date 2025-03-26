@@ -8,7 +8,7 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from assets.repo import AssetFileReference
+from repos.assets import AssetFileReference
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import assert_status_code, make_random_content, random_str

@@ -15,8 +15,8 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import col, delete as sql_delete, insert, select, text, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from assets import repo
-from assets.repo import AssetVersionResult
+from repos import assets as repo
+from repos.assets import AssetVersionResult
 from config import app_config
 from cryptid.cryptid import (
     asset_id_to_seq,

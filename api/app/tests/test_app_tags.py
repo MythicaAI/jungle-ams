@@ -11,7 +11,7 @@ from munch import munchify
 from cryptid.cryptid import file_seq_to_id
 from ripple.auth import roles
 from api.default_values import LATEST_GREATEST_VERSIONS_ASSET_NUM
-from assets.repo import AssetTopVersionsResult
+from repos.assets import AssetTopVersionsResult
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
 from tests.shared_test import (
