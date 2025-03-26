@@ -1,6 +1,9 @@
 import { Meta, StoryObj } from "@storybook/react";
-import { hou, ParmGroup } from 'houdini-ui';
+import { dictionary, hou, ParmGroup } from 'houdini-ui';
+import { useArgs } from '@storybook/preview-api';
 import 'houdini-ui/houdini-ui.css';
+import { useCallback } from "react";
+
 
 const parmTemplates = [
     {
@@ -1500,6 +1503,8 @@ const parmTemplates = [
     }
 ]
 
+  
+
 const group = new hou.ParmTemplateGroup(parmTemplates);
 
 const meta: Meta<typeof ParmGroup> = {
@@ -1508,8 +1513,25 @@ const meta: Meta<typeof ParmGroup> = {
     argTypes: {
         group: {
             control: { type: 'object' },
-            defaultValue: group
-        }
+            description: 'ParmTemplateGroup object from Houdini.',
+            table: {
+                type: { summary: 'hou.ParmTemplateGroup' },
+            },
+        },
+        data: {
+            control: { type: 'object' },
+            description: 'Form data representing parameter values.',
+            table: {
+                type: { summary: 'Record<string, any>' },
+            },
+        },
+        onChange: {
+            action: 'onChange',
+            description: 'Callback triggered on parameter changes.',
+            table: {
+                type: { summary: '(formData: Record<string, any>) => void' },
+            },
+        },        
     }
 }
 export default meta;
@@ -1517,10 +1539,25 @@ export default meta;
 
 type Story = StoryObj<typeof ParmGroup>;
 
+const values = {}
 export const Default: Story = {
+    render: function InteractiveStory(args) {
+        const [{data}, updateArgs] = useArgs();
+
+        const handleParmChange = useCallback((formData:dictionary) => {
+            updateArgs({
+                data: {
+                    ...data,
+                    ...formData
+                }
+            });
+            args.onChange(formData); // Triggers Storybook action logger
+        }, [updateArgs, args]);
+
+        return <ParmGroup {...args} data={data} onChange={handleParmChange} />;
+    },
     args: {
-        group: group,
-        data: {},
-        onChange:()=>{}
+        group,
+        data: values,
     },
 };
