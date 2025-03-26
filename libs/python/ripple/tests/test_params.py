@@ -457,6 +457,27 @@ def test_param_validation_ramp():
         validate_params(spec, set_bad_miss_interp)
     assert_validation(exc_info.value, "ramp point must contain 'pos' and 'value|c' and 'interp' keys")
 
+def test_param_conversion_ramp():
+    specVal = ParameterSpec(params={
+        'test_ramp': RampParameterSpec(
+            label='test', 
+            ramp_parm_type=rampParmType.Float, 
+            default=[{'pos': 0.0, 'value': 0.0, 'interp': rampBasis.Linear}])})
+    specColor = ParameterSpec(params={
+        'test_ramp': RampParameterSpec(
+            label='test', 
+            ramp_parm_type=rampParmType.Color, 
+            default=[{'pos': 0.0, 'c': [0.0,0.0,0.0], 'interp': rampBasis.Linear}])})
+    set_good_pos = ParameterSet(test_ramp=[{'pos': 0, 'value': 0.0, 'interp': rampBasis.Linear}, {'pos': 1, 'value': 1.0, 'interp': rampBasis.Linear}])    
+    set_good_val = ParameterSet(test_ramp=[{'pos': 0.0, 'value': 0, 'interp': rampBasis.Linear}, {'pos': 1.0, 'value': 1, 'interp': rampBasis.Linear}])    
+    set_good_col = ParameterSet(test_ramp=[{'pos': 0.0, 'c': [0,0,0], 'interp': rampBasis.Linear}, {'pos': 1.0, 'c': [1,1,1], 'interp': rampBasis.Linear}])    
+    repair_parameters(specVal, set_good_pos)
+    validate_params(specVal, set_good_pos)
+    repair_parameters(specVal, set_good_val)
+    validate_params(specVal, set_good_val)
+    repair_parameters(specColor, set_good_col)
+    validate_params(specColor, set_good_col)
+
 def test_param_validation_ramp_float():
     # Ramp float test
     spec = ParameterSpec(params={

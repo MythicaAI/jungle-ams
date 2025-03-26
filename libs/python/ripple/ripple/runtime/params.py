@@ -30,10 +30,37 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
 def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
     """Implicitly cast int values to float"""
     for name, spec in paramSpec.params.items():
-        if not hasattr(paramSet, name) or not isinstance(spec, FloatParameterSpec):
+        if not hasattr(paramSet, name):
             continue
 
         value = getattr(paramSet, name)
+
+        if isinstance(spec, RampParameterSpec): 
+            rampType = spec.ramp_parm_type
+            if rampType == rampParmType.Color:
+                vals = 'c'
+            else:
+                vals = 'value'
+
+            newValue = []
+            for item in value:
+                newItem = item
+                if isinstance(item['pos'],int):
+                    newItem['pos'] = float(item['pos'])
+                if rampType == rampParmType.Color:
+                    if isinstance(item[vals],list):
+                        for index,c in enumerate(item[vals]):
+                            if isinstance(c,int):
+                                newItem[vals][index] = float(c)
+                else:
+                    if isinstance(item[vals],int):
+                        newItem[vals]=float(item[vals])
+                newValue.append(newItem)
+            setattr(paramSet, name, newValue)
+        
+        if not isinstance(spec, FloatParameterSpec):
+            continue
+        
         if isinstance(spec.default, float):
             if isinstance(value, int):
                 setattr(paramSet, name, float(value))
