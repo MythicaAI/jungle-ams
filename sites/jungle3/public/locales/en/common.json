@@ -90,5 +90,21 @@
     "expires": "Expires in, days",
     "submit": "Submit",
     "copyId": "Copy Mythica Profile ID"
+  },
+  "packageView": {
+    "by": "by",
+    "download": "Download",
+    "bundleSize": "Bundle size",
+    "visitAuto": "Visit automations"
+  },
+  "automationPage": {
+    "title": "Automations",
+    "runAutomation": "Run automation",
+    "livePreview": "3D Live preview",
+    "history": "Automation History",
+    "params": "Parameters",
+    "historyMissing": "No history available",
+    "backToPackageView": "Back to package view",
+    "noDefinitions": " No automation definitions found for this package"
   }
 }

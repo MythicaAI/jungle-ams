@@ -3,7 +3,7 @@ import { Box } from '@mui/joy';
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/inspector";
 import "@babylonjs/node-geometry-editor";
-import { useSceneStore } from '@store/sceneStore';
+import { useSceneStore } from '@store/sceneStoreEmbedded';
 
 // Material names
 const ROCK = "rock";
@@ -20,18 +20,17 @@ import {
 } from "@babylonjs/core";
 
 interface SceneViewerProps {
-  packageName: string;
   onSceneCreated?: (scene: BABYLON.Scene) => void;
   onMeshSelected?: (mesh: BABYLON.Mesh) => void;
 }
-const SceneViewer: React.FC<SceneViewerProps> = ({
-  packageName,
+const SceneViewerEmbedded: React.FC<SceneViewerProps> = ({
   onSceneCreated,
   onMeshSelected,
 }) => {
   // Get state from the store
   const {
-    packageMaterials,
+    selectedHdaIndex,
+    hdaSchemas,
     isWireframe,
     meshData,
     showLogWindow,
@@ -40,7 +39,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   } = useSceneStore();
 
   // Get the current HDA schema
-  const currentSchema = packageMaterials.find((pm) => pm.name === packageName);
+  const currentSchema = hdaSchemas[selectedHdaIndex];
 
   // References
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -334,16 +333,15 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     vertexData.applyToMesh(newMesh);
 
     // Get the appropriate material for this HDA and set it on the mesh
-    if (currentSchema) {
-        const material = sceneRef.current.getMaterialByName(currentSchema.material_name);
-        if (material) {
-        console.info("setting material " + currentSchema.material_name + " on mesh " + newMesh.name);
-        newMesh.material = material;
-        newMesh.material.wireframe = isWireframe;
-        } else {
-        console.error(`material ${currentSchema.material_name} not found`);
-        }
+    const material = sceneRef.current.getMaterialByName(currentSchema.material_name);
+    if (material) {
+      console.info("setting material " + currentSchema.material_name + " on mesh " + newMesh.name);
+      newMesh.material = material;
+      newMesh.material.wireframe = isWireframe;
+    } else {
+      console.error(`material ${currentSchema.material_name} not found`);
     }
+
     // Add to shadow generator
     if (shadowGeneratorRef.current) {
       shadowGeneratorRef.current.addShadowCaster(newMesh);
@@ -483,4 +481,4 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   );
 };
 
-export default SceneViewer;
+export default SceneViewerEmbedded;

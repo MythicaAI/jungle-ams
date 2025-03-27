@@ -20,6 +20,7 @@ ENV PATH="/usr/local/bin:$PATH"
 # Default for local (docker compose) mode, override in deployment
 ENV NATS_ENDPOINT="nats://nats:4222"
 ENV MYTHICA_ENVIRONMENT=dev
+ENV DISCORD_INFRA_ALERTS_WEBHOOK=localhost
 ENV MYTHICA_LOCATION=localhost
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-blender"
 ENV TELEMETRY_ENABLE=True

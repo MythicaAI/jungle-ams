@@ -77,7 +77,7 @@ def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaRespons
     result_file_paths = generate_mesh_impl(
         request.hda_file.file_path,
         0,
-        'usdz',
+        'glb',
         request.model_dump(exclude={'hda_file'}),
         tmp_dir,
         responder

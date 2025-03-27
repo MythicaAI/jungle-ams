@@ -1,6 +1,7 @@
 
 
 
+import logging
 import os
 import sys
 print(f"cwd: {os.getcwd()}")
@@ -27,6 +28,8 @@ if ripple_config().telemetry_enable:
         ripple_config().telemetry_endpoint,
         ripple_config().telemetry_insecure,
     )
+else:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 automations = [
     {

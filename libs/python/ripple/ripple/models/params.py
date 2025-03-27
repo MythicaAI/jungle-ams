@@ -210,7 +210,7 @@ class ParameterSpec(BaseModel):
     Specification of parameters a job expects as input
     """
     params: dict[str, ParameterSpecType]
-    params_v2: Optional[list[HoudiniParmTemplateSpecType]] = None
+    params_v2: Optional[list[HoudiniParmTemplateSpecType]] = []
 
 class FileParameter(BaseModel):
     file_id: str

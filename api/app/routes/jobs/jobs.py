@@ -334,6 +334,8 @@ async def create(
     if job_def is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
 
+    # IMPORTANT: validation is done against params (not params_v2). Both Specs generate the
+    # same paramSet outputs so this is safe.
     parameter_spec = ParameterSpec(**job_def.params_schema)
     repair_parameters(parameter_spec, req_data.params)
     # validate parameters, report back the parameter error that caused the problem

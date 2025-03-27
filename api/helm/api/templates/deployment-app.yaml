@@ -42,6 +42,11 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SENDGRID_API_KEY
+            - name: DISCORD_INFRA_ALERTS_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: DISCORD_INFRA_ALERTS_WEBHOOK
             - name: MYTHICA_ENVIRONMENT
               value: "{{ .Values.release }}"
             - name: APP_VERSION

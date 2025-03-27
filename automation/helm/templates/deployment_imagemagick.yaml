@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: houdini
+  name: imagemagick
   namespace: {{ .Values.namespace }}
 spec:
   replicas: 1
@@ -12,30 +12,30 @@ spec:
       maxSurge: 0
   selector:
     matchLabels:
-      app: "houdini"
+      app: "imagemagick"
   template:
     metadata:
       labels:
-        app: houdini
+        app: imagemagick
         tier: {{ .Values.tier }}
         version: "1.0"
         release: {{ .Values.release }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.account }}
       containers:
-        - name: houdini
-          image: {{ include "api.image" (list . "mythica-auto-houdini") }}
+        - name: imagemagick
+          image: {{ include "api.image" (list . "mythica-auto-imagemagick") }}
           imagePullPolicy: Always
-          command: [ "/bin/bash", "houdini.sh" ]
+          command: [python, workers.py]
           stdin: true
           tty: true
           env:
             - name: API_BASE_URI
               value: {{ .Values.app_base_url }}
-            - name: NAMESPACE
-              value: {{ .Values.namespace }}
             - name: TELEMETRY_ENABLE
               value: "{{ .Values.telemetry_enable }}"
+            - name: NAMESPACE
+              value: {{ .Values.namespace }}
             - name: TELEMETRY_ENDPOINT
               value: {{ .Values.telemetry_endpoint }}
             - name: TELEMETRY_INSECURE
@@ -50,16 +50,6 @@ spec:
               value: {{ include "api.imageVersion" (list . "mythica-auto-houdini") }}
             - name: MYTHICA_LOCATION
               value: {{ .Values.location }}
-            - name: SFX_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  key: SFX_CLIENT_ID
-                  name: houdini-secrets
-            - name: SFX_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  key: SFX_CLIENT_SECRET
-                  name: houdini-secrets
             - name: DISCORD_INFRA_ALERTS_WEBHOOK
               valueFrom:
                 secretKeyRef:
@@ -67,11 +57,11 @@ spec:
                   key: DISCORD_INFRA_ALERTS_WEBHOOK
           resources:
             limits:
-              cpu: 2000m
-              ephemeral-storage: 8Gi
-              memory: 64Gi
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
             requests:
-              cpu: 2000m
-              ephemeral-storage: 8Gi
-              memory: 64Gi
+              cpu: 500m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
       restartPolicy: Always

@@ -9,3 +9,4 @@ helm upgrade --namespace automation-staging \
 }
 
 kubectl rollout restart deployment/houdini -n automation-staging
+kubectl rollout restart deployment/imagemagick -n automation-staging

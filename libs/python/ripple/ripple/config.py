@@ -30,12 +30,14 @@ from pydantic_settings import BaseSettings
 
 class RippleConfig(BaseSettings):
     """Configuration of the ripple library from environment or otherwise"""
+
     ripple_token_secret_key: str = 'X' * 32  # shared secret for auth token generation
     api_base_uri: str = 'http://localhost:5555/v1'
     mythica_environment: str = "debug"
     telemetry_enable: bool = False
     telemetry_insecure: bool = True
     telemetry_endpoint: str = "otel-sidecar:4317"
+    discord_infra_alerts_webhook: str = "localhost"
 
 
 @functools.lru_cache
@@ -52,18 +54,14 @@ def update_headers_from_context() -> dict:
 
 def get_telemetry_resource() -> Resource:
     detected_resource = OTELResourceDetector().detect()
-    
+
     resource = Resource.create(
         {
             "APP_VERSION": os.getenv("APP_VERSION", "local"),
             "MYTHICA_LOCATION": os.getenv("MYTHICA_LOCATION", "local"),
             ResourceAttributes.K8S_CLUSTER_NAME: os.getenv("K8S_CLUSTER_NAME", "local"),
-            ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv(
-                "NAMESPACE", "dev"
-            ),
-            ResourceAttributes.SERVICE_NAMESPACE: os.getenv(
-                "NAMESPACE", "dev"
-            ),
+            ResourceAttributes.K8S_NAMESPACE_NAME: os.getenv("NAMESPACE", "dev"),
+            ResourceAttributes.SERVICE_NAMESPACE: os.getenv("NAMESPACE", "dev"),
             ResourceAttributes.DEPLOYMENT_ENVIRONMENT: os.getenv("NAMESPACE", "local"),
         }
     )
@@ -73,7 +71,11 @@ def get_telemetry_resource() -> Resource:
     return resource
 
 
-def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, headers: Optional[list[tuple]] = None):
+def configure_telemetry(
+    telemetry_endpoint: str,
+    telemetry_insecure: bool,
+    headers: Optional[list[tuple]] = None,
+):
 
     logger = logging.getLogger()
     logger.info(
@@ -81,8 +83,8 @@ def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, heade
         telemetry_endpoint,
         telemetry_insecure,
     )
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger.handlers.clear()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     #
     # Metadata and access configuration
@@ -163,4 +165,3 @@ class CustomJSONFormatter(logging.Formatter):
         )
         json_log_entry = json.dumps(log_entry)
         return json_log_entry
-

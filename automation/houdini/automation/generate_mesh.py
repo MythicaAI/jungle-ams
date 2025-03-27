@@ -19,12 +19,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
 
-rampkeys = {"interp", "x", "y"}
+rampkeysVal = {"interp", "pos", "value"}
+rampkeysCol = {"interp", "pos", "c"}
 
 
 def is_ramp_param(param):
     if isinstance(param, list) and all(isinstance(p, dict) for p in param):
-        if all(rampkeys.issubset(p.keys()) for p in param):
+        if all(rampkeysVal.issubset(p.keys()) for p in param) or all(rampkeysCol.issubset(p.keys()) for p in param):
             return True
     return False
 
@@ -42,11 +43,11 @@ def apply_single_param(asset, key, value):
         for point in value:
             try:
                 basis.append(RampBasis[point["interp"]].value)
-                keys.append(float(point["x"]))
-                if isinstance(point["y"], (float, int)):
-                    values.append(float(point["y"]))
-                else:
-                    values.append(hou.Vector3(point["y"]))
+                keys.append(float(point["pos"]))
+                if point["value"]:
+                    values.append(float(point["value"]))
+                elif point["c"]:
+                    values.append(hou.Vector3(float(point["c"])))
             except KeyError as e:
                 raise ValueError(f"Invalid key in ramp parameter: {e}") from e
             except Exception as e:
@@ -61,7 +62,7 @@ def apply_single_param(asset, key, value):
             if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
                 parm.set([int(value)])
             else:
-                val = [value] if not isinstance(v, (tuple, list)) else value
+                val = [value] if not isinstance(value, (tuple, list)) else value
                 parm.set(val)
 
 

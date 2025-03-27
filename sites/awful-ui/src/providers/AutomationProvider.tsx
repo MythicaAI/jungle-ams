@@ -232,6 +232,16 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
     return flatAutomations;
   }, [workerAutomations]);
 
+  /**
+   * Initialize an automation execution with the specified
+   * automation task.
+   * 
+   * Nodes that use automaitons can call this method to initialize
+   * their state.
+   * 
+   * @param task
+   * @returns The initialized execution state 
+   */
   const initAutomation = (task: AutomationTask): ExecutionData => {
     return {
       worker: task?.worker,

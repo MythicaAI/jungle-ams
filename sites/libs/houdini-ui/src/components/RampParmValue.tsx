@@ -3,8 +3,8 @@ import hou,{ dictionary } from '../types/Houdini';
 
 
 interface ValueRampPoint {
-    x: number;
-    y: number;
+    pos: number;
+    value: number;
     interp?: hou.rampBasis;
 }
 
@@ -22,14 +22,14 @@ function getDefaultPoints(template: hou.RampParmTemplate, data: dictionary): Val
 
     if (template.default_points && template.default_points.length > 0) {
         return template.default_points.map(p => ({
-            x: p.pos,
-            y: p.value || 0,
+            pos: p.pos,
+            value: p.value || 0,
             interp: p.interp || hou.rampBasis.Linear
         }));
     }
     return [
-        { x: 0, y: 0, interp: hou.rampBasis.Linear },
-        { x: 1, y: 1, interp: hou.rampBasis.Linear }
+        { pos: 0, value: 0, interp: hou.rampBasis.Linear },
+        { pos: 1, value: 1, interp: hou.rampBasis.Linear }
     ];
 }
 
@@ -41,7 +41,7 @@ const rampLineColor = 'rgb(102,102,102)';
 
 export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const canvasSize = { width: 360, height: 150 };
+    const canvasSize = { width: 300, height: 150 };
 
     const [points, setPoints] = useState<ValueRampPoint[]>(() => getDefaultPoints(template,data));
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -73,7 +73,7 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
         ctx.strokeStyle = rampLineColor;
         ctx.strokeRect(margin, margin, innerWidth, innerHeight);
 
-        const sorted = [...points].sort((a, b) => a.x - b.x);
+        const sorted = [...points].sort((a, b) => a.pos - b.pos);
 
         if (sorted.length > 0) {
             const first = sorted[0];
@@ -82,27 +82,27 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
             // Draw line
             ctx.beginPath();
             // Start from x=0
-            const startY = margin + innerHeight - first.y * innerHeight;
+            const startY = margin + innerHeight - first.value * innerHeight;
 
             // Move from x=0
             ctx.moveTo(margin, startY);
 
             // If first.x > 0, draw horizontal line to first point
-            if (first.x > 0) {
-                const firstX = first.x * innerWidth + margin;
+            if (first.pos > 0) {
+                const firstX = first.pos * innerWidth + margin;
                 ctx.lineTo(firstX, startY);
             }
 
             // Draw through the points
             sorted.forEach((p) => {
-                const x = p.x * innerWidth + margin;
-                const y = margin + innerHeight - p.y * innerHeight;
+                const x = p.pos * innerWidth + margin;
+                const y = margin + innerHeight - p.value * innerHeight;
                 ctx.lineTo(x, y);
             });
 
             // If last.x < 1, continue line horizontally at last.y to x=1
-            if (last.x < 1) {
-                const endY = margin + innerHeight - last.y * innerHeight;
+            if (last.pos < 1) {
+                const endY = margin + innerHeight - last.value * innerHeight;
                 const endX = margin + innerWidth;
                 ctx.lineTo(endX, endY);
             }
@@ -116,32 +116,32 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
             ctx.moveTo(margin, margin + innerHeight); // bottom-left corner
 
             // If first.x > 0, fill from 0 to first.x at first.y
-            if (first.x > 0) {
+            if (first.pos > 0) {
                 ctx.lineTo(margin, startY);
-                const firstActualX = first.x * innerWidth + margin;
+                const firstActualX = first.pos * innerWidth + margin;
                 ctx.lineTo(firstActualX, startY);
             } else {
                 // Move directly to first point
-                const firstX = first.x * innerWidth + margin;
-                const firstY = margin + innerHeight - first.y * innerHeight;
+                const firstX = first.pos * innerWidth + margin;
+                const firstY = margin + innerHeight - first.value * innerHeight;
                 ctx.lineTo(firstX, firstY);
             }
 
             sorted.forEach((p) => {
-                const x = p.x * innerWidth + margin;
-                const y = margin + innerHeight - p.y * innerHeight;
+                const x = p.pos * innerWidth + margin;
+                const y = margin + innerHeight - p.value * innerHeight;
                 ctx.lineTo(x, y);
             });
 
             // If last.x < 1, fill horizontally to x=1 at last.y
-            if (last.x < 1) {
-                const endY = margin + innerHeight - last.y * innerHeight;
+            if (last.pos < 1) {
+                const endY = margin + innerHeight - last.value * innerHeight;
                 const endX = margin + innerWidth;
                 ctx.lineTo(endX, endY);
                 ctx.lineTo(endX, margin + innerHeight);
             } else {
                 // close at the last point down to the bottom
-                const lastX = last.x * innerWidth + margin;
+                const lastX = last.pos * innerWidth + margin;
                 ctx.lineTo(lastX, margin + innerHeight);
             }
 
@@ -151,8 +151,8 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
 
             // Draw points
             sorted.forEach((p) => {
-                const x = p.x * innerWidth + margin;
-                const y = margin + innerHeight - p.y * innerHeight;
+                const x = p.pos * innerWidth + margin;
+                const y = margin + innerHeight - p.value * innerHeight;
 
                 ctx.beginPath();
                 ctx.arc(x, y, 5, 0, 2 * Math.PI);
@@ -197,12 +197,12 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
         const innerWidth = width - margin*2;
         const innerHeight = height - margin*2;
 
-        const sorted = [...points].sort((a,b) => a.x - b.x);
+        const sorted = [...points].sort((a,b) => a.pos - b.pos);
 
         // Check if clicked on a point
         const hitIndex = sorted.findIndex(p => {
-            const px = p.x * innerWidth + margin;
-            const py = margin + innerHeight - p.y * innerHeight;
+            const px = p.pos * innerWidth + margin;
+            const py = margin + innerHeight - p.value * innerHeight;
             const dx = px - pos.x;
             const dy = py - pos.y;
             return Math.sqrt(dx*dx + dy*dy) < 6;
@@ -212,7 +212,7 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
             // If right-click and more than two points, remove
             if (e.button === 2 && points.length > 2) {
                 e.preventDefault();
-                const newPoints = [...points].sort((a,b) => a.x - b.x);
+                const newPoints = [...points].sort((a,b) => a.pos - b.pos);
                 newPoints.splice(hitIndex, 1);
                 commitChange(newPoints);
                 setSelectedIndex(null);
@@ -235,8 +235,8 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
             const nx = (pos.x - margin) / innerWidth;
             const ny = 1 - ((pos.y - margin) / innerHeight);
             if (nx >= 0 && nx <= 1 && ny >= 0 && ny <= 1) {
-                const newPoint: ValueRampPoint = { x: nx, y: ny, interp: hou.rampBasis.Linear };
-                const newPoints = [...points, newPoint].sort((a,b) => a.x - b.x);
+                const newPoint: ValueRampPoint = { pos: nx, value: ny, interp: hou.rampBasis.Linear };
+                const newPoints = [...points, newPoint].sort((a,b) => a.pos - b.pos);
                 commitChange(newPoints);
                 const idx = newPoints.indexOf(newPoint);
                 setSelectedIndex(idx);
@@ -262,7 +262,7 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
         ny = Math.max(0, Math.min(1, ny));
 
         const newPoints = [...points];
-        newPoints[draggingIndex] = { ...newPoints[draggingIndex], x: nx, y: ny };
+        newPoints[draggingIndex] = { ...newPoints[draggingIndex], pos: nx, value: ny };
         setPoints(newPoints);
     };
 

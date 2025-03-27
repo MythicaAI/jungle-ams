@@ -36,6 +36,11 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: SQL_ASYNC_URL
+            - name: DISCORD_INFRA_ALERTS_WEBHOOK
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: DISCORD_INFRA_ALERTS_WEBHOOK
             - name: MYTHICA_ENDPOINT
               value: "http://app.{{ .Values.namespace }}:80"
             - name: APP_VERSION
@@ -44,6 +49,14 @@ spec:
               value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
               value: "{{ .Values.location }}"
+            - name: TELEMETRY_ENABLE
+              value: "{{ .Values.api.app.telemetry_enable }}"
+            - name: TELEMETRY_ENDPOINT
+              value: {{ .Values.api.app.telemetry_endpoint }}
+            - name: TELEMETRY_INSECURE
+              value: "{{ .Values.api.app.telemetry_insecure }}"
+            - name: NAMESPACE
+              value: {{ .Values.namespace }}
             - name: MYTHICA_API_KEY
               valueFrom:
                 secretKeyRef:

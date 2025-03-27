@@ -54,6 +54,7 @@ IMAGES="mythica-auto-houdini \
   mythica-auto-blender \
   mythica-auto-daemon \
   mythica-auto-genai \
+  mythica-auto-imagemagick \
   mythica-editor-worker \
   mythica-editor-test"
 for image_name in $IMAGES; do
