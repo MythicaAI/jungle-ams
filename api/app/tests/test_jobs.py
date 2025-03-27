@@ -8,10 +8,11 @@ import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
-from cryptid.cryptid import asset_seq_to_id
+from cryptid.cryptid import asset_seq_to_id, job_def_seq_to_id
 from repos.assets import AssetVersionResult
 from db.schema.events import Event
 from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
+from routes.jobs.models import JobDefinitionResponse
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
@@ -594,3 +595,105 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
         assert single_job.input_files == None
         for jor_res in single_job.results:
             assert jor_res.job_result_id in job_result_ids_by_job[job_id]
+
+
+@pytest.mark.asyncio
+async def test_job_create_from_template(client: TestClient, api_base, create_profile, create_asset_versions, uploader):
+    test_profile: ProfileTestObj = await create_profile()
+    headers = test_profile.authorization_header()
+
+    # create test assets and hda files
+    versions:list[AssetVersionResult] = create_asset_versions(
+        test_profile,
+        uploader,
+        version_ids=['1.0.0'])
+    assert len(versions) == 1
+    asset_version = versions[0]
+
+    hda_file_id = find_hda_file(asset_version)
+    assert hda_file_id is not None
+
+    # Verify no job definitions exist
+    asset_id = asset_version.asset_id
+
+    # Create a job definition for asset version
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus',
+                        'description': 'Generates a cactus mesh',
+                        'params_schema': {
+                            'params': {
+                                'hda_file': {
+                                    'param_type': 'file',
+                                    'label': 'HDA File',
+                                    'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                                    'constant': True
+                                },
+                            },
+                            "params_v2": [
+                            {
+                                "param_type": "file",
+                                "label": "Sub-Network Input #1",
+                                "category_label": None,
+                                "constant": False,
+                                "name": "input0",
+                                "default": ""
+                            }
+                        ]
+                        },
+                        'source': {
+                            'asset_id': asset_id,
+                            'major': asset_version.version[0],
+                            'minor': asset_version.version[1],
+                            'patch': asset_version.version[2],
+                            'file_id': hda_file_id,
+                            'entry_point': 'cactus'
+                        }
+                    }, headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    r = client.get(f'{api_base}/jobs/definitions/{r.json().get("job_def_id")}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    template_job_def: JobDefinitionModel = munchify(r.json())
+
+    # Test create job from template with name and empty params_schema.params_v2 list only
+    r = client.post(f'{api_base}/jobs/definitions/{template_job_def.job_def_id}',
+                    json={
+                        'name': 'Generate Cactus2',
+                        'params_schema': {
+                            'params': template_job_def.params_schema.params,
+                            'params_v2': [],
+                        }
+                    }, headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    new_job_def_id = munchify(r.json()).job_def_id
+    r = client.get(
+        f'{api_base}/jobs/definitions/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}',
+        headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+
+    # Test only original job_def has has asset_entrypoint
+    new_job_def: JobDefinitionModel = munchify(next(
+                    (
+                        item
+                        for item in r.json()
+                        if item.get("job_def_id") == new_job_def_id
+                    ),
+                    None,
+                ))
+    assert not any(True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == new_job_def_id))
+    assert any(True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == template_job_def.job_def_id))
+
+    r = client.get(f'{api_base}/jobs/definitions/{new_job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    new_job_def: JobDefinitionModel = munchify(r.json())
+
+    assert new_job_def.name == 'Generate Cactus2'
+    assert new_job_def.description == template_job_def.description
+    assert new_job_def.params_schema.params_v2 == []
+    assert new_job_def.params_schema.params == template_job_def.params_schema.params
+
+    # Test create job from unexisting template
+    r = client.post(f'{api_base}/jobs/definitions/{job_def_seq_to_id(99999)}',
+                    json={}, headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)

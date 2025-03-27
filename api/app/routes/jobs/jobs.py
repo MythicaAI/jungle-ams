@@ -1,22 +1,10 @@
-from collections import defaultdict
 import logging
 import sys
+from collections import defaultdict
 from datetime import datetime, timezone
 from http import HTTPStatus
-from typing import Any, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
-from opentelemetry import trace
-from opentelemetry.context import get_current as get_current_telemetry_context
-from opentelemetry.trace.status import Status, StatusCode
-from pydantic import BaseModel
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import col, delete as sql_delete, insert, select, text, update
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-from repos import assets as repo
-from repos.assets import AssetVersionResult
 from config import app_config
 from cryptid.cryptid import (
     asset_id_to_seq,
@@ -36,6 +24,12 @@ from db.schema.assets import AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.jobs import Job, JobDefinition, JobResult
 from db.schema.profiles import Profile
+from fastapi import APIRouter, Depends, HTTPException
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
+from opentelemetry.trace.status import Status, StatusCode
+from repos import assets as repo
+from repos.assets import AssetVersionResult
 from ripple.auth import roles
 from ripple.auth.authorization import Scope, validate_roles
 from ripple.automation.adapters import NatsAdapter
@@ -47,66 +41,29 @@ from ripple.models.sessions import SessionProfile
 from ripple.models.streaming import JobDefinition as JobDefinitionRef
 from ripple.runtime.params import ParamError, repair_parameters, validate_params
 from routes.authorization import maybe_session_profile, session_profile
+from routes.jobs.models import (
+    ExtendedJobResultResponse,
+    JobDefinitionModel,
+    JobDefinitionRequest,
+    JobDefinitionResponse,
+    JobDefinitionTemplateRequest,
+    JobRequest,
+    JobResponse,
+    JobResultCreateResponse,
+    JobResultModel,
+    JobResultRequest,
+    JobResultResponse,
+)
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import col
+from sqlmodel import delete as sql_delete
+from sqlmodel import insert, select, text, update
+from sqlmodel.ext.asyncio.session import AsyncSession
 from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
-
-
-class JobDefinitionRequest(BaseModel):
-    job_type: str
-    name: str
-    description: str
-    params_schema: ParameterSpec
-    source: Optional[AssetVersionEntryPointReference] = None
-
-
-class JobDefinitionResponse(BaseModel):
-    job_def_id: str
-
-
-class JobDefinitionModel(JobDefinitionRequest):
-    job_def_id: str
-    owner_id: str | None = None
-
-
-class JobRequest(BaseModel):
-    job_def_id: str
-    params: ParameterSet
-
-
-class JobResponse(BaseModel):
-    job_id: str
-    event_id: str
-    job_def_id: str
-
-
-class JobResultRequest(BaseModel):
-    created_in: str
-    result_data: dict[str, Any]
-
-
-class JobResultCreateResponse(BaseModel):
-    job_result_id: str
-
-
-class JobResultModel(JobResultRequest):
-    job_result_id: str
-
-
-class JobResultResponse(BaseModel):
-    job_def_id: Optional[str]
-    created: datetime
-    completed: bool
-    results: Optional[list[JobResultModel]]
-
-
-class ExtendedJobResultResponse(JobResultResponse):
-    job_id: str
-    completed: Optional[datetime] = None
-    params: dict[str, Any]
-    input_files: Optional[dict[str, Any]] = None
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -145,6 +102,72 @@ async def define_new(
             src_file_seq=file_id_to_seq(req_data.source.file_id),
             entry_point=req_data.source.entry_point,
             job_def_seq=job_def_seq
+        )
+        await db_session.merge(asset_version_entry_point)
+        await db_session.commit()
+
+    return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
+
+
+@router.post('/definitions/{job_def_id}', status_code=HTTPStatus.CREATED)
+async def define_new_from_template(
+    job_def_id: str,
+    new_data: JobDefinitionTemplateRequest,
+    profile: SessionProfile = Depends(maybe_session_profile),
+    db_session: AsyncSession = Depends(get_db_session),
+) -> JobDefinitionResponse:
+    """Create a new job definition from a template of JobDefinition by job_def_id"""
+    # Get old JobDefinition
+    old_job_def = (
+        await db_session.exec(
+            select(JobDefinition).where(
+                JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id)
+            )
+        )
+    ).one_or_none()
+    if old_job_def is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+    old_model = JobDefinitionModel(
+        job_def_id=job_def_seq_to_id(old_job_def.job_def_seq),
+        owner_id=(
+            profile_seq_to_id(old_job_def.owner_seq)
+            if old_job_def.owner_seq is not None
+            else None
+        ),
+        **old_job_def.model_dump(),
+    )
+
+    # Fill the new JobDefinition with the template JobDefinition data
+    new_data.job_type = new_data.job_type or old_model.job_type
+    new_data.name = new_data.name or old_model.name
+    new_data.description = new_data.description or old_model.description
+    new_data.source = new_data.source or old_model.source
+    if new_data.params_schema:
+        if new_data.params_schema.params_v2 is None:
+            new_data.params_schema.params_v2 = old_model.params_schema.params_v2
+    else:
+        new_data.params_schema = old_model.params_schema
+
+    new_model = new_data.model_dump()
+    if profile:
+        new_model["owner_seq"] = profile.profile_seq
+    job_def = JobDefinition(**new_model)
+    db_session.add(job_def)
+    await db_session.commit()
+    await db_session.refresh(job_def)
+    job_def_seq = job_def.job_def_seq
+    print(new_data.source, "new_data.source")
+
+    # Create the asset version link
+    if new_data.source:
+        asset_version_entry_point = AssetVersionEntryPoint(
+            asset_seq=asset_id_to_seq(new_data.source.asset_id),
+            major=new_data.source.major,
+            minor=new_data.source.minor,
+            patch=new_data.source.patch,
+            src_file_seq=file_id_to_seq(new_data.source.file_id),
+            entry_point=new_data.source.entry_point,
+            job_def_seq=job_def_seq,
         )
         await db_session.merge(asset_version_entry_point)
         await db_session.commit()
