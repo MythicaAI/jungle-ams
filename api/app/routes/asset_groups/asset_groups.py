@@ -6,9 +6,9 @@ import re
 from http import HTTPStatus
 from typing import Iterable, Optional
 
-from assets import queries as asset_q
-from assets import repo
-from assets.repo import AssetVersionResult, convert_version_input
+from queries import assets as asset_q
+from repos import assets as repo
+from repos.assets import AssetVersionResult, convert_version_input
 from cryptid.cryptid import asset_id_to_seq
 from db.connection import get_db_session
 from db.schema.assets import Asset, AssetVersion

@@ -9,7 +9,7 @@ from ripple.automation.models import EventAutomationResponse
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.events import query as event_query
-from routes.events import repo as event_repo
+from repos import events as event_repo
 from routes.events.models import EventUpdateResponse
 from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel.ext.asyncio.session import AsyncSession

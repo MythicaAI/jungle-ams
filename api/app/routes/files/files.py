@@ -9,7 +9,7 @@ from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
 from sqlmodel import and_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from routes.files.utils import delete_by_id
+from queries.files import delete_by_id
 
 router = APIRouter(prefix="/files", tags=["files"])
 

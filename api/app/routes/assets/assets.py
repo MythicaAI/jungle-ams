@@ -3,8 +3,8 @@
 import logging
 from http import HTTPStatus
 
-import assets.repo as repo
-from assets import queries as asset_q
+from repos import assets as repo
+from queries import assets as asset_q
 from db.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from ripple.models.sessions import SessionProfile

@@ -5,7 +5,7 @@ from http import HTTPStatus
 
 import pytest
 
-from assets.repo import AssetDependency, AssetDependencyResult
+from repos.assets import AssetDependency, AssetDependencyResult
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader

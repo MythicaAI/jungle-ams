@@ -28,7 +28,7 @@ from uuid import uuid4
 from opentelemetry import trace
 from opentelemetry.context import get_current as get_current_telemetry_context
 
-from assets.repo import AssetDependency, AssetFileReference, AssetVersionResult
+from repos.assets import AssetDependency, AssetFileReference, AssetVersionResult
 from events.events import EventsSession
 from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse

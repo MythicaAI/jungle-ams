@@ -18,7 +18,7 @@ from ripple.auth.authorization import validate_roles
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.tags.tag_types import router as tag_types_router
-from tags.repo import resolve_contents_as_json
+from repos.tags import resolve_contents_as_json
 from tags.tag_models import TagRequest, TagResponse, TagUpdateRequest
 
 log = logging.getLogger(__name__)
