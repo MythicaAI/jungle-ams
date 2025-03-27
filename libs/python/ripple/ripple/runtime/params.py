@@ -1,12 +1,24 @@
 import os
 from http import HTTPStatus
 
-import requests
+import aiofiles
+import httpx
+from ripple.models.houTypes import rampBasis, rampParmType
+from ripple.models.params import (
+    BoolParameterSpec,
+    EnumParameterSpec,
+    FileParameter,
+    FileParameterSpec,
+    FloatParameterSpec,
+    IntParameterSpec,
+    ParameterSet,
+    ParameterSpec,
+    ParameterSpecModel,
+    RampParameterSpec,
+    StringParameterSpec,
+)
 
-from ripple.models.params import (BoolParameterSpec, EnumParameterSpec, FileParameter, FileParameterSpec,
-                                  FloatParameterSpec, IntParameterSpec, ParameterSet, ParameterSpec, ParameterSpecModel, RampParameterSpec,
-                                  StringParameterSpec)
-from ripple.models.houTypes import (rampParmType, rampBasis)
+
 class ParamError(ValueError):
     def __init__(self, label, message):
         super().__init__(f"`{label}`: {message}")
@@ -176,50 +188,49 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
                     raise ParamError(paramSpec.label, f"constant mismatch `{param}` != expected: `{paramSpec.default}`")
 
 
-def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> str:
+async def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> str:
     """Automatically download an entire file at runtime, used to resolve file references"""
     # Get the URL to download the file
     url = f"{endpoint}/download/info/{file_id}"
-    r = requests.get(url, headers=headers)
-    assert r.status_code == HTTPStatus.OK
-    doc = r.json()
+    
+    async with httpx.AsyncClient() as client:
+        r = await client.get(url, headers=headers)
+        assert r.status_code == HTTPStatus.OK
+        doc: dict = r.json()
 
-    # Download the file
-    file_name = file_id + "_" + doc['name'].replace('\\', '_').replace('/', '_')
-    file_path = os.path.join(directory, file_name)
+        # Download the file
+        file_name = file_id + "_" + doc['name'].replace('\\', '_').replace('/', '_')
+        file_path = os.path.join(directory, file_name)
 
-    downloaded_bytes = 0
-    with open(file_path, "w+b") as f:
-        download_req = requests.get(doc['url'], stream=True, headers=headers)
-        for chunk in download_req.iter_content(chunk_size=1024):
-            if chunk:
-                downloaded_bytes += len(chunk)
-                f.write(chunk)
+        async with client.stream("GET", doc['url'], headers=headers) as download_req:
+            async with aiofiles.open(file_path, "wb") as f:
+                async for chunk in download_req.aiter_bytes(chunk_size=1024):
+                    await f.write(chunk)
 
     return file_path
 
 
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, headers=None) -> ParameterSet:
+async def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, headers=None) -> ParameterSet:
     """Resolve any parameters that are external references"""
-    def resolve(field, value):
+    async def resolve(field, value):
         # For list-like, check each value
         if isinstance(value, (list, tuple, set, frozenset)):
             for item in value:
-                resolve(field, item)
+                await resolve(field, item)
         # For Dicts, check if they are FileParams. Otherwise check each item        
         elif isinstance(value, FileParameter):
-            value.file_path = download_file(endpoint, directory, value.file_id, headers or {})
+            value.file_path = await download_file(endpoint, directory, value.file_id, headers or {})
         elif isinstance(value, dict):
             try:
                 FileParameter(**value)
-                value['file_path'] = download_file(endpoint, directory, value['file_id'], headers)
+                value['file_path'] = await download_file(endpoint, directory, value['file_id'], headers)
             except Exception:
                 for key, item in value.items():
-                    resolve(f"{field}:{key}", item)
+                    await resolve(f"{field}:{key}", item)
 
     for name in paramSet.model_fields.keys():
-        resolve(name, getattr(paramSet, name))
+        await resolve(name, getattr(paramSet, name))
     for name in paramSet.model_extra.keys():
-        resolve(name, getattr(paramSet, name))
+        await resolve(name, getattr(paramSet, name))
 
     return paramSet

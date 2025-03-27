@@ -17,12 +17,21 @@ def mock_nats_connection():
         yield mock_nc
 
 @pytest.fixture
-def mock_requests():
-    with patch('requests.post') as mock_post, \
-         patch('requests.get') as mock_get:
-        mock_post.return_value = MagicMock(status_code=200)
-        mock_get.return_value = MagicMock(status_code=200)
-        yield mock_post, mock_get
+def mock_async_client():
+    with patch('ripple.automation.adapters.httpx.AsyncClient') as async_client_cls:
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+        mock_response.json = MagicMock(return_value={"data": "test"})
+
+        mock_client_instance = async_client_cls.return_value.__aenter__.return_value
+        mock_client_instance.get.return_value = mock_response
+        mock_client_instance.post.return_value = mock_response
+
+        yield mock_client_instance
+
+@pytest.fixture
+def mock_requests(mock_async_client):
+    yield mock_async_client.post, mock_async_client.get
 
 @pytest.mark.asyncio
 async def test_nats_subject_scoping():
@@ -65,12 +74,13 @@ async def test_nats_unlisten(mock_nats_connection):
     await adapter.unlisten(subject)
     assert not adapter.listeners
 
-def test_rest_get(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_get(mock_requests):
     _, mock_get = mock_requests
     mock_get.return_value.json.return_value = {"data": "test"}
     
     adapter = RestAdapter()
-    result = adapter.get("http://test", token="test-token")
+    result = await adapter.get("http://test", token="test-token")
     
     assert result == {"data": "test"}
     mock_get.assert_called_with(
@@ -78,12 +88,13 @@ def test_rest_get(mock_requests):
         headers={"traceparent": None, "Authorization": "Bearer test-token"}
     )
 
-def test_rest_post(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_post(mock_requests):
     mock_post, _ = mock_requests
     mock_post.return_value.json.return_value = {"id": "test"}
     
     adapter = RestAdapter()
-    result = adapter.post(
+    result = await adapter.post(
         "http://test",
         json_data={"data": "test"},
         token="test-token"
@@ -101,12 +112,13 @@ def test_rest_post(mock_requests):
         }
     )
 
-def test_rest_post_file(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_post_file(mock_requests):
     mock_post, _ = mock_requests
     mock_post.return_value.json.return_value = {"file_id": "test"}
     
     adapter = RestAdapter()
-    result = adapter.post_file(
+    result = await adapter.post_file(
         "http://test",
         file_data=[("file", "content")],
         token="test-token"
@@ -119,15 +131,16 @@ def test_rest_post_file(mock_requests):
         headers={"traceparent": None, "Authorization": "Bearer test-token"}
     )
 
-def test_rest_error_handling(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_error_handling(mock_requests):
     mock_post, mock_get = mock_requests
     mock_post.return_value.status_code = 500
     mock_get.return_value.status_code = 500
     
     adapter = RestAdapter()
-    assert adapter.get("http://test") is None
-    assert adapter.post("http://test", {}, "token") is None
-    assert adapter.post_file("http://test", [], "token") is None
+    assert await adapter.get("http://test") is None
+    assert await adapter.post("http://test", {}, "token") is None
+    assert await adapter.post_file("http://test", [], "token") is None
 
 @pytest.mark.asyncio
 async def test_nats_post_error(mock_nats_connection):
@@ -163,27 +176,29 @@ async def test_nats_unlisten_missing(mock_nats_connection):
     adapter = NatsAdapter()
     await adapter.unlisten("nonexistent")  # Should log warning
 
-def test_rest_get_error(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_get_error(mock_requests):
     _, mock_get = mock_requests
     mock_get.return_value.status_code = 500
     
     adapter = RestAdapter()
-    result = adapter.get("http://test", token="test-token")
+    result = await adapter.get("http://test", token="test-token")
     assert result is None
 
-def test_rest_post_error(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_post_error(mock_requests):
     mock_post, _ = mock_requests
     mock_post.return_value.status_code = 500
     
     adapter = RestAdapter()
-    result = adapter.post("http://test", {"data": "test"}, "test-token")
+    result = await adapter.post("http://test", {"data": "test"}, "test-token")
     assert result is None
 
-def test_rest_post_file_error(mock_requests):
+@pytest.mark.asyncio
+async def test_rest_post_file_error(mock_requests):
     mock_post, _ = mock_requests
     mock_post.return_value.status_code = 500
     
     adapter = RestAdapter()
-    result = adapter.post_file("http://test", [("file", "content")], "test-token")
+    result = await adapter.post_file("http://test", [("file", "content")], "test-token")
     assert result is None
-

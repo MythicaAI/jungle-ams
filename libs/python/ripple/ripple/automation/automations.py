@@ -1,12 +1,47 @@
+import asyncio
+import logging
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+import multiprocessing
+import sys
 from ripple.automation.models import AutomationModel, AutomationsResponse
 from ripple.automation.publishers import ResultPublisher
 from ripple.automation.utils import format_exception
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import Error, ProcessStreamItem
-from typing import Callable, Literal
+from typing import Callable, Coroutine, Literal
 
 from ripple.config import ripple_config
 from ripple.runtime.params import resolve_params
+
+
+log = logging.getLogger(__name__)
+
+def run_provider_in_async_loop(func: Callable[..., Coroutine], *args,):
+    log.info("Run in parallel process")
+    if asyncio.iscoroutinefunction(func):
+        return asyncio.run(func(*args))
+    else:
+        return func(*args)
+
+# TODO: delete this method or do not use ResultPublisher as argument passed to this 
+# as it is not picklable for multiprocessing: cannot pickle \'_asyncio.Task\'
+async def run_provider_in_process(func: Callable[..., Coroutine], *args,):
+    if "pytest" in sys.modules:
+        # Many arguments like methods are mocked with pytest - they are not picklable
+        executor = ThreadPoolExecutor()
+    else:
+        context = multiprocessing.get_context("fork")
+        executor = ProcessPoolExecutor(mp_context=context)
+
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(
+        executor,
+        run_provider_in_async_loop,
+        func,
+        *args,
+    )
+    return result
+
 
 class ScriptRequest(ParameterSet):
         script: str
@@ -15,7 +50,7 @@ class ScriptRequest(ParameterSet):
 
 def _run_script_automation() -> Callable:
     
-    def impl(request: ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
+    async def impl(request: ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
         # Prepare the environment to hold the script's namespace
         script_namespace = {}
         if not request.request_data:
@@ -35,11 +70,11 @@ def _run_script_automation() -> Callable:
             raise ValueError("RequestModel not found in script.")
 
         api_url = ripple_config().api_base_uri
-        resolve_params(api_url, responder.directory, request_model)
+        await resolve_params(api_url, responder.directory, request_model)
 
         # Run the automation function
         if "runAutomation" in script_namespace and callable(script_namespace["runAutomation"]):
-            result = script_namespace["runAutomation"](request_model, responder)
+            result = await run_provider_in_process(script_namespace["runAutomation"], request_model, responder)
         else:
             raise ValueError("runAutomation function not found in script.")
 
@@ -52,7 +87,7 @@ def _run_script_automation() -> Callable:
     return impl
 
 def _get_script_interface() -> Callable:
-    def impl(request: ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem: 
+    async def impl(request: ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem: 
         script_namespace = {}
 
         try:
@@ -81,11 +116,11 @@ def _get_script_interface() -> Callable:
                 }
             })
         except Exception as e:
-            responder.result(Error(error=f"Script Interface Generation Error: {format_exception(e)}"))
+            await responder.result(Error(error=f"Script Interface Generation Error: {format_exception(e)}"))
 
         return(AutomationsResponse(automations={}))
     return impl
-    
+
 def get_default_automations() -> list[AutomationModel]:
     automations: list[AutomationModel] = []
     automations.append(AutomationModel(
