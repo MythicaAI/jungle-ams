@@ -12,7 +12,6 @@ from cryptid.cryptid import asset_seq_to_id, job_def_seq_to_id
 from repos.assets import AssetVersionResult
 from db.schema.events import Event
 from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
-from routes.jobs.models import JobDefinitionResponse
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader

@@ -38,7 +38,7 @@ class AutomationRequest(BaseModel):
 class BulkAutomationRequest(BaseModel):
     """Bulk automation-jobs in one requests"""
 
-    is_bulk_processing: Literal[True] = True
+    is_bulk_processing: bool = True
     requests: list[AutomationRequest] = []
     event_id: Optional[str] = None
     telemetry_context: Optional[Dict] = {}

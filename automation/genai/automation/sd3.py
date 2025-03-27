@@ -54,7 +54,7 @@ class ImageRequest(ParameterSet):
     aspect_ratio: str = "1:1"
     seed: int = 0
 
-def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
+async def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
     try:
         prompt = request.prompt
         negative_prompt = request.negative_prompt
@@ -63,7 +63,7 @@ def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
         aspect_ratio = request.aspect_ratio
         seed = request.seed
 
-        responder.result(Progress(progress=10))
+        await responder.result(Progress(progress=10))
 
         # Get width and height from aspect_ratio
         if aspect_ratio in aspect_ratio_mapping:
@@ -81,7 +81,7 @@ def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
             height=height
         ).images
         
-        responder.result(Progress(progress=80))
+        await responder.result(Progress(progress=80))
 
         # Use a temporary directory to save all the images
         tmpdirname = tempfile.mkdtemp()
@@ -98,7 +98,7 @@ def txt2img(request: ImageRequest, responder: ResultPublisher) -> OutputFiles:
             # Add the file_id and path to the dictionary
             image_files.append(file_path)
 
-        responder.result(Progress(progress=90))
+        await responder.result(Progress(progress=90))
 
         return OutputFiles(files={'image':image_files})
 

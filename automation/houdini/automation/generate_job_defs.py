@@ -68,7 +68,7 @@ class GenerateJobDefResponse(ProcessStreamItem):
     job_definitions: list[JobDefinition]
 
 
-def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
+async def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher) -> GenerateJobDefResponse:
 
     hda_file = request.hda_file
 
@@ -101,6 +101,6 @@ def generate_job_defs(request: GenerateJobDefRequest, responder: ResultPublisher
             source=source
         )
         ret.append(res)
-        responder.result(res)
+        await responder.result(res)
             
         return GenerateJobDefResponse(job_definitions=ret)
