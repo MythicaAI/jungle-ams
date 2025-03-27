@@ -18,6 +18,29 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
     template.parm_templates[0].name
   );
 
+  const [multiBlocks, setMultiBlocks] = useState<Record<string, number[]>>(() =>
+    template.parm_templates.reduce((acc, folder) => {
+      acc[folder.name] = Array.from(
+        { length: folder?.default_value || 1 },
+        (_, i) => i
+      );
+      return acc;
+    }, {} as Record<string, number[]>)
+  );
+
+  const updateMultiBlocks = (
+    folderName: string,
+    newTemplates: number[] | ((prevTemplates: number[]) => number[])
+  ) => {
+    setMultiBlocks((prev) => ({
+      ...prev,
+      [folderName]:
+        typeof newTemplates === 'function'
+          ? newTemplates(prev[folderName])
+          : newTemplates,
+    }));
+  };
+
   const hasCollapsibleChildren = template.parm_templates.some(
     (parm) => parm.folder_type === 'Collapsible'
   );
@@ -26,6 +49,11 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
   );
   const hasRadioChildren = template.parm_templates.some(
     (parm) => parm.folder_type === 'RadioButtons'
+  );
+  const simpleMultiBlockChildren = template.parm_templates.some(
+    (parm) =>
+      parm.folder_type === 'MultiparmBlock' ||
+      parm.folder_type === 'ScrollingMultiparmBlock'
   );
 
   const handleFolderActivation = (folderName: string) => {
@@ -50,7 +78,11 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
                 className={`folder-tab ${
                   activeFolder === folder.name ? 'active' : ''
                 } 
-                ${hasSimpleChildren ? 'simple-folder-tab' : ''}
+                ${
+                  hasSimpleChildren || simpleMultiBlockChildren
+                    ? 'simple-folder-tab'
+                    : ''
+                }
                 ${hasRadioChildren ? 'align-center gap-4' : ''}
                 `}
                 onClick={() => handleFolderActivation(folder.name || '')}
@@ -81,6 +113,10 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
                     data={data}
                     onChange={onChange}
                     template={folder}
+                    multiBlocks={multiBlocks[folder.name]}
+                    setMultiBlocks={(newBlocks) =>
+                      updateMultiBlocks(folder.name, newBlocks)
+                    }
                   />
                 </div>
               );

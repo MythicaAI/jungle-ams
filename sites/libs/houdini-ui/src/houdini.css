@@ -246,7 +246,49 @@ details > summary::marker {
   content: '';
 }
 
+/* multi-block */
+.multiblock-counter {
+  display: inline-block;
+  padding: 2px 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #787878;
+  color: #fff;
+  min-width: 50px;
+}
+/* generate similar styles as above counter for a + and - button  */
+.multiblock-counter-button {
+  padding: 2px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #5b5b5b;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.multiblock-icon {
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.multiblock-icon:hover {
+  opacity: 0.7;
+}
+
+.underline-text:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* general */
+
+.white {
+  color: #fff;
+}
 
 .cursor-pointer {
   cursor: pointer;
@@ -279,4 +321,8 @@ details > summary::marker {
 
 .gap-4 {
   gap: 4px;
+}
+
+.gap-8 {
+  gap: 8px;
 }
