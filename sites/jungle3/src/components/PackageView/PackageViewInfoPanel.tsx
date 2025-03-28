@@ -21,7 +21,6 @@ import {
 import { DownloadButton } from "@components/common/DownloadButton";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useGetJobDefinition } from "@queries/packages";
-import { useSceneStore } from "@store/sceneStoreEmbedded";
 import { useTranslation } from "react-i18next";
 
 export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
@@ -37,10 +36,6 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
       asset_id as string, 
       (version_id as string)?.split("."));
 
-  const { hdaSchemas } = useSceneStore();
-    const matchesHdaSchema = hdaSchemas.find(
-      (schema) => schema.name === av?.name,
-    );
     
   const convertCommitRefToLink = (ref: string) => {
     if (ref && ref.startsWith("git@github.com")) {
@@ -94,9 +89,7 @@ export const PackageViewInfoPanel: React.FC<AssetVersionResponse> = (
     }, 0),
   );
 
-  const showAutomations = 
-    (jobDefinitions && import.meta.env.VITE_MYTHICA_ENVIRONMENT === "dev")||
-    matchesHdaSchema;
+  const showAutomations = jobDefinitions;
 
   return (
     <Stack gap="10px">
