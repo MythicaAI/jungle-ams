@@ -4,6 +4,7 @@
 
 from http import HTTPStatus
 
+from httpx import ASGITransport, AsyncClient
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
@@ -615,41 +616,43 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     # Verify no job definitions exist
     asset_id = asset_version.asset_id
 
+    json_data = {
+        'job_type': 'houdini::/mythica/generate_mesh',
+        'name': 'Generate Cactus',
+        'description': 'Generates a cactus mesh',
+        'params_schema': {
+            'params': {
+                'hda_file': {
+                    'param_type': 'file',
+                    'label': 'HDA File',
+                    'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                    'constant': True
+                },
+            },
+            "params_v2": [
+            {
+                "param_type": "file",
+                "label": "Sub-Network Input #1",
+                "category_label": None,
+                "constant": False,
+                "name": "input0",
+                "default": ""
+            }
+        ]
+        },
+        'source': {
+            'asset_id': asset_id,
+            'major': asset_version.version[0],
+            'minor': asset_version.version[1],
+            'patch': asset_version.version[2],
+            'file_id': hda_file_id,
+            'entry_point': 'cactus'
+        }
+    }
+
     # Create a job definition for asset version
     r = client.post(f'{api_base}/jobs/definitions',
-                    json={
-                        'job_type': 'houdini::/mythica/generate_mesh',
-                        'name': 'Generate Cactus',
-                        'description': 'Generates a cactus mesh',
-                        'params_schema': {
-                            'params': {
-                                'hda_file': {
-                                    'param_type': 'file',
-                                    'label': 'HDA File',
-                                    'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
-                                    'constant': True
-                                },
-                            },
-                            "params_v2": [
-                            {
-                                "param_type": "file",
-                                "label": "Sub-Network Input #1",
-                                "category_label": None,
-                                "constant": False,
-                                "name": "input0",
-                                "default": ""
-                            }
-                        ]
-                        },
-                        'source': {
-                            'asset_id': asset_id,
-                            'major': asset_version.version[0],
-                            'minor': asset_version.version[1],
-                            'patch': asset_version.version[2],
-                            'file_id': hda_file_id,
-                            'entry_point': 'cactus'
-                        }
-                    }, headers=headers)
+                    json=json_data, headers=headers)
     assert_status_code(r, HTTPStatus.CREATED)
     r = client.get(f'{api_base}/jobs/definitions/{r.json().get("job_def_id")}', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
@@ -696,3 +699,29 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     r = client.post(f'{api_base}/jobs/definitions/{job_def_seq_to_id(99999)}',
                     json={}, headers=headers)
     assert_status_code(r, HTTPStatus.NOT_FOUND)
+
+    # Test create job with completely template's data
+    r = client.post(f'{api_base}/jobs/definitions/{template_job_def.job_def_id}',
+                    json=json_data, headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    r = client.get(f'{api_base}/jobs/definitions/{r.json().get("job_def_id")}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    new_job_def: JobDefinitionModel = munchify(r.json())
+    new_job_def_id = new_job_def.job_def_id
+    assert new_job_def.name == template_job_def.name
+    assert new_job_def.description == template_job_def.description
+    assert new_job_def.params_schema == template_job_def.params_schema
+    assert new_job_def.source == template_job_def.source
+    assert new_job_def.owner_id == test_profile.profile.profile_id
+    assert new_job_def.job_def_id != template_job_def.job_def_id
+    
+    # Test create job from template without params_schema
+    r = client.post(f'{api_base}/jobs/definitions/{template_job_def.job_def_id}',
+                    json={
+                        'name': 'Generate Cactus2',
+                    }, headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    r = client.get(f'{api_base}/jobs/definitions/{new_job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    new_job_def: JobDefinitionModel = munchify(r.json())
+    assert new_job_def.params_schema.params_v2 == template_job_def.params_schema.params_v2

@@ -156,7 +156,7 @@ async def define_new_from_template(
     await db_session.commit()
     await db_session.refresh(job_def)
     job_def_seq = job_def.job_def_seq
-    print(new_data.source, "new_data.source")
+
 
     # Create the asset version link
     if new_data.source:
