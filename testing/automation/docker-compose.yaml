@@ -12,28 +12,9 @@ services:
       - storage
     environment:
       MYTHICA_ENVIRONMENT: debug
-      DISCORD_INFRA_ALERTS_WEBHOOK: localhost
-      MYTHICA_ENDPOINT: http://localhost:5555
-      MYTHICA_API_KEY: ${MYTHICA_API_KEY}
-      API_BASE_URI: http://localhost:5555/v1
-      TELEMETRY_ENABLE: True
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
-  imagemagick:
-    container_name: imagemagick
-    image: mythica-auto-imagemagick:latest
-    networks:
-      - web
-      - storage
-    environment:
-      MYTHICA_ENVIRONMENT: debug
-      DISCORD_INFRA_ALERTS_WEBHOOK: localhost
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       MYTHICA_ENDPOINT: http://app:5555
-      API_BASE_URI: http://app:5555/v1
       MYTHICA_API_KEY: ${MYTHICA_API_KEY}
-      TELEMETRY_ENABLE: True
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
   houdini-worker:
     container_name: houdini
     image: mythica-auto-houdini:latest
@@ -46,12 +27,10 @@ services:
       TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
-      DISCORD_INFRA_ALERTS_WEBHOOK: localhost
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
       SFX_CLIENT_ID: ${SFX_CLIENT_ID}
       SFX_CLIENT_SECRET: ${SFX_CLIENT_SECRET}
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
   blender-worker:
     container_name: blender
     image: mythica-auto-blender:latest
@@ -64,10 +43,8 @@ services:
       TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
-      DISCORD_INFRA_ALERTS_WEBHOOK: localhost
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
   workflow-worker:
     container_name: workflow
     image: mythica-auto-workflow:latest
@@ -80,10 +57,8 @@ services:
       TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
-      DISCORD_INFRA_ALERTS_WEBHOOK: localhost
+      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
 networks:
   storage:
     driver: bridge

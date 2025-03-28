@@ -5,8 +5,8 @@ import os
 from typing import Any, Optional
 
 from cryptid import location
-import httpx
 import nats
+import requests
 
 from ripple.automation.utils import format_exception
 
@@ -121,26 +121,25 @@ class NatsAdapter():
 
 class RestAdapter():
 
-    async def get(self, endpoint: str, data: dict={}, token: str = None, headers: dict = {"traceparent": None}) -> Optional[str]:
+    def get(self, endpoint: str, data: dict={}, token: str = None, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Get data from an endpoint."""
         log.debug(f"Getting from Endpoint: {endpoint} - {data}" )
         headers = headers.copy()
         headers.update({
             "Authorization": "Bearer %s" % token
         })
-        async with httpx.AsyncClient() as async_client:
-            response = await async_client.get(
-                endpoint,
-                headers=headers,
-            )
-            if response.status_code in [200,201]:
-                log.debug(f"Endpoint Response: {response.status_code}")
-                return response.json()
-            else:
-                log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
-                return None
+        response = requests.get(
+            endpoint,
+            headers=headers,
+        )
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
+            return None
 
-    async def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None}, query_params: dict = {}) -> Optional[str]:
+    def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None}, query_params: dict = {}) -> Optional[str]:
         """Post data to an endpoint synchronously. """
         log.debug(f"posting[{endpoint}]: {json_data}; {headers=}" )
         headers = headers.copy()
@@ -148,34 +147,32 @@ class RestAdapter():
             "Content-Type": "application/json",
             "Authorization": "Bearer %s" % token
         })
-        async with httpx.AsyncClient() as async_client:
-            response = await async_client.post(
-                endpoint, 
-                json=json_data,
-                params=query_params,
-                headers=headers,
-            )
-            if response.status_code in [200,201]:
-                log.debug(f"Endpoint Response: {response.status_code}")
-                return response.json()
-            else:
-                log.error(f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}")
-                return None
+        response = requests.post(
+            endpoint, 
+            json=json_data,
+            params=query_params,
+            headers=headers,
+        )
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}")
+            return None
 
-    async def post_file(self, endpoint: str, file_data: list, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
+    def post_file(self, endpoint: str, file_data: list, token: str, headers: dict = {"traceparent": None}) -> Optional[str]:
         """Post file to an endpoint."""
         log.debug(f"Sending file to Endpoint: {endpoint} - {file_data}" )
         headers = headers.copy()
         headers.update({"Authorization": "Bearer %s" % token})
-        async with httpx.AsyncClient() as async_client:
-            response = await async_client.post(
-                endpoint, 
-                files=file_data, 
-                headers=headers,
-            )
-            if response.status_code in [200,201]:
-                log.debug(f"Endpoint Response: {response.status_code}")
-                return response.json()
-            else:
-                log.error(f"Failed to call job API: {endpoint} - {file_data} - {response.status_code}")
-                return None
+        response = requests.post(
+            endpoint, 
+            files=file_data, 
+            headers=headers,
+        )
+        if response.status_code in [200,201]:
+            log.debug(f"Endpoint Response: {response.status_code}")
+            return response.json()
+        else:
+            log.error(f"Failed to call job API: {endpoint} - {file_data} - {response.status_code}")
+            return None

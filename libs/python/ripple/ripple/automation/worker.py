@@ -2,8 +2,7 @@ import asyncio
 import logging
 import tempfile
 from datetime import datetime, timezone
-from types import CoroutineType
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -26,13 +25,13 @@ from ripple.automation.utils import error_handler, format_exception
 from ripple.config import ripple_config, update_headers_from_context
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import Error, ProcessStreamItem, Progress
-from ripple.runtime.alerts import AlertSeverity, send_alert
 from ripple.runtime.params import resolve_params
+from ripple.runtime.alerts import AlertSeverity, send_alert
 
 # Set up logging
 logging.basicConfig(
-    level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
@@ -40,68 +39,64 @@ tracer = trace.get_tracer(__name__)
 
 process_guid = str(uuid4())
 
-
 class CoordinatorException(Exception):
     pass
 
 
+
 class Worker:
     def __init__(self) -> None:
-        self.automations: dict[str, AutomationModel] = {}
+        self.automations:dict[str,AutomationModel] = {}
         self.nats = NatsAdapter()
         self.rest = RestAdapter()
 
         catalog_provider = AutomationModel(
-            path='/mythica/automations',
-            provider=self._get_catalog_provider(),
-            inputModel=ParameterSet,
-            outputModel=AutomationsResponse,
-            hidden=True,
-        )
+            path ='/mythica/automations',
+            provider = self._get_catalog_provider(),
+            inputModel = ParameterSet,
+            outputModel = AutomationsResponse,
+            hidden = True
+        ) 
 
         autos = get_default_automations()
         autos.append(catalog_provider)
         self._load_automations(autos)
 
-    def _get_catalog_provider(
-        self,
-    ) -> Callable[[ParameterSet, ResultPublisher], AutomationsResponse]:
-        doer = self
 
-        def impl(
-            request: ParameterSet = None, responder: ResultPublisher = None
-        ) -> AutomationsResponse:
+    def _get_catalog_provider(self) -> Callable[[ParameterSet, ResultPublisher], AutomationsResponse]:
+        doer=self
+        def impl(request: ParameterSet = None, responder: ResultPublisher=None) -> AutomationsResponse:
             ret = {}
-            for path, wk in doer.automations.items():
-                ret.update(
-                    {
-                        path: {
-                            "input": wk.inputModel.model_json_schema(),
-                            "output": wk.outputModel.model_json_schema(),
-                            "hidden": wk.hidden,
-                        }
+            for path,wk in doer.automations.items():
+                ret.update({
+                    path: {
+                        "input": wk.inputModel.model_json_schema(),
+                        "output": wk.outputModel.model_json_schema(),
+                        "hidden": wk.hidden                   
                     }
-                )
-
+                })
+                        
             return AutomationsResponse(automations=ret)
-
         return impl
+
 
     def start(self, subject: str, automations: list[AutomationModel]) -> None:
         self._load_automations(automations)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()        
         task = loop.create_task(self.nats.listen(subject, self._get_executor()))
         task.add_done_callback(error_handler(log))
 
         # Run loop until canceled or an exception escapes
         loop.run_forever()
 
+
     def start_web(self, automations: list[AutomationModel]) -> FastAPI:
         self._load_automations(automations)
         return self._get_web_executor()
 
-    def _load_automations(self, automations: list[AutomationModel]):
+
+    def _load_automations(self,automations: list[AutomationModel]):
         """Function to dynamically discover and register workers in a container"""
         try:
             log.debug(f'Start Registering automations')
@@ -118,24 +113,19 @@ class Worker:
         """
         Execute an automation by trying to find a route that maps
         to the path defined in the payload. If a route is defined,
-        data is sent to the route provider, along with a callback for
+        data is sent to the route provider, along with a callback for 
         reporting status
         """
-        doer = self
-
+        doer=self
         async def implementation(json_payload: dict) -> tuple[bool, ProcessStreamItem]:
             with tracer.start_as_current_span("worker.execution") as span:
                 ret_data = None
-                span.set_attribute(
-                    "worker.started", datetime.now(timezone.utc).isoformat()
-                )
+                span.set_attribute("worker.started", datetime.now(timezone.utc).isoformat())
                 try:
                     auto_request = AutomationRequest(**json_payload)
 
-                    trace_data = {
-                        "correlation": auto_request.correlation,
-                        "job_id": auto_request.job_id if auto_request.job_id else "",
-                    }
+                    trace_data = {"correlation": auto_request.correlation,
+                                  "job_id": auto_request.job_id if auto_request.job_id else "" }
                     span.set_attributes(trace_data)
                     if len(auto_request.data) == 1 and 'params' in auto_request.data:
                         # If it only contains "params", replace payload.data with its content
@@ -144,63 +134,39 @@ class Worker:
                     log_str = f"correlation: {auto_request.correlation}, work:{auto_request.path}, job_id: {auto_request.job_id}, data: {auto_request.data}"
 
                 except Exception as e:
-                    msg = f'Validation error - {json_payload} - {format_exception(e)}'
+                    msg=f'Validation error - {json_payload} - {format_exception(e)}'
                     log.error(msg)
                     await doer.nats.post("result", Error(error=msg).model_dump())
                     return False, Error(error=msg)
 
-                # Run the worker
+                #Run the worker
                 publisher = None
-
                 try:
                     with tempfile.TemporaryDirectory() as tmpdir:
-                        publisher = ResultPublisher(
-                            auto_request, self.nats, self.rest, tmpdir
-                        )
-                        await publisher.result(Progress(progress=0))
+                        publisher = ResultPublisher(auto_request, self.nats, self.rest, tmpdir)
+                        publisher.result(Progress(progress=0))
 
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
                         api_url = ripple_config().api_base_uri
-                        await resolve_params(
-                            api_url,
-                            tmpdir,
-                            inputs,
-                            headers=update_headers_from_context(),
-                        )
-
+                        resolve_params(api_url, tmpdir, inputs, headers=update_headers_from_context())
                         with tracer.start_as_current_span("job.execution") as job_span:
-                            job_span.set_attribute(
-                                "job.started", datetime.now(timezone.utc).isoformat()
-                            )
-                            # TODO: If we can run it without Publisher instance it can work in separate process
-                            # ret_data: ProcessStreamItem = await run_provider_in_process(worker.provider, inputs, None)
-                            if asyncio.iscoroutinefunction(worker.provider):
-                                ret_data: ProcessStreamItem = await worker.provider(
-                                    inputs, publisher
-                                )
-                            else:
-                                ret_data: ProcessStreamItem = worker.provider(
-                                    inputs, publisher
-                                )
-                            job_span.set_attribute(
-                                "job.completed", datetime.now(timezone.utc).isoformat()
-                            )
+                            job_span.set_attribute("job.started", datetime.now(timezone.utc).isoformat())
+                            ret_data: ProcessStreamItem = worker.provider(inputs, publisher)
+                            job_span.set_attribute("job.completed", datetime.now(timezone.utc).isoformat())
 
-                        await publisher.result(ret_data)
-                    await publisher.result(Progress(progress=100), complete=True)
+                        publisher.result(ret_data)
+                    publisher.result(Progress(progress=100), complete=True)
                     return True, ret_data
                 except Exception as e:
-                    msg = f"Executor error - {log_str} - {format_exception(e)}"
+                    msg=f"Executor error - {log_str} - {format_exception(e)}"
                     if publisher:
-                        await publisher.result(Error(error=msg), complete=True)
+                        publisher.result(Error(error=msg), complete=True)
                     log.error(msg)
                     span.record_exception(e)
                     return False, Error(error=msg)
                 finally:
-                    span.set_attribute(
-                        "worker.completed", datetime.now(timezone.utc).isoformat()
-                    )
+                    span.set_attribute("worker.completed", datetime.now(timezone.utc).isoformat())
                     if ret_data and ret_data.job_id:
                         span.set_attribute("job_id", ret_data.job_id)
                     log.info("Job finished %s", auto_request.correlation)
@@ -218,28 +184,20 @@ class Worker:
             ) as span:
                 job_res = EventAutomationResponse()
                 try:
-                    if json_payload.get("is_bulk_processing") is not None:
+                    if json_payload.get("is_bulk_processing", False):
                         requests: list[dict] = json_payload["requests"]
-                        job_res.is_bulk_processing = json_payload.get(
-                            "is_bulk_processing"
-                        )
-                        # validate request for the bulk processing
-                        BulkAutomationRequest(**json_payload)
+                        job_res.is_bulk_processing = True
                     else:
                         requests: list[dict] = [json_payload]
 
+                    if job_res.is_bulk_processing:
+                        # validate request for the bulk processing
+                        BulkAutomationRequest(**json_payload)
+
                     auth_token = requests[0].get("auth_token", None)
 
-                    async_tasks: list[
-                        CoroutineType[Any, Any, tuple[bool, ProcessStreamItem]]
-                    ] = []
                     for job_request in requests:
-                        async_tasks.append(implementation(job_request))
-                    results: tuple[tuple[bool, ProcessStreamItem]] = (
-                        await asyncio.gather(*async_tasks)
-                    )
-
-                    for job_request, (processed, result) in zip(requests, results):
+                        processed, result = await implementation(job_request)
                         job_res.request_result.append(
                             AutomationRequestResult(
                                 processed=processed,
@@ -258,8 +216,7 @@ class Worker:
                 except (CoordinatorException, ValidationError) as ex:
                     job_res.request_result.append(
                         AutomationRequestResult(
-                            processed=False,
-                            result=Error(error=ex.__str__()).model_dump(),
+                            processed=False, result=Error(error=ex.__str__()).model_dump()
                         )
                     )
                     log.exception(ex)
@@ -297,15 +254,15 @@ class Worker:
                     success = False
                 elif item.get("item_type", "") == "error":
                     success = False
-                elif (
-                    item.get("item_type", "") == "job_def"
-                    and item.get("job_def_id") is None
-                ):
+                elif item.get("item_type", "") == "job_def" and item.get("job_def_id") is None:
                     success = False
-                elif (
-                    item.get("item_type", "") == "cropped_image"
-                    and item.get("file_id") is None
-                ):
+                elif item.get("item_type", "") == "job_defs":
+                    if item.get("job_definitions") is None:
+                        success = False
+                    for job_definition in item.get("job_definitions", []):
+                        if job_definition.get("job_def_id") is None:
+                            success = False
+                elif item.get("item_type", "") == "cropped_image" and item.get("file_id") is None:
                     success = False
 
                 if not success:
@@ -313,15 +270,17 @@ class Worker:
                     break
 
             job_res.processed = success
-            response = await self.rest.post(
-                f"{api_url}/events/processed/{event_id}/",
+            response = self.rest.post(
+                f"{api_url}/events/processed/{event_id}",
                 job_res.model_dump(by_alias=True, exclude_none=False),
                 auth_token,
                 headers=updated_headers,
             )
             if not response:
-                log.error("The event status request failed: item_data-%s", item)
-
+                log.error(
+                    "The event status request failed: item_data-%s", item.model_dump()
+                )
+ 
     def _get_web_executor(self):
         """
         Start a FastAPI app dynamically based on the workers list.
@@ -340,7 +299,7 @@ class Worker:
                 "Access-Control-Max-Age": "3600",
             }
             return JSONResponse(content=None, status_code=204, headers=headers)
-
+        
         @app.post("/")
         async def automation_request(request: Request):
             """
@@ -353,18 +312,14 @@ class Worker:
             request_data = await request.json()
             request_data['process_guid'] = process_guid
             auto_request = AutomationRequest(**request_data)
-
+            
+            
             # Find the appropriate worker by path
             automation = self.automations[auto_request.path]
 
             if not automation:
                 return JSONResponse(
-                    content={
-                        "correlation": auto_request.correlation,
-                        "result": {
-                            "error": f"No automation found for path '{auto_request.path}'"
-                        },
-                    },
+                    content={"correlation": auto_request.correlation, "result": {"error": f"No automation found for path '{auto_request.path}'"}},
                     status_code=404,
                     headers=headers,
                 )
@@ -372,62 +327,39 @@ class Worker:
             # Convert request data to the input model
             input_model_class = automation.inputModel
             try:
-                input_data = input_model_class(
-                    **auto_request.data
-                )  # Validate and parse the input
+                input_data = input_model_class(**auto_request.data)  # Validate and parse the input
             except Exception as e:
                 log.error(f"Automation failed: {format_exception(e)}")
                 return JSONResponse(
-                    content={
-                        "correlation": auto_request.correlation,
-                        "result": {"error": auto_request.data},
-                    },
+                    content={"correlation": auto_request.correlation, "result": {"error": auto_request.data}},
                     status_code=422,
                     headers=headers,
                 )
+      
 
             # Execute the worker's provider function
             try:
 
                 with tempfile.TemporaryDirectory() as tmpdir:
                     api_url = ripple_config().api_base_uri
-                    await resolve_params(api_url, tmpdir, input_data)
-                    publisher = SlimPublisher(
-                        request=auto_request, rest=self.rest, directory=tmpdir
-                    )
-                    # TODO: If we can run it without SlimPublisher instance it can work in separate process
-                    # ret_data: ProcessStreamItem = await run_provider_in_process(automation.provider, input_data, None)
-                    if asyncio.iscoroutinefunction(automation.provider):
-                        result: ProcessStreamItem = await automation.provider(
-                            input_data, publisher
-                        )
-                    else:
-                        result: ProcessStreamItem = automation.provider(
-                            input_data, publisher
-                        )
-                    await publisher.result(result)
-
+                    resolve_params(api_url, tmpdir, input_data)
+                    publisher = SlimPublisher(request=auto_request, rest=self.rest, directory=tmpdir)
+                    result = automation.provider(input_data, publisher)
+                    publisher.result(result)
+                    
             except Exception as e:
                 log.error(f"Automation failed: {format_exception(e)}")
                 return JSONResponse(
-                    content={
-                        "correlation": auto_request.correlation,
-                        "result": {
-                            "error": f"Automation failed: {format_exception(e)}"
-                        },
-                    },
+                    content={"correlation": auto_request.correlation, "result": {"error": f"Automation failed: {format_exception(e)}"}},
                     status_code=500,
                     headers=headers,
                 )
 
             # Return result
             return JSONResponse(
-                content={
-                    "correlation": auto_request.correlation,
-                    "result": result.model_dump(),
-                },
+                content={"correlation": auto_request.correlation, "result": result.model_dump()},
                 status_code=200,
                 headers=headers,
             )
-
-        return app
+        return app        
+        

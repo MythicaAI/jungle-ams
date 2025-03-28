@@ -132,7 +132,7 @@ async def _runAutomation_async(request: 'RequestModel', reporter: ResultPublishe
 
                 log.info("Node %s executed; result: %s", node.id, result)
                 node.data["executionData"] = result
-                # TODO: make reporter.publish method and this method async
+
                 reporter.publish(f"Node {node.id} executed", result)
 
             for node in nodes_to_execute:
