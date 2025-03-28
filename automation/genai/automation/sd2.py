@@ -51,7 +51,7 @@ class InpaintRequest(ParameterSet):
     map: FileParameter #Base64 encoded byte string
     
 
-async def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -> OutputFiles:
+def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -> OutputFiles:
     try:
 
         # Open image and map using PIL
@@ -69,7 +69,7 @@ async def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -
         num_inference_steps = request.num_inference_steps
         num_images_per_prompt = request.num_images_per_prompt
 
-        await responder.result(Progress(progress=10))
+        responder.result(Progress(progress=10))
 
         # Run the pipeline and get the list of images
         images = sd2_pipe(
@@ -82,7 +82,7 @@ async def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -
             num_inference_steps=num_inference_steps
         ).images
 
-        await responder.result(Progress(progress=80))
+        responder.result(Progress(progress=80))
 
         # Use a temporary directory to save all the images
         tmpdirname = tempfile.mkdtemp()
@@ -99,7 +99,7 @@ async def img2img_inpaint(request: InpaintRequest, responder: ResultPublisher) -
             # Add the file_id and path to the dictionary
             image_files.append(file_path)
 
-        await responder.result(Progress(progress=90))
+        responder.result(Progress(progress=90))
 
         return OutputFiles(files={'image':image_files})
 

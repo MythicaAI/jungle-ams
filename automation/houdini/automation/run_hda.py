@@ -71,10 +71,10 @@ class RunHdaRequest(ParameterSet):
 class RunHdaResponse(OutputFiles):
     pass
 
-async def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
+def run_hda(request: RunHdaRequest, responder: ResultPublisher) -> RunHdaResponse:
     
     tmp_dir = tempfile.mkdtemp()
-    result_file_paths = await generate_mesh_impl(
+    result_file_paths = generate_mesh_impl(
         request.hda_file.file_path,
         0,
         'glb',

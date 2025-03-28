@@ -7,7 +7,7 @@ from ripple.models.streaming import CropImageResponse
 from wand.image import Image
 
 
-async def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
+def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
 
     with Image(filename=infile) as img:
         original_width, original_height = img.width, img.height
@@ -22,12 +22,12 @@ async def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
         img.save(filename=outfile)
 
 
-async def crop_image_request(request: CropImageRequest, result_callback: ResultPublisher) -> CropImageResponse:
+def crop_image_request(request: CropImageRequest, result_callback: ResultPublisher) -> CropImageResponse:
 
     with NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
         output_path = temp_file.name
 
-        await crop_image(
+        crop_image(
             request.image_file.file_path,
             output_path,
             request.crop_pos_x.default if request.crop_pos_x else None,
