@@ -394,7 +394,7 @@ async def test_process_items_result_success(
     )
     call_args = mock_rest.post.call_args[0]
     assert test_token == call_args[2]
-    assert f"{ripple_config().api_base_uri}/events/processed/1" == call_args[0]
+    assert f"{ripple_config().api_base_uri}/events/processed/1/" == call_args[0]
     assert expected_response.is_bulk_processing == call_args[1]["is_bulk_processing"]
     assert expected_response.processed == call_args[1]["processed"]
     for index in range(len(expected_response.request_result)):
