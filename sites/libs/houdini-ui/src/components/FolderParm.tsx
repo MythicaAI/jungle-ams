@@ -12,8 +12,9 @@ export interface FolderParmProps {
   template: hou.FolderParmTemplate;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
-  multiBlocks?: number[]; // Templates for this folder
-  setMultiBlocks?: React.Dispatch<React.SetStateAction<number[]>>; // Setter for templates
+  multiBlocks?: number[]; // Multiblocks for this folder
+  setMultiBlocks?: React.Dispatch<React.SetStateAction<number[]>>; // Setter for multibocks
+  multiFolderIndex?: number; // Index of the multi folder
 }
 
 export const FolderParm: React.FC<FolderParmProps> = ({
@@ -22,23 +23,50 @@ export const FolderParm: React.FC<FolderParmProps> = ({
   onChange,
   setMultiBlocks,
   multiBlocks,
+  multiFolderIndex,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [forceRerender, setForceRerender] = React.useState(false);
 
   const handleToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
     const target = event.target as HTMLDetailsElement;
     setIsOpen(target.open);
   };
 
-  const handleAddTemplate = () => {
+  const handleAddMultiBlock = () => {
     if (setMultiBlocks && multiBlocks) {
       setMultiBlocks([...multiBlocks, multiBlocks.length]);
     }
   };
 
-  const handleRemoveTemplate = (index: number) => {
+  const handleRemoveMultiBlock = (index: number) => {
     if (setMultiBlocks && multiBlocks) {
-      setMultiBlocks(multiBlocks.filter((_, i) => i !== index));
+      const updatedBlocks = multiBlocks.filter((_, i) => i !== index);
+      setMultiBlocks(updatedBlocks);
+
+      const updatedValues: typeof data = { ...data };
+      const blockNameTemplate = template.parm_templates[0].name;
+
+      const removedBlockName = blockNameTemplate.replace(/#/, `${index}`);
+      updatedValues[removedBlockName] = null;
+
+      for (let i = index; i < multiBlocks.length - 1; i++) {
+        const currentBlockName = blockNameTemplate.replace(/#/, `${i}`);
+        const nextBlockName = blockNameTemplate.replace(/#/, `${i + 1}`);
+
+        updatedValues[currentBlockName] = updatedValues[nextBlockName];
+      }
+
+      const lastBlockName = blockNameTemplate.replace(
+        /#/,
+        `${multiBlocks.length - 1}`
+      );
+      updatedValues[lastBlockName] = null;
+
+      onChange(updatedValues);
+      setTimeout(() => {
+        setForceRerender((prev) => !prev);
+      }, 100);
     }
   };
 
@@ -99,10 +127,12 @@ export const FolderParm: React.FC<FolderParmProps> = ({
     );
   }
 
+  {
+    /* TODO break down to separate component */
+  }
   if (
     template.folder_type === 'MultiparmBlock' ||
-    template.folder_type === 'ScrollingMultiparmBlock' ||
-    template.folder_type === 'TabbedMultiparmBlock'
+    template.folder_type === 'ScrollingMultiparmBlock'
   ) {
     return (
       <div>
@@ -111,7 +141,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
           <div className="multiblock-counter-button">
             <span
               className="align-center"
-              onClick={handleAddTemplate}
+              onClick={handleAddMultiBlock}
               style={{ paddingRight: '9px' }}
             >
               <img
@@ -134,11 +164,21 @@ export const FolderParm: React.FC<FolderParmProps> = ({
               className="align-center"
               onClick={() => {
                 if (setMultiBlocks && multiBlocks) {
-                  setMultiBlocks(
-                    multiBlocks.length > 1
-                      ? multiBlocks.slice(0, -1)
-                      : multiBlocks
-                  );
+                  if (multiBlocks.length > 0) {
+                    const updatedBlocks = multiBlocks.slice(0, -1);
+                    setMultiBlocks(updatedBlocks);
+
+                    const updatedValues = { ...data };
+                    const blockNameTemplate = template.parm_templates[0].name;
+
+                    const lastBlockName = blockNameTemplate.replace(
+                      /#/,
+                      `${multiBlocks.length - 1}`
+                    );
+                    updatedValues[lastBlockName] = null;
+
+                    onChange(updatedValues);
+                  }
                 }
               }}
               style={{ paddingLeft: '2px' }}
@@ -171,74 +211,157 @@ export const FolderParm: React.FC<FolderParmProps> = ({
             Clear
           </span>
         </div>
-        <div className="folder-content">
+
+        {/* TODO break down to separate component */}
+        <div className="folder-content" key={`${forceRerender}`}>
           {multiBlocks &&
-            multiBlocks?.map((_, index) => (
-              <div
-                key={template.name + index}
-                className="parm-item align-center"
-              >
+            multiBlocks?.map((_, index) => {
+              const temlpateName = template.parm_templates[0].name.replace(
+                /#/,
+                `${index}`
+              );
+              return (
                 <div
-                  className="align-center gap-4  multiblock-counter-button"
-                  style={{ marginRight: '18px', cursor: 'default' }}
+                  key={`${template.name}-${index}-${multiBlocks.length}`}
+                  className="parm-item align-center"
                 >
-                  <button
-                    className="align-center justify-center"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      handleRemoveTemplate(index);
-                    }}
-                  >
-                    <img width="14px" height="14px" src={Cross} alt="cross" />
-                  </button>
                   <div
-                    style={{
-                      height: '22px',
-                      width: '1px',
-                      background: '#ccc',
-                      position: 'absolute',
-                    }}
-                  />
-                  <button
-                    className="align-center"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: '0 0 0 6px',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      if (setMultiBlocks && multiBlocks) {
-                        setMultiBlocks([
-                          ...multiBlocks.slice(0, index),
-                          multiBlocks.length,
-                          ...multiBlocks.slice(index),
-                        ]);
-                      }
-                    }}
+                    className="align-center gap-4  multiblock-counter-button"
+                    style={{ marginRight: '18px', cursor: 'default' }}
                   >
-                    <img width="16px" height="16px" src={Insert} alt="insert" />
-                  </button>
+                    <button
+                      className="align-center justify-center"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => {
+                        handleRemoveMultiBlock(index);
+                      }}
+                    >
+                      <img width="14px" height="14px" src={Cross} alt="cross" />
+                    </button>
+                    <div
+                      style={{
+                        height: '22px',
+                        width: '1px',
+                        background: '#ccc',
+                        position: 'absolute',
+                      }}
+                    />
+                    <button
+                      className="align-center"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0 0 0 6px',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => {
+                        if (setMultiBlocks && multiBlocks) {
+                          const newBlockIndex = index;
+
+                          const updatedBlocks = [
+                            ...multiBlocks.slice(0, newBlockIndex),
+                            multiBlocks[newBlockIndex],
+                            ...multiBlocks.slice(newBlockIndex),
+                          ];
+
+                          setMultiBlocks(updatedBlocks);
+
+                          const updatedValues = { ...data };
+                          const blockNameTemplate =
+                            template.parm_templates[0].name;
+
+                          for (
+                            let i = updatedBlocks.length - 1;
+                            i > newBlockIndex;
+                            i--
+                          ) {
+                            const currentBlockName = blockNameTemplate.replace(
+                              /#/,
+                              `${i - 1}`
+                            );
+                            const newBlockName = blockNameTemplate.replace(
+                              /#/,
+                              `${i}`
+                            );
+
+                            updatedValues[newBlockName] =
+                              updatedValues[currentBlockName];
+                          }
+
+                          const newBlockName = blockNameTemplate.replace(
+                            /#/,
+                            `${newBlockIndex}`
+                          );
+                          updatedValues[newBlockName] = Array.isArray(
+                            template.parm_templates[0]?.default_value
+                          )
+                            ? [...template.parm_templates[0]?.default_value]
+                            : template.parm_templates[0]?.default_value;
+
+                          onChange(updatedValues);
+                          setTimeout(() => {
+                            setForceRerender((prev) => !prev);
+                          }, 100);
+                        }
+                      }}
+                    >
+                      <img
+                        width="16px"
+                        height="16px"
+                        src={Insert}
+                        alt="insert"
+                      />
+                    </button>
+                  </div>
+                  <ParmFactory
+                    data={data}
+                    //@ts-ignore
+                    parmTemplate={{
+                      ...template.parm_templates[0],
+                      id: template.parm_templates[0].id + `${index}`,
+                      default_value: data[temlpateName] || null,
+                      name: temlpateName,
+                    }}
+                    onChange={onChange}
+                  />
                 </div>
+              );
+            })}
+        </div>
+      </div>
+    );
+  }
+
+  if (template.folder_type === 'TabbedMultiparmBlock') {
+    return (
+      <div
+        className={`folder-parm default ${
+          template.runtime_data.isActive ? 'active' : ''
+        }`}
+      >
+        <div className="folder-content">
+          {template.parm_templates.map((parmTemplate, index) => {
+            const name = parmTemplate.name.replace(/#/, `${multiFolderIndex}`);
+            return (
+              <div key={template.name + index} className="parm-item">
                 <ParmFactory
                   data={data}
                   //@ts-ignore
                   parmTemplate={{
-                    ...template.parm_templates[0],
-                    name: template.parm_templates[0].name.replace(
-                      /#/,
-                      `${index}`
-                    ),
+                    ...parmTemplate,
+                    name,
+                    default_value: data[name] || null,
                   }}
                   onChange={onChange}
                 />
               </div>
-            ))}
+            );
+          })}
         </div>
       </div>
     );

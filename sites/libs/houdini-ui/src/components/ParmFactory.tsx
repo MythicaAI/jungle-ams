@@ -24,7 +24,6 @@ export const ParmFactory: React.FC<ParmFactoryProps> = ({
   onChange,
   useSlidersOnMobile,
 }) => {
-  console.log('parmTemplate: ', parmTemplate);
   switch (parmTemplate.param_type) {
     case hou.parmTemplateType.Folder:
       return (

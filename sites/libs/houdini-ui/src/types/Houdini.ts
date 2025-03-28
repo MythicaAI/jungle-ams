@@ -273,6 +273,7 @@ export namespace hou {
     disable_when: string = '';
     default_expression: string[] = [];
     default_expression_language: scriptLanguage[] = [];
+    default_value?: any;
 
     constructor(data: dictionary) {
       this.param_type = data.param_type as hou.parmTemplateType;
@@ -680,7 +681,7 @@ export namespace hou {
     ends_tab_group: boolean = false;
     folder_set: FolderSetParmTemplate | null = null;
     runtime_data: { [key: string]: unknown } = {};
-    default_value?: number;
+   
 
     constructor(config: FolderParmTemplateProps) {
       super(config);
