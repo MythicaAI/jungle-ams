@@ -201,7 +201,7 @@ async def generate_several_houdini_job_defs(
 ) -> bool:
     """Request to generate several job_def"""
     bulk_req = BulkAutomationRequest(
-        is_bulk_processing=len(contents) > 1,
+        is_bulk_processing= True, #len(contents) > 1,
         event_id=event_id,
         telemetry_context=get_telemetry_headers()
     )
