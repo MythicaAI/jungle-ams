@@ -8,7 +8,6 @@ import { CookieConsentBanner } from "@components/CookieConsentBanner";
 import { useOnboarding } from "@hooks/useOnboarding";
 import { ProductTour } from "@components/ProductTour";
 import { PrivateRoute } from "@components/PrivateRoute";
-import { PackageJobs } from "@pages/PackageJobs";
 import { PackageScene } from "@pages/PackageScene";
 import "./styles/App.css";
 
@@ -82,7 +81,7 @@ const App: React.FC = () => {
           />
           <Route
             path="package-view/:asset_id/versions/:version_id/jobs"
-            element={(import.meta.env.VITE_MYTHICA_ENVIRONMENT==="dev")?<PackageScene />:<PackageJobs />}
+            element={<PackageScene />}
           />
           <Route path="quick-setup" element={<QuickSetup />} />
           <Route path="welcome" element={<Welcome />} />
