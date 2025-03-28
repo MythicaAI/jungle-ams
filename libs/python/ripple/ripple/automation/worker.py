@@ -271,7 +271,7 @@ class Worker:
 
             job_res.processed = success
             response = self.rest.post(
-                f"{api_url}/events/processed/{event_id}",
+                f"{api_url}/events/processed/{event_id}/",
                 job_res.model_dump(by_alias=True, exclude_none=False),
                 auth_token,
                 headers=updated_headers,
