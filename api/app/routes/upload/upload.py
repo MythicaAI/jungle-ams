@@ -14,23 +14,24 @@ from sqlmodel import and_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 import db.index as db_index
-from repos.assets import convert_version_input, process_join_results, select_asset_version
 from config import app_config
 from content.validate_filename import validate_filename
 from context import UploadContext
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.connection import get_db_session
 from db.schema.assets import AssetVersion
-from db.schema.media import FileContent
+from db.schema.media import FileContent, FileTag
 from db.schema.profiles import Profile
+from queries.files import delete_by_id
+from repos.assets import convert_version_input, process_join_results, select_asset_version
 from ripple.models.contexts import FilePurpose
 from ripple.models.sessions import SessionProfile
 from routes.authorization import session_profile
-from routes.file_uploads import FileUploadResponse, enrich_files
-from queries.files import delete_by_id
+from routes.file_uploads import FileUploadResponse
 from routes.storage_client import storage_client
 from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient
+from tags.type_utils import get_cached_tags
 
 log = logging.getLogger(__name__)
 
@@ -88,10 +89,10 @@ async def upload_internal(
         with open(ctx.local_filepath, 'wb') as f:
             shutil.copyfileobj(upload_file.file, f)
         log.info('%s saved to %s', filename, ctx.local_filepath)
-    except Exception as e:  
+    except Exception as e:
         log.error('Error saving file %s to %s: %s', filename, ctx.local_filepath, e)
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, 'Error saving file') from e    
-    
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, 'Error saving file') from e
+
     page_size = 64 * 1024
     file_size = 0
     sha1 = hashlib.sha1()
@@ -249,8 +250,29 @@ async def pending(
         db_session: AsyncSession = Depends(get_db_session)) -> list[FileUploadResponse]:
     """Get the list of uploads that have been created for
     the current profile"""
-    owned_files = (await db_session.exec(select(FileContent)
-    .where(
+    owned_files = (await db_session.exec(select(FileContent, FileTag)
+                                         .where(
         and_(FileContent.owner_seq == profile.profile_seq,
-             FileContent.deleted == None)))).all()
-    return await enrich_files(db_session, owned_files, profile)
+             FileContent.deleted == None))
+                                         .outerjoin(FileTag, FileContent.file_seq == FileTag.type_seq)
+                                         )).all()
+    cached_tags = await get_cached_tags(db_session)
+    cached_files: dict[int, FileUploadResponse] = {}
+    for r in owned_files:
+        of = r[0]
+        tag = r[1]
+        response = cached_files.setdefault(of.file_seq, FileUploadResponse(
+            file_id=file_seq_to_id(of.file_seq),
+            owner_id=profile_seq_to_id(of.owner_seq),
+            file_name=of.name,
+            content_type=of.content_type,
+            size=of.size,
+            created=of.created,
+            event_ids=[],
+            content_hash=of.content_hash,
+            tags=[]))
+        if tag:
+            tag_meta = cached_tags.get(tag.tag_seq)
+            if tag_meta:
+                response.tags.append(tag_meta)
+    return list(cached_files.values())
