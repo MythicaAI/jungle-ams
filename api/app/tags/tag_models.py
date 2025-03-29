@@ -4,9 +4,9 @@ from enum import Enum
 from typing import Callable, Optional, Union
 
 from better_profanity import profanity
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
 from pydantic import BaseModel, Field, field_validator
 
+from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
 from db.schema.assets import Asset, AssetTag
 from db.schema.media import FileContent, FileTag
 
@@ -41,6 +41,7 @@ class TagRequest(BaseModel):
             raise ValueError("Tag name contains inappropriate language.")
         return name
 
+
 class TagUpdateRequest(TagRequest):
     name: Optional[str] = None
 
@@ -52,10 +53,15 @@ class TagResponse(BaseModel):
     contents: Optional[dict[str, str | None | list[TagFileReference]]] = None
 
 
+class CachedTag(BaseModel):
+    name: str
+    page_priority: Optional[int] = None
+    contents: Optional[dict[str, str | None | list[TagFileReference]]] = None
+
+
 class TagTypeRequest(BaseModel):
     tag_id: str
     type_id: str
-
 
 
 def get_model_type(tag_type: TagType) -> Union[AssetTag, FileTag]:
@@ -91,4 +97,3 @@ def get_type_id_to_seq(tag_type: TagType) -> Callable:
         return asset_id_to_seq
     if tag_type == TagType.file:
         return file_id_to_seq
-
