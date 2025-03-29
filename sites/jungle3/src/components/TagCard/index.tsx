@@ -1,6 +1,6 @@
 import ImageWithSkeleton from "@components/common/ImageWithSkeleton";
-import { Button, Typography } from "@mui/joy";
-import { Tag } from "@queries/tags/types";
+import {Box, Button, Typography} from "@mui/joy";
+import {Tag} from "@queries/tags/types";
 import React from "react";
 
 type Props = {
@@ -9,8 +9,8 @@ type Props = {
 };
 
 const getTagThumbnailSrc = (tag: Tag) => {
-  if (!tag.contents) {
-    return { url: "/houdini.svg" };
+  if (!tag.contents || !tag.contents.thumbnails) {
+    return {url: "/houdini.svg"};
   }
 
   const file_name = tag.contents?.thumbnails[0]?.file_name;
@@ -22,8 +22,8 @@ const getTagThumbnailSrc = (tag: Tag) => {
   };
 };
 
-export const TagCard: React.FC<Props> = ({ tag, selectedTag }) => {
-  const { url } = getTagThumbnailSrc(tag);
+export const TagCard: React.FC<Props> = ({tag, selectedTag}) => {
+  const {url} = getTagThumbnailSrc(tag);
 
   return (
     <Button
@@ -38,14 +38,16 @@ export const TagCard: React.FC<Props> = ({ tag, selectedTag }) => {
         gap: "10px",
       }}
     >
-      <ImageWithSkeleton
-        width="40px"
-        height="40px"
-        src={url}
-        sx={{ borderRadius: "4px" }}
-        alt={tag.name}
-      />
-      <Typography fontSize={14}>{tag.name}</Typography>
+      <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        <ImageWithSkeleton
+          height="180px"
+          width="auto"
+          src={url}
+          sx={{borderRadius: "4px"}}
+          alt={tag.name}
+        />
+        <Typography fontSize={16} sx={{mt: 0.5}}>{tag.name}</Typography>
+      </Box>
     </Button>
   );
 };
