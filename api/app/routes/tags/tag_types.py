@@ -99,8 +99,6 @@ async def get_tags_for_type(
                 HTTPStatus.FORBIDDEN,
                 detail="You must be logged into the system to enrich files."
             )
-    type_model = get_model_type(tag_type)
-
     tags = (await db_session.exec(
         select(Tag)
         .limit(limit)
