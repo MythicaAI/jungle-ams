@@ -15,6 +15,8 @@ via their [command line tools](https://developer.1password.com/docs/cli/get-star
 ## Running
 
 Ensure you have [Python3](https://python.org) installed 
+Install poetry for Python globally:
+`pip install poetry`
 
 Setup python `virtual environment` and `invoke`
 
@@ -22,6 +24,10 @@ NB: `/.env.local` supports setting required `env` vars for the infrastructure th
 
 ```bash
 . ./env.sh
+```
+
+```cmd
+env.bat
 ```
 
 
@@ -59,14 +65,14 @@ docker ps -a
 docker logs <container-id>
 ```
 
-## Setup
+## Setup - Linux and Mac
 
 Canonically, we use `asdf` to manage local tool versions. Observe the
 `.tool-versions` file. It is possible to manage your tool versions, but YMMV.
 
 To install all tools:
 
-- [Install `asdf`](https://asdf-vm.com/guide/getting-started.html)
+- [Install `asdf`](https://asdf-vm.com/guinpde/getting-started.html)
 
 - Install plugins:
 
@@ -85,6 +91,10 @@ To install all tools:
 
 For further setup information for Terraform or k8s check the README
 files in those subfolders.
+
+## Setup - Windows
+
+node.js must be installed manually from https://nodejs.org/en/download
 
 ### Install with poetry
 
