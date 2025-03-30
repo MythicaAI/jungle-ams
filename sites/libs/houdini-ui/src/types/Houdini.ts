@@ -255,7 +255,7 @@ export namespace hou {
       ret.push(template);
     });
     return ret;
-  }
+  };
   export class ParmTemplate {
     id: string = uuidv4();
     param_type: parmTemplateType = parmTemplateType.None;
@@ -273,14 +273,14 @@ export namespace hou {
     disable_when: string = '';
     default_expression: string[] = [];
     default_expression_language: scriptLanguage[] = [];
+    default_value?: any;
 
-    
     constructor(data: dictionary) {
       this.param_type = data.param_type as hou.parmTemplateType;
-      this.label = data.label as string || "";
-      this.name = data.name as string || "";
+      this.label = (data.label as string) || '';
+      this.name = (data.name as string) || '';
     }
-    
+
     extractConfig = (config: ParmTemplateProps) => {
       const {
         name,
@@ -307,12 +307,14 @@ export namespace hou {
       if (help) this.help = help;
       if (join_with_next) this.join_with_next = join_with_next;
       if (script_callback) this.script_callback = script_callback;
-      if (script_callback_language) this.script_callback_language = script_callback_language;
+      if (script_callback_language)
+        this.script_callback_language = script_callback_language;
       if (tab_conditionals) this.tab_conditionals = tab_conditionals;
       if (tags) this.tags = tags;
       if (disable_when) this.disable_when = disable_when;
       if (default_expression) this.default_expression = default_expression;
-      if (default_expression_language) this.default_expression_language = default_expression_language;
+      if (default_expression_language)
+        this.default_expression_language = default_expression_language;
 
       return superConfig;
     };
@@ -346,8 +348,6 @@ export namespace hou {
     setTags(tags: { [key: string]: string }) {
       this.tags = tags;
     }
-
-
   }
 
   type SeparatorParmTemplateProps = ParmTemplateProps;
@@ -681,11 +681,12 @@ export namespace hou {
     ends_tab_group: boolean = false;
     folder_set: FolderSetParmTemplate | null = null;
     runtime_data: { [key: string]: unknown } = {};
+   
 
     constructor(config: FolderParmTemplateProps) {
       super(config);
       Object.assign(this, this.extractConfig(config));
-      
+
       this.runtime_data.isActive = false;
       this.parm_templates = parmTemplateFactory(config.parm_templates || []);
     }
@@ -709,8 +710,7 @@ export namespace hou {
       } else {
         this.parm_templates.push(parm_template);
       }
-    }
-  
+    };
 
     /**
      * Return whether or not this parm template corresponds to an actual folder, as opposed to a multiparm or import block.
@@ -734,8 +734,10 @@ export namespace hou {
     constructor(config: FolderSetParmTemplateProps) {
       super(config);
       Object.assign(this, this.extractConfig(config));
-      this.parm_templates = parmTemplateFactory(config.parm_templates || []) as FolderParmTemplate[] ;
-    } 
+      this.parm_templates = parmTemplateFactory(
+        config.parm_templates || []
+      ) as FolderParmTemplate[];
+    }
     /**
      * Append a parm template to the end of the list of parm templates inside the folder.
      */
@@ -756,8 +758,6 @@ export namespace hou {
       this.parm_templates = parmTemplateFactory(params_v2);
     }
 
-
-    
     parmTemplates = () => this.parm_templates;
     entries = () => this.parm_templates;
     append = (parm_template: ParmTemplate) => {

@@ -448,10 +448,10 @@ const parmTemplates = [
                                 "parm_templates": [
                                     {
                                         "param_type": "Int",
-                                        "label": "Int Multi Block Scroll",
+                                        "label": "Int Multi Block Tabs",
                                         "category_label": "Folder Multi Block Tabs",
                                         "constant": false,
-                                        "name": "int_multi_block_scroll#_3",
+                                        "name": "int_multi_block_tabs#_3",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
@@ -1545,14 +1545,23 @@ export const Default: Story = {
         const [{data}, updateArgs] = useArgs();
 
         const handleParmChange = useCallback((formData:dictionary) => {
-            updateArgs({
-                data: {
-                    ...data,
-                    ...formData
+            const updatedData = {
+                ...data,
+                ...formData
+            };
+            // filter out any record that is null or undefined 
+            const filteredData = Object.keys(updatedData).reduce((acc, key) => {
+                if (updatedData[key] !== null && updatedData[key] !== undefined) {
+                    acc[key] = updatedData[key];
                 }
+                return acc;
+            }, {});
+            updateArgs({
+                data: filteredData
             });
+        
             args.onChange(formData); // Triggers Storybook action logger
-        }, [updateArgs, args]);
+        }, [updateArgs, args, data]);
 
         return <ParmGroup {...args} data={data} onChange={handleParmChange} />;
     },
