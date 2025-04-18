@@ -311,13 +311,14 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
         meshData.points,
         meshData.indices,
         meshData.normals || [],
-        meshData.uvs || []
+        meshData.uvs || [],
+        meshData.colors || []
       );
     }
   }, [meshData]);
 
   // Create mesh from data received via WebSocket
-  const createMeshFromData = (vertices: number[], indices: number[], normals: number[], uvs: number[]) => {
+  const createMeshFromData = (vertices: number[], indices: number[], normals: number[], uvs: number[], colors: number[]) => {
     if (!sceneRef.current) return;
 
     const vertexData = new BABYLON.VertexData();
@@ -325,6 +326,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     vertexData.indices = indices;
     vertexData.normals = normals;
     vertexData.uvs = uvs;
+    vertexData.colors = colors;
 
     const newMeshName = `mesh_${Math.random().toString(36).substring(2, 10)}`;
     loadingMeshRef.current = newMeshName;
