@@ -1,4 +1,4 @@
-FROM nginx:1.25.5-alpine
+FROM nginx:1.27.5-alpine
 
 LABEL name="mythica-web-front"
 LABEL maintainer="jacobrepp@gmail.com"
