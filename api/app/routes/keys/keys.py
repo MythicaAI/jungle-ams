@@ -32,6 +32,12 @@ class KeyGenerateResponse(BaseModel):
     description: Optional[str] = None
     created: datetime
     expires: datetime
+    is_expired: bool = False
+
+
+def is_expired(expires_db: datetime, now_utc: datetime) -> bool:
+    """Returns true if the database timestamp is expired (will be converted from database TZ to UTC)"""
+    return expires_db.astimezone(TZ).astimezone(timezone.utc) < now_utc
 
 
 def is_naive(dt):
@@ -82,6 +88,7 @@ async def generate(
         value=key,
         created=result.created.replace(tzinfo=TZ).astimezone(timezone.utc),
         expires=result.expires.replace(tzinfo=TZ).astimezone(timezone.utc),
+        is_expired=False,
         description=result.payload['description'])
 
 
@@ -107,9 +114,11 @@ async def current(
     rows = (await db_session.exec(stmt)).all()
 
     # Ensure using normalized db timezone and in UTC at the API level
+    now_utc = datetime.now(timezone.utc)
     response = [KeyGenerateResponse(
         created=r.created.astimezone(TZ).astimezone(timezone.utc),
         expires=r.expires.astimezone(TZ).astimezone(timezone.utc),
+        is_expired=is_expired(r.expires, now_utc),
         value=r.key,
         name=r.payload['name'],
         description=r.payload['description']) for r in rows]
