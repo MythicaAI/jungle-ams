@@ -1503,7 +1503,7 @@ const parmTemplates = [
     }
 ]
 
-  
+
 
 const group = new hou.ParmTemplateGroup(parmTemplates);
 
@@ -1531,7 +1531,7 @@ const meta: Meta<typeof ParmGroup> = {
             table: {
                 type: { summary: '(formData: Record<string, any>) => void' },
             },
-        },        
+        },
     }
 }
 export default meta;
@@ -1544,22 +1544,22 @@ export const Default: Story = {
     render: function InteractiveStory(args) {
         const [{data}, updateArgs] = useArgs();
 
-        const handleParmChange = useCallback((formData:dictionary) => {
-            const updatedData = {
+        const handleParmChange = useCallback((formData: dictionary) => {
+            const updatedData: Record<string, any> = {
                 ...data,
                 ...formData
             };
-            // filter out any record that is null or undefined 
-            const filteredData = Object.keys(updatedData).reduce((acc, key) => {
+            // filter out any record that is null or undefined
+            const filteredData: Record<string, any> = Object.keys(updatedData).reduce((acc, key) => {
                 if (updatedData[key] !== null && updatedData[key] !== undefined) {
                     acc[key] = updatedData[key];
                 }
                 return acc;
-            }, {});
+            }, {} as Record<string, any>);
             updateArgs({
                 data: filteredData
             });
-        
+
             args.onChange(formData); // Triggers Storybook action logger
         }, [updateArgs, args, data]);
 
