@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from http.client import HTTPException
 from typing import Optional
@@ -9,7 +9,7 @@ from sqlmodel import desc, insert, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from cryptid.cryptid import event_id_to_seq, event_seq_to_id, profile_id_to_seq
-from db.connection import get_db_session
+from db.connection import TZ, get_db_session
 from db.schema.events import Event
 from db.schema.profiles import ProfileKey
 from profiles.start_session import start_session
@@ -100,6 +100,19 @@ async def set_email_validation_expires(
     await db_session.commit()
     if update_result.rowcount != 1:
         raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {expire_req.key} not found")
+
+
+@router.get('/expire-key/{key}', tags=['test'])
+async def expire_key(
+        key: str,
+        db_session: AsyncSession = Depends(get_db_session)):
+    now_db = datetime.now(TZ).astimezone(timezone.utc) - timedelta(days=1)
+    update_result = await db_session.exec(
+        update(ProfileKey).where(ProfileKey.key == key)
+        .values(expires=now_db))
+    await db_session.commit()
+    if update_result.rowcount != 1:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"profile {key} not found")
 
 
 def bind_test_routes(app):

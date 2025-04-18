@@ -42,6 +42,7 @@ async def test_api_keys(client, api_base, create_profile):
             assert p in o
             assert o.name is not None
             assert o.value is not None
+            assert o.is_expired is False
             if i % 2 == 0:
                 assert o.description is not None
         assert len(o.value) > 16
@@ -58,6 +59,7 @@ async def test_api_keys(client, api_base, create_profile):
     for v in r.json():
         o = munchify(v)
         assert o.value in key_values
+        assert o.is_expired is False
 
     # delete a key
     remove = key_values.pop()
@@ -71,3 +73,21 @@ async def test_api_keys(client, api_base, create_profile):
     for v in r.json():
         o = munchify(v)
         assert o.value in key_values
+        assert o.value != remove
+
+    # expire a key, it remains in the list until deleted
+    _, expire = next(enumerate(key_values))
+    r = client.get(f"{api_base}/test/expire-key/{expire}")
+    assert_status_code(r, HTTPStatus.OK)
+
+    # validate the keys are expired
+    r = client.get(f"{api_base}/keys", headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    assert len(r.json()) == len(key_values)
+    for v in r.json():
+        o = munchify(v)
+        assert o.value in key_values
+        if o.value == expire:
+            assert o.is_expired is True
+        else:
+            assert o.is_expired is False

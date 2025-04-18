@@ -9,12 +9,13 @@ from pydantic import BaseModel
 from sqlmodel import col, delete as sql_delete, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from db.connection import TZ, get_db_session
+from db.connection import get_db_session
 from db.schema.profiles import Profile, ProfileKey, ProfileSession
 from profiles.auth0_validator import Auth0Validator
 from profiles.responses import SessionStartResponse
 from profiles.start_session import start_session, start_session_with_token_validator
 from routes.authorization import session_profile
+from routes.keys.keys import is_expired
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 log = logging.getLogger(__name__)
@@ -60,9 +61,7 @@ async def key(request: Request,
         raise HTTPException(HTTPStatus.NOT_FOUND, f"profile key {api_key} not found or invalid")
 
     # test for key expiration and remove expired key
-    if key_result.expires.replace(tzinfo=TZ).astimezone(timezone.utc) <= datetime.now(timezone.utc):
-        db_session.exec(sql_delete(ProfileKey).where(col(ProfileKey.key) == api_key))
-        db_session.commit()
+    if is_expired(key_result.expires, datetime.now(timezone.utc)):
         raise HTTPException(HTTPStatus.FORBIDDEN, f"profile key {api_key} expired")
 
     # start the session using the key, key based authentication allows impersonation for privileged accounts
