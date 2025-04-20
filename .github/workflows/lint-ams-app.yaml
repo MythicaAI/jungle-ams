@@ -1,27 +1,27 @@
-name: api-app-lint
+name: lint-ams-app
 
 on:
   push:
     paths:
-      - 'api/app/**'
-      - 'api/packager/**'
-      - 'api/bulk-import/**'
-      - 'api/publish-init/**'
-      - '.github/workflows/api-app-lint-pr.yaml'
+      - 'ams/app/**'
+      - 'ams/packager/**'
+      - 'ams/bulk-import/**'
+      - 'ams/publish-init/**'
+      - '.github/workflows/ams-app-lint-pr.yaml'
 
 defaults:
   run:
-    working-directory: api/app
+    working-directory: ams/app
 
 jobs:
   pylint:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: "${{ github.workspace }}/api/app"
+      PYTHONPATH: "${{ github.workspace }}/ams/app"
 
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: [ "3.11", "3.12", "3.13" ]
 
     steps:
       - name: Checkout code

@@ -7,7 +7,7 @@ on:
   push:
     paths:
       - '.github/workflows/bulk-import-github.yaml'
-      - 'api/bulk-import/**'
+      - 'ams/bulk-import/**'
 
   workflow_dispatch:
     inputs:
@@ -40,7 +40,7 @@ jobs:
             echo "MYTHICA_ENDPOINT=${{ github.event.inputs.mythica_endpoint }}" >> $GITHUB_ENV
           fi
       - name: Bulk Import GitHub Changes
-        working-directory: api/bulk-import
+        working-directory: ams/bulk-import
         run: |
           # bulk import HDA packages
           poetry install --no-root

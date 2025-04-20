@@ -9,7 +9,7 @@ on:
   push:
     paths:
       - '.github/workflows/bulk-import-mythica-p4.yaml'
-      - 'api/bulk-import/**'
+      - 'ams/bulk-import/**'
 
   workflow_dispatch:
     inputs:
