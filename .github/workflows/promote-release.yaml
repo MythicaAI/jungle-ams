@@ -2,7 +2,7 @@ name: promote-release
 
 # Add multiple trigger events for flexibility
 on:
-  workflow_dispatch:  # Manual triggering
+  workflow_dispatch: # Manual triggering
     inputs:
       component:
         description: "Components to release"
@@ -49,11 +49,11 @@ jobs:
           echo "Triggered by: ${{ github.event_name }}"
           echo "Repository: ${{ github.repository }}"
           echo "Branch: ${{ github.ref }}"
-    
+
       - uses: nick-fields/retry@v3
         with:
           max_attempts: 3
           retry_on: error
           timeout_seconds: 10
           command: |
-            github/tagging/tag-for-release.sh ${{ github.event.inputs.component }} > $GITHUB_STEP_SUMMARY
+            workloads/github/tagging/tag-for-release.sh ${{ github.event.inputs.component }} > $GITHUB_STEP_SUMMARY

@@ -60,48 +60,47 @@ TESTING_OBSERVE_DIR = os.path.join(BASE_DIR, 'testing/observe')
 TESTING_MNT_DIR = os.path.join(BASE_DIR, 'testing/mnt')
 
 IMAGES = {
-    'api/nginx': {},
-    'api/app': {
+    'workloads/nginx': {},
+    'ams/app': {
         'requires': ['libs/python'],
     },
     'libs/python': {},
-    'api/publish-init': {},
-    'api/lets-encrypt': {},
-    'api/gcs-proxy': {},
-    'api/packager': {
-        'requires': ['api/app', 'libs/python'],
+    'workloads/lets-encrypt': {},
+    'workloads/gcp/gcs-proxy': {},
+    'ams/packager': {
+        'requires': ['ams/app', 'libs/python'],
     },
-    'api/canary': {},
-    'api/bulk-import': {},
+    'ams/canary': {},
+    'ams/bulk-import': {},
     'sites': {
         'buildargs': {
             'NODE_ENV': NODE_ENV,
         }
     },
     'testing/storage/minio-config': {},
-    'automation/test': {
+    'ams/test-worker': {
         'requires': ['libs/python'],
     },
-    'automation/blender': {
+    'automations/blender': {
         'requires': ['libs/python'],
     },
-    'automation/genai': {
+    'automations/genai': {
         'requires': ['libs/python'],
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
         },
     },
-    'automation/houdini': {
+    'automations/houdini': {
         'requires': ['libs/python'],
         'buildargs': {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
     },
-    'automation/imagemagick': {
+    'automations/imagemagick': {
         'requires': ['libs/python'],
     },
-    'automation/workflow': {
+    'automations/workflow': {
         'requires': ['libs/python'],
     }
 }
@@ -111,12 +110,12 @@ SITE_DATA = {
 }
 
 WEB_SERVING = {
-    'api/nginx',
-    'api/app',
-    'api/publish-init',
-    'api/lets-encrypt',
-    'api/gcs-proxy',
-    'api/canary',
+    'ams/app',
+    'ams/canary',
+    'ams/publisher',
+    'workloads/nginx',
+    'workloads/lets-encrypt',
+    'workloads/gcp/gcs-proxy',
 }
 
 IMAGE_SETS = {
@@ -126,13 +125,11 @@ IMAGE_SETS = {
     'storage': {
         'testing/storage/minio-config'},
     'auto': {
-        'automation/houdini',
-        'automation/imagemagick',
+        'automations/houdini',
+        'automations/imagemagick',
         # 'automation/genai',
-        'automation/test',
-        'automation/workflow',
-        'automation/blender',
-        'api/packager'
+        'automations/workflow',
+        'automations/blender',
     },
 }
 
@@ -478,7 +475,7 @@ def docker_deploy(c, image='all', target='gcs', no_cache: bool = False):
     'image': f'Image path to run: {IMAGES.keys()}',
     'background': 'Run the image in the background'})
 @timed
-def docker_run(c, image='api/app', background=False):
+def docker_run(c, image='ams/app', background=False):
     """Run a docker image by path"""
     image_path_action(c, image, run_image, background=background)
 

@@ -1,27 +1,27 @@
-name: api-app-ci
+name: ci-ams-app
 
 on:
   pull_request:
     branches:
       - '**'
     paths:
-      - 'api/app/**'
+      - 'ams/app/**'
       - 'libs/python/**'
-      - '.github/workflows/api-app-ci.yaml'
+      - '.github/workflows/ci-ams-app.yaml'
   push:
     branches:
       - '**'
     paths:
-      - 'api/app/**'
+      - 'ams/app/**'
       - 'libs/python/**'
-      - '.github/workflows/api-app-ci.yaml'
+      - '.github/workflows/ams-app-ci.yaml'
 
 defaults:
   run:
-    working-directory: api/app
+    working-directory: ams/app
 
 jobs:
-  api-app-ci:
+  ams-app-ci:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -31,7 +31,7 @@ jobs:
     env:
       SQL_URL: "sqlite+aiosqlite:///${{ github.workspace }}/mythica.db"
       DATABASE_PATH: "${{ github.workspace }}/mythica.db"
-      PYTHONPATH: "${{ github.workspace }}/api/app"
+      PYTHONPATH: "${{ github.workspace }}/ams/app"
       UPLOAD_FOLDER_AUTO_CLEAN: false
       LOCAL_STORAGE_PATH: /tmp/local_storage
       USE_LOCAL_STORAGE: true

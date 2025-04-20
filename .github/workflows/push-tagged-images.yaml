@@ -35,53 +35,56 @@ jobs:
         with:
           # setup all the filters to match Dockerfile locations
           filters: |
-            api/app/:
+            ams/app/:
               - 'libs/python/**'
-              - 'api/app/**'
+              - 'ams/app/**'
               - '.github/workflows/push-tagged-images.yaml' # always build at least one image if the workflow changes
-            api/nginx/:
-              - 'api/nginx/**'
-            api/gcs-proxy/:
-              - 'api/gcs-proxy/**'
-            api/lets-encrypt/:
-              - 'api/lets-encrypt/**'
-            api/packager/:
+            ams/test-worker/:
+              - 'libs/python/**'
+              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
+            ams/packager/:
               - 'api/packager/**'
               - 'libs/python/**'
-            api/canary/:
+            ams/canary/:
               - 'api/canary/**'
             sites/:
               - 'sites/**'
+            workloads/lets-encrypt/:
+              - 'api/lets-encrypt/**'
+            workloads/nginx/:
+              - 'ams/nginx/**'
+            workloads/gcp/gcs-proxy/:
+              - 'api/gcs-proxy/**'
 
       # Set matrix based on filter results or use all images for manual trigger
       - id: post_filter
         uses: actions/github-script@v6
         with:
           script: |
-              const isManualTrigger = context.eventName === 'workflow_dispatch';
-              const allImages = ["api/app/", "api/nginx/", "api/gcs-proxy/", "api/lets-encrypt/", "api/packager/", "api/canary/", "sites/"];
-              
-              let changes;
-              try {
-                changes = JSON.parse('${{ steps.filter.outputs.changes }}');
-              } catch (e) {
-                changes = [];
-                console.log('Error parsing changes or empty changes array:', e);
-              }
-              
-              if (isManualTrigger) {
-                // For manual trigger, use all images
-                console.log('Manual trigger detected, building all images');
-                core.setOutput('changes', JSON.stringify(allImages));
-                core.setOutput('has_changes', 'true');
-              } else {
-                // For automatic trigger, use filtered changes
-                const hasChanges = Array.isArray(changes) && changes.length > 0;
-              
-                console.log('Changes detected:', hasChanges ? 'yes' : 'no');
-                core.setOutput('changes', JSON.stringify(changes));
-                core.setOutput('has_changes', hasChanges ? 'true' : 'false');
-              }
+            const isManualTrigger = context.eventName === 'workflow_dispatch';
+            const allImages = ["api/app/", "api/nginx/", "api/gcs-proxy/", "api/lets-encrypt/", "api/packager/", "api/canary/", "sites/"];
+            
+            let changes;
+            try {
+              changes = JSON.parse('${{ steps.filter.outputs.changes }}');
+            } catch (e) {
+              changes = [];
+              console.log('Error parsing changes or empty changes array:', e);
+            }
+            
+            if (isManualTrigger) {
+              // For manual trigger, use all images
+              console.log('Manual trigger detected, building all images');
+              core.setOutput('changes', JSON.stringify(allImages));
+              core.setOutput('has_changes', 'true');
+            } else {
+              // For automatic trigger, use filtered changes
+              const hasChanges = Array.isArray(changes) && changes.length > 0;
+            
+              console.log('Changes detected:', hasChanges ? 'yes' : 'no');
+              core.setOutput('changes', JSON.stringify(changes));
+              core.setOutput('has_changes', hasChanges ? 'true' : 'false');
+            }
 
   build-base:
     runs-on: ubuntu-latest

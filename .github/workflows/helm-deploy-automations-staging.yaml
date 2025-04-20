@@ -1,11 +1,25 @@
-name: helm-deploy-prod
+name: helm-automation-deploy-staging
 
 on:
   # trigger helm deploy when new images are available
   workflow_run:
-    workflows: [ "promote-release" ]
+    workflows: [ "push-automation-images" ]
     types:
       - completed
+
+  # trigger helm deploy when the helm or gha config changes
+  push:
+    branches:
+      - main
+    paths:
+      - 'workloads/helm/automation/**'
+      - '.github/workflows/helm-automation-deploy-staging.yaml'
+      - 'libs/python/ripple/ripple/automation/**'
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -16,11 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: main
     permissions:
+      pull-requests: read
       id-token: write
       contents: read
 
     env:
-      NODE_ENV: "production"
+      NODE_ENV: "staging"
       PROJECT_NUMBER: "296075347103"
       PROJECT_ID: "controlnet-407314"
       AR_REPO_LOCATION: "us-central1"
@@ -36,9 +51,9 @@ jobs:
       - name: Fetch tags
         run: git fetch --prune --unshallow --tags
 
-      - name: Generate values file for released image tags
+      - name: Generate values file for image tags
         run: |
-          api/helm/helm-gen-values-images.sh releases
+          workflow-config/helm/automation/helm-gen-values-images.sh
 
       - name: Google Auth
         id: auth
@@ -56,6 +71,10 @@ jobs:
         run: |
           gcloud components install gke-gcloud-auth-plugin
 
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker '${{ env.AR_REPO_LOCATION }}-docker.pkg.dev'
+
       - name: Set up Kubernetes credentials
         run: |
           gcloud container clusters get-credentials ${{ env.GKE_CLUSTER_NAME }} \
@@ -67,39 +86,26 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Deploy Helm Chart
+        working-dir: workload-config/helm/automation
         run: |
-          helm upgrade --namespace api -f api/helm/api/values.yaml -f api/helm/api/values-images.yaml api api/helm/api
+          helm upgrade --namespace automation-staging \
+            -f values-staging.yaml \
+            -f values-images.yaml \
+            automation-staging .
+          echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
+          cat values-images.yaml >> $GITHUB_STEP_SUMMARY
 
       - name: Rollout deployments
         run: |
-          kubectl rollout restart deployment/packager -n api
-          kubectl rollout status deployment/packager -n api
+          kubectl rollout restart deployment/houdini -n automation-staging
 
-          kubectl rollout restart deployment/lets-encrypt -n api
-          kubectl rollout status deployment/lets-encrypt -n api
-
-          kubectl rollout restart deployment/gcs-proxy -n api
-          kubectl rollout status deployment/gcs-proxy -n api
-
-          kubectl rollout restart deployment/app -n api
-          kubectl rollout status deployment/app -n api
-
-          kubectl rollout restart deployment/web-front -n api
-          kubectl rollout status deployment/web-front -n api
-
-          kubectl rollout restart deployment/canary -n api
-          kubectl rollout status deployment/canary -n api
-
-      - uses: actions-tools/yaml-outputs@v2
-        id: deployed_yaml
-        with:
-          file-path: 'api/helm/api/values-images.yaml'
-      - run: |
-          echo "${{ steps.deployed_yaml.outputs.images }}"
-      - name: Discord notification
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_INFRA_NOTIFICATIONS_WEBOOK }}
-        uses: Ilshidur/action-discord@master
-        with:
-          args: 'Production updated ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-          username: "Infra Notifications"
+      - name: Send Discord notification
+        if: always()
+        run: |
+          echo "{ \"content\": \"" > message.json
+          echo "${{ github.event.pull_request.title }}\n" >> message.json
+          echo "✅ automation-staging has been deployed" >> message.json
+          echo "\" }" >> message.json
+          curl -X POST ${{ secrets.DISCORD_INFRA_NOTIFICATIONS_WEBOOK }} \
+               -H "Content-Type: application/json" \
+               --data @message.json
