@@ -369,31 +369,34 @@ const SceneControls: React.FC<Props> = ({ width }) => {
                         Export
                     </Typography>
                 </Box>
-                <Button
-                    onClick={() => handleExport("obj")}
-                    fullWidth
-                    sx={{
-                        marginBottom: "10px",
-                        padding: "12px",
-                        background: "#333",
-                        border: "1px solid #555",
-                        color: "#e0e0e0",
-                        cursor: "pointer",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        transition: "background-color 0.2s",
-                        "&:hover": {
-                            background: "#444",
-                        },
-                    }}
-                >
-                    Download OBJ
-                </Button>
+                {["fbx", "obj", "usd", "glb"].map(format => (
+                    <Button
+                        key={format}
+                        onClick={() => handleExport(format)}
+                        fullWidth
+                        sx={{
+                            marginBottom: "10px",
+                            padding: "12px",
+                            background: "#333",
+                            border: "1px solid #555",
+                            color: "#e0e0e0",
+                            cursor: "pointer",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            transition: "background-color 0.2s",
+                            "&:hover": {
+                                background: "#444",
+                            },
+                        }}
+                    >
+                        Download {format.toUpperCase()}
+                    </Button>
+                ))}
             </Box>
 
 
         </Box>
-        
+
     )
 }
 
