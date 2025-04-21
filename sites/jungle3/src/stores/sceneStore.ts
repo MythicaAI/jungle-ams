@@ -9,6 +9,7 @@ export interface MeshData {
   indices: number[];
   normals?: number[];
   uvs?: number[];
+  colors?: number[];
 }
 
 export interface PackageMaterials {
@@ -23,7 +24,7 @@ export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
 // Store interface
 interface SceneState {
   packageMaterials: PackageMaterials[];
-    
+
     // HDA schemas and selection
   selectedHdaId: string | null;
   setSelectedHdaId: (selectedHdaId: string) => void;
@@ -42,7 +43,7 @@ interface SceneState {
   paramValues: { [key: string]: any };
   setParamValues: (paramValues: {[key: string]: any}) => void;
 
-  
+
   // WebSocket state
   wsStatus: ConnectionStatus;
   setWsStatus: (status: ConnectionStatus) => void;
@@ -117,7 +118,7 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   selectedHdaId: null,
   setSelectedHdaId: (selectedHdaId) => set({ selectedHdaId: selectedHdaId }),
-  
+
   assetVersion: null,
   setAssetVersion: (assetVersion) => set({ assetVersion: assetVersion }),
 
@@ -136,8 +137,8 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   paramValues: { },
   setParamValues: (values) => set({ paramValues: values }),
-  
-  
+
+
   // WebSocket state
   wsStatus: "disconnected",
   setWsStatus: (status) => set({ wsStatus: status }),
