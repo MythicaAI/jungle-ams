@@ -326,7 +326,15 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     vertexData.indices = indices;
     vertexData.normals = normals;
     vertexData.uvs = uvs;
-    vertexData.colors = colors;
+
+    // Convert RGB to RGBA
+    vertexData.colors = [];
+    for (let i = 0; i < colors.length; i++) {
+      vertexData.colors.push(colors[i]);
+      if (i % 3 === 2) {
+        vertexData.colors.push(1.0);
+      }
+    }
 
     const newMeshName = `mesh_${Math.random().toString(36).substring(2, 10)}`;
     loadingMeshRef.current = newMeshName;
