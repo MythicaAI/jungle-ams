@@ -45,9 +45,9 @@ services:
       MYTHICA_ENVIRONMENT: debug
       ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
       API_BASE_URI: http://host.docker.internal:8080/v1
-  workflow-worker:
-    container_name: workflow
-    image: mythica-auto-workflow:latest
+  genai-worker:
+    container_name: genai
+    image: mythica-auto-genai:latest
     extra_hosts: 
       - "host.docker.internal:host-gateway"
     networks:

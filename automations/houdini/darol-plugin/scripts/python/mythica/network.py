@@ -57,89 +57,6 @@ class HDADefinition(BaseModel):
     node_type: HouNodeType
 
 
-def check_dependencies(node):
-    """
-    Recursively find all custom HDAs inside the node, excluding built-ins.
-    
-    Args:
-        node (hou.Node): Root node for search.
-        
-    Returns:
-        tuple of sets: 
-            Set of hou.Node objects representing custom HDAs.
-            Set of hou.Node objects representing standard HDAs.
-            Set of hou.Node objects representing broken HDAs.
-
-    Example Usage:
-
-        root_node = hou.node('obj/your/node')  # Replace with your HDA node path
-        (custom_hdas,standard_hdas,broken_hdas) = check_dependencies(root_node)
-
-        print(f"\n\n\nCustom HDAs found inside '{root_node.path()}':")
-        for nodeType in sorted(custom_hdas, key=lambda n: n.name()):
-            hda_path = nodeType.definition().libraryFilePath()
-            print(f"{nodeType.name()}")
-
-        print(f"\n\n\nStandard HDAs found inside '{root_node.path()}':")
-        for nodeType in sorted(standard_hdas, key=lambda n: n.name()):
-            print(f"{nodeType.name()}")
-            
-        print(f"\n\n\nBroken HDAs found inside '{root_node.path()}':")
-        for nodeType in sorted(broken_hdas, key=lambda n: n.name()):
-            print(f"{nodeType.name()}")
-    """
-    custom_nodes=set()
-    standard_nodes=set()
-    broken_nodes=set()
-    houdini_otl_dir = os.path.normpath(
-        os.path.join(hou.expandString("$HFS"), "houdini", "otls")
-    )
-
-    def is_custom(definition):
-        """Check if a node is a custom digital asset, excluding built-in OTL libraries."""
-        if definition is None:
-            return False
-        
-        lib_path = definition.libraryFilePath()
-        if lib_path.startswith(houdini_otl_dir):
-            return False  # Default SideFX library
-
-        return True  # Custom library (user-defined)
-    
-    def is_broken_node(definition):
-        if definition.libraryFilePath() == 'Embedded':
-            return True
-        return False        
-
-    def find_dependencies(node):
-        need_lock = False
-        if node.isLockedHDA():
-            node.allowEditingOfContents()
-            need_lock = True
-
-        dependentTypes = node.type().allInstalledDefinitions()
-
-        for depType in dependentTypes:
-            custom =  is_custom(depType)
-            if custom:
-                custom_nodes.add(depType)
-            else:
-                standard_nodes.add(depType)
-
-        for depType in dependentTypes:
-            if is_broken_node(depType):
-                broken_nodes.add(depType)
-
-        for child in node.children():
-            find_dependencies(child)
-
-        if need_lock:
-            node.matchCurrentDefinition()
-
-    find_dependencies(node)
-    return (custom_nodes,standard_nodes,broken_nodes)
-
-
 
 def get_hda_definition(hda_definition: hou.HDADefinition):
     try: 
@@ -260,6 +177,93 @@ def get_node_type(node_type, include_code = True):
                 nt["defaults"][parmtemp.name()] = defaults
 
     return nt
+
+
+def check_dependencies(node):
+    """
+    Recursively find all custom HDAs inside the node, excluding built-ins.
+    
+    Args:
+        node (hou.Node): Root node for search.
+        
+    Returns:
+        tuple of sets: 
+            Set of hou.Node objects representing custom HDAs.
+            Set of hou.Node objects representing standard HDAs.
+            Set of hou.Node objects representing broken HDAs.
+
+    Example Usage:
+        import hou
+        import mythica.network as mnet
+        import os
+        
+        root_node = hou.node('obj/geo1/LvlGen_Blobby1')  # Replace with your HDA node path
+        (custom_hdas,standard_hdas,broken_hdas) = mnet.check_dependencies(root_node)
+
+        # Output results clearly:
+        print(f"\n\n\nCustom HDAs found inside '{root_node.path()}':")
+        for definition in sorted(custom_hdas, key=lambda n: n.nodeType().name()):
+            print(f"{definition.nodeType().nameWithCategory()}")
+
+        print(f"\n\n\nStandard HDAs found inside '{root_node.path()}':")
+        for definition in sorted(standard_hdas, key=lambda n: n.nodeType().name()):
+            print(f"{definition.nodeType().nameWithCategory()}")
+            
+        print(f"\n\n\nBroken HDAs found inside '{root_node.path()}':")
+        for definition in sorted(broken_hdas, key=lambda n: n.nodeType().name()):
+            print(f"{definition.nodeType().nameWithCategory()}")
+    """
+    custom_nodes=set()
+    standard_nodes=set()
+    broken_nodes=set()
+    houdini_otl_dir = os.path.normpath(
+        os.path.join(hou.expandString("$HFS"), "houdini", "otls")
+    )
+
+    def is_custom(definition):
+        """Check if a node is a custom digital asset, excluding built-in OTL libraries."""
+        if definition is None:
+            return False
+        
+        lib_path = definition.libraryFilePath()
+        if lib_path.startswith(houdini_otl_dir):
+            return False  # Default SideFX library
+
+        return True  # Custom library (user-defined)
+    
+    def is_broken_node(definition):
+        if definition.libraryFilePath() == 'Embedded':
+            return True
+        return False        
+
+    def find_dependencies(node):
+        need_lock = False
+        if node.isLockedHDA():
+            node.allowEditingOfContents()
+            need_lock = True
+
+        dependentTypes = node.type().allInstalledDefinitions()
+
+        for depType in dependentTypes:
+            custom =  is_custom(depType)
+            if custom:
+                custom_nodes.add(depType.nodeType())
+            else:
+                standard_nodes.add(depType.nodeType())
+
+        for depType in dependentTypes:
+            if is_broken_node(depType):
+                broken_nodes.add(depType.nodeType())
+
+        for child in node.children():
+            find_dependencies(child)
+
+        if need_lock:
+            node.matchCurrentDefinition()
+
+    find_dependencies(node)
+    return (custom_nodes,standard_nodes,broken_nodes)
+
 
 def get_network(start_here, 
                 traverse_subnet=True, 
