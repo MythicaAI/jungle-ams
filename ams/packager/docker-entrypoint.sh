@@ -3,11 +3,11 @@
 set -eof pipefail
 
 # shellcheck disable=SC2046
-cd /api/app
+cd /ams/app
 . $(poetry env info --path)/bin/activate
-cd /api/packager
+cd /ams/packager
 
-/api/app/print_ip_address.py
+/ams/app/print_ip_address.py
 
 python3 packager.py \
   --endpoint=${MYTHICA_ENDPOINT} \

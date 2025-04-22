@@ -10,12 +10,12 @@ LABEL tier="web"
 # Create the uploads folder
 USER 0
 RUN mkdir -p /uploads
-RUN mkdir -p /api/app
+RUN mkdir -p /ams/app
 
 WORKDIR /api/app
 
 # Fix permissions for the default non-root user
-RUN chown -R appuser /api/app && \
+RUN chown -R appuser /ams/app && \
     chown -R appuser /uploads
 
 USER appuser

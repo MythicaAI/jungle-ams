@@ -11,7 +11,7 @@ set -eof pipefail
 alembic upgrade head
 
 # Start Gunicorn, write logs to stdout for capture by container runtime
-export PYTHONPATH=/api/app
+export PYTHONPATH=/ams/app
 
 opentelemetry-instrument uvicorn main:app \
 	--host ${HTTP_LISTEN_ADDR} \
