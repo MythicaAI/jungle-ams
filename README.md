@@ -114,13 +114,13 @@ simplify working with these technologies while ensuring deterministic builds.
 From Linux, macOS or Windows:
 
 ```bash
-api/app> poetry install
+ams/app> poetry install
 ```
 
 You can run a command using the poetry virtual environment
 
 ```bash
-api/app> poetry run pytest .
+ams/app> poetry run pytest .
 ```
 
 ## Working on Sites
@@ -164,15 +164,15 @@ python -m codegen.codegen
 
 ## CI Tests
 
-The Git workflow file `.github/workflows/api-app-ci.yaml` is set up to run tests on every push event within a PR.
+The Git workflow file `.github/workflows/ci-ams-app.yaml` is set up to run tests on every push event within a PR.
 
-Once changes are pushed, the job will execute pytest tests, and the coverage results will be published as a comment in the PR. This comment will include a table for every `.py` file located in the `api/app` directory.
+Once changes are pushed, the job will execute pytest tests, and the coverage results will be published as a comment in the PR. This comment will include a table for every `.py` file located in the `ams/app` directory.
 
-The table is generated from the pytest step in subsequent steps using a shell script that formats the results for display in the PR. Based on the environment variable defined in the workflow file (`jobs: > api-app-ci: > env: > TEST_FAIL_RATE: `), the workflow will determine if the test results have decreased beyond the specified rate. If the threshold is exceeded, the subsequent step, `Coverage total fail - exit`, will cause the tests to fail.
+The table is generated from the pytest step in subsequent steps using a shell script that formats the results for display in the PR. Based on the environment variable defined in the workflow file (`jobs: > ci-ams-app: > env: > TEST_FAIL_RATE: `), the workflow will determine if the test results have decreased beyond the specified rate. If the threshold is exceeded, the subsequent step, `Coverage total fail - exit`, will cause the tests to fail.
 
 Additionally, there is an option to see the code coverage for each file individually.
 
-To create a `.coverage` file and generate an HTML report for viewing in a browser, run the following commands inside the `api/app` folder:
+To create a `.coverage` file and generate an HTML report for viewing in a browser, run the following commands inside the `ams/app` folder:
 
 ```bash
 pytest --cov --cov-report=html:coverage
@@ -182,22 +182,22 @@ coverage html
 ## Deployment and build
 ### Staging
 The staging deployment runs automatically after a pull request (PR) is merged into the main branch.
-* `.github/workflows/sites-jungle3-publish-staging.yaml` - Frontend Workflow:
-* `.github/workflows/api-app-publish-staging.yaml` - Backend Workflow:
+* `.github/workflows/push-tagged-images.yaml` - Frontend Workflow:
+* `.github/workflows/promote-release.yaml` - Backend Workflow:
 These workflows build the latest versions of the application, as well as the versions specified in `VERSION_APP_PATH` and `VERSION_FRONT_PATH`. The deployment only utilizes the latest versions.
 
 ### PROD
 To deploy on prod cd to:
 ```bash
-cd api/helm/
+cd workloads/helm/
 ```
 To ensure that stable versions of both the frontend and backend are used, the following scripts are provided:
-  * `api/helm/add_tag_for_stable_versions.sh` - This script publishes a unified version of the desired stable frontend and backend versions that you select while following the prompts. It guarantees the use of stable tags by creating a general tag in the format: 
+  * `workloads/helm/add_tag_for_stable_versions.sh` - This script publishes a unified version of the desired stable frontend and backend versions that you select while following the prompts. It guarantees the use of stable tags by creating a general tag in the format: 
   ``` bash
   NEW_TAG="f.${FRONT_VERSION/v./}.b.${APP_VERSION/v./}"
   ```
 
-  * `api/helm/helm-upgrade-prod.sh` - uses `api/helm/add_tag_for_stable_versions.sh` and deploys with "NEW_TAG" 
+  * `workloads/helm/helm-upgrade-prod.sh` - uses `workloads/helm/add_tag_for_stable_versions.sh` and deploys with "NEW_TAG" 
   ``` bash
     --set image.tag="$NEW_TAG"
   ```
@@ -205,7 +205,7 @@ To ensure that stable versions of both the frontend and backend are used, the fo
 ### ROLLBACK
 To rollback to the previous version of Helm on staging, we can use the script:
 ```bash
-api/helm/helm_rollback_staging.sh
+workloads/helm/helm_rollback_staging.sh
 ```
 It shows the Helm history with revision and description. In the description, there should be text in the format:
 ```bash
@@ -233,10 +233,10 @@ http://otel-collector.default:4317.
 Updating OTEL
 To update OpenTelemetry in the cluster, use the following command:
 ```bash
-helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.yaml --namespace default
+helm upgrade otel-release-k8s-infra ./workloads/helm/otel -f ./workloads/helm/otel/values.yaml --namespace default
 ```
 Alternatively, you can run the script:
 ```bash
-./api/helm/helm-upgrade-telemetry.sh
+./workloads/helm/helm-upgrade-telemetry.sh
 ```
 

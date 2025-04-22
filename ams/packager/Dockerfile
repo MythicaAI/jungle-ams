@@ -1,4 +1,4 @@
-# Build the packager image from the api app image
+# Build the packager image from the AMS app image
 # TODO: remove these internal dependencies
 ARG API_APP_IMAGE=mythica-app
 FROM ${API_APP_IMAGE} AS api-app-image
@@ -9,9 +9,9 @@ LABEL name="mythica-packager"
 LABEL description="Automates the packaging of asset versions"
 LABEL tier="automation"
 
-ENV PYTHONPATH=/api/app
+ENV PYTHONPATH=/ams/app
 
-WORKDIR /api/packager
+WORKDIR /ams/packager
 
 # Copy local files
 COPY . .

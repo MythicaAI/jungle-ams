@@ -30,8 +30,8 @@ To debug either `web` or `auto` containers,  you can selective stop the docker c
 Below are the corresponding commands for starting each service in Web:
 
 ```
-#API
-cd app/api
+#AMS
+cd ams/app
 poetry install # only needed when deps change
 ./debug_entrypoint.sh
 
@@ -47,7 +47,7 @@ pnpm run dev
 
 #NGINX 
 # NB: This is a docker image so you will need to stop it when you are done. 
-cd api/nginx
+cd workloads/nginx
 ./debug_entrypoint.sh
 ```
 
@@ -68,7 +68,7 @@ poetry run python workers.py
 
 Final morsel:
 
-If you use VSCode the following workspace configurations will add the debuggers for the web layer to the project (assuming api/app, sites/jungle3, sites/awful-ui are Top-level folders in your workspace). 
+If you use VSCode the following workspace configurations will add the debuggers for the web layer to the project (assuming ams/app, sites/jungle3, sites/awful-ui are Top-level folders in your workspace). 
 
 **NB: If you launch the automation workers in docker-compose mode, you will need to set `"MINIO_ENDPOINT": minio:9000` in the MythicaAPI env vars below**
 
