@@ -448,10 +448,10 @@ const parmTemplates = [
                                 "parm_templates": [
                                     {
                                         "param_type": "Int",
-                                        "label": "Int Multi Block Scroll",
+                                        "label": "Int Multi Block Tabs",
                                         "category_label": "Folder Multi Block Tabs",
                                         "constant": false,
-                                        "name": "int_multi_block_scroll#_3",
+                                        "name": "int_multi_block_tabs#_3",
                                         "is_hidden": false,
                                         "is_label_hidden": false,
                                         "help": "",
@@ -1503,7 +1503,7 @@ const parmTemplates = [
     }
 ]
 
-  
+
 
 const group = new hou.ParmTemplateGroup(parmTemplates);
 
@@ -1531,7 +1531,7 @@ const meta: Meta<typeof ParmGroup> = {
             table: {
                 type: { summary: '(formData: Record<string, any>) => void' },
             },
-        },        
+        },
     }
 }
 export default meta;
@@ -1544,15 +1544,24 @@ export const Default: Story = {
     render: function InteractiveStory(args) {
         const [{data}, updateArgs] = useArgs();
 
-        const handleParmChange = useCallback((formData:dictionary) => {
-            updateArgs({
-                data: {
-                    ...data,
-                    ...formData
+        const handleParmChange = useCallback((formData: dictionary) => {
+            const updatedData: Record<string, any> = {
+                ...data,
+                ...formData
+            };
+            // filter out any record that is null or undefined
+            const filteredData: Record<string, any> = Object.keys(updatedData).reduce((acc, key) => {
+                if (updatedData[key] !== null && updatedData[key] !== undefined) {
+                    acc[key] = updatedData[key];
                 }
+                return acc;
+            }, {} as Record<string, any>);
+            updateArgs({
+                data: filteredData
             });
+
             args.onChange(formData); // Triggers Storybook action logger
-        }, [updateArgs, args]);
+        }, [updateArgs, args, data]);
 
         return <ParmGroup {...args} data={data} onChange={handleParmChange} />;
     },

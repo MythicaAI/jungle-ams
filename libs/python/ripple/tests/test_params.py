@@ -1,29 +1,23 @@
 # pylint: disable=redefined-outer-name, unused-import
+import pytest
 import tempfile
 
-import pytest
 from ripple.compile.rpsc import compile_interface
-from ripple.models.houTypes import rampBasis, rampParmType
+from ripple.models.houTypes import rampParmType, rampBasis
 from ripple.models.params import (
-    BoolParameterSpec,
-    EnumParameterSpec,
-    EnumValueSpec,
-    FileParameter,
-    FileParameterSpec,
-    FloatParameterSpec,
-    IntParameterSpec,
-    ParameterSet,
     ParameterSpec,
-    RampParameterSpec,
-    StringParameterSpec,
+    ParameterSet,
+    IntParameterSpec,
+    FloatParameterSpec,
+    ParameterSpecModel,
+    RampParameterSpec, StringParameterSpec,
+    BoolParameterSpec,
+    EnumValueSpec,
+    EnumParameterSpec,
+    FileParameterSpec,
+    FileParameter,
 )
-from ripple.runtime.params import (
-    ParamError,
-    repair_parameters,
-    resolve_params,
-    validate_param,
-    validate_params,
-)
+from ripple.runtime.params import validate_param, validate_params, resolve_params, repair_parameters, ParamError
 
 
 class UnknownTestType:
@@ -654,12 +648,11 @@ def test_param_implicit_cast_to_float():
     validate_params(spec, set)
 
 
-@pytest.mark.asyncio
-async def test_param_resolve():
+def test_param_resolve():
     # Identity test
     with tempfile.TemporaryDirectory() as tmp_dir:
         set = ParameterSet(test_int=5)
-        success = await resolve_params("", tmp_dir, set)
+        success = resolve_params("", tmp_dir, set)
         assert success
         assert isinstance(set.test_int, int)
         assert set.test_int == 5

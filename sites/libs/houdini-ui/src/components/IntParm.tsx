@@ -17,7 +17,7 @@ export const IntParm: React.FC<IntParmProps> = ({
 }) => {
   const getDefaultValues = () => {
     return data[template.name] ||
-      template.default_value.length === template.num_components
+      template.default_value?.length === template.num_components
       ? template.default_value
       : Array<number>(template.num_components).fill(0);
   };

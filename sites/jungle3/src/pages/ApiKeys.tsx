@@ -18,7 +18,7 @@ import {
   Stack,
   Typography,
 } from "@mui/joy";
-import { addDays } from "date-fns";
+import {addDays, format, formatDistanceToNow, parseISO} from "date-fns";
 
 import {
   LucideCirclePlus,
@@ -42,6 +42,7 @@ import {
 import { DeleteModal } from "@components/common/DeleteModal";
 import { useTranslation } from "react-i18next";
 import { useGlobalStore } from "@store/globalStore";
+
 
 const ApiKeys = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -70,6 +71,25 @@ const ApiKeys = () => {
       handleError(error);
     }
   }, [error]);
+
+  const formatExpiration = (expiresAt: Date, isExpired: boolean) => {
+    const distance = formatDistanceToNow(expiresAt, { addSuffix: true });
+
+    // Optional: fallback for very far dates
+    const fallback = format(expiresAt, 'PPP p');
+    const now = new Date();
+    const isFarAway = Math.abs(+expiresAt - +now) > 1000 * 60 * 60 * 24 * 30; // >30 days
+    if (isExpired) {
+      return <ListItemDecorator
+                  sx={{ display: "flex", alignItems: "center" }}>
+                <Typography noWrap textColor="red" fontWeight="medium" >
+                  Expired {isFarAway ? fallback : distance}</Typography></ListItemDecorator>;
+    }
+    return <ListItemDecorator
+                  sx={{ display: "flex", alignItems: "center" }}>
+                <Typography noWrap >
+                  Expires {isFarAway ? fallback : distance}</Typography></ListItemDecorator>;
+  };
 
   return (
     <>
@@ -121,10 +141,11 @@ const ApiKeys = () => {
               <Card sx={{ width: "100%", flexDirection: "row" }}>
                 <ListItemContent
                   sx={{
-                    width: "calc(100% - 82px)",
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
+                    gap: 2,
+                    minWidth: 0,
+                    flexGrow: 1
                   }}
                 >
                   <LucideKeyRound />
@@ -136,11 +157,17 @@ const ApiKeys = () => {
                       {key.description}
                     </Typography>
                   </Stack>
+
                 </ListItemContent>
+
                 <Divider orientation="vertical" sx={{ margin: "0" }} />
+
+                  {formatExpiration(parseISO(key.expires), key.is_expired)}
+
                 <ListItemDecorator
                   sx={{ display: "flex", alignItems: "center" }}
                 >
+
                   <Stack direction={"row"} minWidth="72px">
                     <IconButton>
                       <LucideCopy

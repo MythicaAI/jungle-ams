@@ -4,7 +4,7 @@ on:
     types:
       - closed
     paths:
-      - 'automation/**'
+      - 'automations/**'
       - 'libs/python/**'
       - '.github/workflows/push-automation-images.yaml'
 jobs:
@@ -27,18 +27,15 @@ jobs:
         with:
           # setup all the filters to match Dockerfile locations
           filters: |
-            automation/test/:
+            automations/houdini/:
               - 'libs/python/**'
-              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
-            automation/houdini/:
+              - 'automations/houdini/**'
+            automations/blender/:
               - 'libs/python/**'
-              - 'automation/houdini/**'
-            automation/blender/:
+              - 'automations/blender/**'
+            automations/imagemagick/:
               - 'libs/python/**'
-              - 'automation/blender/**'
-            automation/imagemagick/:
-              - 'libs/python/**'
-              - 'automation/imagemagick/**'
+              - 'automations/imagemagick/**'
 
   build_libs_python:
     needs:

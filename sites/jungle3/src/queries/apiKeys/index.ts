@@ -9,6 +9,7 @@ export type Key = {
   expires: string;
   name: string;
   value: string;
+  is_expired: boolean;
 };
 
 export const useGetApiKeys = () => {

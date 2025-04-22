@@ -54,17 +54,17 @@ export const PackageScene: React.FC = () => {
   } = useSceneStore();
 
   const navigate = useNavigate();
-  
+
   const { data: jobDefinitions } =
     useGetJobDefinition(asset_id as string, (version_id as string)?.split("."));
-  
+
   useEffect(() => {
     if (jobDefinitions)
       setJobDefinitions(jobDefinitions);
   }
   , [jobDefinitions]);
 
-  const { data: assetVersion } = 
+  const { data: assetVersion } =
     useGetAssetByVersion(asset_id as string, version_id as string);
 
   useEffect(() => {
@@ -109,6 +109,7 @@ export const PackageScene: React.FC = () => {
             indices: data.indices,
             normals: data.normals,
             uvs: data.uvs,
+            colors: data.colors,
           });
         }
       },
@@ -231,7 +232,7 @@ export const PackageScene: React.FC = () => {
       </Helmet>
 
       {currentWidth > 700 ? (
-        <SceneControls 
+        <SceneControls
             width={390} />
       ) : (
         <Button

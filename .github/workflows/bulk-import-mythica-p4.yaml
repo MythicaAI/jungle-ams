@@ -9,7 +9,7 @@ on:
   push:
     paths:
       - '.github/workflows/bulk-import-mythica-p4.yaml'
-      - 'api/bulk-import/**'
+      - 'ams/bulk-import/**'
 
   workflow_dispatch:
     inputs:
@@ -113,7 +113,7 @@ jobs:
             echo "MYTHICA_API_KEY=${{ secrets.BULK_IMPORT_STAGING_MYTHICA_API_KEY }}" >> $GITHUB_ENV
           fi
       - name: Bulk Import HDA Changes
-        working-directory: api/bulk-import
+        working-directory: ams/bulk-import
         run: |
           # Example: Get latest changelist
           LATEST_CL=$(p4 -u $P4USER -P $P4PASSWD changes -m 1 //depot/... | cut -d' ' -f2)

@@ -6,6 +6,7 @@ import "@babylonjs/node-geometry-editor";
 import { useSceneStore } from '@store/sceneStore';
 
 // Material names
+const DEFAULT_MATERIAL = "default_mat";
 const ROCK = "rock";
 const ROCKFACE = "rockface";
 const CRYSTAL = "crystal";
@@ -199,6 +200,12 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     cactusMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.6, 0.4);
     cactusMaterial.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
 
+    // Default material
+    const defaultMaterial = new BABYLON.PBRMaterial(DEFAULT_MATERIAL, scene);
+    defaultMaterial.albedoColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+    defaultMaterial.metallic = 0.3;
+    defaultMaterial.roughness = 0.4;
+
     // Handle scene ready events
     scene.onNewMeshAddedObservable.add(function (mesh) {
      console.log("on new mesh added observable " + mesh.name);
@@ -311,13 +318,14 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
         meshData.points,
         meshData.indices,
         meshData.normals || [],
-        meshData.uvs || []
+        meshData.uvs || [],
+        meshData.colors || []
       );
     }
   }, [meshData]);
 
   // Create mesh from data received via WebSocket
-  const createMeshFromData = (vertices: number[], indices: number[], normals: number[], uvs: number[]) => {
+  const createMeshFromData = (vertices: number[], indices: number[], normals: number[], uvs: number[], colors: number[]) => {
     if (!sceneRef.current) return;
 
     const vertexData = new BABYLON.VertexData();
@@ -325,6 +333,15 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     vertexData.indices = indices;
     vertexData.normals = normals;
     vertexData.uvs = uvs;
+
+    // Convert RGB to RGBA
+    vertexData.colors = [];
+    for (let i = 0; i < colors.length; i++) {
+      vertexData.colors.push(colors[i]);
+      if (i % 3 === 2) {
+        vertexData.colors.push(1.0);
+      }
+    }
 
     const newMeshName = `mesh_${Math.random().toString(36).substring(2, 10)}`;
     loadingMeshRef.current = newMeshName;
@@ -334,16 +351,19 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     vertexData.applyToMesh(newMesh);
 
     // Get the appropriate material for this HDA and set it on the mesh
+    let material: BABYLON.Material | null = null;
+
     if (currentSchema) {
-        const material = sceneRef.current.getMaterialByName(currentSchema.material_name);
-        if (material) {
-        console.info("setting material " + currentSchema.material_name + " on mesh " + newMesh.name);
-        newMesh.material = material;
-        newMesh.material.wireframe = isWireframe;
-        } else {
-        console.error(`material ${currentSchema.material_name} not found`);
-        }
+      material = sceneRef.current.getMaterialByName(currentSchema.material_name);
     }
+    if (!material) {
+      material = sceneRef.current.getMaterialByName(DEFAULT_MATERIAL);
+    }
+    if (material) {
+      newMesh.material = material;
+      newMesh.material.wireframe = isWireframe;
+    }
+
     // Add to shadow generator
     if (shadowGeneratorRef.current) {
       shadowGeneratorRef.current.addShadowCaster(newMesh);

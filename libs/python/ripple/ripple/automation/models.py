@@ -45,7 +45,7 @@ class BulkAutomationRequest(BaseModel):
 
 
 class AutomationRequestResult(BaseModel):
-    processed: Literal[False, True] = False
+    processed: bool = False
     request: Optional[AutomationRequest] = None
     result: Optional[Dict] = None
 
@@ -53,8 +53,8 @@ class AutomationRequestResult(BaseModel):
 class EventAutomationResponse(BaseModel):
     """Bulk automation-jobs in one requests"""
 
-    is_bulk_processing: Literal[True, False] = False
-    processed: Literal[False, True] = False
+    is_bulk_processing: bool = False
+    processed: bool = False
     request_result: list[AutomationRequestResult] = []
 
 
