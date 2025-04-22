@@ -1,7 +1,6 @@
-# Build the packager image from the AMS app image
-# TODO: remove these internal dependencies
-ARG API_APP_IMAGE=mythica-app
-FROM ${API_APP_IMAGE} AS api-app-image
+# Derive the packager image from the AMS app image
+ARG AMS_APP_IMAGE=mythica-app
+FROM ${AMS_APP_IMAGE} AS ams-app-image
 
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL version="1.0.0"
