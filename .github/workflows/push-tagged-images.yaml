@@ -190,7 +190,7 @@ jobs:
       - name: Generate tag
         id: generate_tag
         run: |
-          github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+          workloads/github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
 
       - name: Push tag
         uses: nick-fields/retry@v3
