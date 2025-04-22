@@ -185,7 +185,7 @@ jobs:
         id: aws-auth
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ECR_ROLE
+          role-to-assume: ${{ env.ECR_ROLE }}
           role-session-name: github-actions-ecr
           aws-region: us-east-1
 
