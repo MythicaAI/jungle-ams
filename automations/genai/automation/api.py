@@ -3,7 +3,7 @@ import requests
 from ripple.models.streaming import ProcessStreamItem, OutputFiles
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
-
+from typing import Literal
 
 import os
 from enum import Enum
@@ -72,7 +72,56 @@ class Image2MaterialRequest(GenericApiRequest):
     normals_to_height_seamless: bool = False
     lowres_to_highres_scale_factor: LowresToHighresScaleFactor =LowresToHighresScaleFactor.X1
 
+class Text2ThreeDRequest(GenericApiRequest):
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/text_2_3d") 
+    accept: str = "application/x-www-form-urlencoded"
+    prompt: str
+    seed: int= 1
+    simplify:  float = 0.95
+    texture_size: int = 1024
+    return_type: Literal["glb", "gaussian"] = "glb"
+    slat_sampler_params_steps: int = 12
+    slat_sampler_params_cfg_strength: float = 3.0
 
+
+class ThreeD2ThreeDRequest(GenericApiRequest):
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/3d_2_3d") 
+    accept: str = "application/x-www-form-urlencoded"
+    base_mesh: FileParameter
+    prompt: str
+    seed: int= 1
+    simplify:  float = 0.95
+    texture_size: int = 1024
+    return_type: Literal["glb", "gaussian"] = "glb"
+    slat_sampler_params_steps: int = 12
+    slat_sampler_params_cfg_strength: float = 3.0
+
+class Image2ThreeDRequest(GenericApiRequest):
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/image_2_3d") 
+    accept: str = "application/x-www-form-urlencoded"
+    image: FileParameter
+    seed: int= 1
+    simplify:  float = 0.95
+    texture_size: int = 1024
+    return_type: Literal["glb", "gaussian"] = "glb"
+    sparse_structure_sampler_params_steps: int = 12
+    sparse_structure_sampler_params_cfg_strength: float = 7.5    
+    slat_sampler_params_steps: int = 12
+    slat_sampler_params_cfg_strength: float = 3.0
+
+class MultiImage2ThreeDRequest(GenericApiRequest):
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/multi_image_2_3d") 
+    accept: str = "application/x-www-form-urlencoded"
+    images: list[FileParameter]
+    prompt: str
+    seed: int= 1
+    simplify:  float = 0.95
+    texture_size: int = 1024
+    return_type: Literal["glb", "gaussian"] = "glb"
+    sparse_structure_sampler_params_steps: int = 12
+    sparse_structure_sampler_params_cfg_strength: float = 7.5    
+    slat_sampler_params_steps: int = 12
+    slat_sampler_params_cfg_strength: float = 3.0
 
 def api_request(request: GenericApiRequest, responder: ResultPublisher) -> OutputFiles:
     # Validate that accept is (application/json or application/x-www-form-urlencoded)
