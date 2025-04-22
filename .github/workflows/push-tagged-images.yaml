@@ -189,6 +189,9 @@ jobs:
           role-session-name: github-actions-ecr
           aws-region: us-east-1
 
+      - name: AWS ECR Login
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Login to Artifact Registry
         uses: docker/login-action@v3
         with:
