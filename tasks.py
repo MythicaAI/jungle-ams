@@ -31,6 +31,8 @@ GCS_REPO_HOST = "us-central1-docker"
 GCS_REPO_NAME = "gke-us-central1-images"
 GCS_IMAGE_REPO = f"{GCS_REPO_HOST}.pkg.dev/{GCS_PROJECT}/{GCS_REPO_NAME}"
 
+ECR_URI = "050752617649.dkr.ecr.us-east-1.amazonaws.com"
+
 IMAGE_PLATFORM = "linux/amd64"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -270,6 +272,8 @@ def deploy_image(c, image_path, target):
         repo = GCS_IMAGE_REPO
     elif target == "cpln":
         repo = CPLN_IMAGE_REPO
+    elif target == "aws":
+        repo = ECR_URI
     else:
         raise ValueError(f"unknown deployment target {target}")
 

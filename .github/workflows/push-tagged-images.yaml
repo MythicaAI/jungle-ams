@@ -159,7 +159,7 @@ jobs:
       GCR_SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
       GCR_WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
       ECR_ROLE: 'arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages'
-      ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com/cdk-hnb659fds-container-assets-050752617649-us-east-1'
+      ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
