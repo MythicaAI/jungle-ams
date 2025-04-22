@@ -5,7 +5,7 @@ on:
       - 'main'
     paths:
       - 'sites/**'
-      - 'api/**'
+      - 'ams/**'
       - 'libs/**'
       - '.github/workflows/push-tagged-images.yaml'
 
@@ -43,18 +43,18 @@ jobs:
               - 'libs/python/**'
               - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
             ams/packager/:
-              - 'api/packager/**'
+              - 'ams/packager/**'
               - 'libs/python/**'
             ams/canary/:
-              - 'api/canary/**'
+              - 'ams/canary/**'
             sites/:
               - 'sites/**'
             workloads/lets-encrypt/:
-              - 'api/lets-encrypt/**'
+              - 'ams/lets-encrypt/**'
             workloads/nginx/:
-              - 'ams/nginx/**'
+              - 'workloads/nginx/**'
             workloads/gcp/gcs-proxy/:
-              - 'api/gcs-proxy/**'
+              - 'workloads/gcp/gcs-proxy/**'
 
       # Set matrix based on filter results or use all images for manual trigger
       - id: post_filter
@@ -62,7 +62,7 @@ jobs:
         with:
           script: |
             const isManualTrigger = context.eventName === 'workflow_dispatch';
-            const allImages = ["api/app/", "api/nginx/", "api/gcs-proxy/", "api/lets-encrypt/", "api/packager/", "api/canary/", "sites/"];
+            const allImages = ["ams/app/", "workloads/nginx/", "workloads/gcp/gcs-proxy/", "workloads/lets-encrypt/", "ams/packager/", "ams/canary/", "sites/"];
             
             let changes;
             try {
@@ -105,17 +105,17 @@ jobs:
           context: libs/python
           tags: libs-python:${{ github.sha }}
           load: true
-      - name: Build api-app image
+      - name: Build ams-app image
         uses: docker/build-push-action@v5
         with:
-          context: api/app
-          tags: api-app:${{ github.sha }}
+          context: ams/app
+          tags: ams-app:${{ github.sha }}
           load: true
           build-args: |
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-      - name: Save api-app to tar
+      - name: Save ams-app to tar
         run: |
-          docker save api-app:${{ github.sha }} > /tmp/api-app-${{ github.sha }}.tar
+          docker save ams-app:${{ github.sha }} > /tmp/ams-app-${{ github.sha }}.tar
           docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
       - name: Upload libs-python image
         uses: actions/upload-artifact@v4
@@ -124,11 +124,11 @@ jobs:
           path: /tmp/libs-python-${{ github.sha }}.tar
           retention-days: 1
           overwrite: true
-      - name: Upload api-app image
+      - name: Upload ams-app image
         uses: actions/upload-artifact@v4
         with:
-          name: api-app-${{ github.sha }}
-          path: /tmp/api-app-${{ github.sha }}.tar
+          name: ams-app-${{ github.sha }}
+          path: /tmp/ams-app-${{ github.sha }}.tar
           retention-days: 1
           overwrite: true
 
@@ -203,10 +203,10 @@ jobs:
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
-      - name: Download api-app image
+      - name: Download ams-app image
         uses: actions/download-artifact@v4
         with:
-          name: api-app-${{ github.sha }}
+          name: ams-app-${{ github.sha }}
           path: /tmp
 
       - name: Download libs-python base image
@@ -218,7 +218,7 @@ jobs:
       - name: Load images
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
-          docker load --input /tmp/api-app-${{ github.sha }}.tar
+          docker load --input /tmp/ams-app-${{ github.sha }}.tar
 
       - name: Build and push ${{ matrix.image }}
         id: build_push
@@ -232,7 +232,7 @@ jobs:
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            API_APP_IMAGE=api-app:${{ github.sha }}
+            AMS_APP_IMAGE=ams-app:${{ github.sha }}
           load: true
 
       - name: Send Discord notification
