@@ -38,7 +38,7 @@ jobs:
 
       - name: Generate values file for released image tags
         run: |
-          api/helm/helm-gen-values-images.sh releases
+          workloads/helm/helm-gen-values-images.sh releases
 
       - name: Google Auth
         id: auth
@@ -67,7 +67,7 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Deploy Helm Chart
-        working-directory: workload-config/helm
+        working-directory: workloads/helm
         run: |
           helm upgrade --namespace api -f api/values.yaml -f api/values-images.yaml api api
 
@@ -94,7 +94,7 @@ jobs:
       - uses: actions-tools/yaml-outputs@v2
         id: deployed_yaml
         with:
-          file-path: 'api/helm/api/values-images.yaml'
+          file-path: 'workloads/helm/api/values-images.yaml'
       - run: |
           echo "${{ steps.deployed_yaml.outputs.images }}"
       - name: Discord notification

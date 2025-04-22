@@ -53,7 +53,7 @@ jobs:
 
       - name: Generate values file for image tags
         run: |
-          workflow-config/helm/automation/helm-gen-values-images.sh
+          workloads/helm/automation/helm-gen-values-images.sh
 
       - name: Google Auth
         id: auth
@@ -86,7 +86,7 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Deploy Helm Chart
-        working-dir: workload-config/helm/automation
+        working-dir: workloads/helm/automation
         run: |
           helm upgrade --namespace automation-staging \
             -f values-staging.yaml \

@@ -12,7 +12,7 @@ on:
     branches:
       - main
     paths:
-      - 'api/helm/**'
+      - 'workloads/helm/**'
       - '.github/workflows/helm-deploy-staging.yaml'
 
 concurrency:
@@ -49,7 +49,7 @@ jobs:
 
       - name: Generate values file for image tags
         run: |
-          api/helm/helm-gen-values-images.sh
+          workloads/helm/helm-gen-values-images.sh
 
       - name: Google Auth
         id: auth
@@ -82,11 +82,12 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Deploy Helm Chart
+        working-directory: workloads/helm
         run: |
-          helm upgrade --namespace api-staging -f api/helm/api/values-staging.yaml -f api/helm/api/values-images.yaml api-staging api/helm/api
+          helm upgrade --namespace api-staging -f api/values-staging.yaml -f api/values-images.yaml api-staging api
           echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
-          cat api/helm/api/values-images.yaml >> $GITHUB_STEP_SUMMARY
-          helm upgrade otel-release-k8s-infra ./api/helm/otel -f ./api/helm/otel/values.yaml -n default
+          cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
+          helm upgrade otel-release-k8s-infra ./otel -f ./otel/values.yaml -n default
 
       - name: Rollout deployments
         run: |
