@@ -180,6 +180,14 @@ jobs:
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
+      - name: AWS Auth
+        id: aws-auth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages
+          role-session-name: github-actions-ecr
+          aws-region: us-east-1
+
       - name: Login to Artifact Registry
         uses: docker/login-action@v3
         with:
