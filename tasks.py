@@ -130,7 +130,7 @@ IMAGE_SETS = {
     'auto': {
         'automations/houdini',
         'automations/imagemagick',
-        'automation/genai',
+        'automations/genai',
         'automations/workflow',
         'automations/blender',
     },
