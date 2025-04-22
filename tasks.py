@@ -1,4 +1,5 @@
-# This file is intended for invoke, see README.md for install setup instructions
+# This file is intended for invoke, see README.md for
+# install setup instructions
 import os
 import re
 import shutil
@@ -112,7 +113,7 @@ SITE_DATA = {
 WEB_SERVING = {
     'ams/app',
     'ams/canary',
-    'ams/publisher',
+    'ams/packager',
     'workloads/nginx',
     'workloads/lets-encrypt',
     'workloads/gcp/gcs-proxy',
@@ -210,8 +211,8 @@ def start_docker_compose(c, docker_compose_path, cleanup_fn=None):
     with c.cd(docker_compose_path):
         c.run(f'docker compose --env-file {env_file_path} down --timeout 1')
         # cleanup_fn(c) if cleanup_fn is not None else None
-        c.run(f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml up -d',
-              pty=PTY_SUPPORTED)
+        c.run(f'docker compose --env-file {env_file_path} '
+              '-f ./docker-compose.yaml up -d', pty=PTY_SUPPORTED)
 
 
 def stop_docker_compose(c, docker_compose_path):
@@ -457,7 +458,11 @@ def image_path_action(c, image, action, **kwargs):
 
 @task(help={'image': f'Image path to build: {IMAGES.keys()}'})
 @timed
-def docker_build(c, image='all', no_cache: bool = False, use_tailscale: bool = False):
+def docker_build(
+        c,
+        image='all',
+        no_cache: bool = False,
+        use_tailscale: bool = False):
     """Build a docker image by sub path or set name"""
     image_path_action(c, image, build_image, no_cache=no_cache,
                       use_tailscale=use_tailscale)
@@ -486,7 +491,8 @@ def docker_run(c, image='ams/app', background=False):
 def poetry_nuke(c, path):
     with c.cd(os.path.join(BASE_DIR, path)):
         poetry_env = c.run('poetry env info --path').stdout.strip()
-        answer = input(f"Nuking poetry env in {poetry_env}.\nContinue? Type 'nuke' to confirm: ")
+        answer = input('Nuking poetry env in '
+                       f'{poetry_env}.\nContinue? Type "nuke" to confirm: ')
         if answer.upper() not in ["NUKE"]:
             print("skipping nuke")
             return
@@ -498,14 +504,18 @@ def poetry_nuke(c, path):
 })
 def poetry_upgrade(c, path):
     if path is None:
-        raise ValueError("pass a relative path in the infra repo e.g. libs/python/ripple")
+        raise ValueError(
+            "pass a relative path in the infra repo e.g. libs/python/ripple")
     ignore = {'ripple', 'cryptid'}
     abs_path = os.path.join(BASE_DIR, path)
     with c.cd(abs_path):
         for group in ['dev', 'main', 'infra']:
-            package_list = [line.split(" ")[0] \
-                            for line in \
-                            c.run(f'poetry show --top-level --only={group}').stdout.splitlines() \
+            package_list = [line.split(" ")[0]
+                            for line in
+                            c.run(
+                                'poetry show '
+                                '--top-level '
+                                f'--only={group}').stdout.splitlines()
                             if line]
             for package in package_list:
                 if package in ignore:
@@ -514,5 +524,5 @@ def poetry_upgrade(c, path):
                 print(f"UPGRADE {group}.{package}")
                 c.run(f'poetry add {package}@latest --group={group}')
                 print(f"{package} upgraded")
-        c.run(f'poetry lock')
+        c.run('poetry lock')
         print(f"Finished upgrading packages in {abs_path}")
