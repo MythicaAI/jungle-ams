@@ -11,6 +11,7 @@ export type JSONSchemaProperty = {
     type: string;
     title?: string;
     default?: unknown;
+    propertyNames?: string[];
     properties?: Record<string, JSONSchemaProperty>;
     required?: string[];
     anyOf?: Array<{ title?: string; const?: unknown; default?: unknown }>;

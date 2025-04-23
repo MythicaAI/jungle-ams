@@ -42,17 +42,27 @@ class GenericApiRequest(ParameterSet):
     accept: str = "application/json"
     timeout: int = 60
 
+class ApiResponse(OutputFiles):
+    """
+    A file output event for generated files, the outputs are keyed
+    with a param name.
+    """
+    item_type: Literal["file"] = "file"
+    files: dict[Literal["output"], list[str]]
+
+
+
 class Text2MaterialRequest(GenericApiRequest):
     api_endpoint: str = os.getenv("TEXT_2_MATERIAL_API", "http://54.82.234.239:5555/text_2_material")
-    accept: str = "application/x-www-form-urlencoded",
+    accept: str = "application/x-www-form-urlencoded"
     prompt: str
     negative_prompt: str = ""
     guidance_scale: float = 3.0
     num_inference_steps: int = 8
     max_sequence_length: int = 256
     delight_luminance_min: int = 75
-    delight_luminance_max: int = 190,
-    delight_blur_sigma: float  = 2,
+    delight_luminance_max: int = 190
+    delight_blur_sigma: float  = 2
     delight_detail_weight: float = 0.6
     color_to_normals_overlap: ColorToNormalsOverlap =ColorToNormalsOverlap.LARGE
     normals_to_curvature_blur_radius: NormalsToCurvatureBlurRadius = NormalsToCurvatureBlurRadius.MEDIUM
@@ -64,8 +74,8 @@ class Image2MaterialRequest(GenericApiRequest):
     accept: str = "application/x-www-form-urlencoded"
     image: FileParameter
     delight_luminance_min: int = 75
-    delight_luminance_max: int = 190,
-    delight_blur_sigma: float  = 2,
+    delight_luminance_max: int = 190
+    delight_blur_sigma: float  = 2
     delight_detail_weight: float = 0.6
     color_to_normals_overlap: ColorToNormalsOverlap =ColorToNormalsOverlap.LARGE
     normals_to_curvature_blur_radius: NormalsToCurvatureBlurRadius = NormalsToCurvatureBlurRadius.MEDIUM
@@ -123,7 +133,7 @@ class MultiImage2ThreeDRequest(GenericApiRequest):
     slat_sampler_params_steps: int = 12
     slat_sampler_params_cfg_strength: float = 3.0
 
-def api_request(request: GenericApiRequest, responder: ResultPublisher) -> OutputFiles:
+def api_request(request: GenericApiRequest, responder: ResultPublisher) -> ApiResponse:
     # Validate that accept is (application/json or application/x-www-form-urlencoded)
     if request.accept not in ["application/json", "application/x-www-form-urlencoded"]:
         raise ValueError("Backend error. `Accept` must be either application/json or application/x-www-form-urlencoded")
@@ -169,6 +179,6 @@ def api_request(request: GenericApiRequest, responder: ResultPublisher) -> Outpu
             f.write(response.content)
         
         # Return the file path with a key based on filename without extension
-        return OutputFiles(files={'all': [output_file_path]})
+        return ApiResponse(files={'output': [output_file_path]})
     else:
         raise ValueError(f"Backend error. {response.status_code}: {response.text}")

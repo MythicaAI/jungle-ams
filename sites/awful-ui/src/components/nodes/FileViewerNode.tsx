@@ -11,7 +11,7 @@ import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
 
-import { Card, Typography, Tabs, Box, Button } from '@mui/joy';
+import { Typography, Tabs, Box, Button } from '@mui/joy';
 import {
   GetDownloadInfoResponse,
   GetFileResponse,
@@ -194,16 +194,8 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
   const columnStyle = { width: columnWidth };
 
   return (
-    <Card
+    <div
       className={`mythica-node file-viewer-node ${node.selected && 'selected'}`}
-      sx={{
-        minWidth: 400,
-        height: '100%',
-        display: 'flex',
-        minHeight: 300,
-        flexDirection: 'column',
-        paddingTop: '50px',
-      }}
       ref={containerRef}
     >
       <NodeDeleteButton
@@ -226,7 +218,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
       <Typography level="h4">File Viewer</Typography>
 
       {/* The "Select Files" button now opens our new FilePickerModal */}
-      <Box mb="10px" className="nodrag">
+      <Box mt="20px" mb="20px" className="nodrag">
         <Button variant="outlined" onClick={() => setIsPickerOpen(true)}>
           Select Files
         </Button>
@@ -434,7 +426,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
         style={{ background: '#555' }}
         label="Outputs[ ]"
       />
-    </Card>
+    </div>
   );
 };
 

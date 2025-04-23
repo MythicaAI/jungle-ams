@@ -49,11 +49,15 @@ const AutomationOutputs: React.FC<AutomationOutputProps> = ({ outputSchema, outp
         }
 
         if (key === 'files') {
-            const fileKeys =
-                fieldSchema.type === 'object' && fieldSchema.default
-                    ? Object.keys(fieldSchema.default)
-                    : ['?'];
-        
+            let fileKeys: string[] = [];
+            if (fieldSchema.type === 'object') {
+                if (fieldSchema.propertyNames)
+                    fileKeys = Object.values(fieldSchema.propertyNames)
+                else if (fieldSchema.default)
+                    fileKeys = Object.keys(fieldSchema.default)
+                else
+                    fileKeys = ['?'];
+            }
             const sortedFileKeys = fileKeys.sort().join(',');
             const sortedPrevFileOutputs = [...fileOutputs].sort().join(',');
         

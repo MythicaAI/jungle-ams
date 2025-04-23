@@ -480,40 +480,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, [setEdges, unsetFlowData]);
 
-  const clearFlowData = useCallback(
-    (nodeId: string) => {
-      let removedFiles: {[key: string] :GetFileResponse[]};
-      setFlowDataState((prevData) => {
-        const updatedData = { ...prevData };
-        removedFiles = updatedData[nodeId] 
-        delete updatedData[nodeId];
-        return updatedData;
-      });
-
-      // clear flowdata for edge targets that were connected to this key
-      if (nodeId in edgeMap) {
-        const sourceHandles = edgeMap[nodeId];
-
-        Object.keys(sourceHandles).forEach((sourceHandle) => {
-          setFlowDataState((prevData) => {
-            const updatedData = { ...prevData };
-            sourceHandles[sourceHandle].forEach((edge) => {
-              const target = updatedData[edge.target][edge.targetHandle as string];
-              removedFiles[sourceHandle].forEach((file) => {
-                target.splice( 
-                  target.indexOf(file),
-                  1
-                );
-              })
-            })
-            return updatedData;
-          });
-        })
-      }
-    },
-    []
-  );
-
   const getFlowData = useCallback(
     (nodeId: string) => {
       return flowData[nodeId] || {};
@@ -533,7 +499,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       const newEdge = {
         id: `edge_${connection.source}_${connection.sourceHandle}_${connection.target}_${connection.targetHandle}`,
         ...connection,
-        type: 'fileEdge',
       } as Edge;
 
 
@@ -649,8 +614,6 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
         NodeResizer,
         getFlowData,
         setFlowData,
-        unsetFlowData,
-        clearFlowData,
         onConnect,
         onDisconnect,
         nodes,

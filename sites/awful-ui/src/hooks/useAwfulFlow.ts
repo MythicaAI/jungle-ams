@@ -22,8 +22,6 @@ type AwfulFlowContextType = {
   onNodesDelete: (nodes: Node[]) => void;
   getFlowData: (nodeId: string) => { [key: string]: GetFileResponse[] };
   setFlowData: (nodeId: string, key: string, value: GetFileResponse[]) => void;
-  unsetFlowData: (nodeId: string, key: string) => void;
-  clearFlowData: (nodeId: string) => void;
   setNodeType: Dispatch<SetStateAction<string | null>>;
   onConnect: (connection: Edge | Connection) => void;
   onDisconnect: (connections: Edge[]) => void;

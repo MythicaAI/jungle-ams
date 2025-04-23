@@ -451,13 +451,10 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           myExecutionData.state
         } ${node.selected && 'selected'}`}
         style={{
-          flex: '1 1 auto',
-          display: 'flex',
-          flexDirection: 'column',
+          flex: '1 1 auto !important',
           minHeight: min,
-          minWidth: isScriptNode ? '640px' : 'auto',
+          ...isScriptNode && {minWidth: '640px'},
           position: 'relative',
-          paddingTop: '28px',
         }}
       >
         
@@ -471,6 +468,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           }}
         />
         <NodeHeader />
+
+        <div>
+          <Typography level="h4">{automationTask?.uri}</Typography>
+          <p>State: {myExecutionData.state}</p>
+        </div>
+
         <AutomationInputs
           inputSchema={inputSpec}
           onChange={setInputData}
@@ -482,10 +485,6 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           outputData={myExecutionData.output}
           onFileOutputDetected={handleFileOutputDetected}
         />
-        <div>
-          <Typography level="h4">{automationTask?.uri}</Typography>
-          <p>State: {myExecutionData.state}</p>
-        </div>
 
         {/* Input Handles */}
         {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (

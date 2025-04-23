@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import { Card, Typography, Box, List, ListItem, ListItemButton, ListItemDecorator, Checkbox, Input, Button } from '@mui/joy';
+import { Typography, Box, List, ListItem, ListItemButton, ListItemDecorator, Checkbox, Input, Button } from '@mui/joy';
 import { GetFileResponse, GetAssetResponse } from '../../types/MythicaApi';
 import { useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import useMythicaApi from '../../hooks/useMythicaApi';
@@ -138,15 +138,14 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
   };
 
   return (
-    <Card
+    <div
       className={`mythica-node asset-viewer-node ${node.selected && 'selected'}`}
-      sx={{
+      style={{
         minWidth: 400,
         height: '100%',
         display: 'flex',
         minHeight: 300,
         flexDirection: 'column',
-        paddingTop: '50px',
       }}
     >
       <NodeDeleteButton onDelete={() => deleteElements({ nodes: [node] })} />
@@ -159,7 +158,7 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
 
       {/* Content container */}
       <Box
-        sx={{ flex: 1, display: 'flex', gap: 2, overflow: 'hidden' }}
+        sx={{ paddingTop:'10px', flex: 1, display: 'flex', gap: 2, overflow: 'hidden' }}
         className="nowheel nodrag"
       >
         {/* Asset List */}
@@ -288,7 +287,7 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
           label={key}
         />
       ))}
-    </Card>
+    </div>
   );
 };
 

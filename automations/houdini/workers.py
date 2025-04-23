@@ -8,7 +8,6 @@ print(f"cwd: {os.getcwd()}")
 print(f"python path: {sys.path}")
 
 
-from automation.generate_job_defs import generate_job_defs, GenerateJobDefRequest, GenerateJobDefResponse
 from automation.job_defs import job_defs, JobDefRequest, JobDefResponse
 
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
