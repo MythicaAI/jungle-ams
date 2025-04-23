@@ -4,7 +4,7 @@ import React, { memo } from 'react';
 import useMythicaApi from '../../hooks/useMythicaApi'; // Import Auth context
 import useAwfulFlow from '../../hooks/useAwfulFlow'; // Import NodeDataContext
 import FileOutputHandle from '../handles/FileOutputHandle';
-import { Box, Button, Card, List, ListItem, Typography } from '@mui/joy';
+import { Box, Button, List, ListItem, Typography } from '@mui/joy';
 import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
 import { NodeHeader } from './ux/NodeHeader';
@@ -52,9 +52,8 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
   };
 
   return (
-    <Card
+    <div
       className={`mythica-node file-upload-node ${node.selected && 'selected'}`}
-      sx={{ minWidth: '300px', paddingTop: '60px' }}
     >
       <NodeDeleteButton
         onDelete={() => {
@@ -66,7 +65,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
       <Button
         variant="outlined"
         component="label"
-        sx={{ width: 'fit-content' }}
+        sx={{ width: 'fit-content', mt: '20px' }}
       >
         Choose files
         <input type="file" multiple onChange={handleFileChange} hidden />
@@ -94,7 +93,7 @@ const FileUploadNode: React.FC<FileUploadNodeProps> = (node) => {
         style={{ background: '#555' }}
         label="Uploads[ ]"
       />
-    </Card>
+    </div>
   );
 };
 

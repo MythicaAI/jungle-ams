@@ -49,7 +49,7 @@ def parse_string_menu_parameter(value: dict) -> EnumParameterSpec:
 
 def compile_interface(interface_data: str) -> ParameterSpec:
     """
-    Compiles a Houdini interface file into a parameter spec.
+    DEPRECATED! Compiles a Houdini interface file into a parameter spec.
     """
     data = json.loads(interface_data)
 

@@ -8,7 +8,7 @@ import { hou, ParmGroup, dictionary } from 'houdini-ui';
 import { ExecutionData } from '../../types/Automation';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
-import { Button, Card } from '@mui/joy';
+import { Button, Typography } from '@mui/joy';
 import useMythicaApi from '../../hooks/useMythicaApi';
 import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
@@ -333,16 +333,14 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   }, [node.id, nodeType.outputs]);
   
   return (
-    <Card className={`mythica-node worker ${node.selected && 'selected'}`}>
+    <div className={`mythica-node worker ${node.selected && 'selected'}`}>
       <NodeDeleteButton
         onDelete={() => {
           deleteElements({ nodes: [node] });
         }}
       />
       <NodeHeader />
-      <h3 style={{ marginBottom: '2px' }}>
-        {nodeType['description'] as string}
-      </h3>
+      <Typography level="h4">HDA: {nodeType['description'] as string}</Typography>
       <label>{nodeType['type'] as string}</label>
       <label>Interface: {myExecutionData.state} </label>
       <label>Automation: {myExecutionData.state} </label>
@@ -388,7 +386,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       </div>
 
       <div style={{ height: '24px' }} />
-    </Card>
+    </div>
   );
 };
 

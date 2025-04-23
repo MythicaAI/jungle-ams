@@ -55,7 +55,6 @@ body {
 }
 
 .dndflow .dndnode {
-  height: 20px;
   padding: 8px 12px;
   display: flex;
   justify-content: space-between;
@@ -95,9 +94,14 @@ body {
 
 .mythica-node {
   border: 1px solid #666 !important;
-  padding: 10px 20px 10px 20px;
+  padding: 50px 20px 10px 20px;
   border-radius: 8px;
   background: #0b0d0e;
+  min-width: 400px;
+  height: 100%;
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
 }
 
 .mythica-node.selected {

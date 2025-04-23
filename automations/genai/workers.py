@@ -7,10 +7,10 @@ from  automation.api import (
     ThreeD2ThreeDRequest,
     Image2ThreeDRequest,
     MultiImage2ThreeDRequest,
+    ApiResponse,
     api_request
 )
 from ripple.automation.worker import Worker
-from ripple.models.streaming import OutputFiles
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,37 +24,37 @@ automations = [
         "path": '/mythica/text_2_material',
         "provider": api_request,
         "inputModel": Text2MaterialRequest,
-        "outputModel": OutputFiles
+        "outputModel": ApiResponse
     },
     {
         "path": '/mythica/image_2_material',
         "provider": api_request,
         "inputModel": Image2MaterialRequest,
-        "outputModel": OutputFiles
+        "outputModel": ApiResponse
     },
     {
         "path": '/mythica/text_2_3d',
         "provider": api_request,
         "inputModel": Text2ThreeDRequest,
-        "outputModel": OutputFiles
+        "outputModel": ApiResponse
     },
     {
         "path": '/mythica/3d_2_3d',
         "provider": api_request,
         "inputModel": ThreeD2ThreeDRequest,
-        "outputModel": OutputFiles
+        "outputModel": ApiResponse
     },
     {
         "path": '/mythica/image_2_3d',
         "provider": api_request,
         "inputModel": Image2ThreeDRequest,
-        "outputModel": OutputFiles
+        "outputModel": ApiResponse
     },
     {
         "path": '/mythica/multi_image_2_3d',
         "provider": api_request,
         "inputModel": MultiImage2ThreeDRequest,
-        "outputModel": OutputFiles
+        "outputModel": ApiResponse
     },
 
 ]
