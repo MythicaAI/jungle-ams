@@ -131,7 +131,6 @@ const SceneControls: React.FC<Props> = ({ width }) => {
         <Box
             sx={{
                 width: width ?? 250,
-                height: "100%",
                 padding: "15px",
                 backgroundColor: "#1e1e1e",
                 borderRight: "1px solid #333",
