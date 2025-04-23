@@ -65,6 +65,7 @@ class JobDefRequest(ParameterSet):
     hda_file: FileParameter
     src_asset_id: str
     src_version: list[int]
+    src_package_files: list[FileParameter]
 
 class JobDefResponse(ProcessStreamItem):
     item_type: Literal["job_defs"] = "job_defs"

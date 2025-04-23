@@ -205,11 +205,13 @@ async def generate_several_houdini_job_defs(
         event_id=event_id,
         telemetry_context=get_telemetry_headers()
     )
+    file_ids = [FileParameter(file_id=content.file_id) for content in contents]
     for content in contents:
         parameter_set = ParameterSet(
             hda_file=FileParameter(file_id=content.file_id),
             src_asset_id=avr.asset_id,
-            src_version=avr.version
+            src_version=avr.version,
+            src_package_files=file_ids,
         )
         bulk_req.requests.append(AutomationRequest(
             process_guid=process_guid,
