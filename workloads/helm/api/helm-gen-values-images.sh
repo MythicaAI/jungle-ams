@@ -5,7 +5,7 @@ set -ex
 # Path to this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-OUTPUT_FILE=${OUTPUT_FILE:-"$SCRIPT_DIR/api/values-images.yaml"}
+OUTPUT_FILE=${OUTPUT_FILE:-"$SCRIPT_DIR/values-images.yaml"}
 
 TAG_PREFIX=${1:-versions}
 
