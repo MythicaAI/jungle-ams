@@ -38,7 +38,7 @@ jobs:
 
       - name: Generate values file for released image tags
         run: |
-          workloads/helm/helm-gen-values-images.sh releases
+          workloads/helm/api/helm-gen-values-images.sh releases
 
       - name: Google Auth
         id: auth
