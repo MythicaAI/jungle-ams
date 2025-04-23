@@ -21,8 +21,7 @@ import { SceneTalkConnection } from "../services/sceneTalkConnection";
 import { useWindowSize } from "@hooks/useWindowSize";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
-import { LucideChevronLeft } from "lucide-react";
-
+import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
 
 export const PackageScene: React.FC = () => {
   const { asset_id, version_id } = useParams();
@@ -31,6 +30,7 @@ export const PackageScene: React.FC = () => {
   const wsServiceRef = useRef<SceneTalkConnection | null>(null);
   const { currentWidth } = useWindowSize();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSidepanelOpen, setIsSidepanelOpen] = useState(true); // New state for panel visibility
 
   // Get state and actions from the store
   const {
@@ -63,7 +63,7 @@ export const PackageScene: React.FC = () => {
     if (jobDefinitions)
       setJobDefinitions(jobDefinitions);
   }
-  , [jobDefinitions]);
+    , [jobDefinitions]);
 
   const { data: assetVersion } =
     useGetAssetByVersion(asset_id as string, version_id as string);
@@ -72,7 +72,7 @@ export const PackageScene: React.FC = () => {
     if (assetVersion)
       setAssetVersion(assetVersion);
   }
-  , [assetVersion]);
+    , [assetVersion]);
 
 
   // Initialize WebSocket service
@@ -202,75 +202,130 @@ export const PackageScene: React.FC = () => {
 
   return (
     <>
-        <Stack
-          direction="row"
-          width="100%"
-          justifyContent="space-between"
-          alignItems="center"
-          mb="12px"
-        >
-          <Stack direction="row" alignItems="center" gap="12px">
-            <Typography level="h2">{assetVersion?.name}</Typography>
-            <Chip
-              key={assetVersion?.version.join(".")}
-              variant="soft"
-              color="primary"
-              size="lg"
-              sx={{ borderRadius: "xl" }}
-            >
-              {assetVersion?.version.join(".")}
-            </Chip>
-          </Stack>
-          <Button
-            variant="outlined"
-            color="neutral"
-            startDecorator={<LucideChevronLeft height="20px" width="20px" />}
-            sx={{ pl: "10px" }}
-            onClick={() => {
-              navigate(`/package-view/${asset_id}/versions/${version_id}`);
-            }}
+      <Stack
+        direction="row"
+        width="100%"
+        justifyContent="space-between"
+        alignItems="center"
+        mb="12px"
+      >
+        <Stack direction="row" alignItems="center" gap="12px">
+          <Typography level="h2">{assetVersion?.name}</Typography>
+          <Chip
+            key={assetVersion?.version.join(".")}
+            variant="soft"
+            color="primary"
+            size="lg"
+            sx={{ borderRadius: "xl" }}
           >
-            Back to Package view
-          </Button>
+            {assetVersion?.version.join(".")}
+          </Chip>
         </Stack>
-    <Box sx={{ display: "flex", height: "100vh", position: "relative" }}>
-      <Helmet>
-        <title>Mythica • {t("common.sceneViewer")}</title>
-      </Helmet>
-
-      {currentWidth > 700 ? (
-        <SceneControls
-            width={390} />
-      ) : (
         <Button
+          variant="outlined"
           color="neutral"
-          sx={{
-            position: "absolute",
-            right: 5,
-            top: 5,
-            zIndex: 1,
+          startDecorator={<LucideChevronLeft height="20px" width="20px" />}
+          sx={{ pl: "10px" }}
+          onClick={() => {
+            navigate(`/package-view/${asset_id}/versions/${version_id}`);
           }}
-          onClick={() => setIsModalOpen(true)}
         >
-          Open Controls
+          Back to Package view
         </Button>
-      )}
-      {isModalOpen && (
-        <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <ModalDialog layout="fullscreen">
-            <ModalClose />
-            <DialogTitle>Controls</DialogTitle>
-            <DialogContent>
-              <SceneControls
-                width={currentWidth - 40}
-              />
-            </DialogContent>
-          </ModalDialog>
-        </Modal>
-      )}
+      </Stack>
+      <Box
+        ref={(el: HTMLElement) => {
+          if (el) {
+            const topPosition = el.getBoundingClientRect().top;
+            const viewportHeight = document.documentElement.clientHeight;
+            const availableHeight = viewportHeight - topPosition - 40;
+            // Apply the height directly or store in a state variable
+            el.style.height = `${availableHeight}px`;
+          }
+        }}
+        sx={{ display: "flex", position: "relative", padding: 0, margin: 0 }}
+      >
+        <Helmet>
+          <title>Mythica • {t("common.sceneViewer")}</title>
+        </Helmet>
 
-      <SceneViewer packageName={assetVersion?.name as string}/>
-    </Box>
+        {currentWidth > 700 ? (
+          <>
+            {/* Toggle button for sidepanel */}
+            <Button
+              color="neutral"
+              variant="soft"
+              sx={{
+                position: "absolute",
+                left: isSidepanelOpen ? "395px" : "5px",
+                top: "5px",
+                zIndex: 10,
+                minWidth: "32px",
+                width: "32px",
+                height: "32px",
+                padding: 0,
+              }}
+              onClick={() => setIsSidepanelOpen(!isSidepanelOpen)}
+            >
+              {isSidepanelOpen ? 
+                <LucideChevronLeft height="20px" width="20px" /> : 
+                <LucideChevronRight height="20px" width="20px" />
+              }
+            </Button>
+            
+            {/* Floating sidepanel */}
+            <Box
+              sx={{
+                position: "absolute",
+                left: isSidepanelOpen ? "0" : "-390px",
+                top: 0,
+                bottom: 0,
+                height: "100%", 
+                zIndex: 5,
+                transition: "none",
+                backgroundColor: "background.surface",
+                boxShadow: isSidepanelOpen ? "md" : "none",
+                borderRight: isSidepanelOpen ? "1px solid" : "none",
+                borderColor: "divider",
+                visibility: isSidepanelOpen ? "visible" : "hidden",
+                overflow: "auto", // Enable scrollbar when needed
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <SceneControls width={390} />
+            </Box>
+          </>
+        ) : (
+          <Button
+            color="neutral"
+            sx={{
+              position: "absolute",
+              right: 5,
+              top: 5,
+              zIndex: 1,
+            }}
+            onClick={() => setIsModalOpen(true)}
+          >
+            Open Controls
+          </Button>
+        )}
+        {isModalOpen && (
+          <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+            <ModalDialog layout="fullscreen">
+              <ModalClose />
+              <DialogTitle>Controls</DialogTitle>
+              <DialogContent>
+                <SceneControls
+                  width={currentWidth - 40}
+                />
+              </DialogContent>
+            </ModalDialog>
+          </Modal>
+        )}
+
+        <SceneViewer packageName={assetVersion?.name as string} />
+      </Box>
     </>
   );
 };
