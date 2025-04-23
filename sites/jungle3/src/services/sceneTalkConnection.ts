@@ -1,4 +1,5 @@
 import { AssetVersionContent } from "types/apiTypes";
+import { v4 as uuid } from "uuid";
 
 
 // SceneTalk WebSocket Service
@@ -162,6 +163,7 @@ export class SceneTalkConnection {
         ...params
       }
     };
+    console.log("Sending cook message:", cookMessage);
 
     try {
       this.ws.send(JSON.stringify(cookMessage));
@@ -178,6 +180,53 @@ export class SceneTalkConnection {
       return false;
     }
   }
+
+  
+  sendFileUploadMessage(file: File, callback: (file_id: string) => void) {
+    if (!file) {
+      console.error("File params are missing")
+      return false;
+    }  
+    const file_id = uuid();
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket is not connected");
+      if (this.handlers.onStatusLog) {
+        this.handlers.onStatusLog("Failed to send request: Connection not open");
+      }
+      this.attemptReconnect();
+      return false;
+    }
+
+    const contentType = file.type || "application/octet-stream";
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Content = (reader.result as string).split(',')[1];
+
+      const uploadMessage = {
+        "op": "file_upload",
+        "data": {
+          "file_id": file_id,
+          "content_type": contentType,
+          "content_base64": base64Content
+        }
+      };  
+      console.log("Sending upload message:", uploadMessage);
+
+      try {
+        if (!this.ws) throw new Error("WebSocket is not initialized");
+        this.ws.send(JSON.stringify(uploadMessage));
+        callback(file_id);
+        return true;
+      } catch (error) {
+        console.error("Error sending file upload message:", error);
+        return false;
+      }
+    };   
+    reader.readAsDataURL(file);         
+  }
+  
+  // Send a cook request with file upload
   // Send a cook request to generate a mesh
   sendCookRequest(hdaFilePath: string, params: {[key: string]: any}, format: string = "raw") {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -210,7 +259,7 @@ export class SceneTalkConnection {
         ...params  // Spread all parameters
       }
     };
-
+    console.log("Sending cook message:", cookMessage);
     try {
       this.ws.send(JSON.stringify(cookMessage));
       if (this.handlers.onStatusLog) {

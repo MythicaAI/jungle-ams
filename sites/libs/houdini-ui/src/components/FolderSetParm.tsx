@@ -9,12 +9,14 @@ export interface FolderSetParmProps {
   template: hou.FolderSetParmTemplate;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
+  onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
 }
 
 export const FolderSetParm: React.FC<FolderSetParmProps> = ({
   template,
   data,
   onChange,
+  onFileUpload
 }) => {
   const [multiBlocks, setMultiBlocks] = useState<Record<string, number[]>>(() =>
     template.parm_templates.reduce((acc, folder) => {
@@ -273,6 +275,7 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
                       key={folder.name}
                       data={data}
                       onChange={onChange}
+                      onFileUpload={onFileUpload}
                       template={folder}
                       multiFolderIndex={index}
                     />
@@ -299,6 +302,7 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
                     <FolderParm
                       data={data}
                       onChange={onChange}
+                      onFileUpload={onFileUpload}
                       template={folder}
                       multiBlocks={multiBlocks[folder.name]}
                       setMultiBlocks={(newBlocks) =>

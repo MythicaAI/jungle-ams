@@ -43,6 +43,9 @@ interface SceneState {
   paramValues: { [key: string]: any };
   setParamValues: (paramValues: {[key: string]: any}) => void;
 
+  fileUpload: { file: File, callback:(file_id:string)=>void } | null;
+  setFileUpload: (file: File, callback:(file_id:string)=>void) => void;
+
 
   // WebSocket state
   wsStatus: ConnectionStatus;
@@ -138,6 +141,8 @@ export const useSceneStore = create<SceneState>((set) => ({
   paramValues: { },
   setParamValues: (values) => set({ paramValues: values }),
 
+  fileUpload: null,
+  setFileUpload: (file, callback) => set({ fileUpload: {file: file, callback: callback} }),
 
   // WebSocket state
   wsStatus: "disconnected",

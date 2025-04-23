@@ -12,6 +12,7 @@ export interface FolderParmProps {
   template: hou.FolderParmTemplate;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
+  onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
   multiBlocks?: number[]; // Multiblocks for this folder
   setMultiBlocks?: React.Dispatch<React.SetStateAction<number[]>>; // Setter for multibocks
   multiFolderIndex?: number; // Index of the multi folder
@@ -21,6 +22,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
   template,
   data,
   onChange,
+  onFileUpload,
   setMultiBlocks,
   multiBlocks,
   multiFolderIndex,
@@ -85,6 +87,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                 data={data}
                 parmTemplate={parmTemplate}
                 onChange={onChange}
+                onFileUpload={onFileUpload}
               />
             </div>
           ))}
@@ -119,6 +122,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                 data={data}
                 parmTemplate={parmTemplate}
                 onChange={onChange}
+                onFileUpload={onFileUpload}
               />
             </div>
           ))}
@@ -300,8 +304,8 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                           updatedValues[newBlockName] = Array.isArray(
                             template.parm_templates[0]?.default_value
                           )
-                            ? [...template.parm_templates[0]?.default_value]
-                            : template.parm_templates[0]?.default_value;
+                            ? [...(template.parm_templates[0]?.default_value ?? [])]
+                            : template.parm_templates[0]?.default_value ?? null;
 
                           onChange(updatedValues);
                           setTimeout(() => {
@@ -320,14 +324,14 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                   </div>
                   <ParmFactory
                     data={data}
-                    //@ts-ignore
                     parmTemplate={{
                       ...template.parm_templates[0],
                       id: template.parm_templates[0].id + `${index}`,
                       default_value: data[temlpateName] || null,
                       name: temlpateName,
-                    }}
+                    } as hou.ParmTemplate}
                     onChange={onChange}
+                    onFileUpload={onFileUpload}
                   />
                 </div>
               );
@@ -351,13 +355,13 @@ export const FolderParm: React.FC<FolderParmProps> = ({
               <div key={template.name + index} className="parm-item">
                 <ParmFactory
                   data={data}
-                  //@ts-ignore
                   parmTemplate={{
                     ...parmTemplate,
                     name,
                     default_value: data[name] || null,
-                  }}
+                  } as hou.ParmTemplate}
                   onChange={onChange}
+                  onFileUpload={onFileUpload}
                 />
               </div>
             );
@@ -381,6 +385,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
               data={data}
               parmTemplate={parmTemplate}
               onChange={onChange}
+              onFileUpload={onFileUpload}
             />
           </div>
         ))}

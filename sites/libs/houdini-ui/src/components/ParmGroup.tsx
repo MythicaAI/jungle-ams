@@ -6,6 +6,7 @@ export interface ParmGroupProps {
   group: hou.ParmTemplateGroup;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
+  onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
   useSlidersOnMobile?: boolean;
 }
 
@@ -13,6 +14,7 @@ export const ParmGroup: React.FC<ParmGroupProps> = ({
   group,
   data,
   onChange,
+  onFileUpload,
   useSlidersOnMobile = true,
 }) => {
   return (
@@ -23,6 +25,7 @@ export const ParmGroup: React.FC<ParmGroupProps> = ({
           key={template.id.toString()}
           data={data}
           parmTemplate={template}
+          onFileUpload={onFileUpload}
           onChange={onChange}
           useSlidersOnMobile={useSlidersOnMobile}
         />

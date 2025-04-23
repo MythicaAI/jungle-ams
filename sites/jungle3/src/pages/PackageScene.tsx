@@ -40,6 +40,7 @@ export const PackageScene: React.FC = () => {
     setJobDefinitions,
     selectedHdaId,
     paramValues,
+    fileUpload,
     inputFiles,
     setMeshData,
     addStatusLog,
@@ -183,6 +184,12 @@ export const PackageScene: React.FC = () => {
       regenerateMesh();
     }
   }, [selectedHdaId, paramValues, inputFiles]);
+
+  useEffect(() => {
+    if (fileUpload && wsStatus === "connected" && !requestInFlight) {
+      wsServiceRef.current?.sendFileUploadMessage(fileUpload.file, fileUpload.callback);
+    }
+  }, [fileUpload]);
 
   // Set loading to false after initial setup
   useEffect(() => {
