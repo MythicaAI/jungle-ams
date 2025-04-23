@@ -105,6 +105,15 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     [setInputData]
   );
 
+  const handleFileUpload = useCallback(
+    (formData: Record<string,File>, callback: (file_id:string)=>void) => {
+      console.log('AWFUL UNIMPLEMENTED: File upload handler called with formData:', formData);
+      callback("Not Implemented");
+    },
+    [setInputData]
+  );
+
+
   // Handler for running the automation
   const runHda = useCallback(() => {
     runAutomation(
@@ -354,6 +363,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
         <ParmGroup
           data={inputData}
           onChange={handleParmChange}
+          onFileUpload={handleFileUpload}
           group={parmTemplateGroup}
         />
       ) : (

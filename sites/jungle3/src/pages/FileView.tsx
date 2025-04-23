@@ -12,7 +12,6 @@ import { useGetFile } from "@queries/files";
 import { useRunAutomation } from '@queries/automation';
 import { HDAInterfaceResponse } from 'types/apiTypes';
 import Cookies from "universal-cookie";
-import SceneViewerFile from "@components/BabylonViewer/SceneViewerFile.tsx";
 import { v4 } from 'uuid';
 interface FileViewProps {
   file_id?: string;
@@ -90,16 +89,13 @@ export const FileView = (props: FileViewProps) => {
           <h2>Network: {file.name}</h2>
           <LitegraphViewer url={file.url} />
         </>
-      ) : file.content_type === 'application/gltf' ||
-        file.content_type === 'application/glb' ? (
-        <SceneViewerFile
-          src={file.url} />
       ) : file.content_type === 'application/hda' && parmTemplateGroup ? (
 
         <ParmGroup
           data={inputData}
           group={parmTemplateGroup}
           onChange={handleParmChange}
+          onFileUpload={() => ""}
         />
 
       ) : <></>

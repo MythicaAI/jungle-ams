@@ -6,9 +6,10 @@ export interface StringParmProps {
     template: hou.StringParmTemplate;
     data: dictionary;
     onChange?: (formData: dictionary) => void; // Callback for value changes
+    onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void; // Callback for file upload
 }
 
-export const StringParm: React.FC<StringParmProps> = ({template, data, onChange}) => {
+export const StringParm: React.FC<StringParmProps> = ({template, data, onChange, onFileUpload}) => {
     const getDefaultValues = () => {
         return data[template.name] ||
             template.default_value.length === template.num_components
@@ -19,41 +20,83 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange}
     const [values, setValues] = useState<string[]>(getDefaultValues());
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
+
         const index =  e.target.getAttribute('parm-index') as unknown as number;
 
-        setValues((prev)=>{
-            prev[index] = newValue;
-            return prev;
-        });
+        if (template.string_type==hou.stringParmType.FileReference) {
+
+            const handleFileUploadSuccess = (file_id:string) => {
+                const newValue = {file_id: file_id};
+
+                const ret:{[key:string]: dictionary} = {}
+                ret[template.name] = newValue;
+                onChange?.(ret); // Notify parent about the change
+            }
+            const file = e.target.files?.[0];
+            if (file && onFileUpload) {
+                onFileUpload({[template.name]: file},handleFileUploadSuccess); // Notify parent about the file upload    
+            } else {
+                console.warn("StringParm: File StringParam of FileReference but no FileUpload handler provided");                    
+            }
+        } else {
+            setValues((prev)=>{
+                prev[index] = newValue;
+                return prev;
+            });
+            
+            const newValue = e.target.value;
+            //and notify listeners
+            const ret:{[key:string]: string[]} = {}
+            const updatedValues = [...values];
+            updatedValues[index] = newValue;
+            ret[template.name] = updatedValues
+            onChange?.(ret); // Notify parent about the change
+
+        }
 
 
-        //and notify listeners
-        const ret:{[key:string]: string[]} = {}
-        const updatedValues = [...values];
-        updatedValues[index] = newValue;
-        ret[template.name] = updatedValues
-        onChange?.(ret); // Notify parent about the change
+
+
+
     };
 
-    return (
-        <div className="string-parm" title={template.help}>
-            <label>{template.label}</label>
-            <div className="fields">
-                {values.map((value, index) => (
-                    <div key={template.name + index} className="field">
+    if (template.string_type==hou.stringParmType.FileReference) {
+        return (
+            <div className="string-parm" title={template.help}>
+                <label>{template.label}</label>
+                <div className="fields">
+                    <div key={template.name} className="field">
                         <input
-                            type="text"
-                            value={value}
-                            parm-index={index}
+                            type="file"
+                            accept={template.file_type}
                             onChange={handleChange}
-                            placeholder={`Component ${index + 1}`}
+                            parm-index={0}
+                            placeholder={`Upload ${template.file_type} File`}
                         />
                     </div>  
-                ))}
+                </div>
             </div>
-        </div>
-    );
+        );
+    } else {
+        return (
+            <div className="string-parm" title={template.help}>
+                <label>{template.label}</label>
+                <div className="fields">
+                    {values.map((value, index) => (
+                        <div key={template.name + index} className="field">
+                            <input
+                                type="text"
+                                value={value}
+                                parm-index={index}
+                                onChange={handleChange}
+                                placeholder={`Component ${index + 1}`}
+                            />
+                        </div>  
+                    ))}
+                </div>
+            </div>
+        );
+    }
 };
 
 export default StringParm;

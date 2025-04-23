@@ -6,6 +6,7 @@ from ripple.compile.rpsc import parse_index_menu_parameter, parse_string_menu_pa
 from ripple.models.params import (
     BoolParameterSpec,
     EnumParameterSpec,
+    FileParameterSpec,
     FloatParameterSpec,
     IntParameterSpec,
     ParameterSpec,
@@ -33,7 +34,9 @@ from ripple.models.houTypes import (
     parmTemplateType, 
     scriptLanguage, 
     folderType, 
-    rampParmType, 
+    rampParmType,
+    stringParmType,
+    fileType,
     rampBasis
 )
 
@@ -149,11 +152,19 @@ class StringParmTemplate(ParmTemplate):
     menu_items: list[str] = []
     menu_labels: list[str] = []
     menu_use_token: bool = False
+    string_type: stringParmType = stringParmType.Regular
+    file_type: fileType = fileType.Any
+
+    def setStringType(self, string_type: stringParmType) -> None:
+        self.string_type = string_type
+    
+    def setFileType(self, file_type: fileType) -> None:
+        self.file_type = file_type
 
     def getParmTemplateSpec(self) -> StringParmTemplateSpec:
         return StringParmTemplateSpec(**self.__dict__)
 
-    def getParameterSpec(self) -> list[StringParameterSpec]:
+    def getParameterSpec(self) -> list[StringParameterSpec|FileParameterSpec]:
         if self.is_hidden:
             return []
         
@@ -166,6 +177,8 @@ class StringParmTemplate(ParmTemplate):
                 "menu_use_tokens": self.menu_use_token
             }
             return [parse_string_menu_parameter(value)]        
+        elif self.string_type == stringParmType.FileReference:
+            return [FileParameterSpec(default="",**self.__dict__)]
         else:
             default_value = self.default_value
             if isinstance(default_value, list) and self.num_components == 1:

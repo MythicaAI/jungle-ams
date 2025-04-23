@@ -28,6 +28,7 @@ const SceneControls: React.FC<Props> = ({ width }) => {
         setInputFile,
         paramValues,
         setParamValues,
+        setFileUpload,
         wsStatus,
         generateTime,
         isWireframe,
@@ -87,6 +88,15 @@ const SceneControls: React.FC<Props> = ({ width }) => {
         },
         [paramValues,setParamValues],
     );        
+
+    const handleFileUpload = useCallback(
+        (formData: Record<string, File>, callback:(file_id:string)=>void) => {
+            // Get the first value from the formData
+            const file = Object.values(formData)[0];
+            
+            setFileUpload(file,callback);
+        },[setFileUpload]
+    )
 
     useEffect(() => {
         if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
@@ -291,6 +301,7 @@ const SceneControls: React.FC<Props> = ({ width }) => {
                         data={ paramValues }
                         group={parmTemplateGroup as hou.ParmTemplateGroup}
                         onChange={handleParmChange}
+                        onFileUpload={handleFileUpload}
                     />
                 </Box>
             </Box>
