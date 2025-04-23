@@ -12,7 +12,7 @@ USER 0
 RUN mkdir -p /uploads
 RUN mkdir -p /ams/app
 
-WORKDIR /api/app
+WORKDIR /ams/app
 
 # Fix permissions for the default non-root user
 RUN chown -R appuser /ams/app && \
