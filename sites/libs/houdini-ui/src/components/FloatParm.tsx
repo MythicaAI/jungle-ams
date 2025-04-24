@@ -60,6 +60,17 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   };
 
   const range = template.max - template.min;
+  const val = (val:number) => {
+    if (val === undefined || val === null) return 0;
+    if (range > 1000) {
+      return val.toFixed(0);
+    }
+    if (template.max < 0.1) {
+      return val.toExponential(4);
+    }
+    return val.toFixed(4 - Math.floor(Math.log10(range)));
+  };
+
   return (
     <div className="float-parm" title={template.help}>
       <label>{template.label}</label>
@@ -75,7 +86,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
           >
             <input
               type='range'
-              value={value}
+              value={value || template.default_value[index] || template.min || 0}  
               step={(template.max - template.min)/1000}
               parm-index={index}
               onChange={handleChange}
@@ -96,10 +107,8 @@ export const FloatParm: React.FC<FloatParmProps> = ({
                 display: 'block',
               }}
             >
-              {range > 1000 ? value.toFixed(0) :
-                template.max < 0.1 ? value.toExponential(4) :
-                value.toFixed(4-Math.floor(Math.log10(range)))}
-            </span>
+              {val(value)}
+            </span> 
           </div>
         ))}
       </div>

@@ -15,7 +15,6 @@ import { useReactFlow } from '@xyflow/react';
 import { NodeHeader } from './ux/NodeHeader';
 import { AutomationNodeProps } from './AutomationNode';
 
-import 'houdini-ui/houdini-ui.css';
 
 type InterfaceExecutionData = ExecutionData & {
   output: {
@@ -333,7 +332,8 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   }, [node.id, nodeType.outputs]);
   
   return (
-    <div className={`mythica-node worker ${node.selected && 'selected'}`}>
+    <div className={`mythica-node worker ${node.selected && 'selected'}`}
+         style={{ minWidth: '500px' }}>
       <NodeDeleteButton
         onDelete={() => {
           deleteElements({ nodes: [node] });

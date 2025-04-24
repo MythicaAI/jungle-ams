@@ -77,7 +77,7 @@ export const IntParm: React.FC<IntParmProps> = ({
           >
             <input
               type='range'
-              value={value}
+              value={value || template.default_value[index] || template.min || 0}
               step="1"
               parm-index={index}
               onChange={handleChange}
