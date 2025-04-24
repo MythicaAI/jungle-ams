@@ -39,6 +39,92 @@ const selectedColor = 'rgb(255,255,0)';
 const rampBackgroundColor = 'rgb(68,68,68)';
 const rampLineColor = 'rgb(102,102,102)';
 
+// Helper functions for interpolation
+const interpolate = {
+    Linear: (t: number, p0: number, p1: number): number => {
+        return p0 + t * (p1 - p0);
+    },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    Constant: (_t: number, p0: number, _p1: number): number => {
+        return p0;
+    },
+    CatmullRom: (t: number, p0: number, p1: number, p2: number, p3: number): number => {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        return 0.5 * (
+            (2 * p1) +
+            (-p0 + p2) * t +
+            (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+            (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+        );
+    },
+    MonotoneCubic: (t: number, p0: number, p1: number, m0: number, m1: number): number => {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * p0 + (t3 - 2 * t2 + t) * m0 + (-2 * t3 + 3 * t2) * p1 + (t3 - t2) * m1;
+    },
+    Bezier: (t: number, p0: number, p1: number, p2: number, p3: number): number => {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const mt = 1 - t;
+        const mt2 = mt * mt;
+        const mt3 = mt2 * mt;
+        return mt3 * p0 + 3 * mt2 * t * p1 + 3 * mt * t2 * p2 + t3 * p3;
+    },
+    BSpline: (t: number, p0: number, p1: number, p2: number, p3: number): number => {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        return (1/6) * (
+            (-t3 + 3 * t2 - 3 * t + 1) * p0 +
+            (3 * t3 - 6 * t2 + 4) * p1 +
+            (-3 * t3 + 3 * t2 + 3 * t + 1) * p2 +
+            t3 * p3
+        );
+    },
+    Hermite: (t: number, p0: number, p1: number, m0: number, m1: number): number => {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        return (2 * t3 - 3 * t2 + 1) * p0 + (t3 - 2 * t2 + t) * m0 + (-2 * t3 + 3 * t2) * p1 + (t3 - t2) * m1;
+    }
+};
+
+// Function to calculate slope for monotone cubic interpolation
+const calculateSlopes = (points: ValueRampPoint[]): number[] => {
+    const n = points.length;
+    const slopes: number[] = new Array(n).fill(0);
+    
+    if (n <= 1) return slopes;
+    
+    // Calculate secant slopes
+    const deltaX: number[] = new Array(n - 1);
+    const deltaY: number[] = new Array(n - 1);
+    
+    for (let i = 0; i < n - 1; i++) {
+        deltaX[i] = points[i + 1].pos - points[i].pos;
+        deltaY[i] = points[i + 1].value - points[i].value;
+    }
+    
+    // Handle boundary cases
+    slopes[0] = deltaY[0] / deltaX[0];
+    slopes[n - 1] = deltaY[n - 2] / deltaX[n - 2];
+    
+    // Handle interior points
+    for (let i = 1; i < n - 1; i++) {
+        const m1 = deltaY[i - 1] / deltaX[i - 1];
+        const m2 = deltaY[i] / deltaX[i];
+        
+        // If signs are different or either is zero, set slope to zero
+        if (m1 * m2 <= 0) {
+            slopes[i] = 0;
+        } else {
+            // Use harmonic mean of slopes
+            slopes[i] = 2 / (1/m1 + 1/m2);
+        }
+    }
+    
+    return slopes;
+};
+
 export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 300, height: 150 };
@@ -81,26 +167,98 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
 
             // Draw line
             ctx.beginPath();
+            
             // Start from x=0
             const startY = margin + innerHeight - first.value * innerHeight;
-
-            // Move from x=0
             ctx.moveTo(margin, startY);
 
-            // If first.x > 0, draw horizontal line to first point
+            // If first.pos > 0, draw horizontal line to first point
             if (first.pos > 0) {
                 const firstX = first.pos * innerWidth + margin;
                 ctx.lineTo(firstX, startY);
             }
 
-            // Draw through the points
-            sorted.forEach((p) => {
-                const x = p.pos * innerWidth + margin;
-                const y = margin + innerHeight - p.value * innerHeight;
-                ctx.lineTo(x, y);
-            });
+            // Pre-calculate slopes for monotone cubic and hermite interpolation
+            const slopes = calculateSlopes(sorted);
+            
+            // Draw curves between points
+            for (let i = 0; i < sorted.length - 1; i++) {
+                const p0 = sorted[i];
+                const p1 = sorted[i + 1];
+                
+                const x0 = p0.pos * innerWidth + margin;
+                const y0 = margin + innerHeight - p0.value * innerHeight;
+                const x1 = p1.pos * innerWidth + margin;
+                const y1 = margin + innerHeight - p1.value * innerHeight;
+                
+                const interp = p0.interp || hou.rampBasis.Linear;
+                
+                if (interp === hou.rampBasis.Constant) {
+                    // Draw horizontal then vertical line (step function)
+                    ctx.lineTo(x1, y0);
+                    ctx.lineTo(x1, y1);
+                } else if (interp === hou.rampBasis.Linear) {
+                    // Simple straight line
+                    ctx.lineTo(x1, y1);
+                } else {
+                    // For spline interpolations
+                    const STEPS = 20; // Adjust for smoother curves
+                    
+                    // Get previous and next points for context (for splines that need more points)
+                    const prev = i > 0 ? sorted[i - 1] : {
+                        pos: p0.pos - (p1.pos - p0.pos),
+                        value: p0.value
+                    };
+                    const next = i < sorted.length - 2 ? sorted[i + 2] : {
+                        pos: p1.pos + (p1.pos - p0.pos),
+                        value: p1.value
+                    };
+                    
+                    for (let step = 1; step <= STEPS; step++) {
+                        const t = step / STEPS;
+                        const screenX = x0 + (x1 - x0) * t;
+                        let screenY;
+                        
+                        if (interp === hou.rampBasis.CatmullRom) {
+                            const val = interpolate.CatmullRom(
+                                t, 
+                                prev.value, 
+                                p0.value, 
+                                p1.value, 
+                                next.value
+                            );
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.MonotoneCubic) {
+                            const m0 = slopes[i] * (p1.pos - p0.pos);
+                            const m1 = slopes[i + 1] * (p1.pos - p0.pos);
+                            const val = interpolate.MonotoneCubic(t, p0.value, p1.value, m0, m1);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.Bezier) {
+                            // Use control points at 1/3 distances for this simple implementation
+                            const cp1 = p0.value + (p1.value - prev.value) / 3;
+                            const cp2 = p1.value - (next.value - p0.value) / 3;
+                            const val = interpolate.Bezier(t, p0.value, cp1, cp2, p1.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.BSpline) {
+                            const val = interpolate.BSpline(t, prev.value, p0.value, p1.value, next.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.Hermite) {
+                            const m0 = slopes[i];
+                            const m1 = slopes[i + 1];
+                            const val = interpolate.Hermite(t, p0.value, p1.value, m0, m1);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else {
+                            // Fallback to linear for any unimplemented types
+                            const val = interpolate.Linear(t, p0.value, p1.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        }
+                        
+                        ctx.lineTo(screenX, screenY);
+                    }
+                }
+            }
 
-            // If last.x < 1, continue line horizontally at last.y to x=1
+            // If last.pos < 1, continue line horizontally at last.y to x=1
             if (last.pos < 1) {
                 const endY = margin + innerHeight - last.value * innerHeight;
                 const endX = margin + innerWidth;
@@ -127,11 +285,70 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
                 ctx.lineTo(firstX, firstY);
             }
 
-            sorted.forEach((p) => {
-                const x = p.pos * innerWidth + margin;
-                const y = margin + innerHeight - p.value * innerHeight;
-                ctx.lineTo(x, y);
-            });
+            // Redraw the same curve for filling
+            for (let i = 0; i < sorted.length - 1; i++) {
+                const p0 = sorted[i];
+                const p1 = sorted[i + 1];
+                
+                const x0 = p0.pos * innerWidth + margin;
+                const y0 = margin + innerHeight - p0.value * innerHeight;
+                const x1 = p1.pos * innerWidth + margin;
+                const y1 = margin + innerHeight - p1.value * innerHeight;
+                
+                const interp = p0.interp || hou.rampBasis.Linear;
+                
+                if (interp === hou.rampBasis.Constant) {
+                    ctx.lineTo(x1, y0);
+                    ctx.lineTo(x1, y1);
+                } else if (interp === hou.rampBasis.Linear) {
+                    ctx.lineTo(x1, y1);
+                } else {
+                    // Same spline code as above for drawing the fill
+                    const STEPS = 20;
+                    const prev = i > 0 ? sorted[i - 1] : {
+                        pos: p0.pos - (p1.pos - p0.pos),
+                        value: p0.value
+                    };
+                    const next = i < sorted.length - 2 ? sorted[i + 2] : {
+                        pos: p1.pos + (p1.pos - p0.pos),
+                        value: p1.value
+                    };
+                    
+                    for (let step = 1; step <= STEPS; step++) {
+                        const t = step / STEPS;
+                        const screenX = x0 + (x1 - x0) * t;
+                        let screenY;
+                        
+                        if (interp === hou.rampBasis.CatmullRom) {
+                            const val = interpolate.CatmullRom(t, prev.value, p0.value, p1.value, next.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.MonotoneCubic) {
+                            const m0 = slopes[i] * (p1.pos - p0.pos);
+                            const m1 = slopes[i + 1] * (p1.pos - p0.pos);
+                            const val = interpolate.MonotoneCubic(t, p0.value, p1.value, m0, m1);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.Bezier) {
+                            const cp1 = p0.value + (p1.value - prev.value) / 3;
+                            const cp2 = p1.value - (next.value - p0.value) / 3;
+                            const val = interpolate.Bezier(t, p0.value, cp1, cp2, p1.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.BSpline) {
+                            const val = interpolate.BSpline(t, prev.value, p0.value, p1.value, next.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else if (interp === hou.rampBasis.Hermite) {
+                            const m0 = slopes[i];
+                            const m1 = slopes[i + 1];
+                            const val = interpolate.Hermite(t, p0.value, p1.value, m0, m1);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        } else {
+                            const val = interpolate.Linear(t, p0.value, p1.value);
+                            screenY = margin + innerHeight - val * innerHeight;
+                        }
+                        
+                        ctx.lineTo(screenX, screenY);
+                    }
+                }
+            }
 
             // If last.x < 1, fill horizontally to x=1 at last.y
             if (last.pos < 1) {
@@ -294,8 +511,14 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
             <label>{template.label}</label>
             <div style={{position: 'relative'}}>
                 <canvas
-                    ref={canvasRef}
-                    width={canvasSize.width}
+                    ref={(el: HTMLCanvasElement) => {
+                        if (el) {
+                            canvasRef.current = el;
+                            if (el) {
+                            el.style.width = `${el.parentElement?.getBoundingClientRect().width}px`;
+                            }
+                        }
+                    }}
                     height={canvasSize.height}
                     style={{ border: '1px solid #ccc', display: 'block', cursor: draggingIndex !== null ? 'grabbing' : 'crosshair'}}
                     onMouseDown={onMouseDown}
@@ -305,9 +528,12 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
                     onContextMenu={onContextMenu}
                 />
                 {template.show_controls && selectedIndex !== null && (
-                    <div className="ramp-controls" style={{ marginTop: '10px' }}>
-                        <label>Interpolation:</label>
-                        <select value={points[selectedIndex].interp || hou.rampBasis.Linear} onChange={handleBasisChange}>
+                    <div className="ramp-controls" style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center', fontSize: 'smaller'}}>
+                        <label>Pos:</label><span>{points[selectedIndex].pos.toFixed(3)}</span>
+                        <label>Value:</label><span>{points[selectedIndex].value.toFixed(3)}</span>
+                        <label>Interp:</label>
+                        <select value={points[selectedIndex].interp || hou.rampBasis.Linear} onChange={handleBasisChange}
+                        style={{ fontSize: 'smaller'}}>
                             { options() }
                         </select>
                     </div>

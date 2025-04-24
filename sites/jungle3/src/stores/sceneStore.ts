@@ -202,6 +202,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   reset: () => {
     set({
       paramValues: {},
+      fileUpload: null,
       meshData: null,
       isWireframe: false,
       showLogWindow: false,

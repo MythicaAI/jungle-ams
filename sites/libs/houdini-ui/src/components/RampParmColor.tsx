@@ -295,7 +295,14 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             <label>{template.label}</label>
             <div style={{position: 'relative'}}>
                 <canvas
-                    ref={canvasRef}
+                    ref={(el: HTMLCanvasElement) => {
+                        if (el) {
+                            canvasRef.current = el;
+                            if (el) {
+                            el.style.width = `${el.parentElement?.getBoundingClientRect().width}px`;
+                            }
+                        }
+                    }}
                     width={canvasSize.width}
                     height={canvasSize.height}
                     style={{ border: '1px solid #ccc', display: 'block', cursor: draggingIndex !== null ? 'grabbing' : 'crosshair'}}
@@ -307,15 +314,17 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
                 />
                 {template.show_controls && selectedIndex !== null && (
                     <div className="ramp-controls" style={{ marginTop: '10px' }}>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <label>Point Color:</label>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: 'smaller' }}>
+                            <label>Pos:</label><span>{points[selectedIndex].pos.toFixed(3)}</span>
+                            <label>Color:</label>
                             <input
                                 type="color"
                                 value={rgbToHex(points[selectedIndex].c)}
                                 onChange={handleColorChange}
                             />
-                            <label>Interpolation:</label>
-                            <select value={points[selectedIndex].interp || hou.rampBasis.Linear} onChange={handleBasisChange}>
+                            <label>Interp:</label>
+                            <select value={points[selectedIndex].interp || hou.rampBasis.Linear} onChange={handleBasisChange}
+                            style={{ fontSize: 'smaller'}}>
                                 {options()}
                             </select>
                         </div>
