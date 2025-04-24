@@ -4,19 +4,86 @@
 
 from http import HTTPStatus
 
-from httpx import ASGITransport, AsyncClient
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
 from cryptid.cryptid import asset_seq_to_id, job_def_seq_to_id
-from repos.assets import AssetVersionResult
 from db.schema.events import Event
-from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
+from repos.assets import AssetVersionResult
+from routes.jobs.models import ExtendedJobResultResponse, JobDefinitionModel
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import ProfileTestObj, assert_status_code
+
+
+async def create_job_def(client, api_base, headers):
+    """Create a generate_mesh job definition"""
+    return client.post(f'{api_base}/jobs/definitions',
+                       json={
+                           'job_type': 'houdini::/mythica/generate_mesh',
+                           'name': 'Generate test_scale_input',
+                           'description': 'test_scale_input',
+                           'params_schema': {
+                               'params': {
+                                   'hda_file': {
+                                       'param_type': 'file',
+                                       'label': 'HDA File',
+                                       'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                                       'constant': True
+                                   },
+                                   'hda_definition_index': {
+                                       'param_type': 'int',
+                                       'label': 'HDA Definition Index',
+                                       'default': 0,
+                                       'constant': True
+                                   },
+                                   'size': {
+                                       'param_type': 'float',
+                                       'label': 'Segment Size',
+                                       'default': 0.0,
+                                       'min': 0.0,
+                                       'max': 10.0
+                                   }
+                               }
+                           }
+                       },
+                       headers=headers)
+
+
+async def create_interactive_job_def(client, api_base, headers):
+    return client.post(f'{api_base}/jobs/definitions',
+                       json={
+                           'job_type': 'houdini::/mythica/generate_mesh',
+                           'name': 'Generate test_scale_input',
+                           'description': 'test_scale_input',
+                           'interactive': True,
+                           'params_schema': {
+                               'params': {
+                                   'hda_file': {
+                                       'param_type': 'file',
+                                       'label': 'HDA File',
+                                       'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                                       'constant': True
+                                   },
+                                   'hda_definition_index': {
+                                       'param_type': 'int',
+                                       'label': 'HDA Definition Index',
+                                       'default': 0,
+                                       'constant': True
+                                   },
+                                   'size': {
+                                       'param_type': 'float',
+                                       'label': 'Segment Size',
+                                       'default': 0.0,
+                                       'min': 0.0,
+                                       'max': 10.0
+                                   }
+                               }
+                           }
+                       },
+                       headers=headers)
 
 
 @pytest.mark.asyncio
@@ -221,7 +288,7 @@ async def test_asset_link(client, api_base, create_profile, create_asset_version
     headers = test_profile.authorization_header()
 
     # create test assets and hda files
-    versions:list[AssetVersionResult] = create_asset_versions(
+    versions: list[AssetVersionResult] = create_asset_versions(
         test_profile,
         uploader,
         version_ids=['1.0.0', '2.0.0'])
@@ -351,42 +418,7 @@ async def test_delete_canary(client: TestClient, api_base, create_profile):
     headers2 = test_profile2.authorization_header()
     privileged_profile: ProfileTestObj = await create_profile(email="test@mythica.ai", validate_email=True)
     privileged_headers = privileged_profile.authorization_header()
-
-    def crete_job_def(headers):
-        # Create a job definition
-        r = client.post(f'{api_base}/jobs/definitions',
-                        json={
-                            'job_type': 'houdini::/mythica/generate_mesh',
-                            'name': 'Generate test_scale_input',
-                            'description': 'test_scale_input',
-                            'params_schema': {
-                                'params': {
-                                    'hda_file': {
-                                        'param_type': 'file',
-                                        'label': 'HDA File',
-                                        'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
-                                        'constant': True
-                                    },
-                                    'hda_definition_index': {
-                                        'param_type': 'int',
-                                        'label': 'HDA Definition Index',
-                                        'default': 0,
-                                        'constant': True
-                                    },
-                                    'size': {
-                                        'param_type': 'float',
-                                        'label': 'Segment Size',
-                                        'default': 0.0,
-                                        'min': 0.0,
-                                        'max': 10.0
-                                    }
-                                }
-                            }
-                        },
-                        headers=headers)
-        return r
-
-    r = crete_job_def(headers)
+    r = await create_job_def(client, api_base, headers)
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     job_def_id = o.job_def_id
@@ -438,7 +470,7 @@ async def test_delete_canary(client: TestClient, api_base, create_profile):
     assert all([definition['job_def_id'] != job_def_id for definition in definitions])
 
     # Test delete job_def by an admin
-    r = crete_job_def(headers)
+    r = await create_job_def(client, api_base, headers)
     assert_status_code(r, HTTPStatus.CREATED)
     r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=privileged_headers)
     o = munchify(r.json())
@@ -455,7 +487,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     headers = test_profile.authorization_header()
 
     # create test assets and hda files
-    versions:list[AssetVersionResult] = create_asset_versions(
+    versions: list[AssetVersionResult] = create_asset_versions(
         test_profile,
         uploader,
         version_ids=['1.0.0'])
@@ -472,7 +504,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_seq_to_id(9999)}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
     assert_status_code(r, HTTPStatus.NOT_FOUND)
-    
+
     # Test empty job list for asset version
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
@@ -522,7 +554,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     job_def_ids.append(o.job_def_id)
-    
+
     job_ids_job_def_ids: dict[str, str] = {}
     # Create a job for each definition
     for job_def_id in job_def_ids:
@@ -579,7 +611,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
         o = munchify(r.json())
         assert 'job_result_id' in o
         job_result_ids_by_job[job_id].append(o.job_result_id)
-    
+
     # Test job list for asset version
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
@@ -603,7 +635,7 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     headers = test_profile.authorization_header()
 
     # create test assets and hda files
-    versions:list[AssetVersionResult] = create_asset_versions(
+    versions: list[AssetVersionResult] = create_asset_versions(
         test_profile,
         uploader,
         version_ids=['1.0.0'])
@@ -630,15 +662,15 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
                 },
             },
             "params_v2": [
-            {
-                "param_type": "file",
-                "label": "Sub-Network Input #1",
-                "category_label": None,
-                "constant": False,
-                "name": "input0",
-                "default": ""
-            }
-        ]
+                {
+                    "param_type": "file",
+                    "label": "Sub-Network Input #1",
+                    "category_label": None,
+                    "constant": False,
+                    "name": "input0",
+                    "default": ""
+                }
+            ]
         },
         'source': {
             'asset_id': asset_id,
@@ -676,15 +708,16 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
 
     # Test only original job_def has has asset_entrypoint
     new_job_def: JobDefinitionModel = munchify(next(
-                    (
-                        item
-                        for item in r.json()
-                        if item.get("job_def_id") == new_job_def_id
-                    ),
-                    None,
-                ))
+        (
+            item
+            for item in r.json()
+            if item.get("job_def_id") == new_job_def_id
+        ),
+        None,
+    ))
     assert not any(True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == new_job_def_id))
-    assert any(True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == template_job_def.job_def_id))
+    assert any(
+        True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == template_job_def.job_def_id))
 
     r = client.get(f'{api_base}/jobs/definitions/{new_job_def_id}', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
@@ -714,7 +747,7 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     assert new_job_def.source == template_job_def.source
     assert new_job_def.owner_id == test_profile.profile.profile_id
     assert new_job_def.job_def_id != template_job_def.job_def_id
-    
+
     # Test create job from template without params_schema
     r = client.post(f'{api_base}/jobs/definitions/{template_job_def.job_def_id}',
                     json={

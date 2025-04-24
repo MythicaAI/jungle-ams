@@ -144,7 +144,7 @@ export const useGetJobDefinitionById = (jobDefId: string) => {
   });
 };
 
-export const useRunJob = (assetId: string, version: string) => {
+export const useRunJob = (assetId: string, version: string, interactive: boolean) => {
   const queryClient = useQueryClient();
   const { setSuccess, addError } = useStatusStore();
 

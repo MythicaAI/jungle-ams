@@ -104,6 +104,7 @@ def bind_routes(app):
         'keys',
         'readers',
         'tags',
+        'workers',
     ]
 
     for name in route_names:

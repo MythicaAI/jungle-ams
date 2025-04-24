@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-python3 -m codegen
+poetry install
+poetry run python3 -m codegen

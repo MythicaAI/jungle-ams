@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel
+
 from ripple.models.assets import AssetVersionEntryPointReference
 from ripple.models.params import ParameterSet, ParameterSpec
 
@@ -12,6 +13,7 @@ class JobDefinitionRequest(BaseModel):
     description: str
     params_schema: ParameterSpec
     source: Optional[AssetVersionEntryPointReference] = None
+    interactive: Optional[bool] = False
 
 
 class JobDefinitionTemplateRequest(BaseModel):
@@ -24,15 +26,18 @@ class JobDefinitionTemplateRequest(BaseModel):
 
 class JobDefinitionResponse(BaseModel):
     job_def_id: str
+    interactive: Optional[bool] = False
 
 
 class JobDefinitionModel(JobDefinitionRequest):
     job_def_id: str
+    interactive: Optional[bool] = False
     owner_id: str | None = None
 
 
 class JobRequest(BaseModel):
     job_def_id: str
+    interactive: Optional[bool] = False
     params: ParameterSet
 
 

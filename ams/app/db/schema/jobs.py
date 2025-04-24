@@ -36,6 +36,7 @@ class JobDefinition(SQLModel, table=True):
     description: str | None = Field(default=None)
     params_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    interactive: bool | None = Field(default=False)
 
 # sequences for table jobs
 
@@ -55,6 +56,7 @@ class Job(SQLModel, table=True):
     job_seq: int = Field(sa_column=Column('job_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
     job_def_seq: int = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('job_defs.job_def_seq'),default=None))
     owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    worker_seq: int | None = Field(sa_column=Column('worker_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('workers.worker_seq'),default=None))
     created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
     completed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
@@ -81,3 +83,43 @@ class JobResult(SQLModel, table=True):
     job_result_seq: int = Field(sa_column=Column('job_result_seq',BigInteger().with_variant(Integer, 'sqlite'),job_results_job_result_seq_seq,primary_key=True,nullable=False))
     created_in: str | None = Field(default=None)
     result_data: Dict[str, Any] = Field(default_factory=dict,sa_column=Column(JSON))
+    worker_seq: int | None = Field(sa_column=Column('worker_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('workers.worker_seq'),default=None))
+
+# sequences for table workers
+
+class Worker(SQLModel, table=True):
+    """
+    The schema for job and job result tracking
+    """
+    __tablename__ = "workers"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    worker_seq: int = Field(sa_column=Column('worker_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    job_count: int | None = Field(sa_column=Column('job_count',Integer,default=0))
+    job_capacity: int | None = Field(sa_column=Column('job_capacity',Integer,default=0))
+    ws_client_endpoint: str | None = Field(default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+
+# sequences for table worker_jobs
+
+class WorkerJob(SQLModel, table=True):
+    """
+    The schema for job and job result tracking
+    """
+    __tablename__ = "worker_jobs"
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # JSON types
+
+    # pylint: disable=no-self-argument
+    @declared_attr
+    def __table_args__(cls):
+        # ensure auto increment behavior on non-PK int columns
+        return None
+
+    worker_seq: int = Field(sa_column=Column('worker_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    job_seq: int = Field(sa_column=Column('job_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))

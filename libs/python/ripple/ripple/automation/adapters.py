@@ -1,3 +1,4 @@
+import sys
 
 import json
 import logging
@@ -18,6 +19,13 @@ log = logging.getLogger(__name__)
 NATS_URL= os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
 
 class NatsAdapter():
+    @staticmethod
+    def is_disabled(context_str):
+        if "pytest" in sys.argv[0] or "pytest" in sys.modules:
+            log.info("skipping post to NATS in test: %s", context_str)
+            return True
+        return False
+
     def __init__(self, nats_url: str=NATS_URL) -> None:
         self.nats_url = nats_url
         self.listeners = {}

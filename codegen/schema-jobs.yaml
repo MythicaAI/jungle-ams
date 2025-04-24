@@ -25,6 +25,9 @@ tables:
         description: Profile that created this job-def
         type: BIGINT
         foreign_key: profiles.profile_seq
+      - name: interactive
+        description: Marks the job as interactive to be picked up by a worker
+        type: BOOLEAN
   - name: Job
     table_name: jobs
     columns:
@@ -40,6 +43,10 @@ tables:
         description: Profile that created this job
         type: BIGINT
         foreign_key: profiles.profile_seq
+      - name: worker_seq
+        description: Assigned worker that is authoritative for job status
+        type: BIGINT
+        foreign_key: workers.worker_seq
       - name: created
         type: TIMESTAMP
         auto_create: true
@@ -71,3 +78,34 @@ tables:
         description: Payload of the result
         type: JSON
         nullable: false
+      - name: worker_seq
+        description: Worker that completed this result
+        type: BIGINT
+        foreign_key: workers.worker_seq
+  - name: Worker
+    table_name: workers
+    columns:
+      - name: worker_seq
+        type: BIGINT
+        primary_key: true
+      - name: job_count
+        type: INTEGER
+      - name: job_capacity
+        type: INTEGER
+      - name: ws_client_endpoint
+        type: TEXT
+      - name: updated
+        type: TIMESTAMP
+        auto_update: true
+
+  - name: WorkerJob
+    table_name: worker_jobs
+    columns:
+      - name: worker_seq
+        type: BIGINT
+        primary_key: true
+        foreign_key: workers.worker_seq
+      - name: job_seq
+        type: BIGINT
+        primary_key: true
+        foreign_key: jobs.job_seq

@@ -103,6 +103,11 @@ core__create_roles = {
 job_def_all = 'job_def/all'
 job_def__all_roles = {job_def_all,}
 
+#
+# 'Job' roles
+#
+job_create_interactive = 'job/create_interactive'
+
 # Bind all roles
 all_roles = {
     *org__all_roles,
