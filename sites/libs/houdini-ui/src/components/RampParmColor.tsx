@@ -295,17 +295,14 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
             <label>{template.label}</label>
             <div style={{position: 'relative'}}>
                 <canvas
-                    ref={(el: HTMLCanvasElement) => {
-                        if (el) {
-                            canvasRef.current = el;
-                            if (el) {
-                            el.style.width = `${el.parentElement?.getBoundingClientRect().width}px`;
-                            }
-                        }
+                    ref={canvasRef}
+                    style={{ 
+                        border: '1px solid #ccc', 
+                        display: 'block', 
+                        cursor: draggingIndex !== null ? 'grabbing' : 'crosshair',
+                        width:'100%'
                     }}
-                    width={canvasSize.width}
-                    height={canvasSize.height}
-                    style={{ border: '1px solid #ccc', display: 'block', cursor: draggingIndex !== null ? 'grabbing' : 'crosshair'}}
+                    height = {canvasSize.height}
                     onMouseDown={onMouseDown}
                     onMouseMove={onMouseMove}
                     onMouseUp={onMouseUp}
@@ -314,7 +311,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
                 />
                 {template.show_controls && selectedIndex !== null && (
                     <div className="ramp-controls" style={{ marginTop: '10px' }}>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: 'smaller' }}>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: 'smaller', justifyContent: 'center' }}>
                             <label>Pos:</label><span>{points[selectedIndex].pos.toFixed(3)}</span>
                             <label>Color:</label>
                             <input

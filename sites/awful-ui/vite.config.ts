@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-// In-memory store for URLs
+import runtimeEnv from 'vite-plugin-runtime-env';
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";// In-memory store for URLs
 const urlStore: { [key: string]: string } = {};
 
 
 export default defineConfig({
-  plugins: [
-    react()
-  ],
+  plugins: [react(), tsconfigPaths(), runtimeEnv()],
   base: '/awful',
   build: {
     target: 'es2022', // Or a modern browser version like 'chrome91'
