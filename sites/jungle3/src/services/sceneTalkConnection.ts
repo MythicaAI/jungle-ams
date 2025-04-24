@@ -126,7 +126,7 @@ export class SceneTalkConnection {
     }
   }
 
-  sendCookRequestById(hdaFileId: string, params: {[key: string]: any}, inputFiles: {[key:string]: AssetVersionContent}, format: string = "raw") {
+  sendCookRequestById(hdaFileId: string, dependencyFileIds: string[], params: {[key: string]: any}, inputFiles: {[key:string]: AssetVersionContent}, format: string = "raw") {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
       if (this.handlers.onStatusLog) {
@@ -159,6 +159,7 @@ export class SceneTalkConnection {
         },
         "definition_index": 0,
         "format": format,
+        ...(dependencyFileIds.length > 0 ? {"dependencies": dependencyFileIds.map(id => ({ file_id: id }))} : {}),
         ...files,
         ...params
       }

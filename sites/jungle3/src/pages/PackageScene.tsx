@@ -150,6 +150,14 @@ export const PackageScene: React.FC = () => {
       return;
     }
 
+    const jobDef = jobDefinitions?.find(
+      (definition) => definition.source.file_id === selectedHdaId,
+    );
+    if (!jobDef) {
+      console.error("Failed to find job definition");
+      return;
+    }
+
     if (requestInFlight) {
       setPendingRequest(true);
       return;
@@ -161,10 +169,12 @@ export const PackageScene: React.FC = () => {
     // Set request in flight
     setRequestInFlight(true);
 
+    const dependencyFileIds = jobDef.params_schema.params['dependencies'].default;
 
     // Send the cook request with all parameters for the current HDA
     wsServiceRef.current.sendCookRequestById(
       selectedHdaId as string,
+      dependencyFileIds as string[],
       paramValues,
       inputFiles,
       format,

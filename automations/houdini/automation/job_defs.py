@@ -36,6 +36,30 @@ def extract_node_type_info(hda_path: str) -> list[dict]:
     hou_hou.hipFile.clear(suppress_save_prompt=True)
     return result
 
+def gather_dependencies() -> list[str]:
+    # TODO: Gather file_id of HDA dependnecies
+    return []
+
+def set_config_params(params: ParameterSpec, hda_file_id: str, index: int):
+    params['hda_file'] = FileParameterSpec(
+        label='HDA File',
+        constant=True,
+        default=hda_file_id
+    )
+    params['hda_definition_index'] = IntParameterSpec(
+        label='HDA Definition Index',
+        constant=True,
+        default=index
+    )
+    params['format'] = StringParameterSpec(
+        label='Format',
+        default='usdz'
+    )
+    params['dependencies'] = FileParameterSpec(
+        label='Dependencies',
+        constant=True,
+        default=gather_dependencies()
+    )
 
 class JobDefRequest(ParameterSet):
     hda_file: FileParameter
@@ -59,7 +83,7 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         #Only SOP HDA's supported
         if category != 'SOP':
             continue
-        
+
         #Parse inputs and convert them to FileParameterSpec
         in_files: dict[str, FileParameterSpec] = {}
         for index, label in enumerate(type_info['inputLabels']):
@@ -84,11 +108,9 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         exec(nt_python,context, scope)
         #Grab results
         group:houClasses.ParmTemplateGroup = scope.get("hou_parm_template_group")
-        
 
-        #set_config_params(group, hda_file.file_id, index)
         source = None
-        
+
         if len(request.src_asset_id) > 0:
             source = AssetVersionEntryPointReference(
                 asset_id=request.src_asset_id,
@@ -98,13 +120,15 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
                 file_id=hda_file.file_id,
                 entry_point=type_info['name']
             )
-        
+
         all = group.getParmTemplateSpec()
         params = all.params
         params_v2 = all.params_v2
         params.update(in_files)
         params_v2.extend(in_files.values())
         params_v2.extend(out_files.values())
+
+        set_config_params(params, hda_file.file_id, index)
 
         res = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
@@ -118,5 +142,5 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         )
         ret.append(res)
         responder.result(res)
-            
+
         return JobDefResponse(job_definitions=ret)
