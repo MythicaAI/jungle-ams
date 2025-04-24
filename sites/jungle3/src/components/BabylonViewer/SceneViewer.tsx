@@ -490,11 +490,16 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
             sx={{
               flex: 1,
               minHeight: 0,
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              padding: '12px',
+              px: 2,
+              py: 1,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              whiteSpace: 'pre',
               overflowY: 'auto',
-              fontSize: '0.85rem'
+              overflowX: 'auto',
+              textAlign: 'left',
+              fontSize: '0.9rem',
+              lineHeight: 1.4,
+              letterSpacing: '0.015em'
             }}
           >
             {statusLog.join('\n')}
