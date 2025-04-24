@@ -65,8 +65,9 @@ async def update(db_session: AsyncSession, ctx: UploadContext) -> Tuple[str, str
     if should_post_to_nats(ctx):
         parameter_set = ParameterSet(
             hda_file=FileParameter(file_id=file_id),
+            dependencies=[],
             src_asset_id="",
-            src_version=[0, 0, 0]
+            src_version=[0, 0, 0],
         )
 
         event = AutomationRequest(

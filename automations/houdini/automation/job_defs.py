@@ -36,15 +36,11 @@ def extract_node_type_info(hda_path: str) -> list[dict]:
     hou_hou.hipFile.clear(suppress_save_prompt=True)
     return result
 
-def gather_dependencies() -> list[str]:
-    # TODO: Gather file_id of HDA dependnecies
-    return []
-
-def set_config_params(params: ParameterSpec, hda_file_id: str, index: int):
+def set_config_params(params: ParameterSpec, hda_file: FileParameter, index: int, dependencies: list[FileParameter]):
     params['hda_file'] = FileParameterSpec(
         label='HDA File',
         constant=True,
-        default=hda_file_id
+        default=hda_file.file_id
     )
     params['hda_definition_index'] = IntParameterSpec(
         label='HDA Definition Index',
@@ -58,11 +54,12 @@ def set_config_params(params: ParameterSpec, hda_file_id: str, index: int):
     params['dependencies'] = FileParameterSpec(
         label='Dependencies',
         constant=True,
-        default=gather_dependencies()
+        default=[f.file_id for f in dependencies]
     )
 
 class JobDefRequest(ParameterSet):
     hda_file: FileParameter
+    dependencies: list[FileParameter]
     src_asset_id: str
     src_version: list[int]
 
@@ -128,7 +125,7 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         params_v2.extend(in_files.values())
         params_v2.extend(out_files.values())
 
-        set_config_params(params, hda_file.file_id, index)
+        set_config_params(params, hda_file, index, request.dependencies)
 
         res = JobDefinition(
             job_type='houdini::/mythica/generate_mesh',
