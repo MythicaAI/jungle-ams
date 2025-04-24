@@ -194,7 +194,7 @@ async def generate_several_thumbnails(
     await nats.post("imagemagick", bulk_req.model_dump())
 
 
-async def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> list[FileParameter]:
+def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> list[FileParameter]:
     dependencies = []
 
     # Assume all other HDA files inside the package are dependencies
