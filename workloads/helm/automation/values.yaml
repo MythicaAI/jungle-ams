@@ -13,9 +13,7 @@ imageRepository: us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-im
 serviceAccount:
   account: automation
 
-telemetry_enable: "true"
 telemetry_endpoint: http://otel-collector.default:4317
-telemetry_insecure: "true"
 nats_endpoint: nats://nats.nats:4222
 app_base_url: http://app.api/v1
 

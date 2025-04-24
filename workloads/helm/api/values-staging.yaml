@@ -34,9 +34,7 @@ api:
     maxUnavailable: 1
     maxSurge: 2
     base_url: "https://api-staging.mythica.ai/v1"
-    telemetry_enable: "true"
     telemetry_endpoint: "http://otel-collector.default:4317"
-    telemetry_insecure: "true"
     nodeSelector: spot
     terminationGracePeriodSeconds: 15
   gcsProxy:
@@ -70,8 +68,6 @@ api:
     replicas: 1
     maxUnavailable: 0
     maxSurge: 2
-    telemetry_enable: "true"
     telemetry_endpoint: "http://otel-collector.default:4317"
-    telemetry_insecure: "true"
     nodeSelector: spot
     terminationGracePeriodSeconds: 15

@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 
 import requests
+
 from ripple.config import ripple_config
 
 log = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ def send_alert(message: str, severity: AlertSeverity = AlertSeverity.INFO) -> No
     }
 
     webhook = ripple_config().discord_infra_alerts_webhook
-    if webhook == "localhost":
-        log.debug("Alert sent: %s", json_data)
+    if not webhook:
+        log.info("(test) send_alert: %s", json_data)
         return
 
     headers = {

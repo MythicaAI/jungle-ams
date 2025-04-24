@@ -1,12 +1,9 @@
-
-
-
 import logging
 import os
 import sys
+
 print(f"cwd: {os.getcwd()}")
 print(f"python path: {sys.path}")
-
 
 from automation.job_defs import job_defs, JobDefRequest, JobDefResponse
 
@@ -22,10 +19,10 @@ debug = mythica_environment == "debug"
 
 worker = Worker()
 
-if ripple_config().telemetry_enable:
+if ripple_config().telemetry_endpoint:
     configure_telemetry(
         ripple_config().telemetry_endpoint,
-        ripple_config().telemetry_insecure,
+        ripple_config().telemetry_token,
     )
 else:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -68,6 +65,7 @@ automations = [
 
 ]
 
+
 def force_limited_commercial_mode():
     dummy_hdalc = './darol-plugin/otls/mythica.test_cube.1.0.hdalc'
 
@@ -81,14 +79,15 @@ def force_limited_commercial_mode():
 
     hou.hda.uninstallFile(dummy_hdalc)
     hou.hipFile.clear(suppress_save_prompt=True)
-    
+
     assert hou.licenseCategory() == hou.licenseCategoryType.Indie
     print('License set to limited commercial mode')
 
 
 def main():
-    #force_limited_commercial_mode()
-    worker.start('houdini',automations)
+    # force_limited_commercial_mode()
+    worker.start('houdini', automations)
+
 
 def fastapi_entry_point():
     """
@@ -97,6 +96,7 @@ def fastapi_entry_point():
     import uvicorn
     app = worker.start_web(automations)
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "fastapi":

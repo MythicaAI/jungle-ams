@@ -34,12 +34,8 @@ spec:
               value: {{ .Values.app_base_url }}
             - name: NAMESPACE
               value: {{ .Values.namespace }}
-            - name: TELEMETRY_ENABLE
-              value: "{{ .Values.telemetry_enable }}"
             - name: TELEMETRY_ENDPOINT
               value: {{ .Values.telemetry_endpoint }}
-            - name: TELEMETRY_INSECURE
-              value: "{{ .Values.telemetry_insecure }}"
             - name: NATS_ENDPOINT
               value: {{ .Values.nats_endpoint }}
             - name: MYTHICA_ENVIRONMENT

@@ -1,16 +1,15 @@
 import logging
-from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
+
+from automation.hello_world import HelloWorldRequest, HelloWorldResponse, hello_world_api
 from ripple.automation.worker import Worker
-
 from ripple.config import configure_telemetry, ripple_config
-
 
 worker = Worker()
 
-if ripple_config().telemetry_enable:
+if ripple_config().telemetry_endpoint:
     configure_telemetry(
         ripple_config().telemetry_endpoint,
-        ripple_config().telemetry_insecure,
+        ripple_config().telemetry_token,
     )
 else:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -30,8 +29,10 @@ workers = [
     },
 ]
 
+
 def main():
-    worker.start('houdini',workers)        
+    worker.start('houdini', workers)
+
 
 if __name__ == "__main__":
     main()

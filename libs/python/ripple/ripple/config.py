@@ -4,6 +4,7 @@ import logging
 import os
 import traceback
 from typing import Optional
+from urllib.parse import urlparse
 
 from opentelemetry import metrics
 from opentelemetry._logs import set_logger_provider
@@ -34,10 +35,10 @@ class RippleConfig(BaseSettings):
     ripple_token_secret_key: str = 'X' * 32  # shared secret for auth token generation
     api_base_uri: str = 'http://localhost:5555/v1'
     mythica_environment: str = "debug"
-    telemetry_enable: bool = False
-    telemetry_insecure: bool = True
-    telemetry_endpoint: str = "otel-sidecar:4317"
-    discord_infra_alerts_webhook: str = "localhost"
+    telemetry_endpoint: Optional[str] = None
+    telemetry_token: Optional[str] = None
+    enable_telemetry_debug_logs: bool = False  # show telemetry logs on stdout for debugging
+    discord_infra_alerts_webhook: Optional[str] = None
 
 
 @functools.lru_cache
@@ -67,22 +68,28 @@ def get_telemetry_resource() -> Resource:
     )
     # detected_resource overrides resource with vars from OTEL_RESOURCE_ATTRIBUTES
     resource = resource.merge(detected_resource)
-
     return resource
 
 
-def configure_telemetry(
-    telemetry_endpoint: str,
-    telemetry_insecure: bool,
-    headers: Optional[list[tuple]] = None,
-):
+def is_secure_scheme(url):
+    """Test URL for supported secure schemes"""
+    parsed_url = urlparse(url)
+    secure_schemes = {'https', 'wss', 'grpcs'}
+    return parsed_url.scheme.lower() in secure_schemes
+
+
+def configure_telemetry(endpoint: str, ingest_token: Optional[str] = None):
+    if ingest_token:
+        headers = [('signoz-access-token', ingest_token)]
+    else:
+        headers = None
 
     logger = logging.getLogger()
-    logger.info(
-        "Telemetry enabled. telemetry_endpoint: %s, telemetry_insecure: %s",
-        telemetry_endpoint,
-        telemetry_insecure,
-    )
+    insecure = not is_secure_scheme(endpoint)
+    logger.info("Telemetry enabled. telemetry_endpoint: %s", endpoint)
+    if insecure:
+        logger.warning("Telemetry using insecure scheme", )
+
     logger.handlers.clear()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -97,8 +104,8 @@ def configure_telemetry(
     tracer_provider = TracerProvider(resource=resource)
     set_tracer_provider(tracer_provider)
     span_exporter = OTLPSpanExporter(
-        endpoint=telemetry_endpoint,
-        insecure=telemetry_insecure,
+        endpoint=endpoint,
+        insecure=insecure,
         headers=headers,
     )
     tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
@@ -107,8 +114,8 @@ def configure_telemetry(
     # OpenTelemetry Metrics configuration
     #
     metric_exporter = OTLPMetricExporter(
-        endpoint=telemetry_endpoint,
-        insecure=telemetry_insecure,
+        endpoint=endpoint,
+        insecure=insecure,
         headers=headers,
     )
     reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=500)
@@ -121,19 +128,18 @@ def configure_telemetry(
     logger_provider = LoggerProvider(resource=resource)
     set_logger_provider(logger_provider)
     exporter = OTLPLogExporter(
-        endpoint=telemetry_endpoint,
-        insecure=telemetry_insecure,
+        endpoint=endpoint,
+        insecure=insecure,
         headers=headers,
     )
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
-    if ripple_config().mythica_environment == "debug":
+    if ripple_config().enable_telemetry_debug_logs:
         logger_provider.add_log_record_processor(
             SimpleLogRecordProcessor(ConsoleLogExporter())
         )
 
     otel_log_handler = LoggingHandler(level=logging.INFO)
     logger.addHandler(otel_log_handler)
-
     otel_log_handler.setFormatter(CustomJSONFormatter())
 
 
@@ -160,7 +166,7 @@ class CustomJSONFormatter(logging.Formatter):
                 k: v
                 for k, v in record.__dict__.items()
                 if k
-                not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+                   not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
             }
         )
         json_log_entry = json.dumps(log_entry)

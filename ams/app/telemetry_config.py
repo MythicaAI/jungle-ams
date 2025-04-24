@@ -11,12 +11,10 @@ def configure_logging():
         print("logging disabled under pytest")
         return
 
-    if app_config().telemetry_enable:
+    if app_config().telemetry_endpoint:
         configure_telemetry(
             app_config().telemetry_endpoint,
-            app_config().telemetry_insecure,
-            [('signoz-access-token', app_config().telemetry_token)],
-        )
+            app_config().telemetry_token)
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 

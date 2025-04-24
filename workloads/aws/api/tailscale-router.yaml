@@ -28,7 +28,7 @@ spec:
       serviceAccountName: "tailscale"
       hostname: aws-tailscale
       imagePullSecrets:
-      - name: registry-secret
+        - name: registry-secret
       restartPolicy: Always
       containers:
         - name: houdini
@@ -42,12 +42,8 @@ spec:
               value: http://app.api-staging.svc.cluster.local/v1
             - name: NAMESPACE
               value: api-staging
-            - name: TELEMETRY_ENABLE
-              value: "true"
             - name: TELEMETRY_ENDPOINT
               value: http://otel-collector.default.svc.cluster.local:4317
-            - name: TELEMETRY_INSECURE
-              value: "true"
             - name: NATS_ENDPOINT
               value: nats://nats.nats.svc.cluster.local:4222
             - name: MYTHICA_ENVIRONMENT

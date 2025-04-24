@@ -63,12 +63,8 @@ spec:
               value: "3"
             - name: API_BASE_URI
               value: {{ .Values.api.app.base_url }}
-            - name: TELEMETRY_ENABLE
-              value: "{{ .Values.api.app.telemetry_enable }}"
             - name: TELEMETRY_ENDPOINT
               value: {{ .Values.api.app.telemetry_endpoint }}
-            - name: TELEMETRY_INSECURE
-              value: "{{ .Values.api.app.telemetry_insecure }}"
             - name: NAMESPACE
               value: {{ .Values.namespace }}
             - name: AUTH0_DOMAIN
