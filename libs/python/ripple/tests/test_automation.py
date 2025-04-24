@@ -1,33 +1,37 @@
-import json
 import logging
-from jwt import DecodeError
-from pydantic import ValidationError
-import pytest
 from unittest import mock
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from ripple.auth.generate_token import generate_token
-from ripple.automation.automations import ScriptRequest, _get_script_interface, _run_script_automation, get_default_automations
-from ripple.automation.worker import Worker
-from ripple.automation.models import AutomationModel, AutomationRequest, AutomationRequestResult, AutomationsResponse, EventAutomationResponse
-from ripple.automation.adapters import NatsAdapter, RestAdapter
-from ripple.automation.publishers import ResultPublisher, SlimPublisher
-from ripple.config import ripple_config, update_headers_from_context
-from ripple.models.streaming import CropImageResponse, Error, JobDefinition, Message, OutputFiles, ProcessStreamItem
-from ripple.models.params import ParameterSet
+from jwt import DecodeError
+from pydantic import ValidationError
 
 from cryptid.cryptid import profile_seq_to_id
+from ripple.auth.generate_token import generate_token
+from ripple.automation.adapters import NatsAdapter, RestAdapter
+from ripple.automation.automations import ScriptRequest, _get_script_interface, _run_script_automation, \
+    get_default_automations
+from ripple.automation.models import AutomationModel, AutomationRequest, AutomationRequestResult, AutomationsResponse, \
+    EventAutomationResponse
+from ripple.automation.publishers import ResultPublisher, SlimPublisher
+from ripple.automation.worker import Worker
+from ripple.config import ripple_config
+from ripple.models.params import ParameterSet
+from ripple.models.streaming import CropImageResponse, JobDefinition, Message, OutputFiles, ProcessStreamItem
+
 
 # ---- Test Models ----
 class TestRequest(ParameterSet):
-    __test__=False
+    __test__ = False
     message: str
 
+
 class TestResponse(Message):
-    __test__=False
+    __test__ = False
     pass
+
 
 # ---- Fixtures ----
 @pytest.fixture
@@ -39,6 +43,7 @@ def test_token():
         'localhost',
         'test',
         [])
+
 
 @pytest.fixture
 def test_coordinator_input(test_token):
@@ -55,19 +60,20 @@ def test_coordinator_input(test_token):
             "auth_token": test_token,
             "event_id": "1"
         },
-        {
-            "process_guid": "test-guid",
-            "hda_file": "test_hda_file",
-            "src_asset_id": "test_asset_id",
-            "src_version": [1, 1, 1],
-            "correlation": "test-work",
-            "path": "/test/path",
-            "data": {},
-            "auth_token": test_token,
-            "event_id": "1"
-        }],
+            {
+                "process_guid": "test-guid",
+                "hda_file": "test_hda_file",
+                "src_asset_id": "test_asset_id",
+                "src_version": [1, 1, 1],
+                "correlation": "test-work",
+                "path": "/test/path",
+                "data": {},
+                "auth_token": test_token,
+                "event_id": "1"
+            }],
         event_id="1",
     )
+
 
 @pytest.fixture
 def mock_nats():
@@ -76,10 +82,12 @@ def mock_nats():
     mock.post = AsyncMock()
     return mock
 
+
 @pytest.fixture
 def mock_rest():
     mock = AsyncMock(spec=RestAdapter)
     return mock
+
 
 @pytest.fixture
 def mock_responder(tmp_path):
@@ -87,6 +95,7 @@ def mock_responder(tmp_path):
     mock.directory = str(tmp_path)
     mock.result = MagicMock()
     return mock
+
 
 @pytest.fixture
 def worker(mock_nats, mock_rest):
@@ -96,9 +105,11 @@ def worker(mock_nats, mock_rest):
     worker.rest = mock_rest
     return worker
 
+
 # ---- Helper Functions ----
 def hello_world_api(request: TestRequest, result_callback):
     result_callback(Message(message=f"Received message: {request.message}"))
+
 
 def get_test_worker_spec() -> dict:
     return {
@@ -109,14 +120,15 @@ def get_test_worker_spec() -> dict:
         }
     }
 
+
 def get_test_automation() -> dict:
     ret = [
         AutomationModel(
-            path = '/mythica/hello_world',
-            provider = hello_world_api,
-            inputModel = TestRequest,
-            outputModel = TestResponse,
-            hidden = False
+            path='/mythica/hello_world',
+            provider=hello_world_api,
+            inputModel=TestRequest,
+            outputModel=TestResponse,
+            hidden=False
         )
     ]
     return ret
@@ -139,11 +151,13 @@ def get_all_worker_specs() -> dict:
     }
     return autos
 
+
 # ---- Worker Initialization Tests ----
 def test_worker_init(worker):
     assert isinstance(worker.nats, NatsAdapter)
     assert isinstance(worker.rest, RestAdapter)
     assert '/mythica/automations' in worker.automations
+
 
 # ---- Automation Loading Tests ----
 def test_load_automations(worker):
@@ -151,24 +165,26 @@ def test_load_automations(worker):
     assert '/mythica/hello_world' in worker.automations
     assert isinstance(worker.automations['/mythica/hello_world'], AutomationModel)
 
+
 def test_get_catalog_provider(worker):
     provider = worker._get_catalog_provider()
     response = provider()
     expected = AutomationsResponse(automations=get_all_worker_specs())
     assert response.automations == expected.automations
 
+
 # ---- Executor Tests ----
 @pytest.mark.asyncio
 async def test_worker_executor(worker, mock_responder, test_token):
     test_automation = AutomationModel(
         path='/test/path',
-        provider=lambda x,y: Message(message="test"),
+        provider=lambda x, y: Message(message="test"),
         inputModel=ParameterSet,
         outputModel=Message,
         hidden=False
     )
     worker.automations['/test/path'] = test_automation
-    
+
     with patch('ripple.automation.worker.ResultPublisher', return_value=mock_responder):
         executor = worker._get_executor()
         await executor({
@@ -178,12 +194,13 @@ async def test_worker_executor(worker, mock_responder, test_token):
             "data": {},
             "auth_token": test_token
         })
-    
+
     assert mock_responder.result.call_count == 3
     calls = mock_responder.result.call_args_list
     assert calls[0].args[0].item_type == 'progress'
     assert calls[1].args[0].item_type == 'message'
     assert calls[2].args[0].item_type == 'progress'
+
 
 # ---- Web Tests ----
 def test_start_web(worker):
@@ -193,9 +210,6 @@ def test_start_web(worker):
         assert isinstance(app, FastAPI)
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_worker_catalog(worker):
     catalog_provider = worker.automations['/mythica/automations']
@@ -203,23 +217,24 @@ async def test_worker_catalog(worker):
     assert isinstance(result, AutomationsResponse)
     assert '/mythica/automations' in result.automations
 
+
 @pytest.mark.asyncio
 async def test_worker_load_automations(worker):
     test_automation = AutomationModel(
         path='/test/path',
-        provider=lambda x,y: None,
+        provider=lambda x, y: None,
         inputModel=ParameterSet,
         outputModel=ProcessStreamItem
     )
     worker._load_automations([test_automation])
     assert '/test/path' in worker.automations
 
+
 @pytest.mark.asyncio
 async def test_worker_executor_error(worker):
     executor = worker._get_executor()
     await executor({"invalid": "payload"})
     with pytest.raises(Exception) as exc_info:
-    
         assert len(exc_info.value.errors()) == 4
         error_fields = [e["loc"][0] for e in exc_info.value.errors()]
         assert set(error_fields) == {"process_guid", "correlation", "path", "data"}
@@ -228,7 +243,7 @@ async def test_worker_executor_error(worker):
 @pytest.fixture
 def mock_requests():
     with patch('requests.post') as mock_post, \
-         patch('requests.get') as mock_get:
+            patch('requests.get') as mock_get:
         mock_post.return_value = MagicMock(status_code=200)
         mock_get.return_value = MagicMock(status_code=200)
         yield mock_post, mock_get
@@ -244,10 +259,9 @@ async def test_coordinator_executor_error(worker, caplog, mock_requests, test_co
     worker.rest.post = mock_post
     executor = worker._get_executor()
     worker.process_items_result = AsyncMock()
-    
+
     with caplog.at_level(logging.ERROR):
         await executor(test_coordinator_input)
-        
 
     assert len(caplog.record_tuples) == 2
     worker_log_mess = caplog.record_tuples[1][2]
@@ -269,24 +283,23 @@ async def test_coordinator_executor_error(worker, caplog, mock_requests, test_co
     with caplog.at_level(logging.INFO):
         await executor(data)
 
-    assert len(caplog.record_tuples) == 4
+    assert len(caplog.record_tuples) == 5
     worker_log_level = caplog.record_tuples[2][1]
     assert worker_log_level == logging.ERROR
     worker_log_mess = caplog.record_tuples[2][2]
-    assert "ValidationError" in  worker_log_mess
+    assert "ValidationError" in worker_log_mess
     assert "4 validation errors for AutomationRequest" in worker_log_mess
-
 
     # Test is_bulk_processing set as True but requests is not a list
     data = dict(is_bulk_processing=True, requests={"invalid": "payload"})
     with caplog.at_level(logging.INFO):
         await executor(data)
 
-    assert len(caplog.record_tuples) == 5
+    assert len(caplog.record_tuples) == 7
     coordinator_log_level = caplog.record_tuples[2][1]
     assert coordinator_log_level == logging.ERROR
     coordinator_log_mess = caplog.record_tuples[2][2]
-    assert "ValidationError" in  coordinator_log_mess
+    assert "ValidationError" in coordinator_log_mess
     assert "4 validation errors for AutomationRequest" in coordinator_log_mess
     worker_log_level = caplog.record_tuples[1][1]
     assert worker_log_level == logging.ERROR
@@ -304,7 +317,7 @@ async def test_coordinator_executor_success(worker, test_coordinator_input, capl
     worker.process_items_result = AsyncMock()
     test_automation = AutomationModel(
         path='/test/path',
-        provider=lambda x,y: job_definition_item,
+        provider=lambda x, y: job_definition_item,
         inputModel=ParameterSet,
         outputModel=JobDefinition,
         hidden=False
@@ -314,7 +327,7 @@ async def test_coordinator_executor_success(worker, test_coordinator_input, capl
 
     with caplog.at_level(logging.ERROR):
         await executor(test_coordinator_input)
-        
+
     assert len(caplog.record_tuples) == 0
 
     process_items_result = worker.process_items_result
@@ -328,15 +341,14 @@ async def test_coordinator_executor_success(worker, test_coordinator_input, capl
         assert item.result.get("item_type") == "job_def"
 
 
-
 @pytest.mark.asyncio
 async def test_process_items_result_success(
-    mock_rest,
-    test_token,
-    worker,
-    test_coordinator_input,
-    caplog,
-    mock_requests,
+        mock_rest,
+        test_token,
+        worker,
+        test_coordinator_input,
+        caplog,
+        mock_requests,
 ):
     mock_post, mock_get = mock_requests
     mock_get.return_value = MagicMock(status_code=200)
@@ -347,7 +359,7 @@ async def test_process_items_result_success(
     executor = worker._get_executor()
     job_definition_item = JobDefinition(
         job_type="test_job",
-        name="Test Job", 
+        name="Test Job",
         description="Test Description",
         parameter_spec={
             "type": "object",
@@ -358,7 +370,7 @@ async def test_process_items_result_success(
     )
     test_automation = AutomationModel(
         path='/test/path',
-        provider=lambda x,y: job_definition_item,
+        provider=lambda x, y: job_definition_item,
         inputModel=ParameterSet,
         outputModel=JobDefinition,
         hidden=False
@@ -367,7 +379,7 @@ async def test_process_items_result_success(
 
     with caplog.at_level(logging.ERROR):
         await executor(test_coordinator_input)
-        
+
     assert len(caplog.record_tuples) == 0
     assert mock_rest.post.call_count == 3
 
@@ -399,52 +411,64 @@ async def test_process_items_result_success(
     assert expected_response.processed == call_args[1]["processed"]
     for index in range(len(expected_response.request_result)):
         assert expected_response.request_result[index].processed == call_args[1]["request_result"][index]["processed"]
-        assert expected_response.request_result[index].request.process_guid == call_args[1]["request_result"][index]["request"]["process_guid"]
-        assert expected_response.request_result[index].request.correlation == call_args[1]["request_result"][index]["request"]["correlation"]
-        assert expected_response.request_result[index].request.path == call_args[1]["request_result"][index]["request"]["path"]
-        assert expected_response.request_result[index].request.data == call_args[1]["request_result"][index]["request"]["data"]
-        assert expected_response.request_result[index].request.telemetry_context == call_args[1]["request_result"][index]["request"]["telemetry_context"]
-        assert expected_response.request_result[index].request.event_id == call_args[1]["request_result"][index]["request"]["event_id"]
+        assert expected_response.request_result[index].request.process_guid == \
+               call_args[1]["request_result"][index]["request"]["process_guid"]
+        assert expected_response.request_result[index].request.correlation == \
+               call_args[1]["request_result"][index]["request"]["correlation"]
+        assert expected_response.request_result[index].request.path == call_args[1]["request_result"][index]["request"][
+            "path"]
+        assert expected_response.request_result[index].request.data == call_args[1]["request_result"][index]["request"][
+            "data"]
+        assert expected_response.request_result[index].request.telemetry_context == \
+               call_args[1]["request_result"][index]["request"]["telemetry_context"]
+        assert expected_response.request_result[index].request.event_id == \
+               call_args[1]["request_result"][index]["request"]["event_id"]
         print("jvcfghjkhjgjkhk")
         print(call_args[1]["request_result"][index]["result"])
-        assert expected_response.request_result[index].result["job_type"] == call_args[1]["request_result"][index]["result"]["job_type"]
+        assert expected_response.request_result[index].result["job_type"] == \
+               call_args[1]["request_result"][index]["result"]["job_type"]
 
         assert mock.ANY == call_args[1]["request_result"][index]["result"]["job_def_id"]
-        assert expected_response.request_result[index].result["name"] == call_args[1]["request_result"][index]["result"]["name"]
-        assert expected_response.request_result[index].result["description"] == call_args[1]["request_result"][index]["result"]["description"]
-        assert expected_response.request_result[index].result["parameter_spec"] == call_args[1]["request_result"][index]["result"]["parameter_spec"]
-        assert expected_response.request_result[index].result["source"] == call_args[1]["request_result"][index]["result"]["source"]
+        assert expected_response.request_result[index].result["name"] == \
+               call_args[1]["request_result"][index]["result"]["name"]
+        assert expected_response.request_result[index].result["description"] == \
+               call_args[1]["request_result"][index]["result"]["description"]
+        assert expected_response.request_result[index].result["parameter_spec"] == \
+               call_args[1]["request_result"][index]["result"]["parameter_spec"]
+        assert expected_response.request_result[index].result["source"] == \
+               call_args[1]["request_result"][index]["result"]["source"]
+
 
 @pytest.mark.asyncio
 async def test_worker_web_executor(worker, test_token):
     app = worker._get_web_executor()
     client = TestClient(app)
-    
+
     response = client.post("/",
-        json={
-            "correlation": "test-work",
-            "path": "/mythica/automations",
-            "data": {},
-            "auth_token": test_token
-        }
-    )
+                           json={
+                               "correlation": "test-work",
+                               "path": "/mythica/automations",
+                               "data": {},
+                               "auth_token": test_token
+                           }
+                           )
     assert response.status_code == 200
 
+
 @pytest.mark.asyncio
-async def test_worker_web_executor_error(worker,test_token):
+async def test_worker_web_executor_error(worker, test_token):
     app = worker._get_web_executor()
     client = TestClient(app)
-    
+
     with pytest.raises(KeyError):
         response = client.post("/",
-            json={
-                "correlation": "test-work",
-                "path": "/invalid/path",
-                "data": {},
-                "auth_token": test_token
-            }
-        )
-
+                               json={
+                                   "correlation": "test-work",
+                                   "path": "/invalid/path",
+                                   "data": {},
+                                   "auth_token": test_token
+                               }
+                               )
 
 
 # ---- Model Test Fixtures ----
@@ -458,6 +482,7 @@ def valid_automation_spec():
         }
     }
 
+
 @pytest.fixture
 def valid_automation_request_data():
     return {
@@ -468,6 +493,7 @@ def valid_automation_request_data():
         "data": {"test": "data"},
         "telemetry_context": {},
     }
+
 
 # ---- AutomationsResponse Tests ----
 class TestAutomationsResponse:
@@ -483,6 +509,7 @@ class TestAutomationsResponse:
     def test_invalid_structure(self):
         with pytest.raises(ValidationError):
             AutomationsResponse(automations={"invalid": "structure"})
+
 
 # ---- AutomationModel Tests ----
 class TestAutomationModel:
@@ -509,12 +536,13 @@ class TestAutomationModel:
                 outputModel=TestResponse
             )
 
+
 # ---- AutomationRequest Tests ----
 class TestAutomationRequest:
     def test_valid_request(self, test_token, valid_automation_request_data):
         request_data = valid_automation_request_data.copy()
         request_data["auth_token"] = test_token
-        
+
         request = AutomationRequest(**request_data)
         assert request.process_guid == request_data["process_guid"]
         assert request.correlation == request_data["correlation"]
@@ -539,11 +567,13 @@ class TestAutomationRequest:
         invalid_data["path"] = ""
         AutomationRequest(**invalid_data)
         pytest.raises(ValidationError)
-            
+
 
 """
 publishers.py tests
 """
+
+
 @pytest.fixture
 def mock_nats():
     mock = MagicMock(spec=NatsAdapter)
@@ -552,12 +582,14 @@ def mock_nats():
     mock.unsubscribe = AsyncMock()
     return mock
 
+
 @pytest.fixture
 def mock_rest():
     mock = MagicMock(spec=RestAdapter)
     mock.post = MagicMock()
     mock.download_file = AsyncMock()
     return mock
+
 
 @pytest.fixture
 def publisher(mock_nats, mock_rest, test_request, mock_profile, tmp_path):
@@ -570,6 +602,7 @@ def publisher(mock_nats, mock_rest, test_request, mock_profile, tmp_path):
                 rest=mock_rest,
                 directory=str(tmp_path),
             )
+
 
 @pytest.fixture
 def test_request(test_token):
@@ -584,6 +617,7 @@ def test_request(test_token):
         telemetry_context={"test": "test"},
     )
 
+
 @pytest.fixture
 def mock_profile():
     return {
@@ -591,11 +625,13 @@ def mock_profile():
         "profile_id": "test-profile"
     }
 
+
 @pytest.fixture
 def test_file(tmp_path):
     file_path = tmp_path / "test.txt"
     file_path.write_text("test content")
     return str(file_path)
+
 
 @pytest.fixture
 def output_files_item(test_file):
@@ -605,11 +641,12 @@ def output_files_item(test_file):
         files={"test_key": [test_file]}  # Changed field name to 'files'
     )
 
+
 @pytest.fixture
 def job_definition_item():
     return JobDefinition(
         job_type="test_job",
-        name="Test Job", 
+        name="Test Job",
         description="Test Description",
         parameter_spec={
             "type": "object",
@@ -619,49 +656,55 @@ def job_definition_item():
         }
     )
 
+
 @pytest.fixture
 def cropped_image_item():
     return CropImageResponse(
         job_type="cropped_image",
-        src_asset_id="asset_111", 
+        src_asset_id="asset_111",
         src_version="1.1.1",
         src_file_id="file_111",
         file_path="test.txt",
     )
+
 
 def test_publisher_init(publisher, test_request, mock_profile):
     assert publisher.request == test_request
     assert publisher.profile == mock_profile
     assert publisher.api_url == "http://test-api"
 
+
 @pytest.mark.asyncio
 async def test_result_publishing(publisher, mock_nats):
     test_item = ProcessStreamItem(item_type="test")
-    
+
     # Test regular result
     publisher.result(test_item)
     mock_nats.post_to.assert_called_once()
-    
+
     # Test completion
     publisher.result(test_item, complete=True)
     assert mock_nats.post_to.call_count == 2
+
 
 def test_error_handling(publisher):
     with pytest.raises(AttributeError):
         publisher.result(None)
 
+
 @pytest.mark.asyncio
 async def test_file_handling(publisher, mock_rest, tmp_path):
     test_file = tmp_path / "test.txt"
     test_file.write_text("test content")
-    
+
     test_item = ProcessStreamItem(
         item_type="file",
         file_path=str(test_file)
     )
-    
+
     publisher.result(test_item)
     mock_rest.post.assert_called_once()
+
 
 def test_token_handling(test_request):
     test_request.auth_token = None
@@ -674,16 +717,16 @@ def test_token_handling(test_request):
         )
 
 
-
 @pytest.mark.asyncio
 async def test_result_publisher_with_job_id(publisher, mock_nats, mock_rest):
     test_item = ProcessStreamItem(item_type="test")
     publisher.request.job_id = "test-job"
-    
+
     publisher.result(test_item)
-    
+
     mock_nats.post_to.assert_called_once()
     mock_rest.post.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_automation_request_data):
@@ -691,9 +734,9 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
 
     test_item = ProcessStreamItem(item_type="test")
     publisher.request.job_id = "test-job"
-    
+
     publisher.result(test_item, complete=True)
-    
+
     mock_nats.post_to.assert_called_once()
     assert mock_rest.post.call_count == 2
     mock_rest.post.assert_any_call(
@@ -712,14 +755,16 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
         token=publisher.request.auth_token
     )
 
+
 @pytest.mark.asyncio
 async def test_publish_files(publisher, mock_rest, output_files_item):
     mock_rest.post_file.return_value = {"files": [{"file_id": "test-file-id"}]}
-    
+
     publisher._publish_local_data(output_files_item, publisher.api_url)
-    
+
     mock_rest.post_file.assert_called_once()
     assert output_files_item.files["test_key"][0] == "test-file-id"
+
 
 @pytest.mark.asyncio
 async def test_publish_cropped_image(publisher, mock_rest, cropped_image_item, tmp_path, caplog):
@@ -752,11 +797,12 @@ async def test_publish_missing_cropped_image(publisher, cropped_image_item, capl
 @pytest.mark.asyncio
 async def test_publish_job_definition(publisher, mock_rest, job_definition_item):
     mock_rest.post.return_value = {"job_def_id": "test-job-def-id"}
-    
+
     publisher._publish_local_data(job_definition_item, publisher.api_url)
-    
+
     mock_rest.post.assert_called_once()
     assert job_definition_item.job_def_id == "test-job-def-id"
+
 
 def test_slim_publisher_init(test_request, mock_rest, tmp_path):
     slim_publisher = SlimPublisher(test_request, mock_rest, str(tmp_path))
@@ -764,16 +810,18 @@ def test_slim_publisher_init(test_request, mock_rest, tmp_path):
     assert slim_publisher.rest == mock_rest
     assert slim_publisher.directory == str(tmp_path)
 
+
 @pytest.mark.asyncio
 async def test_slim_publisher_result(test_request, mock_rest, tmp_path):
     slim_publisher = SlimPublisher(test_request, mock_rest, str(tmp_path))
     test_item = ProcessStreamItem(item_type="test")
-    
+
     slim_publisher.result(test_item)
-    
+
     assert test_item.process_guid == test_request.process_guid
     assert test_item.correlation == test_request.correlation
     assert test_item.job_id == ""
+
 
 @pytest.mark.asyncio
 async def test_publish_missing_file(publisher, mock_rest, tmp_path):
@@ -783,11 +831,12 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
         process_guid="test-guid",
         files={"test_key": [non_existent_file]}
     )
-    
+
     publisher._publish_local_data(output_files, publisher.api_url)
-    
+
     mock_rest.post_file.assert_not_called()
     assert output_files.files["test_key"][0] is None
+
 
 @pytest.mark.asyncio
 async def test_publish_missing_file(publisher, mock_rest, tmp_path):
@@ -797,7 +846,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
         process_guid="test-guid",
         files={"test_key": [non_existent_file]}
     )
-    
+
     publisher._publish_local_data(output_files, publisher.api_url)
     mock_rest.post_file.assert_not_called()
     assert output_files.files["test_key"][0] is None
@@ -806,6 +855,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
 """
 automations.py tests
 """
+
 
 @pytest.fixture
 def valid_script():
@@ -824,9 +874,11 @@ def runAutomation(request, responder):
     return ResponseModel(result=f"Hello {request.name}")
 """
 
+
 @pytest.fixture
 def valid_request_data():
     return {"name": "test"}
+
 
 @pytest.fixture
 def mock_responder(tmp_path):
@@ -834,15 +886,17 @@ def mock_responder(tmp_path):
     mock.directory = str(tmp_path)
     return mock
 
+
 def test_script_request_validation():
     with pytest.raises(ValidationError):
         ScriptRequest()  # Missing required fields
-    
+
     request = ScriptRequest(script="print('test')", env="staging")
     assert request.env == "staging"
-    
+
     with pytest.raises(ValidationError):
         ScriptRequest(script="print('test')", env="invalid")
+
 
 @pytest.mark.asyncio
 async def test_run_script_automation_success(valid_script, valid_request_data, mock_responder):
@@ -850,20 +904,22 @@ async def test_run_script_automation_success(valid_script, valid_request_data, m
         script=valid_script,
         request_data=valid_request_data
     )
-    
+
     automation = _run_script_automation()
     result = automation(request, mock_responder)
-    
+
     assert isinstance(result, ProcessStreamItem)
     assert result.result == "Hello test"
+
 
 @pytest.mark.asyncio
 async def test_run_script_missing_request_data(valid_script, mock_responder):
     request = ScriptRequest(script=valid_script)
-    
+
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="request_data is required"):
         automation(request, mock_responder)
+
 
 @pytest.mark.asyncio
 async def test_run_script_missing_responder(valid_script, valid_request_data):
@@ -871,10 +927,11 @@ async def test_run_script_missing_responder(valid_script, valid_request_data):
         script=valid_script,
         request_data=valid_request_data
     )
-    
+
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="responder is required"):
         automation(request, None)
+
 
 @pytest.mark.asyncio
 async def test_run_script_no_request_model(mock_responder):
@@ -883,10 +940,11 @@ async def test_run_script_no_request_model(mock_responder):
         script=script,
         request_data={"test": "value"}
     )
-    
+
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="RequestModel not found"):
         automation(request, mock_responder)
+
 
 @pytest.mark.asyncio
 async def test_run_script_no_automation(mock_responder):
@@ -900,36 +958,39 @@ class RequestModel(ParameterSet):
         script=script,
         request_data={"name": "test"}
     )
-    
+
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="runAutomation function not found"):
         automation(request, mock_responder)
 
+
 @pytest.mark.asyncio
 async def test_get_script_interface_success(valid_script, mock_responder):
     request = ScriptRequest(script=valid_script)
-    
+
     interface = _get_script_interface()
     result = interface(request, mock_responder)
-    
+
     assert isinstance(result, AutomationsResponse)
     assert result.automations
     assert result.automations['/mythica/script']['input']
     assert result.automations['/mythica/script']['output']
 
+
 @pytest.mark.asyncio
 async def test_get_script_interface_error(mock_responder):
     request = ScriptRequest(script="invalid python code")
-    
+
     interface = _get_script_interface()
     result = interface(request, mock_responder)
-    
+
     assert isinstance(result, AutomationsResponse)
     assert len(result.automations) == 0
 
+
 def test_get_default_automations():
     automations = get_default_automations()
-    
+
     assert len(automations) == 2
     assert automations[0].path == '/mythica/script'
     assert automations[1].path == '/mythica/script/interface'
