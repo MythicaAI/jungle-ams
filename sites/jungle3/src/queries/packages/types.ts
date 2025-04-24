@@ -11,7 +11,7 @@ export type JobDefinition = {
       [key: string]: {
         category_label: null | string;
         constant: boolean;
-        default: string | null;
+        default: null | number | string | string[];
         label: string;
         param_type: string;
         min?: number;
