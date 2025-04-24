@@ -37,7 +37,8 @@ class RippleConfig(BaseSettings):
     mythica_environment: str = "debug"
     telemetry_endpoint: Optional[str] = None
     telemetry_token: Optional[str] = None
-    discord_infra_alerts_webhook: str = "localhost"
+    enable_telemetry_debug_logs: bool = False  # show telemetry logs on stdout for debugging
+    discord_infra_alerts_webhook: Optional[str] = None
 
 
 @functools.lru_cache
@@ -88,6 +89,7 @@ def configure_telemetry(endpoint: str, ingest_token: Optional[str] = None):
     logger.info("Telemetry enabled. telemetry_endpoint: %s", endpoint)
     if insecure:
         logger.warning("Telemetry using insecure scheme", )
+
     logger.handlers.clear()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -131,14 +133,13 @@ def configure_telemetry(endpoint: str, ingest_token: Optional[str] = None):
         headers=headers,
     )
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
-    if ripple_config().mythica_environment == "debug":
+    if ripple_config().enable_telemetry_debug_logs:
         logger_provider.add_log_record_processor(
             SimpleLogRecordProcessor(ConsoleLogExporter())
         )
 
     otel_log_handler = LoggingHandler(level=logging.INFO)
     logger.addHandler(otel_log_handler)
-
     otel_log_handler.setFormatter(CustomJSONFormatter())
 
 

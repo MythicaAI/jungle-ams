@@ -12,8 +12,6 @@ from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExport
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import (
     BatchLogRecordProcessor,
-    ConsoleLogExporter,
-    SimpleLogRecordProcessor,
 )
 from opentelemetry.sdk.resources import OTELResourceDetector, Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -96,10 +94,6 @@ def configure_telemetry(endpoint: Optional[str]):
         headers=None,
     )
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
-    if resource.attributes.get("MYTHICA_LOCATION") == "localhost":
-        logger_provider.add_log_record_processor(
-            SimpleLogRecordProcessor(ConsoleLogExporter())
-        )
 
     otel_log_handler = LoggingHandler(level=logging.INFO)
     logger.addHandler(otel_log_handler)

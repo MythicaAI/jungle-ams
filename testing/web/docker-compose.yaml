@@ -71,19 +71,22 @@ services:
       - storage
       - observe
 
+    depends_on:
+      - collector
+
   worker:
     container_name: worker
     image: mythica-test-worker:latest
     environment:
       MYTHICA_ENVIRONMENT: debug
       NATS_ENDPOINT: nats://nats:4222
-      TELEMETRY_ENABLE: True
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
+      TELEMETRY_ENDPOINT: grpc://collector:4317
     networks:
       - web
       - storage
       - observe
+    depends_on:
+      - collector
 
   packager:
     container_name: packager
@@ -93,13 +96,14 @@ services:
       MYTHICA_ENDPOINT: http://app:5555
       MYTHICA_API_KEY: ${MYTHICA_API_KEY}
       NATS_ENDPOINT: nats://nats:4222
-      TELEMETRY_ENABLE: True
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
+      TELEMETRY_ENDPOINT: grpc://collector:4317
     networks:
       - web
       - storage
       - observe
+    depends_on:
+      - app
+      - collector
 
   canary:
     # network_mode: service:tailscale  # It is required by docs, but we use ports and networks so tailscale will be in host mode
@@ -109,14 +113,15 @@ services:
       MYTHICA_ENVIRONMENT: debug
       MYTHICA_ENDPOINT: http://app:5555
       MYTHICA_API_KEY: ${MYTHICA_API_KEY}
-      TELEMETRY_ENABLE: True
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
+      TELEMETRY_ENDPOINT: grpc://collector:4317
     networks:
       - web
       - observe
-  
-  # open telemetry side car for scraping nginx logs
+    depends_on:
+      - app
+      - collector
+
+  # open telemetry collector for scraping nginx logs and recieving traces
   collector:
     container_name: collector
     image: otel/opentelemetry-collector-contrib:latest
