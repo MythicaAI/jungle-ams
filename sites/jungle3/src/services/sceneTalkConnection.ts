@@ -159,7 +159,7 @@ export class SceneTalkConnection {
         },
         "definition_index": 0,
         "format": format,
-        "dependencies": dependencyFileIds.map(id => ({ file_id: id })),
+        ...(dependencyFileIds.length > 0 ? {"dependencies": dependencyFileIds.map(id => ({ file_id: id }))} : {}),
         ...files,
         ...params
       }
