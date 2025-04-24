@@ -193,6 +193,18 @@ async def generate_several_thumbnails(
     log.info("Sent NATS imagemagick task. Request: %s", bulk_req.model_dump())
     await nats.post("imagemagick", bulk_req.model_dump())
 
+
+async def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> list[FileParameter]:
+    dependencies = []
+
+    # Assume all other HDA files inside the package are dependencies
+    for content in contents:
+        if is_houdini_file(content) and content.file_id != file.file_id:
+            dependencies.append(FileParameter(file_id=content.file_id))
+
+    return dependencies
+
+
 async def generate_several_houdini_job_defs(
     avr: AssetVersionResult,
     contents: list[AssetFileReference | AssetDependency | str],
@@ -205,13 +217,13 @@ async def generate_several_houdini_job_defs(
         event_id=event_id,
         telemetry_context=get_telemetry_headers()
     )
-    file_ids = [FileParameter(file_id=content.file_id) for content in contents]
     for content in contents:
+        dependencies = gather_hda_dependencies(content, contents)
         parameter_set = ParameterSet(
             hda_file=FileParameter(file_id=content.file_id),
+            dependencies=dependencies,
             src_asset_id=avr.asset_id,
             src_version=avr.version,
-            src_package_files=file_ids,
         )
         bulk_req.requests.append(AutomationRequest(
             process_guid=process_guid,
@@ -232,8 +244,9 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
     """Request to generate one job_def"""
     parameter_set = ParameterSet(
         hda_file=FileParameter(file_id=content.file_id),
+        dependencies=[],
         src_asset_id=avr.asset_id,
-        src_version=avr.version
+        src_version=avr.version,
     )
 
     event = AutomationRequest(

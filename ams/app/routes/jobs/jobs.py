@@ -270,8 +270,9 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
 
     parameter_set = ParameterSet(
         hda_file=FileParameter(file_id=file_id),
+        dependencies=[],
         src_asset_id="",
-        src_version=[0, 0, 0]
+        src_version=[0, 0, 0],
     )
     correlation = str(uuid4())
     event = AutomationRequest(
