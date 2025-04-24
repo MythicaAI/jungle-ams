@@ -65,12 +65,22 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
             <div className="string-parm" title={template.help}>
                 <label>{template.label}</label>
                 <div className="fields">
-                    <div key={template.name} className="field">
+                    <div 
+                        key={template.name} 
+                        style={{
+                            width: '100%',
+                        }}
+                        className="field">
+                        
                         <input
                             type="file"
                             accept={template.file_type}
                             onChange={handleChange}
                             parm-index={0}
+                            style={{
+                                width: '100%',
+                                margin: '0px',
+                            }}
                             placeholder={`Upload ${template.file_type} File`}
                         />
                     </div>  
@@ -79,15 +89,27 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
         );
     } else {
         return (
-            <div className="string-parm" title={template.help}>
+            <div 
+            className="string-parm" 
+            title={template.help}>
                 <label>{template.label}</label>
                 <div className="fields">
                     {values.map((value, index) => (
-                        <div key={template.name + index} className="field">
+                        <div 
+                            key={template.name + index} 
+                            style={{ 
+                                width: `${100/values.length}%`,
+                                padding: '0px',
+                            }}
+                            className="field">
                             <input
                                 type="text"
                                 value={value}
                                 parm-index={index}
+                                style={{
+                                    width: '100%',
+                                    margin: '0px',
+                                }}
                                 onChange={handleChange}
                                 placeholder={`Component ${index + 1}`}
                             />

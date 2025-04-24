@@ -70,18 +70,37 @@ export const IntParm: React.FC<IntParmProps> = ({
           <div
             key={template.name + index}
             className={`field ${isMobileSize ? 'slider-field' : ''}`}
+            style={{
+              width: `${100/values.length}%`,
+              padding: '0px',
+            }}
           >
             <input
-              type={isMobileSize ? 'range' : 'number'}
+              type='range'
               value={value}
               step="1"
               parm-index={index}
               onChange={handleChange}
               min={template.min}
               max={template.max}
-              className={isMobileSize ? 'input-slider' : ''}
+              style={{
+                width: '100%',  
+                margin: '0px',
+                padding: '0px',
+              }}
+              className='input-slider'
             />
-            {isMobileSize ? <span>{value}</span> : null}
+            <span
+              style={{ 
+                fontSize: 'smaller',
+                margin: '0px',
+                padding: '0px',
+                display: 'block',
+              }}
+            >
+              {value}
+            </span>
+
           </div>
         ))}
       </div>

@@ -59,6 +59,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
     onChange?.(ret); // Notify parent about the change
   };
 
+  const range = template.max - template.min;
   return (
     <div className="float-parm" title={template.help}>
       <label>{template.label}</label>
@@ -67,18 +68,38 @@ export const FloatParm: React.FC<FloatParmProps> = ({
           <div
             key={template.name + index}
             className={`field ${isMobileSize ? 'slider-field' : ''}`}
+            style={{
+              width: `${100/values.length}%`,
+              padding: '0px',
+          }}
           >
             <input
-              type={isMobileSize ? 'range' : 'number'}
-              value={value || 0}
-              step="any"
+              type='range'
+              value={value}
+              step={(template.max - template.min)/1000}
               parm-index={index}
               onChange={handleChange}
               min={template.min}
               max={template.max}
-              className={isMobileSize ? 'input-slider' : ''}
+              style={{
+                width: '100%',  
+                margin: '0px',
+                padding: '0px',
+              }}
+              className='input-slider'
             />
-            {isMobileSize ? <span>{value?.toFixed(2)}</span> : null}
+            <span
+              style={{ 
+                fontSize: 'smaller',
+                margin: '0px',
+                padding: '0px',
+                display: 'block',
+              }}
+            >
+              {range > 1000 ? value.toFixed(0) :
+                template.max < 0.1 ? value.toExponential(4) :
+                value.toFixed(4-Math.floor(Math.log10(range)))}
+            </span>
           </div>
         ))}
       </div>
