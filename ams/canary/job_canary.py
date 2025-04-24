@@ -15,11 +15,9 @@ from telemetry import configure_telemetry
 
 Headers = Mapping[str, str | bytes | None] | None
 
-if os.getenv("TELEMETRY_ENABLE", "False").lower() == "true":
-    configure_telemetry(
-        os.getenv("TELEMETRY_ENDPOINT", "localhost:4317"),
-        os.getenv("TELEMETRY_INSECURE", "False").lower() == "true",
-    )
+telemetry_endpoint = os.getenv("TELEMETRY_ENDPOINT", None)
+if telemetry_endpoint:
+    configure_telemetry(telemetry_endpoint)
 else:
     logging.basicConfig(
         level=logging.INFO,

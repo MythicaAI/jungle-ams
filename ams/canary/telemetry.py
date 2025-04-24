@@ -4,6 +4,7 @@ import logging
 import os
 import traceback
 from typing import Optional
+from urllib.parse import urlparse
 
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
@@ -23,7 +24,7 @@ from opentelemetry.trace import set_tracer_provider
 
 def get_telemetry_resource() -> Resource:
     detected_resource = OTELResourceDetector().detect()
-    
+
     resource = Resource.create(
         {
             "APP_VERSION": os.getenv("APP_VERSION", "local"),
@@ -44,13 +45,25 @@ def get_telemetry_resource() -> Resource:
     return resource
 
 
-def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, headers: Optional[list[tuple]] = None):
+def is_secure_scheme(url):
+    """Test URL for supported secure schemes"""
+    parsed_url = urlparse(url)
+    secure_schemes = {'https', 'wss', 'grpcs'}
+    return parsed_url.scheme.lower() in secure_schemes
+
+
+def configure_telemetry(endpoint: Optional[str]):
+    logger = logging.getLogger()
+    insecure = not is_secure_scheme(endpoint)
+    logger.info("Telemetry enabled. telemetry_endpoint: %s", endpoint)
+    if insecure:
+        logger.warning("Telemetry using insecure scheme", )
+    logger.handlers.clear()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     logger = logging.getLogger()
     logger.info(
-        "Telemetry enabled. telemetry_endpoint: %s, telemetry_insecure: %s",
-        telemetry_endpoint,
-        telemetry_insecure,
+        "Telemetry enabled. telemetry_endpoint: %s", endpoint,
     )
     logger.handlers.clear()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -66,9 +79,9 @@ def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, heade
     tracer_provider = TracerProvider(resource=resource)
     set_tracer_provider(tracer_provider)
     span_exporter = OTLPSpanExporter(
-        endpoint=telemetry_endpoint,
-        insecure=telemetry_insecure,
-        headers=headers,
+        endpoint=endpoint,
+        insecure=insecure,
+        headers=None,
     )
     tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
 
@@ -78,9 +91,9 @@ def configure_telemetry(telemetry_endpoint: str, telemetry_insecure: bool, heade
     logger_provider = LoggerProvider(resource=resource)
     set_logger_provider(logger_provider)
     exporter = OTLPLogExporter(
-        endpoint=telemetry_endpoint,
-        insecure=telemetry_insecure,
-        headers=headers,
+        endpoint=endpoint,
+        insecure=insecure,
+        headers=None,
     )
     logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
     if resource.attributes.get("MYTHICA_LOCATION") == "localhost":
@@ -117,7 +130,7 @@ class CustomJSONFormatter(logging.Formatter):
                 k: v
                 for k, v in record.__dict__.items()
                 if k
-                not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+                   not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
             }
         )
         json_log_entry = json.dumps(log_entry)

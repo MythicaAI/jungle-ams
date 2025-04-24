@@ -33,7 +33,7 @@ services:
     depends_on:
       - sites
       - app
-      - otel-collector
+      - collector
     ports:
       - "8080:80"
     volumes:
@@ -62,9 +62,7 @@ services:
       MINIO_ACCESS_KEY: foo-access
       MINIO_SECRET_KEY: bar-secret
       WORKER_COUNT: 3
-      TELEMETRY_ENABLE: True
-      TELEMETRY_ENDPOINT: otel-sidecar:4317
-      TELEMETRY_INSECURE: True
+      TELEMETRY_ENDPOINT: grpc://collector:4317
       ENABLE_GCS_PYTHON_CLIENT_OTEL_TRACES: false
     ports:
       - "15555:5555"
@@ -119,8 +117,8 @@ services:
       - observe
   
   # open telemetry side car for scraping nginx logs
-  otel-collector:
-    container_name: otel-sidecar
+  collector:
+    container_name: collector
     image: otel/opentelemetry-collector-contrib:latest
     command: [ "--config=/etc/otel-collector-config.yaml" ]
     environment:

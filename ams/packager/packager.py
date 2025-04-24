@@ -195,7 +195,8 @@ async def generate_several_thumbnails(
     await nats.post("imagemagick", bulk_req.model_dump())
 
 
-def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> list[FileParameter]:
+def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> \
+        list[FileParameter]:
     dependencies = []
 
     # Assume all other HDA files inside the package are dependencies
@@ -454,11 +455,10 @@ async def worker_main(endpoint: str, api_key: str):
 
 
 def setup_logging():
-    if ripple_config().telemetry_enable:
+    if ripple_config().telemetry_endpoint:
         configure_telemetry(
             ripple_config().telemetry_endpoint,
-            ripple_config().telemetry_insecure,
-        )
+            ripple_config().telemetry_token)
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 

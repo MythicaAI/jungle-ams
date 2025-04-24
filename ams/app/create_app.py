@@ -61,7 +61,7 @@ def create_app(use_prom=False, intercept_exceptions=False):
             include_in_schema=False,
             tags=["internal", "metrics"])
 
-    if app_config().telemetry_enable:
+    if app_config().telemetry_endpoint:
         # Add the FastAPI instrumentation
         OpenTelemetryInstrumentor.instrument_app(app)
 

@@ -18,13 +18,12 @@ services:
   houdini-worker:
     container_name: houdini
     image: mythica-auto-houdini:latest
-    extra_hosts: 
+    extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - web
       - storage
     environment:
-      TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
       ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
@@ -34,13 +33,12 @@ services:
   blender-worker:
     container_name: blender
     image: mythica-auto-blender:latest
-    extra_hosts: 
+    extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - web
       - storage
     environment:
-      TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
       ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
@@ -48,13 +46,12 @@ services:
   genai-worker:
     container_name: genai
     image: mythica-auto-genai:latest
-    extra_hosts: 
+    extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - web
       - storage
     environment:
-      TELEMETRY_ENABLE: False
       NATS_ENDPOINT: nats://host.docker.internal:4222
       MYTHICA_ENVIRONMENT: debug
       ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost

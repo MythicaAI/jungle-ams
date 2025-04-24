@@ -49,12 +49,8 @@ spec:
               value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
               value: "{{ .Values.location }}"
-            - name: TELEMETRY_ENABLE
-              value: "{{ .Values.api.app.telemetry_enable }}"
             - name: TELEMETRY_ENDPOINT
               value: {{ .Values.api.app.telemetry_endpoint }}
-            - name: TELEMETRY_INSECURE
-              value: "{{ .Values.api.app.telemetry_insecure }}"
             - name: NAMESPACE
               value: {{ .Values.namespace }}
             - name: MYTHICA_API_KEY

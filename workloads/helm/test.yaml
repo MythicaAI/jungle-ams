@@ -195,7 +195,7 @@ spec:
                   name: secrets
                   key: DISCORD_INFRA_ALERTS_WEBHOOK
             - name: APP_VERSION
-              value: {{ include "api.imageVersion" (list . "mythica-app") }}
+              value: { { include "api.imageVersion" (list . "mythica-app") } }
             - name: MYTHICA_LOCATION
               value: "gke-main-us-central1"
             - name: K8S_CLUSTER_NAME
@@ -208,8 +208,6 @@ spec:
               value: "3"
             - name: API_BASE_URI
               value: https://api.mythica.ai/v1
-            - name: TELEMETRY_ENABLE
-              value: "true"
             - name: TELEMETRY_ENDPOINT
               value: http://otel-collector.default:4317
             - name: NAMESPACE
@@ -232,7 +230,7 @@ spec:
               readOnly: true
       volumes:
         - name: ephemeral-upload-vol
-          emptyDir: {}
+          emptyDir: { }
         - name: service-account-vol
           secret:
             secretName: front-end-api-sa
@@ -242,7 +240,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: 
+  name:
   namespace: api
 spec:
   replicas: 1
@@ -253,16 +251,16 @@ spec:
       maxSurge: 2
   selector:
     matchLabels:
-      app: 
+      app:
   template:
     metadata:
       labels:
         myth.tier: web
         myth.release: production
-        app: 
+        app:
     spec:
       nodeSelector:
-      terminationGracePeriodSeconds: 
+      terminationGracePeriodSeconds:
       serviceAccountName: api
       containers:
         - name: canary
@@ -561,6 +559,6 @@ spec:
   containers:
     - name: wget
       image: busybox
-      command: ['wget']
-      args: ['api.api-:80']
+      command: [ 'wget' ]
+      args: [ 'api.api-:80' ]
   restartPolicy: Never

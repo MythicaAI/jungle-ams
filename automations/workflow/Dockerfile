@@ -31,8 +31,7 @@ RUN python -m pip install \
 
 RUN poetry config --local virtualenvs.create false
 RUN poetry install --only main,infra --no-root --no-cache
-ENV TELEMETRY_ENABLE=True
-ENV TELEMETRY_ENDPOINT=otel-sidecar:4317
+ENV TELEMETRY_ENDPOINT=grpc://collector:4317
 ENV API_BASE_URI=http://app:5555/v1
 
 ENTRYPOINT ["poetry", "run", "python3.11", "workers.py"]

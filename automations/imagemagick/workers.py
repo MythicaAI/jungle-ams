@@ -1,4 +1,5 @@
 import logging
+
 from automation.crop_image import (
     CropImageRequest,
     CropImageResponse,
@@ -9,10 +10,10 @@ from ripple.config import configure_telemetry, ripple_config
 
 worker = Worker()
 
-if ripple_config().telemetry_enable:
+if ripple_config().telemetry_endpoint:
     configure_telemetry(
         ripple_config().telemetry_endpoint,
-        ripple_config().telemetry_insecure,
+        ripple_config().telemetry_token,
     )
 else:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -27,9 +28,9 @@ automations = [
 ]
 
 
-
 def main():
-    worker.start('imagemagick',automations)
+    worker.start('imagemagick', automations)
+
 
 if __name__ == "__main__":
     main()

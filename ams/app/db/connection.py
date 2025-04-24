@@ -15,11 +15,11 @@ import sqltap
 from config import app_config
 from fastapi import FastAPI, Request
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from ripple.config import ripple_config
-from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.sql import text
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+from ripple.config import ripple_config
 
 log = logging.getLogger(__name__)
 
@@ -52,9 +52,8 @@ async def db_connection_lifespan(app: FastAPI):
         echo=False,
         future=True,
         connect_args=connect_args)
-    if app_config().telemetry_enable:
+    if app_config().telemetry_endpoint:
         SQLAlchemyInstrumentor().instrument(engine=db_engine.sync_engine)
-
 
     log.info("database engine %s, driver: %s",
              db_engine.dialect.name, db_engine.dialect.driver)
@@ -123,6 +122,7 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
     async context manager to handle session state cleanup"""
     async with db_session_pool(request.app) as db_session:
         yield db_session
+
 
 def sql_profiler_decorator(func: Callable):
     """Decorator to profile SQL queries for FastAPI route handlers"""
