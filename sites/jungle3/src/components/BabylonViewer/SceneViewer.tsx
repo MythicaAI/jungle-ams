@@ -439,12 +439,13 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
             bottom: 20,
             right: 20,
             width: '40%',
-            maxHeight: '40%',
+            maxHeight: '40vh',
+            display: 'flex',
+            flexDirection: 'column',
             bgcolor: 'rgba(30, 30, 30, 0.85)',
             border: '1px solid #333',
             boxShadow: '0 0 20px rgba(0,0,0,0.5)',
             color: '#e0e0e0',
-            overflow: 'hidden',
             zIndex: 1000,
             borderRadius: '4px',
             backdropFilter: 'blur(4px)'
@@ -487,10 +488,11 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
           </Box>
           <Box
             sx={{
+              flex: 1,
+              minHeight: 0,
               fontFamily: 'monospace',
               whiteSpace: 'pre-wrap',
               padding: '12px',
-              maxHeight: 'calc(40vh - 40px)',
               overflowY: 'auto',
               fontSize: '0.85rem'
             }}
