@@ -5,6 +5,7 @@ name: web
 # storage tier services. You can run this compose set with -d (--detach)
 #
 services:
+
   sites:
     container_name: sites
     image: mythica-sites-build:latest
@@ -25,6 +26,7 @@ services:
       VITE_AWFUL_REST_URL: http://localhost:8080/v1/automation/run
       VITE_SCENE_TALK_URL: ws://localhost:8765
       VITE_MYTHICA_ENVIRONMENT: dev
+
   nginx:
     container_name: nginx
     image: mythica-web-front:latest
@@ -45,6 +47,7 @@ services:
       - web
       - storage
       - observe
+
   app:
     # network_mode: service:tailscale  # It is required by docs, but we use ports and networks so tailscale will be in host mode
     container_name: app
@@ -69,6 +72,52 @@ services:
       - web
       - storage
       - observe
+
+  worker:
+    container_name: worker
+    image: mythica-test-worker:latest
+    environment:
+      MYTHICA_ENVIRONMENT: debug
+      NATS_ENDPOINT: nats://nats:4222
+      TELEMETRY_ENABLE: True
+      TELEMETRY_ENDPOINT: otel-sidecar:4317
+      TELEMETRY_INSECURE: True
+    networks:
+      - web
+      - storage
+      - observe
+
+  packager:
+    container_name: packager
+    image: mythica-packager:latest
+    environment:
+      MYTHICA_ENVIRONMENT: debug
+      MYTHICA_ENDPOINT: http://app:5555
+      MYTHICA_API_KEY: ${MYTHICA_API_KEY}
+      NATS_ENDPOINT: nats://nats:4222
+      TELEMETRY_ENABLE: True
+      TELEMETRY_ENDPOINT: otel-sidecar:4317
+      TELEMETRY_INSECURE: True
+    networks:
+      - web
+      - storage
+      - observe
+
+  canary:
+    # network_mode: service:tailscale  # It is required by docs, but we use ports and networks so tailscale will be in host mode
+    container_name: canary
+    image: mythica-job-canary:latest
+    environment:
+      MYTHICA_ENVIRONMENT: debug
+      MYTHICA_ENDPOINT: http://app:5555
+      MYTHICA_API_KEY: ${MYTHICA_API_KEY}
+      TELEMETRY_ENABLE: True
+      TELEMETRY_ENDPOINT: otel-sidecar:4317
+      TELEMETRY_INSECURE: True
+    networks:
+      - web
+      - observe
+  
   # open telemetry side car for scraping nginx logs
   otel-collector:
     container_name: otel-sidecar

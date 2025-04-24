@@ -7,7 +7,7 @@ LABEL tier="automation"
 RUN pip install --upgrade pip && \
     pip install requests opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
 
-WORKDIR /api/canary
+WORKDIR /ams/canary
 
 # Copy local files
 COPY . .
@@ -25,8 +25,7 @@ ENV K8S_CLUSTER_NAME=localhost
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-ENV SERVICE_ENDPOINT=http://app/v1
-
+ENV MYTHICA_ENDPOINT=http://app:5555
 ENV MYTHICA_API_KEY=""
 
 # Entrypoint to bootstrap the published content
