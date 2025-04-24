@@ -193,7 +193,7 @@ export const PackageScene: React.FC = () => {
     if (wsStatus === "connected" && !requestInFlight) {
       regenerateMesh();
     }
-  }, [selectedHdaId, paramValues, inputFiles]);
+  }, [selectedHdaId, paramValues, inputFiles, jobDefinitions]);
 
   useEffect(() => {
     if (fileUpload && wsStatus === "connected" && !requestInFlight) {
