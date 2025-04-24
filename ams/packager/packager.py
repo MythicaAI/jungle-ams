@@ -9,31 +9,31 @@ import argparse
 import asyncio
 import logging
 import os
-from cryptid.cryptid import event_seq_to_id
-import requests
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Optional, Union
+from uuid import uuid4
+
+import requests
+from events.events import EventsSession
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
-from pythonjsonlogger import jsonlogger
+from repos.assets import AssetDependency, AssetFileReference, AssetVersionResult
+from routes.download.download import DownloadInfoResponse
+from routes.file_uploads import FileUploadResponse
+from telemetry_config import get_telemetry_headers
+
+from cryptid.cryptid import event_seq_to_id
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
 from ripple.automation.worker import process_guid
 from ripple.config import configure_telemetry, ripple_config
-from ripple.runtime.alerts import AlertSeverity, send_alert
 from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
-from typing import Optional, Union
-from uuid import uuid4
-from opentelemetry import trace
-from opentelemetry.context import get_current as get_current_telemetry_context
-
-from repos.assets import AssetDependency, AssetFileReference, AssetVersionResult
-from events.events import EventsSession
-from routes.download.download import DownloadInfoResponse
-from routes.file_uploads import FileUploadResponse
+from ripple.runtime.alerts import AlertSeverity, send_alert
 from sanitize_filename import sanitize_filename
-from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -52,6 +52,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webm'}
+
 
 def parse_args():
     """Parse command line arguments and provide the args structure"""
@@ -158,10 +159,10 @@ def is_houdini_file(content: DownloadInfoResponse) -> bool:
 
 
 async def generate_several_thumbnails(
-    avr: AssetVersionResult,
-    contents: list[AssetFileReference | AssetDependency | str],
-    token: str,
-    event_id: str,
+        avr: AssetVersionResult,
+        contents: list[AssetFileReference | AssetDependency | str],
+        token: str,
+        event_id: str,
 ) -> bool:
     """Request to generate several thumbnails"""
     bulk_req = BulkAutomationRequest(
@@ -206,14 +207,14 @@ def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileRe
 
 
 async def generate_several_houdini_job_defs(
-    avr: AssetVersionResult,
-    contents: list[AssetFileReference | AssetDependency | str],
-    token: str,
-    event_id: str,
+        avr: AssetVersionResult,
+        contents: list[AssetFileReference | AssetDependency | str],
+        token: str,
+        event_id: str,
 ) -> bool:
     """Request to generate several job_def"""
     bulk_req = BulkAutomationRequest(
-        is_bulk_processing= True, #len(contents) > 1,
+        is_bulk_processing=True,  # len(contents) > 1,
         event_id=event_id,
         telemetry_context=get_telemetry_headers()
     )
@@ -240,7 +241,8 @@ async def generate_several_houdini_job_defs(
     await nats.post("houdini", bulk_req.model_dump())
 
 
-async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str, event_id: str) -> bool:
+async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str,
+                                    event_id: str) -> bool:
     """Request to generate one job_def"""
     parameter_set = ParameterSet(
         hda_file=FileParameter(file_id=content.file_id),
@@ -288,7 +290,6 @@ async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse,
     nats = NatsAdapter()
     log.info("Sent NATS imagemagick task. Request: %s", event.model_dump())
     await nats.post("imagemagick", event.model_dump())
-
 
 
 def is_image_file(content: Union[AssetFileReference | AssetDependency | str]) -> bool:
@@ -462,10 +463,11 @@ def setup_logging():
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 
-
 def main():
     setup_logging()
     args = parse_args()
+    log.info("running packager against endpoint: '%s', with key: '%s***'",
+             args.endpoint, args.api_key[0:6])
     if args.asset is not None:
         log.info("asset provided, running command line mode")
         asyncio.run(console_main(

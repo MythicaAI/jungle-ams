@@ -116,6 +116,7 @@ WEB_SERVING = {
     'ams/app',
     'ams/canary',
     'ams/packager',
+    'ams/test-worker',
     'workloads/nginx',
     'workloads/lets-encrypt',
     'workloads/gcp/gcs-proxy',

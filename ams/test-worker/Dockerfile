@@ -5,8 +5,8 @@ FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 FROM python:3.11-slim AS base
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-auto-test"
-LABEL description="Automation for mythica automation test image"
+LABEL name="mythica-test-worker"
+LABEL description="Simple worker test validation"
 LABEL version="1.0.0"
 LABEL tier="auto"
 

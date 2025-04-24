@@ -4,13 +4,16 @@ import logging
 import os
 import time
 from http import HTTPStatus
-from typing import Optional
+from typing import Mapping, Optional
 
 import requests
 from opentelemetry import trace
 from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.propagate import inject
+
 from telemetry import configure_telemetry
+
+Headers = Mapping[str, str | bytes | None] | None
 
 if os.getenv("TELEMETRY_ENABLE", "False").lower() == "true":
     configure_telemetry(
@@ -23,7 +26,6 @@ else:
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 log = logging.getLogger(__name__)
-
 
 tracer = trace.get_tracer(__name__)
 
@@ -40,8 +42,8 @@ def parse_args():
 
     parser.add_argument(
         "-e", "--endpoint",
-        help="API endpoint",
-        required=True
+        help="API endpoint e.g. https://api.mythica.gg",
+        default="http://localhost:5555"
     )
 
     parser.add_argument(
@@ -54,7 +56,7 @@ def parse_args():
 
 
 def find_or_create_profile(endpoint: str) -> str:
-    response = requests.get(f"{endpoint}/profiles/named/{PROFILE_NAME}?exact=true")
+    response = requests.get(f"{endpoint}/v1/profiles/named/{PROFILE_NAME}?exact=true")
     response.raise_for_status()
     profiles = response.json()
     if len(profiles) == 1:
@@ -65,28 +67,28 @@ def find_or_create_profile(endpoint: str) -> str:
         "email": "donotreply+canary@mythica.ai",
         "description": "Mythica canary test profile",
     }
-    response = requests.post(f"{endpoint}/profiles/", json=profile_json)
+    response = requests.post(f"{endpoint}/v1/profiles/", json=profile_json)
     response.raise_for_status()
     return response.json()['profile_id']
 
 
-def start_session(endpoint: str, api_key: str, headers={}) -> str:
-    url = f"{endpoint}/sessions/key/{api_key}"
-    response = requests.get(url, timeout=10, headers=headers)
+def start_session(endpoint: str, api_key: str, headers=None) -> str:
+    url = f"{endpoint}/v1/sessions/key/{api_key}"
+    response = requests.get(url, timeout=10, headers=headers or {})
     response.raise_for_status()
 
     result = response.json()
     return result['token']
 
 
-def upload_file(endpoint: str, headers: str, file_path: str) -> str:
+def upload_file(endpoint: str, headers: Headers, file_path: str) -> str:
     page_size = 256 * 1024
     sha1 = hashlib.sha1()
     with open(file_path, "rb") as file:
         content = file.read(page_size)
         content_hash = sha1.update(content)
     digest = sha1.hexdigest()
-    response = requests.get(f"{endpoint}/files/by_content/{digest}",
+    response = requests.get(f"{endpoint}/v1/files/by_content/{digest}",
                             headers=headers)
 
     # return the file_id if the content digest already exists
@@ -103,7 +105,7 @@ def upload_file(endpoint: str, headers: str, file_path: str) -> str:
     with open(file_path, 'rb') as file:
         file_name = os.path.basename(file_path)
         file_data = [('files', (file_name, file, 'application/octet-stream'))]
-        response = requests.post(f"{endpoint}/upload/store", headers=headers, files=file_data)
+        response = requests.post(f"{endpoint}/v1/upload/store", headers=headers, files=file_data)
         response.raise_for_status()
         result = response.json()
         file = result['files'][0]
@@ -114,7 +116,7 @@ def upload_file(endpoint: str, headers: str, file_path: str) -> str:
 
 
 def get_job_def(endpoint: str, file_id: str) -> Optional[str]:
-    url = f"{endpoint}/jobs/definitions"
+    url = f"{endpoint}/v1/jobs/definitions"
     response = requests.get(url, timeout=60)
     response.raise_for_status()
 
@@ -129,7 +131,7 @@ def get_job_def(endpoint: str, file_id: str) -> Optional[str]:
     raise ValueError("Missing job definition")
 
 
-def request_job(endpoint: str, headers: str, job_def_id: str, mesh_file_id: str) -> str:
+def request_job(endpoint: str, headers: Headers, job_def_id: str, mesh_file_id: str) -> str:
     body = {
         "job_def_id": job_def_id,
         "params": {
@@ -138,7 +140,7 @@ def request_job(endpoint: str, headers: str, job_def_id: str, mesh_file_id: str)
         }
     }
 
-    url = f"{endpoint}/jobs/"
+    url = f"{endpoint}/v1/jobs/"
     response = requests.post(url, headers=headers, timeout=10, json=body)
     response.raise_for_status()
 
@@ -146,8 +148,8 @@ def request_job(endpoint: str, headers: str, job_def_id: str, mesh_file_id: str)
     return result['job_id']
 
 
-def check_job_status(endpoint: str, headers: str, job_id: str) -> Optional[str]:
-    url = f"{endpoint}/jobs/results/{job_id}"
+def check_job_status(endpoint: str, headers: Headers, job_id: str) -> Optional[str]:
+    url = f"{endpoint}/v1/jobs/results/{job_id}"
     response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
 
@@ -165,7 +167,7 @@ def check_job_status(endpoint: str, headers: str, job_id: str) -> Optional[str]:
     raise Exception("Job failed to generate mesh.")
 
 
-def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
+def get_job_result(endpoint: str, headers: Headers, job_id: str) -> str:
     start_time = time.time()
     while True:
         result_file_id = check_job_status(endpoint, headers, job_id)
@@ -176,15 +178,15 @@ def get_job_result(endpoint: str, headers: str, job_id: str) -> str:
         time.sleep(1)
 
 
-def delete_job_defs(endpoint: str, headers: str) -> str:
-    url = f"{endpoint}/jobs/definitions/delete_canary_jobs_def"
+def delete_job_defs(endpoint: str, headers: Headers) -> None:
+    url = f"{endpoint}/v1/jobs/definitions/delete_canary_jobs_def"
     response = requests.delete(url, headers=headers, timeout=10)
     response.raise_for_status()
     log.info(f"Job defs successfully deleted")
 
 
 def run_test(endpoint: str, api_key: str):
-    log.info("Starting test")
+    log.info("running canary against endpoint: '%s', with key: '%s***'", endpoint, api_key[0:6])
 
     profile_id = find_or_create_profile(endpoint)
     log.info(f"Using profile: {profile_id}")
@@ -195,7 +197,7 @@ def run_test(endpoint: str, api_key: str):
     token = start_session(endpoint, api_key, headers=telemetry_headers)
     headers = {"Authorization": f"Bearer {token}"}
     headers.update(telemetry_headers)
-    log.info(f"Got token: {token}")
+    log.info(f"Started session")
 
     hda_file_id = upload_file(endpoint, headers, HDA_FILE)
     log.info(f"Using HDA: {hda_file_id}")

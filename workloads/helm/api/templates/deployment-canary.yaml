@@ -31,8 +31,8 @@ spec:
           env:
             - name: MYTHICA_ENVIRONMENT
               value: "{{ .Values.release }}"
-            - name: SERVICE_ENDPOINT
-              value: http://app/v1
+            - name: MYTHICA_ENDPOINT
+              value: http://app
             - name: APP_VERSION
               value: {{ include "api.imageVersion" (list . "mythica-job-canary") }}
             - name: MYTHICA_LOCATION
