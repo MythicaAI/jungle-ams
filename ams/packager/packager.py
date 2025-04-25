@@ -355,9 +355,13 @@ async def create_zip_from_asset(
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
         if worker_job_defs:
             await generate_several_houdini_job_defs(v, worker_job_defs, token, event_id)
-        worker_thumbnails = [c for c in v.contents.get('thumbnails', []) if is_image_file(c)]
-        if worker_thumbnails:
-            await generate_several_thumbnails(v, worker_thumbnails, token, event_id)
+
+        # TODO-jrepp: thumbnail generation is currently not working
+        generate_thumbnails = False
+        if generate_thumbnails:
+            worker_thumbnails = [c for c in v.contents.get('thumbnails', []) if is_image_file(c)]
+            if worker_thumbnails:
+                await generate_several_thumbnails(v, worker_thumbnails, token, event_id)
 
 
 async def upload_package(
