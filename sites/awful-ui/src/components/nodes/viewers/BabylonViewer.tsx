@@ -5,6 +5,7 @@ interface HTML3DElementAttributes
   extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> {
   source?: string;
   environment?: string;
+  engine?: string;
 }
 
 declare global {    // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -27,7 +28,13 @@ const BabylonViewer: React.FC<BabylonViewerProps> = ({ src, environment, style }
 
   return (
     <div style={style}>
-      <babylon-viewer source={src} environment={environment ? environment : STUDIO_ENVIRONMENT}></babylon-viewer>
+      <babylon-viewer 
+        source={src} 
+        environment={environment ? environment : STUDIO_ENVIRONMENT}
+        engine="WebGL"
+
+      >
+      </babylon-viewer>
     </div>
   );
 };

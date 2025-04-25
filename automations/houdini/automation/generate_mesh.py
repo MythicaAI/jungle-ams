@@ -44,10 +44,10 @@ def apply_single_param(asset, key, value):
             try:
                 basis.append(RampBasis[point["interp"]].value)
                 keys.append(float(point["pos"]))
-                if point["value"]:
+                if "value" in point:
                     values.append(float(point["value"]))
-                elif point["c"]:
-                    values.append(hou.Vector3(float(point["c"])))
+                elif "c" in point:
+                    values.append(hou.Vector3([float(point["c"][i]) for i in range(3)]))
             except KeyError as e:
                 raise ValueError(f"Invalid key in ramp parameter: {e}") from e
             except Exception as e:

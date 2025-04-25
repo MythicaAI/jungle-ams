@@ -6,7 +6,6 @@ import Split from 'react-split';
 import useMythicaApi from '../../hooks/useMythicaApi';
 import useAwfulFlow from '../../hooks/useAwfulFlow';
 
-import USDViewer from './viewers/USDViewer';
 import CodeViewer from './viewers/CodeViewer';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
@@ -92,7 +91,7 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
 
       return dInfos;
     },
-    [getDownloadInfo, setFlowData, node.id]
+    [getDownloadInfo]
   );
 
   /**
@@ -342,18 +341,6 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                         language="txt"
                         fileUrl={fileInfo.url}
                       />
-                      ) : fileInfo.content_type === 'application/usd' ||
-                        fileInfo.content_type === 'application/usdz' ? (
-                        <USDViewer
-                          src={fileInfo.url}
-                          alt={fileInfo.name}
-                          style={{
-                            height: '100vh',
-                            width: '100vh',
-                            minHeight: '480px',
-                            minWidth: '640px',
-                          }}
-                        />
                       ) : [
                           '3dm',
                           '3ds',
