@@ -4,17 +4,6 @@ name: automation
 # This docker compose creates a testing environment for automation tier services. 
 #
 services:
-  packager:
-    container_name: packager
-    image: mythica-packager:latest
-    networks:
-      - web
-      - storage
-    environment:
-      MYTHICA_ENVIRONMENT: debug
-      ENV DISCORD_INFRA_ALERTS_WEBHOOK: localhost
-      MYTHICA_ENDPOINT: http://app:5555
-      MYTHICA_API_KEY: ${MYTHICA_API_KEY}
   houdini-worker:
     container_name: houdini
     image: mythica-auto-houdini:latest
