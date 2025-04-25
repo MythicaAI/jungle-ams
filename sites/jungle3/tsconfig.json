@@ -18,7 +18,8 @@
       "@store/*": ["./src/stores/*"],
       "@assets/*": ["./src/assets/*"],
       "types/*": ["./src/types/*"],
-      "houdini-ui": ["../libs/houdini-ui/src"]
+      "houdini-ui": ["../libs/houdini-ui/src"],
+      "scenetalk": ["../libs/scenetalk/src"],
     },
 
     /* Bundler mode */

@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import SceneViewer from "@components/BabylonViewer/SceneViewer";
 import SceneControls from "@components/BabylonViewer/SceneControls";
 import { useSceneStore } from "@store/sceneStore";
-import { SceneTalkConnection } from "../services/sceneTalkConnection";
+import { SceneTalkConnection } from "scenetalk";
 import { useWindowSize } from "@hooks/useWindowSize";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
@@ -52,6 +52,7 @@ export const PackageScene: React.FC = () => {
     setPendingRequest,
     exportFormat,
     setExportFormat,
+    reset
   } = useSceneStore();
 
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ export const PackageScene: React.FC = () => {
   useEffect(() => {
     const wsService = wsServiceRef.current;
     if (!wsService) return;
-
+    reset();
     wsService.setHandlers({
       onStatusChange: (status) => {
         setWsStatus(status);
@@ -337,5 +338,5 @@ export const PackageScene: React.FC = () => {
         <SceneViewer packageName={assetVersion?.name as string} />
       </Box>
     </>
-  );
+  )
 };

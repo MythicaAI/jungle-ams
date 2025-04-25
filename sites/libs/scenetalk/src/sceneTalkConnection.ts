@@ -1,4 +1,3 @@
-import { AssetVersionContent } from "types/apiTypes";
 import { v4 as uuid } from "uuid";
 
 
@@ -126,7 +125,7 @@ export class SceneTalkConnection {
     }
   }
 
-  sendCookRequestById(hdaFileId: string, dependencyFileIds: string[], params: {[key: string]: any}, inputFiles: {[key:string]: AssetVersionContent}, format: string = "raw") {
+  sendCookRequestById(hdaFileId: string, dependencyFileIds: string[], params: {[key: string]: any}, inputFiles: {[key:string]: {file_id: string, [k: string]: any}}, format: string = "raw") {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
       if (this.handlers.onStatusLog) {
@@ -144,11 +143,9 @@ export class SceneTalkConnection {
     this.requestInFlight = true;
     this.requestStartTime = performance.now();
 
-    const files: { [key: string]: { file_id: string } } = {};
+    const files: { [key: string]: { file_id: string, [additionalKey: string]: any } } = {};
     Object.entries(inputFiles).forEach(([key, file]) => {
-      files[key] = {
-        "file_id": file.file_id
-      };
+      files[key] = { ...file };
     });
      
     const cookMessage = {
@@ -227,55 +224,6 @@ export class SceneTalkConnection {
     reader.readAsDataURL(file);         
   }
   
-  // Send a cook request with file upload
-  // Send a cook request to generate a mesh
-  sendCookRequest(hdaFilePath: string, params: {[key: string]: any}, format: string = "raw") {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket is not connected");
-      if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Failed to send request: Connection not open");
-      }
-      this.attemptReconnect();
-      return false;
-    }
-
-    if (this.requestInFlight) {
-      this.pendingRequest = true;
-      return false;
-    }
-
-    this.requestInFlight = true;
-    this.requestStartTime = performance.now();
-
-    // Create cook message with dynamic parameters
-    const cookMessage = {
-      "op": "cook",
-      "data": {
-        "hda_path": {
-          "file_id": "file_xxx",
-          "file_path": hdaFilePath
-        },
-        "definition_index": 0,
-        "format": format,
-        ...params  // Spread all parameters
-      }
-    };
-    console.log("Sending cook message:", cookMessage);
-    try {
-      this.ws.send(JSON.stringify(cookMessage));
-      if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Sent cook request to server");
-      }
-      return true;
-    } catch (error) {
-      console.error("Error sending cook message:", error);
-      if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog(`Error sending request: ${error}`);
-      }
-      this.requestInFlight = false;
-      return false;
-    }
-  }
 
   // Handle incoming WebSocket messages
   private handleMessage(data: any) {
