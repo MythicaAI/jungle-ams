@@ -363,8 +363,8 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                         <O3dViewer
                           model={[fileInfo.url]}
                           style={{
-                            height: '100vh',
-                            width: '100vh',
+                            height: '100%',
+                            width: '100%',
                             minHeight: '480px',
                             minWidth: '640px',
                           }}
@@ -374,8 +374,8 @@ const FileViewerNode: React.FC<FileViewerNodeProps> = (node) => {
                         <BabylonViewer
                           src={fileInfo.url}
                           style={{
-                            height: '100vh',
-                            width: '100vh',
+                            height: '100%',
+                            width: '100%',
                             minHeight: '480px',
                             minWidth: '640px',
                           }}

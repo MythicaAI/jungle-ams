@@ -83,7 +83,7 @@ class Image2MaterialRequest(GenericApiRequest):
     lowres_to_highres_scale_factor: LowresToHighresScaleFactor =LowresToHighresScaleFactor.X1
 
 class Text2ThreeDRequest(GenericApiRequest):
-    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/text_2_3d") 
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/text_to_3d") 
     accept: str = "application/x-www-form-urlencoded"
     prompt: str
     seed: int= 1
@@ -95,7 +95,7 @@ class Text2ThreeDRequest(GenericApiRequest):
 
 
 class ThreeD2ThreeDRequest(GenericApiRequest):
-    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/3d_2_3d") 
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/3d_to_3d") 
     accept: str = "application/x-www-form-urlencoded"
     base_mesh: FileParameter
     prompt: str
@@ -107,7 +107,7 @@ class ThreeD2ThreeDRequest(GenericApiRequest):
     slat_sampler_params_cfg_strength: float = 3.0
 
 class Image2ThreeDRequest(GenericApiRequest):
-    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/image_2_3d") 
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/image_to_3d") 
     accept: str = "application/x-www-form-urlencoded"
     image: FileParameter
     seed: int= 1
@@ -120,7 +120,7 @@ class Image2ThreeDRequest(GenericApiRequest):
     slat_sampler_params_cfg_strength: float = 3.0
 
 class MultiImage2ThreeDRequest(GenericApiRequest):
-    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://http://52.86.105.54:5555/multi_image_2_3d") 
+    api_endpoint: str = os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/multi_image_to_3d") 
     accept: str = "application/x-www-form-urlencoded"
     images: list[FileParameter]
     prompt: str
@@ -139,13 +139,37 @@ def api_request(request: GenericApiRequest, responder: ResultPublisher) -> ApiRe
         raise ValueError("Backend error. `Accept` must be either application/json or application/x-www-form-urlencoded")
     
     if request.accept == "application/x-www-form-urlencoded":
-        # Convert the request to form data
-        form_data = {k: v for k, v in request.dict().items() if k != "api_endpoint"}
-        # Send the request
-        response = requests.post(
-            request.api_endpoint, 
-            data=form_data,
-            timeout=request.timeout)
+        # Prepare form fields and files
+        raw = request.model_dump()
+        form_data = {}
+        files = {}
+        for k, v in raw.items():
+            print(f"key: {k}, value: {v}")
+            if k == "api_endpoint":
+                continue
+            # single file
+            if isinstance(v, dict) and 'file_path' in v:
+                fpath = v['file_path']
+                print(f"key: {k}, value: {fpath}")
+                files[k] = open(fpath, "rb")
+            # list of files
+            elif isinstance(v, list) and v and isinstance(v[0], dict) and 'file_path' in v[0]:
+                for idx, fp in enumerate(v):
+                    fpath = fp['file_path']
+                    print(f"key: {k}, value: {fpath}")
+                    files[f"{k}[{idx}]"] = open(fpath, "rb")
+            else:
+                form_data[k] = v
+        try:
+            response = requests.post(
+                request.api_endpoint,
+                data=form_data,
+                files=files,
+                timeout=request.timeout,
+            )
+        finally:
+            for f in files.values():
+                f.close()
     else:
         # Send the request
         response = requests.post(request.api_endpoint, json=request.model_dump_json())
