@@ -17,7 +17,7 @@ jobs:
     environment: main
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     env:
       NODE_ENV: "production"
