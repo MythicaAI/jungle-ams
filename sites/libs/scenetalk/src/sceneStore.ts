@@ -1,21 +1,5 @@
 import { create } from "zustand";
-import { JobDefinition } from "@queries/packages/types";
-import { AssetVersionResponse, AssetVersionContent } from "types/apiTypes";
-
-
-// Mesh data type
-export interface MeshData {
-  points: number[];
-  indices: number[];
-  normals?: number[];
-  uvs?: number[];
-  colors?: number[];
-}
-
-export interface PackageMaterials {
-  name: string;
-  material_name: string;
-}
+import { InputFile, MeshData } from "./types";
 
 
 // WebSocket status
@@ -23,21 +7,13 @@ export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
 
 // Store interface
 interface SceneState {
-  packageMaterials: PackageMaterials[];
-
     // HDA schemas and selection
   selectedHdaId: string | null;
   setSelectedHdaId: (selectedHdaId: string) => void;
 
-  assetVersion: AssetVersionResponse | null;
-  setAssetVersion: (assetVersion: AssetVersionResponse) => void;
-
-  jobDefinitions: JobDefinition[];
-  setJobDefinitions: (jobDefs: JobDefinition[]) => void;
-
-  inputFiles: { [key: string]:AssetVersionContent };
-  setInputFiles: (filesByInput: { [key: string]:AssetVersionContent }) => void;
-  setInputFile: (key: string, file: AssetVersionContent) => void;
+  inputFiles: { [key: string]: InputFile };
+  setInputFiles: (filesByInput: { [key: string]:InputFile }) => void;
+  setInputFile: (key: string, file: InputFile) => void;
 
   // Parameter values
   paramValues: { [key: string]: any };
@@ -93,42 +69,9 @@ interface SceneState {
 let pendingLogs: string[] = [];
 let flushTimeout: NodeJS.Timeout | null = null;
 
-const materials: PackageMaterials[] = [
-  {
-    name: "Crystals",
-    material_name: "crystal",
-  },
-  {
-    name: "RockGenerator",
-    material_name: "rock",
-  },
-  {
-    name: "Rockify",
-    material_name: "rockface",
-  },
-  {
-    name: 'Succulents',
-    material_name: 'plant',
-  },
-  {
-    name: 'Saguaro',
-    material_name: 'cactus',
-  }
-];
-
 export const useSceneStore = create<SceneState>((set) => ({
-  packageMaterials: materials,
-
   selectedHdaId: null,
   setSelectedHdaId: (selectedHdaId) => set({ selectedHdaId: selectedHdaId }),
-
-  assetVersion: null,
-  setAssetVersion: (assetVersion) => set({ assetVersion: assetVersion }),
-
-  // Job definition
-  jobDefinitions: [],
-  setJobDefinitions: (jobDefs) => set({ jobDefinitions: jobDefs }),
-
 
   // Input files
   inputFiles: {},

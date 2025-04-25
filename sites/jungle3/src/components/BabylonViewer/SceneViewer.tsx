@@ -3,7 +3,7 @@ import { Box } from '@mui/joy';
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/inspector";
 import "@babylonjs/node-geometry-editor";
-import { useSceneStore } from '@store/sceneStore';
+import { useSceneStore } from 'scenetalk';
 
 // Material names
 const DEFAULT_MATERIAL = "default_mat";
@@ -32,7 +32,6 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
 }) => {
   // Get state from the store
   const {
-    packageMaterials,
     isWireframe,
     meshData,
     showLogWindow,
@@ -40,6 +39,35 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     setShowLogWindow
   } = useSceneStore();
 
+  interface PackageMaterials {
+    name: string;
+    material_name: string;
+  }
+  
+  const packageMaterials: PackageMaterials[] = [
+    {
+      name: "Crystals",
+      material_name: "crystal",
+    },
+    {
+      name: "RockGenerator",
+      material_name: "rock",
+    },
+    {
+      name: "Rockify",
+      material_name: "rockface",
+    },
+    {
+      name: 'Succulents',
+      material_name: 'plant',
+    },
+    {
+      name: 'Saguaro',
+      material_name: 'cactus',
+    }
+  ];
+  
+  
   // Get the current HDA schema
   const currentSchema = packageMaterials.find((pm) => pm.name === packageName);
 

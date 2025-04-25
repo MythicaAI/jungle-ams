@@ -7,22 +7,23 @@ import {
     CircularProgress
 } from "@mui/joy";
 import React, { useEffect, useCallback } from "react";
-import { useSceneStore } from "@store/sceneStore";
+import { useSceneStore } from "scenetalk";
 import { Engine } from "@babylonjs/core"
 import "@babylonjs/node-geometry-editor";
 import { dictionary, hou, ParmGroup } from "houdini-ui";
-import { AssetVersionContent } from "types/apiTypes";
+import { AssetVersionResponse, AssetVersionContent } from "types/apiTypes";
+import { JobDefinition } from "@queries/packages/types";
 
 const getScene = () => Engine.LastCreatedScene;
 
 type Props = {
     width: number;
+    jobDefinitions: JobDefinition[] | undefined;
+    assetVersion: AssetVersionResponse | null;
 };
 
-const SceneControls: React.FC<Props> = ({ width }) => {
+const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) => {
     const {
-        assetVersion,
-        jobDefinitions,
         selectedHdaId,
         setSelectedHdaId,
         setInputFile,

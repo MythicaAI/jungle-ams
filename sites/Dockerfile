@@ -28,6 +28,8 @@ ARG NODE_ENV=production
 WORKDIR /build/libs/houdini-ui
 RUN pnpm run build -m "${NODE_ENV}"
 
+WORKDIR /build/libs/scenetalk
+RUN pnpm run build -m "${NODE_ENV}"
 
 # Build the remaining projects
 WORKDIR /build/awful-ui
