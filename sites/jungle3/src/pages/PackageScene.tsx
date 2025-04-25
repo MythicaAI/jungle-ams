@@ -16,7 +16,7 @@ import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import SceneViewer from "@components/BabylonViewer/SceneViewer";
 import SceneControls from "@components/BabylonViewer/SceneControls";
-import { useSceneStore } from "@store/sceneStore";
+import { useSceneStore } from "scenetalk";
 import { SceneTalkConnection } from "scenetalk";
 import { useWindowSize } from "@hooks/useWindowSize";
 import { useNavigate, useParams } from "react-router-dom";
@@ -36,8 +36,6 @@ export const PackageScene: React.FC = () => {
   const {
     wsStatus,
     setWsStatus,
-    setAssetVersion,
-    setJobDefinitions,
     selectedHdaId,
     paramValues,
     fileUpload,
@@ -60,21 +58,8 @@ export const PackageScene: React.FC = () => {
   const { data: jobDefinitions } =
     useGetJobDefinition(asset_id as string, (version_id as string)?.split("."));
 
-  useEffect(() => {
-    if (jobDefinitions)
-      setJobDefinitions(jobDefinitions);
-  }
-    , [jobDefinitions]);
-
   const { data: assetVersion } =
     useGetAssetByVersion(asset_id as string, version_id as string);
-
-  useEffect(() => {
-    if (assetVersion)
-      setAssetVersion(assetVersion);
-  }
-    , [assetVersion]);
-
 
   // Initialize WebSocket service
   useEffect(() => {
@@ -169,17 +154,22 @@ export const PackageScene: React.FC = () => {
 
     // Set request in flight
     setRequestInFlight(true);
+    try {
 
-    const dependencyFileIds = jobDef.params_schema.params['dependencies'].default;
+      const dependencyFileIds = jobDef.params_schema.params['dependencies']?.default || [];
 
-    // Send the cook request with all parameters for the current HDA
-    wsServiceRef.current.sendCookRequestById(
-      selectedHdaId as string,
-      dependencyFileIds as string[],
-      paramValues,
-      inputFiles,
-      format,
-    );
+      // Send the cook request with all parameters for the current HDA
+      wsServiceRef.current.sendCookRequestById(
+        selectedHdaId as string,
+        dependencyFileIds as string[],
+        paramValues,
+        inputFiles,
+        format,
+      );
+    } catch (error) {
+      console.error("Error sending cook request:", error);
+      setRequestInFlight(false);
+    }
   };
 
   // Watch for export format changes
@@ -304,7 +294,10 @@ export const PackageScene: React.FC = () => {
                 flexDirection: "column",
               }}
             >
-              <SceneControls width={390} />
+              <SceneControls 
+                width={390} 
+                assetVersion={assetVersion}
+                jobDefinitions={jobDefinitions}/>
             </Box>
           </>
         ) : (
@@ -329,6 +322,8 @@ export const PackageScene: React.FC = () => {
               <DialogContent>
                 <SceneControls
                   width={currentWidth - 40}
+                  assetVersion={assetVersion}
+                  jobDefinitions={jobDefinitions}
                 />
               </DialogContent>
             </ModalDialog>

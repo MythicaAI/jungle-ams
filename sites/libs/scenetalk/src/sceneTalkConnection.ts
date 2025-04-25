@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-
+import { InputFile } from "./types"; 
 
 // SceneTalk WebSocket Service
 export class SceneTalkConnection {
@@ -125,7 +125,7 @@ export class SceneTalkConnection {
     }
   }
 
-  sendCookRequestById(hdaFileId: string, dependencyFileIds: string[], params: {[key: string]: any}, inputFiles: {[key:string]: {file_id: string, [k: string]: any}}, format: string = "raw") {
+  sendCookRequestById(hdaFileId: string, dependencyFileIds: string[], params: {[key: string]: any}, inputFiles: {[key:string]: InputFile}, format: string = "raw") {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
       if (this.handlers.onStatusLog) {
