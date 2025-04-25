@@ -69,16 +69,17 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         file.file_name.includes(".hda"),
       );
 
-    const availableInputFiles =
+    const [availableInputFiles, setAvailableInputFiles] = React.useState<AssetVersionContent[]>(
         assetVersion?.contents?.files.filter(
-        (file) =>
-            file.file_name.endsWith(".usd") ||
-            file.file_name.endsWith(".usz") ||
-            file.file_name.includes(".glb") ||
-            file.file_name.includes(".gltf") ||
-            file.file_name.includes(".fbx") ||
-            file.file_name.includes(".obj"),
-        ) || [];
+            (file) =>
+                file.file_name.endsWith(".usd") ||
+                file.file_name.endsWith(".usz") ||
+                file.file_name.includes(".glb") ||
+                file.file_name.includes(".gltf") ||
+                file.file_name.includes(".fbx") ||
+                file.file_name.includes(".obj"),
+            ) || []
+    );
 
     const handleParmChange = useCallback(
         (formData: dictionary) => {
@@ -98,7 +99,34 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
             setFileUpload(file,callback);
         },[setFileUpload]
     )
-
+    const handleInputFileUpload = useCallback(
+        (file: File) => {
+            if (!file) return;
+            if (
+                file.name.endsWith(".usd") ||
+                file.name.endsWith(".usz") ||
+                file.name.includes(".glb") ||
+                file.name.includes(".gltf") ||
+                file.name.includes(".fbx") ||
+                file.name.includes(".obj")
+            ) {
+                const uploadCb = (file_id: string) => {
+                    const assetFile: AssetVersionContent = {
+                        file_id: file_id,
+                        file_name: file.name,
+                        content_hash:  "",
+                        size: file.size,
+                    } 
+                    setAvailableInputFiles((prevFiles) => [
+                        ...prevFiles, 
+                        assetFile
+                    ]);
+                        
+                }
+                setFileUpload(file,uploadCb);
+            }
+        },[setFileUpload]
+    )
     useEffect(() => {
         if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
             setSelectedHdaId(hdaFiles[0].file_id);
@@ -256,6 +284,31 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                             {selectedJobData?.name}
                         </Typography>
                     )}
+                    {inputFileParms.length > 0 && (
+                        <>
+                        <Typography
+                            level="h4" 
+                            fontSize="medium"
+                            textAlign="left">
+                            Add Files
+                        </Typography>
+                        <div 
+                            className="field"
+                            style={{ marginBottom: "10px"}}>
+                        <input type="file" 
+                            style={{width: "100%"}}
+                            onChange={(e:React.ChangeEvent<HTMLInputElement>) => {
+                                const file = e.target.files?.[0];
+                            
+                                if (file) {
+                                    handleInputFileUpload(file)
+                                }
+                            }}
+                        />
+                        </div>
+                        </>
+                    )}
+
                     {availableInputFiles.length > 0 && (
                         <>
                             <Typography 

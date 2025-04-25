@@ -194,8 +194,32 @@ export class SceneTalkConnection {
       this.attemptReconnect();
       return false;
     }
-
-    const contentType = file.type || "application/octet-stream";
+    let file_type = file.type;
+    if (!file_type) {
+      switch (file.name.split('.').pop()) {
+        case "usdz":
+          file_type = "application/usdz"
+          break;
+        case "usd":
+          file_type = "application/usd"
+          break;
+        case "glb":
+          file_type = "application/gltb"
+          break;
+        case "gltf":
+          file_type = "application/gltf"
+          break;
+        case "fbx":
+          file_type = "application/fbx"
+          break;
+        case "obj":
+          file_type = "application/obj"
+          break;
+        default:
+          file_type = "application/octet-stream";
+      }
+    }
+    const contentType = file_type;
 
     const reader = new FileReader();
     reader.onload = async () => {
