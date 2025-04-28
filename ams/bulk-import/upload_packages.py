@@ -1032,24 +1032,15 @@ class PackageUploader(object):
         """
         resolved: list[dict] = []
         for name in dep_names:
-            # 1. locate asset by exact name
             r = self.conn_pool.get(f"{self.endpoint}/v1/assets/named/{name}?exact=true")
             r.raise_for_status()
             assets = r.json()
             if not assets:
                 raise ValueError(f"Dependency '{name}' not found")
-            asset_id = assets[0]["asset_id"]
-
-            # 2. grab newest version
-            v_resp = self.conn_pool.get(f"{self.endpoint}/v1/assets/{asset_id}")
-            v_resp.raise_for_status()
-            versions = v_resp.json()
-            if not versions:
-                raise ValueError(f"Dependency '{name}' ({asset_id}) has no versions")
 
             resolved.append(AssetDependency(
-                asset_id=asset_id,
-                version=versions[0]["version"],
+                asset_id=assets[0]["asset_id"],
+                version=assets[0]["version"],
             ))
 
         return resolved
