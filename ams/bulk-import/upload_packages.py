@@ -964,7 +964,6 @@ class PackageUploader(object):
             'published': not package.draft,
         }
 
-        log.info("Creating version: %s", asset_ver_json)
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = self.conn_pool.post(assets_url,
@@ -1054,7 +1053,6 @@ class PackageUploader(object):
                 version=versions[0]["version"],
             ))
 
-        log.info("Resolved dependencies: %s", resolved)
         return resolved
 
 

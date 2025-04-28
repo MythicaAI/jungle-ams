@@ -371,9 +371,7 @@ async def create_zip_from_asset(
         event_id = event_seq_to_id(event_seq)
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
         if worker_job_defs:
-            log.info("Resolving dependencies %s", v.contents.get('dependencies', []))
             dependencies = gather_hda_dependencies(endpoint, worker_job_defs, v.contents.get('dependencies', []))
-            log.info("Resolved dependencies: %s", dependencies)
             await generate_several_houdini_job_defs(v, worker_job_defs, dependencies, token, event_id)
 
         # TODO-jrepp: thumbnail generation is currently not working
