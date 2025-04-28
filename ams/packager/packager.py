@@ -199,28 +199,25 @@ async def generate_several_thumbnails(
     await nats.post("imagemagick", bulk_req.model_dump())
 
 
-def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str], dependent_packages: list[dict]) -> \
+def gather_hda_dependencies(endpoint: str, contents: list[AssetFileReference | AssetDependency | str], dependent_packages: list[AssetDependency]) -> \
         list[FileParameter]:
     dependencies = []
 
+    # Gather all HDA files in dependent packages
     for dep in dependent_packages:
-        version_str = '.'.join(map(str, dep['version']))
-        url = f"/assets/{dep['asset_id']}/versions/{version_str}/contents"
-        
-        response = requests.get(url)
-        if response.status_code == 200:
-            package_contents = response.json()
-            
-            for content in package_contents['files']:
-                if is_houdini_file(content):
-                    dependencies.append(FileParameter(file_id=content['file_id']))
-        else:
-            log.warning("Failed to fetch package %s version %s: %s", 
-                       dep['asset_id'], version_str, response.status_code)
+        versions = get_versions(endpoint, dep.asset_id, dep.version)
+        if len(versions) == 0:
+            log.warning("No versions found for asset %s version %s", dep.asset_id, dep.version)
+            continue
 
-    # Assume all other HDA files inside the package are dependencies
+        version = versions[0]
+        for content in get_file_contents(version):
+            if is_houdini_file(content):
+                dependencies.append(FileParameter(file_id=content.file_id))
+
+    # Assume all HDA files inside the package are dependencies
     for content in contents:
-        if is_houdini_file(content) and content.file_id != file.file_id:
+        if is_houdini_file(content):
             dependencies.append(FileParameter(file_id=content.file_id))
 
     return dependencies
@@ -229,6 +226,7 @@ def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileRe
 async def generate_several_houdini_job_defs(
         avr: AssetVersionResult,
         contents: list[AssetFileReference | AssetDependency | str],
+        dependencies: list[FileParameter],
         token: str,
         event_id: str,
 ) -> bool:
@@ -239,10 +237,10 @@ async def generate_several_houdini_job_defs(
         telemetry_context=get_telemetry_headers()
     )
     for content in contents:
-        dependencies = gather_hda_dependencies(content, contents, avr.contents.get('dependencies', []))
+        filtered_deps = [d for d in dependencies if d.file_id != content.file_id]
         parameter_set = ParameterSet(
             hda_file=FileParameter(file_id=content.file_id),
-            dependencies=dependencies,
+            dependencies=filtered_deps,
             src_asset_id=avr.asset_id,
             src_version=avr.version,
         )
@@ -373,7 +371,10 @@ async def create_zip_from_asset(
         event_id = event_seq_to_id(event_seq)
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
         if worker_job_defs:
-            await generate_several_houdini_job_defs(v, worker_job_defs, token, event_id)
+            log.info("Resolving dependencies %s", v.contents.get('dependencies', []))
+            dependencies = gather_hda_dependencies(endpoint, worker_job_defs, v.contents.get('dependencies', []))
+            log.info("Resolved dependencies: %s", dependencies)
+            await generate_several_houdini_job_defs(v, worker_job_defs, dependencies, token, event_id)
 
         # TODO-jrepp: thumbnail generation is currently not working
         generate_thumbnails = False

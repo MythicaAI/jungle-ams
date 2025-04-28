@@ -24,7 +24,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from connection_pool import ConnectionPool
 from log_config import log_config
-from models import FileRef, OrgResponse, PackageFile, PackageModel, ProcessedPackageModel
+from models import FileRef, AssetDependency, OrgResponse, PackageFile, PackageModel, ProcessedPackageModel
 from perforce import parse_perforce_change, run_p4_command
 
 tempdir = tempfile.TemporaryDirectory()
@@ -596,6 +596,10 @@ class PackageUploader(object):
                  len(package.asset_contents['thumbnails']),
                  package.latest_version)
 
+        # resolve dependencies
+        if package.dependencies:
+            package.asset_contents['dependencies'] = self.resolve_dependencies(package.dependencies)
+
         # Version bumping, duplicate existing version for check
         last_commit_ref = package.commit_ref
         last_known_version = list(package.latest_version)
@@ -959,9 +963,8 @@ class PackageUploader(object):
             'author': package.profile_id,
             'published': not package.draft,
         }
-        if package.dependencies:
-            asset_ver_json['dependencies'] = self.resolve_dependencies(package.dependencies)
 
+        log.info("Creating version: %s", asset_ver_json)
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = self.conn_pool.post(assets_url,
@@ -1024,7 +1027,7 @@ class PackageUploader(object):
         print(f"  - {self.stats.files_uptodate} files up-to-date", file=self.markdown)
         print(f"  - {self.stats.bytes_uploaded} bytes uploaded", file=self.markdown)
 
-    def resolve_dependencies(self, dep_names: list[str]) -> list[dict]:
+    def resolve_dependencies(self, dep_names: list[str]) -> list[AssetDependency]:
         """
         Given a list of package names, resolve each to the latest asset_id
         and version available on the server.
@@ -1040,17 +1043,18 @@ class PackageUploader(object):
             asset_id = assets[0]["asset_id"]
 
             # 2. grab newest version
-            v_resp = self.conn_pool.get(f"{self.endpoint}/v1/assets/{asset_id}/versions")
+            v_resp = self.conn_pool.get(f"{self.endpoint}/v1/assets/{asset_id}")
             v_resp.raise_for_status()
             versions = v_resp.json()
             if not versions:
                 raise ValueError(f"Dependency '{name}' ({asset_id}) has no versions")
-            latest = sorted(versions, key=lambda v: v["version"], reverse=True)[0]
 
-            resolved.append({
-                "asset_id": asset_id,
-                "version":  latest["version"],
-            })
+            resolved.append(AssetDependency(
+                asset_id=asset_id,
+                version=versions[0]["version"],
+            ))
+
+        log.info("Resolved dependencies: %s", resolved)
         return resolved
 
 
