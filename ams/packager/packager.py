@@ -154,7 +154,10 @@ def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> 
 
 
 def is_houdini_file(content: AssetFileReference | DownloadInfoResponse) -> bool:
-    name = content.get('name') or content.get('file_name')
+    if isinstance(content, AssetFileReference):
+        name = content.file_name
+    else:
+        name = content.name
     extension = name.rpartition(".")[-1].lower()
     return extension in houdini_extensions
 
