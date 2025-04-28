@@ -959,6 +959,9 @@ class PackageUploader(object):
             'author': package.profile_id,
             'published': not package.draft,
         }
+        if package.dependencies:
+            asset_ver_json['dependencies'] = self.resolve_dependencies(package.dependencies)
+
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = self.conn_pool.post(assets_url,
@@ -1020,6 +1023,35 @@ class PackageUploader(object):
         print(f"  - {self.stats.files_uploaded} files uploaded", file=self.markdown)
         print(f"  - {self.stats.files_uptodate} files up-to-date", file=self.markdown)
         print(f"  - {self.stats.bytes_uploaded} bytes uploaded", file=self.markdown)
+
+    def resolve_dependencies(self, dep_names: list[str]) -> list[dict]:
+        """
+        Given a list of package names, resolve each to the latest asset_id
+        and version available on the server.
+        """
+        resolved: list[dict] = []
+        for name in dep_names:
+            # 1. locate asset by exact name
+            r = self.conn_pool.get(f"{self.endpoint}/v1/assets/named/{name}?exact=true")
+            r.raise_for_status()
+            assets = r.json()
+            if not assets:
+                raise ValueError(f"Dependency '{name}' not found")
+            asset_id = assets[0]["asset_id"]
+
+            # 2. grab newest version
+            v_resp = self.conn_pool.get(f"{self.endpoint}/v1/assets/{asset_id}/versions")
+            v_resp.raise_for_status()
+            versions = v_resp.json()
+            if not versions:
+                raise ValueError(f"Dependency '{name}' ({asset_id}) has no versions")
+            latest = sorted(versions, key=lambda v: v["version"], reverse=True)[0]
+
+            resolved.append({
+                "asset_id": asset_id,
+                "version":  latest["version"],
+            })
+        return resolved
 
 
 def main():

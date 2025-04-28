@@ -36,6 +36,7 @@ class PackageModel(BaseModel):
     user: Optional[str] = None  # user name override
     tags: Optional[list[str]] = None
     draft: Optional[bool] = False
+    dependencies: Optional[list[str]] = None  # list of package names this package depends on
 
 class ProcessedPackageModel(PackageModel):
     """Instance info filled out by resolving repo and assets"""

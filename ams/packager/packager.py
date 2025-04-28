@@ -52,7 +52,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webm'}
-
+houdini_extensions = ('hda', 'hdalc')
 
 def parse_args():
     """Parse command line arguments and provide the args structure"""
@@ -153,9 +153,10 @@ def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> 
     return result['token']
 
 
-def is_houdini_file(content: DownloadInfoResponse) -> bool:
-    extension = content.name.rpartition(".")[-1].lower()
-    return extension in ('hda', 'hdalc')
+def is_houdini_file(content: AssetFileReference | DownloadInfoResponse) -> bool:
+    name = content.get('name') or content.get('file_name')
+    extension = name.rpartition(".")[-1].lower()
+    return extension in houdini_extensions
 
 
 async def generate_several_thumbnails(
@@ -195,9 +196,24 @@ async def generate_several_thumbnails(
     await nats.post("imagemagick", bulk_req.model_dump())
 
 
-def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> \
+def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str], dependent_packages: list[dict]) -> \
         list[FileParameter]:
     dependencies = []
+
+    for dep in dependent_packages:
+        version_str = '.'.join(map(str, dep['version']))
+        url = f"/assets/{dep['asset_id']}/versions/{version_str}/contents"
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            package_contents = response.json()
+            
+            for content in package_contents['files']:
+                if is_houdini_file(content):
+                    dependencies.append(FileParameter(file_id=content['file_id']))
+        else:
+            log.warning("Failed to fetch package %s version %s: %s", 
+                       dep['asset_id'], version_str, response.status_code)
 
     # Assume all other HDA files inside the package are dependencies
     for content in contents:
@@ -220,7 +236,7 @@ async def generate_several_houdini_job_defs(
         telemetry_context=get_telemetry_headers()
     )
     for content in contents:
-        dependencies = gather_hda_dependencies(content, contents)
+        dependencies = gather_hda_dependencies(content, contents, avr.contents.get('dependencies', []))
         parameter_set = ParameterSet(
             hda_file=FileParameter(file_id=content.file_id),
             dependencies=dependencies,
