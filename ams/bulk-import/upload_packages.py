@@ -963,7 +963,6 @@ class PackageUploader(object):
             'author': package.profile_id,
             'published': not package.draft,
         }
-
         version_str = '.'.join(map(str, package.latest_version))
         assets_url = f"{self.endpoint}/v1/assets/{package.asset_id}/versions/{version_str}"
         response = self.conn_pool.post(assets_url,
