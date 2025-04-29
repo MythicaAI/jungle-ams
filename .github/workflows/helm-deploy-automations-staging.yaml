@@ -86,7 +86,7 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Deploy Helm Chart
-        working-dir: workloads/helm/automation
+        working-directory: workloads/helm/automation
         run: |
           helm upgrade --namespace automation-staging \
             -f values-staging.yaml \
