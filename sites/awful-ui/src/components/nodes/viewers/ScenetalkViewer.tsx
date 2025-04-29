@@ -18,11 +18,13 @@ const ScenetalkViewer: React.FC<ScenetalkViewerProps> = (node) => {
     // Get state from the store
 
     const [meshData, setMeshData] = useState<MeshData | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [isWireframe, setIsWireframe] = useState(false);
     const [wsStatus, setWsStatus] = useState<ConnectionStatus>('disconnected');
     const [inputFiles, setInputFiles] = useState<{ [key: string]: any }>({});
     const [requestInFlight, setRequestInFlight] = useState(false);
     const [pendingRequest, setPendingRequest] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [isLoading, setIsLoading] = useState(true);
     const [showLogWindow, setShowLogWindow] = useState(false);
     const [statusLog, setStatusLog] = useState<string[]>([]);
