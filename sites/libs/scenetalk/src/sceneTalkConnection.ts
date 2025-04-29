@@ -127,6 +127,13 @@ export class SceneTalkConnection {
   }
 
   sendCookRequestById(hdaFileId: string, dependencyFileIds: string[], params: {[key: string]: any}, inputFiles: {[key:string]: InputFile}, format: string = "raw") {
+    if (this.requestInFlight) {
+      this.pendingRequest = true;
+      return false;
+    }
+
+    this.requestInFlight = true;
+
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
       if (this.handlers.onStatusLog) {
@@ -136,12 +143,6 @@ export class SceneTalkConnection {
       return false;
     }
 
-    if (this.requestInFlight) {
-      this.pendingRequest = true;
-      return false;
-    }
-
-    this.requestInFlight = true;
     this.requestStartTime = performance.now();
 
     const files: { [key: string]: { file_id: string, [additionalKey: string]: any } } = {};
@@ -175,9 +176,11 @@ export class SceneTalkConnection {
       if (this.handlers.onStatusLog) {
         this.handlers.onStatusLog(`Error sending request: ${error}`);
       }
-      this.requestInFlight = false;
       return false;
+    } finally {
+      this.requestInFlight = false;
     }
+
   }
 
   

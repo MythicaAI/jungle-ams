@@ -14,7 +14,7 @@ import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { useReactFlow } from '@xyflow/react';
 import { NodeHeader } from './ux/NodeHeader';
 import { AutomationNodeProps } from './AutomationNode';
-
+import SceneTalkNode from './viewers/ScenetalkViewer';
 
 type InterfaceExecutionData = ExecutionData & {
   output: {
@@ -91,7 +91,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
 
   //Input (form) data from ParmGroup component
   const [inputData, setInputData] = useState<dictionary>(
-    node.data.inputData || { nonce: 'nonce' }
+    node.data.inputData || { }
   );
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
@@ -99,7 +99,8 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   // Handler for when ParmGroup or subcomponents update
   const handleParmChange = useCallback(
     (formData: dictionary) => {
-      setInputData((prev) => ({ ...prev, ...formData }));
+      const newInputData = {...inputData, ...formData};
+      setInputData(newInputData);
     },
     [setInputData]
   );
@@ -213,7 +214,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   // This callback is triggered by the useEffect hook below.
   const updateInterface = useCallback(() => {
     if (myInterfaceData.state !== NodeState.Executed) return;
-
+    setInputData({}); // Reset input data
     try {
       const nodeType =
         (myInterfaceData as InterfaceExecutionData).output?.node_types[0] || {};
@@ -330,62 +331,99 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       />
     ));
   }, [node.id, nodeType.outputs]);
+
+  const [showSceneTalk, setShowSceneTalk] = useState(false);
+
+  const drawerStyles: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,            // fill parent height
+    left: '100%',
+    width: '800px',
+    resize: 'both', // only horizontal resize
+    overflow: 'hidden',
+    borderLeft: '1px solid #ccc',
+  };
   
   return (
-    <div className={`mythica-node worker ${node.selected && 'selected'}`}
-         style={{ minWidth: '500px' }}>
-      <NodeDeleteButton
-        onDelete={() => {
-          deleteElements({ nodes: [node] });
-        }}
-      />
-      <NodeHeader />
-      <Typography level="h4">HDA: {nodeType['description'] as string}</Typography>
-      <label>{nodeType['type'] as string}</label>
-      <label>Interface: {myExecutionData.state} </label>
-      <label>Automation: {myExecutionData.state} </label>
-      {/* Render handles for FileParameter inputs */}
-      <FileInputHandle
-        id={INPUT_FILE}
-        nodeId={node.id}
-        left={100 / (2 + ((nodeType.inputs as number) || 0)) + '%'}
-        isConnectable
-        style={{ background: '#555555' }}
-        label={INPUT_FILE}
-      />
-
-      {inputs}
-      <p />
-
-      {parmTemplateGroup ? (
-        <ParmGroup
-          data={inputData}
-          onChange={handleParmChange}
-          onFileUpload={handleFileUpload}
-          group={parmTemplateGroup}
+    <div style={{ position: 'relative' }}>
+      <div className={`mythica-node worker ${node.selected && 'selected'}`}
+           style={{ minWidth: '500px', position: 'relative' }}>
+        <NodeDeleteButton
+          onDelete={() => {
+            deleteElements({ nodes: [node] });
+          }}
         />
-      ) : (
-        <></>
-      )}
-      {outputs}
-      <div style={{ width: '100%' }}>
-        <pre style={{ overflow: 'auto', maxWidth: '640px' }}>
-          {flowExecutionMessage}
-        </pre>
+        <NodeHeader />
+
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'right'}}>
         <Button
-          onClick={runHda}
-          style={{ width: '100%' }}
-          disabled={
-            myExecutionData.state! in [NodeState.Clean, NodeState.Error]
-          }
+          size="sm"
+          variant="outlined"
+          onClick={() => setShowSceneTalk((s) => !s)}
+          style={{ float: 'right', width:'160px' }}
         >
-          {myExecutionData.state === NodeState.Running
-            ? 'Running...'
-            : ' Run HDA'}
+          {showSceneTalk ? 'Hide' : 'Show'} SceneTalk
         </Button>
+        </div>
+
+        <Typography level="h4">HDA: {nodeType['description'] as string}</Typography>
+        <label>{nodeType['type'] as string}</label>
+        <label>Interface: {myExecutionData.state} </label>
+        <label>Automation: {myExecutionData.state} </label>
+        {/* Render handles for FileParameter inputs */}
+        <FileInputHandle
+          id={INPUT_FILE}
+          nodeId={node.id}
+          left={100 / (2 + ((nodeType.inputs as number) || 0)) + '%'}
+          isConnectable
+          style={{ background: '#555555' }}
+          label={INPUT_FILE}
+        />
+
+        {inputs}
+        <p />
+
+        {parmTemplateGroup ? (
+          <ParmGroup
+            data={inputData}
+            onChange={handleParmChange}
+            onFileUpload={handleFileUpload}
+            group={parmTemplateGroup}
+          />
+        ) : (
+          <></>
+        )}
+        {outputs}
+        <div style={{ width: '100%' }}>
+          <pre style={{ overflow: 'auto', maxWidth: '640px' }}>
+            {flowExecutionMessage}
+          </pre>
+          <Button
+            onClick={runHda}
+            style={{ width: '100%' }}
+            disabled={
+              myExecutionData.state! in [NodeState.Clean, NodeState.Error]
+            }
+          >
+            {myExecutionData.state === NodeState.Running
+              ? 'Running...'
+              : ' Run HDA'}
+          </Button>
+        </div>
+
+        <div style={{ height: '24px' }} />
       </div>
 
-      <div style={{ height: '24px' }} />
+      {showSceneTalk && (
+        <div style={drawerStyles}>
+          <SceneTalkNode 
+            hdaId={[interfaceFlowData[0]][0].file_id}
+            paramValues={inputData}/>
+        </div>
+      )}
     </div>
   );
 };

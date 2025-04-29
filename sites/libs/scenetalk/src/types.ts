@@ -12,3 +12,6 @@ export interface MeshData {
     uvs?: number[];
     colors?: number[];
   }
+  
+  // WebSocket status
+export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";

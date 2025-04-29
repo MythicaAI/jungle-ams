@@ -1,9 +1,7 @@
 import { create } from "zustand";
-import { InputFile, MeshData } from "./types";
+import { InputFile, MeshData,ConnectionStatus } from "./types";
 
 
-// WebSocket status
-export type ConnectionStatus = "connected" | "disconnected" | "reconnecting";
 
 // Store interface
 interface SceneState {
