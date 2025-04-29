@@ -1003,8 +1003,9 @@ class PackageUploader(object):
 
         for category, l in package.asset_contents.items():
             for file_ref in l:
-                print(f"| {category} | {file_ref.file_name} | {file_ref.file_id} | {file_ref.content_hash} |",
-                      file=self.markdown)
+                if isinstance(file_ref, FileRef):
+                    print(f"| {category} | {file_ref.file_name} | {file_ref.file_id} | {file_ref.content_hash} |",
+                          file=self.markdown)
         print(file=self.markdown)
 
     def start_md(self):
