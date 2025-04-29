@@ -24,7 +24,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from connection_pool import ConnectionPool
 from log_config import log_config
-from models import FileRef, OrgResponse, PackageFile, PackageModel, ProcessedPackageModel
+from models import FileRef, AssetDependency, OrgResponse, PackageFile, PackageModel, ProcessedPackageModel
 from perforce import parse_perforce_change, run_p4_command
 
 tempdir = tempfile.TemporaryDirectory()
@@ -596,6 +596,10 @@ class PackageUploader(object):
                  len(package.asset_contents['thumbnails']),
                  package.latest_version)
 
+        # resolve dependencies
+        if package.dependencies:
+            package.asset_contents['dependencies'] = self.resolve_dependencies(package.dependencies)
+
         # Version bumping, duplicate existing version for check
         last_commit_ref = package.commit_ref
         last_known_version = list(package.latest_version)
@@ -1020,6 +1024,26 @@ class PackageUploader(object):
         print(f"  - {self.stats.files_uploaded} files uploaded", file=self.markdown)
         print(f"  - {self.stats.files_uptodate} files up-to-date", file=self.markdown)
         print(f"  - {self.stats.bytes_uploaded} bytes uploaded", file=self.markdown)
+
+    def resolve_dependencies(self, dep_names: list[str]) -> list[AssetDependency]:
+        """
+        Given a list of package names, resolve each to the latest asset_id
+        and version available on the server.
+        """
+        resolved: list[dict] = []
+        for name in dep_names:
+            r = self.conn_pool.get(f"{self.endpoint}/v1/assets/named/{name}?exact=true")
+            r.raise_for_status()
+            assets = r.json()
+            if not assets:
+                raise ValueError(f"Dependency '{name}' not found")
+
+            resolved.append(AssetDependency(
+                asset_id=assets[0]["asset_id"],
+                version=assets[0]["version"],
+            ))
+
+        return resolved
 
 
 def main():

@@ -52,7 +52,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webm'}
-
+houdini_extensions = ('hda', 'hdalc')
 
 def parse_args():
     """Parse command line arguments and provide the args structure"""
@@ -153,9 +153,13 @@ def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> 
     return result['token']
 
 
-def is_houdini_file(content: DownloadInfoResponse) -> bool:
-    extension = content.name.rpartition(".")[-1].lower()
-    return extension in ('hda', 'hdalc')
+def is_houdini_file(content: AssetFileReference | DownloadInfoResponse) -> bool:
+    if isinstance(content, AssetFileReference):
+        name = content.file_name
+    else:
+        name = content.name
+    extension = name.rpartition(".")[-1].lower()
+    return extension in houdini_extensions
 
 
 async def generate_several_thumbnails(
@@ -195,13 +199,25 @@ async def generate_several_thumbnails(
     await nats.post("imagemagick", bulk_req.model_dump())
 
 
-def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileReference | AssetDependency | str]) -> \
+def gather_hda_dependencies(endpoint: str, contents: list[AssetFileReference | AssetDependency | str], dependent_packages: list[AssetDependency]) -> \
         list[FileParameter]:
     dependencies = []
 
-    # Assume all other HDA files inside the package are dependencies
+    # Gather all HDA files in dependent packages
+    for dep in dependent_packages:
+        versions = get_versions(endpoint, dep.asset_id, dep.version)
+        if len(versions) == 0:
+            log.warning("No versions found for asset %s version %s", dep.asset_id, dep.version)
+            continue
+
+        version = versions[0]
+        for content in get_file_contents(version):
+            if is_houdini_file(content):
+                dependencies.append(FileParameter(file_id=content.file_id))
+
+    # Assume all HDA files inside the package are dependencies
     for content in contents:
-        if is_houdini_file(content) and content.file_id != file.file_id:
+        if is_houdini_file(content):
             dependencies.append(FileParameter(file_id=content.file_id))
 
     return dependencies
@@ -210,6 +226,7 @@ def gather_hda_dependencies(file: AssetFileReference, contents: list[AssetFileRe
 async def generate_several_houdini_job_defs(
         avr: AssetVersionResult,
         contents: list[AssetFileReference | AssetDependency | str],
+        dependencies: list[FileParameter],
         token: str,
         event_id: str,
 ) -> bool:
@@ -220,10 +237,10 @@ async def generate_several_houdini_job_defs(
         telemetry_context=get_telemetry_headers()
     )
     for content in contents:
-        dependencies = gather_hda_dependencies(content, contents)
+        filtered_deps = [d for d in dependencies if d.file_id != content.file_id]
         parameter_set = ParameterSet(
             hda_file=FileParameter(file_id=content.file_id),
-            dependencies=dependencies,
+            dependencies=filtered_deps,
             src_asset_id=avr.asset_id,
             src_version=avr.version,
         )
@@ -354,7 +371,8 @@ async def create_zip_from_asset(
         event_id = event_seq_to_id(event_seq)
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
         if worker_job_defs:
-            await generate_several_houdini_job_defs(v, worker_job_defs, token, event_id)
+            dependencies = gather_hda_dependencies(endpoint, worker_job_defs, v.contents.get('dependencies', []))
+            await generate_several_houdini_job_defs(v, worker_job_defs, dependencies, token, event_id)
 
         # TODO-jrepp: thumbnail generation is currently not working
         generate_thumbnails = False

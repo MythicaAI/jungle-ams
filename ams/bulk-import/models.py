@@ -22,6 +22,10 @@ class FileRef(BaseModel):
     size: int
     already: bool
 
+class AssetDependency(BaseModel):
+    """Model of an asset dependency"""
+    asset_id: str
+    version: list[int]
 
 class PackageModel(BaseModel):
     """Model to validate the input dictionary"""
@@ -36,6 +40,7 @@ class PackageModel(BaseModel):
     user: Optional[str] = None  # user name override
     tags: Optional[list[str]] = None
     draft: Optional[bool] = False
+    dependencies: Optional[list[str]] = None  # list of package names this package depends on
 
 class ProcessedPackageModel(PackageModel):
     """Instance info filled out by resolving repo and assets"""
@@ -55,7 +60,7 @@ class ProcessedPackageModel(PackageModel):
     commit_ref: str = ''  # commit reference for the imported assets
     root_disk_path: Path | None = None  # absolute path on disk to root of GitHub repo
     latest_version_contents: Dict[str, dict] = Field(default_factory=dict)  # latest contents from API version query
-    asset_contents: dict[str, list[FileRef]] = Field(default_factory=dict)
+    asset_contents: dict[str, list[FileRef | AssetDependency]] = Field(default_factory=dict)
 
 
 class OrgResponse(BaseModel):
