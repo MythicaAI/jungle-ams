@@ -21,6 +21,7 @@ serviceAccount:
 
 apiBaseUrl: https://api-staging.mythica.ai/v1
 imagesBaseUrl: https://api-staging.mythica.ai/images
+sceneTalkUrl: "wss://scenetalk.mythica.gg/staging/"
 
 auth0:
   domain: dev-dtvqj0iuc5rnb6x2.us.auth0.com
