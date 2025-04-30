@@ -53,8 +53,10 @@ spec:
               value: /mythica/script
             - name: VITE_AWFUL_SCRIPT_INTERFACE_PATH
               value: /mythica/script/interface
+            - name: VITE_MYTHICA_API_URL
+              value: {{ .Values.apiBaseUrl }}
             - name: VITE_AWFUL_REST_URL
-              value: http://localhost:8080/v1/automation/run
+              value: {{ .Values.awfulRestUrl }}
             - name: VITE_SCENE_TALK_URL
               value: {{ .Values.sceneTalkUrl }}
           volumeMounts:

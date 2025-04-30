@@ -21,6 +21,7 @@ domains:
 apiBaseUrl: "https://api.mythica.ai/v1"
 imagesBaseUrl: "https://api.mythica.ai/images"
 sceneTalkUrl: "wss://scenetalk.mythica.gg/ws/"
+awfulRestUrl: "https://api.mythica.ai/v1/automation/run"
 
 auth0:
   domain: dev-dtvqj0iuc5rnb6x2.us.auth0.com
