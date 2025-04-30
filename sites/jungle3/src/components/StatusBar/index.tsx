@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
 import { LucideChevronUp, LucideChevronDown } from "lucide-react";
@@ -9,10 +9,17 @@ interface StatusBarProps {
 
 export const StatusBar: React.FC<StatusBarProps> = () => {
   const [isLogVisible, setIsLogVisible] = useState(false);
+  const logContainerRef = useRef<HTMLDivElement>(null);
   const { 
     wsStatus, 
     statusLog 
   } = useSceneStore();
+  
+  useEffect(() => {
+    if (isLogVisible && logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [isLogVisible]);
   
   // Get the latest log message if available
   const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : '';
@@ -109,6 +116,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
       {/* Log panel as a dropdown from the button */}
       {isLogVisible && (
         <Box
+          ref={logContainerRef}
           sx={{
             position: 'absolute',
             bottom: '41px',
@@ -124,7 +132,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             zIndex: 101,
             overflowY: 'auto',
             display: 'flex',
-            flexDirection: 'column-reverse'
+            flexDirection: 'column'
           }}
         >
           {(() => {
