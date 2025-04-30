@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, SxProps, Typography } from '@mui/joy';
+import React, { useState } from 'react';
+import { Box, SxProps, Typography, Button } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
+import { LucideChevronUp, LucideChevronDown } from "lucide-react";
 
 interface StatusBarProps {
   children?: React.ReactNode;
@@ -10,6 +11,7 @@ interface StatusBarProps {
 export const StatusBar: React.FC<StatusBarProps> = ({ 
   sx,
 }) => {
+  const [isLogVisible, setIsLogVisible] = useState(false);
   const { 
     wsStatus, 
     statusLog 
@@ -33,6 +35,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         color: 'text.secondary',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         height: '30px',
         zIndex: 100,
         ...sx
@@ -72,6 +75,55 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           </>
         )}
       </Box>
+      
+      <Button
+        color="neutral"
+        variant="plain"
+        onClick={() => setIsLogVisible(!isLogVisible)}
+        sx={{ 
+          minWidth: '32px',
+          width: '32px',
+          height: '24px',
+          padding: 0,
+          ml: 1
+        }}
+      >
+        {isLogVisible ? 
+          <LucideChevronDown height="16px" width="16px" /> : 
+          <LucideChevronUp height="16px" width="16px" />
+        }
+      </Button>
+
+      {/* Log panel as a dropdown from the button */}
+      {isLogVisible && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '31px',  // Position just above the status bar
+            right: '12px',   // Position aligned with the right padding
+            width: '400px',
+            height: '300px',
+            backgroundColor: 'background.surface',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '4px 4px 0 0',
+            padding: '8px',
+            boxShadow: 'sm',
+            zIndex: 101,
+            overflowY: 'auto'
+          }}
+        >
+          {statusLog.length > 0 ? (
+            statusLog.map((log, index) => (
+              <Typography key={index} level="body-sm" sx={{ py: 0.5 }}>
+                {log}
+              </Typography>
+            ))
+          ) : (
+            <Typography level="body-sm">No log messages</Typography>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };
