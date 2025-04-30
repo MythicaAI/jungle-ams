@@ -30,12 +30,9 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         paramValues,
         setParamValues,
         setFileUpload,
-        wsStatus,
         generateTime,
         isWireframe,
         toggleWireframe,
-        showLogWindow,
-        toggleLogWindow,
         setExportFormat,
     } = useSceneStore();
     const scene = getScene()
@@ -169,32 +166,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                 flexDirection: "column",
             }}
         >
-            {/* Connection Status */}
-            <Box
-                sx={{
-                    position: "relative",
-                    marginBottom: "15px",
-                    padding: "5px 10px",
-                    borderRadius: "4px",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    backgroundColor:
-                        wsStatus === "connected"
-                            ? "#4CAF50"
-                            : wsStatus === "reconnecting"
-                                ? "#FFA500"
-                                : "#f44336",
-                    color: "white",
-                }}
-            >
-                {wsStatus === "connected"
-                    ? "Connected"
-                    : wsStatus === "reconnecting"
-                        ? "Reconnecting..."
-                        : "Disconnected"}
-            </Box>
-
-            {/* Generate Time */}
             <Box
                 sx={{
                     textAlign: "center",
@@ -203,51 +174,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                     color: "#888",
                 }}
             >
-                <span>
-                    Last update:{" "}
-                    <span style={{ color: "#e0e0e0", fontWeight: 500 }}>
-                        {generateTime} ms
-                    </span>
-                </span>
-                <Box sx={{ float: "right" }}>
-                    <Button
-                        onClick={toggleLogWindow}
-                        size="sm"
-                        variant="outlined"
-                        color="neutral"
-                        sx={{
-                            padding: "2px 8px",
-                            backgroundColor: "#333",
-                            border: "1px solid #555",
-                            color: "#e0e0e0",
-                            cursor: "pointer",
-                            borderRadius: "3px",
-                        }}
-                    >
-                        {showLogWindow ? "Hide Log" : "Show Log"}
-                    </Button>
-                    <Button
-                        onClick={toggleInpector}
-                        size="sm"
-                        variant="outlined"
-                        color="neutral"
-                        sx={{
-                            padding: "2px 8px",
-                            backgroundColor: "#333",
-                            border: "1px solid #555",
-                            color: "#e0e0e0",
-                            cursor: "pointer",
-                            borderRadius: "3px",
-                        }}
-                    >
-                        Toggle Inspector
-                    </Button>
-                </Box>
-                <Box sx={{ clear: "both" }}></Box>
-
-
-
-                <Box sx={{ marginTop:"20px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>
+                <Box sx={{ marginTop:"0px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>
                     {hdaFiles && hdaFiles?.length > 1 ? (
                         <>
                         <Typography 
@@ -415,6 +342,26 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                     Wireframe
                 </label>
             </Box>
+            <Box sx={{ float: "right" }}>
+                <Button
+                    onClick={toggleInpector}
+                    size="sm"
+                    variant="outlined"
+                    color="neutral"
+                    sx={{
+                        marginTop: "10px",
+                        padding: "2px 8px",
+                        backgroundColor: "#333",
+                        border: "1px solid #555",
+                        color: "#e0e0e0",
+                        cursor: "pointer",
+                        borderRadius: "3px",
+                    }}
+                >
+                    Toggle Inspector
+                </Button>
+            </Box>
+
 
                 {/* Export Section */}
             <Box sx={{ marginTop: "80px" }}>
