@@ -99,10 +99,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <Box
           sx={{
             position: 'absolute',
-            bottom: '31px',  // Position just above the status bar
-            right: '12px',   // Position aligned with the right padding
-            width: '400px',
-            height: '300px',
+            bottom: '31px',
+            right: '0px',
+            width: '600px',
+            height: '250px',
             backgroundColor: 'background.surface',
             border: '1px solid',
             borderColor: 'divider',
@@ -110,17 +110,19 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             padding: '8px',
             boxShadow: 'sm',
             zIndex: 101,
-            overflowY: 'auto'
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column-reverse'
           }}
         >
           {statusLog.length > 0 ? (
             statusLog.map((log, index) => (
-              <Typography key={index} level="body-sm" sx={{ py: 0.5 }}>
+              <Typography key={index} level="body-sm" sx={{ py: 0.25, textAlign: 'left', lineHeight: 1.3 }}>
                 {log}
               </Typography>
             ))
           ) : (
-            <Typography level="body-sm">No log messages</Typography>
+            <Typography level="body-sm" sx={{ textAlign: 'left' }}>No log messages</Typography>
           )}
         </Box>
       )}
