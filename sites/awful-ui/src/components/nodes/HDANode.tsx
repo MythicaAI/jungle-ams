@@ -80,6 +80,8 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     node.data.executionData || initAutomation(automationTask)
   );
 
+  const [fileParms, setFileParms] = useState<hou.StringParmTemplate[]>([]);
+
   const { getFile } = useMythicaApi();
 
   const [flowExecutionMessage, setFlowExecutionMessage] = useState<string>('');
@@ -91,7 +93,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
 
   //Input (form) data from ParmGroup component
   const [inputData, setInputData] = useState<dictionary>(
-    node.data.inputData || { }
+    node.data.inputData || {}
   );
   //FileParameter  Inputs are handled separately based on flowData
   const [fileInputData, setFileInputData] = useState<dictionary>({});
@@ -99,7 +101,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   // Handler for when ParmGroup or subcomponents update
   const handleParmChange = useCallback(
     (formData: dictionary) => {
-      const newInputData = {...inputData, ...formData};
+      const newInputData = { ...inputData, ...formData };
       setInputData(newInputData);
     },
     [setInputData]
@@ -147,6 +149,19 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
           [fileParam]: fileDict, // Single-entry array
         }));
       }
+    }
+    for (const parm of fileParms) {
+      const fileParam = parm.name;
+      const files = myFlowData[fileParam];
+
+      // Take the first file_id and create a single-entry array
+      const firstFile = files ? files[0] : null;
+      const fileDict = firstFile ? { file_id: firstFile.file_id } : {};
+
+      setFileInputData((prev) => ({
+        ...prev,
+        [fileParam]: fileDict, // Single-entry array
+      }));
     }
   }, [myFlowData, nodeType]);
 
@@ -224,6 +239,9 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
           .code || '';
       const getParmTemplateGroup = eval(strPt);
       const ptg = getParmTemplateGroup(hou) as hou.ParmTemplateGroup;
+      
+      setFileParms(extractFileParmTemplates(ptg));
+
       setParmTemplateGroup(ptg);
       myInterfaceData.state = NodeState.Done;
     } catch (e) {
@@ -231,7 +249,32 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
       myInterfaceData.state = NodeState.Error;
     }
   }, [myInterfaceData]);
-  
+
+  const extractFileParmTemplates = (collector: hou.ParmTemplateCollector) => {
+
+    const fileParmTemplates: hou.StringParmTemplate[] = [];
+
+    for (const pt of collector.parm_templates) {
+      if (pt.param_type === hou.parmTemplateType.String) {
+        const spt = pt as hou.StringParmTemplate;
+                
+        if (spt.string_type === hou.stringParmType.FileReference) {
+          collector.removeParmTemplate(pt)
+          fileParmTemplates.push(spt);
+        };
+      } else if (pt.param_type === hou.parmTemplateType.Folder) {
+        const fpt = pt as hou.FolderParmTemplate;
+        const fileParms = extractFileParmTemplates(fpt);
+        fileParmTemplates.push(...fileParms);
+      } else if (pt.param_type === hou.parmTemplateType.FolderSet) {
+        const fpt = pt as hou.FolderSetParmTemplate;
+        const fileParms = extractFileParmTemplates(fpt);
+        fileParmTemplates.push(...fileParms);
+      }
+    }
+    return fileParmTemplates;
+  }
+
   // Call the automation that processed an HDA File and passing the 
   // myInterfaceData state handler as the result callback.
   // This triggers the useEffect hook below
@@ -267,7 +310,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
   useEffect(() => {
     node.data.executionData = myExecutionData;
   }, [myExecutionData, node.data]);
-  
+
   useEffect(() => {
     setExecutionFlowData((prev) => {
       // Destructure INPUT_FILE out and collect the rest
@@ -304,17 +347,34 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
 
   //Dynamic inputs generated from the input (FileParameters) in the InterfaceSpec 
   const inputs = useMemo(() => {
-    return Array.from({ length: nodeType.inputs as number }, (_, i) => (
+    const len = nodeType.inputs as number;
+    console.log(`file params: ${fileParms.length}`);
+    const ret =  Array.from({ length: len }, (_, i) => (
       <FileInputHandle
         key={`input${i}`}
         nodeId={node.id}
         id={`input${i}`}
-        left={(i + 2) * (100 / (2 + (nodeType.inputs as number))) + '%'}
+        left={(i + 2) * (100 / (2 + len + fileParms.length )) + '%'}
         isConnectable
         style={{ background: '#555555' }}
         label={`Input ${i}`}
       />
     ));
+    for (const parm of fileParms) {
+      ret.push(
+        <FileInputHandle
+          key={parm.name}
+          nodeId={node.id}
+          id={parm.name}
+          left={(len + 2) * (100 / (2 + len + fileParms.length)) + '%'}
+          isConnectable
+          style={{ background: '#555555' }}
+          label={parm.label}
+        />
+      );
+    }
+    return ret;
+    
   }, [node.id, nodeType.inputs]);
 
   //Dynamic outputs generated from the output (FileParameters) in the InterfaceSpec
@@ -344,11 +404,11 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
     overflow: 'hidden',
     borderLeft: '1px solid #ccc',
   };
-  
+
   return (
     <div style={{ position: 'relative' }}>
       <div className={`mythica-node worker ${node.selected && 'selected'}`}
-           style={{ minWidth: '500px', position: 'relative' }}>
+        style={{ minWidth: '500px', position: 'relative' }}>
         <NodeDeleteButton
           onDelete={() => {
             deleteElements({ nodes: [node] });
@@ -356,17 +416,18 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
         />
         <NodeHeader />
 
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'right'}}>
-        <Button
-          size="sm"
-          variant="outlined"
-          onClick={() => setShowSceneTalk((s) => !s)}
-          style={{ float: 'right', width:'160px' }}
-        >
-          {showSceneTalk ? 'Hide' : 'Show'} SceneTalk
-        </Button>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'right'
+        }}>
+          <Button
+            size="sm"
+            variant="outlined"
+            onClick={() => setShowSceneTalk((s) => !s)}
+            style={{ float: 'right', width: '160px' }}
+          >
+            {showSceneTalk ? 'Hide' : 'Show'} SceneTalk
+          </Button>
         </div>
 
         <Typography level="h4">HDA: {nodeType['description'] as string}</Typography>
@@ -377,7 +438,7 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
         <FileInputHandle
           id={INPUT_FILE}
           nodeId={node.id}
-          left={100 / (2 + ((nodeType.inputs as number) || 0)) + '%'}
+          left={100 / (2 + ((nodeType.inputs as number) + fileParms.length || 0)) + '%'}
           isConnectable
           style={{ background: '#555555' }}
           label={INPUT_FILE}
@@ -419,9 +480,9 @@ const HDANode: React.FC<AutomationNodeProps> = (node) => {
 
       {showSceneTalk && (
         <div style={drawerStyles}>
-          <SceneTalkNode 
+          <SceneTalkNode
             hdaId={[interfaceFlowData[0]][0].file_id}
-            paramValues={inputData}/>
+            paramValues={{ ...inputData, ...fileInputData }}/>
         </div>
       )}
     </div>

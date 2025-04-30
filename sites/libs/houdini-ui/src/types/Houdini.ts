@@ -670,10 +670,16 @@ export namespace hou {
     folder_type?: folderType;
     ends_tab_group?: boolean;
   };
-  export class FolderParmTemplate extends ParmTemplate {
-    param_type: parmTemplateType = parmTemplateType.Folder;
-    level = 1;
 
+  export interface ParmTemplateCollector {
+    addParmTemplate: (parm_template: ParmTemplate) => void;
+    removeParmTemplate: (parm_template: ParmTemplate) => ParmTemplate | null;
+    parm_templates: ParmTemplate[];
+  }
+  
+  export class FolderParmTemplate extends ParmTemplate implements ParmTemplateCollector {
+    param_type: parmTemplateType = parmTemplateType.Folder;
+    
     name: string = 'folder';
     label: string = 'Folder';
     parm_templates: ParmTemplate[] = [];
@@ -701,15 +707,25 @@ export namespace hou {
           prev instanceof FolderSetParmTemplate &&
           !prev.parm_templates.at(-1)?.ends_tab_group
         ) {
-          prev.addFolderParmTemplate(parm_template, this.level + 1);
+          prev.addParmTemplate(parm_template);
         } else {
           const fs = new FolderSetParmTemplate({});
           this.parm_templates.push(fs);
-          fs.addFolderParmTemplate(parm_template, this.level + 1);
+          fs.addParmTemplate(parm_template);
         }
       } else {
         this.parm_templates.push(parm_template);
       }
+    };
+    /**
+     * Remove a parm template from the list of parm templates inside the folder.
+     */
+    removeParmTemplate = (parm_template: ParmTemplate) => {
+      const index = this.parm_templates.indexOf(parm_template);
+      if (index !== -1) {
+        return this.parm_templates.splice(index, 1)[0];
+      }
+      return null;
     };
 
     /**
@@ -727,7 +743,7 @@ export namespace hou {
     parm_templates?: ParmTemplate[];
   };
 
-  export class FolderSetParmTemplate extends ParmTemplate {
+  export class FolderSetParmTemplate extends ParmTemplate implements ParmTemplateCollector {
     param_type: parmTemplateType = parmTemplateType.FolderSet;
     parm_templates: FolderParmTemplate[] = [];
 
@@ -741,17 +757,28 @@ export namespace hou {
     /**
      * Append a parm template to the end of the list of parm templates inside the folder.
      */
-    addFolderParmTemplate(
-      parm_template: FolderParmTemplate,
-      level: number = 1
+    addParmTemplate(
+      parm_template: ParmTemplate,
     ) {
-      parm_template.folder_set = this;
-      parm_template.level = level;
-      this.parm_templates.push(parm_template);
+      const pt = parm_template as FolderParmTemplate; 
+      pt.folder_set = this;
+      this.parm_templates.push(pt);
     }
+    /**
+     * Remove a parm template from the list of parm templates inside the folder.
+     */
+    removeParmTemplate = (parm_template: ParmTemplate) => {
+      const pt = parm_template as FolderParmTemplate;
+      const index = this.parm_templates.indexOf(pt);
+      if (index !== -1) {
+        return this.parm_templates.splice(index, 1)[0];
+      }
+      return null;
+    };
   }
+  
 
-  export class ParmTemplateGroup {
+  export class ParmTemplateGroup implements ParmTemplateCollector {
     parm_templates: ParmTemplate[] = [];
 
     constructor(params_v2: dictionary[]) {
@@ -773,15 +800,25 @@ export namespace hou {
           prev instanceof FolderSetParmTemplate &&
           !prev.parm_templates.at(-1)?.ends_tab_group
         ) {
-          prev.addFolderParmTemplate(parm_template);
+          prev.addParmTemplate(parm_template);
         } else {
           const fs = new FolderSetParmTemplate({});
           this.parm_templates.push(fs);
-          fs.addFolderParmTemplate(parm_template);
+          fs.addParmTemplate(parm_template);
         }
       } else {
         this.parm_templates.push(parm_template);
       }
+    };
+    /**
+     * Remove a parm template from the list of parm templates inside the folder.
+     */
+    removeParmTemplate = (parm_template: ParmTemplate) => {
+      const index = this.parm_templates.indexOf(parm_template);
+      if (index !== -1) {
+        return this.parm_templates.splice(index, 1)[0];
+      }
+      return null;
     };
     draw = () => {};
   }
