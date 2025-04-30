@@ -7,6 +7,7 @@ on:
       - 'sites/**'
       - 'ams/**'
       - 'libs/**'
+      - 'workloads/helm/api/**'
       - '.github/workflows/push-tagged-images.yaml'
 
   workflow_dispatch:
