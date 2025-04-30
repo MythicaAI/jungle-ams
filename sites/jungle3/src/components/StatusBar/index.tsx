@@ -50,9 +50,17 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            backgroundColor: 'rgba(80, 80, 80, 0.15)',
+            backgroundColor: wsStatus === "connected" 
+              ? 'rgba(80, 80, 80, 0.15)' 
+              : wsStatus === "reconnecting" 
+                ? 'rgba(255, 165, 0, 1.0)' 
+                : 'rgba(244, 67, 54, 1.0)',
             padding: '0 8px',
             height: '100%',
+            color: wsStatus === "connected" 
+              ? 'inherit' 
+              : '#000000',
+            fontWeight: 'bold',
           }}
         >
           <Box 
@@ -60,11 +68,19 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               width: 10, 
               height: 10, 
               borderRadius: '50%', 
-              bgcolor: wsStatus === "connected" ? 'success.500' : 'warning.500',
+              bgcolor: wsStatus === "connected" 
+                ? 'success.500' 
+                : wsStatus === "reconnecting" 
+                  ? 'warning.500' 
+                  : 'danger.500',
               display: 'inline-block'
             }} 
           />
-          {wsStatus === "connected" ? "Connected" : "Reconnecting..."}
+          {wsStatus === "connected" 
+            ? "Connected" 
+            : wsStatus === "reconnecting" 
+              ? "Reconnecting..." 
+              : "Disconnected"}
         </Box>
         
         <Box
