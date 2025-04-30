@@ -30,7 +30,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         paramValues,
         setParamValues,
         setFileUpload,
-        generateTime,
         isWireframe,
         toggleWireframe,
         setExportFormat,
