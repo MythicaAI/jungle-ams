@@ -1,20 +1,23 @@
 import React from 'react';
 import { Box, SxProps, Typography } from '@mui/joy';
+import { useSceneStore } from "scenetalk";
 
 interface StatusBarProps {
   children?: React.ReactNode;
   sx?: SxProps;
-  wsStatus?: 'connected' | 'disconnected' | 'reconnecting';
-  requestInFlight?: boolean;
-  selectedOperation?: string;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ 
   sx,
-  wsStatus = 'disconnected',
-  requestInFlight = false,
-  selectedOperation = '',
 }) => {
+  const { 
+    wsStatus, 
+    statusLog 
+  } = useSceneStore();
+  
+  // Get the latest log message if available
+  const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : '';
+
   return (
     <Box
       sx={{
@@ -30,38 +33,45 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         color: 'text.secondary',
         display: 'flex',
         alignItems: 'center',
-        height: '28px',
+        height: '30px',
         zIndex: 100,
         ...sx
       }}
     >
-      {(
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1 
-        }}>
-          <Box 
-            sx={{ 
-              width: 10, 
-              height: 10, 
-              borderRadius: '50%', 
-              bgcolor: wsStatus === "connected" ? 'success.500' : 'warning.500',
-              display: 'inline-block'
-            }} 
-          />
-          {wsStatus === "connected" ? "Connected" : "Reconnecting..."}
-          {wsStatus === "connected" && requestInFlight && (
-            <>
-              {" | "}
-              <Typography component="span" sx={{ color: 'primary.500' }}>
-                Cooking Op: {selectedOperation || ''}
-              </Typography>
-            </>
-          )}
-          {wsStatus === "connected" && !requestInFlight && " | Ready"}
-        </Box>
-      )}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 1 
+      }}>
+        <Box 
+          sx={{ 
+            width: 10, 
+            height: 10, 
+            borderRadius: '50%', 
+            bgcolor: wsStatus === "connected" ? 'success.500' : 'warning.500',
+            display: 'inline-block'
+          }} 
+        />
+        {wsStatus === "connected" ? "Connected" : "Reconnecting..."}
+        {latestLogMessage && (
+          <>
+            {" | "}
+            <Typography 
+              component="span" 
+              sx={{ 
+                flex: 1, 
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                maxWidth: '400px',
+                display: 'inline-block'
+              }}
+            >
+              {latestLogMessage}
+            </Typography>
+          </>
+        )}
+      </Box>
     </Box>
   );
 };

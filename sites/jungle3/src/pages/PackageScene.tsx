@@ -332,12 +332,7 @@ export const PackageScene: React.FC = () => {
         )}
 
         <SceneViewer packageName={assetVersion?.name as string} />
-        
-        <StatusBar 
-          wsStatus={wsStatus}
-          requestInFlight={requestInFlight}
-          selectedOperation={selectedHdaId ? selectedHdaId.split('/').pop() : ''}
-        />
+        <StatusBar />
       </Box>
     </>
   )
