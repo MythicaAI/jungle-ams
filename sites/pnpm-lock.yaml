@@ -59,6 +59,9 @@ importers:
       react-split:
         specifier: ^2.0.14
         version: 2.0.14(react@18.3.1)
+      scenetalk:
+        specifier: workspace:*
+        version: link:../libs/scenetalk
       universal-cookie:
         specifier: ^7.2.2
         version: 7.2.2
@@ -75,6 +78,9 @@ importers:
       '@eslint/js':
         specifier: ^9.17.0
         version: 9.21.0
+      '@types/node':
+        specifier: ^20.11.5
+        version: 20.17.21
       '@types/react':
         specifier: ^18.3.18
         version: 18.3.18
@@ -395,11 +401,11 @@ importers:
   libs/houdini-ui:
     dependencies:
       react:
-        specifier: ^18.2.0
-        version: 18.3.1
+        specifier: ^19.0.0
+        version: 19.1.0
       react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
+        specifier: ^19.0.0
+        version: 19.1.0(react@19.1.0)
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -7339,11 +7345,11 @@ snapshots:
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.3.0
 
-  '@mdx-js/react@3.1.0(@types/react@18.3.18)(react@18.3.1)':
+  '@mdx-js/react@3.1.0(@types/react@18.3.18)(react@19.1.0)':
     dependencies:
       '@types/mdx': 2.0.13
       '@types/react': 18.3.18
-      react: 18.3.1
+      react: 19.1.0
 
   '@microsoft/api-extractor-model@7.30.3(@types/node@20.17.21)':
     dependencies:
@@ -7784,12 +7790,12 @@ snapshots:
 
   '@storybook/addon-docs@8.6.2(@types/react@18.3.18)(storybook@8.6.2)':
     dependencies:
-      '@mdx-js/react': 3.1.0(@types/react@18.3.18)(react@18.3.1)
-      '@storybook/blocks': 8.6.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.2)
+      '@mdx-js/react': 3.1.0(@types/react@18.3.18)(react@19.1.0)
+      '@storybook/blocks': 8.6.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@8.6.2)
       '@storybook/csf-plugin': 8.6.2(storybook@8.6.2)
-      '@storybook/react-dom-shim': 8.6.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.2)
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
+      '@storybook/react-dom-shim': 8.6.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@8.6.2)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
       storybook: 8.6.2
       ts-dedent: 2.2.0
     transitivePeerDependencies:
@@ -7867,6 +7873,15 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
+  '@storybook/blocks@8.6.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@8.6.2)':
+    dependencies:
+      '@storybook/icons': 1.3.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      storybook: 8.6.2
+      ts-dedent: 2.2.0
+    optionalDependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+
   '@storybook/builder-vite@8.6.2(storybook@8.6.2)(vite@5.4.14(@types/node@20.17.21))':
     dependencies:
       '@storybook/csf-plugin': 8.6.2(storybook@8.6.2)
@@ -7914,6 +7929,11 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
+  '@storybook/icons@1.3.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+
   '@storybook/instrumenter@8.6.2(storybook@8.6.2)':
     dependencies:
       '@storybook/global': 5.0.0
@@ -7936,6 +7956,12 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
+      storybook: 8.6.2
+
+  '@storybook/react-dom-shim@8.6.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(storybook@8.6.2)':
+    dependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
       storybook: 8.6.2
 
   '@storybook/react-vite@8.6.2(@storybook/test@8.6.2(storybook@8.6.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.40.0)(storybook@8.6.2)(typescript@5.7.3)(vite@5.4.14(@types/node@20.17.21))':

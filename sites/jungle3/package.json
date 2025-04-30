@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build-production": "tsc && vite build -m production",
-    "build-dev": "tsc && vite build -m dev",
+    "build": "tsc && NODE_OPTIONS='--max-old-space-size=8192' vite build",
+    "build-production": "tsc && NODE_OPTIONS='--max-old-space-size=8192' vite build -m production",
+    "build-dev": "tsc && NODE_OPTIONS='--max-old-space-size=8192' vite build -m dev",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "jest",

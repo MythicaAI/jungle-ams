@@ -149,7 +149,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   ); // State to store Monaco editor content
 
   const timeout = 2000;
-  const typingTimeout = useRef(timeout);
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSaveAutomation = useCallback(() => {
     if (!node.data.script?.name || node.data.script.name === '') {
