@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
-import { Box, SxProps, Typography, Button } from '@mui/joy';
+import { Box, Typography, Button } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
 import { LucideChevronUp, LucideChevronDown } from "lucide-react";
 
 interface StatusBarProps {
   children?: React.ReactNode;
-  sx?: SxProps;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ 
-  sx,
-}) => {
+export const StatusBar: React.FC<StatusBarProps> = () => {
   const [isLogVisible, setIsLogVisible] = useState(false);
   const { 
     wsStatus, 
@@ -33,8 +30,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         display: 'flex',
         justifyContent: 'space-between',
         height: '40px',
-        zIndex: 100,
-        ...sx
+        zIndex: 100
       }}
     >
       <Box sx={{ 
