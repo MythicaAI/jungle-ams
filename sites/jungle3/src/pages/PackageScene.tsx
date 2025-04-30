@@ -22,6 +22,7 @@ import { useWindowSize } from "@hooks/useWindowSize";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
+import { StatusBar } from "@components/StatusBar";
 
 export const PackageScene: React.FC = () => {
   const { asset_id, version_id } = useParams();
@@ -331,6 +332,12 @@ export const PackageScene: React.FC = () => {
         )}
 
         <SceneViewer packageName={assetVersion?.name as string} />
+        
+        <StatusBar 
+          wsStatus={wsStatus}
+          requestInFlight={requestInFlight}
+          selectedOperation={selectedHdaId ? selectedHdaId.split('/').pop() : ''}
+        />
       </Box>
     </>
   )
