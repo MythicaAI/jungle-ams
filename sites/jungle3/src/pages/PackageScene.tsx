@@ -105,7 +105,10 @@ export const PackageScene: React.FC = () => {
         SceneTalkConnection.downloadFileFromBase64(fileName, base64Content);
       },
       onRequestComplete: (elapsedTime) => {
-        setGenerateTime(Math.round(elapsedTime).toString());
+        const elapsedTimeInSeconds = Math.round(elapsedTime);
+        setGenerateTime(elapsedTimeInSeconds.toString());
+        addStatusLog(`Generation completed in ${elapsedTimeInSeconds} ms`);
+
         setRequestInFlight(false);
 
         if (pendingRequest) {
