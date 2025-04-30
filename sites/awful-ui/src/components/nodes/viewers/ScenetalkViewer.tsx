@@ -10,7 +10,7 @@ interface ScenetalkViewerProps {
     onSceneCreated?: (scene: BABYLON.Scene) => void;
     onMeshSelected?: (mesh: BABYLON.Mesh) => void;
     paramValues?: { [key: string]: any } | null;
-    fileUpload?: { file: File; callback: (data: any) => void };
+    fileUpload?: { file: File; callback: (file_id:string) => void } | null;
     hdaId?: string | null;
 }
 
@@ -18,14 +18,11 @@ const ScenetalkViewer: React.FC<ScenetalkViewerProps> = (node) => {
     // Get state from the store
 
     const [meshData, setMeshData] = useState<MeshData | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [isWireframe, setIsWireframe] = useState(false);
+    //const [isWireframe, setIsWireframe] = useState(false);
     const [wsStatus, setWsStatus] = useState<ConnectionStatus>('disconnected');
     const [inputFiles, setInputFiles] = useState<{ [key: string]: any }>({});
     const [requestInFlight, setRequestInFlight] = useState(false);
     const [pendingRequest, setPendingRequest] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [isLoading, setIsLoading] = useState(true);
     const [showLogWindow, setShowLogWindow] = useState(false);
     const [statusLog, setStatusLog] = useState<string[]>([]);
 
@@ -312,11 +309,8 @@ const ScenetalkViewer: React.FC<ScenetalkViewerProps> = (node) => {
         }
     }, [node.fileUpload]);
 
-    // Set loading to false after initial setup
-    useEffect(() => {
-        setIsLoading(false);
-    }, []);
 
+    /*
     // Update wireframe mode when state changes
     useEffect(() => {
         const updateWireframe = (_meshName: string, isWireframe: boolean) => {
@@ -333,6 +327,7 @@ const ScenetalkViewer: React.FC<ScenetalkViewerProps> = (node) => {
             updateWireframe(loadingMeshRef.current, isWireframe);
         }
     }, [isWireframe]);
+    */
 
     /**
      * Create or update custom mesh whenever the meshData changes

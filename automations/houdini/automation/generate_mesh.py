@@ -61,6 +61,10 @@ def apply_single_param(asset, key, value):
         if parm:
             if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
                 parm.set([int(value)])
+            elif (isinstance(parm.parmTemplate(), hou.StringParmTemplate)
+                and parm.parmTemplate().stringType() == hou.stringParmType.FileReference):
+                val = value.get('file_path','')
+                parm.set([val])
             else:
                 val = [value] if not isinstance(value, (tuple, list)) else value
                 parm.set(val)
