@@ -9,7 +9,6 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths(), runtimeEnv()],
   base: '/awful',
   build: {
-    target: 'es2022', // Or a modern browser version like 'chrome91'
     sourcemap: true,
   },
   server: {
