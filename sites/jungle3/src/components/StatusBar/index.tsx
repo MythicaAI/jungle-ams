@@ -28,7 +28,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         left: 0,
         right: 0,
         padding: '4px 12px',
-        backgroundColor: 'background.surface',
+        backgroundColor: '#1e1e1e',
         borderTop: '1px solid',
         borderColor: 'divider',
         fontSize: '0.85rem',
@@ -36,7 +36,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: '30px',
+        height: '40px',
         zIndex: 100,
         ...sx
       }}
@@ -99,11 +99,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <Box
           sx={{
             position: 'absolute',
-            bottom: '31px',
+            bottom: '41px',
             right: '0px',
-            width: '600px',
-            height: '250px',
-            backgroundColor: 'background.surface',
+            width: '500px',
+            height: '300px',
+            backgroundColor: '#1e1e1e',
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: '4px 4px 0 0',
@@ -115,15 +115,32 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             flexDirection: 'column-reverse'
           }}
         >
-          {statusLog.length > 0 ? (
-            statusLog.map((log, index) => (
-              <Typography key={index} level="body-sm" sx={{ py: 0.25, textAlign: 'left', lineHeight: 1.3 }}>
-                {log}
+          {(() => {
+            // Create shared log message typography styling
+            const logTypographyStyle = {
+              textAlign: 'left',
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: '0.9rem',
+              lineHeight: 1.4,
+              letterSpacing: '0.015em',
+              color: '#e0e0e0'
+            };
+
+            return statusLog.length > 0 ? (
+              statusLog.map((log, index) => (
+                <Typography key={index} level="body-sm" sx={{ 
+                  py: 0.25,
+                  ...logTypographyStyle
+                }}>
+                  {log}
+                </Typography>
+              ))
+            ) : (
+              <Typography level="body-sm" sx={logTypographyStyle}>
+                No log messages
               </Typography>
-            ))
-          ) : (
-            <Typography level="body-sm" sx={{ textAlign: 'left' }}>No log messages</Typography>
-          )}
+            );
+          })()}
         </Box>
       )}
     </Box>
