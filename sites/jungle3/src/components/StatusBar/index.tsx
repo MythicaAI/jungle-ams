@@ -27,14 +27,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         bottom: 0,
         left: 0,
         right: 0,
-        padding: '4px 12px',
         backgroundColor: '#1e1e1e',
         borderTop: '1px solid',
         borderColor: 'divider',
-        fontSize: '0.85rem',
-        color: 'text.secondary',
         display: 'flex',
-        alignItems: 'center',
         justifyContent: 'space-between',
         height: '40px',
         zIndex: 100,
@@ -44,36 +40,56 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <Box sx={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: 1 
+        flex: 1,
       }}>
         <Box 
           sx={{ 
-            width: 10, 
-            height: 10, 
-            borderRadius: '50%', 
-            bgcolor: wsStatus === "connected" ? 'success.500' : 'warning.500',
-            display: 'inline-block'
-          }} 
-        />
-        {wsStatus === "connected" ? "Connected" : "Reconnecting..."}
-        {latestLogMessage && (
-          <>
-            {" | "}
-            <Typography 
-              component="span" 
-              sx={{ 
-                flex: 1, 
-                textOverflow: 'ellipsis',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                maxWidth: '400px',
-                display: 'inline-block'
-              }}
-            >
-              {latestLogMessage}
-            </Typography>
-          </>
-        )}
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            backgroundColor: 'rgba(80, 80, 80, 0.15)',
+            padding: '0 8px',
+            height: '100%',
+          }}
+        >
+          <Box 
+            sx={{ 
+              width: 10, 
+              height: 10, 
+              borderRadius: '50%', 
+              bgcolor: wsStatus === "connected" ? 'success.500' : 'warning.500',
+              display: 'inline-block'
+            }} 
+          />
+          {wsStatus === "connected" ? "Connected" : "Reconnecting..."}
+        </Box>
+        
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'rgba(95, 95, 95, 0.25)',
+            padding: '0 8px',
+            height: '100%',
+            flex: 1,
+            justifyContent: 'flex-start',
+          }}
+        >
+          <Typography 
+            component="span" 
+            sx={{ 
+              flex: 1, 
+              textOverflow: 'ellipsis',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              maxWidth: '400px',
+              display: 'inline-block',
+              textAlign: 'left'
+            }}
+          >
+            {latestLogMessage}
+          </Typography>
+        </Box>
       </Box>
       
       <Button
