@@ -395,7 +395,7 @@ def storage_nuke(c):
     """Nuke docker storage for a clean start"""
     answer = input("Continue? Type 'nuke' to confirm: ")
     if answer.upper() in ["NUKE"]:
-        os.rmdir(os.path.join(BASE_DIR, 'testing/mnt/pgdata/data'))
+        shutil.rmtree(os.path.join(BASE_DIR, 'testing/mnt/pgdata/data'))
 
 
 @task
