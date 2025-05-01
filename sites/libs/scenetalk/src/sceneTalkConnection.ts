@@ -257,19 +257,17 @@ export class SceneTalkConnection {
   private handleMessage(data: any) {
     if (data.op === "log" && this.handlers.onStatusLog) {
       this.handlers.onStatusLog(data.data.level, data.data.text);
-
-      if (data.data.level === "error") {
-        this.handleRequestComplete();
-      }
     }
 
     if (data.op === "geometry" && this.handlers.onGeometryData) {
       this.handlers.onGeometryData(data.data);
-      this.handleRequestComplete();
     }
 
     if (data.op === "file" && this.handlers.onFileDownload) {
       this.handlers.onFileDownload(data.data.file_name, data.data.content_base64);
+    }
+
+    if (data.op == "automation" && data.data == "end") {
       this.handleRequestComplete();
     }
   }
