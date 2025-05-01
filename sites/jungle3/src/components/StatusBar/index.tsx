@@ -19,7 +19,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     if (isLogVisible && logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
-  }, [isLogVisible]);
+  }, [isLogVisible, statusLog]);
   
   // Get the latest log message if available
   const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
@@ -176,7 +176,8 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
               fontSize: '0.9rem',
               lineHeight: 1.4,
-              letterSpacing: '0.015em'
+              letterSpacing: '0.015em',
+              whiteSpace: 'nowrap'
             };
 
             const getLogColor = (level: string) => {
