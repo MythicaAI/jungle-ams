@@ -5,7 +5,7 @@ import * as BABYLON from '@babylonjs/core';
 import { ConnectionStatus, MeshData } from 'scenetalk';
 import { SceneTalkConnection } from 'scenetalk';
 
-interface StatusLogEntry {
+type StatusLogEntry = {
   level: "info" | "warning" | "error";
   log: string;
 }
