@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { InputFile, MeshData,ConnectionStatus } from "./types";
 
-
+type StatusLogEntry = {
+  level: "info" | "warning" | "error";
+  log: string;
+};
 
 // Store interface
 interface SceneState {
@@ -44,7 +47,7 @@ interface SceneState {
   setGenerateTime: (time: string) => void;
 
   // Status logs
-  statusLog: { level: "info" | "warning" | "error", log: string }[];
+  statusLog: StatusLogEntry[];
   addStatusLog: (level: "info" | "warning" | "error", log: string) => void;
   clearStatusLog: () => void;
 
@@ -64,7 +67,7 @@ interface SceneState {
 }
 
 // Create a buffer outside the store
-let pendingLogs: { level: "info" | "warning" | "error", log: string }[] = [];
+let pendingLogs: StatusLogEntry[] = [];
 let flushTimeout: NodeJS.Timeout | null = null;
 
 export const useSceneStore = create<SceneState>((set) => ({

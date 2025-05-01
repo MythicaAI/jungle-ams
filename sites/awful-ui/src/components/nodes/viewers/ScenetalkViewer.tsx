@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box } from '@mui/joy';
 import * as BABYLON from '@babylonjs/core';
-import { ConnectionStatus, MeshData } from 'scenetalk';
+import { ConnectionStatus, MeshData, StatusLogEntry } from 'scenetalk';
 import { SceneTalkConnection } from 'scenetalk';
 
 
@@ -24,7 +24,7 @@ const ScenetalkViewer: React.FC<ScenetalkViewerProps> = (node) => {
     const [requestInFlight, setRequestInFlight] = useState(false);
     const [pendingRequest, setPendingRequest] = useState(false);
     const [showLogWindow, setShowLogWindow] = useState(false);
-    const [statusLog, setStatusLog] = useState<{ level: "info" | "warning" | "error", log: string }[]>([]);
+    const [statusLog, setStatusLog] = useState<StatusLogEntry[]>([]);
 
     // References
     const canvasRef = useRef<HTMLCanvasElement>(null);
