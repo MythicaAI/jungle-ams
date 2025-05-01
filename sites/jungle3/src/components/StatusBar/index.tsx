@@ -19,10 +19,33 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     if (isLogVisible && logContainerRef.current) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
-  }, [isLogVisible]);
+  }, [isLogVisible, statusLog]);
   
   // Get the latest log message if available
   const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
+
+  let primaryColor = "";
+  let primaryTextColor = "";
+  let secondaryColor = "";
+  let secondaryTextColor = "";
+  if (wsStatus === "disconnected" || latestLogMessage.level === "error") {
+    primaryColor = "rgba(244, 67, 54, 0.5)";
+    primaryTextColor = "rgb(255, 255, 255)";
+    secondaryColor = "rgba(244, 67, 54, 0.7)";
+    secondaryTextColor = "rgb(255, 255, 255)";
+  }
+  else if (latestLogMessage.level === "warning") {
+    primaryColor = "rgba(255, 165, 0, 0.6)";
+    primaryTextColor = "rgb(255, 255, 255)";
+    secondaryColor = "rgba(255, 165, 0, 0.8)";
+    secondaryTextColor = "rgb(255, 255, 255)";
+  }
+  else {
+    primaryColor = "rgba(95, 95, 95, 0.2)";
+    primaryTextColor = "rgb(255, 255, 255)";
+    secondaryColor = "rgba(95, 95, 95, 0.3)";
+    secondaryTextColor = "rgb(255, 255, 255)";
+  }
 
   return (
     <Box
@@ -50,16 +73,10 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            backgroundColor: wsStatus === "connected" 
-              ? 'rgba(80, 80, 80, 0.15)' 
-              : wsStatus === "reconnecting" 
-                ? 'rgba(255, 165, 0, 1.0)' 
-                : 'rgba(244, 67, 54, 1.0)',
+            backgroundColor: primaryColor,
             padding: '0 8px',
             height: '100%',
-            color: wsStatus === "connected" 
-              ? 'inherit' 
-              : '#000000',
+            color: primaryTextColor,
             fontWeight: 'bold',
           }}
         >
@@ -87,7 +104,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: 'rgba(95, 95, 95, 0.25)',
+            backgroundColor: secondaryColor,
             padding: '0 8px',
             height: '100%',
             flex: 1,
@@ -103,7 +120,8 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               whiteSpace: 'nowrap',
               maxWidth: '400px',
               display: 'inline-block',
-              textAlign: 'left'
+              textAlign: 'left',
+              color: secondaryTextColor
             }}
           >
             {latestLogMessage.log}
@@ -159,14 +177,24 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               fontSize: '0.9rem',
               lineHeight: 1.4,
               letterSpacing: '0.015em',
-              color: '#e0e0e0'
+              whiteSpace: 'nowrap'
+            };
+
+            const getLogColor = (level: string) => {
+              switch(level.toLowerCase()) {
+                case 'error': return '#ff4d4d';
+                case 'warning': return '#ffb84d'; 
+                case 'info': return '#bbbbbb';
+                default: return '#bbbbbb';
+              }
             };
 
             return statusLog.length > 0 ? (
               statusLog.map((log, index) => (
                 <Typography key={index} level="body-sm" sx={{ 
                   py: 0.25,
-                  ...logTypographyStyle
+                  ...logTypographyStyle,
+                  color: getLogColor(log.level)
                 }}>
                   {"[" + log.level + "] " + log.log}
                 </Typography>

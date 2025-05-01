@@ -49,6 +49,7 @@ interface SceneState {
   // Status logs
   statusLog: StatusLogEntry[];
   addStatusLog: (level: "info" | "warning" | "error", log: string) => void;
+  flushStatusLog: () => void;
   clearStatusLog: () => void;
 
   // Export functions
@@ -115,19 +116,26 @@ export const useSceneStore = create<SceneState>((set) => ({
   statusLog: [],
   addStatusLog: (level, log) => {
     pendingLogs.push({ level, log });
-
-    // Debounce the update
-    if (flushTimeout) clearTimeout(flushTimeout);
-    flushTimeout = setTimeout(() => {
-      set(state => ({
-        statusLog: [...state.statusLog, ...pendingLogs]
-      }));
-      pendingLogs = [];
-    }, 50);
+    
+    if (!flushTimeout) {
+      flushTimeout = setTimeout(() => {
+        useSceneStore.getState().flushStatusLog();
+        flushTimeout = null;
+      }, 250);
+    }
+  },
+  flushStatusLog: () => {
+    set(state => ({
+      statusLog: [...state.statusLog, ...pendingLogs]
+    }));
+    pendingLogs = [];
   },
   clearStatusLog: () => {
     pendingLogs = [];
-    if (flushTimeout) clearTimeout(flushTimeout);
+    if (flushTimeout) {
+      clearTimeout(flushTimeout);
+      flushTimeout = null;
+    }
     set({ statusLog: [] });
   },
 
