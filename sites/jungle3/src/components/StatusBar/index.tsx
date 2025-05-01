@@ -24,6 +24,29 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
   // Get the latest log message if available
   const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
 
+  let primaryColor = "";
+  let primaryTextColor = "";
+  let secondaryColor = "";
+  let secondaryTextColor = "";
+  if (wsStatus === "disconnected" || latestLogMessage.level === "error") {
+    primaryColor = "rgba(244, 67, 54, 0.5)";
+    primaryTextColor = "rgb(255, 255, 255)";
+    secondaryColor = "rgba(244, 67, 54, 0.7)";
+    secondaryTextColor = "rgb(255, 255, 255)";
+  }
+  else if (latestLogMessage.level === "warning") {
+    primaryColor = "rgba(255, 165, 0, 0.6)";
+    primaryTextColor = "rgb(255, 255, 255)";
+    secondaryColor = "rgba(255, 165, 0, 0.8)";
+    secondaryTextColor = "rgb(255, 255, 255)";
+  }
+  else {
+    primaryColor = "rgba(95, 95, 95, 0.2)";
+    primaryTextColor = "rgb(255, 255, 255)";
+    secondaryColor = "rgba(95, 95, 95, 0.3)";
+    secondaryTextColor = "rgb(255, 255, 255)";
+  }
+
   return (
     <Box
       sx={{
@@ -50,16 +73,10 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            backgroundColor: wsStatus === "connected" 
-              ? 'rgba(80, 80, 80, 0.15)' 
-              : wsStatus === "reconnecting" 
-                ? 'rgba(255, 165, 0, 1.0)' 
-                : 'rgba(244, 67, 54, 1.0)',
+            backgroundColor: primaryColor,
             padding: '0 8px',
             height: '100%',
-            color: wsStatus === "connected" 
-              ? 'inherit' 
-              : '#000000',
+            color: primaryTextColor,
             fontWeight: 'bold',
           }}
         >
@@ -87,7 +104,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: 'rgba(95, 95, 95, 0.25)',
+            backgroundColor: secondaryColor,
             padding: '0 8px',
             height: '100%',
             flex: 1,
@@ -103,7 +120,8 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               whiteSpace: 'nowrap',
               maxWidth: '400px',
               display: 'inline-block',
-              textAlign: 'left'
+              textAlign: 'left',
+              color: secondaryTextColor
             }}
           >
             {latestLogMessage.log}

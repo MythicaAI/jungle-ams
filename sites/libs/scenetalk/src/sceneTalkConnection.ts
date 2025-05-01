@@ -94,7 +94,7 @@ export class SceneTalkConnection {
     }
 
     if (this.handlers.onStatusLog) {
-      this.handlers.onStatusLog("info", `Attempting to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
+      this.handlers.onStatusLog("warning", `Attempting to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
     }
 
     // Calculate backoff time: 1s, 2s, 4s, 8s, 16s
