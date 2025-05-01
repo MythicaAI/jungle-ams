@@ -44,8 +44,8 @@ interface SceneState {
   setGenerateTime: (time: string) => void;
 
   // Status logs
-  statusLog: string[];
-  addStatusLog: (log: string) => void;
+  statusLog: { level: "info" | "warning" | "error", log: string }[];
+  addStatusLog: (level: "info" | "warning" | "error", log: string) => void;
   clearStatusLog: () => void;
 
   // Export functions
@@ -64,7 +64,7 @@ interface SceneState {
 }
 
 // Create a buffer outside the store
-let pendingLogs: string[] = [];
+let pendingLogs: { level: "info" | "warning" | "error", log: string }[] = [];
 let flushTimeout: NodeJS.Timeout | null = null;
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -110,8 +110,8 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   // Status logs
   statusLog: [],
-  addStatusLog: (log) => {
-    pendingLogs.push(log);
+  addStatusLog: (level, log) => {
+    pendingLogs.push({ level, log });
 
     // Debounce the update
     if (flushTimeout) clearTimeout(flushTimeout);

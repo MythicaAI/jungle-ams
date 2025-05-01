@@ -14,7 +14,7 @@ export class SceneTalkConnection {
   private isReconnecting = false;
   private handlers: {
     onStatusChange?: (status: "connected" | "disconnected" | "reconnecting") => void;
-    onStatusLog?: (log: string) => void;
+    onStatusLog?: (level: "info" | "warning" | "error", log: string) => void;
     onGeometryData?: (data: any) => void;
     onFileDownload?: (fileName: string, base64Content: string) => void;
     onRequestComplete?: (elapsedTime: number) => void;
@@ -49,7 +49,7 @@ export class SceneTalkConnection {
         this.handlers.onStatusChange("connected");
       }
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Connected to server");
+        this.handlers.onStatusLog("info", "Connected to server");
       }
     };
 
@@ -59,7 +59,7 @@ export class SceneTalkConnection {
         this.handlers.onStatusChange("disconnected");
       }
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Disconnected from server");
+        this.handlers.onStatusLog("info", "Disconnected from server");
       }
       this.attemptReconnect();
     };
@@ -76,7 +76,7 @@ export class SceneTalkConnection {
     this.ws.onerror = (error) => {
       console.error("WebSocket error:", error);
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("WebSocket connection error");
+        this.handlers.onStatusLog("error", "WebSocket connection error");
       }
     };
   }
@@ -94,7 +94,7 @@ export class SceneTalkConnection {
     }
 
     if (this.handlers.onStatusLog) {
-      this.handlers.onStatusLog(`Attempting to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
+      this.handlers.onStatusLog("info", `Attempting to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})...`);
     }
 
     // Calculate backoff time: 1s, 2s, 4s, 8s, 16s
@@ -137,7 +137,7 @@ export class SceneTalkConnection {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Failed to send request: Connection not open");
+        this.handlers.onStatusLog("error", "Failed to send request: Connection not open");
       }
       this.attemptReconnect();
       return false;
@@ -168,13 +168,13 @@ export class SceneTalkConnection {
     try {
       this.ws.send(JSON.stringify(cookMessage));
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Sent cook request to server");
+        this.handlers.onStatusLog("info", "Sent cook request to server");
       }
       return true;
     } catch (error) {
       console.error("Error sending cook message:", error);
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog(`Error sending request: ${error}`);
+        this.handlers.onStatusLog("error", `Error sending request: ${error}`);
       }
       return false;
     } finally {
@@ -193,7 +193,7 @@ export class SceneTalkConnection {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       console.error("WebSocket is not connected");
       if (this.handlers.onStatusLog) {
-        this.handlers.onStatusLog("Failed to send request: Connection not open");
+        this.handlers.onStatusLog("error", "Failed to send request: Connection not open");
       }
       this.attemptReconnect();
       return false;
@@ -255,13 +255,12 @@ export class SceneTalkConnection {
 
   // Handle incoming WebSocket messages
   private handleMessage(data: any) {
-    if (data.op === "status" && this.handlers.onStatusLog) {
-      this.handlers.onStatusLog(data.data);
-    }
+    if (data.op === "log" && this.handlers.onStatusLog) {
+      this.handlers.onStatusLog(data.data.level, data.data.text);
 
-    if (data.op === "error" && this.handlers.onStatusLog) {
-      this.handlers.onStatusLog(data.data);
-      this.handleRequestComplete();
+      if (data.data.level === "error") {
+        this.handleRequestComplete();
+      }
     }
 
     if (data.op === "geometry" && this.handlers.onGeometryData) {
