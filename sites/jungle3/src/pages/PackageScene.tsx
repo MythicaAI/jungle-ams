@@ -116,7 +116,7 @@ export const PackageScene: React.FC = () => {
 
         if (hasErrors) {
             addStatusLog("error",
-                `Generation completed in ${elapsedTimeInSeconds} ms with ${errorCount} error${errorCount > 1 ? 's' : ''}`);
+                `Generation completed in ${elapsedTimeInSeconds} ms with errors`);
         } else {
             addStatusLog("info",
                 `Generation completed in ${elapsedTimeInSeconds} ms`);
