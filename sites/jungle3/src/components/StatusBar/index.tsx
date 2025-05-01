@@ -176,15 +176,24 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
               fontSize: '0.9rem',
               lineHeight: 1.4,
-              letterSpacing: '0.015em',
-              color: '#e0e0e0'
+              letterSpacing: '0.015em'
+            };
+
+            const getLogColor = (level: string) => {
+              switch(level.toLowerCase()) {
+                case 'error': return '#ff4d4d';
+                case 'warning': return '#ffb84d'; 
+                case 'info': return '#bbbbbb';
+                default: return '#bbbbbb';
+              }
             };
 
             return statusLog.length > 0 ? (
               statusLog.map((log, index) => (
                 <Typography key={index} level="body-sm" sx={{ 
                   py: 0.25,
-                  ...logTypographyStyle
+                  ...logTypographyStyle,
+                  color: getLogColor(log.level)
                 }}>
                   {"[" + log.level + "] " + log.log}
                 </Typography>
