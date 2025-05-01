@@ -17,7 +17,7 @@ def main():
     TypeScript models are generated out of tree
     """
     self_path = os.path.dirname(os.path.abspath(__file__))
-    py_output = os.path.join(self_path, '..', 'api', 'app', 'db', 'schema')
+    py_output = os.path.join(self_path, '..', 'ams', 'app', 'db', 'schema')
     ts_output = os.path.join(self_path, '..', 'sites',
                              'jungle3', 'src', 'schema_types')
 
