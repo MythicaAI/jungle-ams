@@ -22,7 +22,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
   }, [isLogVisible]);
   
   // Get the latest log message if available
-  const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : '';
+  const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
 
   return (
     <Box
@@ -106,7 +106,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
               textAlign: 'left'
             }}
           >
-            {latestLogMessage}
+            {latestLogMessage.log}
           </Typography>
         </Box>
       </Box>
@@ -168,7 +168,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
                   py: 0.25,
                   ...logTypographyStyle
                 }}>
-                  {log}
+                  {"[" + log.level + "] " + log.log}
                 </Typography>
               ))
             ) : (

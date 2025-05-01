@@ -87,8 +87,8 @@ export const PackageScene: React.FC = () => {
           regenerateMesh();
         }
       },
-      onStatusLog: (log) => {
-        addStatusLog(log);
+      onStatusLog: (level, log) => {
+        addStatusLog(level, log);
       },
       onGeometryData: (data) => {
         if (data.points && data.indices) {
@@ -107,7 +107,7 @@ export const PackageScene: React.FC = () => {
       onRequestComplete: (elapsedTime) => {
         const elapsedTimeInSeconds = Math.round(elapsedTime);
         setGenerateTime(elapsedTimeInSeconds.toString());
-        addStatusLog(`Generation completed in ${elapsedTimeInSeconds} ms`);
+        addStatusLog("info", `Generation completed in ${elapsedTimeInSeconds} ms`);
 
         setRequestInFlight(false);
 

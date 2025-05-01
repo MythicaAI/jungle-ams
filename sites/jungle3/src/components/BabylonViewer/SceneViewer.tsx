@@ -530,7 +530,9 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
               letterSpacing: '0.015em'
             }}
           >
-            {statusLog.join('\n')}
+            {statusLog.map((log, index) => (
+              <div key={index}>[{log.level}] {log.log}</div>
+            ))}
           </Box>
         </Box>
       )}
