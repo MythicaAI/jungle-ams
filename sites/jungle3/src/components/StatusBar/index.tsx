@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Button } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
-import { LucideChevronUp, LucideChevronDown } from "lucide-react";
+import { LucideChevronUp, LucideChevronDown, LucideAlertTriangle, LucideAlertCircle } from "lucide-react";
 
 interface StatusBarProps {
   children?: React.ReactNode;
@@ -21,9 +21,10 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     }
   }, [isLogVisible, statusLog]);
   
-  // Get the latest log message if available
+  const warningCount = statusLog.filter(log => log.level === "warning").length;
+  const errorCount = statusLog.filter(log => log.level === "error").length;
   const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
-
+  
   let primaryColor = "";
   let primaryTextColor = "";
   let secondaryColor = "";
@@ -129,6 +130,40 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
         </Box>
       </Box>
       
+      {/* Log count indicators */}
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        {warningCount > 0 && (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 0.5,
+            backgroundColor: primaryColor,
+            color: secondaryTextColor,
+            fontWeight: 'bold',
+            padding: '2px 6px',
+            height: '100%',
+          }}>
+            <LucideAlertTriangle size={16} color="#ffb84d" />
+            {warningCount}
+          </Box>
+        )}
+        {errorCount > 0 && (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 0.5,
+            backgroundColor: primaryColor,
+            color: secondaryTextColor,
+            fontWeight: 'bold',
+            padding: '2px 6px',
+            height: '100%',
+          }}>
+            <LucideAlertCircle size={16} color="#ff4d4d" />
+            {errorCount}
+          </Box>
+        )}
+      </Box>
+      
       <Button
         color="neutral"
         variant="plain"
@@ -136,9 +171,11 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
         sx={{ 
           minWidth: '32px',
           width: '32px',
-          height: '24px',
+          height: '100%',
           padding: 0,
-          ml: 1
+          borderRadius: '0px',
+          '&:hover': { bgcolor: primaryColor },
+          backgroundColor: primaryColor,
         }}
       >
         {isLogVisible ? 
