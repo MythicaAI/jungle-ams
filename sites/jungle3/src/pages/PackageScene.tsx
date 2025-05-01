@@ -43,6 +43,7 @@ export const PackageScene: React.FC = () => {
     inputFiles,
     setMeshData,
     addStatusLog,
+    flushStatusLog,
     clearStatusLog,
     setGenerateTime,
     requestInFlight,
@@ -107,7 +108,8 @@ export const PackageScene: React.FC = () => {
       onRequestComplete: (elapsedTime) => {
         const elapsedTimeInSeconds = Math.round(elapsedTime);
         setGenerateTime(elapsedTimeInSeconds.toString());
-        
+
+        flushStatusLog();
         const currentStatusLog = useSceneStore.getState().statusLog;
         const errorCount = currentStatusLog.filter(e => e.level === "error").length;
         const hasErrors = errorCount > 0;
@@ -119,6 +121,7 @@ export const PackageScene: React.FC = () => {
             addStatusLog("info",
                 `Generation completed in ${elapsedTimeInSeconds} ms`);
         }
+        flushStatusLog();
 
         setRequestInFlight(false);
 

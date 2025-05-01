@@ -49,6 +49,7 @@ interface SceneState {
   // Status logs
   statusLog: StatusLogEntry[];
   addStatusLog: (level: "info" | "warning" | "error", log: string) => void;
+  flushStatusLog: () => void;
   clearStatusLog: () => void;
 
   // Export functions
@@ -66,6 +67,9 @@ interface SceneState {
   reset: () => void;
 }
 
+// Create a buffer outside the store
+let pendingLogs: StatusLogEntry[] = [];
+let flushTimeout: NodeJS.Timeout | null = null;
 
 export const useSceneStore = create<SceneState>((set) => ({
   selectedHdaId: null,
@@ -111,11 +115,27 @@ export const useSceneStore = create<SceneState>((set) => ({
   // Status logs
   statusLog: [],
   addStatusLog: (level, log) => {
+    pendingLogs.push({ level, log });
+    
+    if (!flushTimeout) {
+      flushTimeout = setTimeout(() => {
+        useSceneStore.getState().flushStatusLog();
+        flushTimeout = null;
+      }, 250);
+    }
+  },
+  flushStatusLog: () => {
     set(state => ({
-      statusLog: [...state.statusLog, { level, log }]
+      statusLog: [...state.statusLog, ...pendingLogs]
     }));
+    pendingLogs = [];
   },
   clearStatusLog: () => {
+    pendingLogs = [];
+    if (flushTimeout) {
+      clearTimeout(flushTimeout);
+      flushTimeout = null;
+    }
     set({ statusLog: [] });
   },
 
