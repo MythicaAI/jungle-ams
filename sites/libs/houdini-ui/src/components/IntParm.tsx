@@ -25,6 +25,7 @@ export const IntParm: React.FC<IntParmProps> = ({
   const [editValue, setEditValue] = useState<string>("");
   const { currentWidth } = useWindowSize();
   const isMobileSize = currentWidth <= 700 && useSlidersOnMobile;
+  const isMultiComponent = template.num_components > 1;
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseInt(e.target.value, 10) || 0;
@@ -107,49 +108,123 @@ export const IntParm: React.FC<IntParmProps> = ({
   };
 
   // CSS for the editable value
-  const editableValueStyle = {
+  const editableValueStyle = (hasSlider: boolean) => ({
     fontSize: 'smaller',
     margin: '0px',
-    padding: '0px',
-    display: 'block',
+    padding: '3px 5px',
     cursor: 'pointer',
-    border: '1px dashed transparent',
+    border: '1px solid #444',
     borderRadius: '3px',
-    transition: 'all 0.2s ease'
-  };
+    minWidth: '50px',
+    width: hasSlider ? '50px' : '100%',
+    textAlign: 'right' as const,
+    backgroundColor: 'rgba(30, 30, 30, 0.8)',
+  });
 
+  // Mobile layout
+  if (isMobileSize) {
+    return (
+      <div className="int-parm" title={template.help} style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'flex-start', 
+        gap: '5px',
+        marginBottom: '8px'
+      }}>
+        <label style={{ 
+          width: '100%', 
+          textAlign: 'center',
+          marginBottom: '3px'
+        }}>
+          {template.label}
+        </label>
+        
+        <div className="fields" style={{ 
+          display: 'flex', 
+          gap: '5px', 
+          alignItems: 'center',
+          width: '100%'
+        }}>
+          {values.map((value, index) => (
+            <div
+              key={template.name + index}
+              className="field"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                flex: 1
+              }}
+            >
+              <input
+                type='range'
+                value={value || template.default_value[index] || template.min || 0}  
+                step={1}
+                parm-index={index}
+                onChange={handleChange}
+                min={template.min}
+                max={template.max}
+                style={{
+                  width: '100%',
+                  margin: '0px',
+                }}
+                className='input-slider'
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  // Desktop layout
   return (
-    <div className="int-parm" title={template.help}>
-      <label>{template.label}</label>
-      <div className="fields">
+    <div className="int-parm" title={template.help} style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '10px',
+      marginBottom: '12px'
+    }}>
+      <label style={{ 
+        width: '100px', 
+        textAlign: 'right',
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'flex-end',
+        height: 'auto',
+        minHeight: '28px',
+        margin: 0,
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word'
+      }}>
+        {template.label}
+      </label>
+      
+      <div className="fields" style={{ 
+        display: 'flex', 
+        gap: '5px', 
+        alignItems: 'center',
+        flex: 1,
+        width: '100%'
+      }}>
         {values.map((value, index) => (
           <div
             key={template.name + index}
-            className={`field ${isMobileSize ? 'slider-field' : ''}`}
+            className="field"
             style={{
-              width: `${100/values.length}%`,
-              padding: '0px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              flex: isMultiComponent ? 1 : 1,
+              width: '100%'
             }}
           >
-            <input
-              type='range'
-              value={value || template.default_value[index] || template.min || 0}  
-              step={1} // Integer step
-              parm-index={index}
-              onChange={handleChange}
-              min={template.min}
-              max={template.max}
-              style={{
-                width: '100%',  
-                margin: '0px',
-                padding: '0px',
-              }}
-              className='input-slider'
-            />
             {editingIndex === index ? (
               <div style={{ 
+                display: 'flex',
                 alignItems: 'center',
                 fontSize: 'small',
+                width: !isMultiComponent ? 'auto' : '100%',
               }}>
                 <input
                   type="text"
@@ -159,9 +234,14 @@ export const IntParm: React.FC<IntParmProps> = ({
                   autoFocus
                   style={{
                     textAlign: 'right',
-                    flex: 1,
-                    padding: '5px',
+                    padding: '3px 5px',
                     fontSize: 'small',
+                    width: !isMultiComponent ? '50px' : '100%',
+                    flexGrow: isMultiComponent ? 1 : 0,
+                    backgroundColor: 'rgba(40, 40, 40, 0.9)',
+                    border: '1px solid #555',
+                    borderRadius: '3px',
+                    color: 'white',
                   }}
                 />
                 <button 
@@ -169,6 +249,7 @@ export const IntParm: React.FC<IntParmProps> = ({
                   title="Confirm"
                   style={{
                     background: 'none',
+                    border: 'none',
                     cursor: 'pointer',
                     color: 'white',
                     padding: '0 2px',
@@ -181,6 +262,7 @@ export const IntParm: React.FC<IntParmProps> = ({
                   title="Cancel"
                   style={{
                     background: 'none',
+                    border: 'none',
                     cursor: 'pointer',
                     color: 'white',
                     padding: '0 2px',
@@ -191,13 +273,31 @@ export const IntParm: React.FC<IntParmProps> = ({
               </div>
             ) : (
               <span
-                style={editableValueStyle}
+                style={editableValueStyle(!isMultiComponent)}
                 onClick={() => startEditing(index, value)}
                 title="Click to edit value"
                 className="editable-value"
               >
                 {value}
               </span>
+            )}
+            
+            {!isMultiComponent && (
+              <input
+                type='range'
+                value={value || template.default_value[index] || template.min || 0}  
+                step={1}
+                parm-index={index}
+                onChange={handleChange}
+                min={template.min}
+                max={template.max}
+                style={{
+                  flex: 1,
+                  width: '100%',
+                  margin: '0px',
+                }}
+                className='input-slider'
+              />
             )}
           </div>
         ))}

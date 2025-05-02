@@ -26,6 +26,8 @@
   font-weight: bold;
   display: block;
   margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: #aaaaaa;
 }
 
 .menu-content {
@@ -111,8 +113,8 @@
 
 .string-parm label {
   font-weight: bold;
-  display: block;
-  margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: #aaaaaa;
 }
 
 .string-parm select {
@@ -130,6 +132,8 @@
   font-weight: bold;
   display: block;
   margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: #aaaaaa;
 }
 
 .float-parm {
@@ -140,6 +144,8 @@
   font-weight: bold;
   display: block;
   margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: #aaaaaa;
 }
 
 .fields {
