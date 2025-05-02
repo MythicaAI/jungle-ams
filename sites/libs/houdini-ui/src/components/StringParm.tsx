@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useState } from 'react';
 import hou,{ dictionary } from '../types/Houdini';
-
+import { useWindowSize } from '../util/useWindowSize';
 
 export interface StringParmProps {
     template: hou.StringParmTemplate;
@@ -10,6 +10,9 @@ export interface StringParmProps {
 }
 
 export const StringParm: React.FC<StringParmProps> = ({template, data, onChange, onFileUpload}) => {
+    const { currentWidth } = useWindowSize();
+    const isMobileSize = currentWidth <= 700;
+    
     const getDefaultValues = () => {
         return data[template.name] ||
             template.default_value.length === template.num_components
@@ -20,11 +23,9 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     const [values, setValues] = useState<string[]>(getDefaultValues());
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-
         const index =  e.target.getAttribute('parm-index') as unknown as number;
 
         if (template.string_type==hou.stringParmType.FileReference) {
-
             const handleFileUploadSuccess = (file_id:string) => {
                 const newValue = {file_id: file_id};
 
@@ -51,13 +52,7 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
             updatedValues[index] = newValue;
             ret[template.name] = updatedValues
             onChange?.(ret); // Notify parent about the change
-
         }
-
-
-
-
-
     };
 
     if (template.string_type==hou.stringParmType.FileReference) {
@@ -91,9 +86,21 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
         return (
             <div 
             className="string-parm" 
-            title={template.help}>
-                <label>{template.label}</label>
-                <div className="fields">
+            title={template.help}
+            style={!isMobileSize ? { display: 'flex', gap: '10px' } : undefined}>
+                <label style={!isMobileSize ? { 
+                    width: '100px', 
+                    textAlign: 'right',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-end',
+                    height: 'auto',
+                    minHeight: '28px',
+                    margin: 0,
+                    wordWrap: 'break-word',
+                    overflowWrap: 'break-word'
+                } : undefined}>{template.label}</label>
+                <div className="fields" style={!isMobileSize ? { flex: 1, width: '100%' } : undefined}>
                     {values.map((value, index) => (
                         <div 
                             key={template.name + index} 
