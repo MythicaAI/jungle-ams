@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography, Button, Dropdown, Menu, MenuButton, MenuItem } from '@mui/joy';
+import { Box, Typography, Button, Dropdown, Menu, MenuButton, MenuItem, CircularProgress } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
 import { LucideChevronUp, LucideChevronDown, LucideAlertTriangle, LucideAlertCircle, LucideDownload } from "lucide-react";
 
@@ -13,7 +13,8 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
   const { 
     wsStatus, 
     statusLog,
-    setExportFormat
+    setExportFormat,
+    requestInFlight
   } = useSceneStore();
   
   useEffect(() => {
@@ -53,7 +54,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     secondaryTextColor = "rgb(255, 255, 255)";
   }
 
-  const canDownload = wsStatus === "connected" && latestLogMessage.level !== "error";
+  const canDownload = wsStatus === "connected" && latestLogMessage.level !== "error" && !requestInFlight;
 
   const handleDownload = (format: string) => {
     setExportFormat(format.toLowerCase());
@@ -123,6 +124,18 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             justifyContent: 'flex-start',
           }}
         >
+          {requestInFlight && latestLogMessage.log && (
+            <CircularProgress 
+              color="neutral"
+              sx={{
+                mr: 1,
+                color: secondaryTextColor,
+                "--CircularProgress-size": "20px",
+                "--CircularProgress-trackThickness": "4px", 
+                "--CircularProgress-progressThickness": "4px"
+              }}
+            />
+          )}
           <Typography 
             component="span" 
             sx={{ 
