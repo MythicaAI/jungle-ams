@@ -144,11 +144,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         }
     }
 
-    // Handle export format selection
-    const handleExport = (format: string) => {
-        setExportFormat(format);
-    };
-
     if (!assetVersion || !jobDefinitions )
         return <CircularProgress />;
     
@@ -360,51 +355,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                     Toggle Inspector
                 </Button>
             </Box>
-
-
-                {/* Export Section */}
-            <Box sx={{ marginTop: "80px" }}>
-                <Box
-                    sx={{
-                        backgroundColor: "#2d2d2d",
-                        padding: "8px",
-                        margin: "0 -15px 15px -15px",
-                        borderBottom: "1px solid #333",
-                    }}
-                >
-                    <Typography
-                        level="h3"
-                        sx={{ margin: 0, textAlign: "center", color: "#e0e0e0" }}
-                    >
-                        Export
-                    </Typography>
-                </Box>
-                {["fbx", "obj", "usd", "glb"].map(format => (
-                    <Button
-                        key={format}
-                        onClick={() => handleExport(format)}
-                        fullWidth
-                        sx={{
-                            marginBottom: "10px",
-                            padding: "12px",
-                            background: "#333",
-                            border: "1px solid #555",
-                            color: "#e0e0e0",
-                            cursor: "pointer",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            transition: "background-color 0.2s",
-                            "&:hover": {
-                                background: "#444",
-                            },
-                        }}
-                    >
-                        Download {format.toUpperCase()}
-                    </Button>
-                ))}
-            </Box>
-
-
         </Box>
 
     )
