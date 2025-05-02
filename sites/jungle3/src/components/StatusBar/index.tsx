@@ -202,17 +202,18 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
                 sx: {
                   height: '100%',
                   borderRadius: '0px',
-                  bgcolor: canDownload ? 'rgba(0, 143, 31, 1.0)' : 'rgba(120, 120, 120, 0.6)',
+                  bgcolor: 'rgba(0, 143, 31, 1.0)',
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 0.5,
                   '&:hover': { 
-                    bgcolor: canDownload ? 'rgba(0, 143, 31, 0.75)' : 'rgba(120, 120, 120, 0.6)' 
+                    bgcolor: 'rgba(0, 143, 31, 0.75)'
                   },
                   '&.Mui-disabled': {
                     opacity: 0.6,
-                    color: 'rgba(255, 255, 255, 0.7)'
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    bgcolor: secondaryColor
                   }
                 }
               }
