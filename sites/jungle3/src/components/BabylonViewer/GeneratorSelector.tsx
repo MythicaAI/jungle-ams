@@ -1,5 +1,5 @@
 import React from "react";
-import { Select, Option, Typography, Box } from "@mui/joy";
+import { Select, Option, Box } from "@mui/joy";
 import { useSceneStore } from "scenetalk";
 import { JobDefinition } from "@queries/packages/types";
 import { AssetVersionResponse } from "types/apiTypes";

@@ -33,11 +33,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
     } = useSceneStore();
     const scene = getScene()
     const inspector = scene?.debugLayer
-
-
-    const selectedJobData = jobDefinitions?.find(
-        (definition) => definition.source.file_id === selectedHdaId,
-    );
         
     const parmTemplateGroup = React.useMemo(
         () => {
