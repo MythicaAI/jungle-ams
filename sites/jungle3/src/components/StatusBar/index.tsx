@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography, Button } from '@mui/joy';
+import { Box, Typography, Button, Dropdown, Menu, MenuButton, MenuItem } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
-import { LucideChevronUp, LucideChevronDown, LucideAlertTriangle, LucideAlertCircle } from "lucide-react";
+import { LucideChevronUp, LucideChevronDown, LucideAlertTriangle, LucideAlertCircle, LucideDownload } from "lucide-react";
+
+export type FileFormat = 'FBX' | 'OBJ' | 'GLB' | 'USD';
 
 interface StatusBarProps {
   children?: React.ReactNode;
+  onDownload?: (format: FileFormat) => void;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = () => {
+export const StatusBar: React.FC<StatusBarProps> = ({ onDownload }) => {
   const [isLogVisible, setIsLogVisible] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const { 
@@ -47,6 +50,14 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     secondaryColor = "rgba(95, 95, 95, 0.3)";
     secondaryTextColor = "rgb(255, 255, 255)";
   }
+
+  const canDownload = wsStatus === "connected" && latestLogMessage.level !== "error";
+
+  const handleDownload = (format: FileFormat) => {
+    if (onDownload) {
+      onDownload(format);
+    }
+  };
 
   return (
     <Box
@@ -162,8 +173,7 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             {errorCount}
           </Box>
         )}
-      </Box>
-      
+
       <Button
         color="neutral"
         variant="plain"
@@ -183,6 +193,46 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
           <LucideChevronUp height="16px" width="16px" />
         }
       </Button>
+
+        {/* Download Format Combo Button */}
+        <Dropdown>
+          <MenuButton
+            slots={{ root: Button }}
+            slotProps={{
+              root: {
+                variant: "solid",
+                color: "neutral",
+                disabled: !canDownload,
+                sx: {
+                  height: '100%',
+                  borderRadius: '0px',
+                  bgcolor: canDownload ? 'rgba(0, 143, 31, 1.0)' : 'rgba(120, 120, 120, 0.6)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  '&:hover': { 
+                    bgcolor: canDownload ? 'rgba(0, 143, 31, 0.75)' : 'rgba(120, 120, 120, 0.6)' 
+                  },
+                  '&.Mui-disabled': {
+                    opacity: 0.6,
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  }
+                }
+              }
+            }}
+          >
+            <LucideDownload size={16} />
+            Download
+          </MenuButton>
+          <Menu>
+            <MenuItem onClick={() => handleDownload('FBX')}>FBX</MenuItem>
+            <MenuItem onClick={() => handleDownload('OBJ')}>OBJ</MenuItem>
+            <MenuItem onClick={() => handleDownload('GLB')}>GLB</MenuItem>
+            <MenuItem onClick={() => handleDownload('USD')}>USD</MenuItem>
+          </Menu>
+        </Dropdown>
+      </Box>
 
       {/* Log panel as a dropdown from the button */}
       {isLogVisible && (
