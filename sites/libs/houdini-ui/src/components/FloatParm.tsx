@@ -136,7 +136,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   };
 
   // CSS for the editable value
-  const editableValueStyle = {
+  const editableValueStyle = (hasSlider: boolean) => ({
     fontSize: 'smaller',
     margin: '0px',
     padding: '3px 5px',
@@ -144,9 +144,10 @@ export const FloatParm: React.FC<FloatParmProps> = ({
     border: '1px solid #444',
     borderRadius: '3px',
     minWidth: '50px',
+    width: hasSlider ? '50px' : '100%',
     textAlign: 'right' as const,
     backgroundColor: 'rgba(30, 30, 30, 0.8)',
-  };
+  });
 
   // Mobile layout
   if (isMobileSize) {
@@ -251,6 +252,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 fontSize: 'small',
+                width: !isMultiComponent ? 'auto' : '100%',
               }}>
                 <input
                   type="text"
@@ -262,7 +264,8 @@ export const FloatParm: React.FC<FloatParmProps> = ({
                     textAlign: 'right',
                     padding: '3px 5px',
                     fontSize: 'small',
-                    width: '50px',
+                    width: !isMultiComponent ? '50px' : '100%',
+                    flexGrow: isMultiComponent ? 1 : 0,
                     backgroundColor: isValidInput ? 'rgba(40, 40, 40, 0.9)' : 'rgba(255, 0, 0, 0.2)',
                     border: isValidInput ? '1px solid #555' : '1px solid red',
                     borderRadius: '3px',
@@ -300,7 +303,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
               </div>
             ) : (
               <span
-                style={editableValueStyle}
+                style={editableValueStyle(!isMultiComponent)} // Pass whether it has a slider
                 onClick={() => startEditing(index, value)}
                 title="Click to edit value"
                 className="editable-value"

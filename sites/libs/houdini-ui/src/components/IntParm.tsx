@@ -108,7 +108,7 @@ export const IntParm: React.FC<IntParmProps> = ({
   };
 
   // CSS for the editable value
-  const editableValueStyle = {
+  const editableValueStyle = (hasSlider: boolean) => ({
     fontSize: 'smaller',
     margin: '0px',
     padding: '3px 5px',
@@ -116,9 +116,10 @@ export const IntParm: React.FC<IntParmProps> = ({
     border: '1px solid #444',
     borderRadius: '3px',
     minWidth: '50px',
+    width: hasSlider ? '50px' : '100%',
     textAlign: 'right' as const,
     backgroundColor: 'rgba(30, 30, 30, 0.8)',
-  };
+  });
 
   // Mobile layout
   if (isMobileSize) {
@@ -223,6 +224,7 @@ export const IntParm: React.FC<IntParmProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 fontSize: 'small',
+                width: !isMultiComponent ? 'auto' : '100%',
               }}>
                 <input
                   type="text"
@@ -234,7 +236,8 @@ export const IntParm: React.FC<IntParmProps> = ({
                     textAlign: 'right',
                     padding: '3px 5px',
                     fontSize: 'small',
-                    width: '50px',
+                    width: !isMultiComponent ? '50px' : '100%',
+                    flexGrow: isMultiComponent ? 1 : 0,
                     backgroundColor: 'rgba(40, 40, 40, 0.9)',
                     border: '1px solid #555',
                     borderRadius: '3px',
@@ -270,7 +273,7 @@ export const IntParm: React.FC<IntParmProps> = ({
               </div>
             ) : (
               <span
-                style={editableValueStyle}
+                style={editableValueStyle(!isMultiComponent)}
                 onClick={() => startEditing(index, value)}
                 title="Click to edit value"
                 className="editable-value"
