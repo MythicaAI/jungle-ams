@@ -104,12 +104,6 @@ class Worker:
         # Run loop until canceled or an exception escapes
         loop.run_forever()
 
-
-    def start_web(self, automations: list[AutomationModel]) -> FastAPI:
-        self._load_automations(automations)
-        return self._get_web_executor()
-
-
     def _load_automations(self,automations: list[AutomationModel]):
         """Function to dynamically discover and register workers in a container"""
         try:
@@ -296,85 +290,3 @@ class Worker:
                     "The event status request failed: item_data-%s", item.model_dump()
                 )
  
-    def _get_web_executor(self):
-        """
-        Start a FastAPI app dynamically based on the workers list.
-        """
-        app = FastAPI(title=f"Automation API", description="Mythica Automation API")
-
-        @app.options("/")
-        async def preflight():
-            """
-            Handles CORS preflight requests.
-            """
-            headers = {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST",
-                "Access-Control-Allow-Headers": "Content-Type",
-                "Access-Control-Max-Age": "3600",
-            }
-            return JSONResponse(content=None, status_code=204, headers=headers)
-        
-        @app.post("/")
-        async def automation_request(request: Request):
-            """
-            Handles automation requests and dispatches to appropriate automation function.
-            """
-            # Set CORS headers
-            headers = {"Access-Control-Allow-Origin": "*"}
-
-            # Parse request data
-            request_data = await request.json()
-            request_data['process_guid'] = process_guid
-            auto_request = AutomationRequest(**request_data)
-            
-            
-            # Find the appropriate worker by path
-            automation = self.automations[auto_request.path]
-
-            if not automation:
-                return JSONResponse(
-                    content={"correlation": auto_request.correlation, "result": {"error": f"No automation found for path '{auto_request.path}'"}},
-                    status_code=404,
-                    headers=headers,
-                )
-
-            # Convert request data to the input model
-            input_model_class = automation.inputModel
-            try:
-                input_data = input_model_class(**auto_request.data)  # Validate and parse the input
-            except Exception as e:
-                log.error(f"Automation failed: {format_exception(e)}")
-                return JSONResponse(
-                    content={"correlation": auto_request.correlation, "result": {"error": auto_request.data}},
-                    status_code=422,
-                    headers=headers,
-                )
-      
-
-            # Execute the worker's provider function
-            try:
-
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    api_url = ripple_config().api_base_uri
-                    resolve_params(api_url, tmpdir, input_data)
-                    publisher = SlimPublisher(request=auto_request, rest=self.rest, directory=tmpdir)
-                    result = automation.provider(input_data, publisher)
-                    publisher.result(result)
-                    
-            except Exception as e:
-                log.error(f"Automation failed: {format_exception(e)}")
-                return JSONResponse(
-                    content={"correlation": auto_request.correlation, "result": {"error": f"Automation failed: {format_exception(e)}"}},
-                    status_code=500,
-                    headers=headers,
-                )
-
-            # Return result
-            return JSONResponse(
-                content={"correlation": auto_request.correlation, "result": result.model_dump()},
-                status_code=200,
-                headers=headers,
-            )
-        return app        
-        

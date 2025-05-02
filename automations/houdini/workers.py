@@ -89,18 +89,5 @@ def main():
     # force_limited_commercial_mode()
     worker.start('houdini', automations)
 
-
-def fastapi_entry_point():
-    """
-    Alternate entry point for starting the FastAPI app.
-    """
-    import uvicorn
-    app = worker.start_web(automations)
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "fastapi":
-        fastapi_entry_point()
-    else:
-        main()
+    main()

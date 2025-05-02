@@ -1,5 +1,6 @@
 import importlib
 import sys
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -16,7 +17,15 @@ from exception_handlers import exception_handlers
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
 from ripple_sources.register import register_streaming_sources, unregister_streaming_sources
+from nats.aio.client import Client as NATS
 
+nats_client: NATS | None = None
+
+NATS_URL = os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
+
+def get_nats() -> NATS:
+    assert nats_client is not None, "NATS client not initialized"
+    return nats_client
 
 @asynccontextmanager
 async def server_lifespan(app: FastAPI):
@@ -24,13 +33,30 @@ async def server_lifespan(app: FastAPI):
     Create a lifespan that binds application resources to the startup and shutdown
     of the application
     """
+    global nats_client
+
     register_streaming_sources(app)
 
+    # Connect to DB and Cache as usual
     async with db_connection_lifespan(app) as db_conn, cache_connection_lifespan(app) as cache_conn:
+        # Connect to NATS
+        nats_client = NATS()
+        await nats_client.connect(
+            servers=[NATS_URL],
+            name="awful-ui-relay"
+        )
+        
+        print("[NATS] Connected")
+
         yield {
             'db': db_conn,
             'cache': cache_conn,
         }
+
+        print("[NATS] Disconnecting")
+        await nats_client.drain()
+        await nats_client.close()
+        nats_client = None
 
     unregister_streaming_sources()
 

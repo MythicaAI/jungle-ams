@@ -127,11 +127,11 @@ def create_inputs(asset, geo, params: dict):
             input_node.parm('bImportMaterials').set(False)
             input_node.parm('bConvertUnits').set(True)
             input_node.parm('sFBXFile').set(input_file)
-            #input_node.parm('bImportAnimation').set(False)
-            #input_node.parm('bImportBoneSkin').set(False)
-            #input_node.parm('bConvertYUp').set(False)
-            #input_node.parm('bUnlockGeo').set(False)
-            #input_node.parm('pack').set(False)
+            input_node.parm('bImportAnimation').set(True)
+            input_node.parm('bImportBoneSkin').set(True)
+            input_node.parm('bConvertYUp').set(True)
+            input_node.parm('bUnlockGeo').set(True)
+            #input_node.parm('pack').set(True)
             input_node.parm("reload").pressButton()
 
         elif file_ext in ['.gltf', '.glb']:
@@ -270,6 +270,7 @@ def generate_mesh_impl(
     log.debug("Forcing HDA cook (internal HDA cooks must happen before exporting)")
     try:
         asset.cook(force=True)
+        asset.setDisplayFlag(True)
     except Exception as e:
         log.error(f"Cook failed with exception: {e}")
 

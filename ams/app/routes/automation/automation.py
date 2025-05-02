@@ -1,13 +1,18 @@
 """API routes for automation endpoints."""
+import asyncio
 import logging
 import uuid
 from http import HTTPStatus
+import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Query
 from nats.errors import ConnectionClosedError, NoServersError
+from nats.aio.client import Client as NATS
 from opentelemetry import trace
 from pydantic import BaseModel
 from ripple.automation.utils import nats_submit
+import contextlib
+from create_app import get_nats
 
 log = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -95,3 +100,43 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
         correlation=correlation,
         result=result.pop() if len(result) >0 else None
     )
+
+
+@router.websocket("/automation/lsp")
+async def lsp_ws_endpoint(websocket: WebSocket, channel_type: str = Query(...)):
+    await websocket.accept()
+    session_id = str(uuid.uuid4())
+    in_subject = f"lsp.session.{channel_type}.{session_id}.in"
+    out_subject = f"lsp.session.{channel_type}.{session_id}.out"
+
+    nc = get_nats()
+    sub = await nc.subscribe(out_subject)
+
+    async def ws_to_nats():
+        try:
+            async for message in websocket.iter_text():
+                await nc.publish(in_subject, message.encode())
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            print(f"[ws_to_nats] error: {e}")
+
+    async def nats_to_ws():
+        try:
+            async for msg in sub.messages:
+                await websocket.send_text(msg.data.decode())
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            print(f"[nats_to_ws] error: {e}")
+
+    tasks = [asyncio.create_task(ws_to_nats()), asyncio.create_task(nats_to_ws())]
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+    for task in pending:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+    await nc.unsubscribe(sub.sid)
+    await nc.flush()
