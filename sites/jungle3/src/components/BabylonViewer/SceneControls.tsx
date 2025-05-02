@@ -30,8 +30,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         paramValues,
         setParamValues,
         setFileUpload,
-        isWireframe,
-        toggleWireframe,
     } = useSceneStore();
     const scene = getScene()
     const inspector = scene?.debugLayer
@@ -279,62 +277,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                 </Box>
             </Box>
 
-
-
-            {/* Wireframe Toggle */}
-            <Box
-                sx={{
-                    marginTop: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
-            >
-                <input
-                    type="checkbox"
-                    id="wireframeToggle"
-                    checked={isWireframe}
-                    onChange={toggleWireframe}
-                    style={{ display: "none" }}
-                />
-                <label
-                    htmlFor="wireframeToggle"
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        color: "#e0e0e0",
-                    }}
-                >
-                    <span
-                        style={{
-                            position: "relative",
-                            display: "inline-block",
-                            width: "40px",
-                            height: "20px",
-                            backgroundColor: isWireframe ? "#4CAF50" : "#484848",
-                            borderRadius: "20px",
-                            marginRight: "10px",
-                            transition: "background-color 0.3s",
-                        }}
-                    >
-                        <span
-                            style={{
-                                content: '""',
-                                position: "absolute",
-                                width: "16px",
-                                height: "16px",
-                                borderRadius: "50%",
-                                backgroundColor: "white",
-                                top: "2px",
-                                left: isWireframe ? "22px" : "2px",
-                                transition: "transform 0.3s",
-                            }}
-                        ></span>
-                    </span>
-                    Wireframe
-                </label>
-            </Box>
             <Box sx={{ float: "right" }}>
                 <Button
                     onClick={toggleInpector}
