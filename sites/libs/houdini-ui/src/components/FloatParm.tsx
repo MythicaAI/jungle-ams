@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState, useEffect } from 'react';
+import React, { ChangeEvent, useState } from 'react';
 import hou, { dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
