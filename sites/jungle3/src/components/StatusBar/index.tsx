@@ -3,19 +3,17 @@ import { Box, Typography, Button, Dropdown, Menu, MenuButton, MenuItem } from '@
 import { useSceneStore } from "scenetalk";
 import { LucideChevronUp, LucideChevronDown, LucideAlertTriangle, LucideAlertCircle, LucideDownload } from "lucide-react";
 
-export type FileFormat = 'FBX' | 'OBJ' | 'GLB' | 'USD';
-
 interface StatusBarProps {
   children?: React.ReactNode;
-  onDownload?: (format: FileFormat) => void;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ onDownload }) => {
+export const StatusBar: React.FC<StatusBarProps> = () => {
   const [isLogVisible, setIsLogVisible] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const { 
     wsStatus, 
-    statusLog 
+    statusLog,
+    setExportFormat
   } = useSceneStore();
   
   useEffect(() => {
@@ -53,10 +51,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onDownload }) => {
 
   const canDownload = wsStatus === "connected" && latestLogMessage.level !== "error";
 
-  const handleDownload = (format: FileFormat) => {
-    if (onDownload) {
-      onDownload(format);
-    }
+  const handleDownload = (format: string) => {
+    setExportFormat(format.toLowerCase());
   };
 
   return (
@@ -226,10 +222,22 @@ export const StatusBar: React.FC<StatusBarProps> = ({ onDownload }) => {
             Download
           </MenuButton>
           <Menu>
-            <MenuItem onClick={() => handleDownload('FBX')}>FBX</MenuItem>
-            <MenuItem onClick={() => handleDownload('OBJ')}>OBJ</MenuItem>
-            <MenuItem onClick={() => handleDownload('GLB')}>GLB</MenuItem>
-            <MenuItem onClick={() => handleDownload('USD')}>USD</MenuItem>
+            <MenuItem onClick={() => handleDownload('FBX')}>
+              <LucideDownload size={14} />
+              FBX
+            </MenuItem>
+            <MenuItem onClick={() => handleDownload('OBJ')}>
+              <LucideDownload size={14} />
+              OBJ
+            </MenuItem>
+            <MenuItem onClick={() => handleDownload('GLB')}>
+              <LucideDownload size={14} />
+              GLB
+            </MenuItem>
+            <MenuItem onClick={() => handleDownload('USD')}>
+              <LucideDownload size={14} />
+              USD
+            </MenuItem>
           </Menu>
         </Dropdown>
       </Box>
