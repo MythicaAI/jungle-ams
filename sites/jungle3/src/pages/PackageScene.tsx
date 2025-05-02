@@ -240,12 +240,12 @@ export const PackageScene: React.FC = () => {
             {assetVersion?.version.join(".")}
           </Chip>
         </Stack>
-        
+
         <GeneratorSelector 
           jobDefinitions={jobDefinitions} 
           assetVersion={assetVersion} 
         />
-        
+
         <Button
           variant="outlined"
           color="neutral"
