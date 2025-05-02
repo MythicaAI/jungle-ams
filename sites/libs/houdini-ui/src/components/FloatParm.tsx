@@ -138,7 +138,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   const editableValueStyle = {
     fontSize: 'smaller',
     margin: '0px',
-    padding: '0px',
+    paddingTop: '1px',
     display: 'block',
     cursor: 'pointer',
     border: '1px dashed transparent',
@@ -177,7 +177,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
             {editingIndex === index ? (
               <div style={{ 
                 alignItems: 'center',
-                fontSize: 'small',
+                fontSize: 'smaller',
               }}>
                 <input
                   type="text"
@@ -188,8 +188,8 @@ export const FloatParm: React.FC<FloatParmProps> = ({
                   style={{
                     textAlign: 'right',
                     flex: 1,
-                    padding: '5px',
-                    fontSize: 'small',
+                    padding: '4px',
+                    fontSize: 'smaller',
                     backgroundColor: isValidInput ? '' : 'rgba(255, 0, 0, 0.2)',
                     border: isValidInput ? '' : '1px solid red',
                   }}
