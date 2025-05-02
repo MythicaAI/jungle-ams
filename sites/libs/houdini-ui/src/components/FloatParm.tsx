@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useState, useEffect } from 'react';
 import hou, { dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -25,6 +25,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   const [editValue, setEditValue] = useState<string>("");
   const { currentWidth } = useWindowSize();
   const isMobileSize = currentWidth <= 700 && useSlidersOnMobile;
+  const [isValidInput, setIsValidInput] = useState<boolean>(true);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseFloat(e.target.value) || 0;
@@ -61,10 +62,12 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   const startEditing = (index: number, value: number) => {
     setEditingIndex(index);
     setEditValue(val(value));
+    setIsValidInput(true);
   };
 
   const cancelEditing = () => {
     setEditingIndex(null);
+    setIsValidInput(true);
   };
 
   const confirmEditing = () => {
@@ -95,6 +98,20 @@ export const FloatParm: React.FC<FloatParmProps> = ({
       
       setEditingIndex(null);
     }
+  };
+
+  // Validate float input
+  const handleEditChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEditValue(value);
+    
+    // Check if the value can be parsed as a valid float
+    // Valid formats: decimal numbers, scientific notation, negative numbers
+    const isValid = value.trim() !== '' && 
+                    !isNaN(parseFloat(value)) && 
+                    /^-?(\d*\.?\d+|\d+\.?\d*)([eE][-+]?\d+)?$/.test(value);
+    
+    setIsValidInput(isValid);
   };
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
@@ -165,7 +182,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
                 <input
                   type="text"
                   value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
+                  onChange={handleEditChange}
                   onKeyDown={handleEditKeyDown}
                   autoFocus
                   style={{
@@ -173,16 +190,20 @@ export const FloatParm: React.FC<FloatParmProps> = ({
                     flex: 1,
                     padding: '5px',
                     fontSize: 'small',
+                    backgroundColor: isValidInput ? '' : 'rgba(255, 0, 0, 0.2)',
+                    border: isValidInput ? '' : '1px solid red',
                   }}
                 />
                 <button 
                   onClick={confirmEditing}
                   title="Confirm"
+                  disabled={!isValidInput}
                   style={{
                     background: 'none',
-                    cursor: 'pointer',
-                    color: 'white',
+                    cursor: isValidInput ? 'pointer' : 'not-allowed',
+                    color: isValidInput ? 'white' : 'gray',
                     padding: '0 2px',
+                    opacity: isValidInput ? 1 : 0.5,
                   }}
                 >
                   ✓
