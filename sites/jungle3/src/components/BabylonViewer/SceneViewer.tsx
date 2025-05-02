@@ -34,9 +34,6 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   const {
     isWireframe,
     meshData,
-    showLogWindow,
-    statusLog,
-    setShowLogWindow
   } = useSceneStore();
 
   interface PackageMaterials {
@@ -458,84 +455,6 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       onDragOver={handleDragOver}
     >
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }}></canvas>
-
-      {/* Generation Log Overlay */}
-      {showLogWindow && (
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 20,
-            right: 20,
-            width: '40%',
-            maxHeight: '40vh',
-            display: 'flex',
-            flexDirection: 'column',
-            bgcolor: 'rgba(30, 30, 30, 0.85)',
-            border: '1px solid #333',
-            boxShadow: '0 0 20px rgba(0,0,0,0.5)',
-            color: '#e0e0e0',
-            zIndex: 1000,
-            borderRadius: '4px',
-            backdropFilter: 'blur(4px)'
-          }}
-        >
-          <Box
-            sx={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 1,
-              bgcolor: 'rgba(45, 45, 45, 0.9)',
-              borderBottom: '1px solid #333'
-            }}
-          >
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '8px 12px',
-                position: 'relative'
-              }}
-            >
-              <button
-                onClick={() => setShowLogWindow(false)}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  background: '#333',
-                  border: '1px solid #555',
-                  color: '#e0e0e0',
-                  cursor: 'pointer',
-                  padding: '2px 8px',
-                  borderRadius: 3
-                }}
-              >
-                Close
-              </button>
-              <h3 style={{ margin: 0, width: '100%', textAlign: 'center', fontSize: '1rem' }}>Generation Log</h3>
-            </Box>
-          </Box>
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              px: 2,
-              py: 1,
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-              whiteSpace: 'pre',
-              overflowY: 'auto',
-              overflowX: 'auto',
-              textAlign: 'left',
-              fontSize: '0.9rem',
-              lineHeight: 1.4,
-              letterSpacing: '0.015em'
-            }}
-          >
-            {statusLog.map((log, index) => (
-              <div key={index}>[{log.level}] {log.log}</div>
-            ))}
-          </Box>
-        </Box>
-      )}
     </Box>
   );
 };
