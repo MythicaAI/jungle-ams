@@ -303,7 +303,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
               </div>
             ) : (
               <span
-                style={editableValueStyle(!isMultiComponent)} // Pass whether it has a slider
+                style={editableValueStyle(!isMultiComponent)}
                 onClick={() => startEditing(index, value)}
                 title="Click to edit value"
                 className="editable-value"
