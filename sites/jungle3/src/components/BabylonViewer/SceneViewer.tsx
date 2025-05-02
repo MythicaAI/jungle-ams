@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { Box } from '@mui/joy';
+import { useEffect, useRef, useState } from 'react';
+import { Box, Stack, Typography, IconButton, Tooltip } from '@mui/joy';
 import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/inspector";
 import "@babylonjs/node-geometry-editor";
 import { useSceneStore } from 'scenetalk';
+import { Grid, Layers } from 'lucide-react';
 
 // Material names
 const DEFAULT_MATERIAL = "default_mat";
@@ -33,9 +34,13 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   // Get state from the store
   const {
     isWireframe,
+    setWireframe,
     meshData,
   } = useSceneStore();
-
+  
+  const [isGroundVisible, setIsGroundVisible] = useState(true);
+  const [meshStats, setMeshStats] = useState({ triangles: 0, points: 0 });
+  
   interface PackageMaterials {
     name: string;
     material_name: string;
@@ -75,6 +80,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   const shadowGeneratorRef = useRef<BABYLON.ShadowGenerator | null>(null);
   const currentMeshRef = useRef<string | null>(null);
   const loadingMeshRef = useRef<string | null>(null);
+  const groundRef = useRef<BABYLON.Mesh | null>(null);
 
   // Initialize Babylon scene with enhanced environment
   useEffect(() => {
@@ -163,6 +169,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       scene
     );
     ground.receiveShadows = true;
+    groundRef.current = ground;
 
     const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
     const groundTexture = new BABYLON.Texture(
@@ -448,6 +455,21 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     e.preventDefault();
   };
 
+  useEffect(() => {
+    if (groundRef.current) {
+      groundRef.current.isVisible = isGroundVisible;
+    }
+  }, [isGroundVisible]);
+
+  useEffect(() => {
+    if (meshData && meshData.points && meshData.indices) {
+      setMeshStats({
+        points: meshData.points.length / 3,
+        triangles: meshData.indices.length / 3,
+      });
+    }
+  }, [meshData]);
+
   return (
     <Box
       sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
@@ -455,6 +477,64 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       onDragOver={handleDragOver}
     >
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }}></canvas>
+      
+      {/* Control Panel */}
+      <Box 
+        sx={{ 
+          position: 'absolute', 
+          top: 8,
+          right: 8,
+          backgroundColor: 'rgba(40, 40, 40, 0.75)',
+          borderRadius: 10,
+          p: 1,
+          minWidth: '120px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+        }}
+      >
+        <Stack spacing={1}>
+          <Stack 
+            direction="row" 
+            spacing={1} 
+            justifyContent="center"
+          >
+            <Tooltip title="Wireframe" placement="bottom">
+              <IconButton 
+                variant={isWireframe ? "solid" : "soft"}
+                color={isWireframe ? "primary" : "neutral"}
+                onClick={() => setWireframe(!isWireframe)}
+                size="sm"
+                sx={{ color: isWireframe ? undefined : 'white' }}
+              >
+                <Grid size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Ground" placement="bottom">
+              <IconButton 
+                variant={isGroundVisible ? "solid" : "soft"}
+                color={isGroundVisible ? "primary" : "neutral"}
+                onClick={() => setIsGroundVisible(!isGroundVisible)}
+                size="sm"
+                sx={{ color: isGroundVisible ? undefined : 'white' }}
+              >
+                <Layers size={16} />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+          
+          <Box sx={{ pt: 0.5, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <Typography level="body-xs" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                <span>Triangles</span>
+                <span>{meshStats.triangles.toLocaleString()}</span>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Vertices</span>
+                <span>{meshStats.points.toLocaleString()}</span>
+              </Box>
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
     </Box>
   );
 };
