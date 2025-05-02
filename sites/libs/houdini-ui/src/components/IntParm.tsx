@@ -182,16 +182,19 @@ export const IntParm: React.FC<IntParmProps> = ({
       display: 'flex', 
       alignItems: 'center', 
       gap: '10px',
-      marginBottom: '8px'
+      marginBottom: '12px'
     }}>
       <label style={{ 
-        minWidth: '80px', 
+        width: '100px', 
         textAlign: 'right',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'flex-end',
-        height: '28px',
-        margin: 0
+        height: 'auto',
+        minHeight: '28px',
+        margin: 0,
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word'
       }}>
         {template.label}
       </label>
