@@ -32,7 +32,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         setFileUpload,
         isWireframe,
         toggleWireframe,
-        setExportFormat,
     } = useSceneStore();
     const scene = getScene()
     const inspector = scene?.debugLayer
