@@ -16,6 +16,7 @@ import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import SceneViewer from "@components/BabylonViewer/SceneViewer";
 import SceneControls from "@components/BabylonViewer/SceneControls";
+import GeneratorSelector from "@components/BabylonViewer/GeneratorSelector";
 import { useSceneStore } from "scenetalk";
 import { SceneTalkConnection } from "scenetalk";
 import { useWindowSize } from "@hooks/useWindowSize";
@@ -239,6 +240,12 @@ export const PackageScene: React.FC = () => {
             {assetVersion?.version.join(".")}
           </Chip>
         </Stack>
+        
+        <GeneratorSelector 
+          jobDefinitions={jobDefinitions} 
+          assetVersion={assetVersion} 
+        />
+        
         <Button
           variant="outlined"
           color="neutral"

@@ -165,43 +165,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                     color: "#888",
                 }}
             >
-                <Box sx={{ marginTop:"0px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>
-                    {hdaFiles && hdaFiles?.length > 1 ? (
-                        <>
-                        <Typography 
-                            level="h4" 
-                            fontSize="medium"
-                            textAlign="left">
-                            Select Generator
-                        </Typography>
-                        <Select
-                            variant="soft"
-                            name="org_id"
-                            sx={{fontSize: "small"}}
-                            placeholder={""}
-                            value={selectedHdaId}
-                            multiple={false}
-                            onChange={(_, newValue) => {
-                            setSelectedHdaId(newValue || "");
-                            }}>
-
-                            {hdaFiles.map((hda) => (
-                                <Option key={hda.file_id} value={hda.file_id}>
-                                    {
-                                    jobDefinitions?.find(
-                                        (definition) =>
-                                        definition.source.file_id === hda.file_id,
-                                    )?.name
-                                    }
-                                </Option>
-                            ))}
-                        </Select>
-                        </>
-                    ) : (
-                        <Typography level="h4" textAlign="left">
-                            {selectedJobData?.name}
-                        </Typography>
-                    )}
+                <Box sx={{ marginTop:"0px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>                    
                     {inputFileParms.length > 0 && (
                         <>
                         <Typography
