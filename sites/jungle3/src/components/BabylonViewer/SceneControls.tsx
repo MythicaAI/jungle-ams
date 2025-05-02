@@ -165,69 +165,71 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                     color: "#888",
                 }}
             >
-                <Box sx={{ marginTop:"0px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>                    
-                    {inputFileParms.length > 0 && (
-                        <>
-                        <Typography
-                            level="h4" 
-                            fontSize="medium"
-                            textAlign="left">
-                            Add Files
-                        </Typography>
-                        <div 
-                            className="field"
-                            style={{ marginBottom: "10px"}}>
-                        <input type="file" 
-                            style={{width: "100%"}}
-                            onChange={(e:React.ChangeEvent<HTMLInputElement>) => {
-                                const file = e.target.files?.[0];
-                            
-                                if (file) {
-                                    handleInputFileUpload(file)
-                                }
-                            }}
-                        />
-                        </div>
-                        </>
-                    )}
-
-                    {availableInputFiles.length > 0 && (
-                        <>
-                            <Typography 
+                {inputFileParms.length > 0 && (
+                    <Box sx={{ marginTop:"0px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>                    
+                        { 
+                            <>
+                            <Typography
                                 level="h4" 
                                 fontSize="medium"
                                 textAlign="left">
-                                Input Files
+                                Add Files
                             </Typography>
-                            {inputFileParms.map((parm) => (
-                                <Select
-                                key={parm.name}
-                                variant="soft"
-                                sx={{fontSize: "small"}}
-                                name={parm.name}
-                                placeholder={parm.label}
-                                multiple={false}
-                                onChange={(_, newValue) => {
-                                    if (newValue === null) return;
-                                    setInputFile(
-                                        parm.name, 
-                                        availableInputFiles.find(
-                                            (file) => file.file_id === newValue,
-                                        ) ?? {} as AssetVersionContent,
-                                    )
+                            <div 
+                                className="field"
+                                style={{ marginBottom: "10px"}}>
+                            <input type="file" 
+                                style={{width: "100%"}}
+                                onChange={(e:React.ChangeEvent<HTMLInputElement>) => {
+                                    const file = e.target.files?.[0];
+                                
+                                    if (file) {
+                                        handleInputFileUpload(file)
+                                    }
                                 }}
-                                >
-                                {availableInputFiles.map((file) => (
-                                    <Option key={file.file_id} value={file.file_id}>
-                                    {file.file_name}
-                                    </Option>
+                            />
+                            </div>
+                            </>
+                        }
+
+                        {availableInputFiles.length > 0 && (
+                            <>
+                                <Typography 
+                                    level="h4" 
+                                    fontSize="medium"
+                                    textAlign="left">
+                                    Input Files
+                                </Typography>
+                                {inputFileParms.map((parm) => (
+                                    <Select
+                                    key={parm.name}
+                                    variant="soft"
+                                    sx={{fontSize: "small"}}
+                                    name={parm.name}
+                                    placeholder={parm.label}
+                                    multiple={false}
+                                    onChange={(_, newValue) => {
+                                        if (newValue === null) return;
+                                        setInputFile(
+                                            parm.name, 
+                                            availableInputFiles.find(
+                                                (file) => file.file_id === newValue,
+                                            ) ?? {} as AssetVersionContent,
+                                        )
+                                    }}
+                                    >
+                                    {availableInputFiles.map((file) => (
+                                        <Option key={file.file_id} value={file.file_id}>
+                                        {file.file_name}
+                                        </Option>
+                                    ))}
+                                    </Select>
                                 ))}
-                                </Select>
-                            ))}
-                        </>
-                    )}
-                </Box>
-                <Box sx={{ marginTop:"20px", padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>
+                            </>
+                        )}
+                    </Box>
+                )}
+                <Box sx={{ padding: "10px", border: "1px solid #333", borderRadius: "4px", marginBottom: "20px" }}>
 
                     <Typography level="h4" fontSize="medium" mb="12px" textAlign="left">
                         Params
