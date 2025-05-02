@@ -26,6 +26,8 @@
   font-weight: bold;
   display: block;
   margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: #aaaaaa;
 }
 
 .menu-content {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import hou,{ dictionary } from '../types/Houdini';
-
+import { useWindowSize } from '../util/useWindowSize';
 
 export interface MenuParmProps {
     template: hou.MenuParmTemplate;
@@ -20,6 +20,9 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
         strip_uses_icons = false,
     } = template;
 
+    const { currentWidth } = useWindowSize();
+    const isMobileSize = currentWidth <= 700;
+    
     // Determine initial selected value
     const getDefaultValue = () => {
         return data[template.name] || menu_items.includes(default_value) ? default_value : (menu_items[0] || "");
@@ -66,9 +69,20 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
     };
 
     return (
-        <div className="menu-parm">
-            <label className="menu-label">{label}</label>
-            <div className="menu-content">
+        <div className="menu-parm" style={!isMobileSize ? { display: 'flex', gap: '10px' } : undefined}>
+            <label className="menu-label" style={!isMobileSize ? { 
+                width: '100px', 
+                textAlign: 'right',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'flex-end',
+                height: 'auto',
+                minHeight: '28px',
+                margin: 0,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
+            } : undefined}>{label}</label>
+            <div className="menu-content" style={!isMobileSize ? { flex: 1, width: '100%' } : undefined}>
                 {is_button_strip && (
                     <div className="menu-button-strip">
                         {menu_items.map((item, index) => renderButtonItem(item, index))}
@@ -76,7 +90,12 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
                 )}
 
                 {!is_button_strip && (is_menu || (!is_menu && !is_button_strip)) && (
-                    <select value={selectedValue} onChange={handleSelectChange} className="menu-select">
+                    <select 
+                        value={selectedValue} 
+                        onChange={handleSelectChange} 
+                        className="menu-select"
+                        style={{ width: '100%' }}
+                    >
                         {menu_items.map((item, index) => (
                             <option key={index} value={item}>
                                 {getLabelForItem(item, index)}
