@@ -19,3 +19,12 @@ export type JSONSchemaProperty = {
     items?: JSONSchemaProperty ; // Support for single or multiple schemas in arrays
     additionalProperties?: JSONSchemaProperty; // To handle cases like objects with dynamic keys
 };
+
+export type JsonSchemaEnumParameterSpec = {
+    catgegory_label?: string;
+    constant?: boolean;
+    default?: string;
+    label?: string;
+    param_type?: string;
+    values: Array<{ name: string; label: string }>;
+}

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@services/api";
 import { PackagesApiPath, PackagesQuery } from "./enums";
 import { AssetCreateRequest, AssetVersionResponse } from "types/apiTypes";
-import type { JobDefinition, JobDetails } from "./types";
+import type { JobDefinition, JobDefinitionTemplate, JobDetails } from "./types";
 import { useStatusStore } from "@store/statusStore";
 
 export const useGetOwnedPackages = () => {
@@ -115,6 +115,27 @@ export const useGetJobDefinition = (assetId: string, version: string[]) => {
         path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}${PackagesApiPath.BY_ASSET}/${assetId}${PackagesApiPath.VERSIONS}/${version[0]}/${version[1]}/${version[2]}`,
       }),
     enabled: !!(assetId && version),
+  });
+};
+
+
+export const useCreateJobDefinitionFromTemplate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (createRequest: {
+      job_def_id: string;
+      job_def_template: JobDefinitionTemplate;
+    }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      return await api.post({
+        path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}/${createRequest.job_def_id}`,
+        body: createRequest.job_def_template,
+      });
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: [PackagesQuery.JOB_DEFS] });
+    },
   });
 };
 

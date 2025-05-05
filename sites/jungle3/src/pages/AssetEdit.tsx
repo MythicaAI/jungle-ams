@@ -30,6 +30,7 @@ import {
   AssetEditDetailControls,
   AssetEditListControls,
   AssetEditLinks,
+  AssetEditPresets
 } from "@components/AssetEdit";
 import {
   useDeleteAsset,
@@ -411,6 +412,9 @@ const AssetEdit: React.FC<AssetEditProps> = ({
                 {t("packageEdit.files")}
               </Tab>
               <Tab sx={TabStyle} disableIndicator>
+                {t("packageEdit.presets")}
+              </Tab>
+              <Tab sx={TabStyle} disableIndicator>
                 {t("packageEdit.thumbnails")}
               </Tab>
               <Tab sx={TabStyle} disableIndicator>
@@ -430,14 +434,18 @@ const AssetEdit: React.FC<AssetEditProps> = ({
             </TabPanel>
 
             <TabPanel value={2} sx={TabPanelStyle}>
-              <AssetEditListControls category="thumbnails" />
+              <AssetEditPresets />
             </TabPanel>
 
             <TabPanel value={3} sx={TabPanelStyle}>
-              <AssetEditLinks />
+              <AssetEditListControls category="thumbnails" />
             </TabPanel>
 
             <TabPanel value={4} sx={TabPanelStyle}>
+              <AssetEditLinks />
+            </TabPanel>
+
+            <TabPanel value={5} sx={TabPanelStyle}>
               <AssetEditDeps deps={dependencies} />
             </TabPanel>
           </Tabs>

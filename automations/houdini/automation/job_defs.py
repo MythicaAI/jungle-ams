@@ -59,7 +59,7 @@ def set_config_params(params: ParameterSpec, hda_file: FileParameter, index: int
 
 class JobDefRequest(ParameterSet):
     hda_file: FileParameter
-    dependencies: list[FileParameter]
+    dependencies: list[FileParameter] = []
     src_asset_id: str
     src_version: list[int]
 

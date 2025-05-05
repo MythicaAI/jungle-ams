@@ -344,7 +344,7 @@ export const PackageScene: React.FC = () => {
             >
               {jobDef ?
                 <SceneControls 
-                  width={390} 
+                  style={{width:390}} 
                   assetVersion={assetVersion}
                   jobDefinition={jobDef} />
               : 
@@ -378,7 +378,7 @@ export const PackageScene: React.FC = () => {
               <DialogContent>
               {jobDef ?
                 <SceneControls 
-                  width={currentWidth - 40}
+                  style={{width:currentWidth - 40}} 
                   assetVersion={assetVersion}
                   jobDefinition={jobDef} />
               : 
