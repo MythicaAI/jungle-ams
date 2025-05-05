@@ -17,6 +17,13 @@ type Props = {
     assetVersion: AssetVersionResponse | null;
 };
 
+const VALID_MESH_EXTENSIONS = ['.usd', '.usdz', '.glb', '.gltf', '.fbx', '.obj'];
+
+const isValidMeshFile = (fileName: string): boolean => {
+    const lowerFileName = fileName.toLowerCase();
+    return VALID_MESH_EXTENSIONS.some(ext => lowerFileName.endsWith(ext));
+};
+
 const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) => {
     const {
         selectedHdaId,
@@ -50,15 +57,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
       );
 
     const [availableInputFiles, setAvailableInputFiles] = React.useState<AssetVersionContent[]>(
-        assetVersion?.contents?.files.filter(
-            (file) =>
-                file.file_name.endsWith(".usd") ||
-                file.file_name.endsWith(".usz") ||
-                file.file_name.includes(".glb") ||
-                file.file_name.includes(".gltf") ||
-                file.file_name.includes(".fbx") ||
-                file.file_name.includes(".obj"),
-            ) || []
+        assetVersion?.contents?.files.filter(file => isValidMeshFile(file.file_name)) || []
     );
 
     const handleParmChange = useCallback(
@@ -82,14 +81,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
     const handleInputFileUpload = useCallback(
         (file: File) => {
             if (!file) return;
-            if (
-                file.name.endsWith(".usd") ||
-                file.name.endsWith(".usz") ||
-                file.name.includes(".glb") ||
-                file.name.includes(".gltf") ||
-                file.name.includes(".fbx") ||
-                file.name.includes(".obj")
-            ) {
+            if (isValidMeshFile(file.name)) {
                 const uploadCb = (file_id: string) => {
                     const assetFile: AssetVersionContent = {
                         file_id: file_id,
