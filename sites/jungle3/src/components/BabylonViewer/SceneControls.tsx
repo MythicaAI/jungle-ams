@@ -17,7 +17,7 @@ type Props = {
     assetVersion: AssetVersionResponse | null;
 };
 
-const VALID_MESH_EXTENSIONS = ['.usd', '.usz', '.glb', '.gltf', '.fbx', '.obj'];
+const VALID_MESH_EXTENSIONS = ['.usd', '.usdz', '.glb', '.gltf', '.fbx', '.obj'];
 
 const isValidMeshFile = (fileName: string): boolean => {
     const lowerFileName = fileName.toLowerCase();
