@@ -16,6 +16,7 @@ type Props = {
     jobDefinitions: JobDefinition[] | undefined;
     assetVersion: AssetVersionResponse | null;
 };
+
 const VALID_MESH_EXTENSIONS = ['.usd', '.usz', '.glb', '.gltf', '.fbx', '.obj'];
 
 const isValidMeshFile = (fileName: string): boolean => {
