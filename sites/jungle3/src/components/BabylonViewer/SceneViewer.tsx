@@ -133,9 +133,9 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     camera.setTarget(new BABYLON.Vector3(0, 0.2, 0));
     camera.attachControl(canvasRef.current, true);
     camera.lowerRadiusLimit = 2;
-    camera.upperRadiusLimit = 20;
+    camera.upperRadiusLimit = 150;
     camera.panningSensibility = 0;
-    camera.wheelPrecision = 15;
+    camera.wheelPrecision = 20;
     camera.lowerBetaLimit = 0.2;
     camera.upperBetaLimit = Math.PI / 2.2;
 
