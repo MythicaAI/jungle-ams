@@ -1,6 +1,5 @@
 import {
     Box,
-    Button,
     Typography,
     Select,
     Option,
@@ -8,13 +7,9 @@ import {
 } from "@mui/joy";
 import React, { useEffect, useCallback } from "react";
 import { useSceneStore } from "scenetalk";
-import { Engine } from "@babylonjs/core"
-import "@babylonjs/node-geometry-editor";
 import { dictionary, hou, ParmGroup } from "houdini-ui";
 import { AssetVersionResponse, AssetVersionContent } from "types/apiTypes";
 import { JobDefinition } from "@queries/packages/types";
-
-const getScene = () => Engine.LastCreatedScene;
 
 type Props = {
     width: number;
@@ -30,10 +25,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         paramValues,
         setParamValues,
         setFileUpload,
-    } = useSceneStore();
-    const scene = getScene()
-    const inspector = scene?.debugLayer
-        
+    } = useSceneStore();        
     const parmTemplateGroup = React.useMemo(
         () => {
             const jobDef = jobDefinitions?.find(
@@ -120,21 +112,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
             setSelectedHdaId(hdaFiles[0].file_id);
         }
     }, [hdaFiles]);
-
-    const toggleInpector = () => {
-        if (inspector) {
-            if (inspector.isVisible()) {
-                inspector.hide()
-            } else {
-                inspector.show({
-                    overlay: true,
-                    embedMode: true,
-                    enableClose: false,
-                    enablePopup: false,
-                });
-            }
-        }
-    }
 
     if (!assetVersion || !jobDefinitions )
         return <CircularProgress />;
@@ -236,26 +213,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
                         onFileUpload={handleFileUpload}
                     />
                 </Box>
-            </Box>
-
-            <Box sx={{ float: "right" }}>
-                <Button
-                    onClick={toggleInpector}
-                    size="sm"
-                    variant="outlined"
-                    color="neutral"
-                    sx={{
-                        marginTop: "10px",
-                        padding: "2px 8px",
-                        backgroundColor: "#333",
-                        border: "1px solid #555",
-                        color: "#e0e0e0",
-                        cursor: "pointer",
-                        borderRadius: "3px",
-                    }}
-                >
-                    Toggle Inspector
-                </Button>
             </Box>
         </Box>
 
