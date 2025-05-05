@@ -499,7 +499,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
         sx={{ 
           position: 'absolute', 
           top: 8,
-          right: 8,
+          right: isInspectorVisible ? '308px' : '8px',
           backgroundColor: 'rgba(40, 40, 40, 0.75)',
           borderRadius: 10,
           p: 1,
