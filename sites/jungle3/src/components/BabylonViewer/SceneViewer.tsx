@@ -4,7 +4,7 @@ import * as BABYLON from '@babylonjs/core';
 import "@babylonjs/inspector";
 import "@babylonjs/node-geometry-editor";
 import { useSceneStore } from 'scenetalk';
-import { Grid, Layers } from 'lucide-react';
+import { Grid, Layers, Search } from 'lucide-react';
 
 // Material names
 const DEFAULT_MATERIAL = "default_mat";
@@ -39,6 +39,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   } = useSceneStore();
   
   const [isGroundVisible, setIsGroundVisible] = useState(true);
+  const [isInspectorVisible, setIsInspectorVisible] = useState(false);
   const [meshStats, setMeshStats] = useState({ triangles: 0, points: 0 });
   
   interface PackageMaterials {
@@ -462,6 +463,21 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   }, [isGroundVisible]);
 
   useEffect(() => {
+    if (sceneRef.current) {
+      if (isInspectorVisible) {
+        sceneRef.current.debugLayer.show({
+          overlay: true,
+          embedMode: true,
+          enableClose: false,
+          enablePopup: false,
+        });
+      } else {
+        sceneRef.current.debugLayer.hide();
+      }
+    }
+  }, [isInspectorVisible]);
+
+  useEffect(() => {
     if (meshData && meshData.points && meshData.indices) {
       setMeshStats({
         points: meshData.points.length / 3,
@@ -517,6 +533,17 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
                 sx={{ color: isGroundVisible ? undefined : 'white' }}
               >
                 <Layers size={16} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Inspector" placement="bottom">
+              <IconButton 
+                variant={isInspectorVisible ? "solid" : "soft"}
+                color={isInspectorVisible ? "primary" : "neutral"}
+                onClick={() => setIsInspectorVisible(!isInspectorVisible)}
+                size="sm"
+                sx={{ color: isInspectorVisible ? undefined : 'white' }}
+              >
+                <Search size={16} />
               </IconButton>
             </Tooltip>
           </Stack>
