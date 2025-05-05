@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   Divider,
   IconButton,
   List,
@@ -12,6 +13,7 @@ import {
   ListItemDecorator,
   Stack,
   Typography,
+  Input,
 } from "@mui/joy";
 
 import {
@@ -70,7 +72,7 @@ const Uploads = () => {
     selectedFile: string;
     isOpen: boolean;
   }>({ selectedFile: "", isOpen: false });
-  const { data: pendingUploads, error } = useGetPendingUploads();
+  const { data: pendingUploads, error, refetch } = useGetPendingUploads();
   const { mutate: deleteUpload, error: deleteError } = useDeleteUpload();
   const { t } = useTranslation();
   const { data: allTags } = useGetAllTags();
@@ -248,6 +250,67 @@ const Uploads = () => {
   };
 
   const [sort, setSort] = useState("all");
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [filterText, setFilterText] = useState("");
+
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterText(event.target.value);
+  };
+
+  const filteredUploads = Object.entries(uploads).filter(([_, value]) =>
+    value.file_name.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  const handleSelectFile = (fileId: string) => {
+    setSelectedFiles((prev) =>
+      prev.includes(fileId)
+        ? prev.filter((id) => id !== fileId)
+        : [...prev, fileId],
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedFiles([]);
+    } else {
+      setSelectedFiles(filteredUploads.map(([_key, value]) => value.file_id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  useEffect(() => {
+    const allFilteredFileIds = filteredUploads.map(([_key, value]) => value.file_id);
+    setSelectAll(
+      allFilteredFileIds.length > 0 &&
+      allFilteredFileIds.every((id) => selectedFiles.includes(id))
+    );
+  }, [filteredUploads, selectedFiles]);
+
+  const handleDeleteSelected = () => {
+    const deletePromises = selectedFiles.map((fileId) =>
+      new Promise((resolve) => {
+        deleteUpload(fileId, {
+          onSettled: () => {
+            setSelectedFiles((prev) => prev.filter((id) => id !== fileId));
+            resolve(null);
+          },
+        });
+      })
+    );
+
+    Promise.all(deletePromises).then(() => {
+      refetch(); // Refresh pendingUploads after bulk deletion
+    });
+  };
+
+  const handleDeleteSingle = (fileId: string) => {
+    deleteUpload(fileId, {
+      onSettled: () => {
+        refetch(); // Refresh pendingUploads after single deletion
+      },
+    });
+  };
 
   const allSorts: { [key: string]: Sort } = {
     all: { icon: <LucideFiles />, name: t("myUploads.allFiles"), types: [] },
@@ -294,6 +357,19 @@ const Uploads = () => {
         <UploadsSubmitList />
         <List>
           <ListItem sx={{ flexGrow: 1 }}>
+            <Checkbox
+              checked={selectAll}
+              onChange={handleSelectAll}
+            />
+            <Button
+              variant="solid"
+              color="danger"
+              onClick={handleDeleteSelected}
+              disabled={selectedFiles.length === 0}
+              sx={{ marginRight: "16px" }}
+            >
+              Delete Selected
+            </Button>
             <List orientation="horizontal" sx={{ flexGrow: 1 }}>
               {Object.entries(allSorts).map(([name, value]) => (
                 <ListItemButton key={name} onClick={() => setSort(name)}>
@@ -302,12 +378,23 @@ const Uploads = () => {
                 </ListItemButton>
               ))}
             </List>
+            <Input
+                placeholder="Filter files..."
+                value={filterText}
+                onChange={handleFilterChange}
+                sx={{ flexGrow: 3}}
+              />
           </ListItem>
           <ListDivider />
-          {Array.from(Object.entries(uploads))
+          {filteredUploads
             .filter(fileTypeFilter)
             .map(([key, value]) => (
               <ListItem sx={{ flexGrow: 1 }} key={key}>
+                <Checkbox
+                  checked={selectedFiles.includes(value.file_id)}
+                  onChange={() => handleSelectFile(value.file_id)}
+                  sx={{ marginRight: "16px" }}
+                />
                 <ListItemDecorator
                   sx={{ display: "flex", alignItems: "center" }}
                 >
@@ -405,9 +492,8 @@ const Uploads = () => {
         open={deleteModal.isOpen}
         handleClose={handleDeleteCleaup}
         handleConfirm={() => {
-          deleteUpload(deleteModal.selectedFile, {
-            onSettled: () => handleDeleteCleaup(),
-          });
+          handleDeleteSingle(deleteModal.selectedFile);
+          handleDeleteCleaup();
         }}
       />
       <FileTagModal
