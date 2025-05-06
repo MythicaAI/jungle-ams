@@ -13,7 +13,7 @@ import { JobDefinition } from "@queries/packages/types";
 
 type Props = {
     width: number;
-    jobDefinitions: JobDefinition[] | undefined;
+    jobDefinition: JobDefinition;
     assetVersion: AssetVersionResponse | null;
 };
 
@@ -24,7 +24,7 @@ const isValidMeshFile = (fileName: string): boolean => {
     return VALID_MESH_EXTENSIONS.some(ext => lowerFileName.endsWith(ext));
 };
 
-const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) => {
+const SceneControls: React.FC<Props> = ({ width, jobDefinition,assetVersion }) => {
     const {
         selectedHdaId,
         setSelectedHdaId,
@@ -35,15 +35,12 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
     } = useSceneStore();        
     const parmTemplateGroup = React.useMemo(
         () => {
-            const jobDef = jobDefinitions?.find(
-                (definition) => definition.source.file_id === selectedHdaId,
-            );
             return new hou.ParmTemplateGroup(
-                jobDef?.params_schema.params_v2 as dictionary[],
+                jobDefinition?.params_schema.params_v2 as dictionary[],
             )
         }
         ,
-        [selectedHdaId, jobDefinitions],
+        [selectedHdaId, jobDefinition],
     );
 
     const inputFileParms = parmTemplateGroup.parm_templates.filter(
@@ -105,7 +102,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinitions,assetVersion }) 
         }
     }, [hdaFiles]);
 
-    if (!assetVersion || !jobDefinitions )
+    if (!assetVersion )
         return <CircularProgress />;
     
     return (
