@@ -16,6 +16,7 @@ export interface FolderParmProps {
   multiBlocks?: number[]; // Multiblocks for this folder
   setMultiBlocks?: React.Dispatch<React.SetStateAction<number[]>>; // Setter for multibocks
   multiFolderIndex?: number; // Index of the multi folder
+  useSlidersOnMobile?: boolean;
 }
 
 export const FolderParm: React.FC<FolderParmProps> = ({
@@ -26,6 +27,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
   setMultiBlocks,
   multiBlocks,
   multiFolderIndex,
+  useSlidersOnMobile,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [forceRerender, setForceRerender] = React.useState(false);
@@ -88,6 +90,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                 parmTemplate={parmTemplate}
                 onChange={onChange}
                 onFileUpload={onFileUpload}
+                useSlidersOnMobile={useSlidersOnMobile}
               />
             </div>
           ))}
@@ -123,6 +126,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                 parmTemplate={parmTemplate}
                 onChange={onChange}
                 onFileUpload={onFileUpload}
+                useSlidersOnMobile={useSlidersOnMobile}
               />
             </div>
           ))}
@@ -332,6 +336,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                     } as hou.ParmTemplate}
                     onChange={onChange}
                     onFileUpload={onFileUpload}
+                    useSlidersOnMobile={useSlidersOnMobile}
                   />
                 </div>
               );
@@ -362,6 +367,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
                   } as hou.ParmTemplate}
                   onChange={onChange}
                   onFileUpload={onFileUpload}
+                  useSlidersOnMobile={useSlidersOnMobile}
                 />
               </div>
             );
@@ -386,6 +392,7 @@ export const FolderParm: React.FC<FolderParmProps> = ({
               parmTemplate={parmTemplate}
               onChange={onChange}
               onFileUpload={onFileUpload}
+              useSlidersOnMobile={useSlidersOnMobile}
             />
           </div>
         ))}
