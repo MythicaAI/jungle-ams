@@ -5,6 +5,7 @@ import "@babylonjs/inspector";
 import "@babylonjs/node-geometry-editor";
 import { useSceneStore } from 'scenetalk';
 import { Grid, Layers, Search } from 'lucide-react';
+import { useWindowSize } from '@hooks/useWindowSize';
 
 // Material names
 const DEFAULT_MATERIAL = "default_mat";
@@ -41,7 +42,9 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
   const [isGroundVisible, setIsGroundVisible] = useState(true);
   const [isInspectorVisible, setIsInspectorVisible] = useState(false);
   const [meshStats, setMeshStats] = useState({ triangles: 0, points: 0 });
-  
+
+  const { currentWidth } = useWindowSize();
+
   interface PackageMaterials {
     name: string;
     material_name: string;
@@ -535,17 +538,19 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
                 <Layers size={16} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Inspector" placement="bottom">
-              <IconButton 
-                variant={isInspectorVisible ? "solid" : "soft"}
-                color={isInspectorVisible ? "primary" : "neutral"}
-                onClick={() => setIsInspectorVisible(!isInspectorVisible)}
-                size="sm"
-                sx={{ color: isInspectorVisible ? undefined : 'white' }}
-              >
-                <Search size={16} />
-              </IconButton>
-            </Tooltip>
+            {currentWidth >= 700 && (
+              <Tooltip title="Inspector" placement="bottom">
+                <IconButton 
+                  variant={isInspectorVisible ? "solid" : "soft"}
+                  color={isInspectorVisible ? "primary" : "neutral"}
+                  onClick={() => setIsInspectorVisible(!isInspectorVisible)}
+                  size="sm"
+                  sx={{ color: isInspectorVisible ? undefined : 'white' }}
+                >
+                  <Search size={16} />
+                </IconButton>
+              </Tooltip>
+            )}
           </Stack>
           
           <Box sx={{ pt: 0.5, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
