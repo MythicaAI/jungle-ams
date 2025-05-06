@@ -24,6 +24,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
 import { StatusBar } from "@components/StatusBar";
+import { JobDefinition } from "@queries/packages/types";
 
 export const PackageScene: React.FC = () => {
   const { asset_id, version_id } = useParams();
@@ -210,6 +211,16 @@ export const PackageScene: React.FC = () => {
     }
   }, [fileUpload]);
 
+  const [jobDef, setJobDef] = useState<JobDefinition | null>(null);
+
+  useEffect(() => {
+    setJobDef(
+      jobDefinitions?.find(
+        (definition) => definition.source.file_id === selectedHdaId,
+      ) || null,
+    );
+  }, [selectedHdaId, jobDefinitions]);
+
   // Set loading to false after initial setup
   useEffect(() => {
     setIsLoading(false);
@@ -322,10 +333,18 @@ export const PackageScene: React.FC = () => {
                 flexDirection: "column",
               }}
             >
-              <SceneControls 
-                width={390} 
-                assetVersion={assetVersion}
-                jobDefinitions={jobDefinitions}/>
+              {jobDef ?
+                <SceneControls 
+                  width={390} 
+                  assetVersion={assetVersion}
+                  jobDefinition={jobDef} />
+              : 
+                <Box sx={{ width: 390,padding: "20px" }}>
+                  <Typography level="h4" fontSize="medium">
+                    Select a Generator to continue
+                  </Typography>
+                </Box>
+              } 
             </Box>
           </>
         ) : (
@@ -348,11 +367,18 @@ export const PackageScene: React.FC = () => {
               <ModalClose />
               <DialogTitle>Controls</DialogTitle>
               <DialogContent>
-                <SceneControls
+              {jobDef ?
+                <SceneControls 
                   width={currentWidth - 40}
                   assetVersion={assetVersion}
-                  jobDefinitions={jobDefinitions}
-                />
+                  jobDefinition={jobDef} />
+              : 
+                <Box sx={{ width: currentWidth - 40,padding: "20px" }}> 
+                  <Typography level="h4" fontSize="medium">
+                    Select a Generator to continue
+                  </Typography>
+                </Box>
+              } 
               </DialogContent>
             </ModalDialog>
           </Modal>

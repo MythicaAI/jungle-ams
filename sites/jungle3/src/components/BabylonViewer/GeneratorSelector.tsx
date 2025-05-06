@@ -33,6 +33,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
       <Select
         variant="soft"
         name="generator_select"
+        placeholder="Select Generator"
         size="md"
         sx={{ minWidth: 200 }}
         value={selectedHdaId}
