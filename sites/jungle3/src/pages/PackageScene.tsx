@@ -329,7 +329,7 @@ export const PackageScene: React.FC = () => {
             color="neutral"
             sx={{
               position: "absolute",
-              right: 5,
+              left: 5,
               top: 5,
               zIndex: 1,
             }}
