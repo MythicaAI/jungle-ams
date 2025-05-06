@@ -15,11 +15,11 @@ WORKDIR /build
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package.json and pnpm-lock.yaml (if available)
 COPY . ./
 
-# Install dependencies
-RUN pnpm install
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm fetch --frozen-lockfile && \
+    pnpm install --frozen-lockfile
 
 # Build the application
 ARG NODE_ENV=production
