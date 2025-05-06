@@ -211,19 +211,23 @@ def parse_expose_to_ports(dockerfile_path: PathLike):
 def start_docker_compose(c, docker_compose_path, cleanup_fn=None):
     """Cleanly start a docker compose instance"""
     env_file_path = generate_mount_env_file()
+    compose_file = './docker-compose.yaml.local' if os.path.exists(
+        os.path.join(docker_compose_path, 'docker-compose.yaml.local')) else './docker-compose.yaml'
     with c.cd(docker_compose_path):
         c.run(f'docker compose --env-file {env_file_path} down --timeout 1')
         # cleanup_fn(c) if cleanup_fn is not None else None
         c.run(f'docker compose --env-file {env_file_path} '
-              '-f ./docker-compose.yaml up -d', pty=PTY_SUPPORTED)
+              f'-f {compose_file} up -d', pty=PTY_SUPPORTED)
 
 
 def stop_docker_compose(c, docker_compose_path):
     """Shutdown a docker compose instance"""
     env_file_path = generate_mount_env_file()
+    compose_file = './docker-compose.yaml.local' if os.path.exists(
+        os.path.join(docker_compose_path, 'docker-compose.yaml.local')) else './docker-compose.yaml'
     with c.cd(docker_compose_path):
         c.run(
-            f'docker compose --env-file {env_file_path} -f ./docker-compose.yaml down --timeout 3')
+            f'docker compose --env-file {env_file_path} -f {compose_file} down --timeout 3')
 
 
 def build_image(c, image_path: PathLike, no_cache: bool = False, use_tailscale: bool = False):
