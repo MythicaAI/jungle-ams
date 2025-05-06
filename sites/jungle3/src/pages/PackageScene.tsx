@@ -58,7 +58,7 @@ export const PackageScene: React.FC = () => {
   } = useSceneStore();
 
   const navigate = useNavigate();
-
+  
   const { data: jobDefinitions } =
     useGetJobDefinition(asset_id as string, (version_id as string)?.split("."));
 
@@ -214,11 +214,16 @@ export const PackageScene: React.FC = () => {
   const [jobDef, setJobDef] = useState<JobDefinition | null>(null);
 
   useEffect(() => {
-    setJobDef(
-      jobDefinitions?.find(
-        (definition) => definition.source.file_id === selectedHdaId,
-      ) || null,
-    );
+    if(jobDefinitions?.length === 1) {
+      setJobDef(jobDefinitions[0]);
+    } else {
+      setJobDef(
+        jobDefinitions?.find(
+          (definition) => definition.source.file_id === selectedHdaId,
+        ) || null,
+      );
+    }
+
   }, [selectedHdaId, jobDefinitions]);
 
   // Set loading to false after initial setup
