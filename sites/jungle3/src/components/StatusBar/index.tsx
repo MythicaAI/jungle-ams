@@ -122,6 +122,8 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
             height: '100%',
             flex: 1,
             justifyContent: 'flex-start',
+            overflow: 'hidden',
+            width: 0,
           }}
         >
           {requestInFlight && latestLogMessage.log && (
@@ -138,13 +140,9 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
           )}
           <Typography 
             component="span" 
+            noWrap
             sx={{ 
-              flex: 1, 
               textOverflow: 'ellipsis',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              maxWidth: '400px',
-              display: 'inline-block',
               textAlign: 'left',
               color: secondaryTextColor
             }}
