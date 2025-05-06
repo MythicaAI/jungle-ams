@@ -228,18 +228,22 @@ export const PackageScene: React.FC = () => {
         alignItems="center"
         mb="12px"
       >
-        <Stack direction="row" alignItems="center" gap="12px">
-          <Typography level="h2">{assetVersion?.name}</Typography>
-          <Chip
-            key={assetVersion?.version.join(".")}
-            variant="soft"
-            color="primary"
-            size="lg"
-            sx={{ borderRadius: "xl" }}
-          >
-            {assetVersion?.version.join(".")}
-          </Chip>
-        </Stack>
+        {currentWidth > 700 ? (
+          <Stack direction="row" alignItems="center" gap="12px">
+            <Typography level="h2">{assetVersion?.name}</Typography>
+            <Chip
+              key={assetVersion?.version.join(".")}
+              variant="soft"
+              color="primary"
+              size="lg"
+              sx={{ borderRadius: "xl" }}
+            >
+              {assetVersion?.version.join(".")}
+            </Chip>
+          </Stack>
+        ) : (
+          <Box />
+        )}
 
         <GeneratorSelector 
           jobDefinitions={jobDefinitions} 
@@ -255,7 +259,7 @@ export const PackageScene: React.FC = () => {
             navigate(`/package-view/${asset_id}/versions/${version_id}`);
           }}
         >
-          Back to Package view
+          {currentWidth > 700 ? "Back to Package view" : "Back"}
         </Button>
       </Stack>
       <Box
@@ -329,7 +333,7 @@ export const PackageScene: React.FC = () => {
             color="neutral"
             sx={{
               position: "absolute",
-              right: 5,
+              left: 5,
               top: 5,
               zIndex: 1,
             }}

@@ -34,6 +34,7 @@ export const ParmFactory: React.FC<ParmFactoryProps> = ({
           data={data}
           onChange={onChange}
           onFileUpload={onFileUpload}
+          useSlidersOnMobile={useSlidersOnMobile}
           template={parmTemplate as hou.FolderParmTemplate}
         />
       );
@@ -44,6 +45,7 @@ export const ParmFactory: React.FC<ParmFactoryProps> = ({
           data={data}
           onChange={onChange}
           onFileUpload={onFileUpload}
+          useSlidersOnMobile={useSlidersOnMobile}
           template={parmTemplate as hou.FolderSetParmTemplate}
         />
       );

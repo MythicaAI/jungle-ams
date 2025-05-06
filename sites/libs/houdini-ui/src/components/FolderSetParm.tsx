@@ -10,13 +10,15 @@ export interface FolderSetParmProps {
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
   onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
+  useSlidersOnMobile?: boolean;
 }
 
 export const FolderSetParm: React.FC<FolderSetParmProps> = ({
   template,
   data,
   onChange,
-  onFileUpload
+  onFileUpload,
+  useSlidersOnMobile
 }) => {
   const [multiBlocks, setMultiBlocks] = useState<Record<string, number[]>>(() =>
     template.parm_templates.reduce((acc, folder) => {
@@ -278,6 +280,7 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
                       onFileUpload={onFileUpload}
                       template={folder}
                       multiFolderIndex={index}
+                      useSlidersOnMobile={useSlidersOnMobile}
                     />
                   ))}
                 </div>
@@ -308,6 +311,7 @@ export const FolderSetParm: React.FC<FolderSetParmProps> = ({
                       setMultiBlocks={(newBlocks) =>
                         updateMultiBlocks(folder.name, newBlocks)
                       }
+                      useSlidersOnMobile={useSlidersOnMobile}
                     />
                   </div>
                 );
