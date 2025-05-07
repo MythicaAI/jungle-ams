@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import hou,{ dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -30,6 +30,13 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
 
     const [selectedValue, setSelectedValue] = useState<string>(getDefaultValue);
 
+    useEffect(() => {
+    const myData = data[template.name] as string || null;
+    if (myData && selectedValue !== myData) {
+        setSelectedValue(myData);
+    }
+    }, [data[template.name]]);
+    
     const handleChange = (val: string) => {
         setSelectedValue(val);
 

@@ -133,6 +133,13 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
     const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 
+    useEffect(() => {
+        const myData = data[template.name] as ValueRampPoint[] || null;
+        if (myData) {
+            setPoints(myData);
+        }
+    }, [data[template.name]]);
+        
     const commitChange = useCallback((newPoints: ValueRampPoint[]) => {
         setPoints(newPoints);
         const ret: { [key: string]: ValueRampPoint[] } = {};

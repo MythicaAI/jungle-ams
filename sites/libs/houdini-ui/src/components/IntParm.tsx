@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import hou, { dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -50,6 +50,13 @@ export const IntParm: React.FC<IntParmProps> = ({
     ret[template.name] = updatedValues;
     onChange?.(ret);
   };
+
+  useEffect(() => {
+    const myData = data[template.name] as number[] || null;
+    if (myData && values !== myData) {
+      setValues(myData);
+    }
+  }, [data[template.name]]);
 
   const startEditing = (index: number, value: number) => {
     setEditingIndex(index);
