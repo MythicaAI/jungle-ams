@@ -15,7 +15,7 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     
     
     const getDefaultValues = () => {
-        return template.default_value.length === template.num_components
+        return template.default_value?.length === template.num_components
             ? [...template.default_value]
             : Array<string>(template.num_components).fill("");
     }
