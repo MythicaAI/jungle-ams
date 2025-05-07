@@ -292,13 +292,6 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       scene.render();
     });
 
-    // Handle window resize
-    const handleResize = () => {
-      engine.resize();
-    };
-
-    window.addEventListener("resize", handleResize);
-
     // Notify parent that scene is ready
     if (onSceneCreated) {
       onSceneCreated(scene);
@@ -321,7 +314,6 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
     });
 
     return () => {
-      window.removeEventListener("resize", handleResize);
       scene.dispose();
       engine.dispose();
     };
@@ -488,6 +480,22 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
       });
     }
   }, [meshData]);
+
+  useEffect(() => {
+    if (!canvasRef.current || !engineRef.current) return;
+        
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(() => {
+        if (engineRef.current) engineRef.current.resize();
+      }, 0);
+    });
+    
+    resizeObserver.observe(canvasRef.current);
+    
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   return (
     <Box

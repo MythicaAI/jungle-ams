@@ -325,8 +325,8 @@ export const PackageScene: React.FC = () => {
             {/* Floating sidepanel */}
             <Box
               sx={{
-                position: "absolute",
                 left: isSidepanelOpen ? "0" : "-390px",
+                width: isSidepanelOpen ? "390px" : "0px",
                 top: 0,
                 bottom: 0,
                 height: "100%", 
