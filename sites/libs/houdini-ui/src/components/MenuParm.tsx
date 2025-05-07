@@ -31,7 +31,7 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
     const [selectedValue, setSelectedValue] = useState<string>(getDefaultValue);
 
     useEffect(() => {
-    const myData = data[template.name] as string || null;
+    const myData = data[template.name] as string || getDefaultValue();
     if (myData && selectedValue !== myData) {
         setSelectedValue(myData);
     }

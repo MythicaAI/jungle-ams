@@ -61,7 +61,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 
     useEffect(() => {
-        const myData = data[template.name] as ColorRampPoint[] || null;
+        const myData = data[template.name] as ColorRampPoint[] || getDefaultColorPoints(template,data);
         if (myData) {
             setPoints(myData);
         }

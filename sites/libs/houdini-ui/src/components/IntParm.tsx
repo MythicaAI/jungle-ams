@@ -15,18 +15,21 @@ export const IntParm: React.FC<IntParmProps> = ({
   onChange,
   useSlidersOnMobile,
 }) => {
-  const [values, setValues] = useState<number[]>(() =>
-    data[template.name] ||
-    template.default_value.length === template.num_components
-      ? template.default_value
-      : Array<number>(template.num_components).fill(0)
-  );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const { currentWidth } = useWindowSize();
   const isMobileSize = currentWidth <= 700 && useSlidersOnMobile;
   const isMultiComponent = template.num_components > 1;
 
+  const getDefaultValues = () => {
+    return template.default_value.length === template.num_components
+      ? [...template.default_value]
+      : Array<number>(template.num_components).fill(0);
+  }
+  const [values, setValues] = useState<number[]>(() =>
+    (data[template.name] as number[]) || getDefaultValues() 
+  );
+  
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseInt(e.target.value, 10) || 0;
     const index = parseInt(e.target.getAttribute('parm-index') || '0', 10);
@@ -52,7 +55,7 @@ export const IntParm: React.FC<IntParmProps> = ({
   };
 
   useEffect(() => {
-    const myData = data[template.name] as number[] || null;
+    const myData = data[template.name] as number[] || getDefaultValues();
     if (myData && values !== myData) {
       setValues(myData);
     }
@@ -165,7 +168,7 @@ export const IntParm: React.FC<IntParmProps> = ({
             >
               <input
                 type='range'
-                value={value || template.default_value[index] || template.min || 0}  
+                value={value}  
                 step={1}
                 parm-index={index}
                 onChange={handleChange}
@@ -292,7 +295,7 @@ export const IntParm: React.FC<IntParmProps> = ({
             {!isMultiComponent && (
               <input
                 type='range'
-                value={value || template.default_value[index] || template.min || 0}  
+                value={value}  
                 step={1}
                 parm-index={index}
                 onChange={handleChange}
