@@ -15,6 +15,7 @@ export class SceneTalkConnection {
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private isReconnecting = false;
+  private shouldAutoReconnect = true;
   private pingInterval: NodeJS.Timeout | null = null;
   private lastPingLatency: number = 0;
   private handlers: {
@@ -46,6 +47,7 @@ export class SceneTalkConnection {
     }
 
     this.ws = new WebSocket(this.wsUrl);
+    this.shouldAutoReconnect = true;
 
     this.ws.onopen = () => {
       console.log("Connected to WebSocket server");
@@ -124,7 +126,7 @@ export class SceneTalkConnection {
 
   // Attempt to reconnect with exponential backoff
   private attemptReconnect() {
-    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
+    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts || !this.shouldAutoReconnect) {
       return;
     }
 
@@ -160,6 +162,7 @@ export class SceneTalkConnection {
 
   // Disconnect from the WebSocket server
   disconnect() {
+    this.shouldAutoReconnect = false;
     this.resetReconnect();
     this.stopPingInterval();
     if (this.ws) {
