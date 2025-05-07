@@ -331,11 +331,15 @@ export const FolderParm: React.FC<FolderParmProps> = (folderParm) => {
                   </div>
                   <div className="folder-content">
                     {template.parm_templates.map((parmTemplate, parmIndex) => {
+                      const name = parmTemplate.name.replace(/#/, `${index}`);
                       return (
                         <div key={`${template.name}-${index}-${parmIndex}`} className="parm-item">
                           <ParmFactory
                             data={data}
-                            parmTemplate={parmTemplate}
+                            parmTemplate={{
+                              ...parmTemplate,
+                              name
+                            } as hou.ParmTemplate}
                             onChange={onChange}
                             onFileUpload={onFileUpload}
                             useSlidersOnMobile={useSlidersOnMobile}
