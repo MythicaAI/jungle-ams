@@ -2,6 +2,9 @@
 import { v4 as uuid } from "uuid";
 import { InputFile } from "./types"; 
 
+// Constants
+const PING_INTERVAL_MS = 15000;
+
 // SceneTalk WebSocket Service
 export class SceneTalkConnection {
   private ws: WebSocket | null = null;
@@ -12,12 +15,15 @@ export class SceneTalkConnection {
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private isReconnecting = false;
+  private pingInterval: NodeJS.Timeout | null = null;
+  private lastPingLatency: number = 0;
   private handlers: {
     onStatusChange?: (status: "connected" | "disconnected" | "reconnecting") => void;
     onStatusLog?: (level: "info" | "warning" | "error", log: string) => void;
     onGeometryData?: (data: any) => void;
     onFileDownload?: (fileName: string, base64Content: string) => void;
     onRequestComplete?: (elapsedTime: number) => void;
+    onLatencyUpdate?: (latency: number) => void;
   } = {};
 
   constructor(private wsUrl: string = "ws://localhost:8765") {}
@@ -51,6 +57,7 @@ export class SceneTalkConnection {
       if (this.handlers.onStatusLog) {
         this.handlers.onStatusLog("info", "Connected to server");
       }
+      this.startPingInterval();
     };
 
     this.ws.onclose = () => {
@@ -61,6 +68,7 @@ export class SceneTalkConnection {
       if (this.handlers.onStatusLog) {
         this.handlers.onStatusLog("info", "Disconnected from server");
       }
+      this.stopPingInterval();
       this.attemptReconnect();
     };
 
@@ -79,6 +87,39 @@ export class SceneTalkConnection {
         this.handlers.onStatusLog("error", "WebSocket connection error");
       }
     };
+  }
+
+  private startPingInterval() {
+    this.stopPingInterval();
+    this.sendPing();
+    this.pingInterval = setInterval(() => {
+      this.sendPing();
+    }, PING_INTERVAL_MS);
+  }
+
+  private stopPingInterval() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
+  private sendPing() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    
+    try {
+      const pingMessage = {
+        op: "ping_pong",
+        data: {
+          timestamp: Date.now()
+        }
+      };
+      this.ws.send(JSON.stringify(pingMessage));
+    } catch (error) {
+      console.error("Error sending ping:", error);
+    }
   }
 
   // Attempt to reconnect with exponential backoff
@@ -120,6 +161,7 @@ export class SceneTalkConnection {
   // Disconnect from the WebSocket server
   disconnect() {
     this.resetReconnect();
+    this.stopPingInterval();
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -247,6 +289,17 @@ export class SceneTalkConnection {
       this.handlers.onFileDownload(data.data.file_name, data.data.content_base64);
     }
 
+    if (data.op === "ping_pong") {
+      const sentTime = data.data.timestamp;
+      const now = Date.now();
+      const latency = now - sentTime;
+      this.lastPingLatency = latency;
+      
+      if (this.handlers.onLatencyUpdate) {
+        this.handlers.onLatencyUpdate(latency);
+      }
+    }
+
     if (data.op == "automation" && data.data == "end") {
       this.handleRequestComplete();
     }
@@ -307,6 +360,10 @@ export class SceneTalkConnection {
       console.error("Error downloading file:", error);
       return false;
     }
+  }
+
+  getLatency(): number {
+    return this.lastPingLatency;
   }
 }
 
