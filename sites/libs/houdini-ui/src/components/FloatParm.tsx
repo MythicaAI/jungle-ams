@@ -23,7 +23,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   const isMultiComponent = template.num_components > 1;
 
   const getDefaultValues = () => {
-    return template.default_value.length === template.num_components
+    return template.default_value?.length === template.num_components
       ? [...template.default_value]
       : Array<number>(template.num_components).fill(0);
   }
