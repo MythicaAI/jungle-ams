@@ -15,16 +15,17 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     
     
     const getDefaultValues = () => {
-        return data[template.name] ||
-            template.default_value.length === template.num_components
-            ? template.default_value
+        return template.default_value.length === template.num_components
+            ? [...template.default_value]
             : Array<string>(template.num_components).fill("");
     }
 
-    const [values, setValues] = useState<string[]>(getDefaultValues());
+    const [values, setValues] = useState<string[]>(
+        data[template.name] as string[] || getDefaultValues()
+    );
 
     useEffect(() => {
-        const myData = data[template.name] as string[] || null;
+        const myData = data[template.name] as string[] || getDefaultValues();
         if (myData && values !== myData) {
             setValues(myData);
         }
@@ -48,12 +49,12 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                 console.warn("StringParm: File StringParam of FileReference but no FileUpload handler provided");                    
             }
         } else {
+            const newValue = e.target.value;
             setValues((prev)=>{
                 prev[index] = newValue;
                 return prev;
             });
             
-            const newValue = e.target.value;
             //and notify listeners
             const ret:{[key:string]: string[]} = {}
             const updatedValues = [...values];

@@ -134,7 +134,7 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 
     useEffect(() => {
-        const myData = data[template.name] as ValueRampPoint[] || null;
+        const myData = data[template.name] as ValueRampPoint[] || getDefaultPoints(template,data);
         if (myData) {
             setPoints(myData);
         }

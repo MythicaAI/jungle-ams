@@ -15,12 +15,6 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   onChange,
   useSlidersOnMobile,
 }) => {
-  const [values, setValues] = useState<number[]>(() =>
-    data[template.name] ||
-    template.default_value.length === template.num_components
-      ? template.default_value
-      : Array<number>(template.num_components).fill(0)
-  );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const { currentWidth } = useWindowSize();
@@ -28,7 +22,15 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   const [isValidInput, setIsValidInput] = useState<boolean>(true);
   const isMultiComponent = template.num_components > 1;
 
-
+  const getDefaultValues = () => {
+    return template.default_value.length === template.num_components
+      ? [...template.default_value]
+      : Array<number>(template.num_components).fill(0);
+  }
+  const [values, setValues] = useState<number[]>(() =>
+    (data[template.name] as number[]) || getDefaultValues() 
+  );
+  
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseFloat(e.target.value) || 0;
     const index = parseInt(e.target.getAttribute('parm-index') || '0', 10);
@@ -63,11 +65,11 @@ export const FloatParm: React.FC<FloatParmProps> = ({
 
 
   useEffect(() => {
-    const myData = data[template.name] as number[] || null;
+    const myData = data[template.name] as number[] || getDefaultValues()
     if (myData && values !== myData) {
       setValues(myData);
     }
-  }, [data[template.name]]);
+  }, [data, data[template.name]]);
 
   const startEditing = (index: number, value: number) => {
     setEditingIndex(index);
@@ -195,7 +197,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
             >
               <input
                 type='range'
-                value={value || template.default_value[index] || template.min || 0}  
+                value={value}  
                 step={(template.max - template.min)/1000}
                 parm-index={index}
                 onChange={handleChange}
@@ -324,7 +326,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
             {!isMultiComponent && (
               <input
                 type='range'
-                value={value || template.default_value[index] || template.min || 0}  
+                value={value}  
                 step={(template.max - template.min)/1000}
                 parm-index={index}
                 onChange={handleChange}
