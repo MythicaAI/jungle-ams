@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import hou, { dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -27,6 +27,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
   const isMobileSize = currentWidth <= 700 && useSlidersOnMobile;
   const [isValidInput, setIsValidInput] = useState<boolean>(true);
   const isMultiComponent = template.num_components > 1;
+
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseFloat(e.target.value) || 0;
@@ -59,6 +60,14 @@ export const FloatParm: React.FC<FloatParmProps> = ({
     ret[template.name] = updatedValues;
     onChange?.(ret);
   };
+
+
+  useEffect(() => {
+    const myData = data[template.name] as number[] || null;
+    if (myData && values !== myData) {
+      setValues(myData);
+    }
+  }, [data[template.name]]);
 
   const startEditing = (index: number, value: number) => {
     setEditingIndex(index);

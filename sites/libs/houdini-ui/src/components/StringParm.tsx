@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import hou,{ dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -13,6 +13,7 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     const { currentWidth } = useWindowSize();
     const isMobileSize = currentWidth <= 700;
     
+    
     const getDefaultValues = () => {
         return data[template.name] ||
             template.default_value.length === template.num_components
@@ -22,6 +23,13 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
 
     const [values, setValues] = useState<string[]>(getDefaultValues());
 
+    useEffect(() => {
+        const myData = data[template.name] as string[] || null;
+        if (myData && values !== myData) {
+            setValues(myData);
+        }
+    }, [data[template.name]]);
+    
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const index =  e.target.getAttribute('parm-index') as unknown as number;
 
