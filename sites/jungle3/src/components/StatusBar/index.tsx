@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography, Button, Dropdown, Menu, MenuButton, MenuItem, CircularProgress } from '@mui/joy';
+import { Box, Typography, Button, Dropdown, Menu, MenuButton, MenuItem, CircularProgress, Tooltip } from '@mui/joy';
 import { useSceneStore } from "scenetalk";
 import { LucideChevronUp, LucideChevronDown, LucideAlertTriangle, LucideAlertCircle, LucideDownload } from "lucide-react";
 
@@ -14,7 +14,8 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     wsStatus, 
     statusLog,
     setExportFormat,
-    requestInFlight
+    requestInFlight,
+    latency
   } = useSceneStore();
   
   useEffect(() => {
@@ -81,37 +82,43 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
         alignItems: 'center', 
         flex: 1,
       }}>
-        <Box 
-          sx={{ 
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            backgroundColor: primaryColor,
-            padding: '0 8px',
-            height: '100%',
-            color: primaryTextColor,
-            fontWeight: 'bold',
-          }}
+        <Tooltip 
+          title={wsStatus === "connected" ? `Ping: ${latency || 0}ms` : "Not connected"}
+          placement="top"
+          variant="soft"
         >
           <Box 
             sx={{ 
-              width: 10, 
-              height: 10, 
-              borderRadius: '50%', 
-              bgcolor: wsStatus === "connected" 
-                ? 'success.500' 
-                : wsStatus === "reconnecting" 
-                  ? 'warning.500' 
-                  : 'danger.500',
-              display: 'inline-block'
-            }} 
-          />
-          {wsStatus === "connected" 
-            ? "Connected" 
-            : wsStatus === "reconnecting" 
-              ? "Reconnecting..." 
-              : "Disconnected"}
-        </Box>
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: primaryColor,
+              padding: '0 8px',
+              height: '100%',
+              color: primaryTextColor,
+              fontWeight: 'bold'
+            }}
+          >
+            <Box 
+              sx={{ 
+                width: 10, 
+                height: 10, 
+                borderRadius: '50%', 
+                bgcolor: wsStatus === "connected" 
+                  ? 'success.500' 
+                  : wsStatus === "reconnecting" 
+                    ? 'warning.500' 
+                    : 'danger.500',
+                display: 'inline-block'
+              }} 
+            />
+            {wsStatus === "connected" 
+              ? "Connected" 
+              : wsStatus === "reconnecting" 
+                ? "Reconnecting..." 
+                : "Disconnected"}
+          </Box>
+        </Tooltip>
         
         <Box
           sx={{

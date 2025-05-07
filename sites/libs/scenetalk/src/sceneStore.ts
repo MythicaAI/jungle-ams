@@ -63,6 +63,10 @@ interface SceneState {
   pendingRequest: boolean;
   setPendingRequest: (value: boolean) => void;
 
+  // WebSocket latency
+  latency: number;
+  setLatency: (latency: number) => void;
+
   // Utility methods
   reset: () => void;
 }
@@ -150,6 +154,10 @@ export const useSceneStore = create<SceneState>((set) => ({
   pendingRequest: false,
   setPendingRequest: (value) => set({ pendingRequest: value }),
 
+  // WebSocket latency
+  latency: 0,
+  setLatency: (latency) => set({ latency }),
+
   // Utility methods
   reset: () => {
     set({
@@ -163,6 +171,7 @@ export const useSceneStore = create<SceneState>((set) => ({
       exportFormat: null,
       requestInFlight: false,
       pendingRequest: false,
+      latency: 0,
     });
   },
 }));
