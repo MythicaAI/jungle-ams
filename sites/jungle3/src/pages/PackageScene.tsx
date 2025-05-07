@@ -54,6 +54,7 @@ export const PackageScene: React.FC = () => {
     setPendingRequest,
     exportFormat,
     setExportFormat,
+    setLatency,
     reset
   } = useSceneStore();
 
@@ -106,6 +107,9 @@ export const PackageScene: React.FC = () => {
       },
       onFileDownload: (fileName, base64Content) => {
         SceneTalkConnection.downloadFileFromBase64(fileName, base64Content);
+      },
+      onLatencyUpdate: (latency) => {
+        setLatency(latency);
       },
       onRequestComplete: (elapsedTime) => {
         const elapsedTimeInSeconds = Math.round(elapsedTime);
