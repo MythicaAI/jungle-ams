@@ -15,17 +15,26 @@ export interface ParmFactoryProps {
   parmTemplate: hou.ParmTemplate;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
-  onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
+  onFileUpload?: (formData: Record<string, File>, callback: (file_id: string) => void) => void;
   useSlidersOnMobile?: boolean;
 }
 
-export const ParmFactory: React.FC<ParmFactoryProps> = ({
-  parmTemplate,
-  data,
-  onChange,
-  onFileUpload,
-  useSlidersOnMobile,
-}) => {
+export type ParmFactory = React.ComponentType<ParmFactoryProps>;
+
+
+export const DefaultParmFactory: React.FC<ParmFactoryProps> = (props) => {
+  return parmFactoryMethod(props);
+};
+
+export const ParmFactoryContext =  
+  React.createContext<ParmFactory>(
+    DefaultParmFactory
+);
+
+export const ParmFactoryProvider = ParmFactoryContext.Provider;
+
+export const parmFactoryMethod = (props: ParmFactoryProps): React.ReactNode => {
+  const { parmTemplate, data, onChange, onFileUpload, useSlidersOnMobile } = props;
   switch (parmTemplate.param_type) {
     case hou.parmTemplateType.Folder:
       return (
@@ -129,4 +138,4 @@ export const ParmFactory: React.FC<ParmFactoryProps> = ({
         </div>
       );
   }
-};
+}
