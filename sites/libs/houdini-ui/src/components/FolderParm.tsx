@@ -224,10 +224,6 @@ export const FolderParm: React.FC<FolderParmProps> = ({
         <div className="folder-content" key={`${forceRerender}`}>
           {multiBlocks &&
             multiBlocks?.map((_, index) => {
-              const temlpateName = template.parm_templates[0].name.replace(
-                /#/,
-                `${index}`
-              );
               return (
                 <div
                   key={`${template.name}-${index}-${multiBlocks.length}`}
