@@ -1,6 +1,6 @@
 import React from 'react';
 import hou, { dictionary } from '../types/Houdini';
-import { ParmFactory } from './ParmFactory'; // Reuse the view controller for nested templates
+import { ParmFactoryContext } from './ParmFactory'; // Reuse the view controller for nested templates
 import ChevronRight from '../assets/chevron-right.svg';
 import ChevronDown from '../assets/chevron-down.svg';
 import Cross from '../assets/cross.svg';
@@ -19,16 +19,19 @@ export interface FolderParmProps {
   useSlidersOnMobile?: boolean;
 }
 
-export const FolderParm: React.FC<FolderParmProps> = ({
-  template,
-  data,
-  onChange,
-  onFileUpload,
-  setMultiBlocks,
-  multiBlocks,
-  multiFolderIndex,
-  useSlidersOnMobile,
-}) => {
+export const FolderParm: React.FC<FolderParmProps> = (folderParm) => {
+  const ParmFactory = React.useContext(ParmFactoryContext);
+
+  const {
+    template,
+    data,
+    onChange,
+    onFileUpload,
+    setMultiBlocks,
+    multiBlocks,
+    multiFolderIndex,
+    useSlidersOnMobile,
+  } = folderParm;
   const [isOpen, setIsOpen] = React.useState(false);
   const [forceRerender, setForceRerender] = React.useState(false);
 

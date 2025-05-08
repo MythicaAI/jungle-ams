@@ -1,6 +1,6 @@
 import React from 'react';
 import hou, { dictionary } from '../types/Houdini';
-import { ParmFactory } from './ParmFactory';
+import { ParmFactoryContext } from './ParmFactory';
 
 export interface ParmGroupProps {
   group: hou.ParmTemplateGroup;
@@ -10,24 +10,20 @@ export interface ParmGroupProps {
   useSlidersOnMobile?: boolean;
 }
 
-export const ParmGroup: React.FC<ParmGroupProps> = ({
-  group,
-  data,
-  onChange,
-  onFileUpload,
-  useSlidersOnMobile = true,
-}) => {
+export const ParmGroup: React.FC<ParmGroupProps> = (props) => {
+  const ParmFactory = React.useContext(ParmFactoryContext);
+
   return (
     <div className="parm-group nodrag">
       {/* Render each ParmTemplate in the group */}
-      {group.parm_templates.map((template) => (
+      {props.group.parm_templates.map((template) => (
         <ParmFactory
           key={template.id.toString()}
-          data={data}
+          data={props.data}
           parmTemplate={template}
-          onFileUpload={onFileUpload}
-          onChange={onChange}
-          useSlidersOnMobile={useSlidersOnMobile}
+          onFileUpload={props.onFileUpload}
+          onChange={props.onChange}
+          useSlidersOnMobile={props.useSlidersOnMobile}
         />
       ))}
     </div>
