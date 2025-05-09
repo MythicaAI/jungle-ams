@@ -1,16 +1,13 @@
 import React, { useEffect } from "react";
 import { Select, Option, Box } from "@mui/joy";
 import { useSceneStore } from "scenetalk";
-import { JobDefinition } from "@queries/packages/types";
 import { AssetVersionResponse } from "types/apiTypes";
 
 type GeneratorSelectorProps = {
-  jobDefinitions: JobDefinition[] | undefined;
   assetVersion: AssetVersionResponse | null;
 };
 
 const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({ 
-  jobDefinitions, 
   assetVersion 
 }) => {
   const { selectedHdaId, setSelectedHdaId } = useSceneStore();

@@ -127,7 +127,6 @@ export const useCreateJobDefinitionFromTemplate = () => {
       job_def_id: string;
       job_def_template: JobDefinitionTemplate;
     }) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       return await api.post({
         path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}/${createRequest.job_def_id}`,
         body: createRequest.job_def_template,

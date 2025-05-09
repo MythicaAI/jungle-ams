@@ -29,7 +29,6 @@ import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
 import { StatusBar } from "@components/StatusBar";
 import { JobDefinition } from "@queries/packages/types";
 import { DefaultParmFactory, ParmFactoryProps, ParmFactoryProvider } from "houdini-ui";
-import { set } from "lodash";
 
 export const PackageScene: React.FC = () => {
   const { asset_id, version_id } = useParams();
@@ -298,7 +297,6 @@ export const PackageScene: React.FC = () => {
           Generator:
         </FormLabel>
         <GeneratorSelector 
-          jobDefinitions={jobDefinitions} 
           assetVersion={assetVersion} 
         />
         <FormLabel>
