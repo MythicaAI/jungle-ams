@@ -170,8 +170,7 @@ export const useSceneStore = create<SceneState>((set) => ({
       statusLog: [],
       exportFormat: null,
       requestInFlight: false,
-      pendingRequest: false,
-      latency: 0,
+      pendingRequest: false
     });
   },
 }));
