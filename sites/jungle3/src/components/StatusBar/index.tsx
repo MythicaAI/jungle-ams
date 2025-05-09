@@ -9,7 +9,10 @@ interface StatusBarProps {
 
 export const StatusBar: React.FC<StatusBarProps> = () => {
   const [isLogVisible, setIsLogVisible] = useState(false);
+  const [canDownload, setCanDownload] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
   const { 
     wsStatus, 
     statusLog,
@@ -17,6 +20,10 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     requestInFlight,
     latency
   } = useSceneStore();
+
+  const warningCount = statusLog.filter(log => log.level === "warning").length;
+  const errorCount = statusLog.filter(log => log.level === "error").length;
+  const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
   
   useEffect(() => {
     if (isLogVisible && logContainerRef.current) {
@@ -24,10 +31,28 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     }
   }, [isLogVisible, statusLog]);
   
-  const warningCount = statusLog.filter(log => log.level === "warning").length;
-  const errorCount = statusLog.filter(log => log.level === "error").length;
-  const latestLogMessage = statusLog.length > 0 ? statusLog[statusLog.length - 1] : { level: "info", log: "" };
-  
+  // Debounce the download state to prevent flickering on short requests
+  useEffect(() => {
+    const successState = wsStatus === "connected" && latestLogMessage.level === "info" && !requestInFlight;
+    
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    if (successState) {
+      setCanDownload(true);
+    } else if (requestInFlight) {
+      timerRef.current = setTimeout(() => setCanDownload(false), 250);
+    } else {
+      setCanDownload(false);
+    }
+    
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [requestInFlight, wsStatus]);
+
   let primaryColor = "";
   let primaryHoverColor = "";
   let primaryTextColor = "";
@@ -54,8 +79,6 @@ export const StatusBar: React.FC<StatusBarProps> = () => {
     secondaryColor = "rgba(95, 95, 95, 0.3)";
     secondaryTextColor = "rgb(255, 255, 255)";
   }
-
-  const canDownload = wsStatus === "connected" && latestLogMessage.level !== "error" && !requestInFlight;
 
   const handleDownload = (format: string) => {
     setExportFormat(format.toLowerCase());
