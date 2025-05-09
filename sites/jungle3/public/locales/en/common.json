@@ -6,6 +6,7 @@
     "draft": "Draft",
     "name": "Name",
     "description": "Description",
+    "sceneViewer": "Scene Viewer",
     "sortingPanel": {
       "options": [
         {

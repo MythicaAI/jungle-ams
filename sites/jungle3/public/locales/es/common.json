@@ -6,6 +6,7 @@
     "draft": "Borrador",
     "name": "Nombre",
     "description": "Descripción",
+    "sceneViewer": "Visor de Escena",
     "sortingPanel": {
       "options": [
         {
