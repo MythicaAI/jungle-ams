@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Select, Option, Box } from "@mui/joy";
 import { useSceneStore } from "scenetalk";
 import { JobDefinition } from "@queries/packages/types";
@@ -18,6 +18,12 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
   const hdaFiles = assetVersion?.contents?.files.filter((file) =>
     file.file_name.includes(".hda"),
   );
+
+  useEffect(() => {
+    if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
+        setSelectedHdaId(hdaFiles[0].file_id);
+    }
+  }, [hdaFiles]);
 
   if (!hdaFiles || hdaFiles.length <= 1) {
     return null;

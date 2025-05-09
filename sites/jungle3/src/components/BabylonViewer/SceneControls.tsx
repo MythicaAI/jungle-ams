@@ -5,7 +5,7 @@ import {
     Option,
     CircularProgress
 } from "@mui/joy";
-import React, { useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { useSceneStore } from "scenetalk";
 import { dictionary, hou, ParmGroup } from "houdini-ui";
 import { AssetVersionResponse, AssetVersionContent } from "types/apiTypes";
@@ -27,7 +27,6 @@ const isValidMeshFile = (fileName: string): boolean => {
 const SceneControls: React.FC<Props> = ({ width, jobDefinition,assetVersion }) => {
     const {
         selectedHdaId,
-        setSelectedHdaId,
         setInputFile,
         paramValues,
         setParamValues,
@@ -48,10 +47,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinition,assetVersion }) =
         parm.param_type === hou.parmTemplateType.File &&
         parm.name.startsWith("input"),
     );
-
-    const hdaFiles = assetVersion?.contents?.files.filter((file) =>
-        file.file_name.includes(".hda"),
-      );
 
     const [availableInputFiles, setAvailableInputFiles] = React.useState<AssetVersionContent[]>(
         assetVersion?.contents?.files.filter(file => isValidMeshFile(file.file_name)) || []
@@ -96,11 +91,6 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinition,assetVersion }) =
             }
         },[setFileUpload]
     )
-    useEffect(() => {
-        if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
-            setSelectedHdaId(hdaFiles[0].file_id);
-        }
-    }, [hdaFiles]);
 
     if (!assetVersion )
         return <CircularProgress />;
