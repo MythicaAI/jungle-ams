@@ -40,6 +40,7 @@
     "files": "Archivos",
     "thumbnails": "Miniaturas",
     "links": "Enlaces",
+    "presets": "Preajustes",
     "editPackage": "Editar paquete",
     "update": "Actualizar",
     "org/namespace": "Org / Espacio de nombres",

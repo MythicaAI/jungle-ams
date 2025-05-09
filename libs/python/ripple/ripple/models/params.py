@@ -205,12 +205,6 @@ ParameterSpecType = Annotated[
     Field(discriminator='param_type')
 ]
 
-class ParameterSpec(BaseModel):
-    """ 
-    Specification of parameters a job expects as input
-    """
-    params: dict[str, ParameterSpecType]
-    params_v2: Optional[list[HoudiniParmTemplateSpecType]] = []
 
 class FileParameter(BaseModel):
     file_id: str
@@ -254,3 +248,11 @@ class ParameterSet(BaseModel):
     def check_parameter_types(cls, values:dict) -> Any:
         return _validate_parameter_types(values, ParameterType)
     
+class ParameterSpec(BaseModel):
+    """ 
+    Specification of parameters a job expects as input
+    """
+    params: dict[str, ParameterSpecType]
+    params_v2: Optional[list[HoudiniParmTemplateSpecType]] = []
+    default: Optional[ParameterSet] = {}
+    hidden: Optional[dict[str, bool]] = {}

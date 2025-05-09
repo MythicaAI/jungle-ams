@@ -6,3 +6,4 @@ export { AssetEditDetailControls } from "./AssetEditDetailControls";
 export { AssetEditThumbnails } from "./AssetEditThumbnails";
 export { AssetEditLinks } from "./AssetEditLinks";
 export { AssetEditFileList } from "./AssetEditFileList";
+export { AssetEditPresets } from "./AssetEditPresets";

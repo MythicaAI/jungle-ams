@@ -1,11 +1,9 @@
 import { dictionary } from 'houdini-ui';
 
-export type JobDefinition = {
+export type JobDefinitionTemplate = {
   description: string;
-  job_def_id: string;
   job_type: string;
   name: string;
-  owner_id: string;
   params_schema: {
     params: {
       [key: string]: {
@@ -23,6 +21,12 @@ export type JobDefinition = {
       };
     };
     params_v2: dictionary[];
+    default: {
+      [key: string]: any;
+    };
+    hidden: {
+      [key: string]: boolean;
+    };
   };
   source: {
     asset_id: string;
@@ -32,6 +36,11 @@ export type JobDefinition = {
     minor: number;
     patch: number;
   };
+}
+
+export type JobDefinition = JobDefinitionTemplate & {
+  job_def_id: string;
+  owner_id: string;
 };
 
 export type JobDetails = {

@@ -12,7 +12,7 @@ import { AssetVersionResponse, AssetVersionContent } from "types/apiTypes";
 import { JobDefinition } from "@queries/packages/types";
 
 type Props = {
-    width: number;
+    style: React.CSSProperties;
     jobDefinition: JobDefinition;
     assetVersion: AssetVersionResponse | null;
 };
@@ -24,7 +24,7 @@ const isValidMeshFile = (fileName: string): boolean => {
     return VALID_MESH_EXTENSIONS.some(ext => lowerFileName.endsWith(ext));
 };
 
-const SceneControls: React.FC<Props> = ({ width, jobDefinition,assetVersion }) => {
+const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) => {
     const {
         selectedHdaId,
         setInputFile,
@@ -98,7 +98,7 @@ const SceneControls: React.FC<Props> = ({ width, jobDefinition,assetVersion }) =
     return (
         <Box
             sx={{
-                width: width ?? 250,
+                ...style,
                 padding: "15px",
                 backgroundColor: "#1e1e1e",
                 borderRight: "1px solid #333",

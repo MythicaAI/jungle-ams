@@ -1,16 +1,13 @@
 import React, { useEffect } from "react";
 import { Select, Option, Box } from "@mui/joy";
 import { useSceneStore } from "scenetalk";
-import { JobDefinition } from "@queries/packages/types";
 import { AssetVersionResponse } from "types/apiTypes";
 
 type GeneratorSelectorProps = {
-  jobDefinitions: JobDefinition[] | undefined;
   assetVersion: AssetVersionResponse | null;
 };
 
 const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({ 
-  jobDefinitions, 
   assetVersion 
 }) => {
   const { selectedHdaId, setSelectedHdaId } = useSceneStore();
@@ -50,11 +47,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
       >
         {hdaFiles.map((hda) => (
           <Option key={hda.file_id} value={hda.file_id}>
-            {
-              jobDefinitions?.find(
-                (definition) => definition.source.file_id === hda.file_id,
-              )?.name
-            }
+              {hda.file_name}
           </Option>
         ))}
       </Select>

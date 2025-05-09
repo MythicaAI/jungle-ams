@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo } from 'react';
-import { JSONSchema, JSONSchemaProperty } from '../../../types/JSONSchema';
+import { JSONSchema, JSONSchemaProperty, JsonSchemaEnumParameterSpec } from '../../../types/JSONSchema';
 import { FileParamType, dictionary } from '../../../types/Automation';
 import { Input } from '@mui/joy';
 
@@ -9,6 +9,7 @@ interface AutomationInputProps {
   inputData: dictionary;
   onFileParameterDetected: (fileParams: Record<string, FileParamType>) => void;
 }
+
 
 const AutomationInputs: React.FC<AutomationInputProps> = ({
   inputSchema: schema,
@@ -99,15 +100,48 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
         );
 
       case 'object':
-        return (
-          <fieldset key={key}>
-            <label>{key}</label>
-            {fieldSchema.properties &&
-              Object.entries(fieldSchema.properties).map(
-                ([childKey, childSchema]) => renderField(childKey, childSchema)
-              )}
-          </fieldset>
-        );
+        if (fieldSchema.title === 'EnumParameterSpec') {
+          console.log('EnumParameterSpec', fieldSchema);
+          const enumSpec = (schema.properties?.[key].default as [JsonSchemaEnumParameterSpec])[0];
+          if (!enumSpec) return null;
+          const enumValues = enumSpec.values;
+          return (
+            <div 
+            key={key}
+              style={{ display: 'flex', flexDirection: 'row', gap: '5px' }}
+            >
+              <label>{enumSpec.label || key}</label>
+              <select
+                defaultValue={
+                  (inputData?.[key] as string | null) ||
+                  (typeof fieldSchema.default === 'string'
+                    ? fieldSchema.default
+                    : '')
+                }
+                onChange={(e) => handleChange(key, e.target.value)}
+              >
+                {enumValues?.map(
+                  (option: { name: string; label: string }, index: number) => (
+                    <option key={index} value={option.name}>
+                      {option.label}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+          );
+        } else {
+
+          return (
+            <fieldset key={key}>
+              <label>{key}</label>
+              {fieldSchema.properties &&
+                Object.entries(fieldSchema.properties).map(
+                  ([childKey, childSchema]) => renderField(childKey, childSchema)
+                )}
+            </fieldset>
+          );
+        }
 
       case 'array':
         return (

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Box,
   Button,
@@ -6,9 +6,12 @@ import {
   CircularProgress,
   DialogContent,
   DialogTitle,
+  FormLabel,
   Modal,
   ModalClose,
   ModalDialog,
+  Select,
+  Option,
   Stack,
   Typography,
 } from "@mui/joy";
@@ -25,6 +28,7 @@ import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
 import { StatusBar } from "@components/StatusBar";
 import { JobDefinition } from "@queries/packages/types";
+import { DefaultParmFactory, ParmFactoryProps, ParmFactoryProvider } from "houdini-ui";
 
 export const PackageScene: React.FC = () => {
   const { asset_id, version_id } = useParams();
@@ -41,6 +45,7 @@ export const PackageScene: React.FC = () => {
     setWsStatus,
     selectedHdaId,
     paramValues,
+    setParamValues,
     fileUpload,
     inputFiles,
     setMeshData,
@@ -159,10 +164,10 @@ export const PackageScene: React.FC = () => {
       return;
     }
 
-    const jobDef = jobDefinitions?.find(
+    const jd = jobDefinitions?.find(
       (definition) => definition.source.file_id === selectedHdaId,
     );
-    if (!jobDef) {
+    if (!jd) {
       console.error("Failed to find job definition");
       return;
     }
@@ -179,7 +184,7 @@ export const PackageScene: React.FC = () => {
     setRequestInFlight(true);
     try {
 
-      const dependencyFileIds = jobDef.params_schema.params['dependencies']?.default || [];
+      const dependencyFileIds = jd.params_schema.params['dependencies']?.default || [];
 
       // Send the cook request with all parameters for the current HDA
       wsServiceRef.current.sendCookRequestById(
@@ -230,10 +235,33 @@ export const PackageScene: React.FC = () => {
 
   }, [selectedHdaId, jobDefinitions]);
 
-  // Set loading to false after initial setup
+  useEffect(() => {
+    if (jobDef) {
+      setParamValues(jobDef.params_schema.default);
+    }
+  }, [jobDef]);
+
   useEffect(() => {
     setIsLoading(false);
   }, []);
+
+  const FilteredParmFactory: React.FC<ParmFactoryProps> = useCallback((props) => {
+
+    return (
+      <div 
+        style={{
+          display: (jobDef?.params_schema.hidden?.[props.parmTemplate.name] ? 'none' : 'block'),
+        }}>
+        <DefaultParmFactory
+          {
+            ...props
+          }
+        />
+      </div>
+      
+    );
+  },[jobDef?.params_schema.hidden])
+  
 
   if (isLoading || !assetVersion) {
     return <CircularProgress />;
@@ -265,11 +293,38 @@ export const PackageScene: React.FC = () => {
           <Box />
         )}
 
+        <FormLabel>
+          Generator:
+        </FormLabel>
         <GeneratorSelector 
-          jobDefinitions={jobDefinitions} 
           assetVersion={assetVersion} 
         />
-
+        <FormLabel>
+          Preset:
+        </FormLabel>
+        <Select
+          variant="soft"
+          name="preset_select"
+          placeholder="Select a Preset"
+          onChange={(e, value) => {
+            setJobDef(
+              jobDefinitions?.find(
+                (definition) => definition.job_def_id === value,
+              ) || null,
+            );
+          }}
+          sx={{ minWidth: 200 }}
+          value={jobDef?.job_def_id || jobDefinitions?.[0]?.job_def_id}
+          multiple={false}
+        >
+          {jobDefinitions?.filter(
+            (item) => item.source.file_id === selectedHdaId
+            )?.map((jd) => (
+            <Option key={jd.job_def_id} value={jd.job_def_id}>
+              {jd.name}
+            </Option>
+          ))}
+        </Select>
         <Button
           variant="outlined"
           color="neutral"
@@ -343,10 +398,12 @@ export const PackageScene: React.FC = () => {
               }}
             >
               {jobDef ?
-                <SceneControls 
-                  width={390} 
-                  assetVersion={assetVersion}
-                  jobDefinition={jobDef} />
+                <ParmFactoryProvider value={FilteredParmFactory as React.FC<ParmFactoryProps>}>              
+                  <SceneControls 
+                    style={{width:390}} 
+                    assetVersion={assetVersion}
+                    jobDefinition={jobDef} />
+                </ParmFactoryProvider>
               : 
                 <Box sx={{ width: 390,padding: "20px" }}>
                   <Typography level="h4" fontSize="medium">
@@ -377,10 +434,12 @@ export const PackageScene: React.FC = () => {
               <DialogTitle>Controls</DialogTitle>
               <DialogContent>
               {jobDef ?
-                <SceneControls 
-                  width={currentWidth - 40}
-                  assetVersion={assetVersion}
-                  jobDefinition={jobDef} />
+                <ParmFactoryProvider value={FilteredParmFactory as React.FC<ParmFactoryProps>}>              
+                  <SceneControls 
+                    style={{width:currentWidth - 40}} 
+                    assetVersion={assetVersion}
+                    jobDefinition={jobDef} />
+                </ParmFactoryProvider>
               : 
                 <Box sx={{ width: currentWidth - 40,padding: "20px" }}> 
                   <Typography level="h4" fontSize="medium">
