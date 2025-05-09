@@ -171,22 +171,8 @@ export const FolderParm: React.FC<FolderParmProps> = ({
             <span
               className="align-center"
               onClick={() => {
-                if (setMultiBlocks && multiBlocks) {
-                  if (multiBlocks.length > 0) {
-                    const updatedBlocks = multiBlocks.slice(0, -1);
-                    setMultiBlocks(updatedBlocks);
-
-                    const updatedValues = { ...data };
-                    const blockNameTemplate = template.parm_templates[0].name;
-
-                    const lastBlockName = blockNameTemplate.replace(
-                      /#/,
-                      `${multiBlocks.length - 1}`
-                    );
-                    updatedValues[lastBlockName] = null;
-
-                    onChange(updatedValues);
-                  }
+                if (multiBlocks?.length) {
+                  handleRemoveMultiBlock(multiBlocks.length - 1);
                 }
               }}
               style={{ paddingLeft: '2px' }}
