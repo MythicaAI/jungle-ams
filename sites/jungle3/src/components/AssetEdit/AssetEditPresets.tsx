@@ -10,6 +10,15 @@ import { useCreateJobDefinitionFromTemplate, useGetJobDefinition } from "@querie
 
 export const AssetEditPresets: React.FC = () => {
   const assetVersion = useAssetVersionStore();
+
+  // Filter files to find "HDA" files (HDA files with .hda extension but not .nc or .lc)
+  const hdaFiles = Object.values(assetVersion.files).filter(
+    (file) =>
+      file.file_name.endsWith(".hda") &&
+      !file.file_name.endsWith(".nc.hda") &&
+      !file.file_name.endsWith(".lc.hda")
+  ) as AssetVersionContent[];
+
   const [selectedHda, setSelectedHda] = useState<AssetVersionContent | null>(null);
   const [newJobDefId, setNewJobDefId] = useState<string | null>(null);
   const [selectedJobDef, setSelectedJobDef] = useState<JobDefinition | null>(null);
@@ -24,6 +33,8 @@ export const AssetEditPresets: React.FC = () => {
   const [modalInputValue, setModalInputValue] = useState("");
 
 
+
+  
   const handleOpenModal = (action: "new" | "edit") => {
     setModalAction(action);
     setModalInputValue(action === "edit" ? selectedJobDef?.name || "" : "");
@@ -135,13 +146,6 @@ export const AssetEditPresets: React.FC = () => {
     }
   }, [selectedJobDef]);
 
-      // Filter files to find "HDA" files (HDA files with .hda extension but not .nc or .lc)
-  const hdaFiles = Object.values(assetVersion.files).filter(
-    (file) =>
-      file.file_name.endsWith(".hda") &&
-      !file.file_name.endsWith(".nc.hda") &&
-      !file.file_name.endsWith(".lc.hda")
-  ) as AssetVersionContent[];
 
   const handleSelectHda = (hda: AssetVersionContent) => {
     setSelectedHda(hda);
@@ -162,8 +166,6 @@ export const AssetEditPresets: React.FC = () => {
   };
 
   const FilteringParmFactory: React.FC<ParmFactoryProps> = React.useCallback((props) => {
-    
-
     return (
       <div 
         style={{
@@ -195,7 +197,6 @@ export const AssetEditPresets: React.FC = () => {
           {...props}
         />
       </div>
-      
     );
   },[hidden])
   

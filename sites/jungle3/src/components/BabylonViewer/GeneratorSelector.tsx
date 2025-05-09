@@ -50,11 +50,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
       >
         {hdaFiles.map((hda) => (
           <Option key={hda.file_id} value={hda.file_id}>
-            {
-              jobDefinitions?.find(
-                (definition) => definition.source.file_id === hda.file_id,
-              )?.name
-            }
+              {hda.file_name}
           </Option>
         ))}
       </Select>
