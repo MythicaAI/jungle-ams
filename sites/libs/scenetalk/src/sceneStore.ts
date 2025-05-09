@@ -161,6 +161,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   // Utility methods
   reset: () => {
     set({
+      inputFiles: {},
       paramValues: {},
       fileUpload: null,
       meshData: null,
