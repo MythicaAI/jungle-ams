@@ -21,7 +21,7 @@
     "houdini-ui": "workspace:*",
     "scenetalk": "workspace:*",
     "jwt-decode": "^4.0.0",
-    "lucide-react": "^0.468.0",
+    "lucide-react": "^0.501.0",
     "monaco-editor": "^0.52.0",
     "motion": "^11.16.1",
     "online-3d-viewer": "^0.15.0",
