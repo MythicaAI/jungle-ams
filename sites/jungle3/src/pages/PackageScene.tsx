@@ -246,7 +246,7 @@ export const PackageScene: React.FC = () => {
   }, []);
 
   const FilteredParmFactory: React.FC<ParmFactoryProps> = useCallback((props) => {
-
+    props.parmTemplate.is_hidden = jobDef?.params_schema.hidden?.[props.parmTemplate.name] || false;
     return (
       <div 
         style={{
@@ -306,7 +306,7 @@ export const PackageScene: React.FC = () => {
           variant="soft"
           name="preset_select"
           placeholder="Select a Preset"
-          onChange={(e, value) => {
+          onChange={(_e, value) => {
             setJobDef(
               jobDefinitions?.find(
                 (definition) => definition.job_def_id === value,
