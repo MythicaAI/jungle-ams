@@ -4,7 +4,7 @@ import { AssetVersionContent, AssetVersionResponse } from "types/apiTypes";
 import { JobDefinition, JobDefinitionTemplate } from "@queries/packages/types";
 import { Box, Button, FormLabel, Option, Select, Typography, Modal, ModalDialog, Input } from "@mui/joy";
 import SceneControls from "@components/BabylonViewer/SceneControls";
-import { useSceneStore } from "scenetalk";
+import { useSceneStore, SceneTalkConnector } from "scenetalk";
 import { ParmFactoryProvider, ParmFactoryProps, DefaultParmFactory } from "houdini-ui";
 import { useCreateJobDefinitionFromTemplate, useGetJobDefinition, useUpdateJobDefinition, useDeleteJobDefinition } from "@queries/packages";
 import SceneViewer from "@components/BabylonViewer/SceneViewer";
@@ -29,7 +29,11 @@ export const AssetEditPresets: React.FC = () => {
   const [hidden, setHidden] = useState<{[key: string]: boolean}>({});  
   
 
-  const { paramValues, setParamValues } = useSceneStore();
+  const { 
+    paramValues, 
+    setParamValues,
+    setSelectedHdaId,
+  } = useSceneStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInputValue, setModalInputValue] = useState("");
@@ -188,6 +192,7 @@ export const AssetEditPresets: React.FC = () => {
 
   const handleSelectHda = (hda: AssetVersionContent) => {
     setSelectedHda(hda);
+    setSelectedHdaId(hda.file_id);
   };
   
   const handleSelectJobDef = (_ignore: any, jobDefId: string | null) => {
@@ -516,6 +521,7 @@ export const AssetEditPresets: React.FC = () => {
             height: '100%',
             transition: "margin-left 0.3s ease"
           }}>
+            <SceneTalkConnector dependencyFileIds={selectedJobDef?.params_schema.params['dependencies']?.default as string[]} />
             <SceneViewer packageName={assetVersion?.name as string} />
             <StatusBar />
           </Box>
