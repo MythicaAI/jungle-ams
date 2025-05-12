@@ -4,7 +4,6 @@
 
 from http import HTTPStatus
 
-from httpx import ASGITransport, AsyncClient
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
@@ -725,3 +724,106 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     assert_status_code(r, HTTPStatus.OK)
     new_job_def: JobDefinitionModel = munchify(r.json())
     assert new_job_def.params_schema.params_v2 == template_job_def.params_schema.params_v2
+
+@pytest.mark.asyncio
+async def test_job_edit_delete(client: TestClient, api_base, create_profile):
+    test_profile: ProfileTestObj = await create_profile()
+    headers = test_profile.authorization_header()
+
+    # Create a job definition
+    r = client.post(f'{api_base}/jobs/definitions',
+                    json={
+                        'job_type': 'houdini::/mythica/generate_mesh',
+                        'name': 'Generate Cactus',
+                        'description': 'Generates a cactus mesh',
+                        'params_schema': {
+                            'params': {
+                                'hda_file': {
+                                    'param_type': 'file',
+                                    'label': 'HDA File',
+                                    'default': 'file_qfJSVuWRJvogEDYezoZn8cwdP8D',
+                                    'constant': True
+                                },
+                                'hda_definition_index': {
+                                    'param_type': 'int',
+                                    'label': 'HDA Definition Index',
+                                    'default': 0,
+                                    'constant': True
+                                },
+                                'size': {
+                                    'param_type': 'float',
+                                    'label': 'Segment Size',
+                                    'default': 0.0,
+                                    'min': 0.0,
+                                    'max': 10.0
+                                }
+                            }
+                        }
+                    },
+                    headers=headers)
+    assert_status_code(r, HTTPStatus.CREATED)
+    o = munchify(r.json())
+    job_def_id = o.job_def_id
+
+    # Get job definition from list
+    r = client.get(f'{api_base}/jobs/definitions', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definitions = r.json()
+    assert any([definition['job_def_id'] == job_def_id for definition in definitions])
+
+    # Get job definition directly
+    r = client.get(f'{api_base}/jobs/definitions/{job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definition = r.json()
+    assert definition['job_def_id'] == job_def_id
+    assert definition['owner_id'] == test_profile.profile.profile_id
+
+    # Edit the job definition
+    r = client.put(f'{api_base}/jobs/definitions/{job_def_id}',
+                   json={
+                       "name": "Generate Cactus2",
+                       "job_type": "houdini::/mythica/generate_mesh",
+                       "description": "Generates a cactus mesh",
+                       "params_schema": {
+                           "params": {
+                               "hda_file": {
+                                   "param_type": "file",
+                                   "label": "HDA File",
+                                   "default": "file_qfJSVuWRJvogEDYezoZn8cwdP8D",
+                                   "constant": True
+                               },
+                               "hda_definition_index": {
+                                   "param_type": "int",
+                                   "label": "HDA Definition Index",
+                                   "default": 0,
+                                   "constant": True
+                               },
+                               "size": {
+                                   "param_type": "float",
+                                   "label": "Segment Size",
+                                   "default": 0.0,
+                                   "min": 0.0,
+                                   "max": 10.0
+                               }
+                           }
+                       }
+                   }, headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    o = munchify(r.json())
+    assert o.job_def_id == job_def_id
+
+    # Get the edited job definition
+    r = client.get(f'{api_base}/jobs/definitions/{job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+    definition = r.json()
+    assert definition['job_def_id'] == job_def_id
+    assert definition['name'] == 'Generate Cactus2'
+    assert definition['description'] == 'Generates a cactus mesh'
+
+    # Delete the job definition
+    r = client.delete(f'{api_base}/jobs/definitions/{job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.OK)
+
+    # Verify the job definition is deleted
+    r = client.get(f'{api_base}/jobs/definitions/{job_def_id}', headers=headers)
+    assert_status_code(r, HTTPStatus.NOT_FOUND)

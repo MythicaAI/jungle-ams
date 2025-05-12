@@ -499,7 +499,7 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
 
   return (
     <Box
-      sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
+      sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative',width: '100%', height: '100%' }}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
