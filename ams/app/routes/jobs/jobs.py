@@ -174,6 +174,46 @@ async def define_new_from_template(
 
     return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
 
+@router.put('/definitions/{job_def_id}')
+async def update_job_def(
+        job_def_id: str,
+        req_data: JobDefinitionRequest,
+        db_session: AsyncSession = Depends(get_db_session)) -> JobDefinitionResponse:
+    """Update an existing job definition"""
+    job_def = (await db_session.exec(select(JobDefinition).where(
+        JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id)))).one_or_none()
+    if job_def is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+
+    # Update the job definition
+    for field, value in req_data.model_dump().items():
+        if getattr(job_def, field, None) != None:
+            setattr(job_def, field, value)
+    print(f"job_def: {job_def}")
+    await db_session.commit()
+    return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
+
+@router.delete('/definitions/{job_def_id}')
+async def delete_job_def(
+        job_def_id: str,
+        db_session: AsyncSession = Depends(get_db_session)) -> None:
+    """Delete a job definition"""
+    entry_point = (await db_session.exec(select(AssetVersionEntryPoint).where(
+        AssetVersionEntryPoint.job_def_seq == job_def_id_to_seq(job_def_id)))).one_or_none()
+
+    if entry_point:
+        # Delete the asset version entry point
+        await db_session.delete(entry_point)
+
+    job_def = (await db_session.exec(select(JobDefinition).where(
+        JobDefinition.job_def_seq == job_def_id_to_seq(job_def_id)))).one_or_none()
+    if job_def is None:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="job_def_id not found")
+
+    # Delete the job definition
+    await db_session.delete(job_def)
+    await db_session.commit()
+    return None
 
 @router.get('/definitions')
 async def list_definitions(db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:

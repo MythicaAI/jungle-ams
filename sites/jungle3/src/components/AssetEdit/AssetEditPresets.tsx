@@ -6,7 +6,10 @@ import { Box, Button, FormLabel, Option, Select, Typography, Modal, ModalDialog,
 import SceneControls from "@components/BabylonViewer/SceneControls";
 import { useSceneStore } from "scenetalk";
 import { ParmFactoryProvider, ParmFactoryProps, DefaultParmFactory } from "houdini-ui";
-import { useCreateJobDefinitionFromTemplate, useGetJobDefinition } from "@queries/packages";
+import { useCreateJobDefinitionFromTemplate, useGetJobDefinition, useUpdateJobDefinition, useDeleteJobDefinition } from "@queries/packages";
+import SceneViewer from "@components/BabylonViewer/SceneViewer";
+import { StatusBar } from "@components/StatusBar";
+import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
 
 export const AssetEditPresets: React.FC = () => {
   const assetVersion = useAssetVersionStore();
@@ -29,58 +32,94 @@ export const AssetEditPresets: React.FC = () => {
   const { paramValues, setParamValues } = useSceneStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalAction, setModalAction] = useState<"new" | "edit" | null>(null);
   const [modalInputValue, setModalInputValue] = useState("");
 
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview' | 'raw'>('edit');
+  const [isSidepanelOpen, setIsSidepanelOpen] = useState(true);
 
 
-  
-  const handleOpenModal = (action: "new" | "edit") => {
-    setModalAction(action);
-    setModalInputValue(action === "edit" ? selectedJobDef?.name || "" : "");
-    setIsModalOpen(true);
-  };
-
-  const newFromTemplate = useCreateJobDefinitionFromTemplate();
+  const editJobDef = useUpdateJobDefinition();
+  const deleteJobDef = useDeleteJobDefinition();
+  const newJobDef = useCreateJobDefinitionFromTemplate();
 
   const handleModalSave = () => {
 
-    if (modalAction === "new") {
-      if (!selectedJobDef) {
-        console.error("No job definition selected");
-        return;
-      }
-      
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { job_def_id, owner_id, ...template } = structuredClone(selectedJobDef);
-      template.params_schema.default = paramValues;
-      template.params_schema.hidden = hidden;
-      template.name = modalInputValue;
-      template.source.entry_point = template.name.replace(/ /g, '_');
-
-      newFromTemplate.mutate({
-        job_def_id: job_def_id,
-        job_def_template: template as JobDefinitionTemplate
-      }, {
-        onSuccess: (data) => {
-          setNewJobDefId(data.job_def_id);
-          jobDefResp.refetch();
-        },
-        onError: (error) => {
-          console.error("Error creating job definition from template:", error);
-        }
-      });
-      // Stub for saving a new preset
-      console.log("Saving new jobDef:", modalInputValue);
-    } else if (modalAction === "edit") {
-      // Stub for editing an existing preset
-      console.log("Editing preset:", selectedJobDef?.name, "to", modalInputValue);
+    if (!selectedJobDef) {
+      console.error("No job definition selected");
+      return;
     }
+    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { job_def_id, owner_id, ...template } = structuredClone(selectedJobDef);
+    template.params_schema.default = paramValues;
+    template.params_schema.hidden = hidden;
+    template.name = modalInputValue;
+    template.source.entry_point = template.name.replace(/ /g, '_');
+
+    newJobDef.mutate({
+      job_def_id: job_def_id,
+      job_def_template: template as JobDefinitionTemplate
+    }, {
+      onSuccess: (data) => {
+        setNewJobDefId(data.job_def_id);
+        jobDefResp.refetch();
+      },
+      onError: (error) => {
+        console.error("Error creating job definition from template:", error);
+      }
+    });
+    // Stub for saving a new preset
+    console.log("Saving new jobDef:", modalInputValue);
+
     setIsModalOpen(false);
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
+  };
+
+  const savePreset = () => {
+    if (!selectedJobDef) {
+      console.error("No job definition selected");
+      return;
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { job_def_id, owner_id, ...template } = structuredClone(selectedJobDef);
+    template.params_schema.default = paramValues;
+    template.params_schema.hidden = hidden;
+
+    editJobDef.mutate({
+      jobDefId: job_def_id,
+      job_def: template as JobDefinitionTemplate
+    }, {
+      onSuccess: (_data) => {
+        jobDefResp.refetch();
+        setTimeout(() => setNewJobDefId(_data.job_def_id), 100);
+      },
+      onError: (error) => {
+        console.error("Error updating job definition:", error);
+      }
+    });
+  };
+  const deletePreset = () => {
+    if (!selectedJobDef) {
+      console.error("No job definition selected");
+      return;
+    }
+    // ask for confirmation before deleting
+    if (!window.confirm("Are you sure you want to delete this job definition?")) {
+      return;
+    }
+    deleteJobDef.mutate(selectedJobDef.job_def_id, {
+      onSuccess: () => {
+        setNewJobDefId(null);
+        jobDefResp.refetch();
+      },
+      onError: (error) => {
+        console.error("Error deleting job definition:", error);
+      }
+    });
   };
 
   const assetVersionResp = {
@@ -223,7 +262,7 @@ export const AssetEditPresets: React.FC = () => {
       <Modal open={isModalOpen} onClose={handleModalClose}>
         <ModalDialog>
           <Typography level="h4">
-            {modalAction === "new" ? "Create New Preset" : "Edit Preset Name"}
+            "Create New Preset"
           </Typography>
           <Input
             value={modalInputValue}
@@ -245,6 +284,8 @@ export const AssetEditPresets: React.FC = () => {
         mx: 2,
         flexDirection: 'column',
       }}>
+
+        {/*Generator Selector */}
         <Box sx={{
           display: 'flex',
           flexDirection: 'rows',
@@ -281,6 +322,8 @@ export const AssetEditPresets: React.FC = () => {
           TO handle editing existing presets, add a save as button
           so that current preset can be saved as a new preset.
         */}
+
+        { /* Preset Selector and Buttons */ }
         { selectedHda && (
           <Box display={"flex"} flexDirection="column" gap={2} width="100%">
             <Box sx={{
@@ -303,41 +346,36 @@ export const AssetEditPresets: React.FC = () => {
               >
                 {jobDefResp.data?.filter(
                   (item) => item.source.file_id === selectedHda.file_id
-                 )?.map((jd) => (
+                )?.map((jd) => (
                   <Option key={jd.job_def_id} value={jd.job_def_id}>
                     {jd.name}
                   </Option>
                 ))}
               </Select>
-              <Button 
+                <Button 
                 sx={{ padding: 1 }}
-                onClick={() => window.alert("Not implemented yet")}
+                onClick={savePreset}
                 disabled={
-                  Object.keys(paramValues || {}).length === 0
-                  || !selectedJobDef
+                  !selectedJobDef || 
+                  (JSON.stringify(paramValues) === JSON.stringify(selectedJobDef?.params_schema.default) &&
+                   JSON.stringify(hidden) === JSON.stringify(selectedJobDef?.params_schema.hidden))
                 }
                 >Save
-              </Button>
-              <Button 
-                sx={{ padding: 1 }}
-                onClick={() => window.alert("Not implemented yet")}
-                disabled={!selectedJobDef}
-              >
-                Edit Name
-              </Button>
+                </Button>
               <Button 
                 sx={{ padding: 1, bgcolor: 'red' }}
-                onClick={() => window.alert("Not implemented yet")}
+                onClick={deletePreset}
                 disabled={
-                  Object.keys(paramValues || {}).length === 0
-                  || !selectedJobDef
+                  !selectedJobDef || 
+                  (JSON.stringify(paramValues) === JSON.stringify(selectedJobDef?.params_schema.default) &&
+                   JSON.stringify(hidden) === JSON.stringify(selectedJobDef?.params_schema.hidden))
                 }
                 >Delete
               </Button>
               
               <Button 
                 sx={{ padding: 1 }}
-                onClick={() => handleOpenModal("new")}
+                onClick={() => setIsModalOpen(true)}
               >
                 Save As New...
               </Button>
@@ -348,39 +386,122 @@ export const AssetEditPresets: React.FC = () => {
             </Box>
           </Box>
         )}
+
         <Box sx={{
           display: 'flex',
-          flexDirection: 'rows',
+          flexDirection: 'row',
           gap: 0,
           width: '100%',
+          height: 'calc(min(640px, 100vh))',
+          position: 'relative',
+          minHeight: '600px',
         }}>
-          <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0,
-          }}>
-            { selectedJobDef ? 
-              <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: 0,
-              }}
-              >
-              <ParmFactoryProvider value={FilteringParmFactory as React.FC<ParmFactoryProps>}>
-                <SceneControls
-                  style={{zoom: 0.8, width: 390}}
-                  jobDefinition={selectedJobDef as JobDefinition}
-                  assetVersion={assetVersionResp}
+          {/* Toggle button for sidepanel */}
+          <Button
+            color="neutral"
+            variant="soft"
+            sx={{
+              position: "absolute",
+              left: isSidepanelOpen ? "320px" : "5px",
+              top: "5px",
+              zIndex: 10,
+              minWidth: "32px",
+              width: "32px",
+              height: "32px",
+              padding: 0,
+            }}
+            onClick={() => setIsSidepanelOpen(!isSidepanelOpen)}
+          >
+            {isSidepanelOpen ? 
+              <LucideChevronLeft height="20px" width="20px" /> : 
+              <LucideChevronRight height="20px" width="20px" />
+            }
+          </Button>
+          
+          {/* Collapsible Panel */}
+          <Box
+            sx={{
+              left: isSidepanelOpen ? "0" : "-510px",
+              width: isSidepanelOpen ? "510px" : "0px",
+              position: "relative",
+              height: "100%",
+              zIndex: 5,
+              transition: "all 0.3s ease",
+              backgroundColor: "background.surface",
+              boxShadow: isSidepanelOpen ? "md" : "none",
+              borderRight: isSidepanelOpen ? "1px solid" : "none",
+              borderColor: "divider",
+              visibility: isSidepanelOpen ? "visible" : "hidden",
+              overflow: "auto",
+            }}
+          >
+            { selectedHda && selectedJobDef ? 
+              <div style={{width: '100%', height: '554px'}}>
+                {/* Tab Selection */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  borderBottom: '1px solid #ccc',
+                  mb: 1
+                }}>
+                  <Button 
+                    variant={activeTab === 'edit' ? 'solid' : 'plain'} 
+                    onClick={() => setActiveTab('edit')}
+                    sx={{ borderRadius: '4px 4px 0 0' }}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'preview' ? 'solid' : 'plain'} 
+                    onClick={() => setActiveTab('preview')}
+                    sx={{ borderRadius: '4px 4px 0 0' }}
+                  >
+                    Preview
+                  </Button>
+                  <Button 
+                    variant={activeTab === 'raw' ? 'solid' : 'plain'} 
+                    onClick={() => setActiveTab('raw')}
+                    sx={{ borderRadius: '4px 4px 0 0' }}
+                  >
+                    Raw
+                  </Button>
+                </Box>
+                
+                {/* Tab Content */}
+                <Box sx={{ display: activeTab === 'edit' ? 'block' : 'none', width: '100%', height: '100%', overflow: 'auto' }}>
+                  <ParmFactoryProvider value={FilteringParmFactory as React.FC<ParmFactoryProps>}>
+                    <SceneControls
+                      style={{zoom: 0.8, width: 390}}
+                      jobDefinition={selectedJobDef as JobDefinition}
+                      assetVersion={assetVersionResp}
+                      />
+                  </ParmFactoryProvider>
+                </Box>
+                
+                <Box sx={{ display: activeTab === 'preview' ? 'block' : 'none', width: '100%', height: '100%', overflow: 'auto'}}>
+                  <ParmFactoryProvider value={FilteredParmFactory as React.FC<ParmFactoryProps>}>
+                    <SceneControls
+                      style={{zoom: 0.8, width: 390}}
+                      jobDefinition={selectedJobDef as JobDefinition}
+                      assetVersion={assetVersionResp}
+                      />
+                  </ParmFactoryProvider>
+                </Box>
+                
+                <Box sx={{ display: activeTab === 'raw' ? 'block' : 'none', width: '100%', height: '100%' }}>
+                  <textarea
+                    value={JSON.stringify({
+                        default: {...paramValues},
+                        hidden: {...hidden},
+                      }, null, 2)}
+                    onChange={() => {}}
+                    style={{ 
+                      width: "100%",
+                      height: "100%",
+                      fontFamily: "monospace" 
+                    }}
+                    readOnly
                   />
-              </ParmFactoryProvider>
-              <ParmFactoryProvider value={FilteredParmFactory as React.FC<ParmFactoryProps>}>
-                <SceneControls
-                  style={{zoom: 0.8, width: 390}}
-                  jobDefinition={selectedJobDef as JobDefinition}
-                  assetVersion={assetVersionResp}
-                  />
-              </ParmFactoryProvider>
+                </Box>
               </div>
             :
               <div style={{width: '100%'}}>
@@ -388,33 +509,19 @@ export const AssetEditPresets: React.FC = () => {
               </div>
             }
           </Box>
-          <Box sx={{
-            display: 'flex',
-            flex: '1 1 auto',
-            gap: 0,
+
+          {/* Main content */}
+          <Box sx={{ 
             width: '100%',
+            height: '100%',
+            transition: "margin-left 0.3s ease"
           }}>
-              
-          {/* Preset Editor */}
-          {selectedHda && (
-            <div style={{ 
-              width: "100%",
-              height: "100%"
-              }}> {/* Ensure the child div also fills the parent */}
-              <textarea
-                value={JSON.stringify(paramValues, null, 2) + JSON.stringify(hidden, null, 2)}
-                style={{ 
-                  width: "100%",
-                  height: "100%",
-                  fontFamily: "monospace" 
-                }}
-              />
-              <br />
-            </div>
-          )}
+            <SceneViewer packageName={assetVersion?.name as string} />
+            <StatusBar />
           </Box>
-        </Box>    
+        </Box>
       </Box>
+
     </>
   );
 };

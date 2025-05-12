@@ -138,6 +138,38 @@ export const useCreateJobDefinitionFromTemplate = () => {
   });
 };
 
+export const useUpdateJobDefinition = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (updateRequest: {
+      jobDefId: string;
+      job_def: JobDefinitionTemplate;
+    }) => {
+      return await api.put({
+        path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}/${updateRequest.jobDefId}`,
+        body: updateRequest.job_def,
+      });
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: [PackagesQuery.JOB_DEFS] });
+    }
+  });
+};
+export const useDeleteJobDefinition = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (jobDefId: string) => {
+      return await api.del({
+        path: `${PackagesApiPath.JOBS}${PackagesApiPath.DEFINITIONS}/${jobDefId}`,
+      });
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: [PackagesQuery.JOB_DEFS] });
+    }
+  });
+};
+
 export const useGetJobsDetailsByAsset = (
   assetId: string,
   version: string[],
