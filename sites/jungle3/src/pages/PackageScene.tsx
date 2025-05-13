@@ -137,7 +137,8 @@ export const PackageScene: React.FC = () => {
           Generator:
         </FormLabel>
         <GeneratorSelector 
-          assetVersion={assetVersion} 
+          assetVersion={assetVersion}
+          jobDefinitions={jobDefinitions}
         />
         <FormLabel>
           Preset:
@@ -291,7 +292,7 @@ export const PackageScene: React.FC = () => {
             </ModalDialog>
           </Modal>
         )}
-        <SceneTalkConnector dependencyFileIds={jobDef?.params_schema.params['dependencies']?.default as string[]} />
+        <SceneTalkConnector />
         <SceneViewer packageName={assetVersion?.name as string} />
         <StatusBar />
       </Box>

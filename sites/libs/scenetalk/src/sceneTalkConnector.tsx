@@ -3,10 +3,10 @@ import { useSceneStore } from "./sceneStore";
 import { SceneTalkConnection } from "./sceneTalkConnection";
 
 export interface SceneTalkConnectorProps {
-    dependencyFileIds?: string[];
+
 }
 
-export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = (props) => {
+export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = () => {
   const wsServiceRef = useRef<SceneTalkConnection | null>(null);
 
   // Get state and actions from the store
@@ -15,6 +15,7 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = (props) => 
     setWsStatus,
     selectedHdaId,
     paramValues,
+    dependencyFileIds,
     fileUpload,
     inputFiles,
     setMeshData,
@@ -107,7 +108,7 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = (props) => 
       },
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedHdaId]);
+  }, [selectedHdaId, dependencyFileIds]);
 
 
 
@@ -134,12 +135,10 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = (props) => 
     // Set request in flight
     setRequestInFlight(true);
     try {
-      const dependencyFileIds = props.dependencyFileIds || [];
-
       // Send the cook request with all parameters for the current HDA
       wsServiceRef.current.sendCookRequestById(
         selectedHdaId as string,
-        dependencyFileIds as string[],
+        dependencyFileIds as string[] || [],
         paramValues,
         inputFiles,
         format,
