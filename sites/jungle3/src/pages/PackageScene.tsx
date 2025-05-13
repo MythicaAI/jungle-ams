@@ -291,7 +291,7 @@ export const PackageScene: React.FC = () => {
             </ModalDialog>
           </Modal>
         )}
-        <SceneTalkConnector dependencyFileIds={assetVersion?.contents?.files.map((file) => file.file_id)} />
+        <SceneTalkConnector dependencyFileIds={jobDef?.params_schema.params['dependencies']?.default as string[]} />
         <SceneViewer packageName={assetVersion?.name as string} />
         <StatusBar />
       </Box>
