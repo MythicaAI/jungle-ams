@@ -33,6 +33,7 @@ export const AssetEditPresets: React.FC = () => {
     paramValues, 
     setParamValues,
     setSelectedHdaId,
+    setDependencyFileIds
   } = useSceneStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -193,6 +194,17 @@ export const AssetEditPresets: React.FC = () => {
   const handleSelectHda = (hda: AssetVersionContent) => {
     setSelectedHda(hda);
     setSelectedHdaId(hda.file_id);
+    
+    if (jobDefResp.data?.length) {
+      const jobDef = jobDefResp.data.find(
+        (definition) => definition.source.file_id === hda.file_id
+      );
+      
+      if (jobDef) {
+        const dependencies = jobDef.params_schema.params['dependencies']?.default as string[] || [];
+        setDependencyFileIds(dependencies);
+      }
+    }
   };
   
   const handleSelectJobDef = (_ignore: any, jobDefId: string | null) => {
@@ -521,7 +533,7 @@ export const AssetEditPresets: React.FC = () => {
             height: '100%',
             transition: "margin-left 0.3s ease"
           }}>
-            <SceneTalkConnector dependencyFileIds={selectedJobDef?.params_schema.params['dependencies']?.default as string[]} />
+            <SceneTalkConnector />
             <SceneViewer packageName={assetVersion?.name as string} />
             <StatusBar />
           </Box>
