@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { InputFile, MeshData,ConnectionStatus } from "./types";
+import { InputFile, MeshData, ConnectionStatus } from "./types";
 
 type StatusLogEntry = {
   level: "info" | "warning" | "error";
@@ -11,6 +11,10 @@ interface SceneState {
     // HDA schemas and selection
   selectedHdaId: string | null;
   setSelectedHdaId: (selectedHdaId: string) => void;
+
+  // Dependencies
+  dependencyFileIds: string[];
+  setDependencyFileIds: (dependencyFileIds: string[]) => void;
 
   inputFiles: { [key: string]: InputFile };
   setInputFiles: (filesByInput: { [key: string]:InputFile }) => void;
@@ -78,6 +82,10 @@ let flushTimeout: NodeJS.Timeout | null = null;
 export const useSceneStore = create<SceneState>((set) => ({
   selectedHdaId: null,
   setSelectedHdaId: (selectedHdaId) => set({ selectedHdaId: selectedHdaId }),
+
+  // Dependencies
+  dependencyFileIds: [],
+  setDependencyFileIds: (dependencyFileIds) => set({ dependencyFileIds }),
 
   // Input files
   inputFiles: {},

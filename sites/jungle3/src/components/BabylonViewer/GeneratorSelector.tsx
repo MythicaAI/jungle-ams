@@ -2,25 +2,49 @@ import React, { useEffect } from "react";
 import { Select, Option, Box } from "@mui/joy";
 import { useSceneStore } from "scenetalk";
 import { AssetVersionResponse } from "types/apiTypes";
+import { JobDefinition } from "@queries/packages/types";
 
 type GeneratorSelectorProps = {
   assetVersion: AssetVersionResponse | null;
+  jobDefinitions?: JobDefinition[];
 };
 
 const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({ 
-  assetVersion 
+  assetVersion,
+  jobDefinitions
 }) => {
-  const { selectedHdaId, setSelectedHdaId } = useSceneStore();
+  const { selectedHdaId, setSelectedHdaId, setDependencyFileIds } = useSceneStore();
 
   const hdaFiles = assetVersion?.contents?.files.filter((file) =>
     file.file_name.includes(".hda"),
   );
 
-  useEffect(() => {
-    if (!selectedHdaId && hdaFiles && hdaFiles.length > 0) {
-        setSelectedHdaId(hdaFiles[0].file_id);
+  const updateHdaAndDependencies = (newHdaId: string) => {
+    setSelectedHdaId(newHdaId);
+    
+    if (jobDefinitions?.length) {
+      const jobDef = jobDefinitions.find(
+        (definition) => definition.source.file_id === newHdaId
+      );
+      
+      if (jobDef) {
+        const dependencies = jobDef.params_schema.params['dependencies']?.default as string[] || [];
+        setDependencyFileIds(dependencies);
+      }
     }
-  }, [hdaFiles]);
+  };
+
+  useEffect(() => {
+    if (hdaFiles?.length) {
+      const defaultHdaId = hdaFiles[0].file_id;
+      const newHdaId = !selectedHdaId ? defaultHdaId : selectedHdaId;
+      
+      const hdaExists = hdaFiles.some(file => file.file_id === selectedHdaId);
+      if (!selectedHdaId || !hdaExists) {
+        updateHdaAndDependencies(newHdaId);
+      }
+    }
+  }, [hdaFiles, selectedHdaId, updateHdaAndDependencies]);
 
   if (!hdaFiles || hdaFiles.length <= 1) {
     return null;
@@ -42,7 +66,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
         value={selectedHdaId}
         multiple={false}
         onChange={(_, newValue) => {
-          setSelectedHdaId(newValue || "");
+          updateHdaAndDependencies(newValue || "");
         }}
       >
         {hdaFiles.map((hda) => (
