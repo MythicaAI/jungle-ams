@@ -35,7 +35,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
   };
 
   useEffect(() => {
-    if (hdaFiles?.length) {
+    if (hdaFiles?.length && jobDefinitions?.length) {
       const defaultHdaId = hdaFiles[0].file_id;
       const newHdaId = !selectedHdaId ? defaultHdaId : selectedHdaId;
       
@@ -44,7 +44,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
         updateHdaAndDependencies(newHdaId);
       }
     }
-  }, [hdaFiles, selectedHdaId, updateHdaAndDependencies]);
+  }, [hdaFiles, selectedHdaId, updateHdaAndDependencies, jobDefinitions]);
 
   if (!hdaFiles || hdaFiles.length <= 1) {
     return null;
