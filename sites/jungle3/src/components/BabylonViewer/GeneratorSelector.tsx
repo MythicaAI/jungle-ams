@@ -44,7 +44,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
         updateHdaAndDependencies(newHdaId);
       }
     }
-  }, [hdaFiles, selectedHdaId, updateHdaAndDependencies, jobDefinitions]);
+  }, [hdaFiles, jobDefinitions]);
 
   if (!hdaFiles || hdaFiles.length <= 1) {
     return null;
