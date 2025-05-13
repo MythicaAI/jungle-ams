@@ -79,7 +79,7 @@ export const PackageScene: React.FC = () => {
     if (jobDef) {
       setParamValues(jobDef.params_schema.default);
     }
-  }, [jobDef, setParamValues]);
+  }, [jobDef]);
 
   useEffect(() => {
     setIsLoading(false);

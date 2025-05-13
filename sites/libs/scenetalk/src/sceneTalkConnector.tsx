@@ -138,7 +138,7 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = () => {
       // Send the cook request with all parameters for the current HDA
       wsServiceRef.current.sendCookRequestById(
         selectedHdaId as string,
-        dependencyFileIds || [],
+        dependencyFileIds as string[] || [],
         paramValues,
         inputFiles,
         format,
