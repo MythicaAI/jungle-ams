@@ -16,7 +16,6 @@ export interface ParmFactoryProps {
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
   onFileUpload?: (formData: Record<string, File>, callback: (file_id: string) => void) => void;
-  useSlidersOnMobile?: boolean;
 }
 
 export type ParmFactory = React.ComponentType<ParmFactoryProps>;
@@ -34,7 +33,7 @@ export const ParmFactoryContext =
 export const ParmFactoryProvider = ParmFactoryContext.Provider;
 
 export const parmFactoryMethod = (props: ParmFactoryProps): React.ReactNode => {
-  const { parmTemplate, data, onChange, onFileUpload, useSlidersOnMobile } = props;
+  const { parmTemplate, data, onChange, onFileUpload } = props;
   switch (parmTemplate.param_type) {
     case hou.parmTemplateType.Folder:
       return (
@@ -43,7 +42,6 @@ export const parmFactoryMethod = (props: ParmFactoryProps): React.ReactNode => {
           data={data}
           onChange={onChange}
           onFileUpload={onFileUpload}
-          useSlidersOnMobile={useSlidersOnMobile}
           template={parmTemplate as hou.FolderParmTemplate}
         />
       );
@@ -54,7 +52,6 @@ export const parmFactoryMethod = (props: ParmFactoryProps): React.ReactNode => {
           data={data}
           onChange={onChange}
           onFileUpload={onFileUpload}
-          useSlidersOnMobile={useSlidersOnMobile}
           template={parmTemplate as hou.FolderSetParmTemplate}
         />
       );
@@ -75,7 +72,6 @@ export const parmFactoryMethod = (props: ParmFactoryProps): React.ReactNode => {
           data={data}
           onChange={onChange}
           template={parmTemplate as hou.FloatParmTemplate}
-          useSlidersOnMobile={useSlidersOnMobile}
         />
       );
     case hou.parmTemplateType.Int:
@@ -85,7 +81,6 @@ export const parmFactoryMethod = (props: ParmFactoryProps): React.ReactNode => {
           data={data}
           onChange={onChange}
           template={parmTemplate as hou.IntParmTemplate}
-          useSlidersOnMobile={useSlidersOnMobile}
         />
       );
     case hou.parmTemplateType.Toggle:

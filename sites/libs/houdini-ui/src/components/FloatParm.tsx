@@ -6,19 +6,17 @@ export interface FloatParmProps {
   template: hou.FloatParmTemplate;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
-  useSlidersOnMobile?: boolean;
 }
 
 export const FloatParm: React.FC<FloatParmProps> = ({
   template,
   data,
   onChange,
-  useSlidersOnMobile,
 }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const { currentWidth } = useWindowSize();
-  const isMobileSize = currentWidth <= 700 && useSlidersOnMobile;
+  const isMobileSize = currentWidth <= 700;
   const [isValidInput, setIsValidInput] = useState<boolean>(true);
   const isMultiComponent = template.num_components > 1;
 

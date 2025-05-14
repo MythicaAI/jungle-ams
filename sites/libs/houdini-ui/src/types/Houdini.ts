@@ -274,6 +274,7 @@ export namespace hou {
     default_expression: string[] = [];
     default_expression_language: scriptLanguage[] = [];
     default_value?: any;
+    config: {} = {};
 
     constructor(data: dictionary) {
       this.param_type = data.param_type as hou.parmTemplateType;
@@ -282,6 +283,7 @@ export namespace hou {
     }
 
     extractConfig = (config: ParmTemplateProps) => {
+      this.config = config;
       const {
         name,
         label,
@@ -347,6 +349,20 @@ export namespace hou {
     }
     setTags(tags: { [key: string]: string }) {
       this.tags = tags;
+    }
+    clone() {
+      const ret = parmTemplateFactory([this.config])[0];
+      ret.is_hidden = this.is_hidden;
+      ret.is_label_hidden = this.is_label_hidden;
+      ret.conditionals = structuredClone(this.conditionals);
+      ret.help = this.help;
+      ret.join_with_next = this.join_with_next;
+      ret.script_callback = this.script_callback;
+      ret.script_callback_language = this.script_callback_language;
+      ret.tab_conditionals = structuredClone(this.tab_conditionals);
+      ret.tags = structuredClone(this.tags);
+      
+      return ret;
     }
   }
 
@@ -697,6 +713,12 @@ export namespace hou {
       this.parm_templates = parmTemplateFactory(config.parm_templates || []);
     }
 
+    clone() {
+      const ret = super.clone() as FolderParmTemplate;
+      ret.parm_templates = this.parm_templates.map(pt => pt.clone());
+      return ret;
+    }
+
     /**
      * Append a parm template to the end of the list of parm templates inside the folder.
      */
@@ -754,6 +776,12 @@ export namespace hou {
         config.parm_templates || []
       ) as FolderParmTemplate[];
     }
+    clone() {
+      const ret = super.clone() as FolderParmTemplate;
+      ret.parm_templates = this.parm_templates.map(pt => pt.clone());
+      return ret;
+    }
+
     /**
      * Append a parm template to the end of the list of parm templates inside the folder.
      */

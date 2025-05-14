@@ -24,6 +24,9 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
         data[template.name] as string[] || getDefaultValues()
     );
 
+    // Add state for file upload toggle
+    const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
+    
     useEffect(() => {
         const myData = data[template.name] as string[] || getDefaultValues();
         if (myData && values !== myData) {
@@ -65,6 +68,10 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     };
 
     if (template.string_type==hou.stringParmType.FileReference) {
+        // Check if we have file data
+        const fileData = data[template.name] as {file_id: string, file_name: string} | undefined;
+        const hasExistingFile = fileData && fileData.file_id;
+        
         return (
             <div className="string-parm" title={template.help}>
                 <label>{template.label}</label>
@@ -76,17 +83,61 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                         }}
                         className="field">
                         
-                        <input
-                            type="file"
-                            accept={template.file_type}
-                            onChange={handleChange}
-                            parm-index={0}
-                            style={{
+                        {hasExistingFile && !showFileUpload ? (
+                            <div style={{ 
+                                display: 'flex',
+                                alignItems: 'center',
                                 width: '100%',
-                                margin: '0px',
-                            }}
-                            placeholder={`Upload ${template.file_type} File`}
-                        />
+                                padding: '4px 8px',
+                                border: '1px solid #ccc',
+                                borderRadius: '4px',
+                            }}>
+                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {fileData.file_name || fileData.file_id}
+                                </span>
+                                <button
+                                    onClick={() => setShowFileUpload(true)}
+                                    style={{
+                                        marginLeft: '8px',
+                                        padding: '2px 8px',
+                                        border: '1px solid #ccc',
+                                        borderRadius: '3px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Change
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <input
+                                    type="file"
+                                    accept={template.file_type}
+                                    onChange={handleChange}
+                                    parm-index={0}
+                                    style={{
+                                        width: '100%',
+                                        margin: '0px',
+                                    }}
+                                    placeholder={`Upload ${template.file_type} File`}
+                                />
+                                {hasExistingFile && showFileUpload && (
+                                    <button
+                                        onClick={() => setShowFileUpload(false)}
+                                        style={{
+                                            marginTop: '4px',
+                                            padding: '2px 8px',
+                                            background: '#eee',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '3px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                )}
+                            </>
+                        )}
                     </div>  
                 </div>
             </div>

@@ -23,6 +23,7 @@ interface SceneState {
   // Parameter values
   paramValues: { [key: string]: any };
   setParamValues: (paramValues: {[key: string]: any}) => void;
+  clearParamValues: (keys:string[]) => void;
 
   fileUpload: { file: File, callback:(file_id:string)=>void } | null;
   setFileUpload: (file: File, callback:(file_id:string)=>void) => void;
@@ -97,6 +98,12 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   paramValues: { },
   setParamValues: (values) => set({ paramValues: values }),
+  clearParamValues: (keys) =>
+    set((state) => {
+      const newParamValues = { ...state.paramValues };
+      keys.forEach((key) => delete newParamValues[key]);
+      return { paramValues: newParamValues };
+    }),
 
   fileUpload: null,
   setFileUpload: (file, callback) => set({ fileUpload: {file: file, callback: callback} }),
