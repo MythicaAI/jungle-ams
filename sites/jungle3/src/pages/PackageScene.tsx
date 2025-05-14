@@ -58,7 +58,7 @@ export const PackageScene: React.FC = () => {
     if (!isMobileSize && isModalOpen) {
       setIsModalOpen(false);
     }
-  }, [currentWidth, isMobileSize, isModalOpen]);
+  }, [currentWidth, isMobileSize]);
 
 
   const [jobDef, setJobDef] = useState<JobDefinition | null>(null);
