@@ -48,15 +48,16 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
     <Box sx={{ 
       display: 'flex', 
       alignItems: 'center', 
-      gap: 2,
-      mx: 2
+      gap: 2
     }}>
       <Select
         variant="soft"
         name="generator_select"
         placeholder="Select Generator"
         size="md"
-        sx={{ minWidth: 200 }}
+        sx={{ 
+          maxWidth: { xs: 240, md: 400 }
+        }}
         value={selectedHdaId}
         multiple={false}
         onChange={(_, newValue) => {

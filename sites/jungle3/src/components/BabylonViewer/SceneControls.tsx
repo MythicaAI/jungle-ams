@@ -190,6 +190,7 @@ const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) =
                         group={parmTemplateGroup as hou.ParmTemplateGroup}
                         onChange={handleParmChange}
                         onFileUpload={handleFileUpload}
+                        useSlidersOnMobile={true}
                     />
                 </Box>
             </Box>
