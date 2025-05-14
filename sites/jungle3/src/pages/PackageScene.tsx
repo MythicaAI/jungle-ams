@@ -37,6 +37,7 @@ export const PackageScene: React.FC = () => {
   const { currentWidth } = useWindowSize();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidepanelOpen, setIsSidepanelOpen] = useState(true); // New state for panel visibility
+  const isMobileSize = currentWidth <= 700;
 
   // Get state and actions from the store
   const {
@@ -54,10 +55,10 @@ export const PackageScene: React.FC = () => {
 
 
   useEffect(() => {
-    if (currentWidth > 700 && isModalOpen) {
+    if (!isMobileSize && isModalOpen) {
       setIsModalOpen(false);
     }
-  }, [currentWidth]);
+  }, [currentWidth, isMobileSize, isModalOpen]);
 
 
   const [jobDef, setJobDef] = useState<JobDefinition | null>(null);
@@ -116,7 +117,7 @@ export const PackageScene: React.FC = () => {
         alignItems="center"
         mb="12px"
       >
-        {currentWidth > 700 ? (
+        {!isMobileSize ? (
           <Stack direction="row" alignItems="center" gap="12px">
             <Typography level="h2">{assetVersion?.name}</Typography>
             <Chip
@@ -175,7 +176,7 @@ export const PackageScene: React.FC = () => {
             navigate(`/package-view/${asset_id}/versions/${version_id}`);
           }}
         >
-          {currentWidth > 700 ? "Back to Package view" : "Back"}
+          {!isMobileSize ? "Back to Package view" : "Back"}
         </Button>
       </Stack>
       <Box
@@ -194,7 +195,7 @@ export const PackageScene: React.FC = () => {
           <title>Mythica • {t("common.sceneViewer")}</title>
         </Helmet>
 
-        {currentWidth > 700 ? (
+        {!isMobileSize ? (
           <>
             {/* Toggle button for sidepanel */}
             <Button
