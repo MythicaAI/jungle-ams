@@ -170,7 +170,9 @@ export const PackageScene: React.FC = () => {
                   ) || null,
                 );
               }}
-              sx={{ minWidth: 200 }}
+              sx={{ 
+                maxWidth: { xs: 240, md: 400 }
+              }}
               value={jobDef?.job_def_id || jobDefinitions?.[0]?.job_def_id}
               multiple={false}
             >
