@@ -135,7 +135,22 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
 
   };
 
-
+  const handleClearMultiBlock = () => {
+    const update: { [key: string]: any } = {}
+      multiBlocks.forEach((multiblock) => {
+        multiblock.parm_templates.forEach((parmTemplate) => {
+        update[parmTemplate.name] = null;
+        
+      });
+    });
+    const templates = []
+    for (let i = 0; i < template.default_value; i++) {
+      templates.push(createMultiBlock(i));
+    }
+    setMultiBlocks(templates);
+    update[template.name] = null;
+    onChange?.(update);
+  };
   
   useEffect(() => {
     const myData = data[template.name] as number;
@@ -201,14 +216,7 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
             border: '1px solid #ccc',
             cursor: 'pointer',
           }}
-          onClick={() => {
-            const templates = []
-            for (let i = 0; i < template.default_value; i++) {
-              templates.push(createMultiBlock(i));
-            }
-            setMultiBlocks(templates);
-            notifyChangeListeners(template.default_value);
-          }}
+          onClick={handleClearMultiBlock}
         >
           Clear
         </span>
@@ -224,10 +232,9 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
               return (
                 <div
                   key={`${multiblock.name}-${index}-${multiBlocks.length}`}
-                  className="parm-item "
                 >
                   <div
-                    style={{ marginRight: '18px', cursor: 'default', display: 'flex', alignItems: 'center' }}
+                    style={{  cursor: 'default', display: 'flex', alignItems: 'center' }}
                   >
                     <button
                       className="align-center"
@@ -261,7 +268,7 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
                       />
                     </button>
                   </div>
-                  <div className="folder-content">
+                  <div>
                     {multiblock.parm_templates.map((parmTemplate, parmIndex) => {
                       return (
                         <div key={`${parmTemplate.name}-${index}-${parmIndex}`} className="parm-item">
