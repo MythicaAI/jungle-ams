@@ -110,15 +110,21 @@ export const PackageScene: React.FC = () => {
 
   return (
     <>
-      <Stack
-        direction="row"
-        width="100%"
-        justifyContent="space-between"
-        alignItems="center"
-        mb="12px"
+      {/* Main container */}
+      <Box 
+        sx={{ 
+          width: "100%", 
+          mb: "12px", 
+          display: "flex",
+          flexWrap: "nowrap",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 2
+        }}
       >
+        {/* Title area */}
         {!isMobileSize ? (
-          <Stack direction="row" alignItems="center" gap="12px">
+          <Stack direction="row" alignItems="center" gap="12px" sx={{ flexShrink: 0 }}>
             <Typography level="h2">{assetVersion?.name}</Typography>
             <Chip
               key={assetVersion?.version.join(".")}
@@ -131,54 +137,71 @@ export const PackageScene: React.FC = () => {
             </Chip>
           </Stack>
         ) : (
-          <Box />
+          <Box sx={{ flexShrink: 0 }} />
         )}
-
-        <FormLabel>
-          Generator:
-        </FormLabel>
-        <GeneratorSelector 
-          assetVersion={assetVersion}
-          jobDefinitions={jobDefinitions}
-        />
-        <FormLabel>
-          Preset:
-        </FormLabel>
-        <Select
-          variant="soft"
-          name="preset_select"
-          placeholder="Select a Preset"
-          onChange={(_e, value) => {
-            setJobDef(
-              jobDefinitions?.find(
-                (definition) => definition.job_def_id === value,
-              ) || null,
-            );
-          }}
-          sx={{ minWidth: 200 }}
-          value={jobDef?.job_def_id || jobDefinitions?.[0]?.job_def_id}
-          multiple={false}
-        >
-          {jobDefinitions?.filter(
-            (item) => item.source.file_id === selectedHdaId
-            )?.map((jd) => (
-            <Option key={jd.job_def_id} value={jd.job_def_id}>
-              {jd.name}
-            </Option>
-          ))}
-        </Select>
+        
+        {/* Controls section */}
+        <Box sx={{ 
+          display: "flex", 
+          flexWrap: "wrap",
+          gap: 2,
+          justifyContent: "center",
+          flexGrow: 1,
+          alignItems: "center"
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <FormLabel>Generator:</FormLabel>
+            <GeneratorSelector 
+              assetVersion={assetVersion}
+              jobDefinitions={jobDefinitions}
+            />
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <FormLabel>Preset:</FormLabel>
+            <Select
+              variant="soft"
+              name="preset_select"
+              placeholder="Select a Preset"
+              onChange={(_e, value) => {
+                setJobDef(
+                  jobDefinitions?.find(
+                    (definition) => definition.job_def_id === value,
+                  ) || null,
+                );
+              }}
+              sx={{ minWidth: 200 }}
+              value={jobDef?.job_def_id || jobDefinitions?.[0]?.job_def_id}
+              multiple={false}
+            >
+              {jobDefinitions?.filter(
+                (item) => item.source.file_id === selectedHdaId
+                )?.map((jd) => (
+                <Option key={jd.job_def_id} value={jd.job_def_id}>
+                  {jd.name}
+                </Option>
+              ))}
+            </Select>
+          </Box>
+        </Box>
+        
+        {/* Back button area */}
         <Button
           variant="outlined"
           color="neutral"
           startDecorator={<LucideChevronLeft height="20px" width="20px" />}
-          sx={{ pl: "10px" }}
+          sx={{ 
+            pl: "10px",
+            flexShrink: 0
+          }}
           onClick={() => {
             navigate(`/package-view/${asset_id}/versions/${version_id}`);
           }}
         >
           {!isMobileSize ? "Back to Package view" : "Back"}
         </Button>
-      </Stack>
+      </Box>
+      
       <Box
         ref={(el: HTMLElement) => {
           if (el) {
