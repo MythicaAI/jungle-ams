@@ -30,6 +30,7 @@ const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) =
         setInputFile,
         paramValues,
         setParamValues,
+        clearParamValues,
         setFileUpload,
     } = useSceneStore();        
     const parmTemplateGroup = React.useMemo(
@@ -54,10 +55,25 @@ const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) =
 
     const handleParmChange = useCallback(
         (formData: dictionary) => {
-        setParamValues({
-            ...paramValues,
-            ...formData
-        });
+            const toClear: string[] = [];
+            // make sure any null values in formData are removed
+            Object.keys(formData).forEach((key) => {
+                if (formData[key] === null) {
+                    toClear.push(key);
+                    delete formData[key];
+                }
+            });
+            clearParamValues(toClear);
+            const newParamValues: {[key:string]:any} = {}
+            Object.keys(paramValues).forEach((key) => {
+                if (!toClear.includes(key)) {
+                    newParamValues[key] = paramValues[key];
+                }
+            });
+            setParamValues({
+                ...newParamValues,
+                ...formData
+            });
         },
         [paramValues,setParamValues],
     );        

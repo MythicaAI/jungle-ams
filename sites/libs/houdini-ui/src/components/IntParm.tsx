@@ -6,19 +6,17 @@ export interface IntParmProps {
   template: hou.IntParmTemplate;
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
-  useSlidersOnMobile?: boolean;
 }
 
 export const IntParm: React.FC<IntParmProps> = ({
   template,
   data,
   onChange,
-  useSlidersOnMobile,
 }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const { currentWidth } = useWindowSize();
-  const isMobileSize = currentWidth <= 700 && useSlidersOnMobile;
+  const isMobileSize = currentWidth <= 700;
   const isMultiComponent = template.num_components > 1;
 
   const getDefaultValues = () => {

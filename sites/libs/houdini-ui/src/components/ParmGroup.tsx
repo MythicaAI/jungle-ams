@@ -7,7 +7,6 @@ export interface ParmGroupProps {
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
   onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
-  useSlidersOnMobile?: boolean;
 }
 
 export const ParmGroup: React.FC<ParmGroupProps> = (props) => {
@@ -23,7 +22,6 @@ export const ParmGroup: React.FC<ParmGroupProps> = (props) => {
           parmTemplate={template}
           onFileUpload={props.onFileUpload}
           onChange={props.onChange}
-          useSlidersOnMobile={props.useSlidersOnMobile}
         />
       ))}
     </div>
