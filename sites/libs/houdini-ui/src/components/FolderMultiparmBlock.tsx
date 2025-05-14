@@ -151,7 +151,7 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
           type="number"
           min={0}
           style={{ width: 60, textAlign: 'center', padding: '4px' }}
-          value={data[template.name] as number}
+          value={data[template.name] as number || template.default_value}
           onChange={(e) => handleMultiBlockValueChange(parseInt(e.target.value))}
         />
         <div style={{ display: 'flex' }}>
