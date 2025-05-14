@@ -44,6 +44,7 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                 const ret:{[key:string]: dictionary} = {}
                 ret[template.name] = newValue;
                 onChange?.(ret); // Notify parent about the change
+                setShowFileUpload(false); // Hide the file upload input
             }
             const file = e.target.files?.[0];
             if (file && onFileUpload) {
@@ -73,72 +74,99 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
         const hasExistingFile = fileData && fileData.file_id;
         
         return (
-            <div className="string-parm" title={template.help}>
-                <label>{template.label}</label>
-                <div className="fields">
-                    <div 
-                        key={template.name} 
-                        style={{
-                            width: '100%',
-                        }}
-                        className="field">
-                        
+            <div 
+            className="string-parm" 
+            title={template.help}
+            style={!isMobileSize ? { display: 'flex', gap: '10px' } : undefined}>
+                <label style={!isMobileSize ? { 
+                    width: '100px', 
+                    textAlign: 'right',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-end',
+                    height: 'auto',
+                    minHeight: '28px',
+                    margin: 0,
+                    wordWrap: 'break-word',
+                    overflowWrap: 'break-word'
+                } : undefined}>{template.label}</label>
+                <div key={template.name} className="fields" style={!isMobileSize ? { flex: 1, width: '100%' } : undefined}>
+                    
+                    <div style={{ 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        width: '100%',
+                        padding: '4px 8px',
+                        gap: '4px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                    }}>
                         {hasExistingFile && !showFileUpload ? (
-                            <div style={{ 
-                                display: 'flex',
-                                alignItems: 'center',
-                                width: '100%',
-                                padding: '4px 8px',
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                            }}>
-                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {fileData.file_name || fileData.file_id}
-                                </span>
+                            <>
+                            <input
+                                type="text"
+                                readOnly
+                                value={fileData.file_name || fileData.file_id}
+                                style={{ 
+                                    flex: 1, 
+                                    width: '100%',
+                                    border: 'none',
+                                    background: 'transparent',
+                                    padding: '4px',
+                                    cursor: 'default',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}
+                            />
+                            <button
+                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                    e.preventDefault();
+                                    setShowFileUpload(true);
+                                }}
+                                style={{
+                                    padding: '2px 8px',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '3px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Change
+                            </button>
+                            </>
+                        ) : (
+                            <>
+                            <input
+                                type="file"
+                                accept={template.file_type}
+                                onChange={handleChange}
+                                parm-index={0}
+                                style={{
+                                    width: '100%',
+                                    paddingBottom: '2px',
+                                }}
+                                placeholder={`Upload ${template.file_type} File`}
+                            />
+                            {hasExistingFile && showFileUpload && (
                                 <button
-                                    onClick={() => setShowFileUpload(true)}
+                                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                        e.preventDefault();
+                                        setShowFileUpload(false);
+                                    }}
                                     style={{
-                                        marginLeft: '8px',
                                         padding: '2px 8px',
                                         border: '1px solid #ccc',
                                         borderRadius: '3px',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        marginBottom: '1px'
                                     }}
                                 >
-                                    Change
+                                    Cancel&nbsp;
                                 </button>
-                            </div>
-                        ) : (
-                            <>
-                                <input
-                                    type="file"
-                                    accept={template.file_type}
-                                    onChange={handleChange}
-                                    parm-index={0}
-                                    style={{
-                                        width: '100%',
-                                        margin: '0px',
-                                    }}
-                                    placeholder={`Upload ${template.file_type} File`}
-                                />
-                                {hasExistingFile && showFileUpload && (
-                                    <button
-                                        onClick={() => setShowFileUpload(false)}
-                                        style={{
-                                            marginTop: '4px',
-                                            padding: '2px 8px',
-                                            background: '#eee',
-                                            border: '1px solid #ccc',
-                                            borderRadius: '3px',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Cancel
-                                    </button>
-                                )}
+                            )}
                             </>
-                        )}
-                    </div>  
+                        )}                            
+                    </div>
                 </div>
             </div>
         );

@@ -11,7 +11,6 @@ export interface FolderParmProps {
   data: dictionary;
   onChange: (formData: dictionary) => void; // Callback for value changes
   onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void;
-  multiFolderIndex?: number; // Index of the multi folder
 }
 
 export const FolderParm: React.FC<FolderParmProps> = (folderParm) => {
