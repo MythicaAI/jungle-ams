@@ -111,8 +111,11 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
   const handleRemoveMultiBlock = (index: number) => {
     setMultiBlocks((prev)=>{
       const updated = [...prev];
-      updated.splice(index, 1);
+      const removed = updated.splice(index, 1);
       const update: { [key: string]: any } = {}
+      for (const pt of removed[0].parm_templates) {
+        update[pt.name] = null;
+      }
       for (let i = index; i < updated.length; i++) {
         updated[i].name = updated[i].tags["templateName"].replace(/#$/, `${i}`);
         for (const parmTemplate of updated[i].parm_templates) {
