@@ -15,7 +15,6 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
     data,
     onChange,
     onFileUpload,
-    multiFolderIndex,
   } = folderParm;
   
 
@@ -34,9 +33,9 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
   const createMultiBlock = (index: number) => {
     tagTemplate();
     const newBlock = template.clone();
-    newBlock.name = newBlock.tags["templateName"].replace(/#$/, `${index}`);
+    newBlock.name = newBlock.tags["templateName"].replace(/#$/, `${index+1}`);
     for (const parmTemplate of newBlock.parm_templates) {
-      parmTemplate.name = parmTemplate.tags["templateName"].replace(/#$/, `${index}`);
+      parmTemplate.name = parmTemplate.tags["templateName"].replace(/#/, `${index+1}`);
     }
 
     return newBlock;
@@ -50,6 +49,7 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
     return templates;
   });
 
+  const [activeTab, setActiveTab] = useState<number>(0);
 
   const notifyChangeListeners = (value: number) => {
     const ret: { [key: string]: number } = {};
@@ -92,9 +92,9 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
       updated.splice(index, 0, newBlock);
       const update: { [key: string]: any } = {}
       for (let i = updated.length - 1; index < i; i--) {
-        updated[i].name = template.tags["templateName"].replace(/#$/, `${i}`);
+        updated[i].name = template.tags["templateName"].replace(/#$/, `${i+1}`);
         for (const parmTemplate of updated[i].parm_templates) {
-          const newName = parmTemplate.tags["templateName"].replace(/#$/, `${i}`);
+          const newName = parmTemplate.tags["templateName"].replace(/#/, `${i+1}`);
           if (data[parmTemplate.name]) {
             update[parmTemplate.name] = null;
             update[newName] = data[parmTemplate.name];
@@ -117,9 +117,9 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
         update[pt.name] = null;
       }
       for (let i = index; i < updated.length; i++) {
-        updated[i].name = updated[i].tags["templateName"].replace(/#$/, `${i}`);
+        updated[i].name = updated[i].tags["templateName"].replace(/#$/, `${i+1}`);
         for (const parmTemplate of updated[i].parm_templates) {
-          const newName = parmTemplate.tags["templateName"].replace(/#$/, `${i}`);
+          const newName = parmTemplate.tags["templateName"].replace(/#/, `${i+1}`);
           if (data[parmTemplate.name]) {
             update[parmTemplate.name] = null;
             update[newName] = data[parmTemplate.name];
@@ -142,7 +142,13 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
     if (myData && multiBlocks.length !== myData) {
       handleMultiBlockValueChange(myData, true);
     }
-  }, [data[template.name]]);
+    // Reset active tab if it's out of bounds after blocks change
+    if (activeTab >= multiBlocks.length && multiBlocks.length > 0) {
+      setActiveTab(multiBlocks.length - 1);
+    } else if (multiBlocks.length === 0) {
+      setActiveTab(0);
+    }
+  }, [data[template.name], multiBlocks.length]);
  
   return (
     <div>
@@ -196,8 +202,8 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
             cursor: 'pointer',
           }}
           onClick={() => {
-            const templates = [template]
-            for (let i = 1; i < template.default_value; i++) {
+            const templates = []
+            for (let i = 0; i < template.default_value; i++) {
               templates.push(createMultiBlock(i));
             }
             setMultiBlocks(templates);
@@ -212,49 +218,109 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
         template.folder_type === hou.folderType.MultiparmBlock ||
         template.folder_type === hou.folderType.ScrollingMultiparmBlock
       ) && (
-      <div className="folder-content">
-        {multiBlocks &&
-          multiBlocks?.map((multiblock, index) => {
+        <div className="folder-content">
+          {multiBlocks &&
+            multiBlocks?.map((multiblock, index) => {
+              return (
+                <div
+                  key={`${multiblock.name}-${index}-${multiBlocks.length}`}
+                  className="parm-item "
+                >
+                  <div
+                    style={{ marginRight: '18px', cursor: 'default', display: 'flex', alignItems: 'center' }}
+                  >
+                    <button
+                      className="align-center"
+                      style={{
+                        background: 'none',
+                        border: '1px solid #ccc',
+                        borderRadius: '0',
+                        padding: 3,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleRemoveMultiBlock(index)}
+                    >
+                    <img width="14px" height="14px" src={Cross} alt="cross" />
+                    </button>
+                    <button
+                      className="align-center"
+                      style={{
+                        background: 'none',
+                        border: '1px solid #ccc',
+                        borderRadius: '0',
+                        padding: 3,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleInsertMultiBlock(index)}
+                    >
+                      <img
+                        width="14px"
+                        height="14px"
+                        src={Insert}
+                        alt="insert"
+                      />
+                    </button>
+                  </div>
+                  <div className="folder-content">
+                    {multiblock.parm_templates.map((parmTemplate, parmIndex) => {
+                      return (
+                        <div key={`${parmTemplate.name}-${index}-${parmIndex}`} className="parm-item">
+                          <ParmFactory
+                            data={data}
+                            parmTemplate={parmTemplate}
+                            onChange={onChange}
+                            onFileUpload={onFileUpload}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
+      {template.folder_type === hou.folderType.TabbedMultiparmBlock && (
+        <div className="folder-content">
+          {multiBlocks.length > 0 && (
+            <div className="tab-bar" style={{ 
+              display: 'flex', 
+              borderBottom: '1px solid #ccc', 
+              marginBottom: '10px' 
+            }}>
+              {multiBlocks.map((_, index) => (
+                <div
+                  key={`tab-${index}`}
+                  className={`tab ${activeTab === index ? 'active-tab' : ''}`}
+                  style={{
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    backgroundColor: activeTab === index ? '#f0f0f0' : 'transparent',
+                    borderTop: '1px solid #ccc',
+                    borderLeft: '1px solid #ccc',
+                    borderRight: '1px solid #ccc',
+                    borderBottom: activeTab === index ? 'none' : '1px solid #ccc',
+                    marginBottom: activeTab === index ? '-1px' : '0',
+                    position: 'relative',
+                    borderRadius: '4px 4px 0 0',
+                  }}
+                  onClick={() => setActiveTab(index)}
+                >
+                  {index + 1}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {multiBlocks.map((multiblock, index) => {
+            // Only render the content of the active tab
+            if (index !== activeTab) return null;
+
             return (
               <div
                 key={`${multiblock.name}-${index}-${multiBlocks.length}`}
-                className="parm-item "
+                className="parm-item"
               >
-                <div
-                  style={{ marginRight: '18px', cursor: 'default', display: 'flex', alignItems: 'center' }}
-                >
-                  <button
-                    className="align-center"
-                    style={{
-                      background: 'none',
-                      border: '1px solid #ccc',
-                      borderRadius: '0',
-                      padding: 3,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => handleRemoveMultiBlock(index)}
-                  >
-                  <img width="14px" height="14px" src={Cross} alt="cross" />
-                  </button>
-                  <button
-                    className="align-center"
-                    style={{
-                      background: 'none',
-                      border: '1px solid #ccc',
-                      borderRadius: '0',
-                      padding: 3,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => handleInsertMultiBlock(index)}
-                  >
-                    <img
-                      width="14px"
-                      height="14px"
-                      src={Insert}
-                      alt="insert"
-                    />
-                  </button>
-                </div>
                 <div className="folder-content">
                   {multiblock.parm_templates.map((parmTemplate, parmIndex) => {
                     return (
@@ -272,32 +338,6 @@ export const FolderMultiparmBlock: React.FC<FolderParmProps> = (folderParm) => {
               </div>
             );
           })}
-      </div>
-      )}
-      {template.folder_type === hou.folderType.TabbedMultiparmBlock && (
-        <div
-          className="folder-parm default"
-          style={{ margin: '0 0 8px' }}
-        >
-          <div className="folder-content">
-            {template.parm_templates.map((parmTemplate, index) => {
-              const name = parmTemplate.name.replace(/#/, `${multiFolderIndex}`);
-              return (
-                <div key={template.name + index} className="parm-item">
-                  <ParmFactory
-                    data={data}
-                    parmTemplate={{
-                      ...parmTemplate,
-                      name,
-                      default_value: data[name] || null,
-                    } as hou.ParmTemplate}
-                    onChange={onChange}
-                    onFileUpload={onFileUpload}
-                  />
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>

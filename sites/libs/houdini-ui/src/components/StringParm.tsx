@@ -44,6 +44,7 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                 const ret:{[key:string]: dictionary} = {}
                 ret[template.name] = newValue;
                 onChange?.(ret); // Notify parent about the change
+                setShowFileUpload(false); // Hide the file upload input
             }
             const file = e.target.files?.[0];
             if (file && onFileUpload) {
@@ -127,7 +128,6 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                                         style={{
                                             marginTop: '4px',
                                             padding: '2px 8px',
-                                            background: '#eee',
                                             border: '1px solid #ccc',
                                             borderRadius: '3px',
                                             cursor: 'pointer'
