@@ -79,7 +79,7 @@ const App: React.FC = () => {
             element={<PackageViewWrapper />}
           />
           <Route
-            path="package-view/:asset_id/versions/:version_id/jobs/:jobDefId?"
+            path="package-view/:asset_id/versions/:version_id/jobs/:job_def_id?"
             element={<PackageScene />}
           />
           <Route path="quick-setup" element={<QuickSetup />} />

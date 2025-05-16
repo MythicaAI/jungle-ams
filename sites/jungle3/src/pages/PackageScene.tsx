@@ -27,7 +27,7 @@ import { StatusBar } from "@components/StatusBar";
 import { DefaultParmFactory, ParmFactoryProps, ParmFactoryProvider } from "houdini-ui";
 
 export const PackageScene: React.FC = () => {
-  const { asset_id, version_id, jobDefId } = useParams();
+  const { asset_id, version_id, job_def_id } = useParams();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const { currentWidth } = useWindowSize();
@@ -133,7 +133,7 @@ export const PackageScene: React.FC = () => {
           <GeneratorSelector 
             assetVersion={assetVersion}
             jobDefinitions={jobDefinitions}
-            initialJobDefId={jobDefId}
+            initialJobDefId={job_def_id}
           />
         </Box>
         
