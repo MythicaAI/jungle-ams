@@ -66,7 +66,7 @@ export const PackageScene: React.FC = () => {
         { replace: true }
       );
     }
-  }, [selectedJobDef, navigate, asset_id, version_id, isLoading]);
+  }, [selectedJobDef, navigate, asset_id, version_id]);
 
   const FilteredParmFactory: React.FC<ParmFactoryProps> = useCallback((props) => {
     props.parmTemplate.is_hidden = selectedJobDef?.params_schema.hidden?.[props.parmTemplate.name] || false;
