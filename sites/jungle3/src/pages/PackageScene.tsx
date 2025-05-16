@@ -27,7 +27,7 @@ import { StatusBar } from "@components/StatusBar";
 import { DefaultParmFactory, ParmFactoryProps, ParmFactoryProvider } from "houdini-ui";
 
 export const PackageScene: React.FC = () => {
-  const { asset_id, version_id } = useParams();
+  const { asset_id, version_id, job_def_id } = useParams();
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const { currentWidth } = useWindowSize();
@@ -58,6 +58,15 @@ export const PackageScene: React.FC = () => {
   useEffect(() => {
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (selectedJobDef) {
+      navigate(
+        `/package-view/${asset_id}/versions/${version_id}/jobs/${selectedJobDef.job_def_id}`, 
+        { replace: true }
+      );
+    }
+  }, [selectedJobDef, navigate, asset_id, version_id]);
 
   const FilteredParmFactory: React.FC<ParmFactoryProps> = useCallback((props) => {
     props.parmTemplate.is_hidden = selectedJobDef?.params_schema.hidden?.[props.parmTemplate.name] || false;
@@ -124,6 +133,7 @@ export const PackageScene: React.FC = () => {
           <GeneratorSelector 
             assetVersion={assetVersion}
             jobDefinitions={jobDefinitions}
+            initialJobDefId={job_def_id}
           />
         </Box>
         
