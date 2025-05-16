@@ -8,9 +8,13 @@ type StatusLogEntry = {
 
 // Store interface
 interface SceneState {
-    // HDA schemas and selection
+  // HDA schemas and selection
   selectedHdaId: string | null;
   setSelectedHdaId: (selectedHdaId: string) => void;
+  
+  // Store the entire JobDefinition
+  selectedJobDef: any;  
+  setSelectedJobDef: (jobDef: any) => void;
 
   // Dependencies
   dependencyFileIds: string[];
@@ -83,6 +87,10 @@ let flushTimeout: NodeJS.Timeout | null = null;
 export const useSceneStore = create<SceneState>((set) => ({
   selectedHdaId: null,
   setSelectedHdaId: (selectedHdaId) => set({ selectedHdaId: selectedHdaId }),
+  
+  // Store the entire JobDefinition
+  selectedJobDef: null,
+  setSelectedJobDef: (jobDef) => set({ selectedJobDef: jobDef }),
 
   // Dependencies
   dependencyFileIds: [],
