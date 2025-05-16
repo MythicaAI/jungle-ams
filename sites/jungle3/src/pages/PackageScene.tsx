@@ -38,6 +38,7 @@ export const PackageScene: React.FC = () => {
   // Get state and actions from the store
   const {
     selectedJobDef,
+    resetSelection
   } = useSceneStore();
 
   const navigate = useNavigate();
@@ -48,6 +49,10 @@ export const PackageScene: React.FC = () => {
   const { data: assetVersion } =
     useGetAssetByVersion(asset_id as string, version_id as string);
 
+  // Fully reset store when page mounts
+  useEffect(() => {
+    resetSelection();
+  }, [resetSelection]);
 
   useEffect(() => {
     if (!isMobileSize && isModalOpen) {

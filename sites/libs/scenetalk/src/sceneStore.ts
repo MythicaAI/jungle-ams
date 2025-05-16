@@ -77,6 +77,7 @@ interface SceneState {
   setLatency: (latency: number) => void;
 
   // Utility methods
+  resetSelection: () => void; 
   reset: () => void;
 }
 
@@ -182,6 +183,15 @@ export const useSceneStore = create<SceneState>((set) => ({
   setLatency: (latency) => set({ latency }),
 
   // Utility methods
+  resetSelection: () => {
+    set({
+      selectedHdaId: null,
+      selectedJobDef: null,
+      dependencyFileIds: []
+    })
+    useSceneStore.getState().reset();
+  },
+
   reset: () => {
     set({
       inputFiles: {},
