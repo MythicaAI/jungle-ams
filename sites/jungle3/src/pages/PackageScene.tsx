@@ -6,12 +6,9 @@ import {
   CircularProgress,
   DialogContent,
   DialogTitle,
-  FormLabel,
   Modal,
   ModalClose,
   ModalDialog,
-  Select,
-  Option,
   Stack,
   Typography,
 } from "@mui/joy";
@@ -27,7 +24,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useGetAssetByVersion, useGetJobDefinition } from "@queries/packages";
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react";
 import { StatusBar } from "@components/StatusBar";
-import { JobDefinition } from "@queries/packages/types";
 import { DefaultParmFactory, ParmFactoryProps, ParmFactoryProvider } from "houdini-ui";
 
 export const PackageScene: React.FC = () => {
