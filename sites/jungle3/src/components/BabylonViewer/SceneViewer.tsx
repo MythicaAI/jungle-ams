@@ -349,6 +349,18 @@ const SceneViewer: React.FC<SceneViewerProps> = ({
         meshData.uvs || [],
         meshData.colors || []
       );
+    } else if (!meshData && sceneRef.current && currentMeshRef.current) {
+      const scene = sceneRef.current;
+      console.log("resetting current mesh " + currentMeshRef.current);
+      const mesh = scene.getMeshByName(currentMeshRef.current);
+      if (mesh) {
+        scene.removeMesh(mesh, true);
+        mesh.isVisible = false;
+        mesh.dispose();
+      } else {
+        console.log("mesh not found " + currentMeshRef.current);
+      }
+      currentMeshRef.current = null;
     }
   }, [meshData]);
 
