@@ -13,7 +13,12 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
   assetVersion,
   jobDefinitions
 }) => {
-  const { selectedHdaId, setSelectedHdaId, setDependencyFileIds } = useSceneStore();
+  const { 
+    selectedHdaId, 
+    setSelectedHdaId, 
+    setDependencyFileIds,
+    setSelectedJobDef 
+  } = useSceneStore();
 
   const hdaFiles = assetVersion?.contents?.files.filter((file) =>
     file.file_name.includes(".hda"),
@@ -28,6 +33,8 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
       );
       
       if (jobDef) {
+        setSelectedJobDef(jobDef);
+        
         const dependencies = jobDef.params_schema.params['dependencies']?.default as string[] || [];
         setDependencyFileIds(dependencies);
       }

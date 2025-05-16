@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { InputFile, MeshData, ConnectionStatus } from "./types";
+import type { JobDefinition } from "@queries/packages/types";
 
 type StatusLogEntry = {
   level: "info" | "warning" | "error";
@@ -11,6 +12,10 @@ interface SceneState {
     // HDA schemas and selection
   selectedHdaId: string | null;
   setSelectedHdaId: (selectedHdaId: string) => void;
+  
+  // Store the entire JobDefinition
+  selectedJobDef: JobDefinition | null;
+  setSelectedJobDef: (jobDef: JobDefinition | null) => void;
 
   // Dependencies
   dependencyFileIds: string[];
@@ -83,6 +88,10 @@ let flushTimeout: NodeJS.Timeout | null = null;
 export const useSceneStore = create<SceneState>((set) => ({
   selectedHdaId: null,
   setSelectedHdaId: (selectedHdaId) => set({ selectedHdaId: selectedHdaId }),
+  
+  // Store the entire JobDefinition
+  selectedJobDef: null,
+  setSelectedJobDef: (jobDef) => set({ selectedJobDef: jobDef }),
 
   // Dependencies
   dependencyFileIds: [],
