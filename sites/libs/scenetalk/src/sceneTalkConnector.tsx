@@ -29,8 +29,7 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = () => {
     setPendingRequest,
     exportFormat,
     setExportFormat,
-    setLatency,
-    reset
+    setLatency
   } = useSceneStore();
 
 
@@ -50,7 +49,6 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = () => {
   useEffect(() => {
     const wsService = wsServiceRef.current;
     if (!wsService) return;
-    reset();
     wsService.setHandlers({
       onStatusChange: (status) => {
         setWsStatus(status);

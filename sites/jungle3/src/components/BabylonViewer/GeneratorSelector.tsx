@@ -21,7 +21,8 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
     setDependencyFileIds,
     selectedJobDef,
     setSelectedJobDef,
-    setParamValues
+    setParamValues,
+    reset
   } = useSceneStore();
 
   const hdaFiles = assetVersion?.contents?.files.filter((file) =>
@@ -33,6 +34,7 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
   ) || [];
 
   const updateHdaAndDependencies = (newHdaId: string, specificJobDefId?: string) => {
+    reset();
     setSelectedHdaId(newHdaId);
     
     if (jobDefinitions?.length) {
