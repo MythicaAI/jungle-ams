@@ -33,7 +33,8 @@ export const AssetEditPresets: React.FC = () => {
     paramValues, 
     setParamValues,
     setSelectedHdaId,
-    setDependencyFileIds
+    setDependencyFileIds,
+    reset
   } = useSceneStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -192,6 +193,7 @@ export const AssetEditPresets: React.FC = () => {
 
 
   const handleSelectHda = (hda: AssetVersionContent) => {
+    reset();
     setSelectedHda(hda);
     setSelectedHdaId(hda.file_id);
     
