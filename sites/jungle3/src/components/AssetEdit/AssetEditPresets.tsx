@@ -34,7 +34,8 @@ export const AssetEditPresets: React.FC = () => {
     setParamValues,
     setSelectedHdaId,
     setDependencyFileIds,
-    reset
+    reset,
+    resetSelection
   } = useSceneStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -191,6 +192,10 @@ export const AssetEditPresets: React.FC = () => {
     }
   }, [selectedJobDef]);
 
+  // Fully reset store when page mounts
+  useEffect(() => {
+    resetSelection();
+  }, [resetSelection]);
 
   const handleSelectHda = (hda: AssetVersionContent) => {
     reset();
