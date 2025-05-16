@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { InputFile, MeshData, ConnectionStatus } from "./types";
-import type { JobDefinition } from "@queries/packages/types";
 
 type StatusLogEntry = {
   level: "info" | "warning" | "error";
@@ -9,13 +8,13 @@ type StatusLogEntry = {
 
 // Store interface
 interface SceneState {
-    // HDA schemas and selection
+  // HDA schemas and selection
   selectedHdaId: string | null;
   setSelectedHdaId: (selectedHdaId: string) => void;
   
   // Store the entire JobDefinition
-  selectedJobDef: JobDefinition | null;
-  setSelectedJobDef: (jobDef: JobDefinition | null) => void;
+  selectedJobDef: any;  
+  setSelectedJobDef: (jobDef: any) => void;
 
   // Dependencies
   dependencyFileIds: string[];
