@@ -7,11 +7,13 @@ import { JobDefinition } from "@queries/packages/types";
 type GeneratorSelectorProps = {
   assetVersion: AssetVersionResponse | null;
   jobDefinitions?: JobDefinition[];
+  initialJobDefId?: string;
 };
 
 const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({ 
   assetVersion,
-  jobDefinitions
+  jobDefinitions,
+  initialJobDefId
 }) => {
   const { 
     selectedHdaId, 
@@ -30,13 +32,24 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
     item => item.source.file_id === selectedHdaId
   ) || [];
 
-  const updateHdaAndDependencies = (newHdaId: string) => {
+  const updateHdaAndDependencies = (newHdaId: string, specificJobDefId?: string) => {
     setSelectedHdaId(newHdaId);
     
     if (jobDefinitions?.length) {
-      const jobDef = jobDefinitions.find(
-        (definition) => definition.source.file_id === newHdaId
-      );
+      let jobDef;
+      
+      if (specificJobDefId) {
+        jobDef = jobDefinitions.find(
+          (definition) => definition.job_def_id === specificJobDefId
+        );
+      }
+      
+      // Fall back to first job def for the HDA
+      if (!jobDef) {
+        jobDef = jobDefinitions.find(
+          (definition) => definition.source.file_id === newHdaId
+        );
+      }
       
       if (jobDef) {
         setSelectedJobDef(jobDef);
@@ -63,9 +76,28 @@ const GeneratorSelector: React.FC<GeneratorSelectorProps> = ({
 
   useEffect(() => {
     if (!selectedHdaId && hdaFiles?.length && jobDefinitions?.length) {
-      updateHdaAndDependencies(hdaFiles[0].file_id);
+      let hdaId: string | undefined;
+      let jobDefId: string | undefined;
+
+      // Default to job def specified in URL
+      if (initialJobDefId) {
+        const jobDef = jobDefinitions.find(def => def.job_def_id === initialJobDefId);
+        if (jobDef) {
+          hdaId = jobDef.source.file_id;
+          jobDefId = initialJobDefId;
+        }
+      }
+      
+      // Fallback to first HDA in list
+      if (!hdaId) {
+        hdaId = hdaFiles[0].file_id;
+      }
+
+      if (hdaId) {
+        updateHdaAndDependencies(hdaId, jobDefId);
+      }
     }
-  }, [hdaFiles, jobDefinitions]);
+  }, [hdaFiles, jobDefinitions, initialJobDefId]);
 
   return (
     <Box sx={{ 
