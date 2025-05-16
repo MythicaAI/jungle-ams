@@ -41,8 +41,7 @@ export const PackageScene: React.FC = () => {
 
   // Get state and actions from the store
   const {
-    selectedHdaId,
-    setParamValues,
+    selectedJobDef,
   } = useSceneStore();
 
   const navigate = useNavigate();
@@ -60,38 +59,16 @@ export const PackageScene: React.FC = () => {
     }
   }, [currentWidth, isMobileSize]);
 
-
-  const [jobDef, setJobDef] = useState<JobDefinition | null>(null);
-
-  useEffect(() => {
-    if(jobDefinitions?.length === 1) {
-      setJobDef(jobDefinitions[0]);
-    } else {
-      setJobDef(
-        jobDefinitions?.find(
-          (definition) => definition.source.file_id === selectedHdaId,
-        ) || null,
-      );
-    }
-
-  }, [selectedHdaId, jobDefinitions]);
-
-  useEffect(() => {
-    if (jobDef) {
-      setParamValues(jobDef.params_schema.default);
-    }
-  }, [jobDef]);
-
   useEffect(() => {
     setIsLoading(false);
   }, []);
 
   const FilteredParmFactory: React.FC<ParmFactoryProps> = useCallback((props) => {
-    props.parmTemplate.is_hidden = jobDef?.params_schema.hidden?.[props.parmTemplate.name] || false;
+    props.parmTemplate.is_hidden = selectedJobDef?.params_schema.hidden?.[props.parmTemplate.name] || false;
     return (
       <div 
         style={{
-          display: (jobDef?.params_schema.hidden?.[props.parmTemplate.name] ? 'none' : 'block'),
+          display: (selectedJobDef?.params_schema.hidden?.[props.parmTemplate.name] ? 'none' : 'block'),
         }}>
         <DefaultParmFactory
           {
@@ -99,9 +76,8 @@ export const PackageScene: React.FC = () => {
           }
         />
       </div>
-      
     );
-  },[jobDef?.params_schema.hidden])
+  },[selectedJobDef?.params_schema.hidden])
   
 
   if (isLoading || !assetVersion) {
@@ -149,42 +125,10 @@ export const PackageScene: React.FC = () => {
           flexGrow: 1,
           alignItems: "center"
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FormLabel>Generator:</FormLabel>
-            <GeneratorSelector 
-              assetVersion={assetVersion}
-              jobDefinitions={jobDefinitions}
-            />
-          </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FormLabel>Preset:</FormLabel>
-            <Select
-              variant="soft"
-              name="preset_select"
-              placeholder="Select a Preset"
-              onChange={(_e, value) => {
-                setJobDef(
-                  jobDefinitions?.find(
-                    (definition) => definition.job_def_id === value,
-                  ) || null,
-                );
-              }}
-              sx={{ 
-                maxWidth: { xs: 240, md: 400 }
-              }}
-              value={jobDef?.job_def_id || jobDefinitions?.[0]?.job_def_id}
-              multiple={false}
-            >
-              {jobDefinitions?.filter(
-                (item) => item.source.file_id === selectedHdaId
-                )?.map((jd) => (
-                <Option key={jd.job_def_id} value={jd.job_def_id}>
-                  {jd.name}
-                </Option>
-              ))}
-            </Select>
-          </Box>
+          <GeneratorSelector 
+            assetVersion={assetVersion}
+            jobDefinitions={jobDefinitions}
+          />
         </Box>
         
         {/* Back button area */}
@@ -264,12 +208,12 @@ export const PackageScene: React.FC = () => {
                 flexDirection: "column",
               }}
             >
-              {jobDef ?
+              {selectedJobDef ? 
                 <ParmFactoryProvider value={FilteredParmFactory as React.FC<ParmFactoryProps>}>              
                   <SceneControls 
                     style={{width:390}} 
                     assetVersion={assetVersion}
-                    jobDefinition={jobDef} />
+                    jobDefinition={selectedJobDef} />
                 </ParmFactoryProvider>
               : 
                 <Box sx={{ width: 390,padding: "20px" }}>
@@ -300,12 +244,12 @@ export const PackageScene: React.FC = () => {
               <ModalClose />
               <DialogTitle>Controls</DialogTitle>
               <DialogContent>
-              {jobDef ?
+              {selectedJobDef ?
                 <ParmFactoryProvider value={FilteredParmFactory as React.FC<ParmFactoryProps>}>              
                   <SceneControls 
                     style={{width:currentWidth - 40}} 
                     assetVersion={assetVersion}
-                    jobDefinition={jobDef} />
+                    jobDefinition={selectedJobDef} />
                 </ParmFactoryProvider>
               : 
                 <Box sx={{ width: currentWidth - 40,padding: "20px" }}> 
