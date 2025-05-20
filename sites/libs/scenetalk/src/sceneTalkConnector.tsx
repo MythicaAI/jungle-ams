@@ -61,13 +61,19 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = () => {
         addStatusLog(level, log);
       },
       onGeometryData: (data) => {
-        if (data.points && data.indices) {
+        const meshes = Object.entries(data);
+        if (meshes.length == 0) {
+          return;
+        }
+
+        const mesh = meshes[0][1] as any;
+        if (mesh.points && mesh.indices) {
           setMeshData({
-            points: data.points,
-            indices: data.indices,
-            normals: data.normals,
-            uvs: data.uvs,
-            colors: data.colors,
+            points: mesh.points,
+            indices: mesh.indices,
+            normals: mesh.normals,
+            uvs: mesh.uvs,
+            colors: mesh.colors,
           });
         }
       },
