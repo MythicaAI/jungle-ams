@@ -46,6 +46,7 @@ class CoordinatorException(Exception):
 
 class Worker:
     def __init__(self) -> None:
+        self.subject = None
         self.automations:dict[str,AutomationModel] = {}
         self.nats = NatsAdapter()
         self.rest = RestAdapter()
@@ -82,7 +83,7 @@ class Worker:
 
     def start(self, subject: str, automations: list[AutomationModel]) -> None:
         self._load_automations(automations)
-
+        self.subject = subject
         loop = asyncio.get_event_loop()        
         task = loop.create_task(self.nats.listen(subject, self._get_executor()))
         task.add_done_callback(error_handler(log))
@@ -148,6 +149,7 @@ class Worker:
 
                         worker = doer.automations[auto_request.path]
                         inputs = worker.inputModel(**auto_request.data)
+                        inputs.worker = self.subject
                         api_url = ripple_config().api_base_uri
                         resolve_params(api_url, tmpdir, inputs, headers=update_headers_from_context())
                         with tracer.start_as_current_span("job.execution") as job_span:

@@ -77,14 +77,21 @@ const template = `
 from pydantic import BaseModel, Field
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import ProcessStreamItem, OutputFiles
-    
+from ripple.models.streaming import ProcessStreamItem, OutputFiles 
+from ripple.automation.automations import ( 
+    script_request_model,
+    script_response_model,
+    script_operation
+)
+@script_request_model()
 class RequestModel(ParameterSet):
   pass
 
+@script_response_model()
 class ResponseModel(OutputFiles):
   files: dict[str, list[str]] = Field(default={"Files": []})
 
+@script_operation()
 def runAutomation(request: RequestModel, responder: ResultPublisher) -> ResponseModel:
   pass
 `;

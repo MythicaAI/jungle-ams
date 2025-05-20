@@ -7,6 +7,7 @@ or worker mode when connected to an events table.
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import tempfile
@@ -15,6 +16,7 @@ from pathlib import Path
 from typing import Optional, Union
 from uuid import uuid4
 
+import httpx
 import requests
 from events.events import EventsSession
 from opentelemetry import trace
@@ -27,6 +29,7 @@ from routes.file_uploads import FileUploadResponse
 from telemetry_config import get_telemetry_headers
 
 from cryptid.cryptid import event_seq_to_id
+from ripple.automation.automations import ScriptJobDefRequest
 from ripple.automation.adapters import NatsAdapter
 from ripple.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
 from ripple.automation.worker import process_guid
@@ -283,6 +286,80 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
     log.info("Sent NATS houdini task. Request: %s", event.model_dump())
     await nats.post("houdini", event.model_dump())
 
+async def fetch_content_locally(url):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        return response.text
+
+
+async def generate_several_awpy_job_defs(
+        avr: AssetVersionResult,
+        contents: list[AssetFileReference | AssetDependency | str],
+        token: str,
+        event_id: str,
+) -> bool:
+    """Request to generate several job_def"""
+    bulk_req = BulkAutomationRequest(
+        is_bulk_processing=True,  # len(contents) > 1,
+        event_id=event_id,
+        telemetry_context=get_telemetry_headers()
+    )
+    for content in contents:
+
+        #fetch content.url locally then read the json file and get the worker name
+        data = await fetch_content_locally(content.url)
+        data = json.loads(data)
+        log.info("Fetched content:%s", data)
+        worker_name = data.get("worker")
+
+        parameter_set = ScriptJobDefRequest(
+            awpy_file=FileParameter(file_id=content.file_id),            
+            src_asset_id=avr.asset_id,
+            src_version=avr.version,
+        )
+        bulk_req.requests.append(AutomationRequest(
+            process_guid=process_guid,
+            correlation=str(uuid4()),
+            auth_token=token,
+            path='/mythica/script/job_def',
+            data=parameter_set.model_dump(),
+            telemetry_context=get_telemetry_headers(),
+            event_id=event_id,
+        ))
+
+    nats = NatsAdapter()
+    log.info("Sent NATS %s task. Request: %s", worker_name, bulk_req.model_dump())  
+    await nats.post(worker_name, bulk_req.model_dump())
+
+async def generate_awpy_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str,
+                                    event_id: str) -> bool:
+        #read the json file and get the worker name
+    with open(content.file_name, 'r') as f:
+        data = json.load(f)
+        worker_name = data.get("worker")
+
+    """Request to generate one job_def"""
+    parameter_set = ScriptJobDefRequest(
+        awpy_file=FileParameter(file_id=content.file_id),
+        src_asset_id=avr.asset_id,
+        src_version=avr.version,
+    )
+
+    event = AutomationRequest(
+        process_guid=process_guid,
+        correlation=str(uuid4()),
+        auth_token=token,
+        path='/mythica/script/job_def',
+        data=parameter_set.model_dump(),
+        telemetry_context=get_telemetry_headers(),
+        event_id=event_id,
+    )
+
+    nats = NatsAdapter()
+    log.info("Sent NATS houdini task. Request: %s", event.model_dump())
+    await nats.post(worker_name, event.model_dump())
+
 
 async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse, token: str, event_id: str) -> bool:
     parameter_set = CropImageRequest(
@@ -322,6 +399,20 @@ def is_image_file(content: Union[AssetFileReference | AssetDependency | str]) ->
         span.record_exception(ex)
         return False
 
+def is_awpy_file(content: Union[AssetFileReference | AssetDependency | str]) -> bool:
+    if isinstance(content, AssetFileReference):
+        name = content.file_name
+    else:
+        name = content.name
+
+    try:
+        extension = name.rpartition(".")[-1].lower()
+        return extension == 'awpy'
+    except PackagerBaseException as ex:
+        log.exception(ex)
+        span = trace.get_current_span(context=get_current_telemetry_context())
+        span.record_exception(ex)
+        return False
 
 def build_asset_url(endpoint: str, asset_id: str, version: tuple[int]) -> str:
     """Build an access API access URL to a specific asset version"""
@@ -370,6 +461,7 @@ async def create_zip_from_asset(
         # Trigger job_def generation for package contents
         event_id = event_seq_to_id(event_seq)
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
+        log.info("worker_houdini_job_defs: %s", worker_job_defs)
         if worker_job_defs:
             dependencies = gather_hda_dependencies(endpoint, worker_job_defs, v.contents.get('dependencies', []))
             await generate_several_houdini_job_defs(v, worker_job_defs, dependencies, token, event_id)
@@ -380,6 +472,13 @@ async def create_zip_from_asset(
             worker_thumbnails = [c for c in v.contents.get('thumbnails', []) if is_image_file(c)]
             if worker_thumbnails:
                 await generate_several_thumbnails(v, worker_thumbnails, token, event_id)
+
+        generate_awpy_job_defs = True
+        if generate_awpy_job_defs:
+            worker_awpy_job_defs = [c for c in contents if is_awpy_file(c)]
+            log.info("worker_awpy_job_defs: %s", worker_awpy_job_defs)
+            if worker_awpy_job_defs:
+                await generate_several_awpy_job_defs(v, worker_awpy_job_defs, token, event_id)
 
 
 async def upload_package(
