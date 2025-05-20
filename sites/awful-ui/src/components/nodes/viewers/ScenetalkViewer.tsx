@@ -223,14 +223,20 @@ const ScenetalkViewer: React.FC<ScenetalkViewerProps> = (node) => {
             },
 
             onGeometryData: (data) => {
-                if (data.points && data.indices) {
-                    setMeshData({
-                        points: data.points,
-                        indices: data.indices,
-                        normals: data.normals,
-                        uvs: data.uvs,
-                        colors: data.colors,
-                    });
+                const meshes = Object.entries(data);
+                if (meshes.length == 0) {
+                  return;
+                }
+        
+                const mesh = meshes[0][1] as any;
+                if (mesh.points && mesh.indices) {
+                  setMeshData({
+                    points: mesh.points,
+                    indices: mesh.indices,
+                    normals: mesh.normals,
+                    uvs: mesh.uvs,
+                    colors: mesh.colors,
+                  });
                 }
             },
             onFileDownload: (fileName, base64Content) => {
