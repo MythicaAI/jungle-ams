@@ -242,14 +242,14 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
         if hasattr(value, "__origin__") and value.__origin__ in (list, tuple, set, frozenset):
             # Get the type argument (e.g., int from list[int])
             arg_type = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
-            
+            my_length = len(value.__args__) if hasattr(value, "__args__") else 0
             # Handle based on the contained type
             if arg_type == int:
-                specs.append(IntParmTemplateSpec(name=key, label=key, num_components=len(value), default_value=[0 for _ in range(len(value))]))
+                specs.append(IntParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0 for _ in range(my_length)]))
             elif arg_type == float:
-                specs.append(FloatParmTemplateSpec(name=key, label=key, num_components=len(value), default_value=[0.0 for _ in range(len(value))]))
+                specs.append(FloatParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0.0 for _ in range(my_length)]))
             elif arg_type == str:
-                specs.append(StringParmTemplateSpec(name=key, label=key, num_components=len(value), default_value=["" for _ in range(len(value))]))
+                specs.append(StringParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=["" for _ in range(my_length)]))
             elif arg_type == FileParameter:
                 specs.append(FileParameterSpec(name=key, label=key, default=[]))
             else:

@@ -45,6 +45,7 @@ const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) =
 
     const inputFileParms: hou.FileParmTemplate[] = parmTemplateGroup.parm_templates.filter(
         (parm) =>
+        parm instanceof hou.FileParmTemplate &&
         parm.param_type === hou.parmTemplateType.File &&
         !parm.name.startsWith("output"),
     ) as hou.FileParmTemplate[];
