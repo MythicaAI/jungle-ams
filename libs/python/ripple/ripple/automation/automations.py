@@ -17,46 +17,64 @@ class ScriptRequest(ParameterSet):
     env: Literal['staging','production'] = 'production' 
     request_data: ParameterSet = None
 
-def script_request_model():
+def automation_request():
     """Decorator to associate a class to a request model."""
     def decorator(cls):
+        if not isinstance(cls, type):
+            raise TypeError("@automation_request can only be used with classes")
         if not issubclass(cls, ParameterSet):
-            raise TypeError("@script_request_model can only be used with subclasses of ParameterSet")
-        cls._is_script_request_model = True
+            raise TypeError("@automation_request can only be used with subclasses of ParameterSet")
+        cls._is_automation_request = True
         return cls
     return decorator
 
-def script_response_model():
+def automation_response():
     """Decorator to associate a class to a response model."""
     def decorator(cls):
+        if not isinstance(cls, type):
+            raise TypeError("@automation_response can only be used with classes")
         if not issubclass(cls, ProcessStreamItem):
-            raise TypeError("@script_response_model can only be used with subclasses of ProcessStreamItem")
-        cls._is_script_response_model = True
+            raise TypeError("@automation_response can only be used with subclasses of ProcessStreamItem")
+        cls._is_automation_response = True
         return cls
     return decorator
 
-def script_interface():
+def automation_interface():
     """Decorator to associate a value as the interface.
     The value should be of type list[HoudiniParmTemplateSpecType]"""
-    def decorator(cls):
-        if not isinstance(cls, list[HoudiniParmTemplateSpecType]):
-            raise TypeError("@script_interface can only be used with a list of HoudiniParmTemplateSpecType")
-        cls._is_script_interface = True
-        return cls
+    def decorator(func):
+        if not callable(func):
+            raise TypeError("@automation_interface can only be used with callable methods")
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Validate the method signature
+            if len(args) > 1:
+                raise TypeError("automation_interface has no arguments")
+
+            result = func(*args, **kwargs)
+
+            if not isinstance(result, list):
+                raise TypeError("The return value of the automation_interface must be a list of HoudiniParmTemplateSpecType")
+            
+            return result
+        
+        wrapper._is_automation_interface = True
+        return wrapper
     return decorator
 
 
-def script_operation():
-    """Decorator to associate a method to an operation."""
+def automation():
+    """Decorator to associate a method to an automation."""
     def decorator(func):
         if not callable(func):
-            raise TypeError("@script_operation can only be used with callable methods")
+            raise TypeError("@automation can only be used with callable methods")
 
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Validate the method signature
             if len(args) < 1 or not isinstance(args[0], ParameterSet):
-                raise TypeError("The first argument of the operation must be a subclass of ParameterSet")
+                raise TypeError("The first argument of the automation must be a subclass of ParameterSet")
 
             if 'responder' in kwargs and kwargs['responder'] is not None and not isinstance(kwargs['responder'], ResultPublisher):
                 raise TypeError("The 'responder' argument must be of type ResultPublisher")
@@ -64,11 +82,11 @@ def script_operation():
             result = func(*args, **kwargs)
 
             if not isinstance(result, ProcessStreamItem):
-                raise TypeError("The return value of the operation must be a subclass of ProcessStreamItem")
+                raise TypeError("The return value of the automation must be a subclass of ProcessStreamItem")
 
             return result
         
-        wrapper._is_script_operation = True
+        wrapper._is_automation = True
         return wrapper
 
     return decorator
@@ -79,9 +97,9 @@ def _find_decorated_models(script_namespace: Dict[str, Any]) -> Tuple[Optional[P
     response_model = None
     
     for name, obj in script_namespace.items():
-        if hasattr(obj, "_is_script_request_model") and obj._is_script_request_model:
+        if hasattr(obj, "_is_automation_request") and obj._is_automation_request:
             request_model = obj
-        if hasattr(obj, "_is_script_response_model") and obj._is_script_response_model:
+        if hasattr(obj, "_is_automation_response") and obj._is_automation_response:
             response_model = obj
        
     return request_model, response_model
@@ -89,7 +107,7 @@ def _find_decorated_models(script_namespace: Dict[str, Any]) -> Tuple[Optional[P
 def _find_operation(script_namespace: Dict[str, Any]) -> Optional[Callable]:
     """Find the operation function that has been decorated with @script_operation."""
     for name, obj in script_namespace.items():
-        if hasattr(obj, "_is_script_operation") and obj._is_script_operation:
+        if hasattr(obj, "_is_automation") and obj._is_automation:
             return obj
     
     return None
@@ -97,7 +115,7 @@ def _find_operation(script_namespace: Dict[str, Any]) -> Optional[Callable]:
 def _find_script_interface(script_namespace: Dict[str, Any]) -> Optional[list[HoudiniParmTemplateSpecType]]:
     """Find the script interface that has been decorated with @script_interface."""
     for name, obj in script_namespace.items():
-        if hasattr(obj, "_is_script_interface") and obj._is_script_interface:
+        if hasattr(obj, "_is_automation_interface") and obj._is_automation_interface:
             return obj
     
     return None
@@ -161,11 +179,21 @@ def _get_script_interface() -> Callable:
             operation = _find_operation(script_namespace)
             if operation is None:
                 raise ValueError("No operation function found. Use @script_operation decorator.")
-            
+            params_by_name = {}
+            for param in input_model.get_parameter_specs():
+                params_by_name[param.name] = param
+
+            # read a script Interface model if one exists:
+            interface_model = _find_script_interface(script_namespace)()
+            for param in interface_model:
+                params_by_name[param.name] = param
+            # Get the parameter spec
+            inputs = [param for param in params_by_name.values()]
+
             return AutomationsResponse(
                 automations={
                     '/mythica/script': {
-                        'input': input_model.model_json_schema(),
+                        'input': inputs,
                         'output': output_model.model_json_schema(),
                         'hidden': True
                     }
@@ -224,13 +252,13 @@ def _get_script_job_def() -> Callable:
 
             params = ParameterSpec(params={})
 
+            # If no interface model is found, use the default parameter spec
+            params.params_v2 = input_model.get_parameter_specs()
             # read a script Interface model if one exists:
             interface_model = _find_script_interface(script_namespace)
+
             if interface_model:
-                params.params_v2=interface_model
-            else:
-                # If no interface model is found, use the default parameter spec
-                params.params_v2 = input_model.get_parameter_specs()
+                params.params_v2.extend(interface_model)
 
             params.default = {
                 "script": awpy.get("script")

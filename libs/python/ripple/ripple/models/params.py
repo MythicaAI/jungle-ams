@@ -238,6 +238,10 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
     """
     specs = []
     for key, value in values.items():
+        if hasattr(value, "__origin__") and value.__origin__ == typing.Union:
+            # If the value is Optional, we need to check the actual type
+            value = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
+             
         # Check if it's a generic type (like list[int], tuple[str], etc.)
         if hasattr(value, "__origin__") and value.__origin__ in (list, tuple, set, frozenset):
             # Get the type argument (e.g., int from list[int])

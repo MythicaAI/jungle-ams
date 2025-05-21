@@ -1,10 +1,9 @@
-import React, { useState, useEffect, memo } from 'react';
-import { JSONSchema, JSONSchemaProperty, JsonSchemaEnumParameterSpec } from '../../../types/JSONSchema';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { FileParamType, dictionary } from '../../../types/Automation';
-import { Input } from '@mui/joy';
+import { hou, ParmGroup } from 'houdini-ui'
 
 interface AutomationInputProps {
-  inputSchema: JSONSchema | undefined;
+  inputSchema: dictionary[];
   onChange: (formData: dictionary) => void;
   inputData: dictionary;
   onFileParameterDetected: (fileParams: Record<string, FileParamType>) => void;
@@ -18,211 +17,59 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
   onFileParameterDetected,
 }) => {
   const [formData, setFormData] = useState<dictionary>({});
-  const [fileParams, setFileParams] = useState<Record<string, FileParamType>>(
-    {}
-  );
+  const [parmTemplateGroup, setParmTemplateGroup] = useState<hou.ParmTemplateGroup | null>(null);
 
   useEffect(() => {
-    onFileParameterDetected(fileParams); // Notify parent about detected FileParameters
-  }, [fileParams, onFileParameterDetected]);
+    const ptg = new hou.ParmTemplateGroup(schema);
 
-  if (!schema) return null;
+    const inputFileParms: hou.FileParmTemplate[] = ptg.parm_templates.filter((parm) =>
+      parm instanceof hou.FileParmTemplate &&
+      parm.param_type === hou.parmTemplateType.File &&
+      !parm.name.startsWith("output"),
+    ) as hou.FileParmTemplate[];
 
-  const handleChange = (key: string, value: unknown) => {
-    const updatedData = { ...formData, [key]: value };
+    const fileParams = inputFileParms.reduce<Record<string, FileParamType>>((acc, parm) => {
+      if (Array.isArray(parm.default))
+        acc[parm.name] = FileParamType.Array;
+      else
+        acc[parm.name] = FileParamType.Scalar;
+      return acc;
+    }, {});
+
+    onFileParameterDetected(fileParams);
+    setParmTemplateGroup(ptg);
+
+  }, [schema, onFileParameterDetected]);
+
+  const handleChange = (newData: dictionary) => {
+    const updatedData = { ...formData, ...newData };
     setFormData((prev) => ({
       ...prev,
-      [key]: value
+      ...newData
     }));
 
     onChange(updatedData); // Trigger parent component's onChange
   };
 
-  const resolveRef = (
-    ref: string,
-    schema: JSONSchema
-  ): JSONSchemaProperty | undefined => {
-    const refPath = ref.replace(/^#\/?/, '').split('/');
-    let resolvedSchema: unknown = schema;
-    refPath.forEach((path) => {
-      if (
-        typeof resolvedSchema === 'object' &&
-        resolvedSchema !== null &&
-        path in resolvedSchema
-      ) {
-        resolvedSchema = (resolvedSchema as Record<string, unknown>)[path];
-      }
-    });
-    return resolvedSchema as JSONSchemaProperty | undefined;
-  };
-
-  const renderField = (key: string, fieldSchema: JSONSchemaProperty) => {
-    // Resolve references if any
-    if (fieldSchema.$ref) {
-      const resolvedSchema = resolveRef(fieldSchema.$ref, schema);
-      if (resolvedSchema) fieldSchema = resolvedSchema;
-    }
-
-    // Detect FileParameter (scalar or array)
-    if (
-      fieldSchema.$ref === '#/$defs/FileParameter' ||
-      (fieldSchema.type === 'object' &&
-        fieldSchema.title === 'FileParameter') ||
-      (fieldSchema.type === 'array' &&
-        fieldSchema.items?.title === 'FileParameter') ||
-      (fieldSchema.type === 'array' &&
-        fieldSchema.items?.$ref === '#/$defs/FileParameter')
-    ) {
-      const isArray = fieldSchema.type === FileParamType.Array;
-      fileParamsCollector[key] = isArray
-        ? FileParamType.Array
-        : FileParamType.Scalar;
-
-      return null; // Do not render a form field for FileParameter
-    }
-
-    switch (fieldSchema.type) {
-      case 'string':
-        return (
-          <div key={key}>
-            <label>{fieldSchema.title || key}</label>
-            <Input
-              type="text"
-              defaultValue={
-                (inputData?.[key] as string | null) ||
-                (typeof fieldSchema.default === 'string'
-                  ? fieldSchema.default
-                  : '')
-              }
-              onChange={(e) => handleChange(key, e.target.value)}
-            />
-          </div>
-        );
-
-      case 'object':
-        if (fieldSchema.title === 'EnumParameterSpec') {
-          console.log('EnumParameterSpec', fieldSchema);
-          const enumSpec = (schema.properties?.[key].default as [JsonSchemaEnumParameterSpec])[0];
-          if (!enumSpec) return null;
-          const enumValues = enumSpec.values;
-          return (
-            <div 
-            key={key}
-              style={{ display: 'flex', flexDirection: 'row', gap: '5px' }}
-            >
-              <label>{enumSpec.label || key}</label>
-              <select
-                defaultValue={
-                  (inputData?.[key] as string | null) ||
-                  (typeof fieldSchema.default === 'string'
-                    ? fieldSchema.default
-                    : '')
-                }
-                onChange={(e) => handleChange(key, e.target.value)}
-              >
-                {enumValues?.map(
-                  (option: { name: string; label: string }, index: number) => (
-                    <option key={index} value={option.name}>
-                      {option.label}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          );
-        } else {
-
-          return (
-            <fieldset key={key}>
-              <label>{key}</label>
-              {fieldSchema.properties &&
-                Object.entries(fieldSchema.properties).map(
-                  ([childKey, childSchema]) => renderField(childKey, childSchema)
-                )}
-            </fieldset>
-          );
-        }
-
-      case 'array':
-        return (
-          <div key={key}>
-            <label>{fieldSchema.title || key}</label>
-            <Input
-              type="text"
-              placeholder="Enter comma-separated values"
-              onChange={(e) => handleChange(key, e.target.value.split(','))}
-            />
-          </div>
-        );
-
-      default:
-        if (fieldSchema.anyOf) {
-          return (
-            <div key={key}>
-              <label>{fieldSchema.title || key}</label>
-              <select onChange={(e) => handleChange(key, e.target.value)}>
-                {fieldSchema.anyOf.map((option, index) => {
-                  const val =
-                    typeof option.const === 'string'
-                      ? option.const
-                      : String(option.default ?? '');
-                  return (
-                    <option key={index} value={val}>
-                      {option.title ||
-                        String(option.const ?? '') ||
-                        String(option.default ?? '') ||
-                        `Option ${index + 1}`}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          );
-        }
-
-        // Fallback for unsupported fields
-        return (
-          <div key={key}>
-            <label>{fieldSchema.title || key}</label>
-            <Input
-              type="text"
-              defaultValue={
-                (inputData?.[key] as string | null) ||
-                (typeof fieldSchema.default === 'string'
-                  ? fieldSchema.default
-                  : '')
-              }
-              onChange={(e) => handleChange(key, e.target.value)}
-            />
-          </div>
-        );
-    }
-  };
-  const filteredProperties = schema.properties
-    ? Object.entries(schema.properties).filter(
-        ([, v]) => v['$ref'] !== '#/$defs/FileParameter'
-      )
-    : [];
-
-  const fileParamsCollector: Record<string, FileParamType> = {};
-
-  const retValue = (
-    <div>
-      <h3>{filteredProperties?.length ? 'Inputs' : ''}</h3>
-      <form>
-        {schema.properties &&
-          Object.entries(schema.properties).map(([key, fieldSchema]) =>
-            renderField(key, fieldSchema)
-          )}
-      </form>
-    </div>
+  const handleFileUpload = useCallback(
+    (formData: Record<string,File>, callback: (file_id:string)=>void) => {
+      console.log('AWFUL UNIMPLEMENTED: File upload handler called with formData:', formData);
+      callback("Not Implemented");
+    },[]
   );
-  if (
-    Object.keys(fileParamsCollector).sort().join(',') !==
-    Object.keys(fileParams).sort().join(',')
-  )
-    setFileParams(fileParamsCollector);
-  return retValue;
-};
 
+  if (!parmTemplateGroup) {
+    return <div>Loading...</div>;
+  }
+  return (
+    <>
+      <ParmGroup 
+        group={parmTemplateGroup}
+        data={inputData}
+        onChange={handleChange}
+        onFileUpload={handleFileUpload}
+      />
+    </>
+  );
+};
 export default memo(AutomationInputs);

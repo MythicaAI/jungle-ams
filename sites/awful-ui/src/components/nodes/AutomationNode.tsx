@@ -47,7 +47,7 @@ export type AutomationExecutionData = ExecutionData & {
 type InterfaceExecutionData = ExecutionData & {
   output: {
     automations?: {
-      [key: string]: { input?: JSONSchema; output?: JSONSchema };
+      [key: string]: { input?: dictionary[]; output?: JSONSchema };
     };
     [key: string]: unknown;
   };
@@ -130,7 +130,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const [inputSpec, setInputSpec] = useState(
     !isScriptNode
       ? automationTask?.spec.input
-      : { title: 'Empty', type: 'string' }
+      : []
   );
   const [outputSpec, setOutputSpec] = useState(
     !isScriptNode
@@ -281,7 +281,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         const automationTask = parseAutomation(node.id, {
           internal: {
             hidden: false,
-            input: thisAutomation.input as JSONSchema,
+            input: thisAutomation.input as dictionary[],
             output: thisAutomation.output as JSONSchema,
           },
         });
