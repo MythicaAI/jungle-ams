@@ -204,7 +204,9 @@ export const IntParm: React.FC<IntParmProps> = ({
         margin: 0,
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
-      }}>
+      }}
+      title={`variable: ${template.name}`}
+      >
         {template.label}
       </label>
       

@@ -171,8 +171,11 @@ export const FloatParm: React.FC<FloatParmProps> = ({
         <label style={{ 
           width: '100%', 
           textAlign: 'center',
-          marginBottom: '3px'
-        }}>
+          marginBottom: '3px',
+          
+        }}
+          title={`variable: {template.name}`}
+        >
           {template.label}
         </label>
         
@@ -233,7 +236,9 @@ export const FloatParm: React.FC<FloatParmProps> = ({
         margin: 0,
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
-      }}>
+      }}
+        title={`variable: ${template.name}`}
+        >
         {template.label}
       </label>
       

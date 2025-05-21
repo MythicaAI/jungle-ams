@@ -175,7 +175,12 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
             <div 
             className="string-parm" 
             title={template.help}
-            style={!isMobileSize ? { display: 'flex', gap: '10px' } : undefined}>
+            style={!isMobileSize ? { 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                marginBottom: '12px'
+            } : undefined}>
                 <label style={!isMobileSize ? { 
                     width: '100px', 
                     textAlign: 'right',
@@ -187,23 +192,40 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                     margin: 0,
                     wordWrap: 'break-word',
                     overflowWrap: 'break-word'
-                } : undefined}>{template.label}</label>
-                <div className="fields" style={!isMobileSize ? { flex: 1, width: '100%' } : undefined}>
+                } : undefined}
+                title={`variable: ${template.name}`}
+                >{template.label}</label>
+                <div className="fields" 
+                    style={!isMobileSize ? { 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        flex: 1, 
+                        width: '100%' } : undefined}>
                     {values.map((value, index) => (
                         <div 
                             key={template.name + index} 
                             style={{ 
                                 width: `${100/values.length}%`,
-                                padding: '0px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
                             }}
                             className="field">
                             <input
                                 type="text"
                                 value={value}
                                 parm-index={index}
+                                className="editable-value"
                                 style={{
+                                    textAlign: 'right',
+                                    fontSize: 'small',
                                     width: '100%',
-                                    margin: '0px',
+                                    flexGrow: 1,
+                                    backgroundColor: 'rgba(40, 40, 40, 0.9)',
+                                    border: '1px solid #555',
+                                    borderRadius: '3px',
+                                    color: 'white',
                                 }}
                                 onChange={handleChange}
                                 placeholder={`Component ${index + 1}`}
@@ -211,6 +233,14 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
                         </div>  
                     ))}
                 </div>
+                <style>
+                    {`
+                    .editable-value:hover {
+                        border-color: #ccc !important;
+                        background-color: rgba(200, 200, 200, 0.1);
+                    }
+                    `}
+                </style>
             </div>
         );
     }

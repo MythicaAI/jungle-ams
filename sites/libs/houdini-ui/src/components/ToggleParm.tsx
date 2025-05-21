@@ -31,7 +31,7 @@ export const ToggleParm: React.FC<ToggleParmProps> = ({template, data, onChange}
 
     return (
         <div className="toggle-parm" title={template.help}>
-            <label>
+            <label title={`variable: ${template.name}`}>
                 <input
                     type="checkbox"
                     checked={value}
