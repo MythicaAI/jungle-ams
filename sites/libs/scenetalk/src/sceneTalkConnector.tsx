@@ -89,12 +89,12 @@ export const SceneTalkConnector: React.FC<SceneTalkConnectorProps> = () => {
 
         flushStatusLog();
         const currentStatusLog = useSceneStore.getState().statusLog;
-        const errorCount = currentStatusLog.filter(e => e.level === "error").length;
-        const hasErrors = errorCount > 0;
-
-        if (hasErrors) {
-            addStatusLog("error",
-                `Generation completed in ${elapsedTimeInSeconds} ms with errors`);
+        const errors = currentStatusLog.filter(e => e.level === "error");
+        
+        if (errors.length > 0) {
+            const errorMessage = errors[0].log || "Unknown error";
+            addStatusLog("error", 
+                `Failed with error: "${errorMessage}"`);
         } else {
             addStatusLog("info",
                 `Generation completed in ${elapsedTimeInSeconds} ms`);
