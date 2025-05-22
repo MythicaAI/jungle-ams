@@ -12,13 +12,22 @@
   "dependencies": {
     "@fontsource/inter": "^5.1.1",
     "@fontsource/space-grotesk": "^5.2.7",
+    "@icons-pack/react-simple-icons": "^12.8.0",
     "@mui/joy": "5.0.0-beta.52",
     "@react-three/drei": "^10.0.8",
     "@react-three/fiber": "^9.1.2",
+    "@tanstack/react-query": "^5.66.11",
     "@types/three": "^0.176.0",
+    "i18next": "^23.16.8",
+    "i18next-browser-languagedetector": "^8.0.4",
+    "i18next-http-backend": "^2.7.3",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
+    "react-cookie": "^7.2.2",
     "react-dom": "^19.1.0",
+    "react-helmet-async": "^2.0.5",
+    "react-i18next": "^15.4.1",
+    "react-router-dom": "^6.30.0",
     "three": "^0.176.0"
   },
   "devDependencies": {

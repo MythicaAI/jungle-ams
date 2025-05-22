@@ -3,39 +3,96 @@ import React, {useEffect, useState} from 'react';
 import {
     Sheet,
     IconButton,
-    Box,
-    Typography,
     Button,
     Container,
     useColorScheme,
     Stack,
     Menu,
-    MenuItem
+    MenuItem, Dropdown, MenuButton
 } from '@mui/joy';
 import {useScrollPosition} from '../../hooks/useScrollPosition';
 import {LucideMenu} from "lucide-react";
+import {useLocation, useNavigate} from "react-router-dom";
+import {useTranslation} from "react-i18next";
+
+interface LinkMenuItemProps {
+  to: string;
+  handleNavigate: (to: string) => void;
+  children: React.ReactNode;
+  isActive?: boolean;
+}
+
+const MENU_TIMEOUT = 100;
+
+const LinkMenuItem: React.FC<LinkMenuItemProps> = (props) => {
+  return (
+    <MenuItem
+      sx={{
+        textDecoration: "none",
+        color: "inherit",
+        "&:hover": {
+          textDecoration: "none",
+        },
+      }}
+      onClick={() => props.handleNavigate(props.to)}
+      selected={props.isActive}
+    >
+      {props.children}
+    </MenuItem>
+  );
+};
 
 // Header component with adaptive scroll behavior
 const Header = () => {
     const {mode, setMode} = useColorScheme();
     const {isAtTop} = useScrollPosition();
     const [isExpanded, setIsExpanded] = useState(true);
-    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const [open, setOpen] = React.useState(false);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { t } = useTranslation();
+
+    const handleOpenChange = React.useCallback(
+        (_: React.SyntheticEvent | null, isOpen: boolean) => {
+      setOpen(isOpen);
+        },
+        [],
+      );
+    const handleNavigate = (to: string) => {
+    setOpen(false);
+    setTimeout(() => {
+      navigate(to);
+    }, MENU_TIMEOUT);
+  };
 
     // Update header state based on scroll position
     useEffect(() => {
         setIsExpanded(isAtTop);
     }, [isAtTop]);
 
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setMenuAnchor(event.currentTarget);
-    };
 
-    const handleMenuClose = () => {
-        setMenuAnchor(null);
-    };
-
-    const topNavItems = ['HOME', 'PRODUCT', 'SOLUTIONS', 'COMPETITIONS', 'ABOUT US'];
+    const navMenuItems = [
+        {
+            token: 'navMenu.home',
+            to: '/home',
+        },
+        {
+            token: 'navMenu.products',
+            to: '/products'
+        },
+        {
+            token: 'navMenu.solutions',
+            to: '/solutions'
+        },
+        {
+            token: 'navMenu.competitions',
+            to: '/competitions'
+        },
+        {
+            token: 'navMenu.about',
+            to: '/about'
+        }
+    ];
 
     return (
         <Sheet
@@ -67,8 +124,7 @@ const Header = () => {
                 height: '100%'
             }}>
                 {/* Logo Section */}
-                <Box>
-                    <img
+                 <img
                         src="/mythica_logo_web.avif"
                         alt="Mythica Logo"
                         style={{
@@ -76,7 +132,6 @@ const Header = () => {
                             objectFit: 'contain'
                         }}
                     />
-                </Box>
 
                 {/* Navigation Links - Desktop */}
                 <Stack
@@ -88,11 +143,12 @@ const Header = () => {
                         alignItems: 'center'
                     }}
                 >
-                    {topNavItems.map((item) => (
+                    {navMenuItems.map((item, idx) => (
                         <Button
-                            key={item}
+                            key={idx}
                             variant="plain"
                             color="neutral"
+                            onClick={() => handleNavigate(item.to)}
                             sx={{
                                 fontWeight: 500,
                                 fontSize: '0.9rem',
@@ -118,7 +174,7 @@ const Header = () => {
                                 },
                             }}
                         >
-                            {item}
+                            {t(item.token)}
                         </Button>
                     ))}
                 </Stack>
@@ -141,71 +197,27 @@ const Header = () => {
                         {mode === 'dark' ? '🌙' : '☀️'}
                     </IconButton>
 
-                    {/* Login/Sign Up - desktop only */}
-                    <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{
-                            display: {xs: 'none', sm: 'flex'}
-                        }}
-                    >
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            size={isExpanded ? "md" : "sm"}
-                            sx={{
-                                transition: 'all 0.2s ease',
-                                fontWeight: 500,
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            Log In
-                        </Button>
-                        <Button
-                            variant="solid"
-                            color="primary"
-                            size={isExpanded ? "md" : "sm"}
-                            sx={{
-                                transition: 'all 0.2s ease',
-                                fontWeight: 500,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            Sign Up
-                        </Button>
-                    </Stack>
-
-                    {/* Mobile Menu Button */}
-                    <IconButton
-                        variant="soft"
-                        color="neutral"
-                        sx={{display: {xs: 'flex', md: 'none'}}}
-                        onClick={handleMenuOpen}
-                        aria-label="Open menu"
-                    >
-                        <LucideMenu/>
-                    </IconButton>
-                    <Menu
-                        anchorEl={menuAnchor}
-                        open={Boolean(menuAnchor)}
-                        onClose={handleMenuClose}
-                        sx={{
-                            display: {xs: 'block', md: 'none'},
-                            '& .MuiMenuItem-root': {
-                                transition: 'all 0.2s ease',
-                            },
-                        }}
-                    >
-                        {topNavItems.map((item) => (
-                            <MenuItem
-                                key={item}
-                                onClick={handleMenuClose}
-                            >
-                                {item}
-                            </MenuItem>
+                    {/* Mobile Menu Button, handle open state with timeout to auto close menu*/}
+                    <Dropdown open={open} onOpenChange={handleOpenChange}>
+                        <MenuButton
+                            variant="soft"
+                            color="neutral"
+                            sx={{cursor: "pointer", display: {xs: 'flex', md: 'none'}}}>
+                            <LucideMenu/>
+                        </MenuButton>
+                        <Menu>
+                            {navMenuItems.map((item, idx) => (
+                                <LinkMenuItem
+                                    handleNavigate={handleNavigate}
+                                    to={item.to}
+                                    isActive={location.pathname === item.to}
+                                    key={idx}
+                                  >
+                                    {t(item.token)}
+                                </LinkMenuItem>
                         ))}
-                    </Menu>
+                        </Menu>
+                    </Dropdown>
                 </Stack>
             </Container>
         </Sheet>

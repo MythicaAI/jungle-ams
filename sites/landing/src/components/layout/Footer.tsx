@@ -1,6 +1,7 @@
 // src/components/layout/Footer.tsx
 import React from 'react';
 import { Box, Container, Grid, Typography, Link, Divider, Stack, IconButton, Sheet } from '@mui/joy';
+import {SiX, SiArtstation, SiGithub, SiInstagram, SiYoutube} from "@icons-pack/react-simple-icons";
 
 // Footer navigation item interface
 interface FooterNavItem {
@@ -58,11 +59,11 @@ const Footer: React.FC = () => {
 
   // Social links data
   const socialLinks = [
-    { icon: '📱', href: '#', label: 'Twitter' },
-    { icon: '💼', href: '#', label: 'LinkedIn' },
-    { icon: '📸', href: '#', label: 'Instagram' },
-    { icon: '🎥', href: '#', label: 'YouTube' },
-    { icon: '💻', href: '#', label: 'GitHub' },
+    { icon: <SiX />, href: '#', label: 'Twitter' },
+    { icon: <SiInstagram/>, href: '#', label: 'Instagram' },
+    { icon: <SiYoutube/>, href: '#', label: 'YouTube' },
+    { icon: <SiGithub/>, href: '#', label: 'GitHub' },
+    { icon: <SiArtstation/>, href: '#', label: 'ArtStation' },
   ];
 
   return (
@@ -83,7 +84,7 @@ const Footer: React.FC = () => {
               <Typography level="h4" fontWeight="bold" sx={{ mb: 1 }}>
                 Stay Updated
               </Typography>
-              <Typography level="body2" sx={{ color: 'text.secondary' }}>
+              <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
                 Subscribe to our newsletter to receive the latest updates, features, and news.
               </Typography>
             </Grid>
@@ -160,7 +161,7 @@ const Footer: React.FC = () => {
                   <Link
                     key={itemIndex}
                     href={item.href}
-                    level="body2"
+                    level="body-sm"
                     underline="none"
                     sx={{
                       color: 'text.secondary',
@@ -185,7 +186,7 @@ const Footer: React.FC = () => {
           <Grid xs={12} sm={6}>
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Typography
-                level="h5"
+                level="title-md"
                 component="span"
                 sx={{
                   fontFamily: 'var(--joy-fontFamily-display)',
@@ -196,9 +197,9 @@ const Footer: React.FC = () => {
                   mr: 1,
                 }}
               >
-                LANDING SPA
+                MYTHICA
               </Typography>
-              <Typography level="body2" sx={{ color: 'text.secondary' }}>
+              <Typography level="body-sm" sx={{ color: 'text.secondary' }}>
                 © {new Date().getFullYear()} All rights reserved.
               </Typography>
             </Stack>

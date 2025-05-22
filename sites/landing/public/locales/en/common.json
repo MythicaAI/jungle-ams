@@ -1,0 +1,16 @@
+{
+  "navMenu": {
+      "home": "HOME",
+      "products": "PRODUCTS",
+      "solutions": "SOLUTIONS",
+      "competitions": "COMPETITIONS",
+      "about": "ABOUT US"
+    },
+  "hero": {
+
+    "explore": "Explore our Tools",
+    "learn_more": "Learn More",
+    "main_text": "Immersive Worlds Powered by Open Source",
+    "sub_text": "10x your game asset pipeline with our CreativeOps team and advanced tooling."
+  }
+}

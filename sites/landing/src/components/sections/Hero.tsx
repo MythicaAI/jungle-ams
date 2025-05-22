@@ -1,8 +1,7 @@
 // src/components/sections/Hero.tsx
-import React from 'react';
 import { Box, Container, Typography, Button, Stack, Sheet } from '@mui/joy';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
-import ThreeJsHero from './ThreeJsHero';
+import { ChevronRight } from 'lucide-react';
 
 // Reusable image placeholder component
 const ImagePlaceholder = ({ 
@@ -32,7 +31,7 @@ const ImagePlaceholder = ({
       }}
     >
       <Typography 
-        level="body1" 
+        level="body-lg"
         fontWeight="md" 
         textColor={color}
         fontSize={fontSize}
@@ -67,6 +66,36 @@ const ImagePlaceholder = ({
   );
 };
 
+function ActionButton(text: string, onClick: () => void) {
+  return (
+    <Button
+      variant="solid"
+      size="lg"
+      onClick={onClick}
+      endDecorator={<ChevronRight size={20} />}
+      sx={{
+        backgroundColor: '#4c6ef5',
+        borderRadius: '50px',
+        px: 4,
+        py: 1.5,
+        fontSize: '16px',
+        fontWeight: 500,
+        textTransform: 'none',
+        border: '2px solid rgba(255, 255, 255, 0.3)',
+        boxShadow: '0 4px 20px rgba(76, 110, 245, 0.3)',
+        '&:hover': {
+          backgroundColor: '#3b5bdb',
+          transform: 'translateY(-1px)',
+          boxShadow: '0 6px 25px rgba(76, 110, 245, 0.4)',
+        },
+        transition: 'all 0.2s ease',
+      }}
+    >
+        {text}
+    </Button>
+  );
+}
+
 // Hero section with dynamic scroll animations
 const Hero = () => {
   const { progress } = useScrollPosition();
@@ -90,6 +119,7 @@ const Hero = () => {
       {/* Content overlay */}
       <Container
         maxWidth="lg"
+
         sx={{
           position: 'relative',
           zIndex: 1,
@@ -109,6 +139,7 @@ const Hero = () => {
             sx={{
               maxWidth: { xs: '100%', md: '45%' },
               textAlign: { xs: 'center', md: 'left' },
+
               transform: `translateY(${titleTranslate}px)`,
               opacity: titleOpacity,
               transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
@@ -119,9 +150,8 @@ const Hero = () => {
               level="h1"
               fontWeight="bold"
               sx={{
-                fontSize: { xs: '2.5rem', md: '3.5rem', lg: '4rem' },
+                fontSize: { xs: '2.0rem', md: '2.5rem', lg: '3rem' },
                 lineHeight: 1.1,
-                mb: 2,
                 fontFamily: 'var(--joy-fontFamily-display)',
                 background: 'linear-gradient(90deg, var(--joy-palette-primary-500) 30%, var(--joy-palette-primary-600) 90%)',
                 WebkitBackgroundClip: 'text',
@@ -132,7 +162,7 @@ const Hero = () => {
             </Typography>
             
             <Typography
-              level="body1"
+              level="body-md"
               sx={{
                 fontSize: { xs: 'md', md: 'lg' },
                 mb: 4,
@@ -162,17 +192,6 @@ const Hero = () => {
                 }}
               >
                 Explore Our Tools
-              </Button>
-              <Button
-                size="lg"
-                variant="outlined"
-                color="neutral"
-                sx={{
-                  fontWeight: 600,
-                  px: 4,
-                }}
-              >
-                Learn More
               </Button>
             </Stack>
           </Box>

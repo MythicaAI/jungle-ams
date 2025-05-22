@@ -1,5 +1,4 @@
 // src/styles/globalStyles.ts
-import { extendTheme } from '@mui/joy/styles';
 
 // Define global CSS variables and styles
 const globalStyles = `
@@ -44,7 +43,7 @@ const globalStyles = `
 
   /* Smooth element transitions */
   * {
-    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, filter;
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, filter;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 300ms;
   }

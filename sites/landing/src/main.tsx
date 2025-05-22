@@ -1,7 +1,5 @@
 // src/main.tsx
-import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
 import '@fontsource/inter/300.css';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
@@ -10,9 +8,23 @@ import '@fontsource/space-grotesk/700.css';
 
 // Add global styles
 import './styles/globalStyles.ts';
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import "./i18n";
+import Root from "./Root.tsx";
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+const router = createBrowserRouter([
+  {
+    path: "*",
+    element: <Root />,
+  },
+]);
+
+const container = document.getElementById("root");
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(<RouterProvider future={{
+                                v7_startTransition: true,
+                                v7_relativeSplatPath: true,
+                              }}
+                              router={router} />);
+}
