@@ -21,18 +21,18 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     }
 
     const [values, setValues] = useState<string[]>(
-        data[template.name] as string[] || getDefaultValues()
+        data?.[template.name] as string[] || getDefaultValues()
     );
 
     // Add state for file upload toggle
     const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
     
     useEffect(() => {
-        const myData = data[template.name] as string[] || getDefaultValues();
+        const myData = data?.[template.name] as string[] || getDefaultValues();
         if (myData && values !== myData) {
             setValues(myData);
         }
-    }, [data[template.name]]);
+    }, [data?.[template.name]]);
     
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const index =  e.target.getAttribute('parm-index') as unknown as number;

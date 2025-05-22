@@ -184,9 +184,11 @@ def _get_script_interface() -> Callable:
                 params_by_name[param.name] = param
 
             # read a script Interface model if one exists:
-            interface_model = _find_script_interface(script_namespace)()
-            for param in interface_model:
-                params_by_name[param.name] = param
+            interface_model = _find_script_interface(script_namespace)
+            if interface_model:            
+                for param in interface_model():
+                    params_by_name[param.name] = param
+            #
             # Get the parameter spec
             inputs = [param for param in params_by_name.values()]
 
@@ -256,9 +258,9 @@ def _get_script_job_def() -> Callable:
             params.params_v2 = input_model.get_parameter_specs()
             # read a script Interface model if one exists:
             interface_model = _find_script_interface(script_namespace)
-
+            
             if interface_model:
-                params.params_v2.extend(interface_model)
+                params.params_v2.extend(interface_model())
 
             params.default = {
                 "script": awpy.get("script")

@@ -7,6 +7,7 @@ import useAwfulFlow from '../../hooks/useAwfulFlow';
 import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { NodeHeader } from './ux/NodeHeader';
 import FileOutputHandle from '../handles/FileOutputHandle';
+import { v4 as uuid4 } from 'uuid';
 
 interface AssetViewerNodeProps {
   id: string;
@@ -189,7 +190,7 @@ const AssetViewerNode: React.FC<AssetViewerNodeProps> = (node) => {
           <Box sx={{ flex: 1, overflowY: 'auto' }}>
             <List size="sm">
               {filteredAssets.map((asset) => (
-                <ListItem key={asset.asset_id}>
+                <ListItem key={`${asset.asset_id}-${uuid4()}`}>
                   <ListItemButton
                     selected={selectedAsset?.asset_id === asset.asset_id}
                     onClick={() => handleSelectAsset(asset)}

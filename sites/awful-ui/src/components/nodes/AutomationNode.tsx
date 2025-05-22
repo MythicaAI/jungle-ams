@@ -19,9 +19,11 @@ import { NodeState } from '../../types/AwfulFlow';
 import { JSONSchema } from '../../types/JSONSchema';
 import FileInputHandle from '../handles/FileInputHandle';
 import FileOutputHandle from '../handles/FileOutputHandle';
-import { Button, Input, Stack, Typography } from '@mui/joy';
+import { Button, IconButton, Input, Stack, Typography } from '@mui/joy';
 import { NodeDeleteButton } from './ux/NodeDeleteButton';
 import { NodeHeader } from './ux/NodeHeader';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import LockOutlineIcon from '@mui/icons-material/LockOutline';
 
 /*
  * We store variants of execution data for an automation. 
@@ -79,19 +81,19 @@ from ripple.automation.publishers import ResultPublisher
 from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import ProcessStreamItem, OutputFiles 
 from ripple.automation.automations import ( 
-    script_request_model,
-    script_response_model,
-    script_operation
+    automation_request,
+    automation_response,
+    automation
 )
-@script_request_model()
+@automation_request()
 class RequestModel(ParameterSet):
   pass
 
-@script_response_model()
+@automation_response()
 class ResponseModel(OutputFiles):
   files: dict[str, list[str]] = Field(default={"Files": []})
 
-@script_operation()
+@automation()
 def runAutomation(request: RequestModel, responder: ResultPublisher) -> ResponseModel:
   pass
 `;
@@ -154,6 +156,11 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   const [scriptContent, setScriptContent] = useState<string>(
     node.data.script?.script || template
   ); // State to store Monaco editor content
+
+  // Initialize editor visibility based on whether it's a new script or saved file
+  const [isEditorVisible, setIsEditorVisible] = useState<boolean>(
+    isScriptNode && (!node.data.script?.script || node.data.script.script === template)
+  );
 
   const timeout = 2000;
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -440,16 +447,19 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
     (_, index, array) => `${(index + 1) * (100 / (array.length + 1))}%`
   );
 
-  const min = 640;
-  const delta = 20;
+  const min = 300;
+
+  const toggleEditorVisibility = () => {
+    setIsEditorVisible(!isEditorVisible);
+  };
 
   return (
     <div
       style={{
-        height: '100%',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative', // Added relative positioning
       }}
     >
 
@@ -458,16 +468,12 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
           myExecutionData.state
         } ${node.selected && 'selected'}`}
         style={{
-          flex: '1 1 auto !important',
           minHeight: min,
-          ...isScriptNode && {minWidth: '640px'},
           position: 'relative',
         }}
       >
         
-        {isScriptNode && (
-          <NodeResizer minHeight={min + delta} minWidth={min + 2 * delta} />
-        )}
+
 
         <NodeDeleteButton
           onDelete={() => {
@@ -476,22 +482,29 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
         />
         <NodeHeader />
 
-        <div>
-          <Typography level="h4">{automationTask?.uri}</Typography>
-          <p>State: {myExecutionData.state}</p>
-        </div>
 
-        <AutomationInputs
-          inputSchema={inputSpec}
-          onChange={setInputData}
-          inputData={inputData}
-          onFileParameterDetected={handleFileParameterDetected}
-        />
-        <AutomationOutputs
-          outputSchema={outputSpec}
-          outputData={myExecutionData.output}
-          onFileOutputDetected={handleFileOutputDetected}
-        />
+        {isScriptNode ?
+          <div>
+            <Typography level="h3" sx={{ display: 'flex', alignItems: 'center' }}>
+              {saveName}
+              <IconButton 
+                size="sm" 
+                sx={{ ml: 1 }}
+                onClick={toggleEditorVisibility}
+              >
+                {isEditorVisible ? <LockOpenIcon /> : <LockOutlineIcon />}
+              </IconButton>
+            </Typography>
+            <Typography level="h4">{automationTask?.uri}</Typography>
+            <p>State: {myExecutionData.state}</p>
+          </div>
+
+          :
+          <div>
+            <Typography level="h3">{automationTask?.uri}</Typography>
+            <p>State: {myExecutionData.state}</p>
+          </div>
+        }
 
         {/* Input Handles */}
         {Array.from(Object.keys(inputFileKeys)).map((paramKey, index) => (
@@ -508,57 +521,177 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
             }
           />
         ))}
-
-        {isScriptNode && (
-          <Stack direction="row" gap="8px" mb="8px">
-            <Input
-              type="text"
-              defaultValue={saveName}
-              onChange={(e) => setSaveName(e.target.value)}
-              sx={{ width: 'calc(100%)' }}
-            />
-            <Button onClick={handleSaveAutomation}>Save</Button>
-          </Stack>
-        )}
-        {isScriptNode && (
-          <div
-            className="script-editor nodrag"
-            style={{
-              flex: '1 1 0',
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: '0',
-            }}
-          >
-            {/* Make the editor container fill the available space */}
-            <div style={{ flex: '1 1 0', height: '100%' }}>
-              <MonacoEditor
-                language="python"
-                theme="vs-dark"
-                defaultValue={scriptContent}
-                onChange={handleEditorChange}
-                options={{
-                  minimap: { enabled: false },
-                  automaticLayout: true,
-                  // This is important for auto resizing
-                }}
-              />
-            </div>
-          </div>
-        )}
-        {isScriptNode && (
-          <div className="nowheel">
+        <>
+          <AutomationInputs
+            inputSchema={inputSpec}
+            onChange={setInputData}
+            inputData={inputData}
+            onFileParameterDetected={handleFileParameterDetected}
+          />
+          <AutomationOutputs
+            outputSchema={outputSpec}
+            outputData={myExecutionData.output}
+            onFileOutputDetected={handleFileOutputDetected}
+          />
+          <div className="nowheel" style={{ margin: '12px 0' }}>
             <pre 
               style={{ 
                 overflow: 'auto', 
-                maxHeight: '300px',
+                maxHeight: '200px',
                 width: '100%',
                 whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-            }}>
-              {flowExecutionMessage}
+                wordBreak: 'break-word',
+                padding: '8px',
+                borderRadius: '4px',
+                fontSize: '12px'
+              }}
+            >
+              {!isEditorVisible && flowExecutionMessage}
             </pre>
           </div>
+        </>
+
+        {isScriptNode && (
+          <>
+            {isEditorVisible && (
+              <div
+                className="script-editor nodrag"
+                style={{
+                  position: 'absolute',
+                  top: '0',
+                  bottom: '0',
+                  left: '100%',
+                  width: '640px',
+                  resize: 'both',
+                  overflow: 'hidden',
+                  minWidth: '640px',
+                  minHeight: '640px',
+                  border: '1px solid #2d2d2d',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  backgroundColor: '#1e1e1e',
+                  zIndex: 10,
+                  boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <div 
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    borderBottom: '1px solid #333',
+                    backgroundColor: '#252525'
+                  }}
+                >
+                  <Typography level="body-sm">Script Editor</Typography>
+                  <IconButton 
+                    size="sm" 
+                    onClick={toggleEditorVisibility}
+                  >
+                    <LockOpenIcon />
+                  </IconButton>
+                </div>
+
+                <Stack direction="row" spacing={1} sx={{ p: 2 }}>
+                  <Input
+                    type="text"
+                    defaultValue={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                    sx={{ flex: 1 }}
+                    placeholder="Script name"
+                  />
+                  <Button 
+                    onClick={handleSaveAutomation}
+                    sx={{ width: '120px' }}
+                  >
+                    Save
+                  </Button>
+                </Stack>
+                
+                <div 
+                  style={{ 
+                    flex: 1, 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    position: 'relative',
+                    borderTop: '1px solid #333',
+                    minHeight: 0, // Add this to allow container to shrink
+                    overflow: 'auto', // Make this scrollable if content is too large
+                  }}
+                >
+                  <div style={{ flex: '1 1 auto', overflow: 'hidden' }}>
+                    <MonacoEditor
+                      language="python"
+                      theme="vs-dark"
+                      defaultValue={scriptContent}
+                      onChange={handleEditorChange}
+                      options={{
+                        minimap: { enabled: false },
+                        automaticLayout: true,
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <div 
+                  className="nowheel"
+                  style={{
+                    borderTop: '1px solid #333',
+                    backgroundColor: '#252525', 
+                    display: 'flex',
+                    maxHeight: '200px',
+                    flexDirection: 'column',
+                    overflow: 'hidden' // Changed from auto to hidden
+                  }}
+                >
+                  <div style={{ 
+                    padding: '8px 12px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    flexShrink: 0 // Prevent header from shrinking
+                  }}>
+                    <Typography level="body-sm">Execution Output</Typography>
+                    <Typography level="body-sm">{myExecutionData.state}</Typography>
+                  </div>
+                  <div style={{ 
+                    flex: '1',
+                    overflow: 'auto',
+                    padding: '0 12px 12px'
+                  }}>
+                    <pre 
+                      style={{ 
+                        margin: 0,
+                        width: '100%',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {flowExecutionMessage}
+                    </pre>
+                  </div>
+                </div>
+                
+                {/* Resize handle indicator at the bottom-right corner */}
+                <div 
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    bottom: 0,
+                    width: '16px',
+                    height: '16px',
+                    cursor: 'nwse-resize',
+                    backgroundImage: 'linear-gradient(135deg, transparent 50%, #555 50%, #555 60%, transparent 60%), linear-gradient(45deg, transparent 50%, #555 50%, #555 60%, transparent 60%)',
+                    backgroundSize: '8px 8px',
+                    backgroundPosition: 'right bottom',
+                    backgroundRepeat: 'no-repeat',
+                    pointerEvents: 'none'
+                  }}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {/* Output Handles */}

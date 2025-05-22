@@ -9,11 +9,11 @@ repository = "https://github.com/MythicaAI/infra"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
-bpy = "^4.3.0"
+bpy = "^4.4.0"
 
 # use thie group to install the local dev dependencies
 jax = {extras = ["cuda12"], version = "^0.5.0"}
-numpy = "<2.0"
+#numpy = "<2.0"
 
 # use this group to install without dev redirects
 [tool.poetry.group.infra.dependencies]

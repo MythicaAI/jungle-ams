@@ -11,15 +11,15 @@ export interface ToggleParmProps {
 export const ToggleParm: React.FC<ToggleParmProps> = ({template, data, onChange}) => {
 
     const [value, setValue] = useState<boolean>(
-        (data[template.name] ?? template.default_value) as boolean
+        (data?.[template.name] ?? template.default_value) as boolean
     );
 
     useEffect(() => {
-        const myData = (data[template.name] ?? template.default_value) as boolean;
+        const myData = (data?.[template.name] ?? template.default_value) as boolean;
         if (myData!=undefined && value != myData) {
             setValue(myData);
         }
-    }, [data[template.name]]);
+    }, [data?.[template.name]]);
     
     const handleChange = (_event: React.ChangeEvent<HTMLInputElement>) => {
         setValue(!value);
