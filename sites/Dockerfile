@@ -34,17 +34,19 @@ RUN pnpm run build -m "${NODE_ENV}"
 # Build the remaining projects
 WORKDIR /build/awful-ui
 RUN pnpm run build -m "${NODE_ENV}"
+
 WORKDIR /build/jungle3
 RUN pnpm run build -m "${NODE_ENV}"
 
-
-
+WORKDIR /build/landing
+RUN pnpm run build -m "${NODE_ENV}"
 
 
 # Copy build artifacts from the builder stage to a dist folder
 # structure, to support mounting multiple site builds give each dist
 # folder the name of the mounted site
 FROM alpine:latest
+
 # Install envsubst for runtime environment substitution
 RUN apk add gettext
 
@@ -54,8 +56,14 @@ COPY docker-entrypoint.sh .
 WORKDIR /dist/jungle3
 COPY --from=build /build/jungle3/dist .
 RUN mv index.html index.html.template
+
 WORKDIR /dist/awful-ui
 COPY --from=build /build/awful-ui/dist .
+RUN mv index.html index.html.template
+
+# TODO: convert to next-js for static site generation (SSG)
+WORKDIR /dist/landing
+COPY --from=build /build/landing/dist .
 RUN mv index.html index.html.template
 
 WORKDIR /dist
