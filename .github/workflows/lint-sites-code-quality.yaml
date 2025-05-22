@@ -33,15 +33,26 @@ jobs:
       - name: Build Houdini UI Lib
         working-directory: sites/libs/houdini-ui
         run: pnpm run build
-
+      
+      # Awful graph editor
       - name: Lint awful-ui
         working-directory: sites/awful-ui
         run: pnpm run lint
-
+      
+      # Jungle 3 package index
       - name: Lint jungle3
         working-directory: sites/jungle3
         run: pnpm run lint
 
       - name: Test jungle3
         working-directory: sites/jungle3
+        run: pnpm run test
+    
+      # Landing site
+      - name: Lint landing
+        working-directory: sites/landing
+        run: pnpm run lint
+
+      - name: Test landing
+        working-directory: sites/landing
         run: pnpm run test
