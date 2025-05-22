@@ -20,11 +20,13 @@ const App: React.FC = () => {
       <CssBaseline />
       <Layout>
         <Hero />
-        {/*<Carousel />*/}
+        <Carousel />
+          <ValueProposition />
+          <TeamSection />
         {/*<TeaserContent />*/}
         {/*<SocialLinks />*/}
-        {/*<ValueProposition />*/}
-        {/*<TeamSection />*/}
+
+
       </Layout>
     </CssVarsProvider>
   );

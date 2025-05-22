@@ -66,40 +66,11 @@ const ImagePlaceholder = ({
   );
 };
 
-function ActionButton(text: string, onClick: () => void) {
-  return (
-    <Button
-      variant="solid"
-      size="lg"
-      onClick={onClick}
-      endDecorator={<ChevronRight size={20} />}
-      sx={{
-        backgroundColor: '#4c6ef5',
-        borderRadius: '50px',
-        px: 4,
-        py: 1.5,
-        fontSize: '16px',
-        fontWeight: 500,
-        textTransform: 'none',
-        border: '2px solid rgba(255, 255, 255, 0.3)',
-        boxShadow: '0 4px 20px rgba(76, 110, 245, 0.3)',
-        '&:hover': {
-          backgroundColor: '#3b5bdb',
-          transform: 'translateY(-1px)',
-          boxShadow: '0 6px 25px rgba(76, 110, 245, 0.4)',
-        },
-        transition: 'all 0.2s ease',
-      }}
-    >
-        {text}
-    </Button>
-  );
-}
 
 // Hero section with dynamic scroll animations
 const Hero = () => {
   const { progress } = useScrollPosition();
-  
+
   // Animation values based on scroll progress
   const titleOpacity = 1 - progress * 2;  // Fade out faster
   const titleTranslate = progress * -100;  // Move up as scroll begins
@@ -178,21 +149,31 @@ const Hero = () => {
               justifyContent={{ xs: 'center', md: 'flex-start' }}
             >
               <Button
-                size="lg"
-                variant="solid"
-                color="primary"
-                sx={{
-                  fontWeight: 600,
-                  boxShadow: 'md',
-                  px: 4,
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 'lg',
-                  },
-                }}
-              >
-                Explore Our Tools
-              </Button>
+                  variant="solid"
+                  size="lg"
+                  onClick={() => window.open('https://api.mythica.gg', '_blank')}
+                  endDecorator={<ChevronRight size={20} />}
+                  sx={{
+                    backgroundColor: '#4c6ef5',
+                    borderRadius: '50px',
+                    px: 4,
+                    py: 1.5,
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    textTransform: 'none',
+
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    boxShadow: '0 4px 20px rgba(76, 110, 245, 0.3)',
+                    '&:hover': {
+                      backgroundColor: '#3b5bdb',
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 6px 25px rgba(76, 110, 245, 0.4)',
+                    },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                    Try our Tools
+                </Button>
             </Stack>
           </Box>
           

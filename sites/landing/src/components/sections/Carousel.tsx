@@ -18,9 +18,9 @@ const Carousel = () => {
 
   // Sample carousel items
   const items = [
-    { id: 1, title: 'Feature One', color: 'primary.300' },
-    { id: 2, title: 'Feature Two', color: 'primary.400' },
-    { id: 3, title: 'Feature Three', color: 'primary.500' },
+    { id: 1, title: 'Asset Tools', color: 'primary.400' },
+    { id: 2, title: 'Game Pipelines', color: 'primary.500' },
+    { id: 3, title: 'CreativeOps', color: 'primary.600' },
   ];
 
   // Handle carousel scroll transition
