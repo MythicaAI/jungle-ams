@@ -67,3 +67,6 @@ testing/.env
 api/helm/aws/registry-access-key.json
 automation/helm/values-images.yaml
 api/app/sql-reports/*
+
+# next-js cache
+.next
