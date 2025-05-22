@@ -83,7 +83,7 @@ const themeTokens = {
 };
 
 // Create the theme configuration
-const createAppTheme = (mode = 'light', customTokens = {}) => {
+const createAppTheme = (mode = 'dark', customTokens = {}) => {
   // Merge default tokens with any custom tokens
   const tokens = {
     ...themeTokens,

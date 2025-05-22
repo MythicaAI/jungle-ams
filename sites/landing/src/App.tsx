@@ -12,19 +12,19 @@ import ValueProposition from './components/sections/ValueProposition';
 import TeamSection from './components/sections/TeamSection';
 
 // Create theme with default light mode
-const theme = createAppTheme('light');
+const theme = createAppTheme('dark');
 
 const App: React.FC = () => {
   return (
-    <CssVarsProvider theme={theme} defaultMode="light">
+    <CssVarsProvider theme={theme} defaultMode="dark">
       <CssBaseline />
       <Layout>
         <Hero />
-        <Carousel />
-        <TeaserContent />
-        <SocialLinks />
-        <ValueProposition />
-        <TeamSection />
+        {/*<Carousel />*/}
+        {/*<TeaserContent />*/}
+        {/*<SocialLinks />*/}
+        {/*<ValueProposition />*/}
+        {/*<TeamSection />*/}
       </Layout>
     </CssVarsProvider>
   );

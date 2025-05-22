@@ -87,9 +87,6 @@ const Hero = () => {
         overflow: 'hidden',
       }}
     >
-      {/* ThreeJS background */}
-      <ThreeJsHero />
-      
       {/* Content overlay */}
       <Container
         maxWidth="lg"
@@ -131,7 +128,7 @@ const Hero = () => {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Futuristic Landing Experience
+              Immersive Worlds Powered by Open Source
             </Typography>
             
             <Typography
@@ -142,7 +139,7 @@ const Hero = () => {
                 opacity: 0.85,
               }}
             >
-              Create stunning, interactive experiences with smooth scrolling animations and dynamic 3D elements. Perfect for modern web applications.
+              10x your game asset pipeline with our CreativeOps team and advanced tooling.
             </Typography>
             
             <Stack 
@@ -164,7 +161,7 @@ const Hero = () => {
                   },
                 }}
               >
-                Get Started
+                Explore Our Tools
               </Button>
               <Button
                 size="lg"
@@ -221,7 +218,7 @@ const Hero = () => {
           alignItems: 'center',
         }}
       >
-        <Typography level="body2" sx={{ mb: 1, opacity: 0.7 }}>
+        <Typography level="body" sx={{ mb: 1, opacity: 0.7 }}>
           Scroll Down
         </Typography>
         <Box
