@@ -3,6 +3,7 @@ import React from 'react';
 import {Box, Typography, Grid, Stack, Sheet, Divider} from '@mui/joy';
 import AnimatedSection from '../shared/AnimatedSection';
 import ImagePlaceholder from '../shared/ImagePlaceholder';
+import { valuePoints, valueStats, type ValuePointProps } from '../../data/valueProps';
 
 interface StatItemProps {
     value: string;
@@ -46,22 +47,17 @@ const StatItem: React.FC<StatItemProps> = ({value, label, delay = 0}) => {
             >
                 {value}
             </Typography>
-            <Typography level="body2" sx={{color: 'text.secondary'}}>
+            <Typography level="body-md" sx={{color: 'text.secondary'}}>
                 {label}
             </Typography>
         </Stack>
     );
 };
 
-// Value point with icon
-interface ValuePointProps {
-    icon: string;
-    title: string;
-    description: string;
-    delay?: number;
-}
-
-const ValuePoint: React.FC<ValuePointProps> = ({icon, title, description, delay = 0}) => {
+const ValuePoint: React.FC<ValuePointProps> = ({icon, title, description, delay}) => {
+    if (!delay) {
+        delay = 0;
+    }
     return (
         <Stack
             direction="row"
@@ -114,38 +110,6 @@ const ValuePoint: React.FC<ValuePointProps> = ({icon, title, description, delay 
 
 // Main value proposition section
 const ValueProposition: React.FC = () => {
-    // Stats data
-    const stats = [
-        {value: '98%', label: 'Customer Satisfaction'},
-        {value: '24/7', label: 'Support Available'},
-        {value: '15+', label: 'Integrations'},
-        {value: '4x', label: 'Faster Development'},
-    ];
-
-    // Value points data
-    const valuePoints = [
-        {
-            icon: '🚀',
-            title: 'Accelerated Development',
-            description: 'Build and deploy faster with our pre-built components and intuitive design system.',
-        },
-        {
-            icon: '💎',
-            title: 'Premium Experience',
-            description: 'Create stunning UIs that engage users and elevate your brand with minimal effort.',
-        },
-        {
-            icon: '🔄',
-            title: 'Seamless Integration',
-            description: 'Easily integrate with your existing tech stack and third-party services.',
-        },
-        {
-            icon: '📱',
-            title: 'Multi-platform Support',
-            description: 'Deliver consistent experiences across web, mobile, and desktop platforms.',
-        },
-    ];
-
     return (
         <AnimatedSection
             title="Why Choose Us"
@@ -173,7 +137,7 @@ const ValueProposition: React.FC = () => {
                 }}
             >
                 <Grid container spacing={3}>
-                    {stats.map((stat, index) => (
+                    {valueStats.map((stat, index) => (
                         <Grid key={index} xs={6} sm={3}>
                             <StatItem
                                 value={stat.value}

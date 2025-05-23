@@ -6,10 +6,11 @@ import { createAppTheme } from './styles/theme';
 import Layout from './components/layout/Layout';
 import Hero from './components/sections/Hero';
 import ProductCarousel from './components/sections/ProductCarousel';
-import TeaserContent from './components/sections/TeaserContent';
+import TeaserContent from './components/sections/Testimony';
 import SocialLinks from './components/sections/SocialLinks';
 import ValueProposition from './components/sections/ValueProposition';
 import TeamSection from './components/sections/TeamSection';
+import SceneCarousel from './components/sections/SceneCarousel';
 
 // Create theme with default light mode
 const theme = createAppTheme('dark');
@@ -20,13 +21,10 @@ const App: React.FC = () => {
       <CssBaseline />
       <Layout>
         <Hero />
-        <ProductCarousel />
+        <SceneCarousel />
         <ValueProposition />
         <TeamSection />
-        <TeaserContent />
         <SocialLinks />
-
-
       </Layout>
     </CssVarsProvider>
   );

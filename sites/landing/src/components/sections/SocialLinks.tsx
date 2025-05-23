@@ -2,6 +2,8 @@
 import React from 'react';
 import { Box, Grid, Sheet, Typography, Button, Link, Stack } from '@mui/joy';
 import AnimatedSection from '../shared/AnimatedSection';
+import { SiGithub, SiArtstation, SiDiscord, SiYoutube, SiX } from '@icons-pack/react-simple-icons';
+import { SocialIcon } from 'react-social-icons';
 
 interface SocialCardProps {
   title: string;
@@ -67,7 +69,7 @@ const SocialCard: React.FC<SocialCardProps> = ({
           {title}
         </Typography>
         
-        <Typography level="body2" sx={{ color: 'text.secondary', flexGrow: 1 }}>
+        <Typography level="body-md" sx={{ color: 'text.secondary', flexGrow: 1 }}>
           {description}
         </Typography>
         
@@ -102,42 +104,42 @@ const SocialLinks: React.FC = () => {
   const platforms = [
     {
       title: 'GitHub',
-      icon: '💻',
+      icon: <SiGithub size={48} />,
       description: 'Explore our open-source projects, contribute to our codebase, and stay updated with the latest development.',
-      linkText: 'View Repository',
-      link: 'https://github.com',
-      color: '#24292e',
+      linkText: 'View Repositories',
+      link: 'https://github.com/MythicaAI',
+      color: 'primary.50',
     },
     {
       title: 'Discord',
-      icon: '💬',
+      icon: <SiDiscord size={48} />,
       description: 'Join our community discussions, get support, and connect with other developers building amazing experiences.',
       linkText: 'Join Community',
-      link: 'https://discord.com',
+      link: 'https://discord.com/invite/mythica',
       color: '#5865F2',
     },
     {
       title: 'YouTube',
-      icon: '🎬',
+      icon: <SiYoutube size={48} />,
       description: 'Watch tutorials, demos, and feature showcases to help you get the most out of our platform.',
       linkText: 'Watch Videos',
-      link: 'https://youtube.com',
+      link: 'https://www.youtube.com/@MythicaGG',
       color: '#FF0000',
     },
     {
       title: 'Art Station',
-      icon: '🎨',
+      icon: <SiArtstation size={48} />,
       description: 'Discover design inspirations, mockups, and visual concepts created by our design team.',
       linkText: 'View Designs',
       link: 'https://artstation.com',
       color: '#13AFF0',
     },
     {
-      title: 'Social',
-      icon: '🌐',
+      title: 'X (Twitter)',
+      icon: <SiX size={48} />,
       description: 'Follow us on social media platforms to stay connected and get the latest news and updates.',
       linkText: 'Follow Us',
-      link: 'https://twitter.com',
+      link: 'https://x.com/MythicaAI',
       color: '#1DA1F2',
     },
   ];

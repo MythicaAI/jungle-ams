@@ -3,80 +3,18 @@ import { Box, Container, Typography, Button, Stack, Sheet } from '@mui/joy';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
 import {ChevronRight, LucidePause, LucidePlay} from 'lucide-react';
 import VideoBackground from "../shared/VideoBackground.tsx";
-import {Fragment, useState} from "react";
+import {Fragment} from "react";
 import CrystalHeroScene from "../shared/CrystalHeroScene.tsx";
-
-// Reusable image placeholder component
-const ImagePlaceholder = ({
-  width = '100%',
-  height = '100%',
-  text = 'Image',
-  bg = 'primary.100',
-  color = 'primary.800',
-  borderRadius = 'md',
-  fontSize = 'md',
-  ...props
-}) => {
-  return (
-    <Sheet
-      variant="outlined"
-      sx={{
-        width,
-        height,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: bg,
-        borderRadius,
-        position: 'relative',
-        overflow: 'hidden',
-        ...props.sx,
-      }}
-    >
-      <Typography
-        level="body-lg"
-        fontWeight="md"
-        textColor={color}
-        fontSize={fontSize}
-      >
-        {text}
-      </Typography>
-
-      {/* Visual elements for futuristic look */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '10%',
-          left: '10%',
-          width: '30%',
-          height: '30%',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)',
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '15%',
-          right: '15%',
-          width: '40%',
-          height: '20%',
-          background: 'linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
-          transform: 'rotate(-15deg)',
-        }}
-      />
-    </Sheet>
-  );
-};
-
+import {heroVideoContent} from "../../data/media";
+import { heroCallToAction } from '../../data/links';
 
 // Hero section with dynamic scroll animations
 const Hero = () => {
   const { progress } = useScrollPosition();
 
-
-  const videoSrc = "/videos/crystal_caverns_loop.mp4";
-    const videoSrcFallbackImg = "/crystal_caverns_loop.png";
+  // Grab the first video definition
+  const videoSrc = heroVideoContent[0].videoSrc;
+  const videoSrcFallbackImg = heroVideoContent[0].videoSrcImageFallback;
 
   // Animation values based on scroll progress
   const titleOpacity = 1 - progress * 2;  // Fade out faster
@@ -181,7 +119,7 @@ const Hero = () => {
               <Button
                   variant="solid"
                   size="lg"
-                  onClick={() => window.open('https://api.mythica.gg', '_blank')}
+                  onClick={() => window.open(heroCallToAction, '_blank')}
                   endDecorator={<ChevronRight size={20} />}
                   sx={{
                     backgroundColor: '#4c6ef5',

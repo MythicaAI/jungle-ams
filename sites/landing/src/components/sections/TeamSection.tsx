@@ -3,21 +3,14 @@ import React from 'react';
 import { Box, Grid, Sheet, Typography, Stack, IconButton } from '@mui/joy';
 import AnimatedSection from '../shared/AnimatedSection';
 import ImagePlaceholder from '../shared/ImagePlaceholder';
-
-interface TeamMemberProps {
-  name: string;
-  role: string;
-  bio: string;
-  imageText?: string;
-  socialLinks?: Array<{ icon: string; url: string; }>;
-  delay?: number;
-}
+import { teamMembers, type TeamMember } from '../../data/teamData';
 
 // Team member card component
-const TeamMember: React.FC<TeamMemberProps> = ({ 
+const TeamMember: React.FC<TeamMember> = ({ 
   name, 
   role, 
-  bio, 
+  bio,
+  imageSrc = '/images/team/default.jpg',
   imageText = 'Team Member', 
   socialLinks = [],
   delay = 0
@@ -64,6 +57,7 @@ const TeamMember: React.FC<TeamMemberProps> = ({
       >
         <ImagePlaceholder
           height="100%"
+          src={imageSrc}
           text={imageText}
           bg="primary.100"
           color="primary.800"
@@ -124,49 +118,7 @@ const TeamMember: React.FC<TeamMemberProps> = ({
 
 // Main team section
 const TeamSection: React.FC = () => {
-  // Team members data
-  const teamMembers = [
-    {
-      name: 'Alex Johnson',
-      role: 'Founder & CEO',
-      bio: 'Leading our vision and strategy with over 10 years of experience in the digital space.',
-      imageText: 'Alex J.',
-      socialLinks: [
-        { icon: '🔗', url: '#' },
-        { icon: '💼', url: '#' },
-      ],
-    },
-    {
-      name: 'Sam Rodriguez',
-      role: 'Lead Designer',
-      bio: 'Bringing creative vision to life with expertise in UX/UI and visual design systems.',
-      imageText: 'Sam R.',
-      socialLinks: [
-        { icon: '🎨', url: '#' },
-        { icon: '🔗', url: '#' },
-      ],
-    },
-    {
-      name: 'Taylor Kim',
-      role: 'Senior Developer',
-      bio: 'Building robust, scalable solutions with deep knowledge of modern web technologies.',
-      imageText: 'Taylor K.',
-      socialLinks: [
-        { icon: '💻', url: '#' },
-        { icon: '🔗', url: '#' },
-      ],
-    },
-    {
-      name: 'Jordan Patel',
-      role: 'Marketing Specialist',
-      bio: 'Crafting compelling narratives and growth strategies to expand our reach.',
-      imageText: 'Jordan P.',
-      socialLinks: [
-        { icon: '📣', url: '#' },
-        { icon: '🔗', url: '#' },
-      ],
-    },
-  ];
+
 
   return (
     <AnimatedSection
@@ -187,6 +139,7 @@ const TeamSection: React.FC = () => {
               name={member.name}
               role={member.role}
               bio={member.bio}
+              imageSrc={member.imageSrc}
               imageText={member.imageText}
               socialLinks={member.socialLinks}
               delay={index * 0.1}
@@ -196,7 +149,7 @@ const TeamSection: React.FC = () => {
       </Grid>
       
       {/* Team values statement */}
-      <Box sx={{ mt: { xs: 6, md: 8 } }}>
+      <Box >
         <Sheet
           variant="soft"
           color="primary"
@@ -217,7 +170,7 @@ const TeamSection: React.FC = () => {
               <Typography level="h3" fontWeight="bold" sx={{ mb: 2 }}>
                 Join Our Growing Team
               </Typography>
-              <Typography level="body1">
+              <Typography level="body-md">
                 We're always looking for talented individuals who are passionate about creating exceptional digital experiences. If you're creative, driven, and collaborative, we'd love to hear from you.
               </Typography>
             </Grid>

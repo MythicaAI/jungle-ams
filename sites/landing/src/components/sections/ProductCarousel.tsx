@@ -2,8 +2,9 @@
 import {useState, useEffect, useRef} from 'react';
 import {Box, Sheet, Typography, Container, IconButton, Stack} from '@mui/joy';
 import {useScrollPosition} from '../../hooks/useScrollPosition';
-import {useIntersectionObserver} from '../../hooks/useScrollPosition';
+import {useIntersectionObserver} from '../../hooks/useIntersectionObserver';
 import {ImagePlaceholder} from '../shared/ImagePlaceholder';
+import { NoToneMapping } from 'three';
 
 // ProductCarousel component that transforms when scrolling
 const ProductCarousel = () => {
@@ -13,7 +14,7 @@ const ProductCarousel = () => {
     const containerRef = useRef(null);
     const [elementRef, isIntersecting] = useIntersectionObserver({
         threshold: 0,
-        rootMargin: '-80px 0px 0px 0px', // Offset for the header
+        rootMargin: '80px 0px 0px 0px', // Offset for the header
     });
 
     // Sample carousel items
@@ -155,7 +156,7 @@ const ProductCarousel = () => {
                                 {isSticky ? (
                                     // Sticky mode - simple text
                                     <Typography
-                                        level={isSticky ? "body1" : "h3"}
+                                        level={isSticky ? "body-md" : "h3"}
                                         fontWeight="bold"
                                         sx={{
                                             color: 'white',
@@ -180,7 +181,7 @@ const ProductCarousel = () => {
                                             }}
                                         />
                                         <Typography
-                                            level="body1"
+                                            level="body-md"
                                             fontWeight="bold"
                                             sx={{
                                                 position: 'absolute',
