@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Annotated, Literal, Optional, Union, Any
 from ripple.models  import houTypes as hou
 from uuid import uuid4
+import typing
 
 
 class ParameterSpecModel(BaseModel):
@@ -18,6 +19,15 @@ class RampPointSpec(BaseModel):
     value: Optional[float] = None
     interp: hou.rampBasis = hou.rampBasis.Linear
 
+class RampColorPointSpec(BaseModel):
+    pos: float
+    c: list[float] = []
+    interp: hou.rampBasis = hou.rampBasis.Linear
+
+class RampValuePointSpec(BaseModel):
+    pos: float
+    value: float = 0.0
+    interp: hou.rampBasis = hou.rampBasis.Linear
 
 ####################################################################################################
 # Standard Parameter Specs
@@ -65,6 +75,7 @@ class EnumParameterSpec(ParameterSpecModel):
 class FileParameterSpec(ParameterSpecModel):
     param_type: Literal['file'] = 'file'
     name: Optional[str] = ""
+    type: Optional[list[str]] = None
     default: str | list[str]
 
 
@@ -210,7 +221,6 @@ class FileParameter(BaseModel):
     file_id: str
     file_path: Optional[str] = None
 
-
 ParameterType = (
     int,
     float,
@@ -218,6 +228,51 @@ ParameterType = (
     bool,
     FileParameter,
 )
+
+def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
+    """
+    Based on the type of parameter, generate the appropriate HoudiniParmTemplateSpec.
+    If the parameter is a (list/tuple/set/frozenset) of values, make sure we set the numComponents
+    to the number of values in the list and then generate the appropriate HoudiniParmTemplateSpec
+    based on the type of the first value in the list.
+    """
+    specs = []
+    for key, value in values.items():
+        if hasattr(value, "__origin__") and value.__origin__ == typing.Union:
+            # If the value is Optional, we need to check the actual type
+            value = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
+             
+        # Check if it's a generic type (like list[int], tuple[str], etc.)
+        if hasattr(value, "__origin__") and value.__origin__ in (list, tuple, set, frozenset):
+            # Get the type argument (e.g., int from list[int])
+            arg_type = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
+            my_length = len(value.__args__) if hasattr(value, "__args__") else 0
+            # Handle based on the contained type
+            if arg_type == int:
+                specs.append(IntParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0 for _ in range(my_length)]))
+            elif arg_type == float:
+                specs.append(FloatParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0.0 for _ in range(my_length)]))
+            elif arg_type == str:
+                specs.append(StringParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=["" for _ in range(my_length)]))
+            elif arg_type == FileParameter:
+                specs.append(FileParameterSpec(name=key, label=key, default=[]))
+            else:
+                raise ValueError(f"Unsupported parameter type for '{key}': list/tuple/set of {arg_type}")
+        # Check simple types
+        elif value == int:
+            specs.append(IntParmTemplateSpec(name=key, label=key, default_value=[0]))
+        elif value == float:
+            specs.append(FloatParmTemplateSpec(name=key, label=key, default_value=[0.0]))
+        elif value == str:
+            specs.append(StringParmTemplateSpec(name=key, label=key, default_value=[""]))
+        elif value == bool:
+            specs.append(ToggleParmTemplateSpec(name=key, label=key))
+        elif value == FileParameter:
+            specs.append(FileParameterSpec(name=key, label=key, default=""))
+        else:
+            raise ValueError(f"Unsupported parameter type for '{key}': {value}")
+    return specs
+
 
 def _validate_parameter_types(values:dict, match_type) -> Any:
     def check(field, value):
@@ -242,6 +297,16 @@ def _validate_parameter_types(values:dict, match_type) -> Any:
 
 class ParameterSet(BaseModel):
     model_config = ConfigDict(extra='allow')
+    @classmethod
+    def get_parameter_specs(cls) -> list[HoudiniParmTemplateSpecType]:
+        # Get the model's fields with their default values
+        values = {
+            field_name: field.annotation 
+            for field_name, field in cls.model_fields.items()
+            if field.annotation is not None
+        }
+        return _get_parameter_spec(values)
+
     # This root validator checks all fields' values
     @model_validator(mode='before')
     @classmethod

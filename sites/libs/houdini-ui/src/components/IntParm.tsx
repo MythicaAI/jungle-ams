@@ -10,7 +10,7 @@ export interface IntParmProps {
 
 export const IntParm: React.FC<IntParmProps> = ({
   template,
-  data,
+  data = {},
   onChange,
 }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -204,7 +204,9 @@ export const IntParm: React.FC<IntParmProps> = ({
         margin: 0,
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
-      }}>
+      }}
+      title={`variable: ${template.name}`}
+      >
         {template.label}
       </label>
       

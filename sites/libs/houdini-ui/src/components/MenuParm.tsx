@@ -8,7 +8,7 @@ export interface MenuParmProps {
     onChange: (formData: dictionary) => void; 
 }
 
-export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) => {
+export const MenuParm: React.FC<MenuParmProps> = ({ template, data={}, onChange }) => {
     const {
         label,
         menu_items = [],
@@ -88,7 +88,9 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
                 margin: 0,
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word'
-            } : undefined}>{label}</label>
+            } : undefined}
+            title={`variable: ${template.name}`}
+            >{label}</label>
             <div className="menu-content" style={!isMobileSize ? { flex: 1, width: '100%' } : undefined}>
                 {is_button_strip && (
                     <div className="menu-button-strip">

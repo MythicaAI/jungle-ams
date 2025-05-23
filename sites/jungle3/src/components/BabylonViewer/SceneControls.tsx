@@ -43,14 +43,17 @@ const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) =
         [selectedHdaId, jobDefinition],
     );
 
-    const inputFileParms = parmTemplateGroup.parm_templates.filter(
+    const inputFileParms: hou.FileParmTemplate[] = parmTemplateGroup.parm_templates.filter(
         (parm) =>
+        parm instanceof hou.FileParmTemplate &&
         parm.param_type === hou.parmTemplateType.File &&
-        parm.name.startsWith("input"),
-    );
+        !parm.name.startsWith("output"),
+    ) as hou.FileParmTemplate[];
 
     const [availableInputFiles, setAvailableInputFiles] = React.useState<AssetVersionContent[]>(
-        assetVersion?.contents?.files.filter(file => isValidMeshFile(file.file_name)) || []
+        selectedHdaId ?
+        assetVersion?.contents?.files.filter(file => isValidMeshFile(file.file_name)) || [] 
+        :  assetVersion?.contents?.files || [],
     );
 
     const handleParmChange = useCallback(
@@ -174,7 +177,7 @@ const SceneControls: React.FC<Props> = ({ style, jobDefinition,assetVersion }) =
                                     sx={{fontSize: "small"}}
                                     name={parm.name}
                                     placeholder={parm.label}
-                                    multiple={false}
+                                    multiple={(Array.isArray(parm.default))}
                                     onChange={(_, newValue) => {
                                         if (newValue === null) return;
                                         setInputFile(

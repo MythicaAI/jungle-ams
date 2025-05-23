@@ -52,7 +52,7 @@ function hexToRgb(hex: string): number[] {
     return [r, g, b];
 }
 
-export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, onChange }) => {
+export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data = {}, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 300, height: 50 };
 
@@ -299,7 +299,7 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
 
     return (
         <div className="ramp-parm" title={template.help} style={{ userSelect: 'none' }}>
-            <label>{template.label}</label>
+            <label title={`variable: ${template.name}`}>{template.label}</label>
             <div style={{position: 'relative'}}>
                 <canvas
                     ref={canvasRef}

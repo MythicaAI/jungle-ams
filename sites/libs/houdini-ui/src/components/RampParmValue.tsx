@@ -125,7 +125,7 @@ const calculateSlopes = (points: ValueRampPoint[]): number[] => {
     return slopes;
 };
 
-export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, onChange }) => {
+export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data = {}, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 300, height: 150 };
 
@@ -515,7 +515,7 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
     }
     return (
         <div className="ramp-parm" title={template.help} style={{ userSelect: 'none' }}>
-            <label>{template.label}</label>
+            <label title={`variable: ${template.name}`}>{template.label}</label>
             <div style={{position: 'relative'}}>
                 <canvas
                     ref={canvasRef}

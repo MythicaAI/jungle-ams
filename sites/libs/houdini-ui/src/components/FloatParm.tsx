@@ -10,7 +10,7 @@ export interface FloatParmProps {
 
 export const FloatParm: React.FC<FloatParmProps> = ({
   template,
-  data,
+  data = {},
   onChange,
 }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -26,7 +26,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
       : Array<number>(template.num_components).fill(0);
   }
   const [values, setValues] = useState<number[]>(() =>
-    (data[template.name] as number[]) || getDefaultValues() 
+    (data[template.name] as number[]) || getDefaultValues()
   );
   
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -67,7 +67,7 @@ export const FloatParm: React.FC<FloatParmProps> = ({
     if (myData && values !== myData) {
       setValues(myData);
     }
-  }, [data, data[template.name]]);
+  }, [data[template.name]]);
 
   const startEditing = (index: number, value: number) => {
     setEditingIndex(index);
@@ -171,8 +171,11 @@ export const FloatParm: React.FC<FloatParmProps> = ({
         <label style={{ 
           width: '100%', 
           textAlign: 'center',
-          marginBottom: '3px'
-        }}>
+          marginBottom: '3px',
+          
+        }}
+          title={`variable: {template.name}`}
+        >
           {template.label}
         </label>
         
@@ -233,7 +236,9 @@ export const FloatParm: React.FC<FloatParmProps> = ({
         margin: 0,
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
-      }}>
+      }}
+        title={`variable: ${template.name}`}
+        >
         {template.label}
       </label>
       

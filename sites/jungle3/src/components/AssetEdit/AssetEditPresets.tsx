@@ -15,14 +15,14 @@ export const AssetEditPresets: React.FC = () => {
   const assetVersion = useAssetVersionStore();
 
   // Filter files to find "HDA" files (HDA files with .hda extension but not .nc or .lc)
-  const hdaFiles = Object.values(assetVersion.files).filter(
+  const operatorFiles = Object.values(assetVersion.files).filter(
     (file) =>
-      file.file_name.endsWith(".hda") &&
-      !file.file_name.endsWith(".nc.hda") &&
-      !file.file_name.endsWith(".lc.hda")
+      file.file_name.endsWith(".hda") ||
+      file.file_name.endsWith(".awpy")
+
   ) as AssetVersionContent[];
 
-  const [selectedHda, setSelectedHda] = useState<AssetVersionContent | null>(null);
+  const [selectedOperator, setSelectedOperator] = useState<AssetVersionContent | null>(null);
   const [newJobDefId, setNewJobDefId] = useState<string | null>(null);
   const [selectedJobDef, setSelectedJobDef] = useState<JobDefinition | null>(null);
   const [jobDefs, setJobDefs] = useState<JobDefinition[] | null>(null);
@@ -162,15 +162,15 @@ export const AssetEditPresets: React.FC = () => {
   }, [jobDefResp.data]);
 
   useEffect(() => {
-    if (!selectedHda) {
+    if (!selectedOperator) {
       setJobDefs(null);
     }
-    if (selectedHda) {
+    if (selectedOperator) {
       setJobDefs(jobDefResp.data?.filter(
-        (item) => item.source.file_id === selectedHda.file_id
+        (item) => item.source.file_id === selectedOperator.file_id
        ) || null);
     }
-  }, [selectedHda]);
+  }, [selectedOperator]);
 
   useEffect(() => {
     if (!jobDefs || jobDefs.length == 0) {
@@ -197,14 +197,17 @@ export const AssetEditPresets: React.FC = () => {
     resetSelection();
   }, [resetSelection]);
 
-  const handleSelectHda = (hda: AssetVersionContent) => {
+  const handleSelectOperator = (operator: AssetVersionContent) => {
     reset();
-    setSelectedHda(hda);
-    setSelectedHdaId(hda.file_id);
-    
+    setSelectedOperator(operator);
+
+    if (operator && operator.file_name.endsWith(".hda")) {
+      setSelectedHdaId(operator.file_id);
+    }
+
     if (jobDefResp.data?.length) {
       const jobDef = jobDefResp.data.find(
-        (definition) => definition.source.file_id === hda.file_id
+        (definition) => definition.source.file_id === operator.file_id
       );
       
       if (jobDef) {
@@ -325,13 +328,13 @@ export const AssetEditPresets: React.FC = () => {
             placeholder="Select Generator"
             size="md"
             sx={{ minWidth: 200 }}
-            value={selectedHda}
+            value={selectedOperator}
             multiple={false}
             onChange={(_, newValue) => {
-              handleSelectHda( newValue as AssetVersionContent);
+              handleSelectOperator( newValue as AssetVersionContent);
             }}
           >
-            {hdaFiles.map((hda) => (
+            {operatorFiles.map((hda) => (
               <Option key={hda.file_id} value={hda}>
                 {hda.file_name}
               </Option>
@@ -348,7 +351,7 @@ export const AssetEditPresets: React.FC = () => {
         */}
 
         { /* Preset Selector and Buttons */ }
-        { selectedHda && (
+        { selectedOperator && (
           <Box display={"flex"} flexDirection="column" gap={2} width="100%">
             <Box sx={{
               display: 'flex',
@@ -369,7 +372,7 @@ export const AssetEditPresets: React.FC = () => {
                 multiple={false}
               >
                 {jobDefResp.data?.filter(
-                  (item) => item.source.file_id === selectedHda.file_id
+                  (item) => item.source.file_id === selectedOperator.file_id
                 )?.map((jd) => (
                   <Option key={jd.job_def_id} value={jd.job_def_id}>
                     {jd.name}
@@ -459,7 +462,7 @@ export const AssetEditPresets: React.FC = () => {
               overflow: "auto",
             }}
           >
-            { selectedHda && selectedJobDef ? 
+            { selectedOperator && selectedJobDef ? 
               <div style={{width: '100%', height: '554px'}}>
                 {/* Tab Selection */}
                 <Box sx={{ 

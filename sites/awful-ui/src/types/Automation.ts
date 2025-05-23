@@ -29,7 +29,7 @@ export type AutomationScript = {
 
 export type AutomationSpec = {
     hidden: boolean;
-    input: JSONSchema;
+    input: dictionary[];
     output: JSONSchema;
 }
 

@@ -248,6 +248,9 @@ export namespace hou {
         case hou.parmTemplateType.Ramp:
           template = new RampParmTemplate(param);
           break;
+        case hou.parmTemplateType.File:
+          template = new FileParmTemplate(param);
+          break;
         default:
           template = new ParmTemplate(param);
           break;
@@ -363,6 +366,19 @@ export namespace hou {
       ret.tags = structuredClone(this.tags);
       
       return ret;
+    }
+  }
+
+  type FileParmTemplateProps = ParmTemplateProps;
+
+  export class FileParmTemplate extends ParmTemplate {
+    param_type: parmTemplateType = parmTemplateType.File;
+    name: string = 'file';
+    default: string | string[] = "";
+
+    constructor(config: FileParmTemplateProps) {
+      super(config);
+      Object.assign(this, this.extractConfig(config));
     }
   }
 

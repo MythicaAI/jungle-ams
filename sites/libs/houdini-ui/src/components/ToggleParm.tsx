@@ -8,7 +8,7 @@ export interface ToggleParmProps {
     onChange?: (formData: dictionary) => void; // Callback for value changes
 }
 
-export const ToggleParm: React.FC<ToggleParmProps> = ({template, data, onChange}) => {
+export const ToggleParm: React.FC<ToggleParmProps> = ({template, data = {}, onChange}) => {
 
     const [value, setValue] = useState<boolean>(
         (data[template.name] ?? template.default_value) as boolean
@@ -31,7 +31,7 @@ export const ToggleParm: React.FC<ToggleParmProps> = ({template, data, onChange}
 
     return (
         <div className="toggle-parm" title={template.help}>
-            <label>
+            <label title={`variable: ${template.name}`}>
                 <input
                     type="checkbox"
                     checked={value}
