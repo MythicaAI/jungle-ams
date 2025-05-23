@@ -80,9 +80,9 @@ export const useScrollPosition = () => {
  */
 export const useIntersectionObserver = (options = {}, callback) => {
   const [isIntersecting, setIsIntersecting] = useState(false);
-  const [entry, setEntry] = useState(null);
+  const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null);
   const elementRef = useRef(null);
-  const observerRef = useRef(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const defaultOptions = {
     root: null,
@@ -263,40 +263,4 @@ export const useGestureDetection = () => {
   }, [handleTouchStart, handleTouchEnd]);
   
   return gesture;
-};
-
-/**
- * Custom hook for handling theme modes
- * @param {string} initialMode - Initial theme mode ('light' or 'dark')
- * @returns {Array} [mode, toggleMode, setMode]
- */
-export const useThemeMode = (initialMode = 'light') => {
-  const [mode, setMode] = useState(() => {
-    // Try to load from localStorage
-    const savedMode = localStorage.getItem('themeMode');
-    if (savedMode === 'light' || savedMode === 'dark') {
-      return savedMode;
-    }
-    
-    // Check user preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    
-    // Fallback to initial mode
-    return initialMode;
-  });
-  
-  // Update localStorage when mode changes
-  useEffect(() => {
-    localStorage.setItem('themeMode', mode);
-    // Optional: Update document attributes or classes
-    document.documentElement.setAttribute('data-theme', mode);
-  }, [mode]);
-  
-  const toggleMode = useCallback(() => {
-    setMode(prevMode => prevMode === 'light' ? 'dark' : 'light');
-  }, []);
-  
-  return [mode, toggleMode, setMode];
 };

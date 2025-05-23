@@ -4,11 +4,11 @@ import { extendTheme } from '@mui/joy/styles';
 const themeTokens = {
   // Primary brand colors - change these to match your brand
   brand: {
-    primary: '#3a86ff',  // Main brand color
-    secondary: '#8338ec', // Secondary brand color
+    primary: '#2d5a4f',  // Main brand color
+    secondary: '#9acd32', // Secondary brand color
     accent: '#ff006e',   // Accent color for highlights
-    dark: '#14213d',     // Dark shade for backgrounds
-    light: '#f8f9fa',    // Light shade for backgrounds
+    dark: '#2d3748',     // Dark shade for backgrounds
+    light: '#e8e8e8',    // Light shade for backgrounds
   },
 
   // UI feedback colors

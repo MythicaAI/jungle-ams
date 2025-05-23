@@ -1,6 +1,4 @@
 // src/types/theme.ts
-import { ThemeOptions } from '@mui/joy/styles';
-
 /**
  * Brand theme tokens
  */

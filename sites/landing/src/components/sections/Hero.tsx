@@ -1,13 +1,16 @@
 // src/components/sections/Hero.tsx
 import { Box, Container, Typography, Button, Stack, Sheet } from '@mui/joy';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
-import { ChevronRight } from 'lucide-react';
+import {ChevronRight, LucidePause, LucidePlay} from 'lucide-react';
+import VideoBackground from "../shared/VideoBackground.tsx";
+import {Fragment, useState} from "react";
+import CrystalHeroScene from "../shared/CrystalHeroScene.tsx";
 
 // Reusable image placeholder component
-const ImagePlaceholder = ({ 
-  width = '100%', 
-  height = '100%', 
-  text = 'Image', 
+const ImagePlaceholder = ({
+  width = '100%',
+  height = '100%',
+  text = 'Image',
   bg = 'primary.100',
   color = 'primary.800',
   borderRadius = 'md',
@@ -30,15 +33,15 @@ const ImagePlaceholder = ({
         ...props.sx,
       }}
     >
-      <Typography 
+      <Typography
         level="body-lg"
-        fontWeight="md" 
+        fontWeight="md"
         textColor={color}
         fontSize={fontSize}
       >
         {text}
       </Typography>
-      
+
       {/* Visual elements for futuristic look */}
       <Box
         sx={{
@@ -71,11 +74,25 @@ const ImagePlaceholder = ({
 const Hero = () => {
   const { progress } = useScrollPosition();
 
+
+  const videoSrc = "/videos/crystal_caverns_loop.mp4";
+    const videoSrcFallbackImg = "/crystal_caverns_loop.png";
+
   // Animation values based on scroll progress
   const titleOpacity = 1 - progress * 2;  // Fade out faster
   const titleTranslate = progress * -100;  // Move up as scroll begins
   const heroScale = 1 - progress * 0.1;    // Slight zoom out
-  
+
+    const getVideoControlIcon = () => {
+        const video = document.querySelector('video');
+        if (!video) {
+            return <Fragment/>;
+        }
+        if (video.paused) {
+            return <LucidePlay />
+        }
+        return <LucidePause />
+    }
   return (
     <Box
       component="section"
@@ -87,6 +104,19 @@ const Hero = () => {
         overflow: 'hidden',
       }}
     >
+        {/* Video Background */}
+      {videoSrc && (
+        <VideoBackground
+          src={videoSrc}
+          fallbackImage={videoSrcFallbackImg}
+          overlay={true}
+          overlayOpacity={0.5}
+          overlayColor="rgba(0, 0, 0, 0.5)"
+          onLoadedData={() => console.log('loaded') }
+          onError={() => console.log('Video failed to load')}
+        />
+      )}
+
       {/* Content overlay */}
       <Container
         maxWidth="lg"
@@ -131,7 +161,7 @@ const Hero = () => {
             >
               Immersive Worlds Powered by Open Source
             </Typography>
-            
+
             <Typography
               level="body-md"
               sx={{
@@ -142,9 +172,9 @@ const Hero = () => {
             >
               10x your game asset pipeline with our CreativeOps team and advanced tooling.
             </Typography>
-            
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
+
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
               justifyContent={{ xs: 'center', md: 'flex-start' }}
             >
@@ -165,9 +195,9 @@ const Hero = () => {
                     border: '2px solid rgba(255, 255, 255, 0.3)',
                     boxShadow: '0 4px 20px rgba(76, 110, 245, 0.3)',
                     '&:hover': {
-                      backgroundColor: '#3b5bdb',
+                      backgroundColor: '#4264ea',
                       transform: 'translateY(-1px)',
-                      boxShadow: '0 6px 25px rgba(76, 110, 245, 0.4)',
+                      boxShadow: '0 6px 25px rgba(76, 150, 245, 0.4)',
                     },
                     transition: 'all 0.2s ease',
                   }}
@@ -176,7 +206,7 @@ const Hero = () => {
                 </Button>
             </Stack>
           </Box>
-          
+
           {/* Hero Image Placeholder */}
           <Box
             sx={{
@@ -187,23 +217,68 @@ const Hero = () => {
               transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
             }}
           >
-            <ImagePlaceholder
-              height="100%"
-              text="Hero Image"
-              bg="rgba(255, 255, 255, 0.05)"
-              color="white"
-              borderRadius="lg"
-              fontSize="xl"
-              sx={{
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: 'lg',
-              }}
-            />
+            <CrystalHeroScene />
           </Box>
         </Stack>
       </Container>
-      
+
+        {/* Video controls (optional) */}
+      {videoSrc && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 20,
+            right: 20,
+            zIndex: 15,
+            display: 'flex',
+            gap: 1,
+          }}
+        >
+          <Button
+            size="sm"
+            variant="soft"
+            color="neutral"
+            sx={{
+              minWidth: 'auto',
+              px: 2,
+              opacity: 0.8,
+              '&:hover': { opacity: 1 },
+            }}
+            onClick={() => {
+                const video = document.querySelector('video');
+              if (video) {
+                if (video.paused) {
+                  video.play();
+                } else {
+                  video.pause();
+                }
+              }
+            }}
+          >
+              { getVideoControlIcon() }
+          </Button>
+          <Button
+            size="sm"
+            variant="soft"
+            color="neutral"
+            sx={{
+              minWidth: 'auto',
+              px: 2,
+              opacity: 0.8,
+              '&:hover': { opacity: 1 },
+            }}
+            onClick={() => {
+              const video = document.querySelector('video');
+              if (video) {
+                video.muted = !video.muted;
+              }
+            }}
+          >
+            🔊
+          </Button>
+        </Box>
+      )}
+
       {/* Scroll indicator */}
       <Box
         sx={{
@@ -218,7 +293,7 @@ const Hero = () => {
           alignItems: 'center',
         }}
       >
-        <Typography level="body" sx={{ mb: 1, opacity: 0.7 }}>
+        <Typography level="body-md" sx={{ mb: 1, opacity: 0.7 }}>
           Scroll Down
         </Typography>
         <Box

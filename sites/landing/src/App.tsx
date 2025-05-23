@@ -5,7 +5,7 @@ import CssBaseline from '@mui/joy/CssBaseline';
 import { createAppTheme } from './styles/theme';
 import Layout from './components/layout/Layout';
 import Hero from './components/sections/Hero';
-import Carousel from './components/sections/Carousel';
+import ProductCarousel from './components/sections/ProductCarousel';
 import TeaserContent from './components/sections/TeaserContent';
 import SocialLinks from './components/sections/SocialLinks';
 import ValueProposition from './components/sections/ValueProposition';
@@ -20,11 +20,11 @@ const App: React.FC = () => {
       <CssBaseline />
       <Layout>
         <Hero />
-        <Carousel />
-          <ValueProposition />
-          <TeamSection />
-        {/*<TeaserContent />*/}
-        {/*<SocialLinks />*/}
+        <ProductCarousel />
+        <ValueProposition />
+        <TeamSection />
+        <TeaserContent />
+        <SocialLinks />
 
 
       </Layout>
