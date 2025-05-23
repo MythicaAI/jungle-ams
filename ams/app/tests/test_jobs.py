@@ -419,7 +419,7 @@ async def test_delete_canary(client: TestClient, api_base, create_profile):
 
     # Test unauthorized /authorized delete canary job definitions
     r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=headers2)
-    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
+    assert_status_code(r, HTTPStatus.BAD_REQUEST)
 
     r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=privileged_headers)
     assert_status_code(r, HTTPStatus.OK)

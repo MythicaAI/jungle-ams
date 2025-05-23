@@ -1,3 +1,4 @@
+import json
 import logging
 from unittest import mock
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,14 +12,14 @@ from pydantic import ValidationError
 from cryptid.cryptid import profile_seq_to_id
 from ripple.auth.generate_token import generate_token
 from ripple.automation.adapters import NatsAdapter, RestAdapter
-from ripple.automation.automations import ScriptRequest, _get_script_interface, _run_script_automation, \
-    get_default_automations
+from ripple.automation.automations import (ScriptRequest, _get_script_interface, _run_script_automation,
+    get_default_automations, automation_request, automation_response, automation_interface, automation)
 from ripple.automation.models import AutomationModel, AutomationRequest, AutomationRequestResult, AutomationsResponse, \
     EventAutomationResponse
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
 from ripple.automation.worker import Worker
 from ripple.config import ripple_config
-from ripple.models.params import ParameterSet
+from ripple.models.params import ParameterSet, FileParameter
 from ripple.models.streaming import CropImageResponse, JobDefinition, Message, OutputFiles, ProcessStreamItem
 
 
@@ -1003,3 +1004,275 @@ def test_get_default_automations():
     assert automations[0].path == '/mythica/script'
     assert automations[1].path == '/mythica/script/interface'
     assert automations[2].path == '/mythica/script/job_def'
+
+
+# ---- Automation Decorator Tests ----
+class TestAutomationDecorators:
+    """Tests for automation decorators and their error conditions"""
+
+    def test_automation_request_decorator_invalid_type(self):
+        """Test automation_request decorator with non-class input"""
+        with pytest.raises(TypeError, match="@automation_request can only be used with classes"):
+            @automation_request()
+            def not_a_class():
+                pass
+
+    def test_automation_request_decorator_invalid_subclass(self):
+        """Test automation_request decorator with non-ParameterSet subclass"""
+        with pytest.raises(TypeError, match="@automation_request can only be used with subclasses of ParameterSet"):
+            @automation_request()
+            class NotParameterSet:
+                pass
+
+    def test_automation_response_decorator_invalid_type(self):
+        """Test automation_response decorator with non-class input"""
+        with pytest.raises(TypeError, match="@automation_response can only be used with classes"):
+            @automation_response()
+            def not_a_class():
+                pass
+
+    def test_automation_response_decorator_invalid_subclass(self):
+        """Test automation_response decorator with non-ProcessStreamItem subclass"""
+        with pytest.raises(TypeError, match="@automation_response can only be used with subclasses of ProcessStreamItem"):
+            @automation_response()
+            class NotProcessStreamItem:
+                pass
+
+    def test_automation_interface_decorator_invalid_type(self):
+        """Test automation_interface decorator with non-callable input"""
+        with pytest.raises(TypeError, match="@automation_interface can only be used with callable methods"):
+            @automation_interface()
+            def not_callable():
+                pass
+            not_callable_obj = "not callable"
+            automation_interface()(not_callable_obj)
+
+    def test_automation_interface_decorator_too_many_args(self):
+        """Test automation_interface decorator with too many arguments"""
+        @automation_interface()
+        def bad_interface(arg1, arg2):
+            return []
+
+        with pytest.raises(TypeError, match="automation_interface has no arguments"):
+            bad_interface("arg1", "arg2")
+
+    def test_automation_interface_decorator_wrong_return_type(self):
+        """Test automation_interface decorator with wrong return type"""
+        @automation_interface()
+        def bad_interface():
+            return "not a list"
+
+        with pytest.raises(TypeError, match="The return value of the automation_interface must be a list of HoudiniParmTemplateSpecType"):
+            bad_interface()
+
+    def test_automation_decorator_invalid_type(self):
+        """Test automation decorator with non-callable input"""
+        with pytest.raises(TypeError, match="@automation can only be used with callable methods"):
+            @automation()
+            def not_callable():
+                pass
+            not_callable_obj = "not callable"
+            automation()(not_callable_obj)
+
+    def test_automation_decorator_invalid_first_arg(self):
+        """Test automation decorator with invalid first argument"""
+        @automation()
+        def bad_automation(not_parameter_set):
+            return ProcessStreamItem()
+
+        with pytest.raises(TypeError, match="The first argument of the automation must be a subclass of ParameterSet"):
+            bad_automation("not_parameter_set")
+
+    def test_automation_decorator_invalid_responder(self, mock_responder):
+        """Test automation decorator with invalid responder argument"""
+        @automation()
+        def bad_automation(request, responder="not_result_publisher"):
+            return ProcessStreamItem()
+
+        with pytest.raises(TypeError, match="The 'responder' argument must be of type ResultPublisher"):
+            bad_automation(ParameterSet(), responder="not_result_publisher")
+
+    def test_automation_decorator_invalid_return_type(self, mock_responder):
+        """Test automation decorator with invalid return type"""
+        @automation()
+        def bad_automation(request, responder=None):
+            return "not a ProcessStreamItem"
+
+        with pytest.raises(TypeError, match="The return value of the automation must be a subclass of ProcessStreamItem"):
+            bad_automation(ParameterSet(), responder=mock_responder)
+
+
+# ---- Script Job Definition Tests ----
+@pytest.fixture
+def script_job_def_request_data(tmp_path):
+    """Create a valid ScriptJobDefRequest with test data"""
+    awpy_content = {
+        "name": "Test Script",
+        "description": "A test script",
+        "worker": "test-worker",
+        "script": """
+from ripple.models.params import ParameterSet
+from ripple.models.streaming import ProcessStreamItem
+from ripple.automation.automations import automation_request, automation_response, automation
+
+@automation_request()
+class RequestModel(ParameterSet):
+    name: str
+
+@automation_response()
+class ResponseModel(ProcessStreamItem):
+    item_type: str = "test"
+    result: str
+
+@automation()
+def runAutomation(request, responder):
+    return ResponseModel(result=f"Hello {request.name}")
+"""
+    }
+    
+    awpy_file = tmp_path / "test.awpy"
+    awpy_file.write_text(json.dumps(awpy_content))
+    
+    return {
+        "awpy_file": FileParameter(file_id="test-file-id", file_path=str(awpy_file)),
+        "src_asset_id": "test-asset-id",
+        "src_version": [1, 0, 0]
+    }
+
+@pytest.mark.asyncio
+async def test_get_script_job_def_missing_worker(script_job_def_request_data, mock_responder, tmp_path):
+    """Test script job definition with missing worker"""
+    from ripple.automation.automations import ScriptJobDefRequest, _get_script_job_def
+    
+    # Create awpy file without worker
+    awpy_content = {
+        "name": "Test Script",
+        "script": "print('test')"
+    }
+    awpy_file = tmp_path / "test_no_worker.awpy"
+    awpy_file.write_text(json.dumps(awpy_content))
+    
+    script_job_def_request_data["awpy_file"] = FileParameter(file_id="test-file-id", file_path=str(awpy_file))
+    request = ScriptJobDefRequest(**script_job_def_request_data)
+    job_def_func = _get_script_job_def()
+    
+    result = job_def_func(request, mock_responder)
+    
+    # Should return empty AutomationsResponse on error
+    assert isinstance(result, AutomationsResponse)
+    assert result.automations == {}
+
+
+@pytest.mark.asyncio
+async def test_get_script_job_def_invalid_script(script_job_def_request_data, mock_responder, tmp_path):
+    """Test script job definition with invalid script"""
+    from ripple.automation.automations import ScriptJobDefRequest, _get_script_job_def
+    
+    # Create awpy file with invalid script
+    awpy_content = {
+        "name": "Test Script",
+        "worker": "test-worker",
+        "script": "invalid python code $$$$"
+    }
+    awpy_file = tmp_path / "test_invalid.awpy"
+    awpy_file.write_text(json.dumps(awpy_content))
+    
+    script_job_def_request_data["awpy_file"] = FileParameter(file_id="test-file-id", file_path=str(awpy_file))
+    request = ScriptJobDefRequest(**script_job_def_request_data)
+    job_def_func = _get_script_job_def()
+    
+    result = job_def_func(request, mock_responder)
+    
+    # Should return empty AutomationsResponse on error
+    assert isinstance(result, AutomationsResponse)
+    assert result.automations == {}
+
+
+@pytest.mark.asyncio
+async def test_get_script_interface_invalid_decorator_message(mock_responder):
+    """Test get_script_interface with specific error message for decorator"""
+    script = """
+from ripple.models.params import ParameterSet
+from ripple.automation.automations import automation_request
+
+@automation_request()
+class RequestModel(ParameterSet):
+    name: str
+"""
+    request = ScriptRequest(script=script)
+    interface_func = _get_script_interface()
+    
+    # This should catch the exception and return empty automations
+    result = interface_func(request, mock_responder)
+    
+    assert isinstance(result, AutomationsResponse)
+    assert result.automations == {}
+
+
+@pytest.mark.asyncio
+async def test_script_automation_with_interface_model(mock_responder):
+    """Test script automation that includes an interface model"""
+    script_with_interface = """
+from ripple.models.params import ParameterSet
+from ripple.models.streaming import ProcessStreamItem
+from ripple.automation.automations import automation_request, automation_response, automation, automation_interface
+
+@automation_request()
+class RequestModel(ParameterSet):
+    name: str
+
+@automation_response()
+class ResponseModel(ProcessStreamItem):
+    item_type: str = "test"
+    result: str
+
+@automation_interface()
+def get_interface():
+    return []
+
+@automation()
+def runAutomation(request, responder):
+    return ResponseModel(result=f"Hello {request.name}")
+"""
+    
+    request = ScriptRequest(script=script_with_interface)
+    interface_func = _get_script_interface()
+    
+    result = interface_func(request, mock_responder)
+    
+    assert isinstance(result, AutomationsResponse)
+    assert '/mythica/script' in result.automations
+    assert 'input' in result.automations['/mythica/script']
+    assert 'output' in result.automations['/mythica/script']
+
+
+@pytest.mark.asyncio 
+async def test_run_script_operation_error(valid_script, valid_request_data, mock_responder):
+    """Test script automation when operation returns non-ProcessStreamItem"""
+    bad_script = """
+from ripple.models.params import ParameterSet
+from ripple.models.streaming import ProcessStreamItem
+from ripple.automation.automations import automation_request, automation_response, automation
+
+@automation_request()
+class RequestModel(ParameterSet):
+    name: str
+
+@automation_response()
+class ResponseModel(ProcessStreamItem):
+    item_type: str = "test"
+    result: str
+
+@automation()
+def runAutomation(request, responder):
+    return "not a ProcessStreamItem"  # This should cause an error
+"""
+    
+    request = ScriptRequest(
+        script=bad_script,
+        request_data=valid_request_data
+    )
+    
+    automation = _run_script_automation()
+    with pytest.raises(TypeError, match="The return value of the automation must be a subclass of ProcessStreamItem"):
+        automation(request, mock_responder)

@@ -221,7 +221,7 @@ def _get_script_job_def() -> Callable:
     def impl(request: ScriptJobDefRequest = None, responder: ResultPublisher = None) -> ScriptJobDefResponse: 
         script_namespace = {}
         awpy_file = request.awpy_file
-        with open(awpy_file.get("file_path"), 'r') as f:
+        with open(awpy_file.file_path, 'r') as f:
             awpy = json.load(f)
 
         if len(request.src_asset_id) > 0:
@@ -230,7 +230,7 @@ def _get_script_job_def() -> Callable:
                 major=request.src_version[0],
                 minor=request.src_version[1],
                 patch=request.src_version[2],
-                file_id=awpy_file.get("file_id"),
+                file_id=awpy_file.file_id,
                 entry_point=awpy.get('name')
             )
         try:
@@ -280,8 +280,7 @@ def _get_script_job_def() -> Callable:
         
         except Exception as e:
             responder.result(Error(error=f"Script Interface Generation Error: {format_exception(e)}"))
-
-        return(AutomationsResponse(automations={}))
+            return AutomationsResponse(automations={})
     return impl
     
 def get_default_automations() -> list[AutomationModel]:
