@@ -8,7 +8,7 @@ export interface MenuParmProps {
     onChange: (formData: dictionary) => void; 
 }
 
-export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) => {
+export const MenuParm: React.FC<MenuParmProps> = ({ template, data={}, onChange }) => {
     const {
         label,
         menu_items = [],
@@ -25,17 +25,17 @@ export const MenuParm: React.FC<MenuParmProps> = ({ template, data, onChange }) 
     
     // Determine initial selected value
     const getDefaultValue = () => {
-        return data?.[template.name] || menu_items.includes(default_value) ? default_value : (menu_items[0] || "");
+        return data[template.name] || menu_items.includes(default_value) ? default_value : (menu_items[0] || "");
     }
 
     const [selectedValue, setSelectedValue] = useState<string>(getDefaultValue);
 
     useEffect(() => {
-    const myData = data?.[template.name] as string || getDefaultValue();
+    const myData = data[template.name] as string || getDefaultValue();
     if (myData && selectedValue !== myData) {
         setSelectedValue(myData);
     }
-    }, [data?.[template.name]]);
+    }, [data[template.name]]);
     
     const handleChange = (val: string) => {
         setSelectedValue(val);

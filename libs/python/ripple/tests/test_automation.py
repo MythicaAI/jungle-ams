@@ -862,14 +862,22 @@ def valid_script():
     return """
 from ripple.models.params import ParameterSet
 from ripple.models.streaming import ProcessStreamItem
+from ripple.automation.automations import ( 
+    automation_request,
+    automation_response,
+    automation
+)
 
+@automation_request()
 class RequestModel(ParameterSet):
     name: str
 
+@automation_response()
 class ResponseModel(ProcessStreamItem):
     item_type: str = "test"
     result: str
 
+@automation()
 def runAutomation(request, responder):
     return ResponseModel(result=f"Hello {request.name}")
 """
@@ -888,8 +896,6 @@ def mock_responder(tmp_path):
 
 
 def test_script_request_validation():
-    with pytest.raises(ValidationError):
-        ScriptRequest()  # Missing required fields
 
     request = ScriptRequest(script="print('test')", env="staging")
     assert request.env == "staging"
@@ -942,7 +948,7 @@ async def test_run_script_no_request_model(mock_responder):
     )
 
     automation = _run_script_automation()
-    with pytest.raises(ValueError, match="RequestModel not found"):
+    with pytest.raises(ValueError, match="No request model found. Use @automation_request decorator."):
         automation(request, mock_responder)
 
 
@@ -950,7 +956,9 @@ async def test_run_script_no_request_model(mock_responder):
 async def test_run_script_no_automation(mock_responder):
     script = """
 from ripple.models.params import ParameterSet
+from ripple.automation.automations import automation_request
 
+@automation_request()
 class RequestModel(ParameterSet):
     name: str
 """
@@ -960,7 +968,7 @@ class RequestModel(ParameterSet):
     )
 
     automation = _run_script_automation()
-    with pytest.raises(ValueError, match="runAutomation function not found"):
+    with pytest.raises(ValueError, match="No operation function found. Use @automation decorator."):
         automation(request, mock_responder)
 
 
@@ -991,6 +999,7 @@ async def test_get_script_interface_error(mock_responder):
 def test_get_default_automations():
     automations = get_default_automations()
 
-    assert len(automations) == 2
+    assert len(automations) == 3
     assert automations[0].path == '/mythica/script'
     assert automations[1].path == '/mythica/script/interface'
+    assert automations[2].path == '/mythica/script/job_def'

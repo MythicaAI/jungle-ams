@@ -124,7 +124,7 @@ const AutomationNode: React.FC<AutomationNodeProps> = (node) => {
   );
   const { getFile } = useMythicaApi();
 
-  const { NodeResizer, getFlowData, setFlowData } = useAwfulFlow(); //node data mapped to connections
+  const { getFlowData, setFlowData } = useAwfulFlow(); //node data mapped to connections
   const myFlowData = getFlowData(node.id);
   const [flowExecutionMessage, setFlowExecutionMessage] = useState<string>('');
 

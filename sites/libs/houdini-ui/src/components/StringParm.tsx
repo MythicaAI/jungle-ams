@@ -9,7 +9,7 @@ export interface StringParmProps {
     onFileUpload?: (formData: Record<string,File>, callback:(file_id:string)=>void) => void; // Callback for file upload
 }
 
-export const StringParm: React.FC<StringParmProps> = ({template, data, onChange, onFileUpload}) => {
+export const StringParm: React.FC<StringParmProps> = ({template, data = {}, onChange, onFileUpload}) => {
     const { currentWidth } = useWindowSize();
     const isMobileSize = currentWidth <= 700;
     
@@ -21,18 +21,18 @@ export const StringParm: React.FC<StringParmProps> = ({template, data, onChange,
     }
 
     const [values, setValues] = useState<string[]>(
-        data?.[template.name] as string[] || getDefaultValues()
+        data[template.name] as string[] || getDefaultValues()
     );
 
     // Add state for file upload toggle
     const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
     
     useEffect(() => {
-        const myData = data?.[template.name] as string[] || getDefaultValues();
+        const myData = data[template.name] as string[] || getDefaultValues();
         if (myData && values !== myData) {
             setValues(myData);
         }
-    }, [data?.[template.name]]);
+    }, [data[template.name]]);
     
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         const index =  e.target.getAttribute('parm-index') as unknown as number;

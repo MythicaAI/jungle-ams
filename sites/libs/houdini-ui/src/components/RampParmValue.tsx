@@ -16,7 +16,7 @@ export interface ValueRampParmProps {
 
 // Default to a simple 2-point ramp if none provided
 function getDefaultPoints(template: hou.RampParmTemplate, data: dictionary): ValueRampPoint[] {
-    if (data?.[template.name]) {
+    if (data[template.name]) {
         return data[template.name] as ValueRampPoint[];
     }
 
@@ -125,7 +125,7 @@ const calculateSlopes = (points: ValueRampPoint[]): number[] => {
     return slopes;
 };
 
-export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, onChange }) => {
+export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data = {}, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 300, height: 150 };
 
@@ -134,11 +134,11 @@ export const ValueRampParm: React.FC<ValueRampParmProps> = ({ template, data, on
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 
     useEffect(() => {
-        const myData = data?.[template.name] as ValueRampPoint[] || getDefaultPoints(template,data);
+        const myData = data[template.name] as ValueRampPoint[] || getDefaultPoints(template,data);
         if (myData) {
             setPoints(myData);
         }
-    }, [data?.[template.name]]);
+    }, [data[template.name]]);
         
     const commitChange = useCallback((newPoints: ValueRampPoint[]) => {
         setPoints(newPoints);

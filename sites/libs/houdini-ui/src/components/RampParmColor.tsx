@@ -18,7 +18,7 @@ const pointColor = 'rgb(0,0,0)';
 const selectedColor = 'rgb(255,255,0)';
 
 function getDefaultColorPoints(template: hou.RampParmTemplate,data:dictionary): ColorRampPoint[] {
-    if (data?.[template.name]) {
+    if (data[template.name]) {
         return data[template.name] as ColorRampPoint[];
     }
     if (template.default_points && template.default_points.length > 0) {
@@ -52,7 +52,7 @@ function hexToRgb(hex: string): number[] {
     return [r, g, b];
 }
 
-export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, onChange }) => {
+export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data = {}, onChange }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const canvasSize = { width: 300, height: 50 };
 
@@ -61,11 +61,11 @@ export const ColorRampParm: React.FC<ColorRampParmProps> = ({ template, data, on
     const [selectedIndex, setSelectedIndex] = useState<number | null>(0);
 
     useEffect(() => {
-        const myData = data?.[template.name] as ColorRampPoint[] || getDefaultColorPoints(template,data);
+        const myData = data[template.name] as ColorRampPoint[] || getDefaultColorPoints(template,data);
         if (myData) {
             setPoints(myData);
         }
-    }, [data?.[template.name]]);
+    }, [data[template.name]]);
     
     const commitChange = useCallback((newPoints: ColorRampPoint[]) => {
         setPoints(newPoints);

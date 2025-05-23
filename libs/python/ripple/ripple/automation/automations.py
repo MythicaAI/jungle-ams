@@ -138,7 +138,7 @@ def _run_script_automation() -> Callable:
         # Find request model and create an instance
         request_model_class, _ = _find_decorated_models(script_namespace)
         if request_model_class is None:
-            raise ValueError("No request model found. Use @script_request_model decorator.")
+            raise ValueError("No request model found. Use @automation_request decorator.")
         
         request_model = request_model_class(**request.request_data.model_dump())
 
@@ -148,7 +148,7 @@ def _run_script_automation() -> Callable:
         # Find and run the operation function
         operation = _find_operation(script_namespace)
         if operation is None:
-            raise ValueError("No operation function found. Use @script_operation decorator.")
+            raise ValueError("No operation function found. Use @automation decorator.")
         
         result = operation(request_model, responder)
 
