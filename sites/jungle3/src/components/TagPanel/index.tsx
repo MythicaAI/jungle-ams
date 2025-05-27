@@ -120,6 +120,17 @@ export const TagsPanel: React.FC<Props> = ({
       sx={{ 
         display: "flex",
         alignItems: "center",
+        width: "100%",
+        maxWidth: "100%",
+        overflow: "hidden",
+        "& .slick-slider": {
+          width: "100%",
+          maxWidth: "100%",
+        },
+        "& .slick-track": {
+          display: "flex",
+          alignItems: "center",
+        },
       }}
     >
       <Slider ref={sliderRef} {...settings}>
