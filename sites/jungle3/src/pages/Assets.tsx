@@ -12,10 +12,13 @@ import { BottomSortingPanel, SortType } from "@components/BottomSortingPanel";
 import { useGetAssetsByTags, useGetAssetTags } from "@queries/tags";
 import { Tag } from "@queries/tags/types";
 import { TagsPanel } from "@components/TagPanel";
+import { FeaturedHeader } from "@components/FeaturedHeader";
 import { useSearchParams } from "react-router-dom";
 
 const ALL_ASSETS_TAG = "All assets";
 const DEFAULT_TAG = "Mythica";
+const FEATURED_ASSET_NAME = "Crystals";
+const FEATURED_ASSET_AUTHOR = "mythica";
 
 const Assets = () => {
   const { addError, addWarning } = useStatusStore();
@@ -44,6 +47,14 @@ const Assets = () => {
     error: topAssetsError,
   } = useGetTopAssets();
 
+  const featuredAsset = (assetsByTag && selectedTag !== ALL_ASSETS_TAG
+    ? assetsByTag
+    : (topAssets ?? [])
+  ).find(asset => 
+    asset.name.toLowerCase() === FEATURED_ASSET_NAME.toLowerCase() && 
+    asset.owner_name?.toLowerCase() === FEATURED_ASSET_AUTHOR.toLowerCase()
+  );
+
   const handleSetSelectedTag = (value: string) => {
     setSelectedTag(value);
     setSearchParams({ tag: value });
@@ -71,6 +82,11 @@ const Assets = () => {
 
       {isTopAssetsLoading && isTagsLoading && isAssetsByTagLoading && (
         <CircularProgress />
+      )}
+
+      {/* Featured Header */}
+      {featuredAsset && (
+        <FeaturedHeader asset={featuredAsset} />
       )}
 
       <Box sx={{ flexGrow: 1, position: "relative" }}>
