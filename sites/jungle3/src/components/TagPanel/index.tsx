@@ -120,7 +120,6 @@ export const TagsPanel: React.FC<Props> = ({
       sx={{ 
         display: "flex",
         alignItems: "center",
-        minHeight: "52px",
       }}
     >
       <Slider ref={sliderRef} {...settings}>

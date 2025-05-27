@@ -73,7 +73,7 @@ const Assets = () => {
         <CircularProgress />
       )}
 
-      <Box sx={{ flexGrow: 1, padding: 2, position: "relative" }}>
+      <Box sx={{ flexGrow: 1, position: "relative" }}>
         {/* <Stack direction="row" gap="10px" mb="15px">
             <Input
               startDecorator={<LucideSearch width="16px" />}
@@ -84,7 +84,7 @@ const Assets = () => {
             />
           </Stack> */}
 
-        <Stack mb="25px" direction="row" gap="10px">
+        <Stack mt="10px" mb="10px" direction="row" gap="10px">
           <Box width="100%">
             <TagsPanel
               tags={tags as Tag[]}
