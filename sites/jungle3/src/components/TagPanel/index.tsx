@@ -32,7 +32,7 @@ const NextArrow: React.FC<CustomArrowProps & { isDisabled: boolean }> = ({
       onClick={onClick}
       sx={{
         position: "absolute",
-        right: "-40px",
+        right: "-50px",
         top: "50%",
         transform: "translateY(-50%)",
         zIndex: "1",
@@ -41,7 +41,7 @@ const NextArrow: React.FC<CustomArrowProps & { isDisabled: boolean }> = ({
         display: "flex",
         borderRadius: "50%",
         padding: "8px",
-        opacity: isDisabled ? 0.5 : 1,
+        opacity: isDisabled ? 0.25 : 1,
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
     >
@@ -58,7 +58,7 @@ const PrevArrow: React.FC<CustomArrowProps & { isDisabled: boolean }> = ({
     <Box
       sx={{
         position: "absolute",
-        left: "-40px",
+        left: "-50px",
         top: "50%",
         transform: "translateY(-50%)",
         zIndex: "1",
@@ -67,7 +67,7 @@ const PrevArrow: React.FC<CustomArrowProps & { isDisabled: boolean }> = ({
         bgcolor: "#fff",
         borderRadius: "50%",
         padding: "8px",
-        opacity: isDisabled ? 0.5 : 1,
+        opacity: isDisabled ? 0.25 : 1,
         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
       onClick={onClick}
@@ -116,7 +116,7 @@ export const TagsPanel: React.FC<Props> = ({
     <Box 
       component="div" 
       className="slider-container" 
-      p="0 40px"
+      p="0 50px"
       sx={{ 
         display: "flex",
         alignItems: "center",
