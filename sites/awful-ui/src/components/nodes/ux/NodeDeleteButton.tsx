@@ -34,7 +34,7 @@ export const NodeDeleteButton: React.FC<Props> = ({ onDelete }) => {
           zIndex: 1,
         }}
         color="neutral"
-        onClick={() => setOpen(true)}
+        onClick={onDelete}
       >
         <LucideX size={20} />
       </IconButton>

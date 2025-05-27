@@ -1,6 +1,7 @@
 # pylint: disable=redefined-outer-name, unused-import
 import pytest
 import tempfile
+from typing import Literal, Optional, Union
 
 from ripple.compile.rpsc import compile_interface
 from ripple.models.houTypes import rampParmType, rampBasis
@@ -9,7 +10,6 @@ from ripple.models.params import (
     ParameterSet,
     IntParameterSpec,
     FloatParameterSpec,
-    ParameterSpecModel,
     RampParameterSpec, StringParameterSpec,
     BoolParameterSpec,
     EnumValueSpec,
@@ -648,6 +648,80 @@ def test_param_implicit_cast_to_float():
     validate_params(spec, set)
 
 
+def test_get_parameter_spec_with_literal_and_union_types():
+    """Test _get_parameter_spec function with Literal and Union types."""
+    from ripple.models.params import _get_parameter_spec, IntParmTemplateSpec, ToggleParmTemplateSpec, StringParmTemplateSpec
+
+    # Test with Literal type
+    values = {
+        'literal_int': Literal[1, 2, 3],
+        'literal_str': Literal['a', 'b', 'c'],
+        'literal_bool': Literal[True, False],
+    }
+    
+    specs = _get_parameter_spec(values)
+    assert len(specs) == 3
+    
+    # Check that the literal types are converted to their base types
+    assert isinstance(specs[0], IntParmTemplateSpec)
+    assert specs[0].name == 'literal_int'
+    
+    assert isinstance(specs[1], StringParmTemplateSpec)
+    assert specs[1].name == 'literal_str'
+    
+    assert isinstance(specs[2], ToggleParmTemplateSpec)
+    assert specs[2].name == 'literal_bool'
+
+    # Test with Union/Optional types
+    values = {
+        'optional_int': Optional[int],  # Union[int, None]
+        'union_type': Union[int, str],
+    }
+    
+    specs = _get_parameter_spec(values)
+    assert len(specs) == 2
+    
+    # Check that the Union types use their first argument's type
+    assert isinstance(specs[0], IntParmTemplateSpec)
+    assert specs[0].name == 'optional_int'
+    
+    # Union should default to the first type
+    assert isinstance(specs[1], IntParmTemplateSpec)
+    assert specs[1].name == 'union_type'
+
+
+def test_get_parameter_spec_with_nested_types():
+    """Test _get_parameter_spec function with nested Union and Literal types."""
+    from ripple.models.params import _get_parameter_spec, IntParmTemplateSpec,  FileParameterSpec
+
+    # Test with nested Union types
+    values = {
+        'nested_union': Union[Optional[int], str],  # Union[Union[int, None], str]
+        'complex_union': Union[Literal[1, 2], Optional[str]],  # Union[Literal[1, 2], Union[str, None]]
+    }
+    
+    specs = _get_parameter_spec(values)
+    assert len(specs) == 2
+    
+    # Union should resolve to the first non-None type
+    assert isinstance(specs[0], IntParmTemplateSpec)
+    assert specs[0].name == 'nested_union'
+    
+    assert isinstance(specs[1], IntParmTemplateSpec)
+    assert specs[1].name == 'complex_union'
+    
+    # Test with list containing FileParameter
+    values = {
+        'file_list': list[FileParameter],
+    }
+    
+    specs = _get_parameter_spec(values)
+    assert len(specs) == 1
+    
+    assert isinstance(specs[0], FileParameterSpec)
+    assert specs[0].name == 'file_list'
+
+
 def test_param_resolve():
     # Identity test
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -690,3 +764,31 @@ def test_param_resolve():
         assert os.path.exists(set.files[1].file_path)
         assert set.files[0].file_path != set.files[1].file_path
     """
+
+def test_nested_parameter_sets():
+    """Test that a ParameterSet can contain another ParameterSet as an entry."""
+    from ripple.models.params import _get_parameter_spec, ParameterSet
+    
+    # Define a nested ParameterSet class
+    class NestedParam(ParameterSet):
+        val1: int
+        val2: int
+        val3: float
+    
+    # Define a parent ParameterSet class that contains the nested one
+    class ParentParam(ParameterSet):
+        val1: int
+        nested_param: NestedParam
+    
+    specs = ParentParam.get_parameter_specs()
+    
+    # The function should unpack the nested ParameterSet specs and include them directly
+    # So we should have 3 specs total (regular_int + nested_int + nested_str)
+    
+    # First verify that NestedParams has 2 specs
+    nested_specs = NestedParam.get_parameter_specs()
+    assert len(nested_specs) == 3
+
+    # Now verify that specs from ParentParams includes all three
+    assert len(specs) == 4
+

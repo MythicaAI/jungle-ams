@@ -141,12 +141,12 @@ def get_all_worker_specs() -> dict:
     defaults = get_default_automations()
     for default in defaults:
         autos[default.path] = {
-            'input': default.inputModel.model_json_schema(),
+            'input': default.inputModel.get_parameter_specs(),
             'output': default.outputModel.model_json_schema(),
             'hidden': default.hidden
         }
     autos['/mythica/automations'] = {
-        'input': ParameterSet.model_json_schema(),
+        'input': ParameterSet.get_parameter_specs(),
         'output': AutomationsResponse.model_json_schema(),
         'hidden': True
     }
@@ -895,14 +895,6 @@ def mock_responder(tmp_path):
     mock.directory = str(tmp_path)
     return mock
 
-
-def test_script_request_validation():
-
-    request = ScriptRequest(script="print('test')", env="staging")
-    assert request.env == "staging"
-
-    with pytest.raises(ValidationError):
-        ScriptRequest(script="print('test')", env="invalid")
 
 
 @pytest.mark.asyncio

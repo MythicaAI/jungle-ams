@@ -19,6 +19,7 @@ import useUndoRedo from './hooks/useUndoRedo';
 import { UndoRedoPanel } from './components/utils/UndoRedoPanel';
 import { CopyPastePanel } from './components/utils/CopyPastePanel';
 import AssetViewerNode from './components/nodes/AssetViewerNode';
+import ScriptNode from './components/nodes/ScriptNode';
 
 // Main Awful UI component
 const AwfulUI: React.FC = () => {
@@ -46,6 +47,7 @@ const AwfulUI: React.FC = () => {
     () => ({
       hdaWorker: HDANode,
       worker: AutomationNode,
+      scriptWorker: ScriptNode,
       fileUpload: FileUploadNode,
       fileViewer: FileViewerNode,
       assetViewer: AssetViewerNode

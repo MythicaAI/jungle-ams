@@ -71,7 +71,7 @@ class Worker:
             for path,wk in doer.automations.items():
                 ret.update({
                     path: {
-                        "input": wk.inputModel.model_json_schema(),
+                        "input": wk.inputModel.get_parameter_specs(),
                         "output": wk.outputModel.model_json_schema(),
                         "hidden": wk.hidden                   
                     }

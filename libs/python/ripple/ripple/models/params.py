@@ -241,7 +241,12 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
         if hasattr(value, "__origin__") and value.__origin__ == typing.Union:
             # If the value is Optional, we need to check the actual type
             value = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
-             
+        if hasattr(value, "__origin__") and value.__origin__ == typing.Literal:
+            # If the value is Optional, we need to check the actual type
+            oldval = value
+            value = type(value.__args__[0]) if hasattr(value, "__args__") and len(value.__args__) > 0 else Any
+            print(f"****\nParameter '{key}:{oldval}' is a Literal type, using type of its first value '{oldval.__args__[0]}':{value} as the type.")
+
         # Check if it's a generic type (like list[int], tuple[str], etc.)
         if hasattr(value, "__origin__") and value.__origin__ in (list, tuple, set, frozenset):
             # Get the type argument (e.g., int from list[int])
@@ -259,6 +264,10 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
             else:
                 raise ValueError(f"Unsupported parameter type for '{key}': list/tuple/set of {arg_type}")
         # Check simple types
+        elif issubclass(value, ParameterSet):
+            newspecs = value.get_parameter_specs()
+            for spec in newspecs:
+                specs.append(spec)
         elif value == int:
             specs.append(IntParmTemplateSpec(name=key, label=key, default_value=[0]))
         elif value == float:
@@ -302,8 +311,8 @@ class ParameterSet(BaseModel):
         # Get the model's fields with their default values
         values = {
             field_name: field.annotation 
-            for field_name, field in cls.model_fields.items()
-            if field.annotation is not None
+                for field_name, field in cls.model_fields.items()
+                if field.annotation is not None
         }
         return _get_parameter_spec(values)
 

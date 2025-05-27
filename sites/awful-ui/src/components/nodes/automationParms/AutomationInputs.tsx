@@ -11,15 +11,14 @@ interface AutomationInputProps {
 
 
 const AutomationInputs: React.FC<AutomationInputProps> = ({
-  inputSchema: schema,
+  inputSchema,
   onChange,
   inputData,
   onFileParameterDetected,
 }) => {
   const [formData, setFormData] = useState<dictionary>({});
-  const [parmTemplateGroup, setParmTemplateGroup] = useState<hou.ParmTemplateGroup | null>(null);
 
-  useEffect(() => {
+  const parseInputSchema = (schema: dictionary[]): hou.ParmTemplateGroup => {
     const ptg = new hou.ParmTemplateGroup(schema);
 
     const inputFileParms: hou.FileParmTemplate[] = ptg.parm_templates.filter((parm) =>
@@ -37,9 +36,14 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
     }, {});
 
     onFileParameterDetected(fileParams);
-    setParmTemplateGroup(ptg);
+    return ptg;
+  }
 
-  }, [schema, onFileParameterDetected]);
+  const [parmTemplateGroup, setParmTemplateGroup] = useState<hou.ParmTemplateGroup>(parseInputSchema(inputSchema));
+
+  useEffect(() => {
+    setParmTemplateGroup(parseInputSchema(inputSchema));
+  }, [inputSchema, onFileParameterDetected]);
 
   const handleChange = (newData: dictionary) => {
     const updatedData = { ...formData, ...newData };
