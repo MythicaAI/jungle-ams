@@ -47,10 +47,7 @@ const Assets = () => {
     error: topAssetsError,
   } = useGetTopAssets();
 
-  const featuredAsset = (assetsByTag && selectedTag !== ALL_ASSETS_TAG
-    ? assetsByTag
-    : (topAssets ?? [])
-  ).find(asset => 
+  const featuredAsset = (topAssets ?? []).find(asset => 
     asset.name.toLowerCase() === FEATURED_ASSET_NAME.toLowerCase() && 
     asset.owner_name?.toLowerCase() === FEATURED_ASSET_AUTHOR.toLowerCase()
   );
