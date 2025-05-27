@@ -14,7 +14,6 @@ from ripple.runtime.params import resolve_params
 
 class ScriptRequest(ParameterSet):
     script: str = None
-    env: Literal['staging','production'] = 'production' 
     request_data: ParameterSet = None
 
 def automation_request():

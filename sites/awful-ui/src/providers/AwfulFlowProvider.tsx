@@ -348,7 +348,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
           if (!savedAuto) break;
           newNode = {
             id: getId(),
-            type: 'worker',
+            type: 'scriptWorker',
             position,
             data: {
               automation: `${savedAuto.worker}://mythica/script`,
@@ -507,6 +507,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       setEdgeMap((prevEdgeMap) => {
         if (!prevEdgeMap[newEdge.source])
           prevEdgeMap[newEdge.source] = {};
+        // Don't add the edge if it already exists
         if ((newEdge.sourceHandle as string in prevEdgeMap[newEdge.source])) 
           return prevEdgeMap;
         return {
