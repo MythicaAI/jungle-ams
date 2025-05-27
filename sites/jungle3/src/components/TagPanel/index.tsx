@@ -33,17 +33,19 @@ const NextArrow: React.FC<CustomArrowProps & { isDisabled: boolean }> = ({
       sx={{
         position: "absolute",
         right: "-40px",
-        top: "15px",
+        top: "50%",
+        transform: "translateY(-50%)",
         zIndex: "1",
         cursor: isDisabled ? "default" : "pointer",
         bgcolor: "#fff",
         display: "flex",
         borderRadius: "50%",
-        padding: "3px",
+        padding: "8px",
         opacity: isDisabled ? 0.5 : 1,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
     >
-      <LucideChevronRight color="#0b0d0e" />
+      <LucideChevronRight color="#0b0d0e" size={20} />
     </Box>
   );
 };
@@ -57,18 +59,20 @@ const PrevArrow: React.FC<CustomArrowProps & { isDisabled: boolean }> = ({
       sx={{
         position: "absolute",
         left: "-40px",
-        top: "15px",
+        top: "50%",
+        transform: "translateY(-50%)",
         zIndex: "1",
         cursor: isDisabled ? "default" : "pointer",
         display: "flex",
         bgcolor: "#fff",
         borderRadius: "50%",
-        padding: "3px",
+        padding: "8px",
         opacity: isDisabled ? 0.5 : 1,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       }}
       onClick={onClick}
     >
-      <LucideChevronLeft color="#0b0d0e" />
+      <LucideChevronLeft color="#0b0d0e" size={20} />
     </Box>
   );
 };
@@ -91,6 +95,10 @@ export const TagsPanel: React.FC<Props> = ({
     }
   };
 
+  const sortedTags = tags
+    ?.filter((tag) => tag?.page_priority !== 0)
+    .sort((a, b) => (b?.page_priority ?? 0) - (a?.page_priority ?? 0)) || [];
+
   const settings = {
     dots: false,
     infinite: false,
@@ -100,22 +108,32 @@ export const TagsPanel: React.FC<Props> = ({
     prevArrow: <PrevArrow isDisabled={isPrevDisabled} />,
     beforeChange: handleBeforeChange,
     variableWidth: true,
+    slidesToShow: 1,
+    slidesToScroll: 1,
   };
 
   return tags && tags.length > 0 ? (
-    <Box component="div" className="slider-container" p="0 40px">
+    <Box 
+      component="div" 
+      className="slider-container" 
+      p="0 40px"
+      sx={{ 
+        display: "flex",
+        alignItems: "center",
+        minHeight: "52px",
+      }}
+    >
       <Slider ref={sliderRef} {...settings}>
-        {tags
-          .filter((tag) => tag?.page_priority !== 0)
-          .sort((a, b) => (b?.page_priority ?? 0) - (a?.page_priority ?? 0))
-          .map((tag) => (
-            <Box key={tag.tag_id} onClick={() => handleChangeTag(tag.name)}>
-              <TagCard tag={tag} selectedTag={selectedTag} />
-            </Box>
-          ))}
+        {/* Pin "All assets" first */}
         <Box onClick={() => handleChangeTag(NO_FILTERING_TAG.name)}>
           <TagCard tag={NO_FILTERING_TAG} selectedTag={selectedTag} />
         </Box>
+        {/* Then show other tags */}
+        {sortedTags.map((tag) => (
+          <Box key={tag.tag_id} onClick={() => handleChangeTag(tag.name)}>
+            <TagCard tag={tag} selectedTag={selectedTag} />
+          </Box>
+        ))}
       </Slider>
     </Box>
   ) : null;
