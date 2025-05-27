@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, useCallback } from 'react';
+import React, { useState, memo, useCallback, useEffect, useMemo } from 'react';
 import { FileParamType, dictionary } from '../../../types/Automation';
 import { hou, ParmGroup } from 'houdini-ui'
 
@@ -9,7 +9,6 @@ interface AutomationInputProps {
   onFileParameterDetected: (fileParams: Record<string, FileParamType>) => void;
 }
 
-
 const AutomationInputs: React.FC<AutomationInputProps> = ({
   inputSchema,
   onChange,
@@ -18,16 +17,18 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
 }) => {
   const [formData, setFormData] = useState<dictionary>({});
 
-  const parseInputSchema = (schema: dictionary[]): hou.ParmTemplateGroup => {
-    const ptg = new hou.ParmTemplateGroup(schema);
+  // Use useMemo to compute the parameter template group once when inputSchema changes.
+  const parmTemplateGroup = useMemo(() => new hou.ParmTemplateGroup(inputSchema), [inputSchema]);
 
-    const inputFileParms: hou.FileParmTemplate[] = ptg.parm_templates.filter((parm) =>
+  // Instead of using parseInputSchema to set state every render, use an effect.
+  useEffect(() => {
+    const inputFileParms = parmTemplateGroup.parm_templates.filter((parm) =>
       parm instanceof hou.FileParmTemplate &&
       parm.param_type === hou.parmTemplateType.File &&
-      !parm.name.startsWith("output"),
+      !parm.name.startsWith("output")
     ) as hou.FileParmTemplate[];
 
-    const fileParams = inputFileParms.reduce<Record<string, FileParamType>>((acc, parm) => {
+    const fps = inputFileParms.reduce<Record<string, FileParamType>>((acc, parm) => {
       if (Array.isArray(parm.default))
         acc[parm.name] = FileParamType.Array;
       else
@@ -35,28 +36,17 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
       return acc;
     }, {});
 
-    onFileParameterDetected(fileParams);
-    return ptg;
-  }
-
-  const [parmTemplateGroup, setParmTemplateGroup] = useState<hou.ParmTemplateGroup>(parseInputSchema(inputSchema));
-
-  useEffect(() => {
-    setParmTemplateGroup(parseInputSchema(inputSchema));
-  }, [inputSchema, onFileParameterDetected]);
+    onFileParameterDetected(fps);
+  }, [parmTemplateGroup, onFileParameterDetected]);
 
   const handleChange = (newData: dictionary) => {
     const updatedData = { ...formData, ...newData };
-    setFormData((prev) => ({
-      ...prev,
-      ...newData
-    }));
-
+    setFormData(prev => ({ ...prev, ...newData }));
     onChange(updatedData); // Trigger parent component's onChange
   };
 
   const handleFileUpload = useCallback(
-    (formData: Record<string,File>, callback: (file_id:string)=>void) => {
+    (formData: Record<string, File>, callback: (file_id: string) => void) => {
       console.log('AWFUL UNIMPLEMENTED: File upload handler called with formData:', formData);
       callback("Not Implemented");
     },[]
@@ -65,6 +55,7 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
   if (!parmTemplateGroup) {
     return <div>Loading...</div>;
   }
+  
   return (
     <>
       <ParmGroup 
@@ -76,4 +67,5 @@ const AutomationInputs: React.FC<AutomationInputProps> = ({
     </>
   );
 };
+
 export default memo(AutomationInputs);
