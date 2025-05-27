@@ -108,9 +108,9 @@ const ScriptNode: React.FC<ScriptNodeProps> = (node) => {
     spec: AutomationSpec = {input: [] as dictionary[], output: {} as JSONSchema, hidden: false}
   ) => {
     return {
-      worker: automationTask.worker,
-      path: automationTask.path,
-      uri: automationTask.uri,
+      worker: automationTask?.worker,
+      path: automationTask?.path,
+      uri: automationTask?.uri,
       spec: spec,
     } as AutomationTask;
   }, [automationTask]);

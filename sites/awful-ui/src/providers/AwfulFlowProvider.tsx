@@ -105,6 +105,7 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
   const onRestoreSession = async () => {
     try {
       const savedState = JSON.parse(localStorage.getItem(storageKey) || '');
+      console.log('Restoring flow from local storage:', savedState);
       if (!savedState) return;
 
       const { x = 0, y = 0, zoom = 1 } = savedState.flow.viewport || {};
@@ -118,11 +119,13 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
       onNew();
     }
   };
-
+  
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   // if first load of the app, load from session.
   useEffect(() => {
-    if (!isLoaded && Object.keys(allAutomations).length > 0) {
+    if (!isLoading && Object.keys(allAutomations).length > 0) {
+      setIsLoading(true);
       onRestoreSession().then(() => setIsLoaded(true));
     } else if (isLoaded && rfInstance) {
       onSaveSession();
@@ -135,21 +138,48 @@ const AwfulFlowProvider: React.FC<{ children: React.ReactNode }> = ({
     /* Because the Automation node handles are not updated immediately after 
   a refresh event, we need to wait a bit before updating the edges */
 
-  useEffect(() => {
-    if (refreshEdgeData.length > 0) {
-      sleep(2000).then(() => {
-        setEdges(refreshEdgeData);
-        const edgeMapData: EdgeMap = {};
+  const refreshEdges = useCallback(()=> {
+   if (refreshEdgeData.length > 0) {
+      sleep(3000).then(() => {
+//        let ready = true;
+//
+//        for (const edge of refreshEdgeData) {
+//          const sourceNode = rfInstance?.getNode(edge.source);
+//          const sourceHandle = sourceNode?.handles?.find((h) => h.id === edge.sourceHandle);
+//          const targetNode = rfInstance?.getNode(edge.target);
+//          const targetHandle = targetNode?.handles?.find((h) => h.id === edge.targetHandle);
+//
+//          if (!sourceNode || !sourceHandle || !targetNode || !targetHandle) {
+//            ready = false;
+//            break;
+//          }
+//        }
+//        console.log('Schedule restore of edges is ready: ', ready , ' ', refreshEdgeData);
+//
+//        if (ready) {
+          setEdges(refreshEdgeData);
+          const edgeMapData: EdgeMap = {};
 
-        refreshEdgeData.forEach((edge) => {
-          if (!edgeMapData[edge.source]) edgeMapData[edge.source] = {};
-          if (!edgeMapData[edge.source][edge.sourceHandle as string])
-            edgeMapData[edge.source][edge.sourceHandle as string] = [];
-          edgeMapData[edge.source][edge.sourceHandle as string].push(edge);
-        });
-        setEdgeMap(edgeMapData);
-        setRefreshEdgeData([]);
+          refreshEdgeData.forEach((edge) => {
+            if (!edgeMapData[edge.source]) edgeMapData[edge.source] = {};
+            if (!edgeMapData[edge.source][edge.sourceHandle as string])
+              edgeMapData[edge.source][edge.sourceHandle as string] = [];
+            edgeMapData[edge.source][edge.sourceHandle as string].push(edge);
+          });
+          setEdgeMap(edgeMapData);
+          setRefreshEdgeData([]);
+//        } else {
+//
+//          refreshEdges();
+//        }
       });
+    }
+  }, [refreshEdgeData]);
+
+  useEffect(() => {
+    if (refreshEdgeData?.length > 0) {
+
+      refreshEdges();
     }
   }, [refreshEdgeData, setEdges]);
   /***************************************************************************

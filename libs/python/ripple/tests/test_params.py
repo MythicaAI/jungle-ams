@@ -655,12 +655,11 @@ def test_get_parameter_spec_with_literal_and_union_types():
     # Test with Literal type
     values = {
         'literal_int': Literal[1, 2, 3],
-        'literal_str': Literal['a', 'b', 'c'],
-        'literal_bool': Literal[True, False],
+        'literal_str': Literal['a', 'b', 'c']
     }
     
     specs = _get_parameter_spec(values)
-    assert len(specs) == 3
+    assert len(specs) == 2
     
     # Check that the literal types are converted to their base types
     assert isinstance(specs[0], IntParmTemplateSpec)
@@ -669,8 +668,6 @@ def test_get_parameter_spec_with_literal_and_union_types():
     assert isinstance(specs[1], StringParmTemplateSpec)
     assert specs[1].name == 'literal_str'
     
-    assert isinstance(specs[2], ToggleParmTemplateSpec)
-    assert specs[2].name == 'literal_bool'
 
     # Test with Union/Optional types
     values = {

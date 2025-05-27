@@ -24,7 +24,7 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
   const [workers] = useState(WORKERS);
   const { authToken, getFiles, getDownloadInfo, uploadFile, deleteFile } =
     useMythicaApi();
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [workerAutomations, setAutomations] = useState<WorkerAutomations>({});
 
   const [savedAutomationsById, setSavedAutomationsById] = useState<{
@@ -308,16 +308,21 @@ const AutomationProvider: React.FC<{ children: React.ReactNode }> = ({
     [authToken]
   );
 
+  // NOTE: In React 18 development environments, useEffect will run twice due to StrictMode, 
+  // so loadAutomations() may be called twice. This is expected.
   useEffect(() => {
-    if (!loaded && authToken) {
+    if (!loading && authToken) {
+      setLoading(true);
       try {
         loadAutomations();
-        setLoaded(true);
+        console.debug('Automations loaded successfully');
       } catch (error) {
         console.error('Failed to load automations:', error);
+      } finally {
+        setLoading(false);
       }
     }
-  }, [loadAutomations, loaded, authToken]); // Only re-run when apiKey changes
+  }, [loadAutomations, loading, authToken]); // Only re-run when apiKey changes
 
   return (
     <AutomationContext.Provider

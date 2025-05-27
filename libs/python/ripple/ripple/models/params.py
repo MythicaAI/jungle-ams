@@ -251,14 +251,14 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
         if hasattr(value, "__origin__") and value.__origin__ in (list, tuple, set, frozenset):
             # Get the type argument (e.g., int from list[int])
             arg_type = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
-            my_length = len(value.__args__) if hasattr(value, "__args__") else 0
+            my_length = len(value.__args__) if hasattr(value, "__args__") else 1
             # Handle based on the contained type
             if arg_type == int:
-                specs.append(IntParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0 for _ in range(my_length)]))
+                specs.append(IntParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0 for _ in range(my_length - 1)]))
             elif arg_type == float:
-                specs.append(FloatParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0.0 for _ in range(my_length)]))
+                specs.append(FloatParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=[0.0 for _ in range(my_length - 1)]))
             elif arg_type == str:
-                specs.append(StringParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=["" for _ in range(my_length)]))
+                specs.append(StringParmTemplateSpec(name=key, label=key, num_components=my_length, default_value=["" for _ in range(my_length - 1)]))
             elif arg_type == FileParameter:
                 specs.append(FileParameterSpec(name=key, label=key, default=[]))
             else:
@@ -268,15 +268,15 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
             newspecs = value.get_parameter_specs()
             for spec in newspecs:
                 specs.append(spec)
-        elif value == int:
+        elif value == int or issubclass(value, int):
             specs.append(IntParmTemplateSpec(name=key, label=key, default_value=[0]))
-        elif value == float:
+        elif value == float or issubclass(value, float):
             specs.append(FloatParmTemplateSpec(name=key, label=key, default_value=[0.0]))
-        elif value == str:
+        elif value == str or issubclass(value, str):
             specs.append(StringParmTemplateSpec(name=key, label=key, default_value=[""]))
-        elif value == bool:
+        elif value == bool or issubclass(value, bool):
             specs.append(ToggleParmTemplateSpec(name=key, label=key))
-        elif value == FileParameter:
+        elif value == FileParameter or issubclass(value, FileParameter):
             specs.append(FileParameterSpec(name=key, label=key, default=""))
         else:
             raise ValueError(f"Unsupported parameter type for '{key}': {value}")
