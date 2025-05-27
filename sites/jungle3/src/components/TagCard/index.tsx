@@ -19,7 +19,6 @@ export const TagCard: React.FC<Props> = ({tag, selectedTag}) => {
         padding: "8px 16px",
         minWidth: "fit-content",
         whiteSpace: "nowrap",
-        margin: "0 4px",
         height: "36px",
       }}
     >
