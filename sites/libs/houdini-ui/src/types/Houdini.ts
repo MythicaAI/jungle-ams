@@ -416,6 +416,7 @@ export namespace hou {
     max_is_strict?: boolean;
     look?: parmLook;
     naming_scheme?: parmNamingScheme;
+    as_scalar?: boolean;
   };
 
   export class FloatParmTemplate extends ParmTemplate {
@@ -430,6 +431,7 @@ export namespace hou {
     max_is_strict: boolean = false;
     look: parmLook = parmLook.Regular;
     naming_scheme: parmNamingScheme = parmNamingScheme.XYZW;
+    as_scalar: boolean = false;
 
     constructor(config: FloatParmTemplateProps) {
       super(config);
@@ -451,6 +453,7 @@ export namespace hou {
     max_is_strict: boolean = false;
     look: parmLook = parmLook.Regular;
     naming_scheme: parmNamingScheme = parmNamingScheme.XYZW;
+    as_scalar: boolean = false;
 
     constructor(config: IntParmTemplateProps) {
       super(config);
@@ -470,6 +473,7 @@ export namespace hou {
     item_generator_script?: string;
     item_generator_script_language?: scriptLanguage;
     menu_type?: menuType;
+    as_scalar?: boolean;
   };
 
   export class StringParmTemplate extends ParmTemplate {
@@ -487,6 +491,7 @@ export namespace hou {
     item_generator_script: string = '';
     item_generator_script_language: scriptLanguage = scriptLanguage.Hscript;
     menu_type: menuType = menuType.Normal;
+    as_scalar: boolean = false;
 
     constructor(config: StringParmTemplateProps) {
       super(config);

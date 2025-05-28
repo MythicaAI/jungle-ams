@@ -114,6 +114,7 @@ class IntParmTemplateSpec(ParmTemplateSpec):
     max: int = 10
     min_is_strict: bool = False
     max_is_strict: bool = False
+    as_scalar: Optional[bool] = False
 
 class FloatParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.Float] = hou.parmTemplateType.Float
@@ -123,6 +124,7 @@ class FloatParmTemplateSpec(ParmTemplateSpec):
     max: float = 10.0
     min_is_strict: bool = False
     max_is_strict: bool = False
+    as_scalar: Optional[bool] = False
 
 class StringParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.String] = hou.parmTemplateType.String
@@ -134,6 +136,7 @@ class StringParmTemplateSpec(ParmTemplateSpec):
     menu_items: list[str] = []
     menu_labels: list[str] = []
     menu_type: hou.menuType = hou.menuType.Normal
+    as_scalar: Optional[bool] = False
 
 class ToggleParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.Toggle] = hou.parmTemplateType.Toggle
@@ -269,11 +272,11 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
             for spec in newspecs:
                 specs.append(spec)
         elif value == int or issubclass(value, int):
-            specs.append(IntParmTemplateSpec(name=key, label=key, default_value=[0]))
+            specs.append(IntParmTemplateSpec(name=key, label=key, default_value=[0], as_scalar=True))
         elif value == float or issubclass(value, float):
-            specs.append(FloatParmTemplateSpec(name=key, label=key, default_value=[0.0]))
+            specs.append(FloatParmTemplateSpec(name=key, label=key, default_value=[0.0], as_scalar=True))
         elif value == str or issubclass(value, str):
-            specs.append(StringParmTemplateSpec(name=key, label=key, default_value=[""]))
+            specs.append(StringParmTemplateSpec(name=key, label=key, default_value=[""], as_scalar=True))
         elif value == bool or issubclass(value, bool):
             specs.append(ToggleParmTemplateSpec(name=key, label=key))
         elif value == FileParameter or issubclass(value, FileParameter):

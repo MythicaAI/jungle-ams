@@ -69,9 +69,22 @@ class Worker:
         def impl(request: ParameterSet = None, responder: ResultPublisher=None) -> AutomationsResponse:
             ret = {}
             for path,wk in doer.automations.items():
+
+                params_by_name = {}
+                for param in wk.inputModel.get_parameter_specs():
+                    params_by_name[param.name] = param
+
+                # read a script Interface model if one exists:
+                if wk.interfaceModel:            
+                    for param in wk.interfaceModel():
+                        params_by_name[param.name] = param
+        
+                # Get the parameter spec
+                inputs = [param for param in params_by_name.values()]
+
                 ret.update({
                     path: {
-                        "input": wk.inputModel.get_parameter_specs(),
+                        "input": inputs,
                         "output": wk.outputModel.model_json_schema(),
                         "hidden": wk.hidden                   
                     }
