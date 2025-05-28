@@ -144,7 +144,7 @@ class ToggleParmTemplateSpec(ParmTemplateSpec):
 
 class MenuParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.Menu] = hou.parmTemplateType.Menu
-    default_value: int = 0
+    default_value: int | str
     menu_items: list[str] = []
     menu_labels: list[str] = []
     menu_type: hou.menuType = hou.menuType.Normal
