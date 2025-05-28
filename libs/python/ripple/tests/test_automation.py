@@ -19,7 +19,7 @@ from ripple.automation.models import AutomationModel, AutomationRequest, Automat
 from ripple.automation.publishers import ResultPublisher, SlimPublisher
 from ripple.automation.worker import Worker
 from ripple.config import ripple_config
-from ripple.models.params import ParameterSet, FileParameter
+from ripple.models.params import FloatParmTemplateSpec, ParameterSet, FileParameter
 from ripple.models.streaming import CropImageResponse, JobDefinition, Message, OutputFiles, ProcessStreamItem
 
 
@@ -173,6 +173,40 @@ def test_get_catalog_provider(worker):
     expected = AutomationsResponse(automations=get_all_worker_specs())
     assert response.automations == expected.automations
 
+
+def test_worker_catalog_with_interface(worker):
+    from ripple.automation.models import AutomationModel
+    from ripple.models.params import ParameterSet
+    from ripple.models.streaming import Message
+    from ripple.automation.automations import AutomationsResponse
+
+    # Create a dummy interface function that returns a parameter with name "dummy_interface"
+    dummy_interface = lambda: [FloatParmTemplateSpec(name="dummy_interface", label="Dummy Interface", default_value=[0.0])]
+
+    # Create a dummy AutomationModel and set interfaceModel on it
+    dummy_automation = AutomationModel(
+         path='/dummy/interface',
+         provider=lambda req, res: None,
+         inputModel=ParameterSet,
+         outputModel=Message,  # dummy output model
+         hidden=False
+    )
+    dummy_automation.interfaceModel = dummy_interface
+
+    # Add the dummy automation to the worker
+    worker.automations['/dummy/interface'] = dummy_automation
+
+    # Get the catalog
+    catalog_provider = worker._get_catalog_provider()
+    result = catalog_provider(None, None)
+    assert isinstance(result, AutomationsResponse)
+    assert '/dummy/interface' in result.automations
+
+    catalog_entry = result.automations['/dummy/interface']
+    input_params = catalog_entry["input"]
+    # Verify that the interface parameters include one with name "dummy_interface"
+    names = [param.name for param in input_params]
+    assert "dummy_interface" in names
 
 # ---- Executor Tests ----
 @pytest.mark.asyncio

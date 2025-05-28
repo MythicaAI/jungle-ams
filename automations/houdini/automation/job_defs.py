@@ -7,7 +7,7 @@ import requests
 from types import SimpleNamespace
 from ripple.automation.publishers import ResultPublisher
 from ripple.models.assets import AssetVersionEntryPointReference
-from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, BoolParameterSpec, IntParameterSpec, StringParameterSpec
+from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec, IntParmTemplateSpec, StringParmTemplateSpec
 from ripple.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
 from ripple.models import houClasses
@@ -60,14 +60,18 @@ def set_config_params(params: ParameterSpec, hda_file: FileParameter, index: int
 class JobDefRequest(ParameterSet):
     hda_file: FileParameter
     dependencies: list[FileParameter] = []
-    src_asset_id: str
-    src_version: list[int]
+    src_asset_id: str = '0'
+    src_version: list[int] = [1, 0, 0]
 
 class JobDefResponse(ProcessStreamItem):
     item_type: Literal["job_defs"] = "job_defs"
     job_definitions: list[JobDefinition]
 
-
+def job_defs_interface():
+  return [ 
+    StringParmTemplateSpec(label='Asset Index', name='src_asset_id', default_value=['0'], as_scalar=True),
+    IntParmTemplateSpec(label='Version', name='src_version', num_components=3, default_value=[1,0,0]),
+  ]
 def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefResponse:
 
     hda_file = request.hda_file

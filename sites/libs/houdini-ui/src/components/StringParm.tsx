@@ -60,10 +60,10 @@ export const StringParm: React.FC<StringParmProps> = ({template, data = {}, onCh
             });
             
             //and notify listeners
-            const ret:{[key:string]: string[]} = {}
+            const ret:{[key:string]: string | string[]} = {}
             const updatedValues = [...values];
             updatedValues[index] = newValue;
-            ret[template.name] = updatedValues
+            ret[template.name] = template.as_scalar && updatedValues.length === 1 ? updatedValues[0] : updatedValues;
             onChange?.(ret); // Notify parent about the change
         }
     };

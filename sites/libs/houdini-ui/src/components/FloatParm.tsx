@@ -56,8 +56,9 @@ export const FloatParm: React.FC<FloatParmProps> = ({
     setValues(updatedValues);
 
     // Notify parent about the change
-    const ret: { [key: string]: number[] } = {};
-    ret[template.name] = updatedValues;
+    const ret: { [key: string]: number[] | number } = {};
+    ret[template.name] = template.as_scalar && updatedValues.length === 1 ? updatedValues[0] : updatedValues;
+
     onChange?.(ret);
   };
 

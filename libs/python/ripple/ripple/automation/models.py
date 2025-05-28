@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, Literal, Optional, Type
 
 from pydantic import BaseModel
-from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
+from ripple.models.params import FileParameter, HoudiniParmTemplateSpecType, IntParameterSpec, ParameterSet
 from ripple.models.streaming import ProcessStreamItem
 
 
@@ -15,6 +15,7 @@ class AutomationModel(BaseModel):
     provider: Callable
     inputModel: Type[ParameterSet]
     outputModel: Type[ProcessStreamItem]
+    interfaceModel: Optional[Callable[[], list[HoudiniParmTemplateSpecType]]]= None
     hidden: bool = False
 
 

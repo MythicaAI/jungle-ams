@@ -5,7 +5,7 @@ import sys
 print(f"cwd: {os.getcwd()}")
 print(f"python path: {sys.path}")
 
-from automation.job_defs import job_defs, JobDefRequest, JobDefResponse
+from automation.job_defs import job_defs, JobDefRequest, JobDefResponse, job_defs_interface
 
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
 from automation.run_hda import hda, HdaRequest, HdaResponse, run_hda, RunHdaRequest, RunHdaResponse
@@ -40,6 +40,7 @@ automations = [
         "provider": job_defs,
         "inputModel": JobDefRequest,
         "outputModel": JobDefResponse,
+        "interfaceModel": job_defs_interface,
         "hidden": not debug
     },
     {
