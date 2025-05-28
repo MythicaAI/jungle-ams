@@ -64,9 +64,13 @@ export const FloatParm: React.FC<FloatParmProps> = ({
 
 
   useEffect(() => {
-    const myData = data[template.name] as number[] || getDefaultValues()
+    const myData = template.name in data ? 
+      Array.isArray(data[template.name]) ?
+        data[template.name] as number[] 
+        : [data[template.name] as number] 
+      : getDefaultValues();
     if (myData && values !== myData) {
-      setValues(myData);
+      setValues(myData); // Otherwise, store as array
     }
   }, [data[template.name]]);
 

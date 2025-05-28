@@ -55,7 +55,7 @@ class ApiResponse(OutputFiles):
 
 def generic_material_interface():
     return [
-        StringParmTemplateSpec(name="accept", label="Accept Header", help="The value for the Accept header in the request.", default_value=["application/x-www-form-urlencoded"], is_hidden=True),
+        StringParmTemplateSpec(name="accept", label="Accept Header", help="The value for the Accept header in the request.", default_value=["application/x-www-form-urlencoded"], is_hidden=True, as_scalar=True),
         IntParmTemplateSpec(name="delight_luminance_min", label="Delight Luminance Min", help="The minimum luminance for delight processing.", default_value=[75], as_scalar=True),
         IntParmTemplateSpec(name="delight_luminance_max", label="Delight Luminance Max", help="The maximum luminance for delight processing.", default_value=[190], as_scalar=True),
         FloatParmTemplateSpec(name="delight_blur_sigma", label="Delight Blur Sigma", help="The sigma value for the blur in delight processing.", default_value=[2.0], as_scalar=True),
@@ -97,17 +97,17 @@ def generic_material_interface():
 
 def text_2_material_interface():
     return generic_material_interface() + [
-        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("IMAGE_2_MATERIAL_API", "http://54.82.234.239:5555/text_2_material")]),
-        StringParmTemplateSpec(name="prompt", label="Prompt", help="The text prompt for the API request.", default_value=[""]),
-        StringParmTemplateSpec(name="negative_prompt", label="Negative Prompt", help="The negative text prompt for the API request.", default_value=[""]),
-        FloatParmTemplateSpec(name="guidance_scale", label="Guidance Scale", help="The guidance scale for the API request.", default_value=[3.0]),
-        IntParmTemplateSpec(name="num_inference_steps", label="Number of Inference Steps", help="The number of inference steps for the API request.", default_value=[8]),
-        IntParmTemplateSpec(name="max_sequence_length", label="Max Sequence Length", help="The maximum sequence length for the API request.", default_value=[256]),
+        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("IMAGE_2_MATERIAL_API", "http://54.82.234.239:5555/text_2_material")], as_scalar=True),
+        StringParmTemplateSpec(name="prompt", label="Prompt", help="The text prompt for the API request.", default_value=[""], as_scalar=True),
+        StringParmTemplateSpec(name="negative_prompt", label="Negative Prompt", help="The negative text prompt for the API request.", default_value=[""], as_scalar=True),
+        FloatParmTemplateSpec(name="guidance_scale", label="Guidance Scale", help="The guidance scale for the API request.", default_value=[3.0], as_scalar=True),
+        IntParmTemplateSpec(name="num_inference_steps", label="Number of Inference Steps", help="The number of inference steps for the API request.", default_value=[8], as_scalar=True),
+        IntParmTemplateSpec(name="max_sequence_length", label="Max Sequence Length", help="The maximum sequence length for the API request.", default_value=[256], as_scalar=True),
     ]
 
 def image_2_material_interface():
     return generic_material_interface() + [
-        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("IMAGE_2_MATERIAL_API", "http://54.82.234.239:5555/image_2_material")]),
+        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("IMAGE_2_MATERIAL_API", "http://54.82.234.239:5555/image_2_material")], as_scalar=True),
     ]
 class Text2MaterialRequest(GenericApiRequest):
     api_endpoint: str = os.getenv("TEXT_2_MATERIAL_API", "http://54.82.234.239:5555/text_2_material")
@@ -142,7 +142,7 @@ class Image2MaterialRequest(GenericApiRequest):
 
 def generic_3d_interface():
     return [
-        StringParmTemplateSpec(name="accept", label="Accept Header", help="The value for the Accept header in the request.", default_value=["application/x-www-form-urlencoded"], is_hidden=True),
+        StringParmTemplateSpec(name="accept", label="Accept Header", help="The value for the Accept header in the request.", default_value=["application/x-www-form-urlencoded"], is_hidden=True, as_scalar=True),
         IntParmTemplateSpec(name="seed", label="Seed", help="The seed for the random number generator.", default_value=[1], as_scalar=True),
         FloatParmTemplateSpec(name="simplify", label="Simplify", help="The simplification factor for the 3D model.", default_value=[0.95], as_scalar=True),
         IntParmTemplateSpec(name="texture_size", label="Texture Size", help="The size of the texture for the 3D model.", default_value=[1024], as_scalar=True),
@@ -161,26 +161,26 @@ def generic_3d_interface():
 
 def text_2_three_d_interface():
     return generic_3d_interface() + [
-        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/text_2_3d")]),
-        StringParmTemplateSpec(name="prompt", label="Prompt", help="The text prompt for the API request.", default_value=[""]),
+        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/text_2_3d")], as_scalar=True),
+        StringParmTemplateSpec(name="prompt", label="Prompt", help="The text prompt for the API request.", default_value=[""], as_scalar=True),
     ]
 
 def three_d_2_three_d_interface():
     return generic_3d_interface() + [
-        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/3d_to_3d")]),
-        StringParmTemplateSpec(name="prompt", label="Prompt", help="The text prompt for the API request.", default_value=[""]),
+        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/3d_to_3d")], as_scalar=True),
+        StringParmTemplateSpec(name="prompt", label="Prompt", help="The text prompt for the API request.", default_value=[""], as_scalar=True),
     ]
 
 def image_2_three_d_interface():
     return generic_3d_interface() + [
-        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("IMAGE_2_3D_API", "http://52.86.105.54:5555/image_2_3d")]),
+        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("IMAGE_2_3D_API", "http://52.86.105.54:5555/image_2_3d")], as_scalar=True),
         IntParmTemplateSpec(name="sparse_structure_sampler_params_steps", label="Sparse Structure Sampler Steps", help="The number of steps for the sparse structure sampler.", default_value=[12], as_scalar=True),
         FloatParmTemplateSpec(name="sparse_structure_sampler_params_cfg_strength", label="Sparse Structure Sampler CFG Strength", help="The CFG strength for the sparse structure sampler.", default_value=[7.5], as_scalar=True),
     ]
 
 def multi_image_2_three_d_interface():
     return generic_3d_interface() + [
-        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/multi_image_2_3d")]),
+        StringParmTemplateSpec(name="api_endpoint", label="API Endpoint", help="The API endpoint for the request.", default_value=[os.getenv("TEXT_2_3D_API", "http://52.86.105.54:5555/multi_image_2_3d")], as_scalar=True),
         IntParmTemplateSpec(name="sparse_structure_sampler_params_steps", label="Sparse Structure Sampler Steps", help="The number of steps for the sparse structure sampler.", default_value=[12], as_scalar=True),
         FloatParmTemplateSpec(name="sparse_structure_sampler_params_cfg_strength", label="Sparse Structure Sampler CFG Strength", help="The CFG strength for the sparse structure sampler.", default_value=[7.5], as_scalar=True),
     ]
