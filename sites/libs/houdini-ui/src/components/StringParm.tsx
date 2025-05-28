@@ -28,10 +28,14 @@ export const StringParm: React.FC<StringParmProps> = ({template, data = {}, onCh
     const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
     
     useEffect(() => {
-        const myData = data[template.name] as string[] || getDefaultValues();
-        if (myData && values !== myData) {
-            setValues(myData);
-        }
+    const myData = template.name in data ? 
+      Array.isArray(data[template.name]) ?
+        data[template.name] as string[] 
+        : [data[template.name] as string] 
+      : getDefaultValues();
+    if (myData && values !== myData) {
+      setValues(myData); // Otherwise, store as array
+    }
     }, [data[template.name]]);
     
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
