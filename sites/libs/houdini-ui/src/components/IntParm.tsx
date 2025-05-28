@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import hou, { dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -24,10 +24,20 @@ export const IntParm: React.FC<IntParmProps> = ({
       ? [...template.default_value]
       : Array<number>(template.num_components).fill(0);
   }
-  const [values, setValues] = useState<number[]>(() =>
-    (data[template.name] as number[]) || getDefaultValues() 
-  );
-  
+
+  const getNormalizedData = useCallback(() => {
+      const myData = template.name in data ? 
+      Array.isArray(data[template.name]) ?
+          data[template.name] as number[] 
+          : [data[template.name] as number] 
+      : getDefaultValues();
+      return myData
+  }, [data, template.name]);
+
+
+  const [values, setValues] = useState<number[]>(getNormalizedData());
+
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const parsedValue = parseInt(e.target.value, 10) || 0;
     const index = parseInt(e.target.getAttribute('parm-index') || '0', 10);
@@ -53,11 +63,7 @@ export const IntParm: React.FC<IntParmProps> = ({
   };
 
   useEffect(() => {
-    const myData = template.name in data ? 
-      Array.isArray(data[template.name]) ?
-        data[template.name] as number[] 
-        : [data[template.name] as number] 
-      : getDefaultValues();
+    const myData = getNormalizedData();
     if (myData && values !== myData) {
       setValues(myData); // Otherwise, store as array
     }

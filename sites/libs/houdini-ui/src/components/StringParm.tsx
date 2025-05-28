@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import hou,{ dictionary } from '../types/Houdini';
 import { useWindowSize } from '../util/useWindowSize';
 
@@ -20,22 +20,27 @@ export const StringParm: React.FC<StringParmProps> = ({template, data = {}, onCh
             : Array<string>(template.num_components).fill("");
     }
 
-    const [values, setValues] = useState<string[]>(
-        data[template.name] as string[] || getDefaultValues()
-    );
+
+    const getNormalizedData = useCallback(() => {
+        const myData = template.name in data ? 
+        Array.isArray(data[template.name]) ?
+            data[template.name] as string[] 
+            : [data[template.name] as string] 
+        : getDefaultValues();
+        return myData
+    }, [data, template.name]);
+
+
+    const [values, setValues] = useState<string[]>(getNormalizedData());
 
     // Add state for file upload toggle
     const [showFileUpload, setShowFileUpload] = useState<boolean>(false);
-    
+
     useEffect(() => {
-    const myData = template.name in data ? 
-      Array.isArray(data[template.name]) ?
-        data[template.name] as string[] 
-        : [data[template.name] as string] 
-      : getDefaultValues();
-    if (myData && values !== myData) {
-      setValues(myData); // Otherwise, store as array
-    }
+        const myData = getNormalizedData();
+        if (myData && values !== myData) {
+            setValues(myData); // Otherwise, store as array
+        }
     }, [data[template.name]]);
     
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
