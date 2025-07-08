@@ -1,9 +1,10 @@
 
 // Video background component
 import {Box} from "@mui/joy";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useImperativeHandle, useRef, useState} from "react";
 
 interface VideoBackgroundProps {
+  ref: HTMLVideoElement;
   src: string;
   fallbackImage?: string;
   overlay?: boolean;
@@ -19,20 +20,20 @@ interface VideoBackgroundProps {
 }
 
 const VideoBackground: React.FC<VideoBackgroundProps> = ({
-  src,
-  fallbackImage,
-  overlay = true,
-  overlayOpacity = 0.4,
-  overlayColor = 'rgba(0, 0, 0, 0.4)',
-  muted = true,
-  loop = true,
-  autoplay = true,
-  playsInline = true,
-  poster,
-  onLoadedData,
-  onError,
-}) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+                                                           src,
+                                                           fallbackImage,
+                                                           overlay = true,
+                                                           overlayOpacity = 0.4,
+                                                           overlayColor = 'rgba(0, 0, 0, 0.4)',
+                                                           muted = true,
+                                                           loop = true,
+                                                           autoplay = true,
+                                                           playsInline = true,
+                                                           poster,
+                                                           onLoadedData,
+                                                           onError,
+                                                         }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 

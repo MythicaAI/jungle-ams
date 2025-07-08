@@ -6,7 +6,7 @@ import { createAppTheme } from './styles/theme';
 import Layout from './components/layout/Layout';
 import Hero from './components/sections/Hero';
 import ProductCarousel from './components/sections/ProductCarousel';
-import TeaserContent from './components/sections/Testimony';
+import Testimonials from './components/sections/Testimonials';
 import SocialLinks from './components/sections/SocialLinks';
 import ValueProposition from './components/sections/ValueProposition';
 import TeamSection from './components/sections/TeamSection';
@@ -21,8 +21,9 @@ const App: React.FC = () => {
       <CssBaseline />
       <Layout>
         <Hero />
-        <SceneCarousel />
+        {/* <SceneCarousel /> */}
         <ValueProposition />
+        <Testimonials />
         <TeamSection />
         <SocialLinks />
       </Layout>

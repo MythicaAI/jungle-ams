@@ -149,7 +149,7 @@ const TeamSection: React.FC = () => {
       </Grid>
       
       {/* Team values statement */}
-      <Box >
+      <Box sx={{ mt: { xs: 6, md: 8 } }}>
         <Sheet
           variant="soft"
           color="primary"

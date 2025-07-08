@@ -1,9 +1,9 @@
 // src/components/sections/Hero.tsx
-import { Box, Container, Typography, Button, Stack, Sheet } from '@mui/joy';
+import { Box, Container, Typography, Button, Stack } from '@mui/joy';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
 import {ChevronRight, LucidePause, LucidePlay} from 'lucide-react';
 import VideoBackground from "../shared/VideoBackground.tsx";
-import {Fragment} from "react";
+import {Fragment, useCallback, useEffect, useState} from "react";
 import CrystalHeroScene from "../shared/CrystalHeroScene.tsx";
 import {heroVideoContent} from "../../data/media";
 import { heroCallToAction } from '../../data/links';
@@ -11,7 +11,7 @@ import { heroCallToAction } from '../../data/links';
 // Hero section with dynamic scroll animations
 const Hero = () => {
   const { progress } = useScrollPosition();
-
+  const [videoPlaybackState, setVideoPlaybackState] = useState<boolean>(true);
   // Grab the first video definition
   const videoSrc = heroVideoContent[0].videoSrc;
   const videoSrcFallbackImg = heroVideoContent[0].videoSrcImageFallback;
@@ -20,17 +20,16 @@ const Hero = () => {
   const titleOpacity = 1 - progress * 2;  // Fade out faster
   const titleTranslate = progress * -100;  // Move up as scroll begins
   const heroScale = 1 - progress * 0.1;    // Slight zoom out
-
-    const getVideoControlIcon = () => {
-        const video = document.querySelector('video');
-        if (!video) {
-            return <Fragment/>;
-        }
-        if (video.paused) {
-            return <LucidePlay />
-        }
-        return <LucidePause />
+  const videoRef = useRef(null);
+  useEffect(() => {
+    const video = document.querySelector('video');
+    if (!video || video.paused) {
+      setVideoPlaybackState(false);
+    } else {
+      setVideoPlaybackState(true);
     }
+  }, []);
+
   return (
     <Box
       component="section"
@@ -45,6 +44,7 @@ const Hero = () => {
         {/* Video Background */}
       {videoSrc && (
         <VideoBackground
+          ref={videoRef}
           src={videoSrc}
           fallbackImage={videoSrcFallbackImg}
           overlay={true}
@@ -183,36 +183,22 @@ const Hero = () => {
               '&:hover': { opacity: 1 },
             }}
             onClick={() => {
-                const video = document.querySelector('video');
+              const video = document.querySelector('video');
               if (video) {
-                if (video.paused) {
-                  video.play();
-                } else {
+                if (videoPlaybackState) {
                   video.pause();
+                  setVideoPlaybackState(false);
+                  console.log(`video paused`);
+                } else {
+                  video.play().then(() => {
+                    setVideoPlaybackState(true);
+                    console.log(`video started`);
+                  });
                 }
               }
             }}
           >
-              { getVideoControlIcon() }
-          </Button>
-          <Button
-            size="sm"
-            variant="soft"
-            color="neutral"
-            sx={{
-              minWidth: 'auto',
-              px: 2,
-              opacity: 0.8,
-              '&:hover': { opacity: 1 },
-            }}
-            onClick={() => {
-              const video = document.querySelector('video');
-              if (video) {
-                video.muted = !video.muted;
-              }
-            }}
-          >
-            🔊
+            { videoPlaybackState ? <LucidePlay /> : <LucidePause /> }
           </Button>
         </Box>
       )}
