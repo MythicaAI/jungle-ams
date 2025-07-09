@@ -161,6 +161,7 @@ jobs:
       GCR_WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
       ECR_ROLE: 'arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages'
       ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com'
+      HETZNER_URL: 'mythica-a:32000'  # microk8s registry endpoint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -189,7 +190,15 @@ jobs:
           role-to-assume: ${{ env.ECR_ROLE }}
           role-session-name: github-actions-ecr
           aws-region: us-east-1
-
+      
+      - name: Tailscale Auth
+        id: tailscale-auth
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+  
       - name: AWS ECR Login
         uses: aws-actions/amazon-ecr-login@v2
 
@@ -205,17 +214,7 @@ jobs:
         run: |
           workloads/github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
 
-      - name: Push tag
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          retry_on: error
-          timeout_seconds: 10
-          command: |
-            git tag ${{ steps.generate_tag.outputs.new_tag }}
-            git push origin ${{ steps.generate_tag.outputs.new_tag }}
-            echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
-
+      
       - name: Download ams-app image
         uses: actions/download-artifact@v4
         with:
@@ -232,7 +231,7 @@ jobs:
         run: |
           docker load --input /tmp/libs-python-${{ github.sha }}.tar
           docker load --input /tmp/ams-app-${{ github.sha }}.tar
-
+    
       - name: Build and push ${{ matrix.image }}
         id: build_push
         uses: docker/build-push-action@v6
@@ -243,11 +242,24 @@ jobs:
           tags: |
             ${{ env.GCR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
             ${{ env.ECR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.HETZNER_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
             AMS_APP_IMAGE=ams-app:${{ github.sha }}
           load: true
+      
+      - name: Push tag
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 10
+          command: |
+            git tag ${{ steps.generate_tag.outputs.new_tag }}
+            git push origin ${{ steps.generate_tag.outputs.new_tag }}
+            echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
+
 
       - name: Send Discord notification
         if: always()
