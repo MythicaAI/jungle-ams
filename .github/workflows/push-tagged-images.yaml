@@ -173,6 +173,13 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker
+          config-inline: |
+            [registry."mythica-a"]
+              http = true
+              insecure = true
+            [registry."mythica-b"]
+              http = true
+              insecure = true
 
       - name: Google Auth
         id: auth
