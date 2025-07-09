@@ -175,10 +175,10 @@ jobs:
         with:
           driver: docker
           config-inline: |
-            [registry."${{ HETZNER_A_URL }}"]
+            [registry."${{ env.HETZNER_A_URL }}"]
               http = true
               insecure = true
-            [registry."${{ HETZNER_B_URL }}"]
+            [registry."${{ env.HETZNER_B_URL }}"]
               http = true
               insecure = true
 
