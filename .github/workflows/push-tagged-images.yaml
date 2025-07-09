@@ -161,7 +161,8 @@ jobs:
       GCR_WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
       ECR_ROLE: 'arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages'
       ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com'
-      HETZNER_URL: 'mythica-a:32000'  # microk8s registry endpoint
+      HETZNER_A_URL: 'mythica-a:32000'  # microk8s registry endpoint
+      HETZNER_B_URL: 'mythica-b:32000'  # microk8s registry endpoint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -174,10 +175,10 @@ jobs:
         with:
           driver: docker
           config-inline: |
-            [registry."mythica-a"]
+            [registry."${{ HETZNER_A_URL }}"]
               http = true
               insecure = true
-            [registry."mythica-b"]
+            [registry."${{ HETZNER_B_URL }}"]
               http = true
               insecure = true
 
@@ -249,7 +250,7 @@ jobs:
           tags: |
             ${{ env.GCR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
             ${{ env.ECR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
-            ${{ env.HETZNER_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.HETZNER_A_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
