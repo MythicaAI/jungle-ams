@@ -161,8 +161,8 @@ jobs:
       GCR_WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
       ECR_ROLE: 'arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages'
       ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com'
-      HETZNER_A_URL: 'mythica-a:32000'  # microk8s registry endpoint
-      HETZNER_B_URL: 'mythica-b:32000'  # microk8s registry endpoint
+      HETZNER_A_URL: 'mythica-a.narwhal-themis.ts.net:32000'  # internal registry endpoint
+      HETZNER_B_URL: 'mythica-b.narwhal-themis.ts.net:32000'  # internal registry endpoint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -174,13 +174,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker
-          buildkitd-config-inline: |
-            [registry."${{ env.HETZNER_A_URL }}"]
-              http = true
-              insecure = true
-            [registry."${{ env.HETZNER_B_URL }}"]
-              http = true
-              insecure = true
 
       - name: Google Auth
         id: auth

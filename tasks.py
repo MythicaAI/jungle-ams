@@ -16,6 +16,12 @@ COMMIT_HASH = ''
 PTY_SUPPORTED = os.name != 'nt'
 
 #
+# Internal environment variables
+#
+MYTHICA_A_REPO = "mythica-a.narwhal-themis.ts.net:32000"
+MYTHICA_B_REPO = "mythica-b.narwhal-themis.ts.net:32000"
+
+#
 # Control plane variables
 #
 CPLN_ORG_NAME = "mythica-main"
@@ -279,6 +285,8 @@ def deploy_image(c, image_path, target):
         repo = CPLN_IMAGE_REPO
     elif target == "aws":
         repo = ECR_URI
+    elif target == "myth":
+        repo = MYTHICA_A_REPO
     else:
         raise ValueError(f"unknown deployment target {target}")
 
