@@ -19,6 +19,9 @@ imagesBaseUrl: https://mythica-a.narwhal-themis.ts.net/images
 sceneTalkUrl: "wss://mythica-a.narwhal-themis.ts.net/staging/"
 awfulRestUrl: "https:/mythica-a.narwhal-themis.ts.net/v1/automation/run"
 
+gke:
+  enabled: false
+
 auth0:
   domain: dev-dtvqj0iuc5rnb6x2.us.auth0.com
   clientId: ddxXLUYxqXMKCv6VZ7zWLly4B19NvDoW
