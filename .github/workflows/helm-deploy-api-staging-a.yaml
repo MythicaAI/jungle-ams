@@ -45,6 +45,10 @@ jobs:
       KUBECA: /tmp/kube-ca.crt
       HELM_KUBECAFILE: /tmp/kube-ca.crt
     steps:
+      - name: TS_OAUTH_SECRET
+        run: |
+          echo "DO_INSTALL=${{ github.event.inputs.install || 'false' }}" >> "$GITHUB_ENV"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -73,7 +77,7 @@ jobs:
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Install Helm Chart
-        if: ${{ inputs.install == 'true' }}
+        if: ${{ env.DO_INSTALL == 'true' }}
         working-directory: workloads/helm
         run: |
           helm install --namespace api-staging -f api/values-staging-a.yaml -f api/values-images.yaml api-staging api
@@ -83,7 +87,7 @@ jobs:
             - name: Deploy Helm Chart
 
       - name: Upgrade Helm Chart
-        if: ${{ inputs.install == 'false' }}
+        if: ${{ env.DO_INSTALL == 'false' }}
         working-directory: workloads/helm
         run: |
           helm upgrade --namespace api-staging -f api/values-staging-a.yaml -f api/values-images.yaml api-staging api
