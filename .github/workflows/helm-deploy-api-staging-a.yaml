@@ -94,7 +94,7 @@ jobs:
     
       - name: Rollout deployments
         run: |
-          RESTART=kubectl --certificate-authority $KUBECA rollout restart
+          RESTART="kubectl --certificate-authority $KUBECA rollout restart"
           $RESTART deployment/otel-agent -n default
           $RESTART deployment/otel-collector -n default
           $RESTART deployment/app -n api-staging
