@@ -1,0 +1,70 @@
+# Default values for api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+namespace: "api-staging"
+tier: "web"
+release: "staging"  # note that helm release is mapped to MYTHICA_ENVIRONMENT in k8s deployments
+hostnameDecorator: "-staging"
+domains:
+  - mythica-a.narwhal-themis.ts.net
+serviceAccount:
+  secretName: front-end-api-staging-sa
+  email: infra@mythica.ai
+
+apiBaseUrl: https://mythica-a.narwhal-themis.ts.net/v1
+imagesBaseUrl: https://mythica-a.narwhal-themis.ts.net/images
+sceneTalkUrl: "wss://mythica-a.narwhal-themis.ts.net/staging/"
+awfulRestUrl: "https:/mythica-a.narwhal-themis.ts.net/v1/automation/run"
+
+auth0:
+  domain: dev-dtvqj0iuc5rnb6x2.us.auth0.com
+  clientId: ddxXLUYxqXMKCv6VZ7zWLly4B19NvDoW
+  audience: https://mythica-a.narwhal-themis.ts.net/v1
+  redirectUrl: https://mythica-a.narwhal-themis.ts.net
+
+api:
+  app:
+    replicas: 2
+    maxUnavailable: 1
+    maxSurge: 2
+    base_url: "https://mythica-a.narwhal-themis.ts.net/v1"
+    telemetry_endpoint: "http://otel-collector.default:4317"
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
+  gcsProxy:
+    replicas: 0
+    maxUnavailable: 1
+    maxSurge: 4
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
+  letsEncrypt:
+    secretName: mythica-lets-encrypt-staging-tls
+    replicas: 1
+    maxUnavailable: 1
+    maxSurge: 2
+    nodeSelector: scale-out
+    terminationGracePeriodSeconds: 60
+  packager:
+    replicas: 1
+    maxUnavailable: 1
+    maxSurge: 2
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
+  webFront:
+    replicas: 2
+    maxUnavailable: 1
+    maxSurge: 5
+    nginxConfig: "nginx-mythica-a.conf"
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
+  canary:
+    name: "canary"
+    replicas: 1
+    maxUnavailable: 0
+    maxSurge: 2
+    telemetry_endpoint: "http://otel-collector.default:4317"
+    nodeSelector: spot
+    terminationGracePeriodSeconds: 15
