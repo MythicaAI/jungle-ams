@@ -1,4 +1,4 @@
-{{- if .Values.gke.enabled }}
+{{- if eq .Values.gke.enabled true }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,4 +17,4 @@ spec:
       targetPort: http-proxy
   selector:
     app: {{ .Values.api.gcsProxy.name }}
-{{- end }}
+{{- end}}
