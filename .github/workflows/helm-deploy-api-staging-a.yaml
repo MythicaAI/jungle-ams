@@ -15,6 +15,15 @@ on:
       - 'workloads/helm/**'
       - '.github/workflows/helm-deploy-api-staging-a.yaml'
 
+  # manual dispatch for installing helm
+  workflow_dispatch:
+    inputs:
+      install:
+        description: 'install helm chart'
+        required: true
+        default: 'false'
+        type: boolean
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -63,14 +72,26 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      - name: Deploy Helm Chart
+      - name: Install Helm Chart
+        if: ${{ inputs.install == 'true' }}
+        working-directory: workloads/helm
+        run: |
+          helm install --namespace api-staging -f api/values-staging-a.yaml -f api/values-images.yaml api-staging api
+          echo "## Installed image versions" >> $GITHUB_STEP_SUMMARY
+          cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
+          helm install otel-release-k8s-infra ./otel -f ./otel/values.yaml -n default
+            - name: Deploy Helm Chart
+
+      - name: Upgrade Helm Chart
+        if: ${{ inputs.install == 'false' }}
         working-directory: workloads/helm
         run: |
           helm upgrade --namespace api-staging -f api/values-staging-a.yaml -f api/values-images.yaml api-staging api
-          echo "## Upgraded image versions" >> $GITHUB_STEP_SUMMARY
+          echo "## Installed image versions" >> $GITHUB_STEP_SUMMARY
           cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
           helm upgrade otel-release-k8s-infra ./otel -f ./otel/values.yaml -n default
-
+            - name: Deploy Helm Chart
+    
       - name: Rollout deployments
         run: |
           RESTART=kubectl --certificate-authority $KUBECA rollout restart
