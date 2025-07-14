@@ -13,7 +13,7 @@ on:
       - '**'
     paths:
       - 'workloads/helm/**'
-      - '.github/workflows/helm-deploy-staging-a.yaml'
+      - '.github/workflows/helm-deploy-api-staging-a.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
