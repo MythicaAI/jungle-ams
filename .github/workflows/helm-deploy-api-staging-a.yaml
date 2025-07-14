@@ -57,7 +57,7 @@ jobs:
       - name: Configure kubectl
         run: |
           echo "${{ secrets.KUBE_CONFIG_MYTHICA_A }}" | base64 -d > $KUBECONFIG
-          echo "${{ secrets.KUBE_A_MYTHICA_A }}" | base64 -d > $KUBECA
+          echo "${{ secrets.KUBE_CA_MYTHICA_A }}" | base64 -d > $KUBECA
 
       - name: Install Helm
         run: |
