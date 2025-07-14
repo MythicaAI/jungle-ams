@@ -1,4 +1,4 @@
-name: helm-deploy-api-staging
+name: helm-deploy-api-staging-a
 
 on:
   # trigger helm deploy when new images are available
