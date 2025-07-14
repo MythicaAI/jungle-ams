@@ -32,7 +32,7 @@ jobs:
 
     env:
       NODE_ENV: "staging"
-      KUBECONFIG: ${{ secrets.KUBE_CONFIG_MYTHICA_A }}
+      KUBECONFIG: /tmp/kubeconfig
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,6 +51,10 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_MYTHICA_A }}" | base64 -d > $KUBECONFIG
 
       - name: Install Helm
         run: |
