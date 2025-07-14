@@ -10,7 +10,7 @@ on:
   # trigger helm deploy when the helm or gha config changes
   push:
     branches:
-      - main
+      - '**'
     paths:
       - 'workloads/helm/**'
       - '.github/workflows/helm-deploy-staging-a.yaml'
