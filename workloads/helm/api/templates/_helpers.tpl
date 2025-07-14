@@ -47,7 +47,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 GKE Node selector
 */}}
 {{- define "api.nodeSelector" -}}
-{{- if eq $.Values.gke.enabled true -}}
+{{- if eq .Values.gke.enabled true -}}
 nodeSelector:
   {{- if eq .nodeSelector "spot" }}
   cloud.google.com/gke-spot: "true"
