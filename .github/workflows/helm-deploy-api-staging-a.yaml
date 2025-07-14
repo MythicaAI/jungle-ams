@@ -33,6 +33,8 @@ jobs:
     env:
       NODE_ENV: "staging"
       KUBECONFIG: /tmp/kubeconfig
+      KUBECA: /tmp/kube-ca.crt
+      HELM_KUBECAFILE: /tmp/kube-ca.crt
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,6 +57,7 @@ jobs:
       - name: Configure kubectl
         run: |
           echo "${{ secrets.KUBE_CONFIG_MYTHICA_A }}" | base64 -d > $KUBECONFIG
+          echo "${{ secrets.KUBE_A_MYTHICA_A }}" | base64 -d > $KUBECA
 
       - name: Install Helm
         run: |
@@ -70,11 +73,12 @@ jobs:
 
       - name: Rollout deployments
         run: |
-          kubectl rollout restart deployment/otel-agent -n default
-          kubectl rollout restart deployment/otel-collector -n default
-          kubectl rollout restart deployment/app -n api-staging
-          kubectl rollout restart deployment/packager -n api-staging
-          kubectl rollout restart deployment/lets-encrypt -n api-staging
-          kubectl rollout restart deployment/gcs-proxy -n api-staging
-          kubectl rollout restart deployment/web-front -n api-staging
-          kubectl rollout restart deployment/canary -n api-staging
+          RESTART=kubectl --certificate-authority $KUBECA rollout restart
+          $RESTART deployment/otel-agent -n default
+          $RESTART deployment/otel-collector -n default
+          $RESTART deployment/app -n api-staging
+          $RESTART deployment/packager -n api-staging
+          $RESTART deployment/lets-encrypt -n api-staging
+          $RESTART deployment/gcs-proxy -n api-staging
+          $RESTART deployment/web-front -n api-staging
+          $RESTART deployment/canary -n api-staging
