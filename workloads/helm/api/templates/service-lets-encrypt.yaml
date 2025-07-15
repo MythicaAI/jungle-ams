@@ -7,7 +7,9 @@ metadata:
     {{- include "api.commonLabels" . | nindent 4 }}
     {{- include "api.componentLabels" .Values.api.letsEncrypt | nindent 4 }}
   annotations:
+    {{- if eq .Values.gke.enabled true }}
     networking.gke.io/load-balancer-type: "Internal"
+    {{- end }}
 spec:
   type: LoadBalancer
   ports:

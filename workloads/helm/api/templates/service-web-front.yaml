@@ -7,8 +7,10 @@ metadata:
     {{- include "api.commonLabels" . | nindent 4 }}
     {{- include "api.componentLabels" .Values.api.webFront | nindent 4 }}
   annotations:
+    {{- if eq .Values.gke.enabled true }}
     networking.gke.io/load-balancer-type: "Internal"
     cloud.google.com/neg: '{"exposed_ports": {"80":{}}}'
+    {{- end }}
 spec:
   type: LoadBalancer
   ports:

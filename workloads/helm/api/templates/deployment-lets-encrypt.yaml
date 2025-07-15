@@ -17,7 +17,7 @@ spec:
         {{- include "api.commonLabels" . | nindent 8 }}
         {{- include "api.componentLabels" $componentContext | nindent 8 }}
     spec:
-      {{- include "api.nodeSelector" $componentContext | nindent 6 }}
+      {{- include "api.nodeSelector" (merge $componentContext .) | nindent 6 }}
       terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}
       serviceAccountName: lets-encrypt
       containers:

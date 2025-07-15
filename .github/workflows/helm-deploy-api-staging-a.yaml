@@ -80,11 +80,11 @@ jobs:
         if: ${{ env.DO_INSTALL == 'true' }}
         working-directory: workloads/helm
         run: |
+          bash install-namespace.sh api-staging
           helm install --namespace api-staging -f api/values-staging-a.yaml -f api/values-images.yaml api-staging api
           echo "## Installed image versions" >> $GITHUB_STEP_SUMMARY
           cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
           helm install otel-release-k8s-infra ./otel -f ./otel/values.yaml -n default
-            - name: Deploy Helm Chart
 
       - name: Upgrade Helm Chart
         if: ${{ env.DO_INSTALL == 'false' }}
@@ -94,7 +94,6 @@ jobs:
           echo "## Installed image versions" >> $GITHUB_STEP_SUMMARY
           cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
           helm upgrade otel-release-k8s-infra ./otel -f ./otel/values.yaml -n default
-            - name: Deploy Helm Chart
     
       - name: Rollout deployments
         run: |
@@ -104,6 +103,5 @@ jobs:
           $RESTART deployment/app -n api-staging
           $RESTART deployment/packager -n api-staging
           $RESTART deployment/lets-encrypt -n api-staging
-          $RESTART deployment/gcs-proxy -n api-staging
           $RESTART deployment/web-front -n api-staging
           $RESTART deployment/canary -n api-staging

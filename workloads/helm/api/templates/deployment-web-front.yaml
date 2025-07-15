@@ -17,7 +17,7 @@ spec:
         {{- include "api.labels" . | nindent 8 }}
         {{- include "api.componentLabels" $componentContext | nindent 8 }}
     spec:
-      {{- include "api.nodeSelector" $componentContext | nindent 6 }}
+      {{- include "api.nodeSelector" (merge $componentContext .) | nindent 6 }}
       securityContext:
         fsGroup: 101 # use the nginx group for file-system security privileges
       terminationGracePeriodSeconds: {{ $componentContext.terminationGracePeriodSeconds }}

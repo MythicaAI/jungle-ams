@@ -44,16 +44,19 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Node selector
+GKE Node selector
 */}}
 {{- define "api.nodeSelector" -}}
+{{- if eq .Values.gke.enabled true -}}
 nodeSelector:
   {{- if eq .nodeSelector "spot" }}
   cloud.google.com/gke-spot: "true"
   {{- else if eq .nodeSelector "scale-out" }}
   cloud.google.com/compute-class: "Scale-Out"
   {{- end }}
-{{- end }}
+{{- end -}}
+{{- end -}}
+
 
 {{/*
 Selector labels

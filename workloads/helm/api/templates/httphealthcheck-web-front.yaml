@@ -1,3 +1,4 @@
+{{- if eq .Values.gke.enabled true -}}
 apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
 metadata:
@@ -21,3 +22,4 @@ spec:
     group: ""
     kind: Service
     name: web-front
+{{- end -}}

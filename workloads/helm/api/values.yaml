@@ -29,6 +29,9 @@ auth0:
   audience: https://api.mythica.ai/v1
   redirectUrl: https://api.mythica.ai
 
+gke:
+  enabled: true
+
 serviceAccount:
   secretName: front-end-api-sa
   email: front-end-api-sa@controlnet-407314.iam.gserviceaccount.com
