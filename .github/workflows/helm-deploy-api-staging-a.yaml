@@ -80,10 +80,7 @@ jobs:
         if: ${{ env.DO_INSTALL == 'true' }}
         working-directory: workloads/helm
         run: |
-          kubectl apply -f <(echo "apiVersion: v1
-            kind: Namespace
-            metadata:
-              name: api-staging")
+          bash install-namespace.sh api-staging
           helm install --namespace api-staging -f api/values-staging-a.yaml -f api/values-images.yaml api-staging api
           echo "## Installed image versions" >> $GITHUB_STEP_SUMMARY
           cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
