@@ -8,6 +8,8 @@ namespace: "api-staging"
 tier: "web"
 release: "staging"  # note that helm release is mapped to MYTHICA_ENVIRONMENT in k8s deployments
 hostnameDecorator: "-staging"
+location: "hz"
+imageRepository: mythica-a:32000
 domains:
   - mythica-a.narwhal-themis.ts.net
 serviceAccount:
@@ -16,6 +18,7 @@ serviceAccount:
 
 apiBaseUrl: https://mythica-a.narwhal-themis.ts.net/v1
 imagesBaseUrl: https://mythica-a.narwhal-themis.ts.net/images
+
 sceneTalkUrl: "wss://mythica-a.narwhal-themis.ts.net/staging/"
 awfulRestUrl: "https:/mythica-a.narwhal-themis.ts.net/v1/automation/run"
 
