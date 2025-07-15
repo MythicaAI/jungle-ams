@@ -94,7 +94,6 @@ jobs:
           echo "## Installed image versions" >> $GITHUB_STEP_SUMMARY
           cat ./api/values-images.yaml >> $GITHUB_STEP_SUMMARY
           helm upgrade otel-release-k8s-infra ./otel -f ./otel/values.yaml -n default
-            - name: Deploy Helm Chart
     
       - name: Rollout deployments
         run: |
