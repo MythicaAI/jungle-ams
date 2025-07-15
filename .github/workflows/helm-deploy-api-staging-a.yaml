@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: TS_OAUTH_SECRET
         run: |
-          echo "DO_INSTALL=${{ github.event.inputs.install || 'fall' }}" >> "$GITHUB_ENV"
+          echo "DO_INSTALL=${{ github.event.inputs.install || 'false' }}" >> "$GITHUB_ENV"
 
       - name: Checkout code
         uses: actions/checkout@v4
