@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: TS_OAUTH_SECRET
         run: |
-          echo "DO_INSTALL=${{ github.event.inputs.install || 'true' }}" >> "$GITHUB_ENV"
+          echo "DO_INSTALL=${{ github.event.inputs.install || 'fall' }}" >> "$GITHUB_ENV"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -104,6 +104,5 @@ jobs:
           $RESTART deployment/app -n api-staging
           $RESTART deployment/packager -n api-staging
           $RESTART deployment/lets-encrypt -n api-staging
-          $RESTART deployment/gcs-proxy -n api-staging
           $RESTART deployment/web-front -n api-staging
           $RESTART deployment/canary -n api-staging
