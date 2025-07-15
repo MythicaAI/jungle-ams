@@ -1,4 +1,4 @@
-{{- if .Values.gke.enabled true -}}
+{{- if eq .Values.gke.enabled true -}}
 apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
 metadata:
