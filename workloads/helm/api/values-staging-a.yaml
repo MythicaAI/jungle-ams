@@ -9,7 +9,7 @@ tier: "web"
 release: "staging"  # note that helm release is mapped to MYTHICA_ENVIRONMENT in k8s deployments
 hostnameDecorator: "-staging"
 location: "hz"
-imageRepository: mythica-a.narwhal-themis.ts.net:32000
+imageRepository: registry:5000
 domains:
   - mythica-a.narwhal-themis.ts.net
 serviceAccount:
