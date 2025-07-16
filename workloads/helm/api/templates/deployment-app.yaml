@@ -55,7 +55,7 @@ spec:
               value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
               value: "{{ .Values.location }}"
-{{- if .Values.gke.enabled eq true -}}
+{{- if eq .Values.gke.enabled true -}}
             - name: GCS_SERVICE_ENABLE
               value: "true"
             - name: GOOGLE_APPLICATION_CREDENTIALS
@@ -84,7 +84,7 @@ spec:
             - name: ephemeral-upload-vol
               mountPath: /uploads
               readOnly: false
-{{- if .Values.gke.enabled eq true -}}
+{{- if eq .Values.gke.enabled true -}}
             - name: service-account-vol
               mountPath: /accounts
               readOnly: true
