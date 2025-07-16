@@ -1,3 +1,4 @@
+{{- if .Values.gke.enabled eq true -}}
 {{- $componentContext := .Values.api.letsEncrypt -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -47,3 +48,4 @@ spec:
           persistentVolumeClaim:
             claimName: lets-encrypt
       restartPolicy: Always
+{{- end -}}
