@@ -55,12 +55,12 @@ spec:
               value: "{{ .Values.location }}"
             - name: K8S_CLUSTER_NAME
               value: "{{ .Values.location }}"
-{{- if eq .Values.gke.enabled true -}}
+{{- if eq .Values.gke.enabled true }}
             - name: GCS_SERVICE_ENABLE
               value: "true"
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "/accounts/service-account.json"
-{{- end -}}
+{{- end }}
             - name: WORKER_COUNT
               value: "3"
             - name: API_BASE_URI
@@ -84,11 +84,11 @@ spec:
             - name: ephemeral-upload-vol
               mountPath: /uploads
               readOnly: false
-{{- if eq .Values.gke.enabled true -}}
+{{- if eq .Values.gke.enabled true }}
             - name: service-account-vol
               mountPath: /accounts
               readOnly: true
-{{- end -}}
+{{- end }}
       volumes:
         - name: ephemeral-upload-vol
           emptyDir: {}
