@@ -161,8 +161,7 @@ jobs:
       GCR_WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
       ECR_ROLE: 'arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages'
       ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com'
-      HETZNER_A_URL: 'mythica-a.narwhal-themis.ts.net:32000'  # internal registry endpoint
-      HETZNER_B_URL: 'mythica-b.narwhal-themis.ts.net:32000'  # internal registry endpoint
+      REGISTRY_URL: 'registry.mythica.gg'  # internal container registry endpoint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -191,14 +190,6 @@ jobs:
           role-to-assume: ${{ env.ECR_ROLE }}
           role-session-name: github-actions-ecr
           aws-region: us-east-1
-      
-      - name: Tailscale Auth
-        id: tailscale-auth
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
   
       - name: AWS ECR Login
         uses: aws-actions/amazon-ecr-login@v2
@@ -209,6 +200,13 @@ jobs:
           registry: '${{ env.GCR_REPO_LOCATION }}-docker.pkg.dev'
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
+      
+      - name: Login to registry.mythica.gg
+        uses: docker/login-action@v3
+        with:
+          registry: '${{ env.REGISTRY_URL }}'
+          username: registry
+          password: ${{ secrets.REGISTRY_HTPASSWD }}
 
       - name: Generate tag
         id: generate_tag
@@ -243,7 +241,7 @@ jobs:
           tags: |
             ${{ env.GCR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
             ${{ env.ECR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
-            ${{ env.HETZNER_A_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.REGISTRY_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
             LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
