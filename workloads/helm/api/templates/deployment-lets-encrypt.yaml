@@ -1,4 +1,4 @@
-{{- if .Values.gke.enabled eq true }}
+{{- if eq .Values.gke.enabled true }}
 {{- $componentContext := .Values.api.letsEncrypt -}}
 apiVersion: apps/v1
 kind: Deployment

@@ -1,4 +1,4 @@
-{{- if .Values.gke.enabled eq true }}
+{{- if eq .Values.gke.enabled true }}
 apiVersion: v1
 kind: Service
 metadata:
