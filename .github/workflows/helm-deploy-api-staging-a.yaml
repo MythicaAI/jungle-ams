@@ -102,6 +102,5 @@ jobs:
           $RESTART deployment/otel-collector -n default
           $RESTART deployment/app -n api-staging
           $RESTART deployment/packager -n api-staging
-          $RESTART deployment/lets-encrypt -n api-staging
           $RESTART deployment/web-front -n api-staging
           $RESTART deployment/canary -n api-staging
