@@ -30,7 +30,7 @@ tenant:
   #
   image:
     repository: quay.io/minio/minio
-    tag: RELEASE.2025-04-08T15-41-24Z
+    tag: latest
     pullPolicy: IfNotPresent
   ###
   #
@@ -237,7 +237,7 @@ tenant:
   ###
   # Configures a Prometheus-compatible scraping endpoint at the specified port.
   metrics:
-    enabled: false
+    enabled: true
     port: 9000
     protocol: http
   ###
@@ -269,7 +269,7 @@ tenant:
     externalCertSecret: [ ]
     ###
     # Enable automatic Kubernetes based `certificate generation and signing <https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster>`__
-    requestAutoCert: true
+    requestAutoCert: false
     ###
     # The minimum number of days to expiry before an alert for an expiring certificate is fired.
     # In the below example, if a given certificate will expire in 7 days then expiration events will only be triggered 1 day before expiry
@@ -496,7 +496,7 @@ ingress:
     path: /
     pathType: Prefix
   console:
-    enabled: false
+    enabled: true
     ingressClassName: ""
     labels: { }
     annotations: { }
