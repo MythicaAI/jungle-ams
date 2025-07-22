@@ -1,5 +1,7 @@
 # Jungle AMS
 
+![Jungle Screenshot](docs/index-screenshot.png)
+
 An asset management and automation framework system including API, front-end components and backend automations.
 
 This repo contains the Jungle Asset Management System
