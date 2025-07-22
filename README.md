@@ -1,16 +1,12 @@
-# Infra for Mythica.ai
+# Jungle AMS
 
-In this repo, expect to find definitions, helpers, and code for back-end
-infrastructure. Currently, this repository is not intended to be shared externally.
+An asset management and automation framework system including API, front-end components and backend automations.
 
-DO NOT STORE SECRETS HERE
+This repo contains the Jungle Asset Management System
 
-Do not, under any circumstances, store secret data in this repository.
-
-Talk to @jacob or @pedro for secret management patterns.
-
-Currently, secrets will be stored in 1Password and can be made available
-via their [command line tools](https://developer.1password.com/docs/cli/get-started/#install).
+ams/             Asset management system backend API
+automations/     Backend automations
+sites/           Front end sites
 
 ## Running
 
@@ -30,21 +26,19 @@ NB: `/.env.local` supports setting required `env` vars for the infrastructure th
 env.bat
 ```
 
-
 Services are split into tiers:
 
 * `storage` (Database, cache, and files)
 * `auto`mation (Packaging, Houdini automation)
 * `web` serving (API, nginx)
-* `auth` (TBD)
 
 For local testing, each tier is implemented in a separate `docker-compose.yaml`.
 
 For example, see `testing/storage`
 
-Each tier has task invoke commands defined in the root `tasks.py` file.
+Each tier has invoke commands defined in the root `tasks.py` file.
 
-For example to start the storage tier locally:
+For example, to start the storage tier locally:
 
 ```bash
 invoke storage-start
@@ -170,64 +164,4 @@ pytest --cov --cov-report=html:coverage
 coverage html
 ```
 
-## Deployment and build
-### Staging
-The staging deployment runs automatically after a pull request (PR) is merged into the main branch.
-* `.github/workflows/push-tagged-images.yaml` - Frontend Workflow:
-* `.github/workflows/promote-release.yaml` - Backend Workflow:
-These workflows build the latest versions of the application, as well as the versions specified in `VERSION_APP_PATH` and `VERSION_FRONT_PATH`. The deployment only utilizes the latest versions.
-
-### PROD
-To deploy on prod cd to:
-```bash
-cd workloads/helm/
-```
-To ensure that stable versions of both the frontend and backend are used, the following scripts are provided:
-  * `workloads/helm/add_tag_for_stable_versions.sh` - This script publishes a unified version of the desired stable frontend and backend versions that you select while following the prompts. It guarantees the use of stable tags by creating a general tag in the format: 
-  ``` bash
-  NEW_TAG="f.${FRONT_VERSION/v./}.b.${APP_VERSION/v./}"
-  ```
-
-  * `workloads/helm/helm-upgrade-prod.sh` - uses `workloads/helm/add_tag_for_stable_versions.sh` and deploys with "NEW_TAG" 
-  ``` bash
-    --set image.tag="$NEW_TAG"
-  ```
-
-### ROLLBACK
-To rollback to the previous version of Helm on staging, we can use the script:
-```bash
-workloads/helm/helm_rollback_staging.sh
-```
-It shows the Helm history with revision and description. In the description, there should be text in the format:
-```bash
-"Versions: back: $APP_VERSION, web-front: $FRONT_VERSION"
-```
-This can help you decide which version of the frontend and backend should be rolled back to. After you choose, just type the revision number (following the script's prompts).
-
-At the top of `helm_rollback_staging.sh`, you can see the namespace variable, which can be changed to rollback production:
-
-```bash
-# Namespace and release name
-NAMESPACE="api-staging"
-RELEASE_NAME="api-staging"
-```
-
-# K8s
-
-## OTEL (Open-Telemetry) with SigNoz
-
-OpenTelemetry (OTEL) has been integrated to log application logs, with services configured to forward logs to SigNoz.
-
-It requires the SIGNOZ_API_KEY secret, which is accessible throughout the cluster and is stored in the default namespace. The OTEL collector endpoint is reachable at:
-http://otel-collector.default:4317.
-
-Updating OTEL
-To update OpenTelemetry in the cluster, use the following command:
-```bash
-helm upgrade otel-release-k8s-infra ./workloads/helm/otel -f ./workloads/helm/otel/values.yaml --namespace default
-```
-Alternatively, you can run the script:
-```bash
-./workloads/helm/helm-upgrade-telemetry.sh
-```
 

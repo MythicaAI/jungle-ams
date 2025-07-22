@@ -68,13 +68,11 @@ TESTING_OBSERVE_DIR = os.path.join(BASE_DIR, 'testing/observe')
 TESTING_MNT_DIR = os.path.join(BASE_DIR, 'testing/mnt')
 
 IMAGES = {
-    'workloads/nginx': {},
+    'testing/web/nginx': {},
     'ams/app': {
         'requires': ['libs/python'],
     },
     'libs/python': {},
-    'workloads/lets-encrypt': {},
-    'workloads/gcp/gcs-proxy': {},
     'ams/packager': {
         'requires': ['ams/app', 'libs/python'],
     },
@@ -122,9 +120,7 @@ WEB_SERVING = {
     'ams/canary',
     'ams/packager',
     'ams/test-worker',
-    'workloads/nginx',
-    'workloads/lets-encrypt',
-    'workloads/gcp/gcs-proxy',
+    'testing/web/nginx',
 }
 
 IMAGE_SETS = {
