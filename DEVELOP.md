@@ -47,7 +47,7 @@ pnpm run dev
 
 #NGINX 
 # NB: This is a docker image so you will need to stop it when you are done. 
-cd workloads/nginx
+cd testing/web/nginx
 ./debug_entrypoint.sh
 ```
 

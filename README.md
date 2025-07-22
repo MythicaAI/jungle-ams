@@ -12,15 +12,6 @@ Talk to @jacob or @pedro for secret management patterns.
 Currently, secrets will be stored in 1Password and can be made available
 via their [command line tools](https://developer.1password.com/docs/cli/get-started/#install).
 
-## Internal Resources
-
-workload-configs/
-automations/
-
-## Open Source
-
-Everything else will be released MPLv2
-
 ## Running
 
 Ensure you have [Python3](https://python.org) installed 
