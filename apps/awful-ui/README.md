@@ -8,14 +8,14 @@ Future improvements:
 
 ## Quick Start
 
-Make sure you have react and pnpm installed. From the root of `/infra/sites/awful-ui` run `pnpm install`. Then `pnpm run dev`.
+Make sure you have react and pnpm installed. From the root of `apps/awful-ui` run `pnpm install`. Then `pnpm run dev`.
 
 ## Basic Architecture 
 
 There are three providers in the react App. 
 
 - `MythicaApiProvider` consumes an `apikey` and provides methods to access files in the Mythica API available via the `useMythicaApi` hook. This can be extended to provide access to other APIs
-- `AutomationProvider` interacts with the Mythica Automation CloudRun RESTful wrapper. (see `/infra/automation/cloudrun`) The provider queries each Automation Worker (Houdini, Blender, Genai...) for a catalog of their automations (`path=/mythica/workers`) and makes them available via the `useAutomation` hook. The provider also provides an interface to Run an automation and propage results from its execution via the `getExecutionData` method.
+- `AutomationProvider` interacts with the Mythica Automation CloudRun RESTful wrapper. (see `automation/cloudrun`) The provider queries each Automation Worker (Houdini, Blender, Genai...) for a catalog of their automations (`path=/mythica/workers`) and makes them available via the `useAutomation` hook. The provider also provides an interface to Run an automation and propage results from its execution via the `getExecutionData` method.
 - `AwfulFlowProvider` provides features like "drag and drop" to add nodes to the ReactFlow canvas, and "connect" to handle passing input and output files from one node to the other. Also provides a notifier `notifyTargets` to publish execution data updates to downstream nodes.
 
 When a drop event is triggered in the AwfulFlowProvider, a ReactFlow node is created and wrapped by the HLC corresponding to the `NodeType` of the Drop source. Currently, there are three HLC nodes: `FileUploadNode` (wraps the api endpoint `/v1/upload/store`), `FileViewerNode` (`/v1/download/{file_id}`) and `AutomationNode` (CloudRun RESTful enndpoint). 

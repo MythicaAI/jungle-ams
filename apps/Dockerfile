@@ -1,11 +1,11 @@
 # Use the latest stable Node.js image
 FROM node:lts-alpine AS build
 
-LABEL name="mythica-sites-build"
+LABEL name="mythica-apps-build"
 LABEL maintainer="pedro@mythica.ai"
 LABEL verison="1.0.0"
 LABEL tier="web"
-LABEL description="Build container for websites"
+LABEL description="Build container for web applications"
 
 ENV NODE_OPTIONS="--max-old-space-size=8192"
 
