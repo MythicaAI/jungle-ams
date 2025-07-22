@@ -1,24 +1,46 @@
-# Jungle AMS
+# Jungle - Asset Management System
 
 ![Jungle Screenshot](docs/index-screenshot.png)
 
 An asset management and automation framework system including API, front-end components and backend automations.
 
-This repo contains the Jungle Asset Management System
+Primary uses cases are:
 
-ams/             Asset management system backend API
-automations/     Backend automations
-sites/           Front end sites
+* Game asset management tracking
+* Automating procedural tasks with Houdini against game assets
+* Automating procedural tasks with Blender against game assets
 
-## Running
+The asset management system is a headless CMS system with a job execution API capable of modeling 
+multi-file game asset data.
 
-Ensure you have [Python3](https://python.org) installed 
-Install poetry for Python globally:
-`pip install poetry`
+For real time interactive control see [SceneTalk](https://github.com/MythicaAI/scenetalk)
 
-Setup python `virtual environment` and `invoke`
+Basic front ends for graph editing and user asset management are included.
 
-NB: `/.env.local` supports setting required `env` vars for the infrastructure that are loaded by the next step. The required vars are defined in `/.env`
+* **ams/**             
+  * Asset management system backend API
+* **automations/**
+  * Backend automations for automating Houdini, Blender and AI workloads behind the AMS APIs
+* **apps/**
+  * Front end applications built on the API
+
+## Running Locally
+
+Backend components are based on Python and front end components are based on React+Vite.
+
+Developer actions are implemented with `invoke` in tasks.py
+
+### Python setup
+1. Ensure you have [Python3](https://python.org) and Node installed.
+1. Local build dependencies are in `local_requirements.tat`
+1. Run `pip install -r local_requirements.txt`
+
+
+### Environment Variables
+NB: `/.env.local` supports setting required `env` vars for the infrastructure that are loaded by the next step. 
+The required vars are defined in `/.env`
+
+### Create the base virtual environment
 
 ```bash
 . ./env.sh
@@ -28,17 +50,19 @@ NB: `/.env.local` supports setting required `env` vars for the infrastructure th
 env.bat
 ```
 
-Services are split into tiers:
+### Service tiers
 
-* `storage` (Database, cache, and files)
+Services are segmented into tiers to make local development easier.
+
+* `storage` (Database, cache and files)
+* `web` web and API serving
 * `auto`mation (Packaging, Houdini automation)
-* `web` serving (API, nginx)
 
 For local testing, each tier is implemented in a separate `docker-compose.yaml`.
 
 For example, see `testing/storage`
 
-Each tier has invoke commands defined in the root `tasks.py` file.
+Each tier has commands defined in the root `tasks.py` file.
 
 For example, to start the storage tier locally:
 
@@ -63,8 +87,9 @@ docker logs <container-id>
 
 ## Setup - Linux and Mac
 
-Canonically, we use `asdf` to manage local tool versions. Observe the
-`.tool-versions` file. It is possible to manage your tool versions, but YMMV.
+We currently recommend using `asdf` or `brew` to manage local tool versions. 
+
+For ASDF see `.tool-versions`.
 
 To install all tools:
 
@@ -79,7 +104,7 @@ To install all tools:
   asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
   ```
 
-- From repo root install tools:
+- Install tools:
 
   ``` shell
   asdf install
@@ -91,6 +116,8 @@ files in those subfolders.
 ## Setup - Windows
 
 node.js must be installed manually from https://nodejs.org/en/download
+
+On windows `chocolatey` is recommended for tool support.
 
 ### Install with poetry
 
