@@ -1,24 +1,39 @@
-# Jungle AMS
+# Jungle - Asset Management System
 
 ![Jungle Screenshot](docs/index-screenshot.png)
 
 An asset management and automation framework system including API, front-end components and backend automations.
 
-This repo contains the Jungle Asset Management System
+The asset management system is a headless CMS system with a job execution API capable of modeling 
+multi-file game asset data.
 
-ams/             Asset management system backend API
-automations/     Backend automations
-sites/           Front end sites
+Basic front ends for graph editing and user asset management are included.
 
-## Running
 
-Ensure you have [Python3](https://python.org) installed 
-Install poetry for Python globally:
-`pip install poetry`
+* **ams/**             
+  * Asset management system backend API
+* **automations/**
+  * Backend automations for automating Houdini, Blender and AI workloads behind the AMS APIs
+* **apps/**
+  * Front end applications built on the API
 
-Setup python `virtual environment` and `invoke`
+## Running Locally
 
-NB: `/.env.local` supports setting required `env` vars for the infrastructure that are loaded by the next step. The required vars are defined in `/.env`
+Backend components are based on Python and front end components are based on React+Vite.
+
+Developer actions are implemented with `invoke` in tasks.py
+
+### Python setup
+1. Ensure you have [Python3](https://python.org) and Node installed.
+1. Local build dependencies are in `local_requirements.tat`
+1. Run `pip install -r local_requirements.txt`
+
+
+### Environment Variables
+NB: `/.env.local` supports setting required `env` vars for the infrastructure that are loaded by the next step. 
+The required vars are defined in `/.env`
+
+### Create the base virtual environment
 
 ```bash
 . ./env.sh
@@ -28,17 +43,19 @@ NB: `/.env.local` supports setting required `env` vars for the infrastructure th
 env.bat
 ```
 
-Services are split into tiers:
+### Service tiers
 
-* `storage` (Database, cache, and files)
+Services are segmented into tiers to make local development easier.
+
+* `storage` (Database, cache and files)
+* `web` web and API serving
 * `auto`mation (Packaging, Houdini automation)
-* `web` serving (API, nginx)
 
 For local testing, each tier is implemented in a separate `docker-compose.yaml`.
 
 For example, see `testing/storage`
 
-Each tier has invoke commands defined in the root `tasks.py` file.
+Each tier has commands defined in the root `tasks.py` file.
 
 For example, to start the storage tier locally:
 
