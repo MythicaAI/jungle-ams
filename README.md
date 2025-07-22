@@ -4,11 +4,18 @@
 
 An asset management and automation framework system including API, front-end components and backend automations.
 
+Primary uses cases are:
+
+* Game asset management tracking
+* Automating procedural tasks with Houdini against game assets
+* Automating procedural tasks with Blender against game assets
+
 The asset management system is a headless CMS system with a job execution API capable of modeling 
 multi-file game asset data.
 
-Basic front ends for graph editing and user asset management are included.
+For real time interactive control see [SceneTalk](https://github.com/MythicaAI/scenetalk)
 
+Basic front ends for graph editing and user asset management are included.
 
 * **ams/**             
   * Asset management system backend API
@@ -80,8 +87,9 @@ docker logs <container-id>
 
 ## Setup - Linux and Mac
 
-Canonically, we use `asdf` to manage local tool versions. Observe the
-`.tool-versions` file. It is possible to manage your tool versions, but YMMV.
+We currently recommend using `asdf` or `brew` to manage local tool versions. 
+
+For ASDF see `.tool-versions`.
 
 To install all tools:
 
@@ -96,7 +104,7 @@ To install all tools:
   asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git
   ```
 
-- From repo root install tools:
+- Install tools:
 
   ``` shell
   asdf install
@@ -108,6 +116,8 @@ files in those subfolders.
 ## Setup - Windows
 
 node.js must be installed manually from https://nodejs.org/en/download
+
+On windows `chocolatey` is recommended for tool support.
 
 ### Install with poetry
 
