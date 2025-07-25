@@ -1,27 +1,27 @@
-name: ci-ams-app
+name: ci-ams-api
 
 on:
   pull_request:
     branches:
       - '**'
     paths:
-      - 'ams/**'
+      - 'api/**'
       - 'libs/python/**'
-      - '.github/workflows/ci-ams-app.yaml'
+      - '.github/workflows/ci-ams-api.yaml'
   push:
     branches:
       - '**'
     paths:
-      - 'ams/**'
+      - 'api/**'
       - 'libs/python/**'
-      - '.github/workflows/ams-app-ci.yaml'
+      - '.github/workflows/ci-ams-api.yaml'
 
 defaults:
   run:
-    working-directory: ams
+    working-directory: api
 
 jobs:
-  ams-app-ci:
+  ci-ams-api:
     runs-on: ubuntu-latest
     permissions:
       contents: write
