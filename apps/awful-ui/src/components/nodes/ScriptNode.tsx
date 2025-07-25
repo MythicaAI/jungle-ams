@@ -65,10 +65,10 @@ export interface ScriptNodeProps {
  */
 const template = `
 from pydantic import BaseModel, Field
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import ProcessStreamItem, OutputFiles 
-from ripple.automation.automations import ( 
+from meshwork.automation.publishers import ResultPublisher
+from meshwork.models.params import ParameterSet, FileParameter
+from meshwork.models.streaming import ProcessStreamItem, OutputFiles 
+from meshwork.automation.automations import ( 
     automation_request,
     automation_response,
     automation
