@@ -23,12 +23,13 @@ jobs:
       repository-projects: write
 
     outputs:
-      libraries: ${{ steps.filter.outputs.changes }}
+      libraries: ${{ steps.post_filter.outputs.changes }}
+      has_changes: ${{ steps.post_filter.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dorny/paths-filter@v3
-        id: filter
+      - id: filter
+        uses: dorny/paths-filter@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -37,6 +38,38 @@ jobs:
               - 'libs/python/cryptid/**'
             libs/python/ripple:
               - 'libs/python/ripple/**'
+
+      # Set matrix based on filter results or use all images for manual trigger
+      - id: post_filter
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const isManualTrigger = context.eventName === 'workflow_dispatch';
+            const allLibs = [
+              "libs/python/cryptid/",
+              "libs/python/ripple/" ];
+            
+            let changes;
+            try {
+              changes = JSON.parse('${{ steps.filter.outputs.changes }}');
+            } catch (e) {
+              changes = [];
+              console.log('Error parsing changes or empty changes array:', e);
+            }
+            
+            if (isManualTrigger) {
+              // For manual trigger, use all libraries
+              console.log('Manual trigger detected, testing all libraries');
+              core.setOutput('changes', JSON.stringify(allLibs));
+              core.setOutput('has_changes', 'true');
+            } else {
+              // For automatic trigger, use filtered changes
+              const hasChanges = Array.isArray(changes) && changes.length > 0;
+            
+              console.log('Changes detected:', hasChanges ? 'yes' : 'no');
+              core.setOutput('changes', JSON.stringify(changes));
+              core.setOutput('has_changes', hasChanges ? 'true' : 'false');
+            }
 
   build-and-test:
     needs: changes

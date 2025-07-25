@@ -1,8 +1,8 @@
 FROM python:3.12-alpine
 LABEL version="1.0.0"
-LABEL name="mythica-job-canary"
+LABEL name="canary"
 LABEL description="Automated canary test for the job pipeline"
-LABEL tier="automation"
+LABEL tier="web"
 
 RUN pip install --upgrade pip && \
     pip install requests opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp

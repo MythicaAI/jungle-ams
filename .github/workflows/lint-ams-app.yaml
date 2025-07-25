@@ -3,21 +3,21 @@ name: lint-ams-app
 on:
   push:
     paths:
-      - 'ams/app/**'
-      - 'ams/packager/**'
-      - 'ams/bulk-import/**'
-      - 'ams/publish-init/**'
+      - 'ams/**'
+      - 'packager/**'
+      - 'libs/python/**'
+      - 'bulk-import/**'
       - '.github/workflows/ams-app-lint-pr.yaml'
 
 defaults:
   run:
-    working-directory: ams/app
+    working-directory: ams
 
 jobs:
   pylint:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: "${{ github.workspace }}/ams/app"
+      PYTHONPATH: "${{ github.workspace }}/ams"
 
     strategy:
       matrix:

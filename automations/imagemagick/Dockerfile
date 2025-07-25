@@ -1,10 +1,10 @@
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 FROM python:3.12-alpine AS base
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-auto-imagemagick"
+LABEL name="imagemagick"
 LABEL description="Automation for mythica automation test image"
 LABEL version="1.0.0"
 LABEL tier="auto"

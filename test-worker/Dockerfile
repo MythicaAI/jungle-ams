@@ -1,11 +1,11 @@
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Stage 1: python 3.11 base image
 FROM python:3.11-slim AS base
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-test-worker"
+LABEL name="test-worker"
 LABEL description="Simple worker test validation"
 LABEL version="1.0.0"
 LABEL tier="auto"

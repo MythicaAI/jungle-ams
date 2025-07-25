@@ -1,7 +1,7 @@
 FROM python:3.12-alpine
 
 LABEL maintainer="jacobrepp@gmail.com"
-LABEL name="mythica-libs-python"
+LABEL name="libs-python"
 LABEL description="Base image with libraries and poetry"
 LABEL version="1.0.0"
 LABEL tier="web"
