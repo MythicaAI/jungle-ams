@@ -6,11 +6,11 @@ from fastapi import FastAPI, HTTPException
 from sqlalchemy import asc
 from sqlmodel import select
 
-from cryptid.cryptid import event_id_to_seq, event_seq_to_id
+from gcid.gcid import event_id_to_seq, event_seq_to_id
 from db.connection import db_session_pool
 from db.schema.events import Event as DbEvent
-from ripple.funcs import Boundary, Source
-from ripple.models.streaming import Event, StreamItem
+from meshwork.funcs import Boundary, Source
+from meshwork.models.streaming import Event, StreamItem
 
 
 def create_events_table_source(app: FastAPI, params: dict[str, Any]) -> Source:

@@ -4,10 +4,10 @@ from typing import Any
 import pytest
 
 from config import app_config
-from ripple.funcs import Source
-from ripple.models.streaming import StreamItem
-from ripple.source_types import add_source_type, remove_source_type
-from ripple.sources.memory import create_memory_source
+from meshwork.funcs import Source
+from meshwork.models.streaming import StreamItem
+from meshwork.source_types import add_source_type, remove_source_type
+from meshwork.sources.memory import create_memory_source
 
 
 @pytest.fixture

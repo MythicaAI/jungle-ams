@@ -1,10 +1,10 @@
-from cryptid.cryptid import file_id_to_seq
+from gcid.gcid import file_id_to_seq
 from db.connection import get_db_session
 from db.schema.media import FileContent
 from db.schema.profiles import Profile
 from fastapi import APIRouter, Depends, HTTPException
-from ripple.models.contexts import FilePurpose
-from ripple.models.sessions import SessionProfile
+from meshwork.models.contexts import FilePurpose
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse, enrich_file, enrich_files
 from sqlmodel import and_, select

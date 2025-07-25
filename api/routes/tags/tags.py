@@ -10,12 +10,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import delete as sql_delete, insert, select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import tag_id_to_seq, tag_seq_to_id
+from gcid.gcid import tag_id_to_seq, tag_seq_to_id
 from db.connection import get_db_session
 from db.schema.tags import Tag
-from ripple.auth import roles
-from ripple.auth.authorization import validate_roles
-from ripple.models.sessions import SessionProfile
+from meshwork.auth import roles
+from meshwork.auth.authorization import validate_roles
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.tags.tag_types import router as tag_types_router
 from repos.tags import resolve_contents_as_json

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from cache.connection import redis_connection_pool
-from ripple.funcs import Boundary, Source
+from meshwork.funcs import Boundary, Source
 
 
 async def populate_list(app: FastAPI, key: str, source: Source):

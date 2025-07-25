@@ -17,15 +17,15 @@ import db.index as db_index
 from config import app_config
 from content.validate_filename import validate_filename
 from context import UploadContext
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq, file_seq_to_id, profile_seq_to_id
+from gcid.gcid import asset_id_to_seq, file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.connection import get_db_session
 from db.schema.assets import AssetVersion
 from db.schema.media import FileContent, FileTag
 from db.schema.profiles import Profile
 from queries.files import delete_by_id
 from repos.assets import convert_version_input, process_join_results, select_asset_version
-from ripple.models.contexts import FilePurpose
-from ripple.models.sessions import SessionProfile
+from meshwork.models.contexts import FilePurpose
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.file_uploads import FileUploadResponse
 from routes.storage_client import storage_client

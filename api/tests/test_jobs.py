@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
-from cryptid.cryptid import asset_seq_to_id, job_def_seq_to_id
+from gcid.gcid import asset_seq_to_id, job_def_seq_to_id
 from repos.assets import AssetVersionResult
 from db.schema.events import Event
 from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
@@ -220,7 +220,7 @@ async def test_asset_link(client, api_base, create_profile, create_asset_version
     headers = test_profile.authorization_header()
 
     # create test assets and hda files
-    versions:list[AssetVersionResult] = create_asset_versions(
+    versions: list[AssetVersionResult] = create_asset_versions(
         test_profile,
         uploader,
         version_ids=['1.0.0', '2.0.0'])
@@ -454,7 +454,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     headers = test_profile.authorization_header()
 
     # create test assets and hda files
-    versions:list[AssetVersionResult] = create_asset_versions(
+    versions: list[AssetVersionResult] = create_asset_versions(
         test_profile,
         uploader,
         version_ids=['1.0.0'])
@@ -471,7 +471,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_seq_to_id(9999)}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
     assert_status_code(r, HTTPStatus.NOT_FOUND)
-    
+
     # Test empty job list for asset version
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
@@ -521,7 +521,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
     assert_status_code(r, HTTPStatus.CREATED)
     o = munchify(r.json())
     job_def_ids.append(o.job_def_id)
-    
+
     job_ids_job_def_ids: dict[str, str] = {}
     # Create a job for each definition
     for job_def_id in job_def_ids:
@@ -578,7 +578,7 @@ async def test_asset_version_job_list(client: TestClient, api_base, create_profi
         o = munchify(r.json())
         assert 'job_result_id' in o
         job_result_ids_by_job[job_id].append(o.job_result_id)
-    
+
     # Test job list for asset version
     r = client.get(
         f'{api_base}/jobs/by_asset/{asset_id}/versions/{asset_version.version[0]}/{asset_version.version[1]}/{asset_version.version[2]}')
@@ -602,7 +602,7 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     headers = test_profile.authorization_header()
 
     # create test assets and hda files
-    versions:list[AssetVersionResult] = create_asset_versions(
+    versions: list[AssetVersionResult] = create_asset_versions(
         test_profile,
         uploader,
         version_ids=['1.0.0'])
@@ -629,15 +629,15 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
                 },
             },
             "params_v2": [
-            {
-                "param_type": "file",
-                "label": "Sub-Network Input #1",
-                "category_label": None,
-                "constant": False,
-                "name": "input0",
-                "default": ""
-            }
-        ]
+                {
+                    "param_type": "file",
+                    "label": "Sub-Network Input #1",
+                    "category_label": None,
+                    "constant": False,
+                    "name": "input0",
+                    "default": ""
+                }
+            ]
         },
         'source': {
             'asset_id': asset_id,
@@ -675,15 +675,16 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
 
     # Test only original job_def has has asset_entrypoint
     new_job_def: JobDefinitionModel = munchify(next(
-                    (
-                        item
-                        for item in r.json()
-                        if item.get("job_def_id") == new_job_def_id
-                    ),
-                    None,
-                ))
+        (
+            item
+            for item in r.json()
+            if item.get("job_def_id") == new_job_def_id
+        ),
+        None,
+    ))
     assert not any(True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == new_job_def_id))
-    assert any(True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == template_job_def.job_def_id))
+    assert any(
+        True for job_def_list_item in r.json() if (job_def_list_item.get("job_def_id") == template_job_def.job_def_id))
 
     r = client.get(f'{api_base}/jobs/definitions/{new_job_def_id}', headers=headers)
     assert_status_code(r, HTTPStatus.OK)
@@ -713,7 +714,7 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     assert new_job_def.source == template_job_def.source
     assert new_job_def.owner_id == test_profile.profile.profile_id
     assert new_job_def.job_def_id != template_job_def.job_def_id
-    
+
     # Test create job from template without params_schema
     r = client.post(f'{api_base}/jobs/definitions/{template_job_def.job_def_id}',
                     json={
@@ -724,6 +725,7 @@ async def test_job_create_from_template(client: TestClient, api_base, create_pro
     assert_status_code(r, HTTPStatus.OK)
     new_job_def: JobDefinitionModel = munchify(r.json())
     assert new_job_def.params_schema.params_v2 == template_job_def.params_schema.params_v2
+
 
 @pytest.mark.asyncio
 async def test_job_edit_delete(client: TestClient, api_base, create_profile):

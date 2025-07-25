@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import Any, Dict, Union
 
 from content.locate_content import locate_content_by_seq
-from cryptid.cryptid import file_id_to_seq, file_seq_to_id
+from gcid.gcid import file_id_to_seq, file_seq_to_id
 from fastapi import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tags.tag_models import TagFileReference

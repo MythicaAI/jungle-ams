@@ -2,7 +2,7 @@ from datetime import timedelta
 from io import BytesIO
 import logging
 
-from cryptid.location import location
+from gcid.location import location
 from google.cloud import storage
 from urllib.parse import quote
 
@@ -11,7 +11,6 @@ from storage.bucket_types import BucketType
 from storage.storage_client import StorageClient, tracer
 
 from opentelemetry.context import get_current as get_current_telemetry_context
-
 
 # Configure GCS bucket mappings here directly - this could get more involved as bucket limits,
 # regional and migrations occur

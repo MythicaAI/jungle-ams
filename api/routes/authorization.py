@@ -2,11 +2,11 @@ import logging
 from http import HTTPStatus
 from typing import Annotated, Optional, Union
 
-from cryptid.cryptid import profile_seq_to_id
+from gcid.gcid import profile_seq_to_id
 from fastapi import HTTPException, Header, Request, Security, WebSocket
 from fastapi.security.api_key import APIKeyHeader
 
-from ripple.models.sessions import SessionProfile
+from meshwork.models.sessions import SessionProfile
 
 from auth.data import decode_session_profile
 

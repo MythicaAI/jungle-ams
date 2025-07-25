@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from cryptid.cryptid import profile_seq_to_id
+from gcid.gcid import profile_seq_to_id
 from db.schema.profiles import Profile
 from validate_email.responses import ValidateEmailState, email_validate_state_enum
 

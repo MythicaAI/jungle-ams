@@ -1,12 +1,12 @@
 import logging
 from http import HTTPStatus
 
-from cryptid.cryptid import event_id_to_seq
+from gcid.gcid import event_id_to_seq
 from db.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException
 from opentelemetry import trace
-from ripple.automation.models import EventAutomationResponse
-from ripple.models.sessions import SessionProfile
+from meshwork.automation.models import EventAutomationResponse
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.events import query as event_query
 from repos import events as event_repo
@@ -23,10 +23,10 @@ router = APIRouter(prefix="/events", tags=["jobs", "events"])
 
 @router.post("/processed/{event_id}/")
 async def update_events_result_data(
-    event_id: str,
-    data: EventAutomationResponse,
-    profile: SessionProfile = Depends(session_profile),
-    db_session: AsyncSession = Depends(get_db_session),
+        event_id: str,
+        data: EventAutomationResponse,
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session),
 ) -> EventUpdateResponse:
     """Updates event table if event is processed"""
     event_seq = event_id_to_seq(event_id)

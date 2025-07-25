@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from cryptid.cryptid import IdError, IdType, SequenceError, id_to_seq, id_type, seq_to_id
+from gcid.gcid import IdError, IdType, SequenceError, id_to_seq, id_type, seq_to_id
 
 
 def profile_id():

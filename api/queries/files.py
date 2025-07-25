@@ -1,10 +1,10 @@
 from http import HTTPStatus
 from sqlite3 import IntegrityError
-from cryptid.cryptid import file_id_to_seq
+from gcid.gcid import file_id_to_seq
 from fastapi import HTTPException
 from sqlalchemy import and_, update
 from sqlmodel.ext.asyncio.session import AsyncSession
-from ripple.models.sessions import SessionProfile
+from meshwork.models.sessions import SessionProfile
 from db.schema.media import FileContent
 from sqlalchemy.sql.functions import now as sql_now
 

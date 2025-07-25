@@ -12,13 +12,13 @@ from fastapi import WebSocket
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import app_config
-from cryptid.cryptid import IdError, reader_id_to_seq
+from gcid.gcid import IdError, reader_id_to_seq
 from db.connection import db_session_pool
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
-from ripple.client_ops import ClientOp, ReadClientOp
-from ripple.funcs import Boundary, Source
-from ripple.source_types import create_source
+from meshwork.client_ops import ClientOp, ReadClientOp
+from meshwork.funcs import Boundary, Source
+from meshwork.source_types import create_source
 from routes.readers.utils import (
     reader_to_source_params,
     select_profile_readers,

@@ -9,7 +9,7 @@ from pydantic import AnyHttpUrl, BaseModel, EmailStr, ValidationError, constr
 from sqlmodel import col, select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import profile_id_to_seq
+from gcid.gcid import profile_id_to_seq
 from db.connection import get_db_session
 from db.schema.profiles import Profile
 from profiles.load_profile_and_roles import load_profile_and_roles
@@ -18,9 +18,9 @@ from profiles.responses import (
     ProfileRolesResponse, PublicProfileResponse,
     profile_to_profile_response,
 )
-from ripple.auth import roles
-from ripple.auth.authorization import Scope, validate_roles
-from ripple.models.sessions import SessionProfile
+from meshwork.auth import roles
+from meshwork.auth.authorization import Scope, validate_roles
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import maybe_session_profile, session_profile
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])

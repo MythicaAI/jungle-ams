@@ -1,15 +1,15 @@
 import logging
 
 from automation.hello_world import HelloWorldRequest, HelloWorldResponse, hello_world_api
-from ripple.automation.worker import Worker
-from ripple.config import configure_telemetry, ripple_config
+from meshwork.automation.worker import Worker
+from meshwork.config import configure_telemetry, meshwork_config
 
 worker = Worker()
 
-if ripple_config().telemetry_endpoint:
+if meshwork_config().telemetry_endpoint:
     configure_telemetry(
-        ripple_config().telemetry_endpoint,
-        ripple_config().telemetry_token,
+        meshwork_config().telemetry_endpoint,
+        meshwork_config().telemetry_token,
     )
 else:
     logging.basicConfig(level=logging.INFO, format="%(message)s")

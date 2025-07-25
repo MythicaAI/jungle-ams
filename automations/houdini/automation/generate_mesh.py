@@ -9,9 +9,9 @@ from mythica.network import RampBasis
 from opentelemetry import trace
 from pydantic import Field
 
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.params import FileParameter, ParameterSet
-from ripple.models.streaming import Error, OutputFiles
+from meshwork.automation.publishers import ResultPublisher
+from meshwork.models.params import FileParameter, ParameterSet
+from meshwork.models.streaming import Error, OutputFiles
 
 tracer = trace.get_tracer(__name__)
 logging.basicConfig(
@@ -62,8 +62,8 @@ def apply_single_param(asset, key, value):
             if isinstance(parm.parmTemplate(), hou.MenuParmTemplate):
                 parm.set([int(value)])
             elif (isinstance(parm.parmTemplate(), hou.StringParmTemplate)
-                and parm.parmTemplate().stringType() == hou.stringParmType.FileReference):
-                val = value.get('file_path','')
+                  and parm.parmTemplate().stringType() == hou.stringParmType.FileReference):
+                val = value.get('file_path', '')
                 parm.set([val])
             else:
                 val = [value] if not isinstance(value, (tuple, list)) else value
@@ -127,11 +127,11 @@ def create_inputs(asset, geo, params: dict):
             input_node.parm('bImportMaterials').set(False)
             input_node.parm('bConvertUnits').set(True)
             input_node.parm('sFBXFile').set(input_file)
-            #input_node.parm('bImportAnimation').set(False)
-            #input_node.parm('bImportBoneSkin').set(False)
-            #input_node.parm('bConvertYUp').set(False)
-            #input_node.parm('bUnlockGeo').set(False)
-            #input_node.parm('pack').set(False)
+            # input_node.parm('bImportAnimation').set(False)
+            # input_node.parm('bImportBoneSkin').set(False)
+            # input_node.parm('bConvertYUp').set(False)
+            # input_node.parm('bUnlockGeo').set(False)
+            # input_node.parm('pack').set(False)
             input_node.parm("reload").pressButton()
 
         elif file_ext in ['.gltf', '.glb']:

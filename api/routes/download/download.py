@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from content.resolve_download_info import DownloadInfoResponse, increment_download_count, resolve_download_info, \
     translate_download_url
-from cryptid.cryptid import file_id_to_seq
+from gcid.gcid import file_id_to_seq
 from db.connection import get_db_session
 from db.schema.media import FileContent
 from routes.storage_client import storage_client

@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel
-from ripple.models.assets import AssetVersionEntryPointReference
-from ripple.models.params import ParameterSet, ParameterSpec
+from meshwork.models.assets import AssetVersionEntryPointReference
+from meshwork.models.params import ParameterSet, ParameterSpec
 
 
 class JobDefinitionRequest(BaseModel):

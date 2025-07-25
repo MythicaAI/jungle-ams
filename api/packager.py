@@ -28,14 +28,14 @@ from routes.download.download import DownloadInfoResponse
 from routes.file_uploads import FileUploadResponse
 from telemetry_config import get_telemetry_headers
 
-from cryptid.cryptid import event_seq_to_id
-from ripple.automation.automations import ScriptJobDefRequest
-from ripple.automation.adapters import NatsAdapter
-from ripple.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
-from ripple.automation.worker import process_guid
-from ripple.config import configure_telemetry, ripple_config
-from ripple.models.params import FileParameter, IntParameterSpec, ParameterSet
-from ripple.runtime.alerts import AlertSeverity, send_alert
+from gcid.gcid import event_seq_to_id
+from meshwork.automation.automations import ScriptJobDefRequest
+from meshwork.automation.adapters import NatsAdapter
+from meshwork.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
+from meshwork.automation.worker import process_guid
+from meshwork.config import configure_telemetry, meshwork_config
+from meshwork.models.params import FileParameter, IntParameterSpec, ParameterSet
+from meshwork.runtime.alerts import AlertSeverity, send_alert
 from sanitize_filename import sanitize_filename
 
 log = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ settings = Settings()
 
 image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webm'}
 houdini_extensions = ('hda', 'hdalc')
+
 
 def parse_args():
     """Parse command line arguments and provide the args structure"""
@@ -202,7 +203,8 @@ async def generate_several_thumbnails(
     await nats.post("imagemagick", bulk_req.model_dump())
 
 
-def gather_hda_dependencies(endpoint: str, contents: list[AssetFileReference | AssetDependency | str], dependent_packages: list[AssetDependency]) -> \
+def gather_hda_dependencies(endpoint: str, contents: list[AssetFileReference | AssetDependency | str],
+                            dependent_packages: list[AssetDependency]) -> \
         list[FileParameter]:
     dependencies = []
 
@@ -286,6 +288,7 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
     log.info("Sent NATS houdini task. Request: %s", event.model_dump())
     await nats.post("houdini", event.model_dump())
 
+
 async def fetch_content_locally(url):
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
@@ -306,15 +309,14 @@ async def generate_several_awpy_job_defs(
         telemetry_context=get_telemetry_headers()
     )
     for content in contents:
-
-        #fetch content.url locally then read the json file and get the worker name
+        # fetch content.url locally then read the json file and get the worker name
         data = await fetch_content_locally(content.url)
         data = json.loads(data)
         log.info("Fetched content:%s", data)
         worker_name = data.get("worker")
 
         parameter_set = ScriptJobDefRequest(
-            awpy_file=FileParameter(file_id=content.file_id),            
+            awpy_file=FileParameter(file_id=content.file_id),
             src_asset_id=avr.asset_id,
             src_version=avr.version,
         )
@@ -329,12 +331,13 @@ async def generate_several_awpy_job_defs(
         ))
 
     nats = NatsAdapter()
-    log.info("Sent NATS %s task. Request: %s", worker_name, bulk_req.model_dump())  
+    log.info("Sent NATS %s task. Request: %s", worker_name, bulk_req.model_dump())
     await nats.post(worker_name, bulk_req.model_dump())
 
+
 async def generate_awpy_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str,
-                                    event_id: str) -> bool:
-        #read the json file and get the worker name
+                                 event_id: str) -> bool:
+    # read the json file and get the worker name
     with open(content.file_name, 'r') as f:
         data = json.load(f)
         worker_name = data.get("worker")
@@ -399,6 +402,7 @@ def is_image_file(content: Union[AssetFileReference | AssetDependency | str]) ->
         span.record_exception(ex)
         return False
 
+
 def is_awpy_file(content: Union[AssetFileReference | AssetDependency | str]) -> bool:
     if isinstance(content, AssetFileReference):
         name = content.file_name
@@ -413,6 +417,7 @@ def is_awpy_file(content: Union[AssetFileReference | AssetDependency | str]) -> 
         span = trace.get_current_span(context=get_current_telemetry_context())
         span.record_exception(ex)
         return False
+
 
 def build_asset_url(endpoint: str, asset_id: str, version: tuple[int]) -> str:
     """Build an access API access URL to a specific asset version"""
@@ -576,10 +581,10 @@ async def worker_main(endpoint: str, api_key: str):
 
 
 def setup_logging():
-    if ripple_config().telemetry_endpoint:
+    if meshwork_config().telemetry_endpoint:
         configure_telemetry(
-            ripple_config().telemetry_endpoint,
-            ripple_config().telemetry_token)
+            meshwork_config().telemetry_endpoint,
+            meshwork_config().telemetry_token)
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 

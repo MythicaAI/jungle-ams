@@ -13,15 +13,15 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.testclient import WebSocketTestSession
 
-from cryptid.cryptid import (
+from gcid.gcid import (
     event_seq_to_id,
     file_seq_to_id,
     job_seq_to_id,
     profile_id_to_seq,
 )
 from profiles.responses import ProfileResponse
-from ripple.client_ops import ReadClientOp
-from ripple.models.streaming import (
+from meshwork.client_ops import ReadClientOp
+from meshwork.models.streaming import (
     Event,
     Message,
     OutputFiles,

@@ -1,7 +1,7 @@
 import pytest
-from cryptid.cryptid import profile_seq_to_id
+from gcid.gcid import profile_seq_to_id
 from fastapi import HTTPException
-from ripple.auth.generate_token import generate_token
+from meshwork.auth.generate_token import generate_token
 
 from auth.data import decode_session_profile
 

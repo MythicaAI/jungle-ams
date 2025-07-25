@@ -496,8 +496,8 @@ def poetry_nuke(c, path):
 def poetry_upgrade(c, path):
     if path is None:
         raise ValueError(
-            "pass a relative path in the infra repo e.g. libs/python/ripple")
-    ignore = {'ripple', 'cryptid'}
+            "pass a relative path in the infra repo e.g. libs/python/meshwork")
+    ignore = {'meshwork', 'gcid'}
     abs_path = os.path.join(BASE_DIR, path)
     with c.cd(abs_path):
         for group in ['dev', 'main', 'infra']:

@@ -19,16 +19,16 @@ from queries import assets as asset_q
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
 from content.validate_filename import validate_filename
-from cryptid.cryptid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
+from gcid.gcid import asset_id_to_seq, asset_seq_to_id, file_id_to_seq, file_seq_to_id, org_id_to_seq, \
     org_seq_to_id, profile_id_to_seq, profile_seq_to_id
-from cryptid.location import location
+from gcid.location import location
 from db.schema.assets import Asset, AssetVersion, AssetVersionEntryPoint
 from db.schema.events import Event
 from db.schema.profiles import Org, Profile
-from ripple.auth import roles
-from ripple.auth.authorization import Scope, validate_roles
-from ripple.models.assets import AssetVersionRef
-from ripple.models.sessions import SessionProfile
+from meshwork.auth import roles
+from meshwork.auth.authorization import Scope, validate_roles
+from meshwork.models.assets import AssetVersionRef
+from meshwork.models.sessions import SessionProfile
 from routes.download.download import DownloadInfoResponse
 from storage.storage_client import StorageClient
 from tags.tag_models import TagResponse, TagType
@@ -240,11 +240,11 @@ async def old_process_join_results(
 
 async def process_join_results(
         join_results: Iterable[tuple[Asset, AssetVersion, dict[str, Union[int, str], str, str, str]]] \
-) -> list[AssetVersionResult]:
+        ) -> list[AssetVersionResult]:
     """Process the join result of Asset, AssetVersion and FileContent tables"""
-    
+
     results = list()
-    for asset, ver, tag_to_asset, owner_name, author_name, org_name  in join_results:
+    for asset, ver, tag_to_asset, owner_name, author_name, org_name in join_results:
         if ver is None:
             # outer join or joined load didn't find a version
             ver = AssetVersion(major=0, minor=0, patch=0, created=None, contents={})
@@ -273,9 +273,9 @@ async def process_join_results(
 
 
 async def process_filtered_tags(
-    join_results: Iterable[
-        tuple[Asset, AssetVersion, dict[str, Union[int, str]], str, str, str]
-    ]
+        join_results: Iterable[
+            tuple[Asset, AssetVersion, dict[str, Union[int, str]], str, str, str]
+        ]
 ):
     def filtered_avt(
             asset: Asset,
@@ -305,6 +305,7 @@ async def process_filtered_tags(
             versions=sorted_versions,
             tags=asset_q.resolve_assets_tag(tag_to_asset),
         )
+
     reduced: dict[int, AssetTopResult] = {}
     for result in join_results:
         asset, ver, tag_to_asset, owner_name, author_name, org_name = result
@@ -572,11 +573,11 @@ async def create_root(
 
 
 async def update_versions_contents(
-    asset_id: str,
-    version_str: str,
-    req: AssetUpdateVersionContentsRequest,
-    profile: SessionProfile,
-    db_session: AsyncSession,
+        asset_id: str,
+        version_str: str,
+        req: AssetUpdateVersionContentsRequest,
+        profile: SessionProfile,
+        db_session: AsyncSession,
 ) -> AssetVersionResult:
     """
     Updates the contents of a specific version of an asset.

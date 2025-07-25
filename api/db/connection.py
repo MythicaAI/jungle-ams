@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession as SQLA_AsyncSession, async_sess
 from sqlalchemy.sql import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from ripple.config import ripple_config
+from meshwork.config import meshwork_config
 
 log = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ def sql_profiler_decorator(func: Callable):
     @functools.wraps(func)
     async def async_wrapper(*args, **kwargs):
         # Start the SQL profiler
-        if not ripple_config().mythica_environment == "debug":
+        if not meshwork_config().mythica_environment == "debug":
             return await func(*args, **kwargs)
         profiler = sqltap.start()
         log.error("SQL-query Profiler has written report")
@@ -155,7 +155,7 @@ def sql_profiler_decorator(func: Callable):
     @functools.wraps(func)
     def sync_wrapper(*args, **kwargs):
         # Start the SQL profiler
-        if not ripple_config().mythica_environment == "debug":
+        if not meshwork_config().mythica_environment == "debug":
             return func(*args, **kwargs)
         profiler = sqltap.start()
         try:

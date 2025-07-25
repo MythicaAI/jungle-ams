@@ -6,7 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from config import app_config
 from db.schema.events import Event
 from db.schema.media import FileContent
-from ripple.models.contexts import FilePurpose
+from meshwork.models.contexts import FilePurpose
+
 
 def verify():
     sql_url = app_config().sql_url.strip()
@@ -20,7 +21,7 @@ def verify():
         size=1024,
         file_type='text/plain',
         purpose=FilePurpose.SYSTEM_GENERATED
-        )
+    )
     session.add(upload)
     session.commit()
 

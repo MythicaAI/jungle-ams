@@ -7,12 +7,13 @@ from fastapi import APIRouter, HTTPException
 from nats.errors import ConnectionClosedError, NoServersError
 from opentelemetry import trace
 from pydantic import BaseModel
-from ripple.automation.utils import nats_submit
+from meshwork.automation.utils import nats_submit
 
 log = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
 router = APIRouter(prefix="/automation", tags=["automation"])
+
 
 class AutomationRequest(BaseModel):
     """Request model for automation endpoints."""
@@ -22,10 +23,12 @@ class AutomationRequest(BaseModel):
     data: dict
     auth_token: str = None
 
+
 class AutomationResponse(BaseModel):
     """Response model for automation endpoints."""
     correlation: str
-    result: dict|list[dict]
+    result: dict | list[dict]
+
 
 @router.post('/run', status_code=HTTPStatus.CREATED)
 def automation_request(request: AutomationRequest) -> AutomationResponse:
@@ -48,7 +51,7 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
     path = request_data['path']
 
     log.info("processing automation: correlation: %s; path: %s; channel: %s",
-        correlation, path, channel)
+             correlation, path, channel)
 
     data = request_data['data']
     auth_token = request_data.get('auth_token')
@@ -93,5 +96,5 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
     # Return the result
     return AutomationResponse(
         correlation=correlation,
-        result=result.pop() if len(result) >0 else None
+        result=result.pop() if len(result) > 0 else None
     )

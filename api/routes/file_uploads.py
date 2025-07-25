@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_seq_to_id
+from gcid.gcid import event_seq_to_id, file_seq_to_id, profile_seq_to_id
 from db.schema.events import Event
 from db.schema.media import FileContent
 from db.schema.profiles import Profile

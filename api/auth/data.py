@@ -7,7 +7,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from db.schema.profiles import OrgRef
-from ripple.auth.generate_token import SessionProfile, decode_token
+from meshwork.auth.generate_token import SessionProfile, decode_token
 
 log = logging.getLogger(__name__)
 

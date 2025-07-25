@@ -7,8 +7,8 @@ from http import HTTPStatus
 import pytest
 from munch import munchify
 
-from cryptid.cryptid import org_seq_to_id
-from ripple.auth import roles
+from gcid.gcid import org_seq_to_id
+from meshwork.auth import roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code, refresh_auth_token

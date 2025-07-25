@@ -6,23 +6,23 @@ from http import HTTPStatus
 from string import ascii_lowercase
 
 import pytest
-from cryptid.cryptid import event_seq_to_id, job_seq_to_id, profile_id_to_seq
+from gcid.gcid import event_seq_to_id, job_seq_to_id, profile_id_to_seq
 from fastapi.testclient import TestClient
 from munch import munchify
 from profiles.responses import ProfileResponse
-from ripple.automation.models import (
+from meshwork.automation.models import (
     AutomationRequest,
     AutomationRequestResult,
     CropImageRequest,
     EventAutomationResponse,
 )
-from ripple.models.params import (
+from meshwork.models.params import (
     FileParameter,
     IntParameterSpec,
     ParameterSet,
     ParameterSpec,
 )
-from ripple.models.streaming import CropImageResponse, JobDefinition
+from meshwork.models.streaming import CropImageResponse, JobDefinition
 from routes.events.models import EventUpdateResponse
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import request_to_upload_files
@@ -47,7 +47,7 @@ test_event_info_len = 10
 
 
 def generate_events(
-    api_base: str, client: TestClient, profile: ProfileResponse, event_count: int
+        api_base: str, client: TestClient, profile: ProfileResponse, event_count: int
 ):
     """Generate some random event data in the database"""
 
@@ -74,11 +74,10 @@ def generate_events(
 
 @pytest.mark.asyncio
 async def test_update_events_result_data(
-    api_base,
-    client: TestClient,
-    create_profile,
+        api_base,
+        client: TestClient,
+        create_profile,
 ):
-
     test_profile: ProfileTestObj = await create_profile()
     auth_header = test_profile.authorization_header()
     second_test_profile: ProfileTestObj = await create_profile()

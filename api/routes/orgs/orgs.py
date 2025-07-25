@@ -11,13 +11,13 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import col, delete as sql_delete, insert, select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
+from gcid.gcid import org_id_to_seq, org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.connection import get_db_session
 from db.schema.profiles import Org, OrgRef, Profile
 from profiles.invalidate_sessions import invalidate_sessions
-from ripple.auth import roles
-from ripple.auth.authorization import validate_roles
-from ripple.models.sessions import SessionProfile
+from meshwork.auth import roles
+from meshwork.auth.authorization import validate_roles
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 
 MIN_ORG_NAME = 3
