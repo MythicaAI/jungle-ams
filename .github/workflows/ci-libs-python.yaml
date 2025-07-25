@@ -65,7 +65,6 @@ jobs:
             } else {
               // For automatic trigger, use filtered changes
               const hasChanges = Array.isArray(changes) && changes.length > 0;
-            
               console.log('Changes detected:', hasChanges ? 'yes' : 'no');
               core.setOutput('changes', JSON.stringify(changes));
               core.setOutput('has_changes', hasChanges ? 'true' : 'false');
@@ -73,6 +72,9 @@ jobs:
 
   build-and-test:
     needs: changes
+    if: needs.changes.outputs.has_changes == 'true'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
