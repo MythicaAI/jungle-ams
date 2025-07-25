@@ -1,7 +1,7 @@
 FROM alpine:3.19
 
 LABEL maintainer="jacobrepp@gmail.com"
-LABEL name="mythica-bulk-import"
+LABEL name="bulk-import"
 LABEL description="Bulk import packages from perforce"
 LABEL version="1.0.0"
 LABEL tier="automation"

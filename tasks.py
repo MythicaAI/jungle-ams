@@ -15,29 +15,6 @@ from invoke import task
 COMMIT_HASH = ''
 PTY_SUPPORTED = os.name != 'nt'
 
-#
-# Internal environment variables
-#
-MYTHICA_REPO = "registry.mythica.gg"
-
-#
-# Control plane variables
-#
-CPLN_ORG_NAME = "mythica-main"
-CPLN_IMAGE_REPO = f"{CPLN_ORG_NAME}.registry.cpln.io"
-
-#
-# GCS variables
-#
-GCS_PROJECT_NAME = "controlnet"
-GCS_PROJECT_ID = 407314
-GCS_PROJECT = f"{GCS_PROJECT_NAME}-{GCS_PROJECT_ID}"
-GCS_REPO_HOST = "us-central1-docker"
-GCS_REPO_NAME = "gke-us-central1-images"
-GCS_IMAGE_REPO = f"{GCS_REPO_HOST}.pkg.dev/{GCS_PROJECT}/{GCS_REPO_NAME}"
-
-ECR_URI = "050752617649.dkr.ecr.us-east-1.amazonaws.com"
-
 IMAGE_PLATFORM = "linux/amd64"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,24 +44,23 @@ TESTING_AUTO_DIR = os.path.join(BASE_DIR, 'testing/automation')
 TESTING_OBSERVE_DIR = os.path.join(BASE_DIR, 'testing/observe')
 TESTING_MNT_DIR = os.path.join(BASE_DIR, 'testing/mnt')
 
+DEFAULT_REPO = "jrepp/jungle-ams"
+
 IMAGES = {
     'testing/web/nginx': {},
-    'ams/app': {
+    'api': {
         'requires': ['libs/python'],
     },
     'libs/python': {},
-    'ams/packager': {
-        'requires': ['ams/app', 'libs/python'],
-    },
-    'ams/canary': {},
-    'ams/bulk-import': {},
-    'sites': {
+    'canary': {},
+    'bulk-import': {},
+    'apps': {
         'buildargs': {
             'NODE_ENV': NODE_ENV,
         }
     },
     'testing/storage/minio-config': {},
-    'ams/test-worker': {
+    'test-worker': {
         'requires': ['libs/python'],
     },
     'automations/blender': {
@@ -112,20 +88,19 @@ IMAGES = {
 }
 
 SITE_DATA = {
-    'sites',
+    'apps',
 }
 
 WEB_SERVING = {
-    'ams/app',
-    'ams/canary',
-    'ams/packager',
-    'ams/test-worker',
+    'api',
+    'canary',
+    'test-worker',
     'testing/web/nginx',
 }
 
 IMAGE_SETS = {
     'all': set(IMAGES.keys()),
-    'sites': SITE_DATA,
+    'apps': SITE_DATA,
     'web': SITE_DATA | WEB_SERVING,
     'storage': {
         'testing/storage/minio-config'},
@@ -200,7 +175,7 @@ def parse_expose_to_ports(dockerfile_path: PathLike):
     with open(dockerfile_path, 'r') as file:
         lines = file.readlines()
     ports = []
-    expose_pattern = re.compile(r'^EXPOSE\s+(\d+)(?:\/\w+)?$', re.IGNORECASE)
+    expose_pattern = re.compile(r'^EXPOSE\s+(\d+)(?:\w+)?$', re.IGNORECASE)
     for line in lines:
         match = expose_pattern.match(line.strip())
         if match:
@@ -219,6 +194,8 @@ def start_docker_compose(c, docker_compose_path, cleanup_fn=None):
         # cleanup_fn(c) if cleanup_fn is not None else None
         c.run(f'docker compose --env-file {env_file_path} '
               f'-f {compose_file} up -d', pty=PTY_SUPPORTED)
+        if cleanup_fn is not None:
+            cleanup_fn()
 
 
 def stop_docker_compose(c, docker_compose_path):
@@ -231,21 +208,20 @@ def stop_docker_compose(c, docker_compose_path):
             f'docker compose --env-file {env_file_path} -f {compose_file} down --timeout 3')
 
 
-def build_image(c, image_path: PathLike, no_cache: bool = False, use_tailscale: bool = False):
+def build_image(c, image_path: PathLike, repo: str, no_cache: bool = False, use_tailscale: bool = False):
     """Build a docker image"""
-
     working_directory = Path(BASE_DIR) / image_path
     dockerfile_path = working_directory / 'Dockerfile'
     parse_expose_to_ports(dockerfile_path)
 
     image_name = parse_dockerfile_label_name(dockerfile_path)
-    requires = IMAGES[image_path].get('requires')
+    requires = IMAGES[str(image_path)].get('requires')
     if requires is not None:
         for image in requires:
-            build_image(c, image, use_tailscale=use_tailscale)
+            build_image(c, Path(image), repo=repo, use_tailscale=use_tailscale)
 
     buildarg_str = ''
-    buildargs = IMAGES[image_path].get('buildargs')
+    buildargs = IMAGES[str(image_path)].get('buildargs')
     if use_tailscale:
         if buildargs is None:
             buildargs = {}
@@ -256,45 +232,38 @@ def build_image(c, image_path: PathLike, no_cache: bool = False, use_tailscale: 
             [f'--build-arg {key}={value}' for key, value in buildargs.items()])
 
     commit_hash = get_commit_hash()
+    tag = f"{image_name}-{commit_hash}"
+    latest_tag = f"{image_name}-latest"
     with c.cd(working_directory):
+        print(f"building {dockerfile_path} as {repo}:{tag}")
         c.run(
             (f"docker buildx build --platform={IMAGE_PLATFORM}"
              f" {buildarg_str} -f {dockerfile_path}"
              f" --network=host"
              f'{" --no-cache" if no_cache else ""}'
-             f"  -t {image_name}:latest ."),
+             f"  -t {repo}:{tag} ."),
             pty=PTY_SUPPORTED)
-        c.run(f'docker tag {image_name}:latest {image_name}:{commit_hash}',
-              pty=PTY_SUPPORTED)
+        print(f"tagging {repo}:{latest_tag}")
+        c.run(f'docker tag {repo}:{tag} {repo}:{latest_tag}', pty=PTY_SUPPORTED)
 
 
-def deploy_image(c, image_path, target):
+def deploy_image(c, image_path, repo):
     """Deploy a docker image"""
     working_directory = Path(BASE_DIR) / image_path
     dockerfile_path = working_directory / 'Dockerfile'
     image_name = parse_dockerfile_label_name(dockerfile_path)
     commit_hash = get_commit_hash()
-    if target == "gcs":
-        repo = GCS_IMAGE_REPO
-    elif target == "cpln":
-        repo = CPLN_IMAGE_REPO
-    elif target == "aws":
-        repo = ECR_URI
-    elif target == "myth":
-        repo = MYTHICA_REPO
-    else:
-        raise ValueError(f"unknown deployment target {target}")
+    tag = f"{image_name}-{commit_hash}"
+    latest_tag = f"{image_name}-latest"
+    if not repo:
+        raise ValueError(f"unknown deployment target {repo}")
 
     with c.cd(os.path.join(BASE_DIR, image_path)):
-        c.run((f"docker tag {image_name}:{commit_hash}"
-               f" {repo}/{image_name}:{commit_hash}"),
+        print(f"pushing {repo}:{latest_tag}")
+        c.run(f"docker push {repo}:{latest_tag}",
               pty=PTY_SUPPORTED)
-        c.run((f"docker tag {image_name}:{commit_hash}"
-               f" {repo}/{image_name}:latest"),
-              pty=PTY_SUPPORTED)
-        c.run(f"docker push {repo}/{image_name}:latest",
-              pty=PTY_SUPPORTED)
-        c.run(f"docker push {repo}/{image_name}:{commit_hash}",
+        print(f"pushing {repo}:{tag}")
+        c.run(f"docker push {repo}:{tag}",
               pty=PTY_SUPPORTED)
 
 
@@ -473,26 +442,36 @@ def image_path_action(c, image, action, **kwargs):
 def docker_build(
         c,
         image='all',
+        repo=DEFAULT_REPO,
         no_cache: bool = False,
         use_tailscale: bool = False):
     """Build a docker image by sub path or set name"""
-    image_path_action(c, image, build_image, no_cache=no_cache,
+    image_path_action(c, image, build_image,
+                      repo=repo,
+                      no_cache=no_cache,
                       use_tailscale=use_tailscale)
 
 
 @task(help={'image': f'Image path to build in: {IMAGES.keys()}'})
 @timed
-def docker_deploy(c, image='all', target='gcs', no_cache: bool = False):
+def docker_deploy(
+        c,
+        image='all',
+        repo=DEFAULT_REPO,
+        no_cache: bool = False):
     """Deploy a docker image by sub path set name"""
-    image_path_action(c, image, build_image, no_cache=no_cache)
-    image_path_action(c, image, deploy_image, target=target)
+    image_path_action(c, image, build_image,
+                      repo=repo,
+                      no_cache=no_cache)
+    image_path_action(c, image, deploy_image,
+                      repo=repo)
 
 
 @task(help={
     'image': f'Image path to run: {IMAGES.keys()}',
     'background': 'Run the image in the background'})
 @timed
-def docker_run(c, image='ams/app', background=False):
+def docker_run(c, image='api', background=False):
     """Run a docker image by path"""
     image_path_action(c, image, run_image, background=background)
 

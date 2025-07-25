@@ -1,27 +1,27 @@
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 LABEL maintainer="jacobrepp@gmail.com"
-LABEL name="mythica-app"
-LABEL description="API service for mythica asset version managment"
+LABEL name="api"
+LABEL description="The Jungle Asset Management API"
 LABEL version="1.0.0"
 LABEL tier="web"
 
 # Create the uploads folder
 USER 0
 RUN mkdir -p /uploads
-RUN mkdir -p /ams/app
+RUN mkdir -p /ams/
 
-WORKDIR /ams/app
+WORKDIR /ams/
 
 # Fix permissions for the default non-root user
-RUN chown -R appuser /ams/app && \
+RUN chown -R appuser /ams/ && \
     chown -R appuser /uploads
 
 USER appuser
 
 # Put all application data into the container /app directory, do this as late
-# as possible to aid in the docker layer cache coherency
+# as possible as possible to aid in the Docker layer cache coherency
 COPY . .
 
 # Run poetry as the app user to activate the virtual environment
@@ -56,10 +56,6 @@ ENV OTEL_EXPORTER_OTLP_TRACES_INSECURE=true
 ENV ENABLE_GCS_PYTHON_CLIENT_OTEL_TRACES=true
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=api"
 ENV K8S_CLUSTER_NAME=localhost
-#ENV OTEL_EXPORTER_OTLP_ENDPOINT="https://ingest.{region}.signoz.cloud:443"
-#ENV OTEL_EXPORTER_OLTP_ENDPOINT=http://collector:4317
-#ENV OTEL_EXPORTER_OTLP_HEADERS="signoz-access-token=SIGNOZ_INGESTION_KEY"
-#ENV OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
 # Expose SQL connection using the environment variable
 ENV SQL_URL="postgresql+asyncpg://test:test@postgres:5432/upload_pipeline"

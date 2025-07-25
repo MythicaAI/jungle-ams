@@ -19,6 +19,12 @@ Basic front ends for graph editing and user asset management are included.
 
 * **ams/**             
   * Asset management system backend API
+* **canary/**             
+  * Asset management system backend API
+* **bulk-import/**             
+  * Bulk importer to bring assets into the API
+* **test-worker/**             
+  * A simple template for worker automations
 * **automations/**
   * Backend automations for automating Houdini, Blender and AI workloads behind the AMS APIs
 * **apps/**
@@ -128,13 +134,13 @@ simplify working with these technologies while ensuring deterministic builds.
 From Linux, macOS or Windows:
 
 ```bash
-ams/app> poetry install
+ams/> poetry install
 ```
 
 You can run a command using the poetry virtual environment
 
 ```bash
-ams/app> poetry run pytest .
+ams/> poetry run pytest .
 ```
 
 ## Working on Sites
@@ -180,13 +186,13 @@ python -m codegen.codegen
 
 The Git workflow file `.github/workflows/ci-ams-app.yaml` is set up to run tests on every push event within a PR.
 
-Once changes are pushed, the job will execute pytest tests, and the coverage results will be published as a comment in the PR. This comment will include a table for every `.py` file located in the `ams/app` directory.
+Once changes are pushed, the job will execute pytest tests, and the coverage results will be published as a comment in the PR. This comment will include a table for every `.py` file located in the `ams/` directory.
 
 The table is generated from the pytest step in subsequent steps using a shell script that formats the results for display in the PR. Based on the environment variable defined in the workflow file (`jobs: > ci-ams-app: > env: > TEST_FAIL_RATE: `), the workflow will determine if the test results have decreased beyond the specified rate. If the threshold is exceeded, the subsequent step, `Coverage total fail - exit`, will cause the tests to fail.
 
 Additionally, there is an option to see the code coverage for each file individually.
 
-To create a `.coverage` file and generate an HTML report for viewing in a browser, run the following commands inside the `ams/app` folder:
+To create a `.coverage` file and generate an HTML report for viewing in a browser, run the following commands inside the `ams/` folder:
 
 ```bash
 pytest --cov --cov-report=html:coverage

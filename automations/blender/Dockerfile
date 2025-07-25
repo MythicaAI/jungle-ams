@@ -1,8 +1,8 @@
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-auto-blender"
+LABEL name="blender"
 LABEL description="Automation for mythica blender services"
 LABEL version="1.0.0"
 LABEL tier="auto"

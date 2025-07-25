@@ -1,8 +1,8 @@
 # Use the latest stable Node.js image
 FROM node:lts-alpine AS build
 
-LABEL name="mythica-apps-build"
-LABEL maintainer="pedro@mythica.ai"
+LABEL name="apps"
+LABEL maintainer="jacobrepp@gmail.com"
 LABEL verison="1.0.0"
 LABEL tier="web"
 LABEL description="Build container for web applications"

@@ -1,4 +1,4 @@
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
+ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 ARG HOUDINI_VERSION=20.5.370
 
 # Image for monorepo library dependencies
@@ -9,8 +9,8 @@ FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 FROM python:3.11-slim AS python-dependency-downloader
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-auto-houdini"
-LABEL description="Automation for mythica gen aiservices"
+LABEL name="houdini"
+LABEL description="Automation for houdini automations"
 LABEL version="1.0.0"
 LABEL tier="auto"
 

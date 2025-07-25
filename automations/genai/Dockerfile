@@ -1,14 +1,11 @@
-# Reference the library base image
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
-
-
+ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Use the specified CUDA base image
 FROM python:3.12-alpine
 
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-auto-genai"
+LABEL name="genai"
 LABEL description="Automation for mythica gen aiservices"
 LABEL version="1.0.0"
 LABEL tier="auto"

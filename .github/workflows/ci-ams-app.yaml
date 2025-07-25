@@ -5,20 +5,20 @@ on:
     branches:
       - '**'
     paths:
-      - 'ams/app/**'
+      - 'ams/**'
       - 'libs/python/**'
       - '.github/workflows/ci-ams-app.yaml'
   push:
     branches:
       - '**'
     paths:
-      - 'ams/app/**'
+      - 'ams/**'
       - 'libs/python/**'
       - '.github/workflows/ams-app-ci.yaml'
 
 defaults:
   run:
-    working-directory: ams/app
+    working-directory: ams
 
 jobs:
   ams-app-ci:
@@ -31,7 +31,7 @@ jobs:
     env:
       SQL_URL: "sqlite+aiosqlite:///${{ github.workspace }}/mythica.db"
       DATABASE_PATH: "${{ github.workspace }}/mythica.db"
-      PYTHONPATH: "${{ github.workspace }}/ams/app"
+      PYTHONPATH: "${{ github.workspace }}/ams"
       UPLOAD_FOLDER_AUTO_CLEAN: false
       LOCAL_STORAGE_PATH: /tmp/local_storage
       USE_LOCAL_STORAGE: true
