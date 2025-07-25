@@ -101,6 +101,8 @@ jobs:
 
   build-libs-python:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs:
       - changes
     if: needs.changes.outputs.has_changes == 'true'

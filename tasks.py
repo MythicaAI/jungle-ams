@@ -235,7 +235,7 @@ def build_image(c, image_path: PathLike, repo: str, no_cache: bool = False, use_
     tag = f"{image_name}-{commit_hash}"
     latest_tag = f"{image_name}-latest"
     with c.cd(working_directory):
-        print(f"building {dockerfile_path} as {repo}:{tag}")
+        print(f"building {image_name} as {repo}:{tag}")
         c.run(
             (f"docker buildx build --platform={IMAGE_PLATFORM}"
              f" {buildarg_str} -f {dockerfile_path}"
