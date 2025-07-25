@@ -47,8 +47,8 @@ const Assets = () => {
     error: topAssetsError,
   } = useGetTopAssets();
 
-  const featuredAsset = (topAssets ?? []).find(asset => 
-    asset.name.toLowerCase() === FEATURED_ASSET_NAME.toLowerCase() && 
+  const featuredAsset = (topAssets ?? []).find(asset =>
+    asset.name?.toLowerCase() === FEATURED_ASSET_NAME.toLowerCase() &&
     asset.owner_name?.toLowerCase() === FEATURED_ASSET_AUTHOR.toLowerCase()
   );
 
