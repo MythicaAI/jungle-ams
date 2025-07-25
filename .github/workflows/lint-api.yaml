@@ -1,23 +1,21 @@
-name: lint-ams-app
+name: lint-api
 
 on:
   push:
     paths:
-      - 'ams/**'
-      - 'packager/**'
+      - 'api/**'
       - 'libs/python/**'
-      - 'bulk-import/**'
-      - '.github/workflows/ams-app-lint-pr.yaml'
+      - '.github/workflows/lint-api.yaml
 
 defaults:
   run:
-    working-directory: ams
+    working-directory: api
 
 jobs:
   pylint:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: "${{ github.workspace }}/ams"
+      PYTHONPATH: "${{ github.workspace }}/api"
 
     strategy:
       matrix:
