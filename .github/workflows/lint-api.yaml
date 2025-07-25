@@ -5,7 +5,7 @@ on:
     paths:
       - 'api/**'
       - 'libs/python/**'
-      - '.github/workflows/lint-api.yaml
+      - '.github/workflows/lint-api.yaml'
 
 defaults:
   run:
