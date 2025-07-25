@@ -1,5 +1,5 @@
-from  automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
-from ripple.automation.worker import Worker
+from automation.hello_world import hello_world_api, HelloWorldRequest, HelloWorldResponse
+from meshwork.automation.worker import Worker
 
 worker = Worker()
 
@@ -13,8 +13,10 @@ automations = [
     },
 ]
 
+
 def main():
-    worker.start('blender',automations)        
+    worker.start('blender', automations)
+
 
 if __name__ == "__main__":
     main()

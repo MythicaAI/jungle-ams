@@ -7,7 +7,7 @@ from repos import assets as repo
 from queries import assets as asset_q
 from db.connection import get_db_session
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from ripple.models.sessions import SessionProfile
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from routes.storage_client import storage_client
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -103,11 +103,11 @@ async def create_version(asset_id: str,
 
 @router.post('/{asset_id}/versions/{version_str}/contents')
 async def update_versions_contents(
-    asset_id: str,
-    version_str: str,
-    req: repo.AssetUpdateVersionContentsRequest,
-    profile: SessionProfile = Depends(session_profile),
-    db_session: AsyncSession = Depends(get_db_session),
+        asset_id: str,
+        version_str: str,
+        req: repo.AssetUpdateVersionContentsRequest,
+        profile: SessionProfile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session),
 ) -> repo.AssetVersionResult:
     """Update the contents of a single asset version"""
     version_result = await repo.update_versions_contents(

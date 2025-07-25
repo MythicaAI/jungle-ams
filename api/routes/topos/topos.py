@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlmodel import select, update as sql_update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import org_id_to_seq, org_seq_to_id, profile_seq_to_id, topo_id_to_seq, topo_seq_to_id
+from gcid.gcid import org_id_to_seq, org_seq_to_id, profile_seq_to_id, topo_id_to_seq, topo_seq_to_id
 from db.connection import get_db_session
 from db.schema.graph import Topology, TopologyRef
 from db.schema.profiles import Org, Profile

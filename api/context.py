@@ -6,8 +6,8 @@ an HTTP request through the application request path"""
 from datetime import timezone, datetime
 from pydantic import BaseModel, Field
 
-from ripple.models.contexts import FilePurpose
-from ripple.models.sessions import SessionProfile
+from meshwork.models.contexts import FilePurpose
+from meshwork.models.sessions import SessionProfile
 
 
 class UploadContext(BaseModel):

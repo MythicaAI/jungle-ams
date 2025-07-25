@@ -7,14 +7,14 @@ from sqlmodel import insert
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from context import UploadContext
-from cryptid.cryptid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
-from cryptid.location import location
+from gcid.gcid import event_seq_to_id, file_seq_to_id, profile_id_to_seq
+from gcid.location import location
 from db.schema.events import Event
 from db.schema.media import FileContent
-from ripple.automation.adapters import NatsAdapter
-from ripple.automation.models import AutomationRequest
-from ripple.automation.worker import process_guid
-from ripple.models.params import FileParameter, ParameterSet
+from meshwork.automation.adapters import NatsAdapter
+from meshwork.automation.models import AutomationRequest
+from meshwork.automation.worker import process_guid
+from meshwork.models.params import FileParameter, ParameterSet
 from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)

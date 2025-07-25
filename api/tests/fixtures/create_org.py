@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
 import pytest
-from ripple.auth import roles
+from meshwork.auth import roles
 
 from routes.orgs.orgs import OrgRefResponse
 from tests.shared_test import ProfileTestObj, assert_status_code

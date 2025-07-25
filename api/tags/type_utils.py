@@ -2,7 +2,7 @@ from async_lru import alru_cache
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import tag_seq_to_id
+from gcid.gcid import tag_seq_to_id
 from db.schema.tags import Tag
 from tags.tag_models import CachedTag, TagResponse, TagType, get_model_type
 

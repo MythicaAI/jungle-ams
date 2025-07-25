@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import profile_seq_to_id, reader_seq_to_id
+from gcid.gcid import profile_seq_to_id, reader_seq_to_id
 from db.connection import TZ
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader

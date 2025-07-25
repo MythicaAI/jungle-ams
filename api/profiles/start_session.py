@@ -11,15 +11,15 @@ from sqlmodel import asc, col, delete, insert, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from auth.data import resolve_org_roles
-from cryptid.cryptid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
+from gcid.gcid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
 from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
 from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
 from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
-from ripple.auth import roles
-from ripple.auth.authorization import validate_roles
-from ripple.auth.generate_token import generate_token
-from ripple.config import ripple_config
-from ripple.models.sessions import SessionProfile
+from meshwork.auth import roles
+from meshwork.auth.authorization import validate_roles
+from meshwork.auth.generate_token import generate_token
+from meshwork.config import meshwork_config
+from meshwork.models.sessions import SessionProfile
 from validate_email.responses import ValidateEmailState
 
 log = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ async def start_session(
                                                  .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
                                                  )).all()
 
-    # Convert org roles into auth role declarations for ripple
+    # Convert org roles into auth role declarations for meshwork
     auth_roles = set()
     for r in profile_org_results:
         _, r_org, r_org_ref = r
@@ -109,7 +109,7 @@ async def start_session(
         profile.email,
         profile.email_validate_state,
         profile.location,
-        ripple_config().mythica_environment,
+        meshwork_config().mythica_environment,
         list(auth_roles))
 
     # Add a new session

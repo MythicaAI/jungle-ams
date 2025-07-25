@@ -15,7 +15,7 @@ from db.connection import db_connection_lifespan, get_db_session
 from exception_handlers import exception_handlers
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
-from ripple_sources.register import register_streaming_sources, unregister_streaming_sources
+from meshwork_sources.register import register_streaming_sources, unregister_streaming_sources
 
 
 @asynccontextmanager

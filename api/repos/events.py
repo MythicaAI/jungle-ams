@@ -1,11 +1,11 @@
 import logging
 
-from ripple.models.params import ParameterSet
-from ripple.runtime.alerts import AlertSeverity, send_alert
+from meshwork.models.params import ParameterSet
+from meshwork.runtime.alerts import AlertSeverity, send_alert
 
 from db.schema.events import Event
 from opentelemetry import trace
-from ripple.automation.models import (
+from meshwork.automation.models import (
     AutomationRequestResult,
     EventAutomationResponse,
 )
@@ -16,7 +16,7 @@ tracer = trace.get_tracer(__name__)
 
 
 def update_or_create_event_automation(
-    new_job_result_data: EventAutomationResponse, event: Event
+        new_job_result_data: EventAutomationResponse, event: Event
 ) -> EventAutomationResponse:
     """Updates or creates new event automation data"""
     old_job_result_data = (
@@ -50,7 +50,7 @@ def update_or_create_event_automation(
                         item
                         for item in old_job_result_data.request_result
                         if item.result.get("job_def_id")
-                        == new_item.result.get("job_def_id")
+                           == new_item.result.get("job_def_id")
                     ),
                     None,
                 )

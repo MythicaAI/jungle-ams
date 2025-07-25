@@ -12,11 +12,11 @@ from munch import munchify
 from pydantic import TypeAdapter
 from starlette.testclient import TestClient
 
-from cryptid.cryptid import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
+from gcid.gcid import event_seq_to_id, file_seq_to_id, job_seq_to_id, profile_id_to_seq
 from db.schema.profiles import Profile
-from ripple.funcs import Boundary
-from ripple.models.streaming import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
-from ripple.source_types import create_source
+from meshwork.funcs import Boundary
+from meshwork.models.streaming import Event, Message, OutputFiles, Progress, StreamItemUnion, StreamModelTypes
+from meshwork.source_types import create_source
 from tests.fixtures.app import use_test_source_fixture
 from tests.fixtures.create_profile import create_profile
 from tests.shared_test import assert_status_code

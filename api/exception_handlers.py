@@ -6,8 +6,8 @@ from opentelemetry import trace
 from pydantic import ValidationError
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERROR
 
-from cryptid.cryptid import IdError, SequenceError
-from ripple.auth.authorization import RoleError
+from gcid.gcid import IdError, SequenceError
+from meshwork.auth.authorization import RoleError
 
 logger = logging.getLogger(__name__)
 

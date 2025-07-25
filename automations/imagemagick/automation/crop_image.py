@@ -1,14 +1,13 @@
 from tempfile import NamedTemporaryFile
 from typing import Optional
 
-from ripple.automation.models import CropImageRequest
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.streaming import CropImageResponse
+from meshwork.automation.models import CropImageRequest
+from meshwork.automation.publishers import ResultPublisher
+from meshwork.models.streaming import CropImageResponse
 from wand.image import Image
 
 
 def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
-
     with Image(filename=infile) as img:
         original_width, original_height = img.width, img.height
         crop_pos_x = (original_width - w) // 2 if not crop_h else crop_h
@@ -23,7 +22,6 @@ def crop_image(infile, outfile, crop_h=None, crop_w=None, w=320, h=180):
 
 
 def crop_image_request(request: CropImageRequest, result_callback: ResultPublisher) -> CropImageResponse:
-
     with NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
         output_path = temp_file.name
 

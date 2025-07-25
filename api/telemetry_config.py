@@ -2,7 +2,7 @@ import logging
 import sys
 
 from config import app_config
-from ripple.config import configure_telemetry, update_headers_from_context
+from meshwork.config import configure_telemetry, update_headers_from_context
 
 
 def configure_logging():

@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import org_seq_to_id, profile_seq_to_id
+from gcid.gcid import org_seq_to_id, profile_seq_to_id
 from db.schema.profiles import Org, OrgRef, Profile
 from profiles.responses import ProfileOrgRoles
 

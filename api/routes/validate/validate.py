@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import delete, insert, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import profile_seq_to_id
+from gcid.gcid import profile_seq_to_id
 from db.connection import get_db_session
 from db.schema.profiles import Profile, ProfileKey
 from profiles.invalidate_sessions import invalidate_sessions
-from ripple.models.sessions import SessionProfile
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from validate_email.responses import ValidateEmailResponse, ValidateEmailState, email_validate_state_enum
 from validate_email.verification import send_validating_email

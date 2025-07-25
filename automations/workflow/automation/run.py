@@ -9,15 +9,15 @@ import importlib
 import threading
 
 from http import HTTPStatus
-from cryptid import location
+from gcid import location
 from pydantic import BaseModel, Field
 
 # ––– import your workflow parser and models –––
-from ripple.automation.utils import nats_submit
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import OutputFiles
-import ripple.automation.workflow as wk  # our earlier parse() function
+from meshwork.automation.utils import nats_submit
+from meshwork.automation.publishers import ResultPublisher
+from meshwork.models.params import ParameterSet, FileParameter
+from meshwork.models.streaming import OutputFiles
+import meshwork.automation.workflow as wk  # our earlier parse() function
 
 importlib.reload(wk)
 log = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ STATUS_SUBJECT = "result"
 ENVIRONMENT = os.getenv('MYTHICA_ENVIRONMENT', 'debug')
 LOCATION = location.location()
 PROCESS_GUID = str(uuid.uuid4())
+
 
 ###############################################################################
 # Helpers for workflow execution
@@ -47,8 +48,9 @@ def parse_automation_field(automation: str) -> tuple[str, str]:
     # Ensure the path begins with a slash.
     path = "/" + parts[1].lstrip("/")
     if path == "/houdini/hda":
-        path = "/mythica/hda_run"   
+        path = "/mythica/hda_run"
     return worker, path
+
 
 def is_executable(node) -> bool:
     """
@@ -60,6 +62,7 @@ def is_executable(node) -> bool:
     if node.type in ["hdaWorker", "worker"]:
         return True
     return False
+
 
 def is_executed(node) -> bool:
     """
@@ -112,7 +115,7 @@ async def _runAutomation_async(request: 'RequestModel', reporter: ResultPublishe
                     continue
                 channel, path = parse_automation_field(automation_field)
                 input_data = node.data.get("inputData", {})
-                
+
                 correlation = node.id  # Use the node id as the correlation id
 
                 log.info("Executing node %s via channel %s at path %s", node.id, channel, path)
@@ -143,7 +146,6 @@ async def _runAutomation_async(request: 'RequestModel', reporter: ResultPublishe
                             nodes_to_execute.append(child)
     except Exception as exc:
         log.error("Error executing workflow %s", exc)
-        
 
     workflow_dict = {
         "flow": {

@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
 
-from ripple.auth import roles
+from meshwork.auth import roles
 from tests.fixtures.create_org import create_org
 from tests.fixtures.create_profile import create_profile
 from tests.script_tests.profile_factory import get_email_validation_key, set_email_validation_expires

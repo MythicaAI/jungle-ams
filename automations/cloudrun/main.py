@@ -8,6 +8,7 @@ from nats.errors import ConnectionClosedError, TimeoutError, NoServersError
 
 # Instantiates a client
 import google.cloud.logging
+
 client = google.cloud.logging.Client()
 
 # Retrieves a Cloud Logging handler based on the environment
@@ -25,7 +26,7 @@ log = logging.getLogger(__name__)
 NATS_SERVER = "nats://10.128.0.14:4222"
 STATUS_SUBJECT = "result"
 ENVIRONMENT = "production"
-LOCATION = "localhost"  # update when CRYPTID_LOCATION rolled out
+LOCATION = "localhost"  # update when gcid_LOCATION rolled out
 
 process_guid = str(uuid.uuid4())
 
@@ -75,7 +76,7 @@ async def nats_submit(channel, path, data, work_guid, auth_token):
                     datatype = "result"
                     if 'item_type' in data:
                         datatype = data['item_type']
-                        
+
                     if datatype != "progress":
                         return_data = data
                         break
@@ -102,12 +103,12 @@ async def nats_submit(channel, path, data, work_guid, auth_token):
 
     return return_data
 
+
 # Google Cloud Run function entry point
 
 
 @functions_framework.http
 def automation_request(request):
-
     # Set CORS headers for the preflight request
     if request.method == "OPTIONS":
         # Allows GET requests from any origin with the Content-Type

@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 import pytest
 from munch import munchify
 
-from cryptid.cryptid import file_seq_to_id
-from ripple.auth import roles
+from gcid.gcid import file_seq_to_id
+from meshwork.auth import roles
 from api.default_values import LATEST_GREATEST_VERSIONS_ASSET_NUM
 from repos.assets import AssetTopVersionsResult
 from tests.fixtures.create_profile import create_profile
@@ -34,7 +34,7 @@ test_commit_ref = "git@github.com:test-project/test-project.git/f00df00d"
 
 
 def unauthorized_create_type_tag(
-    client, api_base, type_model_name, type_id, tag_id, headers
+        client, api_base, type_model_name, type_id, tag_id, headers
 ):
     r = client.post(
         f"{api_base}/tags/types/{type_model_name}",
@@ -45,7 +45,7 @@ def unauthorized_create_type_tag(
 
 
 def unauthorized_delete_type_tag(
-    client, api_base, type_model_name, type_id, tag_id, headers
+        client, api_base, type_model_name, type_id, tag_id, headers
 ):
     r = client.delete(
         f"{api_base}/tags/types/{type_model_name}/{tag_id}/{type_id}",
@@ -221,7 +221,7 @@ async def test_tags_operations(api_base, client, create_profile, request_to_uplo
 
 @pytest.mark.asyncio
 async def test_tag_asset_operations(
-    api_base, client, create_profile, request_to_upload_files
+        api_base, client, create_profile, request_to_upload_files
 ):
     test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
@@ -467,7 +467,7 @@ async def test_wrong_type_model(api_base, client, create_profile):
 
 @pytest.mark.asyncio
 async def test_tag_files_operations(
-    api_base, client, create_profile, request_to_upload_files
+        api_base, client, create_profile, request_to_upload_files
 ):
     test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
@@ -625,8 +625,8 @@ async def test_tag_files_operations(
 
 
 @pytest.mark.asyncio
-async def test_tags_filtered_and_ordered_by_latest_versions(api_base, client: TestClient, create_profile, request_to_upload_files):
-
+async def test_tags_filtered_and_ordered_by_latest_versions(api_base, client: TestClient, create_profile,
+                                                            request_to_upload_files):
     test_profile = await create_profile(email="test@mythica.ai", validate_email=True)
     headers = test_profile.authorization_header()
 
@@ -767,7 +767,7 @@ async def test_tags_filtered_and_ordered_by_latest_versions(api_base, client: Te
     o: list[AssetTopVersionsResult] = munchify(r.json())
     assert len(o) == 1
     assert o[0].asset_id == asset_id_2
-    
+
     # Get first asset that has unique tag
     r = client.get(
         f"{api_base}/tags/types/asset/filter",
@@ -778,7 +778,6 @@ async def test_tags_filtered_and_ordered_by_latest_versions(api_base, client: Te
     o: list[AssetTopVersionsResult] = munchify(r.json())
     assert len(o) == 1
     assert o[0].asset_id == asset_id_1
-    
-    
+
     delete_all_created_type_tags(created_asset_ids, tag_obj1.tag_id)
     delete_all_created_type_tags([asset_id_1], tag_obj2.tag_id)

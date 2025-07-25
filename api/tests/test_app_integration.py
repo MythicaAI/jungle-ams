@@ -6,7 +6,7 @@ import hashlib
 import json
 from http import HTTPStatus
 
-from cryptid.cryptid import file_seq_to_id
+from gcid.gcid import file_seq_to_id
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
@@ -15,7 +15,8 @@ from repos.assets import AssetFileReference
 from routes.file_uploads import FileUploadResponse
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
-from tests.shared_test import FileContentTestObj, assert_status_code, make_random_content, random_str, refresh_auth_token
+from tests.shared_test import FileContentTestObj, assert_status_code, make_random_content, random_str, \
+    refresh_auth_token
 from tests.fixtures.uploader import request_to_upload_files
 
 test_profile_name = "test-profile"
@@ -42,7 +43,8 @@ __fixtures__ = [
 
 # see http://localhost:8080/docs for examples
 @pytest.mark.asyncio
-async def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader, request_to_upload_files):
+async def test_create_profile_and_assets(api_base, client: TestClient, create_profile, uploader,
+                                         request_to_upload_files):
     test_profile = await create_profile(name=test_profile_name,
                                         email=test_profile_email,
                                         full_name=test_profile_full_name,
@@ -76,8 +78,7 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
     asset_contents = list(map(
         lambda x: json.loads(AssetFileReference(**x.model_dump()).model_dump_json()),
         response_files.values()))
-    
-    
+
     uploaded_files = [
         FileContentTestObj(
             file_name=test_file_name + str(_file_id),
@@ -98,7 +99,7 @@ async def test_create_profile_and_assets(api_base, client: TestClient, create_pr
             f"{api_base}/download/info/{_file_id}", headers=headers
         )
         uploaded_files_dict[_file_id] = info_response.json()
-    
+
     src_file = uploaded_files_dict[uploaded_files_ids[0]]
     dependent_file = uploaded_files_dict[uploaded_files_ids[1]]
 

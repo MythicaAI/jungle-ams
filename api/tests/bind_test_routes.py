@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlmodel import desc, insert, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import event_id_to_seq, event_seq_to_id, profile_id_to_seq
+from gcid.gcid import event_id_to_seq, event_seq_to_id, profile_id_to_seq
 from db.connection import TZ, get_db_session
 from db.schema.events import Event
 from db.schema.profiles import ProfileKey

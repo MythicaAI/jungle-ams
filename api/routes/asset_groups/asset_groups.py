@@ -9,12 +9,12 @@ from typing import Iterable, Optional
 from queries import assets as asset_q
 from repos import assets as repo
 from repos.assets import AssetVersionResult, convert_version_input
-from cryptid.cryptid import asset_id_to_seq
+from gcid.gcid import asset_id_to_seq
 from db.connection import get_db_session
 from db.schema.assets import Asset, AssetVersion
 from db.schema.profiles import ProfileAsset
 from fastapi import APIRouter, Depends, HTTPException
-from ripple.models.sessions import SessionProfile
+from meshwork.models.sessions import SessionProfile
 from routes.authorization import session_profile
 from sqlmodel import delete, insert
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -72,9 +72,11 @@ async def select_filtered_g_assets(
         profile: SessionProfile,
         category: Optional[str]
 ) -> list[AssetVersionResult]:
-    db_results = await asset_q.exec_query_select_assets_by_profile_asset_category(db_session, profile.profile_seq, category)
+    db_results = await asset_q.exec_query_select_assets_by_profile_asset_category(db_session, profile.profile_seq,
+                                                                                  category)
     avr_results = await repo.process_join_results(db_results)
     return avr_results
+
 
 @router.get('/{category}')
 async def for_profile(

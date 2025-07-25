@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from typing import Callable, Iterable, Optional, Union
 
-from cryptid.cryptid import tag_seq_to_id
+from gcid.gcid import tag_seq_to_id
 from db.schema.assets import Asset, AssetTag, AssetVersion
 from db.schema.media import FileContent
 from db.schema.profiles import Org, Profile, ProfileAsset
@@ -51,6 +51,7 @@ def build_lpad_function(db_session: AsyncSession) -> Callable:
         # Define a SQL function for LPAD
         def sqlite_lpad(value, length, pad_char):
             return func.substr(pad_char * length + value, -length, length)
+
         return sqlite_lpad
 
 
@@ -65,7 +66,9 @@ def build_concat_function(db_session: AsyncSession) -> Callable:
             for arg in args[1:]:
                 expr = expr.op("||")(arg)
             return expr
+
         return sqlite_concat
+
 
 def get_tag_join_query(db_session: AsyncSession) -> Select[Tuple]:
     json_func = build_json_function(db_session)
@@ -101,7 +104,7 @@ AuthorProfile = aliased(Profile)
 
 
 async def get_top_published_assets_metadata_query(
-    db_session: AsyncSession,
+        db_session: AsyncSession,
 ) -> Iterable[
     tuple[Asset, AssetVersion, FileContent, dict[str, Union[int, str]], str, str, str]
 ]:
@@ -130,7 +133,7 @@ async def get_top_published_assets_metadata_query(
 
 
 async def exec_query_owned_versions(
-    db_session: AsyncSession, profile_seq: int
+        db_session: AsyncSession, profile_seq: int
 ) -> Iterable[
     tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
 ]:
@@ -158,7 +161,7 @@ async def exec_query_owned_versions(
 
 
 async def exec_query_assets_by_asset_name(
-    db_session: AsyncSession, asset_name: str
+        db_session: AsyncSession, asset_name: str
 ) -> Iterable[
     tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
 ]:
@@ -186,7 +189,7 @@ async def exec_query_assets_by_asset_name(
 
 
 async def exec_query_assets_by_commit_ref(
-    db_session: AsyncSession, commit_ref: str
+        db_session: AsyncSession, commit_ref: str
 ) -> Iterable[
     tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
 ]:
@@ -214,7 +217,7 @@ async def exec_query_assets_by_commit_ref(
 
 
 async def exec_query_assets_by_asset_seq(
-    db_session: AsyncSession, asset_seq: int
+        db_session: AsyncSession, asset_seq: int
 ) -> Iterable[
     tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
 ]:
@@ -244,7 +247,7 @@ async def exec_query_assets_by_asset_seq(
 
 
 async def exec_query_select_asset_version(
-    db_session: AsyncSession, asset_seq: int, version: tuple[int, ...]
+        db_session: AsyncSession, asset_seq: int, version: tuple[int, ...]
 ) -> Iterable[
     tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
 ]:
@@ -277,7 +280,7 @@ async def exec_query_select_asset_version(
 
 
 async def exec_query_select_asset_latest_version(
-    db_session: AsyncSession, asset_seq: int
+        db_session: AsyncSession, asset_seq: int
 ) -> Optional[
     tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
 ]:
@@ -307,11 +310,11 @@ async def exec_query_select_asset_latest_version(
 
 
 async def exec_query_select_asset_by_version(
-    db_session: AsyncSession,
-    asset_seq: int,
-    major: int,
-    minor: int,
-    patch: int,
+        db_session: AsyncSession,
+        asset_seq: int,
+        major: int,
+        minor: int,
+        patch: int,
 ) -> Iterable[
     Optional[
         tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
@@ -343,7 +346,7 @@ async def exec_query_select_asset_by_version(
 
 
 def resolve_assets_tag(
-    tags_to_asset: list[dict[str, Union[int, str]]]
+        tags_to_asset: list[dict[str, Union[int, str]]]
 ) -> list | list[dict[str, str]]:
     if isinstance(tags_to_asset, str):
         tags_to_asset = json.loads(tags_to_asset)
@@ -365,9 +368,9 @@ def resolve_assets_tag(
 
 
 async def exec_query_select_assets_by_profile_asset_category(
-    db_session: AsyncSession,
-    profile_seq: int,
-    category: Optional[str],
+        db_session: AsyncSession,
+        profile_seq: int,
+        category: Optional[str],
 ) -> Iterable[
     Optional[
         tuple[Asset, Optional[AssetVersion], dict[str, Union[int, str]], str, str, str]
@@ -448,7 +451,7 @@ async def exec_query_select_assets_by_profile_asset_category(
 
 
 async def get_list_all_assets_query(
-    db_session: AsyncSession,
+        db_session: AsyncSession,
 ) -> list[tuple[Asset, AssetVersion, dict[str, Union[int, str]], str, str, str]]:
     tag_subquery = get_tag_subquery(db_session)
     query = (
@@ -471,10 +474,10 @@ async def get_list_all_assets_query(
 
 
 async def get_filtered_assets_by_tags_query(
-    db_session: AsyncSession,
-    tag_subquery: Subquery,
-    limit: int,
-    offset: int,
+        db_session: AsyncSession,
+        tag_subquery: Subquery,
+        limit: int,
+        offset: int,
 ) -> list[tuple[Asset, AssetVersion, dict[str, Union[int, str]], str, str, str]]:
     query = (
         select(
@@ -504,10 +507,10 @@ async def get_filtered_assets_by_tags_query(
 
 
 async def get_tag_name_filter_query(
-    db_session: AsyncSession,
-    include: Optional[list[str]],
-    exclude: Optional[list[str]],
-    tag_type: TagType,
+        db_session: AsyncSession,
+        include: Optional[list[str]],
+        exclude: Optional[list[str]],
+        tag_type: TagType,
 ) -> Select:
     type_model = get_model_type(tag_type)
     # model_of_type_model = get_model_of_model_type(tag_type)
@@ -584,10 +587,10 @@ async def get_tag_name_filter_query(
 
 
 async def get_filtered_assets_by_tags_query2(
-    db_session: AsyncSession,
-    tag_subquery: Subquery,
-    limit: int,
-    offset: int,
+        db_session: AsyncSession,
+        tag_subquery: Subquery,
+        limit: int,
+        offset: int,
 ) -> list[tuple[Asset, AssetVersion, dict[str, Union[int, str]], str, str, str]]:
     query = (
         select(

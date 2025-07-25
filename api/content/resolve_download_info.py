@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
+from gcid.gcid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
 from db.schema.media import FileContent
 from storage.local_file_uploader import LocalFileStorageClient
 from storage.storage_client import StorageClient

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel
-from ripple.automation.models import EventAutomationResponse
+from meshwork.automation.models import EventAutomationResponse
 
 
 class EventUpdateResponse(BaseModel):

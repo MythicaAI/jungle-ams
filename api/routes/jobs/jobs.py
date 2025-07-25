@@ -6,7 +6,7 @@ from http import HTTPStatus
 from uuid import uuid4
 
 from config import app_config
-from cryptid.cryptid import (
+from gcid.gcid import (
     asset_id_to_seq,
     event_seq_to_id,
     file_id_to_seq,
@@ -18,7 +18,7 @@ from cryptid.cryptid import (
     job_seq_to_id,
     profile_seq_to_id,
 )
-from cryptid.location import location
+from gcid.location import location
 from db.connection import get_db_session
 from db.schema.assets import AssetVersionEntryPoint
 from db.schema.events import Event
@@ -30,16 +30,16 @@ from opentelemetry.context import get_current as get_current_telemetry_context
 from opentelemetry.trace.status import Status, StatusCode
 from repos import assets as repo
 from repos.assets import AssetVersionResult
-from ripple.auth import roles
-from ripple.auth.authorization import Scope, validate_roles
-from ripple.automation.adapters import NatsAdapter
-from ripple.automation.models import AutomationRequest
-from ripple.automation.worker import process_guid
-from ripple.models.assets import AssetVersionEntryPointReference
-from ripple.models.params import FileParameter, ParameterSet, ParameterSpec
-from ripple.models.sessions import SessionProfile
-from ripple.models.streaming import JobDefinition as JobDefinitionRef
-from ripple.runtime.params import ParamError, repair_parameters, validate_params
+from meshwork.auth import roles
+from meshwork.auth.authorization import Scope, validate_roles
+from meshwork.automation.adapters import NatsAdapter
+from meshwork.automation.models import AutomationRequest
+from meshwork.automation.worker import process_guid
+from meshwork.models.assets import AssetVersionEntryPointReference
+from meshwork.models.params import FileParameter, ParameterSet, ParameterSpec
+from meshwork.models.sessions import SessionProfile
+from meshwork.models.streaming import JobDefinition as JobDefinitionRef
+from meshwork.runtime.params import ParamError, repair_parameters, validate_params
 from routes.authorization import maybe_session_profile, session_profile
 from routes.jobs.models import (
     ExtendedJobResultResponse,
@@ -64,7 +64,6 @@ from telemetry_config import get_telemetry_headers
 log = logging.getLogger(__name__)
 
 tracer = trace.get_tracer(__name__)
-
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -111,10 +110,10 @@ async def define_new(
 
 @router.post('/definitions/{job_def_id}', status_code=HTTPStatus.CREATED)
 async def define_new_from_template(
-    job_def_id: str,
-    new_data: JobDefinitionTemplateRequest,
-    profile: SessionProfile = Depends(maybe_session_profile),
-    db_session: AsyncSession = Depends(get_db_session),
+        job_def_id: str,
+        new_data: JobDefinitionTemplateRequest,
+        profile: SessionProfile = Depends(maybe_session_profile),
+        db_session: AsyncSession = Depends(get_db_session),
 ) -> JobDefinitionResponse:
     """Create a new job definition from a template of JobDefinition by job_def_id"""
     # Get old JobDefinition
@@ -157,7 +156,6 @@ async def define_new_from_template(
     await db_session.refresh(job_def)
     job_def_seq = job_def.job_def_seq
 
-
     # Create the asset version link
     if new_data.source:
         asset_version_entry_point = AssetVersionEntryPoint(
@@ -173,6 +171,7 @@ async def define_new_from_template(
         await db_session.commit()
 
     return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
+
 
 @router.put('/definitions/{job_def_id}')
 async def update_job_def(
@@ -192,6 +191,7 @@ async def update_job_def(
     print(f"job_def: {job_def}")
     await db_session.commit()
     return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
+
 
 @router.delete('/definitions/{job_def_id}')
 async def delete_job_def(
@@ -214,6 +214,7 @@ async def delete_job_def(
     await db_session.delete(job_def)
     await db_session.commit()
     return None
+
 
 @router.get('/definitions')
 async def list_definitions(db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:

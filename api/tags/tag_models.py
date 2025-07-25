@@ -6,7 +6,7 @@ from typing import Callable, Optional, Union
 from better_profanity import profanity
 from pydantic import BaseModel, Field, field_validator
 
-from cryptid.cryptid import asset_id_to_seq, file_id_to_seq
+from gcid.gcid import asset_id_to_seq, file_id_to_seq
 from db.schema.assets import Asset, AssetTag
 from db.schema.media import FileContent, FileTag
 

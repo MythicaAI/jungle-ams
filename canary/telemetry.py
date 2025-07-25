@@ -1,4 +1,4 @@
-# copy from libs/python/ripple/ripple/config.py
+# copy from libs/python/meshwork/meshwork/config.py
 import json
 import logging
 import os

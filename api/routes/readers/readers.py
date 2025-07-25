@@ -9,14 +9,14 @@ from pydantic import TypeAdapter, ValidationError
 from sqlmodel import delete as sql_delete, insert, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from cryptid.cryptid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
+from gcid.gcid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, db_session_pool, get_db_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
-from ripple.client_ops import ReadClientOp
-from ripple.funcs import Boundary
-from ripple.models.streaming import StreamItemUnion
-from ripple.source_types import create_source
+from meshwork.client_ops import ReadClientOp
+from meshwork.funcs import Boundary
+from meshwork.models.streaming import StreamItemUnion
+from meshwork.source_types import create_source
 from routes.authorization import current_cookie_profile, maybe_session_profile, session_profile
 from routes.readers.manager import ReaderConnectionManager
 from routes.readers.schemas import CreateReaderRequest, ReaderResponse
