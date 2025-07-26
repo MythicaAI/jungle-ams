@@ -10,7 +10,7 @@ export SQL_URL="sqlite+aiosqlite:///${SCRIPT_DIR}/mythica.db"
 export DATABASE_PATH="${SCRIPT_DIR}/mythica.db"
 
 
-export PYTHONPATH="${SCRIPT_DIR}/ams/app"
+export PYTHONPATH="${SCRIPT_DIR}:${SCRIPT_DIR}/tests"
 export UPLOAD_FOLDER_AUTO_CLEAN=false
 export LOCAL_STORAGE_PATH=${SCRIPT_DIR}/tmp_local_storage
 export USE_LOCAL_STORAGE=true

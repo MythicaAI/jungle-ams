@@ -21,7 +21,7 @@ set "SQL_URL=sqlite+aiosqlite:///%SCRIPT_DIR%\mythica.db"
 set "DATABASE_PATH=%SCRIPT_DIR%\mythica.db"
 
 rem Python and storage settings
-set "PYTHONPATH=%SCRIPT_DIR%\api\app"
+set "PYTHONPATH=%SCRIPT_DIR%"
 set "UPLOAD_FOLDER_AUTO_CLEAN=false"
 set "LOCAL_STORAGE_PATH=%SCRIPT_DIR%\tmp_local_storage"
 set "USE_LOCAL_STORAGE=true"

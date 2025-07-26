@@ -8,11 +8,9 @@ import tempfile
 from pathlib import Path
 
 import requests
-from munch import munchify
-
 from events.events import EventsSession
-
-from api.files import API, api_settings
+from file_access import API, api_settings
+from munch import munchify
 
 # Configure logging
 logging.basicConfig(
@@ -62,7 +60,7 @@ def process_output(stdout, stderr, returncode):
     log.info("stderr %s", stderr)
     log.info("returncode %s", returncode)
     if returncode != 0:
-        log.error("Unable to process HDA. returncode was %s",returncode)
+        log.error("Unable to process HDA. returncode was %s", returncode)
 
 
 def pull_container():
@@ -96,21 +94,21 @@ def launch_container(o):
                            " && hserver -Q")
         process_output(*run_docker(
             ["docker", "run",
-                                    "--rm",
-                                    "-it",
-                                    "-v", "/tmp:/tmp",
-                                    "-v", f"{OUTPUT_LOCAL}:/output",
-                                    IMAGE_NAME,
-                                    '/bin/sh',
+             "--rm",
+             "-it",
+             "-v", "/tmp:/tmp",
+             "-v", f"{OUTPUT_LOCAL}:/output",
+             IMAGE_NAME,
+             '/bin/sh',
              '-c', gather_deps_cmd]))
         process_output(*run_docker(
             ["docker", "run",
-                                    "--rm",
-                                    "-it",
-                                    "-v", "/tmp:/tmp",
-                                    "-v", f"{OUTPUT_LOCAL}:/output",
-                                    IMAGE_NAME,
-                                    '/bin/sh',
+             "--rm",
+             "-it",
+             "-v", "/tmp:/tmp",
+             "-v", f"{OUTPUT_LOCAL}:/output",
+             IMAGE_NAME,
+             '/bin/sh',
              '-c', gen_network_cmd]))
 
         upload_results(token)
@@ -133,7 +131,7 @@ def upload_results(token):
                     response = requests.post(
                         f"{api_settings().endpoint}/upload/store",
                         headers=headers, files=file_data,
-                                             timeout=10)
+                        timeout=10)
                     if response.status_code == 200:
                         log.info("Successfully uploaded %s", file_name)
                         try:

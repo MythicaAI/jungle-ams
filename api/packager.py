@@ -18,25 +18,25 @@ from uuid import uuid4
 
 import httpx
 import requests
-from events.events import EventsSession
-from opentelemetry import trace
-from opentelemetry.context import get_current as get_current_telemetry_context
-from pydantic import AnyHttpUrl
-from pydantic_settings import BaseSettings
-from repos.assets import AssetDependency, AssetFileReference, AssetVersionResult
-from routes.download.download import DownloadInfoResponse
-from routes.file_uploads import FileUploadResponse
-from telemetry_config import get_telemetry_headers
-
 from gcid.gcid import event_seq_to_id
-from meshwork.automation.automations import ScriptJobDefRequest
 from meshwork.automation.adapters import NatsAdapter
+from meshwork.automation.automations import ScriptJobDefRequest
 from meshwork.automation.models import AutomationRequest, BulkAutomationRequest, CropImageRequest
 from meshwork.automation.worker import process_guid
 from meshwork.config import configure_telemetry, meshwork_config
 from meshwork.models.params import FileParameter, IntParameterSpec, ParameterSet
 from meshwork.runtime.alerts import AlertSeverity, send_alert
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
+from pydantic import AnyHttpUrl
+from pydantic_settings import BaseSettings
+
+from events.events import EventsSession
+from repos.assets import AssetDependency, AssetFileReference, AssetVersionResult
+from routes.download.download import DownloadInfoResponse
+from routes.file_uploads import FileUploadResponse
 from sanitize_filename import sanitize_filename
+from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -112,10 +112,10 @@ def get_versions(
     if len(version) != 3:
         raise ValueError("Invalid version format, must be a 3 valued tuple")
     if version == (0, 0, 0):
-        r = requests.get(f"{endpoint}/v1/assets/{asset_id}")
+        r = requests.get(f"{endpoint}/v1/assets/{asset_id}", timeout=30)
     else:
         url = build_asset_url(endpoint, asset_id, version)
-        r = requests.get(url)
+        r = requests.get(url, timeout=30)
     if r.status_code != 200:
         raise ConnectionError(r.text)
     o = r.json()
@@ -132,7 +132,7 @@ def get_file_contents(v: AssetVersionResult) -> list[AssetFileReference]:
 
 def resolve_contents(endpoint, file: AssetFileReference) -> DownloadInfoResponse:
     """"Resolve content by ID to a resolved download URL"""
-    r = requests.get(f"{endpoint}/v1/download/info/{file.file_id}")
+    r = requests.get(f"{endpoint}/v1/download/info/{file.file_id}", timeout=30)
     if r.status_code != 200:
         raise ConnectionError(r.text)
     dl_info = DownloadInfoResponse(**r.json())
@@ -337,12 +337,13 @@ async def generate_several_awpy_job_defs(
 
 async def generate_awpy_job_defs(avr: AssetVersionResult, content: DownloadInfoResponse, token: str,
                                  event_id: str) -> bool:
+    """Request to generate one job_def"""
+
     # read the json file and get the worker name
-    with open(content.file_name, 'r') as f:
+    with open(content.file_name, 'r', encoding="utf-8") as f:
         data = json.load(f)
         worker_name = data.get("worker")
 
-    """Request to generate one job_def"""
     parameter_set = ScriptJobDefRequest(
         awpy_file=FileParameter(file_id=content.file_id),
         src_asset_id=avr.asset_id,
@@ -453,7 +454,7 @@ async def create_zip_from_asset(
         with zipfile.ZipFile(zip_filename, 'w') as zip_file:
             for content in contents:
                 url = AnyHttpUrl(content.url)
-                response = requests.get(url, stream=True)
+                response = requests.get(url, stream=True, timeout=30)
                 if response.status_code != 200:
                     raise ConnectionError(f"{response.status_code}: to download url: {url} {response.text}")
 
@@ -495,7 +496,7 @@ async def upload_package(
     """Upload a package update to an asset from a specific zip file"""
     url = f"{endpoint}/v1/upload/package/{asset_id}/{version_str}"
     with open(zip_filename, 'rb') as file:
-        response = requests.post(url, files={
+        response = requests.post(url, timeout=60, files={
             'files': (os.path.basename(zip_filename), file, 'application/zip')},
                                  headers=headers)
         if response.status_code != 200:
@@ -523,7 +524,8 @@ async def console_main(
         api_key,
         asset_id,
         profile_id,
-        version)
+        version,
+        event_seq=0)
 
 
 async def exec_job(endpoint: str, api_key: str, job_data, event_seq: int):
