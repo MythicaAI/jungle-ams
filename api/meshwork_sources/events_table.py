@@ -2,15 +2,14 @@
 from http import HTTPStatus
 from typing import Any, AsyncIterator
 
-from fastapi import FastAPI, HTTPException
-from sqlalchemy import asc
-from sqlmodel import select
-
-from gcid.gcid import event_id_to_seq, event_seq_to_id
 from db.connection import db_session_pool
 from db.schema.events import Event as DbEvent
+from fastapi import FastAPI, HTTPException
+from gcid.gcid import event_id_to_seq, event_seq_to_id
 from meshwork.funcs import Boundary, Source
 from meshwork.models.streaming import Event, StreamItem
+from sqlalchemy import asc
+from sqlmodel import select
 
 
 def create_events_table_source(app: FastAPI, params: dict[str, Any]) -> Source:
@@ -22,6 +21,8 @@ def create_events_table_source(app: FastAPI, params: dict[str, Any]) -> Source:
 
     async def events_table_source(boundary: Boundary) -> AsyncIterator[StreamItem]:
         """Function that produces event table result streams"""
+        # pylint disable=F824
+        # (pylint doesn't understand this nonlocal usage)
         nonlocal app
 
         async with db_session_pool(app) as db_session:

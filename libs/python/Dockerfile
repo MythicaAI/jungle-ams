@@ -14,8 +14,8 @@ RUN pip install poetry==1.8.5
 
 # Copy libraries to the /libs/python folder for consistent
 # referencing by other project in the infra monorepo
-COPY meshwork /libs/python/ripple
-COPY gcid /libs/python/cryptid
+COPY meshwork /libs/python/meshwork
+COPY gcid /libs/python/gcid
 
 # Create a default non-root user
 RUN adduser -u 5678 --disabled-password --gecos "" appuser

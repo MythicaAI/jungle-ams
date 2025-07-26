@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mythica-app"
+name = "ams-api"
 version = "1.0.0"
 description = "FastAPI service to provide asset services."
 authors = ["Jacob Repp <jacobrepp@gmail.com>"]
@@ -35,8 +35,8 @@ starlette = "^0.45.3"
 tzdata = "^2025.1"
 websockets = "^15.0"
 redis = "^5.2.1"
-ripple = { path = "../../libs/python/ripple", develop = true }
-cryptid = { path = "../../libs/python/cryptid", develop = true }
+meshwork = { path = "../libs/python/meshwork", develop = true }
+gcid = { path = "../libs/python/gcid", develop = true }
 better-profanity = "^0.7.0"
 opentelemetry-instrumentation = "^0.51b0"
 opentelemetry-instrumentation-fastapi = "^0.51b0"
