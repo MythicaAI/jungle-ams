@@ -14,7 +14,7 @@ from sqlalchemy.sql.functions import now as sql_now
 from sqlmodel import delete as sql_delete, insert, or_, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from api.default_values import LATEST_GREATEST_VERSIONS_ASSET_NUM
+from default_values import LATEST_GREATEST_VERSIONS_ASSET_NUM
 from queries import assets as asset_q
 from content.locate_content import locate_content_by_seq
 from content.resolve_download_info import resolve_download_info
