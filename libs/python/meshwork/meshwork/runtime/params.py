@@ -3,11 +3,20 @@ from http import HTTPStatus
 
 import requests
 
-from meshwork.models.params import (BoolParameterSpec, EnumParameterSpec, FileParameter, FileParameterSpec,
-                                    FloatParameterSpec, IntParameterSpec, ParameterSet, ParameterSpec,
-                                    ParameterSpecModel, RampParameterSpec,
-                                    StringParameterSpec)
-from meshwork.models.houTypes import (rampParmType, rampBasis)
+from meshwork.models.params import (
+    BoolParameterSpec,
+    EnumParameterSpec,
+    FileParameter,
+    FileParameterSpec,
+    FloatParameterSpec,
+    IntParameterSpec,
+    ParameterSet,
+    ParameterSpec,
+    ParameterSpecModel,
+    RampParameterSpec,
+    StringParameterSpec,
+)
+from meshwork.models.houTypes import rampParmType, rampBasis
 
 
 class ParamError(ValueError):
@@ -21,7 +30,9 @@ def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
         if paramSpec.constant and name not in paramSet.model_fields.keys():
             if isinstance(paramSpec, FileParameterSpec):
                 if isinstance(paramSpec.default, list):
-                    default = [FileParameter(file_id=file_id) for file_id in paramSpec.default]
+                    default = [
+                        FileParameter(file_id=file_id) for file_id in paramSpec.default
+                    ]
                 else:
                     default = FileParameter(file_id=paramSpec.default)
             else:
@@ -41,15 +52,15 @@ def cast_numeric_types(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None
         if isinstance(spec, RampParameterSpec):
             rampType = spec.ramp_parm_type
             if rampType == rampParmType.Color:
-                vals = 'c'
+                vals = "c"
             else:
-                vals = 'value'
+                vals = "value"
 
             newValue = []
             for item in value:
                 newItem = item
-                if isinstance(item['pos'], int):
-                    newItem['pos'] = float(item['pos'])
+                if isinstance(item["pos"], int):
+                    newItem["pos"] = float(item["pos"])
                 if rampType == rampParmType.Color:
                     if isinstance(item[vals], list):
                         for index, c in enumerate(item[vals]):
@@ -88,46 +99,74 @@ def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> None:
     if isinstance(paramSpec, RampParameterSpec):
         # Check that param is a list of expectedType
         if not isinstance(param, list):
-            raise ParamError(paramSpec.label, f"ramp params must be list of dict, got {type(param).__name__}")
+            raise ParamError(
+                paramSpec.label,
+                f"ramp params must be list of dict, got {type(param).__name__}",
+            )
         for item in param:
             rampType = paramSpec.ramp_parm_type
             if rampType == rampParmType.Color:
-                vals = 'c'
+                vals = "c"
             else:
-                vals = 'value'
+                vals = "value"
 
             if not isinstance(item, expectedType):
-                raise ParamError(paramSpec.label, f"ramp point must be of type dict, got {type(item).__name__}")
-            if 'pos' not in item or vals not in item or 'interp' not in item:
-                raise ParamError(paramSpec.label, f"ramp point must contain 'pos' and 'value|c' and 'interp' keys")
-            if not isinstance(item['pos'], float):
-                raise ParamError(paramSpec.label, f"ramp point 'pos' must be of type float")
+                raise ParamError(
+                    paramSpec.label,
+                    f"ramp point must be of type dict, got {type(item).__name__}",
+                )
+            if "pos" not in item or vals not in item or "interp" not in item:
+                raise ParamError(
+                    paramSpec.label,
+                    f"ramp point must contain 'pos' and 'value|c' and 'interp' keys",
+                )
+            if not isinstance(item["pos"], float):
+                raise ParamError(
+                    paramSpec.label, f"ramp point 'pos' must be of type float"
+                )
             if rampType == rampParmType.Color:
                 if not isinstance(item[vals], list):
-                    raise ParamError(paramSpec.label, f"ramp point color 'c' must be of type list")
-                if (len(item[vals]) != 3):
-                    raise ParamError(paramSpec.label, f"ramp point color 'c' must be of length 3")
+                    raise ParamError(
+                        paramSpec.label, f"ramp point color 'c' must be of type list"
+                    )
+                if len(item[vals]) != 3:
+                    raise ParamError(
+                        paramSpec.label, f"ramp point color 'c' must be of length 3"
+                    )
                 for c in item[vals]:
                     if not isinstance(c, float):
-                        raise ParamError(paramSpec.label, f"ramp point color 'c' must be of type list of floats")
+                        raise ParamError(
+                            paramSpec.label,
+                            f"ramp point color 'c' must be of type list of floats",
+                        )
             else:
                 if not isinstance(item[vals], float):
-                    raise ParamError(paramSpec.label, f"ramp point 'value' must be of type float")
+                    raise ParamError(
+                        paramSpec.label, f"ramp point 'value' must be of type float"
+                    )
             # check that interp is a valid value from rampBasis
-            if item['interp'] not in [basis.name for basis in rampBasis]:
-                raise ParamError(paramSpec.label, f"ramp point 'interp' must be a valid value from hou.rampBasis")
+            if item["interp"] not in [basis.name for basis in rampBasis]:
+                raise ParamError(
+                    paramSpec.label,
+                    f"ramp point 'interp' must be a valid value from hou.rampBasis",
+                )
 
     elif isinstance(param, (list, tuple, set, frozenset)):
         if len(param) != len(paramSpec.default):
-            raise ParamError(paramSpec.label, f"length mismatch {len(param)} != expected: {len(paramSpec.default)}")
+            raise ParamError(
+                paramSpec.label,
+                f"length mismatch {len(param)} != expected: {len(paramSpec.default)}",
+            )
         for item in param:
             validate_param(paramSpec, item, expectedType)
     else:
         allowed_atomic_types = {bool, str, float, int}
         if expectedType in allowed_atomic_types:
             if not isinstance(param, expectedType):
-                raise ParamError(paramSpec.label,
-                                 f"type `{type(param).__name__}` did not match expected type `{expectedType.__name__}`")
+                raise ParamError(
+                    paramSpec.label,
+                    f"type `{type(param).__name__}` did not match expected type `{expectedType.__name__}`",
+                )
         else:
             expectedType(**param)
 
@@ -137,7 +176,7 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
     params = paramSet.model_dump()
 
     for name, paramSpec in paramSpecs.params.items():
-        if paramSpec.param_type == 'file' and name not in params:
+        if paramSpec.param_type == "file" and name not in params:
             raise ParamError(paramSpec.label, "param not provided")
         elif name not in params:
             continue
@@ -150,7 +189,9 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
             use_type = int
         elif isinstance(paramSpec, FloatParameterSpec):
             use_type = float
-        elif isinstance(paramSpec, StringParameterSpec) or isinstance(paramSpec, EnumParameterSpec):
+        elif isinstance(paramSpec, StringParameterSpec) or isinstance(
+            paramSpec, EnumParameterSpec
+        ):
             use_type = str
         elif isinstance(paramSpec, BoolParameterSpec):
             use_type = bool
@@ -169,14 +210,21 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
         # Validate constant
         if paramSpec.constant:
             if isinstance(paramSpec, FileParameterSpec):
-                file_ids = [file_param['file_id'] \
-                            for file_param in param] \
-                    if isinstance(param, list) else param['file_id']
+                file_ids = (
+                    [file_param["file_id"] for file_param in param]
+                    if isinstance(param, list)
+                    else param["file_id"]
+                )
                 if file_ids != paramSpec.default:
-                    raise ParamError(paramSpec.label, f"{file_ids} != {paramSpec.default}")
+                    raise ParamError(
+                        paramSpec.label, f"{file_ids} != {paramSpec.default}"
+                    )
             else:
                 if param != paramSpec.default:
-                    raise ParamError(paramSpec.label, f"constant mismatch `{param}` != expected: `{paramSpec.default}`")
+                    raise ParamError(
+                        paramSpec.label,
+                        f"constant mismatch `{param}` != expected: `{paramSpec.default}`",
+                    )
 
 
 def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> str:
@@ -188,12 +236,12 @@ def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> st
     doc = r.json()
 
     # Download the file
-    file_name = file_id + "_" + doc['name'].replace('\\', '_').replace('/', '_')
+    file_name = file_id + "_" + doc["name"].replace("\\", "_").replace("/", "_")
     file_path = os.path.join(directory, file_name)
 
     downloaded_bytes = 0
     with open(file_path, "w+b") as f:
-        download_req = requests.get(doc['url'], stream=True, headers=headers)
+        download_req = requests.get(doc["url"], stream=True, headers=headers)
         for chunk in download_req.iter_content(chunk_size=1024):
             if chunk:
                 downloaded_bytes += len(chunk)
@@ -202,7 +250,9 @@ def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> st
     return file_path
 
 
-def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, headers=None) -> ParameterSet:
+def resolve_params(
+    endpoint: str, directory: str, paramSet: ParameterSet, headers=None
+) -> ParameterSet:
     """Resolve any parameters that are external references"""
 
     def resolve(field, value):
@@ -210,13 +260,17 @@ def resolve_params(endpoint: str, directory: str, paramSet: ParameterSet, header
         if isinstance(value, (list, tuple, set, frozenset)):
             for item in value:
                 resolve(field, item)
-        # For Dicts, check if they are FileParams. Otherwise check each item        
+        # For Dicts, check if they are FileParams. Otherwise check each item
         elif isinstance(value, FileParameter):
-            value.file_path = download_file(endpoint, directory, value.file_id, headers or {})
+            value.file_path = download_file(
+                endpoint, directory, value.file_id, headers or {}
+            )
         elif isinstance(value, dict):
             try:
                 FileParameter(**value)
-                value['file_path'] = download_file(endpoint, directory, value['file_id'], headers)
+                value["file_path"] = download_file(
+                    endpoint, directory, value["file_id"], headers
+                )
             except Exception:
                 for key, item in value.items():
                     resolve(f"{field}:{key}", item)

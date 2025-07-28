@@ -10,19 +10,19 @@ import requests
 from meshwork.automation.utils import format_exception
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 log = logging.getLogger(__name__)
 
-NATS_URL = os.environ.get('NATS_ENDPOINT', 'nats://localhost:4222')
+NATS_URL = os.environ.get("NATS_ENDPOINT", "nats://localhost:4222")
 
 
-class NatsAdapter():
+class NatsAdapter:
     def __init__(self, nats_url: str = NATS_URL) -> None:
         self.nats_url = nats_url
         self.listeners = {}
         self.nc = None  # Single NATS client connection
-        self.env = os.getenv('MYTHICA_ENVIRONMENT', 'debug')
+        self.env = os.getenv("MYTHICA_ENVIRONMENT", "debug")
         self.location = location.location()
 
     async def _connect(self) -> None:
@@ -54,17 +54,19 @@ class NatsAdapter():
         try:
             await self.nc.publish(subject, json.dumps(data).encode())
             # Remove encoded data from the log
-            if p_data.get('encoded_data'):
-                p_data['encoded_data'] = '...'
+            if p_data.get("encoded_data"):
+                p_data["encoded_data"] = "..."
             log.info(f"Posted: {subject} - {p_data}")
         except Exception as e:
-            log.error(f"Sending to NATS failed: {subject} - {p_data} - {format_exception(e)}")
+            log.error(
+                f"Sending to NATS failed: {subject} - {p_data} - {format_exception(e)}"
+            )
         finally:
             if not self.listeners:
                 await self._disconnect()
 
     async def post(self, subject: str, data: dict) -> None:
-        """Post data to NATS on subject. """
+        """Post data to NATS on subject."""
         await self._internal_post(self._scoped_subject(subject), data)
 
     async def post_to(self, subject: str, entity: str, data: dict) -> None:
@@ -86,25 +88,30 @@ class NatsAdapter():
 
         async def message_handler(msg) -> None:
             try:
-                payload = json.loads(msg.data.decode('utf-8'))
+                payload = json.loads(msg.data.decode("utf-8"))
                 log.info(f"Received message on {subject}: {payload}")
                 await callback(payload)
             except Exception as e:
-                log.error(f"Error processing message on {subject}: {format_exception(e)}")
+                log.error(
+                    f"Error processing message on {subject}: {format_exception(e)}"
+                )
 
         try:
             # Wait for the response with a timeout (customize as necessary)
             log.debug("Setting up NATS response listener")
-            listener = await self.nc.subscribe(subject, queue="worker", cb=message_handler)
+            listener = await self.nc.subscribe(
+                subject, queue="worker", cb=message_handler
+            )
             self.listeners[subject] = listener
             log.info(f"NATS subscribed to {subject}")
 
         except Exception as e:
-            log.error(f"Error setting up listener for subject {subject}: {format_exception(e)}")
+            log.error(
+                f"Error setting up listener for subject {subject}: {format_exception(e)}"
+            )
             raise e
 
     async def unlisten(self, subject: str) -> None:
-
         """Shut down the listener for a specific subject."""
         if subject in self.listeners:
             log.debug(f"Shutting down listener for subject {subject}")
@@ -118,16 +125,18 @@ class NatsAdapter():
             log.warning(f"No active listener found for subject {subject}")
 
 
-class RestAdapter():
-
-    def get(self, endpoint: str, data: dict = {}, token: str = None, headers: dict = {"traceparent": None}) -> Optional[
-        str]:
+class RestAdapter:
+    def get(
+        self,
+        endpoint: str,
+        data: dict = {},
+        token: str = None,
+        headers: dict = {"traceparent": None},
+    ) -> Optional[str]:
         """Get data from an endpoint."""
         log.debug(f"Getting from Endpoint: {endpoint} - {data}")
         headers = headers.copy()
-        headers.update({
-            "Authorization": "Bearer %s" % token
-        })
+        headers.update({"Authorization": "Bearer %s" % token})
         response = requests.get(
             endpoint,
             headers=headers,
@@ -136,18 +145,25 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {endpoint} - {data} - {response.status_code}")
+            log.error(
+                f"Failed to call job API: {endpoint} - {data} - {response.status_code}"
+            )
             return None
 
-    def post(self, endpoint: str, json_data: Any, token: str, headers: dict = {"traceparent": None},
-             query_params: dict = {}) -> Optional[str]:
-        """Post data to an endpoint synchronously. """
+    def post(
+        self,
+        endpoint: str,
+        json_data: Any,
+        token: str,
+        headers: dict = {"traceparent": None},
+        query_params: dict = {},
+    ) -> Optional[str]:
+        """Post data to an endpoint synchronously."""
         log.debug(f"posting[{endpoint}]: {json_data}; {headers=}")
         headers = headers.copy()
-        headers.update({
-            "Content-Type": "application/json",
-            "Authorization": "Bearer %s" % token
-        })
+        headers.update(
+            {"Content-Type": "application/json", "Authorization": "Bearer %s" % token}
+        )
         response = requests.post(
             endpoint,
             json=json_data,
@@ -158,11 +174,18 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}")
+            log.error(
+                f"Failed to call job API: {endpoint} - {json_data} - {response.status_code}"
+            )
             return None
 
-    def post_file(self, endpoint: str, file_data: list, token: str, headers: dict = {"traceparent": None}) -> Optional[
-        str]:
+    def post_file(
+        self,
+        endpoint: str,
+        file_data: list,
+        token: str,
+        headers: dict = {"traceparent": None},
+    ) -> Optional[str]:
         """Post file to an endpoint."""
         log.debug(f"Sending file to Endpoint: {endpoint} - {file_data}")
         headers = headers.copy()
@@ -176,5 +199,7 @@ class RestAdapter():
             log.debug(f"Endpoint Response: {response.status_code}")
             return response.json()
         else:
-            log.error(f"Failed to call job API: {endpoint} - {file_data} - {response.status_code}")
+            log.error(
+                f"Failed to call job API: {endpoint} - {file_data} - {response.status_code}"
+            )
             return None

@@ -12,16 +12,34 @@ from pydantic import ValidationError
 from gcid.gcid import profile_seq_to_id
 from meshwork.auth.generate_token import generate_token
 from meshwork.automation.adapters import NatsAdapter, RestAdapter
-from meshwork.automation.automations import (ScriptRequest, _get_script_interface, _run_script_automation,
-                                             get_default_automations, automation_request, automation_response,
-                                             automation_interface, automation)
-from meshwork.automation.models import AutomationModel, AutomationRequest, AutomationRequestResult, AutomationsResponse, \
-    EventAutomationResponse
+from meshwork.automation.automations import (
+    ScriptRequest,
+    _get_script_interface,
+    _run_script_automation,
+    get_default_automations,
+    automation_request,
+    automation_response,
+    automation_interface,
+    automation,
+)
+from meshwork.automation.models import (
+    AutomationModel,
+    AutomationRequest,
+    AutomationRequestResult,
+    AutomationsResponse,
+    EventAutomationResponse,
+)
 from meshwork.automation.publishers import ResultPublisher, SlimPublisher
 from meshwork.automation.worker import Worker
 from meshwork.config import meshwork_config
 from meshwork.models.params import FloatParmTemplateSpec, ParameterSet, FileParameter
-from meshwork.models.streaming import CropImageResponse, JobDefinition, Message, OutputFiles, ProcessStreamItem
+from meshwork.models.streaming import (
+    CropImageResponse,
+    JobDefinition,
+    Message,
+    OutputFiles,
+    ProcessStreamItem,
+)
 
 
 # ---- Test Models ----
@@ -39,29 +57,15 @@ class TestResponse(Message):
 @pytest.fixture
 def test_token():
     return generate_token(
-        profile_seq_to_id(1),
-        'test@example.com',
-        1,
-        'localhost',
-        'test',
-        [])
+        profile_seq_to_id(1), "test@example.com", 1, "localhost", "test", []
+    )
 
 
 @pytest.fixture
 def test_coordinator_input(test_token):
     return dict(
         is_bulk_processing=True,
-        requests=[{
-            "process_guid": "test-guid",
-            "hda_file": "test_hda_file",
-            "src_asset_id": "test_asset_id",
-            "src_version": [1, 1, 1],
-            "correlation": "test-work",
-            "path": "/test/path",
-            "data": {},
-            "auth_token": test_token,
-            "event_id": "1"
-        },
+        requests=[
             {
                 "process_guid": "test-guid",
                 "hda_file": "test_hda_file",
@@ -71,8 +75,20 @@ def test_coordinator_input(test_token):
                 "path": "/test/path",
                 "data": {},
                 "auth_token": test_token,
-                "event_id": "1"
-            }],
+                "event_id": "1",
+            },
+            {
+                "process_guid": "test-guid",
+                "hda_file": "test_hda_file",
+                "src_asset_id": "test_asset_id",
+                "src_version": [1, 1, 1],
+                "correlation": "test-work",
+                "path": "/test/path",
+                "data": {},
+                "auth_token": test_token,
+                "event_id": "1",
+            },
+        ],
         event_id="1",
     )
 
@@ -115,10 +131,10 @@ def hello_world_api(request: TestRequest, result_callback):
 
 def get_test_worker_spec() -> dict:
     return {
-        '/mythica/hello_world': {
-            'input': TestRequest.model_json_schema(),
-            'output': TestResponse.model_json_schema(),
-            'hidden': False
+        "/mythica/hello_world": {
+            "input": TestRequest.model_json_schema(),
+            "output": TestResponse.model_json_schema(),
+            "hidden": False,
         }
     }
 
@@ -126,11 +142,11 @@ def get_test_worker_spec() -> dict:
 def get_test_automation() -> dict:
     ret = [
         AutomationModel(
-            path='/mythica/hello_world',
+            path="/mythica/hello_world",
             provider=hello_world_api,
             inputModel=TestRequest,
             outputModel=TestResponse,
-            hidden=False
+            hidden=False,
         )
     ]
     return ret
@@ -142,14 +158,14 @@ def get_all_worker_specs() -> dict:
     defaults = get_default_automations()
     for default in defaults:
         autos[default.path] = {
-            'input': default.inputModel.get_parameter_specs(),
-            'output': default.outputModel.model_json_schema(),
-            'hidden': default.hidden
+            "input": default.inputModel.get_parameter_specs(),
+            "output": default.outputModel.model_json_schema(),
+            "hidden": default.hidden,
         }
-    autos['/mythica/automations'] = {
-        'input': ParameterSet.get_parameter_specs(),
-        'output': AutomationsResponse.model_json_schema(),
-        'hidden': True
+    autos["/mythica/automations"] = {
+        "input": ParameterSet.get_parameter_specs(),
+        "output": AutomationsResponse.model_json_schema(),
+        "hidden": True,
     }
     return autos
 
@@ -158,14 +174,14 @@ def get_all_worker_specs() -> dict:
 def test_worker_init(worker):
     assert isinstance(worker.nats, NatsAdapter)
     assert isinstance(worker.rest, RestAdapter)
-    assert '/mythica/automations' in worker.automations
+    assert "/mythica/automations" in worker.automations
 
 
 # ---- Automation Loading Tests ----
 def test_load_automations(worker):
     worker._load_automations(get_test_automation())
-    assert '/mythica/hello_world' in worker.automations
-    assert isinstance(worker.automations['/mythica/hello_world'], AutomationModel)
+    assert "/mythica/hello_world" in worker.automations
+    assert isinstance(worker.automations["/mythica/hello_world"], AutomationModel)
 
 
 def test_get_catalog_provider(worker):
@@ -183,28 +199,31 @@ def test_worker_catalog_with_interface(worker):
 
     # Create a dummy interface function that returns a parameter with name "dummy_interface"
     dummy_interface = lambda: [
-        FloatParmTemplateSpec(name="dummy_interface", label="Dummy Interface", default_value=[0.0])]
+        FloatParmTemplateSpec(
+            name="dummy_interface", label="Dummy Interface", default_value=[0.0]
+        )
+    ]
 
     # Create a dummy AutomationModel and set interfaceModel on it
     dummy_automation = AutomationModel(
-        path='/dummy/interface',
+        path="/dummy/interface",
         provider=lambda req, res: None,
         inputModel=ParameterSet,
         outputModel=Message,  # dummy output model
-        hidden=False
+        hidden=False,
     )
     dummy_automation.interfaceModel = dummy_interface
 
     # Add the dummy automation to the worker
-    worker.automations['/dummy/interface'] = dummy_automation
+    worker.automations["/dummy/interface"] = dummy_automation
 
     # Get the catalog
     catalog_provider = worker._get_catalog_provider()
     result = catalog_provider(None, None)
     assert isinstance(result, AutomationsResponse)
-    assert '/dummy/interface' in result.automations
+    assert "/dummy/interface" in result.automations
 
-    catalog_entry = result.automations['/dummy/interface']
+    catalog_entry = result.automations["/dummy/interface"]
     input_params = catalog_entry["input"]
     # Verify that the interface parameters include one with name "dummy_interface"
     names = [param.name for param in input_params]
@@ -215,34 +234,38 @@ def test_worker_catalog_with_interface(worker):
 @pytest.mark.asyncio
 async def test_worker_executor(worker, mock_responder, test_token):
     test_automation = AutomationModel(
-        path='/test/path',
+        path="/test/path",
         provider=lambda x, y: Message(message="test"),
         inputModel=ParameterSet,
         outputModel=Message,
-        hidden=False
+        hidden=False,
     )
-    worker.automations['/test/path'] = test_automation
+    worker.automations["/test/path"] = test_automation
 
-    with patch('meshwork.automation.worker.ResultPublisher', return_value=mock_responder):
+    with patch(
+        "meshwork.automation.worker.ResultPublisher", return_value=mock_responder
+    ):
         executor = worker._get_executor()
-        await executor({
-            "process_guid": "test-guid",
-            "correlation": "test-work",
-            "path": "/test/path",
-            "data": {},
-            "auth_token": test_token
-        })
+        await executor(
+            {
+                "process_guid": "test-guid",
+                "correlation": "test-work",
+                "path": "/test/path",
+                "data": {},
+                "auth_token": test_token,
+            }
+        )
 
     assert mock_responder.result.call_count == 3
     calls = mock_responder.result.call_args_list
-    assert calls[0].args[0].item_type == 'progress'
-    assert calls[1].args[0].item_type == 'message'
-    assert calls[2].args[0].item_type == 'progress'
+    assert calls[0].args[0].item_type == "progress"
+    assert calls[1].args[0].item_type == "message"
+    assert calls[2].args[0].item_type == "progress"
 
 
 # ---- Web Tests ----
 def test_start_web(worker):
-    with patch.object(worker, '_load_automations') as mock_load:
+    with patch.object(worker, "_load_automations") as mock_load:
         app = worker.start_web(get_test_worker_spec())
         mock_load.assert_called_once()
         assert isinstance(app, FastAPI)
@@ -250,22 +273,22 @@ def test_start_web(worker):
 
 @pytest.mark.asyncio
 async def test_worker_catalog(worker):
-    catalog_provider = worker.automations['/mythica/automations']
+    catalog_provider = worker.automations["/mythica/automations"]
     result = catalog_provider.provider(None, None)
     assert isinstance(result, AutomationsResponse)
-    assert '/mythica/automations' in result.automations
+    assert "/mythica/automations" in result.automations
 
 
 @pytest.mark.asyncio
 async def test_worker_load_automations(worker):
     test_automation = AutomationModel(
-        path='/test/path',
+        path="/test/path",
         provider=lambda x, y: None,
         inputModel=ParameterSet,
-        outputModel=ProcessStreamItem
+        outputModel=ProcessStreamItem,
     )
     worker._load_automations([test_automation])
-    assert '/test/path' in worker.automations
+    assert "/test/path" in worker.automations
 
 
 @pytest.mark.asyncio
@@ -280,15 +303,16 @@ async def test_worker_executor_error(worker):
 
 @pytest.fixture
 def mock_requests():
-    with patch('requests.post') as mock_post, \
-            patch('requests.get') as mock_get:
+    with patch("requests.post") as mock_post, patch("requests.get") as mock_get:
         mock_post.return_value = MagicMock(status_code=200)
         mock_get.return_value = MagicMock(status_code=200)
         yield mock_post, mock_get
 
 
 @pytest.mark.asyncio
-async def test_coordinator_executor_error(worker, caplog, mock_requests, test_coordinator_input):
+async def test_coordinator_executor_error(
+    worker, caplog, mock_requests, test_coordinator_input
+):
     mock_post, mock_get = mock_requests
     mock_get.return_value = MagicMock(status_code=404)
     mock_post.return_value.json.return_value = {"test": "test"}
@@ -344,7 +368,9 @@ async def test_coordinator_executor_error(worker, caplog, mock_requests, test_co
 
 
 @pytest.mark.asyncio
-async def test_coordinator_executor_success(worker, test_coordinator_input, caplog, mock_requests, job_definition_item):
+async def test_coordinator_executor_success(
+    worker, test_coordinator_input, caplog, mock_requests, job_definition_item
+):
     mock_post, mock_get = mock_requests
     mock_get.return_value = MagicMock(status_code=404)
     mock_post.return_value.json.return_value = {"test": "test"}
@@ -354,14 +380,14 @@ async def test_coordinator_executor_success(worker, test_coordinator_input, capl
     executor = worker._get_executor()
     worker.process_items_result = AsyncMock()
     test_automation = AutomationModel(
-        path='/test/path',
+        path="/test/path",
         provider=lambda x, y: job_definition_item,
         inputModel=ParameterSet,
         outputModel=JobDefinition,
-        hidden=False
+        hidden=False,
     )
 
-    worker.automations['/test/path'] = test_automation
+    worker.automations["/test/path"] = test_automation
 
     with caplog.at_level(logging.ERROR):
         await executor(test_coordinator_input)
@@ -381,12 +407,12 @@ async def test_coordinator_executor_success(worker, test_coordinator_input, capl
 
 @pytest.mark.asyncio
 async def test_process_items_result_success(
-        mock_rest,
-        test_token,
-        worker,
-        test_coordinator_input,
-        caplog,
-        mock_requests,
+    mock_rest,
+    test_token,
+    worker,
+    test_coordinator_input,
+    caplog,
+    mock_requests,
 ):
     mock_post, mock_get = mock_requests
     mock_get.return_value = MagicMock(status_code=200)
@@ -403,17 +429,17 @@ async def test_process_items_result_success(
             "type": "object",
             "properties": {},
             "params": {},  # Adding required params field
-            "params_v2": []  # Adding required params field
-        }
+            "params_v2": [],  # Adding required params field
+        },
     )
     test_automation = AutomationModel(
-        path='/test/path',
+        path="/test/path",
         provider=lambda x, y: job_definition_item,
         inputModel=ParameterSet,
         outputModel=JobDefinition,
-        hidden=False
+        hidden=False,
     )
-    worker.automations['/test/path'] = test_automation
+    worker.automations["/test/path"] = test_automation
 
     with caplog.at_level(logging.ERROR):
         await executor(test_coordinator_input)
@@ -438,9 +464,10 @@ async def test_process_items_result_success(
                     telemetry_context={},
                     event_id="1",
                 ),
-                result=job_definition_item.model_dump()
-            ) for _ in range(2)
-        ]
+                result=job_definition_item.model_dump(),
+            )
+            for _ in range(2)
+        ],
     )
     call_args = mock_rest.post.call_args[0]
     assert test_token == call_args[2]
@@ -448,33 +475,58 @@ async def test_process_items_result_success(
     assert expected_response.is_bulk_processing == call_args[1]["is_bulk_processing"]
     assert expected_response.processed == call_args[1]["processed"]
     for index in range(len(expected_response.request_result)):
-        assert expected_response.request_result[index].processed == call_args[1]["request_result"][index]["processed"]
-        assert expected_response.request_result[index].request.process_guid == \
-               call_args[1]["request_result"][index]["request"]["process_guid"]
-        assert expected_response.request_result[index].request.correlation == \
-               call_args[1]["request_result"][index]["request"]["correlation"]
-        assert expected_response.request_result[index].request.path == call_args[1]["request_result"][index]["request"][
-            "path"]
-        assert expected_response.request_result[index].request.data == call_args[1]["request_result"][index]["request"][
-            "data"]
-        assert expected_response.request_result[index].request.telemetry_context == \
-               call_args[1]["request_result"][index]["request"]["telemetry_context"]
-        assert expected_response.request_result[index].request.event_id == \
-               call_args[1]["request_result"][index]["request"]["event_id"]
+        assert (
+            expected_response.request_result[index].processed
+            == call_args[1]["request_result"][index]["processed"]
+        )
+        assert (
+            expected_response.request_result[index].request.process_guid
+            == call_args[1]["request_result"][index]["request"]["process_guid"]
+        )
+        assert (
+            expected_response.request_result[index].request.correlation
+            == call_args[1]["request_result"][index]["request"]["correlation"]
+        )
+        assert (
+            expected_response.request_result[index].request.path
+            == call_args[1]["request_result"][index]["request"]["path"]
+        )
+        assert (
+            expected_response.request_result[index].request.data
+            == call_args[1]["request_result"][index]["request"]["data"]
+        )
+        assert (
+            expected_response.request_result[index].request.telemetry_context
+            == call_args[1]["request_result"][index]["request"]["telemetry_context"]
+        )
+        assert (
+            expected_response.request_result[index].request.event_id
+            == call_args[1]["request_result"][index]["request"]["event_id"]
+        )
         print("jvcfghjkhjgjkhk")
         print(call_args[1]["request_result"][index]["result"])
-        assert expected_response.request_result[index].result["job_type"] == \
-               call_args[1]["request_result"][index]["result"]["job_type"]
+        assert (
+            expected_response.request_result[index].result["job_type"]
+            == call_args[1]["request_result"][index]["result"]["job_type"]
+        )
 
         assert mock.ANY == call_args[1]["request_result"][index]["result"]["job_def_id"]
-        assert expected_response.request_result[index].result["name"] == \
-               call_args[1]["request_result"][index]["result"]["name"]
-        assert expected_response.request_result[index].result["description"] == \
-               call_args[1]["request_result"][index]["result"]["description"]
-        assert expected_response.request_result[index].result["parameter_spec"] == \
-               call_args[1]["request_result"][index]["result"]["parameter_spec"]
-        assert expected_response.request_result[index].result["source"] == \
-               call_args[1]["request_result"][index]["result"]["source"]
+        assert (
+            expected_response.request_result[index].result["name"]
+            == call_args[1]["request_result"][index]["result"]["name"]
+        )
+        assert (
+            expected_response.request_result[index].result["description"]
+            == call_args[1]["request_result"][index]["result"]["description"]
+        )
+        assert (
+            expected_response.request_result[index].result["parameter_spec"]
+            == call_args[1]["request_result"][index]["result"]["parameter_spec"]
+        )
+        assert (
+            expected_response.request_result[index].result["source"]
+            == call_args[1]["request_result"][index]["result"]["source"]
+        )
 
 
 @pytest.mark.asyncio
@@ -482,14 +534,15 @@ async def test_worker_web_executor(worker, test_token):
     app = worker._get_web_executor()
     client = TestClient(app)
 
-    response = client.post("/",
-                           json={
-                               "correlation": "test-work",
-                               "path": "/mythica/automations",
-                               "data": {},
-                               "auth_token": test_token
-                           }
-                           )
+    response = client.post(
+        "/",
+        json={
+            "correlation": "test-work",
+            "path": "/mythica/automations",
+            "data": {},
+            "auth_token": test_token,
+        },
+    )
     assert response.status_code == 200
 
 
@@ -499,14 +552,15 @@ async def test_worker_web_executor_error(worker, test_token):
     client = TestClient(app)
 
     with pytest.raises(KeyError):
-        response = client.post("/",
-                               json={
-                                   "correlation": "test-work",
-                                   "path": "/invalid/path",
-                                   "data": {},
-                                   "auth_token": test_token
-                               }
-                               )
+        response = client.post(
+            "/",
+            json={
+                "correlation": "test-work",
+                "path": "/invalid/path",
+                "data": {},
+                "auth_token": test_token,
+            },
+        )
 
 
 # ---- Model Test Fixtures ----
@@ -516,7 +570,7 @@ def valid_automation_spec():
         "test_path": {
             "input": {"type": "object"},
             "output": {"type": "object"},
-            "hidden": False
+            "hidden": False,
         }
     }
 
@@ -557,7 +611,7 @@ class TestAutomationModel:
             provider=hello_world_api,
             inputModel=TestRequest,
             outputModel=TestResponse,
-            hidden=False
+            hidden=False,
         )
         assert model.path == "/test/path"
         assert model.provider == hello_world_api
@@ -571,7 +625,7 @@ class TestAutomationModel:
                 path="/test/path",
                 provider="not_callable",
                 inputModel=TestRequest,
-                outputModel=TestResponse
+                outputModel=TestResponse,
             )
 
 
@@ -594,7 +648,7 @@ class TestAutomationRequest:
             "process_guid": valid_automation_request_data["process_guid"],
             "correlation": valid_automation_request_data["correlation"],
             "path": valid_automation_request_data["path"],
-            "data": valid_automation_request_data["data"]
+            "data": valid_automation_request_data["data"],
         }
         request = AutomationRequest(**minimal_data)
         assert request.job_id is None
@@ -631,8 +685,10 @@ def mock_rest():
 
 @pytest.fixture
 def publisher(mock_nats, mock_rest, test_request, mock_profile, tmp_path):
-    with patch('meshwork.automation.publishers.decode_token', return_value=mock_profile):
-        with patch('meshwork.automation.publishers.meshwork_config') as mock_config:
+    with patch(
+        "meshwork.automation.publishers.decode_token", return_value=mock_profile
+    ):
+        with patch("meshwork.automation.publishers.meshwork_config") as mock_config:
             mock_config.return_value.api_base_uri = "http://test-api"
             return ResultPublisher(
                 request=test_request,
@@ -658,10 +714,7 @@ def test_request(test_token):
 
 @pytest.fixture
 def mock_profile():
-    return {
-        "sub": "test-user",
-        "profile_id": "test-profile"
-    }
+    return {"sub": "test-user", "profile_id": "test-profile"}
 
 
 @pytest.fixture
@@ -676,7 +729,7 @@ def output_files_item(test_file):
     return OutputFiles(
         item_type="file",  # Changed from "files" to "file"
         process_guid="test-guid",
-        files={"test_key": [test_file]}  # Changed field name to 'files'
+        files={"test_key": [test_file]},  # Changed field name to 'files'
     )
 
 
@@ -690,8 +743,8 @@ def job_definition_item():
             "type": "object",
             "properties": {},
             "params": {},  # Adding required params field
-            "params_v2": []  # Adding required params field
-        }
+            "params_v2": [],  # Adding required params field
+        },
     )
 
 
@@ -735,10 +788,7 @@ async def test_file_handling(publisher, mock_rest, tmp_path):
     test_file = tmp_path / "test.txt"
     test_file.write_text("test content")
 
-    test_item = ProcessStreamItem(
-        item_type="file",
-        file_path=str(test_file)
-    )
+    test_item = ProcessStreamItem(item_type="file", file_path=str(test_file))
 
     publisher.result(test_item)
     mock_rest.post.assert_called_once()
@@ -751,7 +801,7 @@ def test_token_handling(test_request):
             request=test_request,
             nats_adapter=MagicMock(),
             rest=MagicMock(),
-            directory="/tmp"
+            directory="/tmp",
         )
 
 
@@ -767,7 +817,9 @@ async def test_result_publisher_with_job_id(publisher, mock_nats, mock_rest):
 
 
 @pytest.mark.asyncio
-async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_automation_request_data):
+async def test_result_publisher_complete(
+    publisher, mock_nats, mock_rest, valid_automation_request_data
+):
     invalid_data = valid_automation_request_data.copy()
 
     test_item = ProcessStreamItem(item_type="test")
@@ -784,13 +836,13 @@ async def test_result_publisher_complete(publisher, mock_nats, mock_rest, valid_
             "result_data": test_item.model_dump(),
         },
         headers=invalid_data["telemetry_context"],
-        token=publisher.request.auth_token
+        token=publisher.request.auth_token,
     )
     mock_rest.post.assert_any_call(
         f"{publisher.api_url}/jobs/complete/test-job",
         json_data={},
         headers=invalid_data["telemetry_context"],
-        token=publisher.request.auth_token
+        token=publisher.request.auth_token,
     )
 
 
@@ -805,8 +857,12 @@ async def test_publish_files(publisher, mock_rest, output_files_item):
 
 
 @pytest.mark.asyncio
-async def test_publish_cropped_image(publisher, mock_rest, cropped_image_item, tmp_path, caplog):
-    mock_rest.post_file.return_value = {"files": [{"file_id": "file_222", "file_name": "test.txt"}]}
+async def test_publish_cropped_image(
+    publisher, mock_rest, cropped_image_item, tmp_path, caplog
+):
+    mock_rest.post_file.return_value = {
+        "files": [{"file_id": "file_222", "file_name": "test.txt"}]
+    }
     mock_rest.post.return_value = True
     test_file = tmp_path / "test.txt"
     test_file.write_text("test content")
@@ -816,7 +872,10 @@ async def test_publish_cropped_image(publisher, mock_rest, cropped_image_item, t
         publisher._publish_local_data(cropped_image_item, publisher.api_url)
     mock_rest.post_file.assert_called_once()
     mock_rest.post.assert_called_once()
-    assert any("Added cropped image to contents, item" in message for message in caplog.messages)
+    assert any(
+        "Added cropped image to contents, item" in message
+        for message in caplog.messages
+    )
     assert cropped_image_item.file_id == "file_222"
     assert cropped_image_item.file_name == "test.txt"
 
@@ -827,7 +886,10 @@ async def test_publish_missing_cropped_image(publisher, cropped_image_item, capl
 
     with caplog.at_level(logging.ERROR):
         publisher._publish_local_data(cropped_image_item, publisher.api_url)
-    assert any("Failed to add cropped image to contents" in message for message in caplog.messages)
+    assert any(
+        "Failed to add cropped image to contents" in message
+        for message in caplog.messages
+    )
     assert cropped_image_item.file_id == None
     assert cropped_image_item.file_name == None
 
@@ -867,7 +929,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
     output_files = OutputFiles(
         item_type="files",
         process_guid="test-guid",
-        files={"test_key": [non_existent_file]}
+        files={"test_key": [non_existent_file]},
     )
 
     publisher._publish_local_data(output_files, publisher.api_url)
@@ -882,7 +944,7 @@ async def test_publish_missing_file(publisher, mock_rest, tmp_path):
     output_files = OutputFiles(
         item_type="file",  # Changed from "files" to "file"
         process_guid="test-guid",
-        files={"test_key": [non_existent_file]}
+        files={"test_key": [non_existent_file]},
     )
 
     publisher._publish_local_data(output_files, publisher.api_url)
@@ -934,11 +996,10 @@ def mock_responder(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_run_script_automation_success(valid_script, valid_request_data, mock_responder):
-    request = ScriptRequest(
-        script=valid_script,
-        request_data=valid_request_data
-    )
+async def test_run_script_automation_success(
+    valid_script, valid_request_data, mock_responder
+):
+    request = ScriptRequest(script=valid_script, request_data=valid_request_data)
 
     automation = _run_script_automation()
     result = automation(request, mock_responder)
@@ -958,10 +1019,7 @@ async def test_run_script_missing_request_data(valid_script, mock_responder):
 
 @pytest.mark.asyncio
 async def test_run_script_missing_responder(valid_script, valid_request_data):
-    request = ScriptRequest(
-        script=valid_script,
-        request_data=valid_request_data
-    )
+    request = ScriptRequest(script=valid_script, request_data=valid_request_data)
 
     automation = _run_script_automation()
     with pytest.raises(ValueError, match="responder is required"):
@@ -971,13 +1029,12 @@ async def test_run_script_missing_responder(valid_script, valid_request_data):
 @pytest.mark.asyncio
 async def test_run_script_no_request_model(mock_responder):
     script = "print('test')"
-    request = ScriptRequest(
-        script=script,
-        request_data={"test": "value"}
-    )
+    request = ScriptRequest(script=script, request_data={"test": "value"})
 
     automation = _run_script_automation()
-    with pytest.raises(ValueError, match="No request model found. Use @automation_request decorator."):
+    with pytest.raises(
+        ValueError, match="No request model found. Use @automation_request decorator."
+    ):
         automation(request, mock_responder)
 
 
@@ -991,13 +1048,12 @@ from meshwork.automation.automations import automation_request
 class RequestModel(ParameterSet):
     name: str
 """
-    request = ScriptRequest(
-        script=script,
-        request_data={"name": "test"}
-    )
+    request = ScriptRequest(script=script, request_data={"name": "test"})
 
     automation = _run_script_automation()
-    with pytest.raises(ValueError, match="No operation function found. Use @automation decorator."):
+    with pytest.raises(
+        ValueError, match="No operation function found. Use @automation decorator."
+    ):
         automation(request, mock_responder)
 
 
@@ -1010,8 +1066,8 @@ async def test_get_script_interface_success(valid_script, mock_responder):
 
     assert isinstance(result, AutomationsResponse)
     assert result.automations
-    assert result.automations['/mythica/script']['input']
-    assert result.automations['/mythica/script']['output']
+    assert result.automations["/mythica/script"]["input"]
+    assert result.automations["/mythica/script"]["output"]
 
 
 @pytest.mark.asyncio
@@ -1029,9 +1085,9 @@ def test_get_default_automations():
     automations = get_default_automations()
 
     assert len(automations) == 3
-    assert automations[0].path == '/mythica/script'
-    assert automations[1].path == '/mythica/script/interface'
-    assert automations[2].path == '/mythica/script/job_def'
+    assert automations[0].path == "/mythica/script"
+    assert automations[1].path == "/mythica/script/interface"
+    assert automations[2].path == "/mythica/script/job_def"
 
 
 # ---- Automation Decorator Tests ----
@@ -1040,36 +1096,53 @@ class TestAutomationDecorators:
 
     def test_automation_request_decorator_invalid_type(self):
         """Test automation_request decorator with non-class input"""
-        with pytest.raises(TypeError, match="@automation_request can only be used with classes"):
+        with pytest.raises(
+            TypeError, match="@automation_request can only be used with classes"
+        ):
+
             @automation_request()
             def not_a_class():
                 pass
 
     def test_automation_request_decorator_invalid_subclass(self):
         """Test automation_request decorator with non-ParameterSet subclass"""
-        with pytest.raises(TypeError, match="@automation_request can only be used with subclasses of ParameterSet"):
+        with pytest.raises(
+            TypeError,
+            match="@automation_request can only be used with subclasses of ParameterSet",
+        ):
+
             @automation_request()
             class NotParameterSet:
                 pass
 
     def test_automation_response_decorator_invalid_type(self):
         """Test automation_response decorator with non-class input"""
-        with pytest.raises(TypeError, match="@automation_response can only be used with classes"):
+        with pytest.raises(
+            TypeError, match="@automation_response can only be used with classes"
+        ):
+
             @automation_response()
             def not_a_class():
                 pass
 
     def test_automation_response_decorator_invalid_subclass(self):
         """Test automation_response decorator with non-ProcessStreamItem subclass"""
-        with pytest.raises(TypeError,
-                           match="@automation_response can only be used with subclasses of ProcessStreamItem"):
+        with pytest.raises(
+            TypeError,
+            match="@automation_response can only be used with subclasses of ProcessStreamItem",
+        ):
+
             @automation_response()
             class NotProcessStreamItem:
                 pass
 
     def test_automation_interface_decorator_invalid_type(self):
         """Test automation_interface decorator with non-callable input"""
-        with pytest.raises(TypeError, match="@automation_interface can only be used with callable methods"):
+        with pytest.raises(
+            TypeError,
+            match="@automation_interface can only be used with callable methods",
+        ):
+
             @automation_interface()
             def not_callable():
                 pass
@@ -1094,13 +1167,18 @@ class TestAutomationDecorators:
         def bad_interface():
             return "not a list"
 
-        with pytest.raises(TypeError,
-                           match="The return value of the automation_interface must be a list of HoudiniParmTemplateSpecType"):
+        with pytest.raises(
+            TypeError,
+            match="The return value of the automation_interface must be a list of HoudiniParmTemplateSpecType",
+        ):
             bad_interface()
 
     def test_automation_decorator_invalid_type(self):
         """Test automation decorator with non-callable input"""
-        with pytest.raises(TypeError, match="@automation can only be used with callable methods"):
+        with pytest.raises(
+            TypeError, match="@automation can only be used with callable methods"
+        ):
+
             @automation()
             def not_callable():
                 pass
@@ -1115,7 +1193,10 @@ class TestAutomationDecorators:
         def bad_automation(not_parameter_set):
             return ProcessStreamItem()
 
-        with pytest.raises(TypeError, match="The first argument of the automation must be a subclass of ParameterSet"):
+        with pytest.raises(
+            TypeError,
+            match="The first argument of the automation must be a subclass of ParameterSet",
+        ):
             bad_automation("not_parameter_set")
 
     def test_automation_decorator_invalid_responder(self, mock_responder):
@@ -1125,7 +1206,9 @@ class TestAutomationDecorators:
         def bad_automation(request, responder="not_result_publisher"):
             return ProcessStreamItem()
 
-        with pytest.raises(TypeError, match="The 'responder' argument must be of type ResultPublisher"):
+        with pytest.raises(
+            TypeError, match="The 'responder' argument must be of type ResultPublisher"
+        ):
             bad_automation(ParameterSet(), responder="not_result_publisher")
 
     def test_automation_decorator_invalid_return_type(self, mock_responder):
@@ -1135,8 +1218,10 @@ class TestAutomationDecorators:
         def bad_automation(request, responder=None):
             return "not a ProcessStreamItem"
 
-        with pytest.raises(TypeError,
-                           match="The return value of the automation must be a subclass of ProcessStreamItem"):
+        with pytest.raises(
+            TypeError,
+            match="The return value of the automation must be a subclass of ProcessStreamItem",
+        ):
             bad_automation(ParameterSet(), responder=mock_responder)
 
 
@@ -1165,7 +1250,7 @@ class ResponseModel(ProcessStreamItem):
 @automation()
 def runAutomation(request, responder):
     return ResponseModel(result=f"Hello {request.name}")
-"""
+""",
     }
 
     awpy_file = tmp_path / "test.awpy"
@@ -1174,24 +1259,25 @@ def runAutomation(request, responder):
     return {
         "awpy_file": FileParameter(file_id="test-file-id", file_path=str(awpy_file)),
         "src_asset_id": "test-asset-id",
-        "src_version": [1, 0, 0]
+        "src_version": [1, 0, 0],
     }
 
 
 @pytest.mark.asyncio
-async def test_get_script_job_def_missing_worker(script_job_def_request_data, mock_responder, tmp_path):
+async def test_get_script_job_def_missing_worker(
+    script_job_def_request_data, mock_responder, tmp_path
+):
     """Test script job definition with missing worker"""
     from meshwork.automation.automations import ScriptJobDefRequest, _get_script_job_def
 
     # Create awpy file without worker
-    awpy_content = {
-        "name": "Test Script",
-        "script": "print('test')"
-    }
+    awpy_content = {"name": "Test Script", "script": "print('test')"}
     awpy_file = tmp_path / "test_no_worker.awpy"
     awpy_file.write_text(json.dumps(awpy_content))
 
-    script_job_def_request_data["awpy_file"] = FileParameter(file_id="test-file-id", file_path=str(awpy_file))
+    script_job_def_request_data["awpy_file"] = FileParameter(
+        file_id="test-file-id", file_path=str(awpy_file)
+    )
     request = ScriptJobDefRequest(**script_job_def_request_data)
     job_def_func = _get_script_job_def()
 
@@ -1203,7 +1289,9 @@ async def test_get_script_job_def_missing_worker(script_job_def_request_data, mo
 
 
 @pytest.mark.asyncio
-async def test_get_script_job_def_invalid_script(script_job_def_request_data, mock_responder, tmp_path):
+async def test_get_script_job_def_invalid_script(
+    script_job_def_request_data, mock_responder, tmp_path
+):
     """Test script job definition with invalid script"""
     from meshwork.automation.automations import ScriptJobDefRequest, _get_script_job_def
 
@@ -1211,12 +1299,14 @@ async def test_get_script_job_def_invalid_script(script_job_def_request_data, mo
     awpy_content = {
         "name": "Test Script",
         "worker": "test-worker",
-        "script": "invalid python code $$$$"
+        "script": "invalid python code $$$$",
     }
     awpy_file = tmp_path / "test_invalid.awpy"
     awpy_file.write_text(json.dumps(awpy_content))
 
-    script_job_def_request_data["awpy_file"] = FileParameter(file_id="test-file-id", file_path=str(awpy_file))
+    script_job_def_request_data["awpy_file"] = FileParameter(
+        file_id="test-file-id", file_path=str(awpy_file)
+    )
     request = ScriptJobDefRequest(**script_job_def_request_data)
     job_def_func = _get_script_job_def()
 
@@ -1280,13 +1370,15 @@ def runAutomation(request, responder):
     result = interface_func(request, mock_responder)
 
     assert isinstance(result, AutomationsResponse)
-    assert '/mythica/script' in result.automations
-    assert 'input' in result.automations['/mythica/script']
-    assert 'output' in result.automations['/mythica/script']
+    assert "/mythica/script" in result.automations
+    assert "input" in result.automations["/mythica/script"]
+    assert "output" in result.automations["/mythica/script"]
 
 
 @pytest.mark.asyncio
-async def test_run_script_operation_error(valid_script, valid_request_data, mock_responder):
+async def test_run_script_operation_error(
+    valid_script, valid_request_data, mock_responder
+):
     """Test script automation when operation returns non-ProcessStreamItem"""
     bad_script = """
 from meshwork.models.params import ParameterSet
@@ -1307,11 +1399,11 @@ def runAutomation(request, responder):
     return "not a ProcessStreamItem"  # This should cause an error
 """
 
-    request = ScriptRequest(
-        script=bad_script,
-        request_data=valid_request_data
-    )
+    request = ScriptRequest(script=bad_script, request_data=valid_request_data)
 
     automation = _run_script_automation()
-    with pytest.raises(TypeError, match="The return value of the automation must be a subclass of ProcessStreamItem"):
+    with pytest.raises(
+        TypeError,
+        match="The return value of the automation must be a subclass of ProcessStreamItem",
+    ):
         automation(request, mock_responder)

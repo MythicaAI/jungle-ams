@@ -31,7 +31,7 @@ def log_sql_queries(func):
 
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        db_session = kwargs.get('db_session')
+        db_session = kwargs.get("db_session")
         if db_session is None:
             for arg in args:
                 if isinstance(arg, AsyncSession):

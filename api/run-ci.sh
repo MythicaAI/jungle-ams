@@ -23,6 +23,7 @@ rm -f ${DATABASE_PATH}
 touch ${DATABASE_PATH}
 rm -rf ${SCRIPT_DIR}/alembic_sqlite/versions
 mkdir -p ${SCRIPT_DIR}/alembic_sqlite/versions
-poetry run alembic -n sqlite revision --autogenerate -m "initial"
-poetry run alembic -n sqlite upgrade head
-poetry run pytest . $*
+uv sync --group dev
+uv run alembic -n sqlite revision --autogenerate -m "initial"
+uv run alembic -n sqlite upgrade head
+uv run pytest . $*

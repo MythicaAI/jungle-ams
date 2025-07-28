@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 class SessionProfile(BaseModel):
     """Data stored for a session in a token"""
+
     auth_token: str  # Mythica auth token that instantiated the session
     profile_seq: int  # cached for API internals
     profile_id: str
@@ -20,5 +21,6 @@ class SessionProfile(BaseModel):
 
 class OrgRef(BaseModel):
     """Data flowing through meshwork about orgs"""
+
     org_seq: int
     org_id: str

@@ -32,12 +32,14 @@ from pydantic_settings import BaseSettings
 class meshworkConfig(BaseSettings):
     """Configuration of the meshwork library from environment or otherwise"""
 
-    meshwork_token_secret_key: str = 'X' * 32  # shared secret for auth token generation
-    api_base_uri: str = 'http://localhost:5555/v1'
+    meshwork_token_secret_key: str = "X" * 32  # shared secret for auth token generation
+    api_base_uri: str = "http://localhost:5555/v1"
     mythica_environment: str = "debug"
     telemetry_endpoint: Optional[str] = None
     telemetry_token: Optional[str] = None
-    enable_telemetry_debug_logs: bool = False  # show telemetry logs on stdout for debugging
+    enable_telemetry_debug_logs: bool = (
+        False  # show telemetry logs on stdout for debugging
+    )
     discord_infra_alerts_webhook: Optional[str] = None
 
 
@@ -74,13 +76,13 @@ def get_telemetry_resource() -> Resource:
 def is_secure_scheme(url):
     """Test URL for supported secure schemes"""
     parsed_url = urlparse(url)
-    secure_schemes = {'https', 'wss', 'grpcs'}
+    secure_schemes = {"https", "wss", "grpcs"}
     return parsed_url.scheme.lower() in secure_schemes
 
 
 def configure_telemetry(endpoint: str, ingest_token: Optional[str] = None):
     if ingest_token:
-        headers = [('signoz-access-token', ingest_token)]
+        headers = [("signoz-access-token", ingest_token)]
     else:
         headers = None
 
@@ -88,7 +90,9 @@ def configure_telemetry(endpoint: str, ingest_token: Optional[str] = None):
     insecure = not is_secure_scheme(endpoint)
     logger.info("Telemetry enabled. telemetry_endpoint: %s", endpoint)
     if insecure:
-        logger.warning("Telemetry using insecure scheme", )
+        logger.warning(
+            "Telemetry using insecure scheme",
+        )
 
     logger.handlers.clear()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -166,7 +170,7 @@ class CustomJSONFormatter(logging.Formatter):
                 k: v
                 for k, v in record.__dict__.items()
                 if k
-                   not in ['msg', 'args', 'levelname', 'asctime', 'message', 'exc_info']
+                not in ["msg", "args", "levelname", "asctime", "message", "exc_info"]
             }
         )
         json_log_entry = json.dumps(log_entry)

@@ -1,4 +1,3 @@
-from gcid.config import Config
 from gcid.gcid import _config
 
 

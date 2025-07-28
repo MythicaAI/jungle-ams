@@ -35,7 +35,7 @@ from meshwork.models.params import (
     DataParmTemplateSpec,
     FolderParmTemplateSpec,
     FolderSetParmTemplateSpec,
-    RampPointSpec
+    RampPointSpec,
 )
 
 # Import the classes from houClasses
@@ -93,6 +93,7 @@ def test_houdini_enums():
 # 2. Test each ParmTemplateSpec-derived model from params.py
 # -----------------------------------------------------------------------------
 
+
 def test_separator_parm_template_spec():
     sep = SeparatorParmTemplateSpec(
         label="MySeparator",
@@ -107,10 +108,7 @@ def test_separator_parm_template_spec():
 
 def test_button_parm_template_spec():
     btn = ButtonParmTemplateSpec(
-        label="MyButton",
-        name="btn1",
-        is_label_hidden=True,
-        help="Click me!"
+        label="MyButton", name="btn1", is_label_hidden=True, help="Click me!"
     )
     assert btn.param_type == parmTemplateType.Button
     assert btn.label == "MyButton"
@@ -126,7 +124,7 @@ def test_int_parm_template_spec():
         default_value=[1, 2, 3],
         min=0,
         max=10,
-        num_components=3
+        num_components=3,
     )
     assert ip.param_type == parmTemplateType.Int
     assert ip.default_value == [1, 2, 3]
@@ -145,11 +143,7 @@ def test_int_parm_template_spec():
 
 def test_float_parm_template_spec():
     fp = FloatParmTemplateSpec(
-        label="Float Label",
-        name="float1",
-        default_value=[3.14],
-        min=0.0,
-        max=10.0
+        label="Float Label", name="float1", default_value=[3.14], min=0.0, max=10.0
     )
     assert fp.param_type == parmTemplateType.Float
     assert fp.default_value == [3.14]
@@ -171,7 +165,7 @@ def test_string_parm_template_spec():
         name="str1",
         default_value=["Hello", "World"],
         string_type=stringParmType.Regular,
-        file_type=fileType.Any
+        file_type=fileType.Any,
     )
     assert sp.param_type == parmTemplateType.String
     assert sp.default_value == ["Hello", "World"]
@@ -195,7 +189,7 @@ def test_menu_parm_template_spec():
         name="menu1",
         default_value=2,
         menu_items=["x", "y", "z"],
-        menu_labels=["X", "Y", "Z"]
+        menu_labels=["X", "Y", "Z"],
     )
     assert mp.param_type == parmTemplateType.Menu
     assert mp.default_value == 2
@@ -205,9 +199,7 @@ def test_menu_parm_template_spec():
 
 def test_label_parm_template_spec():
     lp = LabelParmTemplateSpec(
-        label="Label Label",
-        name="lbl1",
-        column_labels=["colA", "colB"]
+        label="Label Label", name="lbl1", column_labels=["colA", "colB"]
     )
     assert lp.param_type == parmTemplateType.Label
     assert lp.column_labels == ["colA", "colB"]
@@ -222,7 +214,7 @@ def test_ramp_parm_template_spec():
         default_points=[
             RampPointSpec(pos=0.0, value=0.1),
             RampPointSpec(pos=1.0, value=0.9, interp=rampBasis.Bezier),
-        ]
+        ],
     )
     assert rp.param_type == parmTemplateType.Ramp
     assert rp.ramp_parm_type == rampParmType.Float
@@ -232,11 +224,7 @@ def test_ramp_parm_template_spec():
 
 
 def test_data_parm_template_spec():
-    dp = DataParmTemplateSpec(
-        label="Data Label",
-        name="data1",
-        num_components=2
-    )
+    dp = DataParmTemplateSpec(label="Data Label", name="data1", num_components=2)
     assert dp.param_type == parmTemplateType.Data
     assert dp.num_components == 2
 
@@ -249,7 +237,7 @@ def test_folder_parm_template_spec():
         ends_tab_group=True,
         folder_type=folderType.RadioButtons,
         parm_templates=[],
-        default_value=1
+        default_value=1,
     )
     assert folder.param_type == parmTemplateType.Folder
     assert folder.level == 2
@@ -261,9 +249,7 @@ def test_folder_parm_template_spec():
 
 def test_folderset_parm_template_spec():
     fs = FolderSetParmTemplateSpec(
-        label="FolderSet Label",
-        name="fs1",
-        parm_templates=[]
+        label="FolderSet Label", name="fs1", parm_templates=[]
     )
     assert fs.param_type == parmTemplateType.FolderSet
     assert fs.parm_templates == []
@@ -403,8 +389,13 @@ def test_toggle_parm_template_class():
 
 
 def test_menu_parm_template_class():
-    mpt = MenuParmTemplate("menu_test", default_value=1, menu_items=["itemA", "itemB"],
-                           menu_labels=["Item A", "Item B"], menu_use_token=True)
+    mpt = MenuParmTemplate(
+        "menu_test",
+        default_value=1,
+        menu_items=["itemA", "itemB"],
+        menu_labels=["Item A", "Item B"],
+        menu_use_token=True,
+    )
     assert mpt.type == parmTemplateType.Menu
     assert mpt.name == "menu_test"
     assert mpt.default_value == 1
@@ -484,7 +475,7 @@ def test_ramp_parm_template_class_color_fill_defaults():
     rpt = RampParmTemplate(
         name="ramp_test_color",
         label="MyColorRamp",
-        ramp_part_type=classRampParmType.Color
+        ramp_part_type=classRampParmType.Color,
     )
     # Provide a 'tags' dict that includes the ramp definition for a color ramp
     # Example format:  "0pos(0)0c(1 0 0)0interp(linear)1pos(1)1c(0 1 0)1interp(bezier)"
@@ -506,7 +497,7 @@ def test_ramp_parm_template_class_invalid_color_parsing():
     rpt = RampParmTemplate(
         name="ramp_test_invalid",
         label="MyBadColorRamp",
-        ramp_part_type=classRampParmType.Color
+        ramp_part_type=classRampParmType.Color,
     )
     # Attempt with invalid color data
     # e.g. missing 3rd color component
@@ -516,7 +507,9 @@ def test_ramp_parm_template_class_invalid_color_parsing():
 
 
 def test_folder_parm_template_class():
-    folder = FolderParmTemplate("folder_test", label="FolderTest", folder_type=folderType.Tabs)
+    folder = FolderParmTemplate(
+        "folder_test", label="FolderTest", folder_type=folderType.Tabs
+    )
     assert folder.type == parmTemplateType.Folder
     assert folder.folder_type == folderType.Tabs
     assert folder.parm_templates == []
@@ -564,17 +557,44 @@ def test_folder_set_parm_template_class():
 def test_hidden_params():
     # For each parameter type that generates a ParameterSpec
     # Test that the is_hidden attribute is respected
-    folder = FolderParmTemplate("folder_test", label="FolderTest", folder_type=folderType.Tabs, is_hidden=True)
-    intTemp = IntParmTemplate("int_test", label="IntTest", default_value=[1], num_components=1, is_hidden=True)
-    floatTemp = FloatParmTemplate("float_test", label="FloatTest", default_value=[1.0], num_components=1,
-                                  is_hidden=True)
-    stringTemp = StringParmTemplate("string_test", label="StringTest", default_value=["Hello"], num_components=1,
-                                    is_hidden=True)
-    toggleTemp = ToggleParmTemplate("toggle_test", label="ToggleTest", default_value=True, is_hidden=True)
-    menuTemp = MenuParmTemplate("menu_test", label="MenuTest", default_value=1, menu_items=["itemA", "itemB"],
-                                menu_labels=["Item A", "Item B"], is_hidden=True)
-    rampTemp = RampParmTemplate("ramp_test", label="RampTest", ramp_part_type=classRampParmType.Float,
-                                default_points=[RampPointSpec(pos=0.0, value=0.2)], is_hidden=True)
+    folder = FolderParmTemplate(
+        "folder_test", label="FolderTest", folder_type=folderType.Tabs, is_hidden=True
+    )
+    intTemp = IntParmTemplate(
+        "int_test", label="IntTest", default_value=[1], num_components=1, is_hidden=True
+    )
+    floatTemp = FloatParmTemplate(
+        "float_test",
+        label="FloatTest",
+        default_value=[1.0],
+        num_components=1,
+        is_hidden=True,
+    )
+    stringTemp = StringParmTemplate(
+        "string_test",
+        label="StringTest",
+        default_value=["Hello"],
+        num_components=1,
+        is_hidden=True,
+    )
+    toggleTemp = ToggleParmTemplate(
+        "toggle_test", label="ToggleTest", default_value=True, is_hidden=True
+    )
+    menuTemp = MenuParmTemplate(
+        "menu_test",
+        label="MenuTest",
+        default_value=1,
+        menu_items=["itemA", "itemB"],
+        menu_labels=["Item A", "Item B"],
+        is_hidden=True,
+    )
+    rampTemp = RampParmTemplate(
+        "ramp_test",
+        label="RampTest",
+        ramp_part_type=classRampParmType.Float,
+        default_points=[RampPointSpec(pos=0.0, value=0.2)],
+        is_hidden=True,
+    )
 
     assert folder.getParameterSpec() == None
     assert intTemp.getParameterSpec() == []
@@ -587,7 +607,7 @@ def test_hidden_params():
 
 def test_folder_parm_auto_folderset_insertion():
     """
-    Test the logic that automatically wraps new FolderParmTemplate 
+    Test the logic that automatically wraps new FolderParmTemplate
     in a FolderSetParmTemplate if needed.
     """
     top_folder = FolderParmTemplate("top_folder", label="TopFolder")
@@ -609,8 +629,12 @@ def test_parm_template_group_basic():
 
     # Add a few parm templates
     int_pt = IntParmTemplate("my_int", "My Int", default_value=[10], num_components=1)
-    float_pt = FloatParmTemplate("my_float", "My Float", default_value=[1.5], num_components=1)
-    string_pt = StringParmTemplate("my_string", "My String", default_value=["hello", "world"], num_components=2)
+    float_pt = FloatParmTemplate(
+        "my_float", "My Float", default_value=[1.5], num_components=1
+    )
+    string_pt = StringParmTemplate(
+        "my_string", "My String", default_value=["hello", "world"], num_components=2
+    )
     group.addParmTemplate(int_pt)
     group.addParmTemplate(float_pt)
     group.addParmTemplate(string_pt)
@@ -636,7 +660,9 @@ def test_parm_template_group_nested_folder():
     top_folder = FolderParmTemplate("top", label="Top")
     group.addParmTemplate(top_folder)
     # Add child param
-    child_toggle = ToggleParmTemplate("child_toggle", "child toggle", default_value=False)
+    child_toggle = ToggleParmTemplate(
+        "child_toggle", "child toggle", default_value=False
+    )
     top_folder.addParmTemplate(child_toggle)
 
     # We should see a FolderSet inserted automatically if needed
@@ -664,7 +690,7 @@ def test_string_parm_template_menu_items():
         num_components=1,
         menu_items=["foo", "bar", "baz"],
         menu_labels=["Foo", "Bar", "Baz"],
-        menu_use_token=False
+        menu_use_token=False,
     )
 
     pspec_list = spt.getParameterSpec()
@@ -683,15 +709,21 @@ def test_string_parm_template_menu_items():
 
 def test_folder_parm_template_is_actual_folder():
     # A folder with folderType=TABS => True
-    f1 = FolderParmTemplate("folder_test1", label="FolderTest1", folder_type=folderType.Tabs)
+    f1 = FolderParmTemplate(
+        "folder_test1", label="FolderTest1", folder_type=folderType.Tabs
+    )
     assert f1.isActualFolder() is True
 
     # A folder with folderType=MultiparmBlock => should be False
-    f2 = FolderParmTemplate("folder_test2", label="FolderTest2", folder_type=folderType.MultiparmBlock)
+    f2 = FolderParmTemplate(
+        "folder_test2", label="FolderTest2", folder_type=folderType.MultiparmBlock
+    )
     assert f2.isActualFolder() is False
 
     # A folder with folderType=ImportBlock => also False
-    f3 = FolderParmTemplate("folder_test3", label="FolderTest3", folder_type=folderType.ImportBlock)
+    f3 = FolderParmTemplate(
+        "folder_test3", label="FolderTest3", folder_type=folderType.ImportBlock
+    )
     assert f3.isActualFolder() is False
 
 
@@ -733,7 +765,7 @@ def test_folder_parm_template_ends_tab_group():
 
     # Just verify we can retrieve the final spec
     spec = group.getParmTemplateSpec()
-    # This won't raise an error if the path was exercised. 
+    # This won't raise an error if the path was exercised.
     # Optionally, you can add asserts about the nested structure if you want to confirm it.
     assert spec is not None
 

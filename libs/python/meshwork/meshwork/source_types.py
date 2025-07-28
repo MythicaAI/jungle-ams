@@ -26,5 +26,5 @@ def create_source(source_type: str, params: dict[str, Any]) -> Source:
     """Create a new source with a set of parameters"""
     fn = _source_types.get(source_type)
     if fn is None:
-        raise ValueError(f'unknown source type {source_type}')
+        raise ValueError(f"unknown source type {source_type}")
     return fn(params)

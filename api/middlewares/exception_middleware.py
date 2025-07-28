@@ -3,10 +3,7 @@ import logging
 import time
 import sys
 
-if sys.version_info < (3, 13):
-    from collections.abc import Mapping  # pylint: disable=deprecated-class, unused-import
-else:
-    from collections import Mapping  # pylint: disable=deprecated-class, unused-import
+from collections.abc import Mapping  # pylint: disable=deprecated-class, unused-import
 
 from fastapi import HTTPException, Request, Response
 from fastapi.concurrency import iterate_in_threadpool
@@ -128,9 +125,12 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
                 "application/x-msdownload",
                 "application/x-sh",
                 "application/x-dosexec",
-                "image/",  # Matches all image types (e.g., image/png, image/jpeg)
-                "video/",  # Matches all video types (e.g., video/mp4, video/webm)
-                "audio/",  # Matches all audio types (e.g., audio/mpeg, audio/ogg)
+                # Matches all image types (e.g., image/png, image/jpeg)
+                "image/",
+                # Matches all video types (e.g., video/mp4, video/webm)
+                "video/",
+                # Matches all audio types (e.g., audio/mpeg, audio/ogg)
+                "audio/",
                 "font/",  # Matches font files (e.g., font/woff, font/woff2)
             }
         )

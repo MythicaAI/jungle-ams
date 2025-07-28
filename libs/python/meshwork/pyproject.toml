@@ -1,60 +1,116 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
 name = "meshwork"
 version = "0.1.0"
-description = "Library for the popogation of distributed parameterized jobs and their streams"
+description = "Library for the propagation of distributed parameterized jobs and their streams"
 authors = [
-    "Jacob Repp <jacob@mythica.ai>",
-    "Kevin Calderone <kevin@mythica.ai",
-    "Pedro "]
-license = "MIT"
+    { name = "Jacob Repp", email = "jacob@mythica.ai" },
+    { name = "Kevin Calderone", email = "kevin@mythica.ai" },
+    { name = "Pedro", email = "pedro@mythica.ai" }
+]
+license = { text = "MPL-2.0" }
 readme = "README.md"
-homepage = "https://github.com/MythicaAI/infra/libs/python/meshwork"
-repository = "https://github.com/MythicaAI/infra"
-keywords = ["game assets", "file management", "streaming", "jobs"]
-
-
-[tool.poetry.dependencies]
-python = "<4.0,>=3.10"
-pydantic-settings = "^2.7.1"
-typing-extensions = "^4.12.2"
-pydantic = "^2.10.6"
-python-json-logger = "^3.2.1"
-base58 = "^2.1.1"
-tzdata = "^2025.1"
-cryptography = "^44.0.1"
-requests = "^2.32.3"
-aiohttp = "^3.11.12"
-nats-py = "^2.9.0"
-gcid = "^0.1.0"
-pyjwt = "^2.10.1"
-fastapi = "^0.115.8"
-uvicorn = "^0.34.0"
-opentelemetry-api = "^1.30.0"
-opentelemetry-sdk = "^1.30.0"
-opentelemetry-exporter-otlp = "^1.30.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.4"
-flake8 = "^7.1.2"
-munch = "^4.0.0"
-pylint = "^3.3.4"
-pytest-cov = "^6.0.0"
-pytest-timeout = "^2.3.1"
-gcid = { path = "../gcid", develop = true }
-pytest-asyncio = "^0.25.3"
-httpx = "^0.28.1"
-
-[tool.poetry.scripts]
-start = "main:start"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.coverage.report]
-omit = [
-    "tests/*",
+requires-python = ">=3.10"
+keywords = ["distributed-computing", "job-scheduling", "streaming", "microservices"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pydantic>=2.10.6",
+    "pydantic-settings>=2.7.1",
+    "typing-extensions>=4.12.2",
+    "python-json-logger>=3.2.1",
+    "base58>=2.1.1",
+    "tzdata>=2025.1",
+    "cryptography>=44.0.1",
+    "requests>=2.32.3",
+    "aiohttp>=3.11.12",
+    "nats-py>=2.9.0",
+    "gcid>=0.1.0",
+    "pyjwt>=2.10.1",
+    "fastapi>=0.115.8",
+    "uvicorn>=0.34.0",
+    "opentelemetry-api>=1.30.0",
+    "opentelemetry-sdk>=1.30.0",
+    "opentelemetry-exporter-otlp>=1.30.0",
 ]
 
+[dependency-groups]
+test = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3.1",
+    "httpx>=0.28.1",
+]
+lint = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+]
+
+[project.urls]
+Homepage = "https://github.com/MythicaAI/infra/libs/python/meshwork"
+Repository = "https://github.com/MythicaAI/infra"
+
+[project.scripts]
+test = "scripts:test"
+lint = "scripts:lint"
+fmt = "scripts:format_code"
+typecheck = "scripts:typecheck"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501", # line too long, handled by formatter
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+strict_optional = true
+
 [tool.pytest.ini_options]
-addopts = "-p no:logging"
+addopts = "-v --cov=meshwork --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["meshwork"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

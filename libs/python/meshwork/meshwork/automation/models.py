@@ -1,7 +1,12 @@
 from typing import Any, Callable, Dict, Literal, Optional, Type
 
 from pydantic import BaseModel
-from meshwork.models.params import FileParameter, HoudiniParmTemplateSpecType, IntParameterSpec, ParameterSet
+from meshwork.models.params import (
+    FileParameter,
+    HoudiniParmTemplateSpecType,
+    IntParameterSpec,
+    ParameterSet,
+)
 from meshwork.models.streaming import ProcessStreamItem
 
 

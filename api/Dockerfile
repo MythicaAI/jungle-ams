@@ -1,6 +1,4 @@
-ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
-FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
-
+FROM python:3.13.5-alpine
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL name="api"
 LABEL description="The Jungle Asset Management API"
@@ -15,19 +13,22 @@ RUN mkdir -p /ams/
 WORKDIR /ams/
 
 # Fix permissions for the default non-root user
+RUN adduser -u 5678 --disabled-password --gecos "" appuser
 RUN chown -R appuser /ams/ && \
     chown -R appuser /uploads
 
+
+RUN python -m pip install --upgrade pip && \
+    pip install poetry
+
+# Run lib install as the app user to activate the virtual environment
 USER appuser
 
-# Put all application data into the container /app directory, do this as late
-# as possible as possible to aid in the Docker layer cache coherency
+# Put all application data into the container /ams directory
 COPY . .
 
-# Run poetry as the app user to activate the virtual environment
-RUN poetry check && \
-    poetry env use python3 && \
-    poetry install --compile --all-extras --without=dev --no-root
+# Sync the local environment
+RUN uv --sync && source ./venv/bin/activate
 
 # Application server listen port, see ./docker-entrypoint.sh
 EXPOSE 5555

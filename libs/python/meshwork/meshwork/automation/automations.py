@@ -3,7 +3,12 @@ import json
 from meshwork.automation.models import AutomationModel, AutomationsResponse
 from meshwork.automation.publishers import ResultPublisher
 from meshwork.automation.utils import format_exception
-from meshwork.models.params import FileParameter, HoudiniParmTemplateSpecType, ParameterSet, ParameterSpec
+from meshwork.models.params import (
+    FileParameter,
+    HoudiniParmTemplateSpecType,
+    ParameterSet,
+    ParameterSpec,
+)
 from meshwork.models.assets import AssetVersionEntryPointReference
 from meshwork.models.streaming import Error, JobDefinition, ProcessStreamItem
 from typing import Callable, Literal, Optional, Tuple, Any, Dict
@@ -25,7 +30,9 @@ def automation_request():
         if not isinstance(cls, type):
             raise TypeError("@automation_request can only be used with classes")
         if not issubclass(cls, ParameterSet):
-            raise TypeError("@automation_request can only be used with subclasses of ParameterSet")
+            raise TypeError(
+                "@automation_request can only be used with subclasses of ParameterSet"
+            )
         cls._is_automation_request = True
         return cls
 
@@ -39,7 +46,9 @@ def automation_response():
         if not isinstance(cls, type):
             raise TypeError("@automation_response can only be used with classes")
         if not issubclass(cls, ProcessStreamItem):
-            raise TypeError("@automation_response can only be used with subclasses of ProcessStreamItem")
+            raise TypeError(
+                "@automation_response can only be used with subclasses of ProcessStreamItem"
+            )
         cls._is_automation_response = True
         return cls
 
@@ -52,7 +61,9 @@ def automation_interface():
 
     def decorator(func):
         if not callable(func):
-            raise TypeError("@automation_interface can only be used with callable methods")
+            raise TypeError(
+                "@automation_interface can only be used with callable methods"
+            )
 
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -64,7 +75,8 @@ def automation_interface():
 
             if not isinstance(result, list):
                 raise TypeError(
-                    "The return value of the automation_interface must be a list of HoudiniParmTemplateSpecType")
+                    "The return value of the automation_interface must be a list of HoudiniParmTemplateSpecType"
+                )
 
             return result
 
@@ -85,16 +97,25 @@ def automation():
         def wrapper(*args, **kwargs):
             # Validate the method signature
             if len(args) < 1 or not isinstance(args[0], ParameterSet):
-                raise TypeError("The first argument of the automation must be a subclass of ParameterSet")
+                raise TypeError(
+                    "The first argument of the automation must be a subclass of ParameterSet"
+                )
 
-            if 'responder' in kwargs and kwargs['responder'] is not None and not isinstance(kwargs['responder'],
-                                                                                            ResultPublisher):
-                raise TypeError("The 'responder' argument must be of type ResultPublisher")
+            if (
+                "responder" in kwargs
+                and kwargs["responder"] is not None
+                and not isinstance(kwargs["responder"], ResultPublisher)
+            ):
+                raise TypeError(
+                    "The 'responder' argument must be of type ResultPublisher"
+                )
 
             result = func(*args, **kwargs)
 
             if not isinstance(result, ProcessStreamItem):
-                raise TypeError("The return value of the automation must be a subclass of ProcessStreamItem")
+                raise TypeError(
+                    "The return value of the automation must be a subclass of ProcessStreamItem"
+                )
 
             return result
 
@@ -104,8 +125,9 @@ def automation():
     return decorator
 
 
-def _find_decorated_models(script_namespace: Dict[str, Any]) -> Tuple[
-    Optional[ParameterSet], Optional[ProcessStreamItem]]:
+def _find_decorated_models(
+    script_namespace: Dict[str, Any],
+) -> Tuple[Optional[ParameterSet], Optional[ProcessStreamItem]]:
     """Find request and response models that have been decorated with the appropriate decorators."""
     request_model = None
     response_model = None
@@ -128,7 +150,9 @@ def _find_operation(script_namespace: Dict[str, Any]) -> Optional[Callable]:
     return None
 
 
-def _find_script_interface(script_namespace: Dict[str, Any]) -> Optional[list[HoudiniParmTemplateSpecType]]:
+def _find_script_interface(
+    script_namespace: Dict[str, Any],
+) -> Optional[list[HoudiniParmTemplateSpecType]]:
     """Find the script interface that has been decorated with @script_interface."""
     for name, obj in script_namespace.items():
         if hasattr(obj, "_is_automation_interface") and obj._is_automation_interface:
@@ -138,7 +162,9 @@ def _find_script_interface(script_namespace: Dict[str, Any]) -> Optional[list[Ho
 
 
 def _run_script_automation() -> Callable:
-    def impl(request: ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
+    def impl(
+        request: ScriptRequest = None, responder: ResultPublisher = None
+    ) -> ProcessStreamItem:
         # Prepare the environment to hold the script's namespace
         script_namespace = {}
         if not request.request_data:
@@ -153,7 +179,9 @@ def _run_script_automation() -> Callable:
         # Find request model and create an instance
         request_model_class, _ = _find_decorated_models(script_namespace)
         if request_model_class is None:
-            raise ValueError("No request model found. Use @automation_request decorator.")
+            raise ValueError(
+                "No request model found. Use @automation_request decorator."
+            )
 
         request_model = request_model_class(**request.request_data.model_dump())
 
@@ -177,7 +205,9 @@ def _run_script_automation() -> Callable:
 
 
 def _get_script_interface() -> Callable:
-    def impl(request: ScriptRequest = None, responder: ResultPublisher = None) -> ProcessStreamItem:
+    def impl(
+        request: ScriptRequest = None, responder: ResultPublisher = None
+    ) -> ProcessStreamItem:
         script_namespace = {}
 
         try:
@@ -186,7 +216,9 @@ def _get_script_interface() -> Callable:
             # Find request and response models using decorators
             input_model, output_model = _find_decorated_models(script_namespace)
             if input_model is None:
-                raise ValueError("No request model found. Use @script_request_model decorator.")
+                raise ValueError(
+                    "No request model found. Use @script_request_model decorator."
+                )
 
             if output_model is None:
                 output_model = ProcessStreamItem
@@ -194,7 +226,9 @@ def _get_script_interface() -> Callable:
             # Find operation function
             operation = _find_operation(script_namespace)
             if operation is None:
-                raise ValueError("No operation function found. Use @script_operation decorator.")
+                raise ValueError(
+                    "No operation function found. Use @script_operation decorator."
+                )
             params_by_name = {}
             for param in input_model.get_parameter_specs():
                 params_by_name[param.name] = param
@@ -210,17 +244,19 @@ def _get_script_interface() -> Callable:
 
             return AutomationsResponse(
                 automations={
-                    '/mythica/script': {
-                        'input': inputs,
-                        'output': output_model.model_json_schema(),
-                        'hidden': True
+                    "/mythica/script": {
+                        "input": inputs,
+                        "output": output_model.model_json_schema(),
+                        "hidden": True,
                     }
                 }
             )
         except Exception as e:
-            responder.result(Error(error=f"Script Interface Generation Error: {format_exception(e)}"))
+            responder.result(
+                Error(error=f"Script Interface Generation Error: {format_exception(e)}")
+            )
 
-        return (AutomationsResponse(automations={}))
+        return AutomationsResponse(automations={})
 
     return impl
 
@@ -237,10 +273,12 @@ class ScriptJobDefResponse(ProcessStreamItem):
 
 
 def _get_script_job_def() -> Callable:
-    def impl(request: ScriptJobDefRequest = None, responder: ResultPublisher = None) -> ScriptJobDefResponse:
+    def impl(
+        request: ScriptJobDefRequest = None, responder: ResultPublisher = None
+    ) -> ScriptJobDefResponse:
         script_namespace = {}
         awpy_file = request.awpy_file
-        with open(awpy_file.file_path, 'r') as f:
+        with open(awpy_file.file_path, "r") as f:
             awpy = json.load(f)
 
         if len(request.src_asset_id) > 0:
@@ -250,7 +288,7 @@ def _get_script_job_def() -> Callable:
                 minor=request.src_version[1],
                 patch=request.src_version[2],
                 file_id=awpy_file.file_id,
-                entry_point=awpy.get('name')
+                entry_point=awpy.get("name"),
             )
         try:
             if not awpy.get("worker"):
@@ -261,7 +299,9 @@ def _get_script_job_def() -> Callable:
             # Find request and response models using decorators
             input_model, output_model = _find_decorated_models(script_namespace)
             if input_model is None:
-                raise ValueError("No request model found. Use @script_request_model decorator.")
+                raise ValueError(
+                    "No request model found. Use @script_request_model decorator."
+                )
 
             if output_model is None:
                 output_model = ProcessStreamItem
@@ -269,7 +309,9 @@ def _get_script_job_def() -> Callable:
             # Find operation function
             operation = _find_operation(script_namespace)
             if operation is None:
-                raise ValueError("No operation function found. Use @script_operation decorator.")
+                raise ValueError(
+                    "No operation function found. Use @script_operation decorator."
+                )
 
             params = ParameterSpec(params={})
 
@@ -281,23 +323,23 @@ def _get_script_job_def() -> Callable:
             if interface_model:
                 params.params_v2.extend(interface_model())
 
-            params.default = {
-                "script": awpy.get("script")
-            }
+            params.default = {"script": awpy.get("script")}
 
             jd = JobDefinition(
-                job_type=f'{request.worker}::/mythica/script',
-                name=awpy.get('name'),
-                description=awpy.get('description', ''),
+                job_type=f"{request.worker}::/mythica/script",
+                name=awpy.get("name"),
+                description=awpy.get("description", ""),
                 parameter_spec=params,
                 owner_id=None,
-                source=source
+                source=source,
             )
             responder.result(jd)
             return ScriptJobDefResponse(job_definition=jd)
 
         except Exception as e:
-            responder.result(Error(error=f"Script Interface Generation Error: {format_exception(e)}"))
+            responder.result(
+                Error(error=f"Script Interface Generation Error: {format_exception(e)}")
+            )
             return AutomationsResponse(automations={})
 
     return impl
@@ -305,26 +347,32 @@ def _get_script_job_def() -> Callable:
 
 def get_default_automations() -> list[AutomationModel]:
     automations: list[AutomationModel] = []
-    automations.append(AutomationModel(
-        path='/mythica/script',
-        provider=_run_script_automation(),
-        inputModel=ScriptRequest,
-        outputModel=ProcessStreamItem,
-        hidden=True
-    ))
-    automations.append(AutomationModel(
-        path='/mythica/script/interface',
-        provider=_get_script_interface(),
-        inputModel=ScriptRequest,
-        outputModel=AutomationsResponse,
-        hidden=True
-    ))
-    automations.append(AutomationModel(
-        path='/mythica/script/job_def',
-        provider=_get_script_job_def(),
-        inputModel=ScriptRequest,
-        outputModel=ScriptJobDefResponse,
-        hidden=True
-    ))
+    automations.append(
+        AutomationModel(
+            path="/mythica/script",
+            provider=_run_script_automation(),
+            inputModel=ScriptRequest,
+            outputModel=ProcessStreamItem,
+            hidden=True,
+        )
+    )
+    automations.append(
+        AutomationModel(
+            path="/mythica/script/interface",
+            provider=_get_script_interface(),
+            inputModel=ScriptRequest,
+            outputModel=AutomationsResponse,
+            hidden=True,
+        )
+    )
+    automations.append(
+        AutomationModel(
+            path="/mythica/script/job_def",
+            provider=_get_script_job_def(),
+            inputModel=ScriptRequest,
+            outputModel=ScriptJobDefResponse,
+            hidden=True,
+        )
+    )
 
     return automations

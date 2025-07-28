@@ -18,8 +18,9 @@ class Boundary(NamedTuple):
     The boundary is non-inclusive, that is the sequence after position does not include
     the element denoted by position.
     """
+
     position: Optional[str] = None
-    direction: Literal['before', 'after'] = 'after'
+    direction: Literal["before", "after"] = "after"
 
 
 """

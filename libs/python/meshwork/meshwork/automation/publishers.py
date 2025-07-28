@@ -20,25 +20,26 @@ from meshwork.models.streaming import (
 NATS_FILE_CHUNK_SIZE = 64 * 1024
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 log = logging.getLogger(__name__)
 
 
 class ResultPublisher:
-    """"
+    """ "
     Object that encapsulates streaming results back for a work request
     """
+
     request: AutomationRequest
     nats: NatsAdapter
     rest: RestAdapter
 
     def __init__(
-            self,
-            request: AutomationRequest,
-            nats_adapter: NatsAdapter,
-            rest: RestAdapter,
-            directory: str
+        self,
+        request: AutomationRequest,
+        nats_adapter: NatsAdapter,
+        rest: RestAdapter,
+        directory: str,
     ) -> None:
         self.request = request
         self.directory = directory
@@ -65,17 +66,14 @@ class ResultPublisher:
         if self.request.results_subject:
             task = asyncio.create_task(
                 self.nats.post_to(
-                    "result",
-                    self.request.results_subject,
-                    item.model_dump()))
+                    "result", self.request.results_subject, item.model_dump()
+                )
+            )
             task.add_done_callback(error_handler(log))
 
         if self.request.job_id:
             updated_headers = update_headers_from_context()
-            data = {
-                "created_in": "automation-worker",
-                "result_data": item.model_dump()
-            }
+            data = {"created_in": "automation-worker", "result_data": item.model_dump()}
             self.rest.post(
                 f"{job_result_endpoint}/{self.request.job_id}",
                 json_data=data,
@@ -104,7 +102,6 @@ class ResultPublisher:
                 )
 
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
-
         updated_headers = update_headers_from_context()
 
         def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
@@ -116,14 +113,25 @@ class ResultPublisher:
                 # if self.request.results_subject:
                 #   self._stream_file_chunks(file_path, key, index)
 
-                with open(file_path, 'rb') as file:
+                with open(file_path, "rb") as file:
                     file_name = os.path.basename(file_path)
-                    file_data = [('files', (file_name, file, 'application/octet-stream'))]
-                    response = self.rest.post_file(f"{api_url}/upload/store", file_data, self.request.auth_token,
-                                                   headers=updated_headers
-                                                   )
-                    file_id, file_name = (response['files'][0].get("file_id"),
-                                          response['files'][0].get("file_name")) if response else (None, None)
+                    file_data = [
+                        ("files", (file_name, file, "application/octet-stream"))
+                    ]
+                    response = self.rest.post_file(
+                        f"{api_url}/upload/store",
+                        file_data,
+                        self.request.auth_token,
+                        headers=updated_headers,
+                    )
+                    file_id, file_name = (
+                        (
+                            response["files"][0].get("file_id"),
+                            response["files"][0].get("file_name"),
+                        )
+                        if response
+                        else (None, None)
+                    )
                     log.info("Uploaded response: %s", response)
                     return file_id, file_name
             finally:
@@ -131,30 +139,34 @@ class ResultPublisher:
 
         def upload_job_def(job_def: JobDefinition) -> Optional[str]:
             definition = {
-                'job_type': job_def.job_type,
-                'name': job_def.name,
-                'description': job_def.description,
-                'params_schema': job_def.parameter_spec.model_dump(),
-                'source': job_def.source.model_dump() if job_def.source else None,
+                "job_type": job_def.job_type,
+                "name": job_def.name,
+                "description": job_def.description,
+                "params_schema": job_def.parameter_spec.model_dump(),
+                "source": job_def.source.model_dump() if job_def.source else None,
             }
-            response = self.rest.post(f"{api_url}/jobs/definitions", definition, self.request.auth_token,
-                                      headers=updated_headers
-                                      )
-            return response['job_def_id'] if response else None
+            response = self.rest.post(
+                f"{api_url}/jobs/definitions",
+                definition,
+                self.request.auth_token,
+                headers=updated_headers,
+            )
+            return response["job_def_id"] if response else None
 
         def add_cropped_image_to_contents(item: CropImageResponse) -> bool:
             """
             Add the cropped image to the contents of the source asset.
             """
             cropped_req = {
-                'file_id': item.file_id,
-                'file_name': item.file_name,
-                'src_file_id': item.src_file_id,
-                'file_type': "thumbnails",
+                "file_id": item.file_id,
+                "file_name": item.file_name,
+                "src_file_id": item.src_file_id,
+                "file_type": "thumbnails",
             }
             response = self.rest.post(
                 f"{api_url}/assets/{item.src_asset_id}/versions/{item.src_version}/contents",
-                cropped_req, self.request.auth_token,
+                cropped_req,
+                self.request.auth_token,
                 headers=updated_headers,
             )
             return True if response else False
@@ -184,13 +196,15 @@ class ResultPublisher:
 
     def _stream_file_chunks(self, file_path: str, key: str, index: int) -> None:
         """Stream a file's contents as base64-encoded chunks via NATS"""
-        with open(file_path, 'rb') as file:
+        with open(file_path, "rb") as file:
             file_size = os.path.getsize(file_path)
-            total_chunks = (file_size + NATS_FILE_CHUNK_SIZE - 1) // NATS_FILE_CHUNK_SIZE
+            total_chunks = (
+                file_size + NATS_FILE_CHUNK_SIZE - 1
+            ) // NATS_FILE_CHUNK_SIZE
             chunk_index = 0
 
             while chunk := file.read(NATS_FILE_CHUNK_SIZE):
-                encoded_data = base64.b64encode(chunk).decode('utf-8')
+                encoded_data = base64.b64encode(chunk).decode("utf-8")
                 chunk_item = FileContentChunk(
                     process_guid=self.request.process_guid,
                     correlation=self.request.correlation,
@@ -200,14 +214,14 @@ class ResultPublisher:
                     chunk_index=chunk_index,
                     total_chunks=total_chunks,
                     file_size=file_size,
-                    encoded_data=encoded_data
+                    encoded_data=encoded_data,
                 )
 
                 task = asyncio.create_task(
                     self.nats.post_to(
-                        "result",
-                        self.request.results_subject,
-                        chunk_item.model_dump()))
+                        "result", self.request.results_subject, chunk_item.model_dump()
+                    )
+                )
                 task.add_done_callback(error_handler(log))
                 chunk_index += 1
 
@@ -215,8 +229,9 @@ class ResultPublisher:
 
 
 class SlimPublisher(ResultPublisher):
-
-    def __init__(myself, request: AutomationRequest, rest: RestAdapter, directory: str) -> None:
+    def __init__(
+        myself, request: AutomationRequest, rest: RestAdapter, directory: str
+    ) -> None:
         myself.rest = rest
         myself.directory = directory
         myself.request = request

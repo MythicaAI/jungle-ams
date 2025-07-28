@@ -6,14 +6,12 @@ import logging
 import os
 import tempfile
 from unittest.mock import Mock, patch
-from contextlib import contextmanager
 
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
-
 from config import app_config
 from create_app import create_app
+from fastapi.testclient import TestClient
 from tests.bind_test_routes import bind_test_routes
 
 log = logging.getLogger(__name__)
@@ -56,7 +54,6 @@ def api_base(setup_database) -> str:
     return "/v1"
 
 
-@contextmanager
 @pytest_asyncio.fixture(scope='session')
 async def client() -> TestClient:
     """Return a test client for the test module scope"""
@@ -75,9 +72,10 @@ async def client() -> TestClient:
         executor.shutdown(wait=True)
     del app
 
+
 @pytest.fixture(scope='module')
 def mock_mail_send_success():
-    # Mock the SendGrid's send method
+    """"Mock a success of the SendGrid send method"""
     with patch('sendgrid.SendGridAPIClient.send') as mock_send:
         mock_response = Mock()
         mock_response.status_code = 200

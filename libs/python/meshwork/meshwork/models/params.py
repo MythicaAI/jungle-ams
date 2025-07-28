@@ -37,26 +37,26 @@ class RampValuePointSpec(BaseModel):
 # Standard Parameter Specs
 ####################################################################################################
 class IntParameterSpec(ParameterSpecModel):
-    param_type: Literal['int'] = 'int'
+    param_type: Literal["int"] = "int"
     default: int | list[int]
     min: Optional[int] = None
     max: Optional[int] = None
 
 
 class FloatParameterSpec(ParameterSpecModel):
-    param_type: Literal['float'] = 'float'
+    param_type: Literal["float"] = "float"
     default: float | list[float]
     min: Optional[float] = None
     max: Optional[float] = None
 
 
 class StringParameterSpec(ParameterSpecModel):
-    param_type: Literal['string'] = 'string'
+    param_type: Literal["string"] = "string"
     default: str | list[str]
 
 
 class BoolParameterSpec(ParameterSpecModel):
-    param_type: Literal['bool'] = 'bool'
+    param_type: Literal["bool"] = "bool"
     default: bool
 
 
@@ -66,19 +66,19 @@ class EnumValueSpec(BaseModel):
 
 
 class RampParameterSpec(ParameterSpecModel):
-    param_type: Literal['ramp'] = 'ramp'
+    param_type: Literal["ramp"] = "ramp"
     ramp_parm_type: hou.rampParmType = hou.rampParmType.Float
     default: list[RampPointSpec]
 
 
 class EnumParameterSpec(ParameterSpecModel):
-    param_type: Literal['enum'] = 'enum'
+    param_type: Literal["enum"] = "enum"
     values: list[EnumValueSpec]
     default: str
 
 
 class FileParameterSpec(ParameterSpecModel):
-    param_type: Literal['file'] = 'file'
+    param_type: Literal["file"] = "file"
     name: Optional[str] = ""
     type: Optional[list[str]] = None
     default: str | list[str]
@@ -88,8 +88,9 @@ class FileParameterSpec(ParameterSpecModel):
 # Houdini Parameter Specs
 ####################################################################################################
 
+
 class ParmTemplateSpec(ParameterSpecModel):
-    param_type: Literal['base'] = 'base'
+    param_type: Literal["base"] = "base"
     name: str
     is_hidden: bool = False
     is_label_hidden: bool = False
@@ -216,7 +217,7 @@ HoudiniParmTemplateSpecType = Annotated[
         FolderSetParmTemplateSpec,
         FileParameterSpec,
     ],
-    Field(discriminator='param_type')
+    Field(discriminator="param_type"),
 ]
 
 ParameterSpecType = Annotated[
@@ -228,9 +229,9 @@ ParameterSpecType = Annotated[
         EnumParameterSpec,
         FileParameterSpec,
         RampParameterSpec,
-        HoudiniParmTemplateSpecType
+        HoudiniParmTemplateSpecType,
     ],
-    Field(discriminator='param_type')
+    Field(discriminator="param_type"),
 ]
 
 
@@ -259,44 +260,94 @@ def _get_parameter_spec(values: dict) -> list[HoudiniParmTemplateSpecType]:
     for key, value in values.items():
         if hasattr(value, "__origin__") and value.__origin__ == typing.Union:
             # If the value is Optional, we need to check the actual type
-            value = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
+            value = (
+                value.__args__[0]
+                if hasattr(value, "__args__") and value.__args__
+                else Any
+            )
         if hasattr(value, "__origin__") and value.__origin__ == typing.Literal:
             # If the value is Optional, we need to check the actual type
             oldval = value
-            value = type(value.__args__[0]) if hasattr(value, "__args__") and len(value.__args__) > 0 else Any
+            value = (
+                type(value.__args__[0])
+                if hasattr(value, "__args__") and len(value.__args__) > 0
+                else Any
+            )
             print(
-                f"****\nParameter '{key}:{oldval}' is a Literal type, using type of its first value '{oldval.__args__[0]}':{value} as the type.")
+                f"****\nParameter '{key}:{oldval}' is a Literal type, using type of its first value '{oldval.__args__[0]}':{value} as the type."
+            )
 
         # Check if it's a generic type (like list[int], tuple[str], etc.)
-        if hasattr(value, "__origin__") and value.__origin__ in (list, tuple, set, frozenset):
+        if hasattr(value, "__origin__") and value.__origin__ in (
+            list,
+            tuple,
+            set,
+            frozenset,
+        ):
             # Get the type argument (e.g., int from list[int])
-            arg_type = value.__args__[0] if hasattr(value, "__args__") and value.__args__ else Any
+            arg_type = (
+                value.__args__[0]
+                if hasattr(value, "__args__") and value.__args__
+                else Any
+            )
             my_length = len(value.__args__) if hasattr(value, "__args__") else 1
             # Handle based on the contained type
             if arg_type == int:
-                specs.append(IntParmTemplateSpec(name=key, label=key, num_components=my_length,
-                                                 default_value=[0 for _ in range(my_length - 1)]))
+                specs.append(
+                    IntParmTemplateSpec(
+                        name=key,
+                        label=key,
+                        num_components=my_length,
+                        default_value=[0 for _ in range(my_length - 1)],
+                    )
+                )
             elif arg_type == float:
-                specs.append(FloatParmTemplateSpec(name=key, label=key, num_components=my_length,
-                                                   default_value=[0.0 for _ in range(my_length - 1)]))
+                specs.append(
+                    FloatParmTemplateSpec(
+                        name=key,
+                        label=key,
+                        num_components=my_length,
+                        default_value=[0.0 for _ in range(my_length - 1)],
+                    )
+                )
             elif arg_type == str:
-                specs.append(StringParmTemplateSpec(name=key, label=key, num_components=my_length,
-                                                    default_value=["" for _ in range(my_length - 1)]))
+                specs.append(
+                    StringParmTemplateSpec(
+                        name=key,
+                        label=key,
+                        num_components=my_length,
+                        default_value=["" for _ in range(my_length - 1)],
+                    )
+                )
             elif arg_type == FileParameter:
                 specs.append(FileParameterSpec(name=key, label=key, default=[]))
             else:
-                raise ValueError(f"Unsupported parameter type for '{key}': list/tuple/set of {arg_type}")
+                raise ValueError(
+                    f"Unsupported parameter type for '{key}': list/tuple/set of {arg_type}"
+                )
         # Check simple types
         elif issubclass(value, ParameterSet):
             newspecs = value.get_parameter_specs()
             for spec in newspecs:
                 specs.append(spec)
         elif value == int or issubclass(value, int):
-            specs.append(IntParmTemplateSpec(name=key, label=key, default_value=[0], as_scalar=True))
+            specs.append(
+                IntParmTemplateSpec(
+                    name=key, label=key, default_value=[0], as_scalar=True
+                )
+            )
         elif value == float or issubclass(value, float):
-            specs.append(FloatParmTemplateSpec(name=key, label=key, default_value=[0.0], as_scalar=True))
+            specs.append(
+                FloatParmTemplateSpec(
+                    name=key, label=key, default_value=[0.0], as_scalar=True
+                )
+            )
         elif value == str or issubclass(value, str):
-            specs.append(StringParmTemplateSpec(name=key, label=key, default_value=[""], as_scalar=True))
+            specs.append(
+                StringParmTemplateSpec(
+                    name=key, label=key, default_value=[""], as_scalar=True
+                )
+            )
         elif value == bool or issubclass(value, bool):
             specs.append(ToggleParmTemplateSpec(name=key, label=key))
         elif value == FileParameter or issubclass(value, FileParameter):
@@ -321,7 +372,9 @@ def _validate_parameter_types(values: dict, match_type) -> Any:
                     check(f"{field}:{key}", item)
         # If it's not a "collection" value it must be of match_type
         elif not isinstance(value, match_type):
-            raise TypeError(f"Field '{field}' contains invalid type: {type(value)}. Must match {match_type}.")
+            raise TypeError(
+                f"Field '{field}' contains invalid type: {type(value)}. Must match {match_type}."
+            )
 
     starmap(check, values.items())
 
@@ -329,7 +382,7 @@ def _validate_parameter_types(values: dict, match_type) -> Any:
 
 
 class ParameterSet(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
 
     @classmethod
     def get_parameter_specs(cls) -> list[HoudiniParmTemplateSpecType]:
@@ -342,16 +395,17 @@ class ParameterSet(BaseModel):
         return _get_parameter_spec(values)
 
     # This root validator checks all fields' values
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def check_parameter_types(cls, values: dict) -> Any:
         return _validate_parameter_types(values, ParameterType)
 
 
 class ParameterSpec(BaseModel):
-    """ 
+    """
     Specification of parameters a job expects as input
     """
+
     params: dict[str, ParameterSpecType]
     params_v2: Optional[list[HoudiniParmTemplateSpecType]] = []
     default: Optional[ParameterSet] = {}

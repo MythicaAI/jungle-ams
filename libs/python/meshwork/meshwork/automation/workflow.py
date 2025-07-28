@@ -5,8 +5,8 @@ from meshwork.automation.utils import format_exception
 
 # Set up logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 log = logging.getLogger(__name__)
 
 
@@ -18,8 +18,8 @@ class Node(WorkflowPart):
     id: str
     type: str
     data: dict
-    parents: list['Node'] = []
-    children: list['Node'] = []
+    parents: list["Node"] = []
+    children: list["Node"] = []
 
 
 class Edge(WorkflowPart):
@@ -70,11 +70,7 @@ def parse(awful_json: dict) -> Workflow:
         node_id = node_data["id"]
         node_type = node_data["type"]
         data = node_data.get("data", {})
-        graph.nodes[node_id] = Node(
-            id=node_id,
-            type=node_type,
-            data=data
-        )
+        graph.nodes[node_id] = Node(id=node_id, type=node_type, data=data)
     # 2. Create Edge objects and build adjacency
     for edge_data in edge_list:
         try:
@@ -84,13 +80,15 @@ def parse(awful_json: dict) -> Workflow:
             target_handle = edge_data["targetHandle"]
             edge_type = edge_data["type"]
 
-            graph.edges.append(Edge(
-                source_id=source,
-                target_id=target,
-                source_handle=source_handle,
-                target_handle=target_handle,
-                edge_type=edge_type
-            ))
+            graph.edges.append(
+                Edge(
+                    source_id=source,
+                    target_id=target,
+                    source_handle=source_handle,
+                    target_handle=target_handle,
+                    edge_type=edge_type,
+                )
+            )
 
             # Link nodes in adjacency
             source_node = graph.nodes[source]
@@ -101,8 +99,10 @@ def parse(awful_json: dict) -> Workflow:
             try:
                 flow_data = mythica_flow[target][target_handle]
                 if flow_data:
-                    files: list[FileParameter] = [{'file_id': item["file_id"]} for item in flow_data]
-                    target_node.data['inputData'][target_handle] = files
+                    files: list[FileParameter] = [
+                        {"file_id": item["file_id"]} for item in flow_data
+                    ]
+                    target_node.data["inputData"][target_handle] = files
             except Exception as e:
                 log.debug("No flow data found for %s %s", target, target_handle)
         except Exception as e:
