@@ -12,6 +12,7 @@ on:
       - 'libs/**'
       - 'test-worker/**'
       - '.github/workflows/push-tagged-images.yaml'
+      - 'github/get-dockerfile-tag.sh'
 
   workflow_dispatch:
 jobs:
@@ -99,46 +100,11 @@ jobs:
               core.setOutput('has_changes', hasChanges ? 'true' : 'false');
             }
 
-  build-libs-python:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs:
-      - changes
-    if: needs.changes.outputs.has_changes == 'true'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
-
-      - name: Build libs-python image
-        uses: docker/build-push-action@v5
-        with:
-          context: libs/python
-          tags: libs-python:${{ github.sha }}
-          load: true
-
-      - name: Save libs-python to tar
-        run: |
-          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
-
-      - name: Upload libs-python image
-        uses: actions/upload-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp/libs-python-${{ github.sha }}.tar
-          retention-days: 1
-          overwrite: true
-
   build-tag-publish:
     runs-on: ubuntu-latest
     environment: main
     needs:
       - changes
-      - build-libs-python
     if: needs.changes.outputs.has_changes == 'true'
     permissions:
       repository-projects: read
@@ -176,17 +142,7 @@ jobs:
       - name: Generate tag
         id: generate_tag
         run: |
-          workloads/github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
-
-      - name: Download libs-python base image
-        uses: actions/download-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp
-
-      - name: Load images
-        run: |
-          docker load --input /tmp/libs-python-${{ github.sha }}.tar
+          github/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
 
       - name: Build and push ${{ matrix.image }}
         id: build_push
@@ -201,7 +157,6 @@ jobs:
             ${{ env.REPO }}:${{ steps.generate_tag.outputs.image_name }}-${{ steps.generate_tag.outputs.new_tag_version }}
           build-args: |
             NODE_ENV=${{ env.NODE_ENV }}
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
           load: true
 
       - name: Push tag
