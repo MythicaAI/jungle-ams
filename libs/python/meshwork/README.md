@@ -1,8 +1,11 @@
-Ripple Python Library
+Meshwork
 ===
 
-This library is responsible for the propagation of parameters and
-results through a higher level system. It provides small primitives
-and re-usable components that can be used as the basis for distributed
-job execution and streaming.
+Library to connect a set of processes in a mesh configuration using
+some form of network transparent bus. 
 
+Used to issue automation requests to backend workers and capture their
+output.
+
+This library is still very specific to the automation for the
+https://api.mythica.gg API backend.

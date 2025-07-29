@@ -43,12 +43,11 @@ def bump_version(data, bump_type="patch"):
 
 def git_operations(project_name, new_version):
     """Handle git commit, tag, and push"""
-    tag_name = f"releases/{project_name}/{new_version}"
+    tag_name = f"releases/pypi/{project_name}/{new_version}"
 
     subprocess.run(["git", "add", "pyproject.toml"], check=True)
     subprocess.run(["git", "commit", "-m", f"Bump version to {new_version}"], check=True)
     subprocess.run(["git", "tag", tag_name], check=True)
-    subprocess.run(["git", "push", "origin", "main"], check=True)
     subprocess.run(["git", "push", "origin", tag_name], check=True)
 
 
