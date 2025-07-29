@@ -1,0 +1,17 @@
+import functools
+
+from meshwork.source_types import add_source_type, remove_source_type
+from meshwork_sources.events_table import create_events_table_source
+
+
+def register_streaming_sources(app):
+    """
+    Register all internal streaming sources, this is done
+    to provide an overridable name->source factory map for the
+    readers endpoint
+    """
+    add_source_type("events", functools.partial(create_events_table_source, app))
+
+
+def unregister_streaming_sources():
+    remove_source_type("events")

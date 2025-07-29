@@ -3,12 +3,17 @@ on:
   push: # only run when PR merged to main
     branches:
       - 'main'
+      - '**'  # enable for testing
     paths:
-      - 'sites/**'
-      - 'ams/**'
+      - 'api/**'
+      - 'apps/**'
+      - 'automations/**'
+      - 'bulk-import/**'
+      - 'canary/**'
       - 'libs/**'
-      - 'workloads/helm/api/**'
+      - 'test-worker/**'
       - '.github/workflows/push-tagged-images.yaml'
+      - 'github/get-dockerfile-tag.sh'
 
   workflow_dispatch:
 jobs:
@@ -36,26 +41,27 @@ jobs:
         with:
           # setup all the filters to match Dockerfile locations
           filters: |
-            ams/app/:
+            api/:
               - 'libs/python/**'
               - 'ams/app/**'
               - '.github/workflows/push-tagged-images.yaml' # always build at least one image if the workflow changes
-            ams/test-worker/:
+            apps/:
+              - 'apps/**'
+            automations/houdini/:
               - 'libs/python/**'
-              - '.github/workflows/push-automation-images.yaml' # always build at least one image if the workflow changes
-            ams/packager/:
-              - 'ams/packager/**'
+              - 'automations/houdini/**'
+            automations/blender/:
               - 'libs/python/**'
-            ams/canary/:
+              - 'automations/blender/**'
+            automations/imagemagick/:
+              - 'libs/python/**'
+              - 'automations/imagemagick/**'
+            bulk-import/:
+              - 'bulk-import/**'
+            canary/:
               - 'ams/canary/**'
-            sites/:
-              - 'sites/**'
-            workloads/lets-encrypt/:
-              - 'ams/lets-encrypt/**'
-            workloads/nginx/:
-              - 'workloads/nginx/**'
-            workloads/gcp/gcs-proxy/:
-              - 'workloads/gcp/gcs-proxy/**'
+            test-worker/:
+              - 'libs/python/**'
 
       # Set matrix based on filter results or use all images for manual trigger
       - id: post_filter
@@ -63,7 +69,15 @@ jobs:
         with:
           script: |
             const isManualTrigger = context.eventName === 'workflow_dispatch';
-            const allImages = ["ams/app/", "workloads/nginx/", "workloads/gcp/gcs-proxy/", "workloads/lets-encrypt/", "ams/packager/", "ams/canary/", "sites/"];
+            const allImages = [
+              "api/",
+              "apps/",
+              "automations/houdini/",
+              "automations/blender/",
+              "automations/imagemagick/",
+              "bulk-import/",
+              "canary/",
+              "test-worker/" ];
             
             let changes;
             try {
@@ -87,58 +101,11 @@ jobs:
               core.setOutput('has_changes', hasChanges ? 'true' : 'false');
             }
 
-  build-base:
-    runs-on: ubuntu-latest
-    needs:
-      - changes
-    if: needs.changes.outputs.has_changes == 'true'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
-
-      - name: Build libs-python image
-        uses: docker/build-push-action@v5
-        with:
-          context: libs/python
-          tags: libs-python:${{ github.sha }}
-          load: true
-      - name: Build ams-app image
-        uses: docker/build-push-action@v5
-        with:
-          context: ams/app
-          tags: ams-app:${{ github.sha }}
-          load: true
-          build-args: |
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-      - name: Save ams-app to tar
-        run: |
-          docker save ams-app:${{ github.sha }} > /tmp/ams-app-${{ github.sha }}.tar
-          docker save libs-python:${{ github.sha }} > /tmp/libs-python-${{ github.sha }}.tar
-      - name: Upload libs-python image
-        uses: actions/upload-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp/libs-python-${{ github.sha }}.tar
-          retention-days: 1
-          overwrite: true
-      - name: Upload ams-app image
-        uses: actions/upload-artifact@v4
-        with:
-          name: ams-app-${{ github.sha }}
-          path: /tmp/ams-app-${{ github.sha }}.tar
-          retention-days: 1
-          overwrite: true
-
   build-tag-publish:
     runs-on: ubuntu-latest
     environment: main
     needs:
       - changes
-      - build-base
     if: needs.changes.outputs.has_changes == 'true'
     permissions:
       repository-projects: read
@@ -154,13 +121,7 @@ jobs:
     env:
       IMAGE_NAME: "${{ matrix.image }}"
       NODE_ENV: "staging"
-      GCR_PROJECT_ID: "296075347103"
-      GCR_REPO_LOCATION: 'us-central1'
-      GCR_URL: 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
-      GCR_SERVICE_ACCOUNT: 'github-actions-service-account@controlnet-407314.iam.gserviceaccount.com'
-      GCR_WORKLOAD_IDENTITY_PROVIDER: 'projects/296075347103/locations/global/workloadIdentityPools/gh-infra-pool/providers/github-mythica-infra'
-      ECR_ROLE: 'arn:aws:iam::050752617649:role/MythicaGitHubActionPushTaggedImages'
-      ECR_URL: '050752617649.dkr.ecr.us-east-1.amazonaws.com'
+      REPO: jrepp/jungle-ams
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -173,37 +134,31 @@ jobs:
         with:
           driver: docker
 
-      - name: Google Auth
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          token_format: 'access_token'
-          project_id: ${{ env.GCR_PROJECT_ID }}
-          service_account: ${{ env.GCR_SERVICE_ACCOUNT }}
-          workload_identity_provider: ${{ env.GCR_WORKLOAD_IDENTITY_PROVIDER }}
-
-      - name: AWS Auth
-        id: aws-auth
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.ECR_ROLE }}
-          role-session-name: github-actions-ecr
-          aws-region: us-east-1
-
-      - name: AWS ECR Login
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Login to Artifact Registry
         uses: docker/login-action@v3
         with:
-          registry: '${{ env.GCR_REPO_LOCATION }}-docker.pkg.dev'
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Generate tag
         id: generate_tag
         run: |
-          workloads/github/tagging/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+          github/get-dockerfile-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
+
+      - name: Build and push ${{ matrix.image }}
+        id: build_push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ${{ matrix.image }}
+          file: ${{ matrix.image }}/Dockerfile
+          tags: |
+            ${{ env.REPO }}:${{ steps.generate_tag.outputs.image_name }}-${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.REPO }}:${{ steps.generate_tag.outputs.image_name }}-${{ steps.generate_tag.outputs.new_tag_version }}
+            ${{ env.REPO }}:${{ steps.generate_tag.outputs.image_name }}-${{ steps.generate_tag.outputs.new_tag_version }}
+          build-args: |
+            NODE_ENV=${{ env.NODE_ENV }}
+          load: true
 
       - name: Push tag
         uses: nick-fields/retry@v3
@@ -216,38 +171,6 @@ jobs:
             git push origin ${{ steps.generate_tag.outputs.new_tag }}
             echo "## Tagged image ${{ matrix.image }} as ${{ steps.generate_tag.outputs.new_tag }}" > $GITHUB_STEP_SUMMARY
 
-      - name: Download ams-app image
-        uses: actions/download-artifact@v4
-        with:
-          name: ams-app-${{ github.sha }}
-          path: /tmp
-
-      - name: Download libs-python base image
-        uses: actions/download-artifact@v4
-        with:
-          name: libs-python-${{ github.sha }}
-          path: /tmp
-
-      - name: Load images
-        run: |
-          docker load --input /tmp/libs-python-${{ github.sha }}.tar
-          docker load --input /tmp/ams-app-${{ github.sha }}.tar
-
-      - name: Build and push ${{ matrix.image }}
-        id: build_push
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          context: ${{ matrix.image }}
-          file: ${{ matrix.image }}/Dockerfile
-          tags: |
-            ${{ env.GCR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
-            ${{ env.ECR_URL }}/${{ steps.generate_tag.outputs.image_name }}:${{ steps.generate_tag.outputs.new_tag_version }}
-          build-args: |
-            NODE_ENV=${{ env.NODE_ENV }}
-            LIBS_PYTHON_IMAGE=libs-python:${{ github.sha }}
-            AMS_APP_IMAGE=ams-app:${{ github.sha }}
-          load: true
 
       - name: Send Discord notification
         if: always()

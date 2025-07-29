@@ -1,0 +1,30 @@
+line-length = 79
+
+[lint]
+# 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
+# select = ["E4", "E7", "E9", "F", "B", "Q"]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+
+
+# 2. Avoid enforcing line-length violations (`E501`), use formatter
+ignore = ["E501"]
+
+# 3. Avoid trying to fix flake8-bugbear (`B`) violations.
+unfixable = ["B"]
+
+# 4. Ignore `E402` (import violations) in all `__init__.py` files, and in selected subdirectories.
+[lint.per-file-ignores]
+"__init__.py" = ["E402"]
+"**/{tests,docs,tools,alembic}/*" = ["E402"]
+
+[format]
+# 5. Use single quotes in `ruff format`.
+quote-style = "single"

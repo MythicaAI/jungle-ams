@@ -1,9 +1,10 @@
 from pydantic import BaseModel, Field
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.params import ParameterSet, FileParameter
-from ripple.models.streaming import ProcessStreamItem, OutputFiles
+from meshwork.automation.publishers import ResultPublisher
+from meshwork.models.params import ParameterSet, FileParameter
+from meshwork.models.streaming import ProcessStreamItem, OutputFiles
 import bpy
 import os
+
 
 class RequestModel(ParameterSet):
     # List of files to be converted
@@ -11,12 +12,15 @@ class RequestModel(ParameterSet):
     # Export as binary GLB if True, else as JSON glTF
     binary: bool = True
 
+
 class ResponseModel(OutputFiles):
     files: dict[str, list[str]] = Field(default_factory=lambda: {"Files": []})
+
 
 def clear_scene():
     # Reset Blender's scene to default settings.
     bpy.ops.wm.read_factory_settings(use_empty=True)
+
 
 def import_file(filepath: str):
     ext = os.path.splitext(filepath)[1].lower()
@@ -29,9 +33,11 @@ def import_file(filepath: str):
     else:
         raise ValueError(f"Unsupported file type: {ext}")
 
+
 def export_to_gltf(output_path: str, binary: bool = True):
     export_format = 'GLB' if binary else 'GLTF'
     bpy.ops.export_scene.gltf(filepath=output_path, export_format=export_format)
+
 
 def convert(filepath: str, binary: bool = True) -> str:
     clear_scene()
@@ -41,6 +47,7 @@ def convert(filepath: str, binary: bool = True) -> str:
     output_path = f"{base}_converted{ext}"
     export_to_gltf(output_path, binary)
     return output_path
+
 
 def runAutomation(request: RequestModel, responder: ResultPublisher) -> ResponseModel:
     response = ResponseModel()

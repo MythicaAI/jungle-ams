@@ -1,0 +1,2 @@
+-e ../libs/python/meshwork
+-e ../libs/python/gcid

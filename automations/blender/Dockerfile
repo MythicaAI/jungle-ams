@@ -1,8 +1,6 @@
-ARG LIBS_PYTHON_IMAGE=mythica-libs-python
-FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
-
+FROM python:3.11-alpine
 LABEL maintainer="pedro@mythica.ai"
-LABEL name="mythica-auto-blender"
+LABEL name="blender"
 LABEL description="Automation for mythica blender services"
 LABEL version="1.0.0"
 LABEL tier="auto"
@@ -51,8 +49,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 
-COPY --from=libs-python-image /libs/python /libs/python
-
 # Copy monorepo dependencies
 COPY . /app
 
@@ -66,7 +62,7 @@ RUN python3.11 -m pip install \
 # Install everything into the python site-packages, these
 # will be referenced later to build the houdini site-packages
 RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main,infra --no-root --no-cache
+RUN poetry install --only main --no-root --no-cache
 ENV API_BASE_URI=http://app:5555/v1
 
 ENTRYPOINT ["poetry", "run", "python3.11", "workers.py"]

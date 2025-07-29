@@ -36,18 +36,18 @@ poetry install # only needed when deps change
 ./debug_entrypoint.sh
 
 #JUNGLE3
-cd sites/jungle3
+cd apps/jungle3
 pnpm install # only needed when deps change
 pnpm run dev
 
 #AWFUL-UI
-cd sites/awful-ui
+cd apps/awful-ui
 pnpm install # only needed when deps change
 pnpm run dev
 
 #NGINX 
 # NB: This is a docker image so you will need to stop it when you are done. 
-cd workloads/nginx
+cd testing/web/nginx
 ./debug_entrypoint.sh
 ```
 
@@ -68,7 +68,7 @@ poetry run python workers.py
 
 Final morsel:
 
-If you use VSCode the following workspace configurations will add the debuggers for the web layer to the project (assuming ams/app, sites/jungle3, sites/awful-ui are Top-level folders in your workspace). 
+If you use VSCode the following workspace configurations will add the debuggers for the web layer to the project (assuming ams/app, apps/jungle3, apps/awful-ui are Top-level folders in your workspace). 
 
 **NB: If you launch the automation workers in docker-compose mode, you will need to set `"MINIO_ENDPOINT": minio:9000` in the MythicaAPI env vars below**
 

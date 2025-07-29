@@ -1,0 +1,153 @@
+"""Readers API"""
+import logging
+from datetime import timezone
+from http import HTTPStatus
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, WebSocketException
+from pydantic import TypeAdapter, ValidationError
+from sqlmodel import delete as sql_delete, insert, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from db.connection import TZ, db_session_pool, get_db_session
+from db.schema.profiles import Profile
+from db.schema.streaming import Reader
+from gcid.gcid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
+from meshwork.client_ops import ReadClientOp
+from meshwork.funcs import Boundary
+from meshwork.models.streaming import StreamItemUnion
+from meshwork.source_types import create_source
+from routes.authorization import current_cookie_profile, maybe_session_profile, session_profile
+from routes.readers.manager import ReaderConnectionManager
+from routes.readers.schemas import CreateReaderRequest, ReaderResponse
+from routes.readers.utils import (direction_db_to_literal, direction_literal_to_db, reader_to_source_params,
+                                  resolve_results, select_reader, update_reader_index)
+
+router = APIRouter(prefix="/readers", tags=["readers", "streaming"])
+log = logging.getLogger(__name__)
+
+reader_connection_manager = ReaderConnectionManager()
+
+
+class WebsocketClientOp(ReadClientOp):
+    reader_id: Optional[str] = None
+
+
+@router.post("/", status_code=HTTPStatus.CREATED)
+async def create(
+        create_req: CreateReaderRequest,
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> ReaderResponse:
+    """Create a new reader on a source"""
+    r = await db_session.exec(insert(Reader).values(
+        source=create_req.source,
+        owner_seq=profile.profile_seq,
+        name=create_req.name,
+        position=create_req.position,
+        params=create_req.params,
+        direction=direction_literal_to_db(create_req.direction),
+    ))
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to create reader")
+    await db_session.commit()
+    reader_seq = r.inserted_primary_key[0]
+    r = await db_session.exec(select(Reader)
+                              .where(Reader.reader_seq == reader_seq)
+                              .where(Reader.owner_seq == profile.profile_seq))
+    reader = r.one_or_none()
+    if reader is None:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "failed to get created reader")
+    return ReaderResponse(
+        source=reader.source,
+        name=reader.name,
+        position=reader.position,
+        direction=direction_db_to_literal(reader.direction),
+        reader_id=reader_seq_to_id(reader_seq),
+        owner_id=profile_seq_to_id(profile.profile_seq),
+        created=reader.created.replace(tzinfo=TZ).astimezone(timezone.utc))
+
+
+@router.get("/")
+async def current(
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)) -> list[ReaderResponse]:
+    """Get all persistent readers for the current profile"""
+    return resolve_results((await db_session.exec(select(Reader)
+                                                  .where(Reader.owner_seq == profile.profile_seq))).all())
+
+
+@router.delete("/{reader_id}")
+async def delete(
+        reader_id: str,
+        profile: Profile = Depends(session_profile),
+        db_session: AsyncSession = Depends(get_db_session)):
+    """Delete a reader by ID"""
+    reader_seq = reader_id_to_seq(reader_id)
+    r = await db_session.exec(sql_delete(Reader)
+                              .where(Reader.owner_seq == profile.profile_seq)
+                              .where(Reader.reader_seq == reader_seq))
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.NOT_FOUND, f"failed to delete reader {reader_id}")
+    await db_session.commit()
+
+
+@router.get("/{reader_id}/items")
+async def items(reader_id: str,
+                before: Optional[str] = None,
+                after: Optional[str] = None,
+                profile: Profile = Depends(session_profile),
+                db_session: AsyncSession = Depends(get_db_session)) -> list[StreamItemUnion]:
+    """Dequeue items from the reader"""
+    reader_seq = reader_id_to_seq(reader_id)
+    reader = await select_reader(db_session, reader_seq, profile.profile_seq)
+    params = reader_to_source_params(profile, reader)
+    source = create_source(reader.source, params)
+    if before is not None:
+        boundary = Boundary(position=before, direction="before")
+    elif after is not None:
+        boundary = Boundary(position=after, direction="after")
+    else:
+        boundary = Boundary(position=reader.position, direction=direction_db_to_literal(reader.direction))
+    if source is None:
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            f"failed to create source for reader {reader_id}")
+    item_gen = source(boundary)
+    raw_items = [item async for item in item_gen]
+    if len(raw_items) > 0 and raw_items[-1].index:
+        await update_reader_index(db_session, reader.reader_seq, raw_items[-1].index)
+
+    adapter = TypeAdapter(list[StreamItemUnion])
+    try:
+        return adapter.validate_python(raw_items)
+    except ValidationError as e:
+        log.exception("failed to validate", exc_info=e)
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,  # pylint: disable=W0707:raise-missing-from
+                            detail=f"validation error for reader {reader_id}") from e
+
+
+@router.websocket("/test/connect")
+async def test_connect(websocket: WebSocket):
+    """Connect a websocket for all profile data"""
+    await websocket.accept()
+    await websocket.send_json(data={"message": "hello world"}, mode="text")
+
+
+@router.websocket("/connect")
+async def connect_all(
+        websocket: WebSocket,
+        profile: Profile = Depends(maybe_session_profile)):
+    """Create a profile websocket connection"""
+    async with db_session_pool(websocket.app) as db_session:
+        if not profile:
+            # JavaScript does not support headers for WebSocket connections, use cookies instead.
+            profile = await current_cookie_profile(websocket)
+        try:
+            log.info("websocket connected to profile %s", profile)
+            await reader_connection_manager.connect(db_session, websocket, profile)
+        except WebSocketDisconnect:
+            log.info("websocket disconnected from profile %s", profile)
+            await reader_connection_manager.disconnect(websocket, profile)
+        except WebSocketException as e:
+            log.exception("websocket exception for profile %s", profile, exc_info=e)
+            await reader_connection_manager.disconnect(websocket, profile)

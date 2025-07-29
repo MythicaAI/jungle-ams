@@ -5,15 +5,15 @@ import mythica.network as mnet
 import requests
 
 from types import SimpleNamespace
-from ripple.automation.publishers import ResultPublisher
-from ripple.models.assets import AssetVersionEntryPointReference
-from ripple.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, StringParameterSpec, IntParmTemplateSpec, StringParmTemplateSpec
-from ripple.models.streaming import JobDefinition, ProcessStreamItem
+from meshwork.automation.publishers import ResultPublisher
+from meshwork.models.assets import AssetVersionEntryPointReference
+from meshwork.models.params import FileParameter, ParameterSet, ParameterSpec, FileParameterSpec, IntParameterSpec, \
+    StringParameterSpec, IntParmTemplateSpec, StringParmTemplateSpec
+from meshwork.models.streaming import JobDefinition, ProcessStreamItem
 from typing import Literal
-from ripple.models import houClasses
-from ripple.models import houTypes
+from meshwork.models import houClasses
+from meshwork.models import houTypes
 from opentelemetry import trace
-
 
 tracer = trace.get_tracer(__name__)
 logging.basicConfig(
@@ -36,6 +36,7 @@ def extract_node_type_info(hda_path: str) -> list[dict]:
     hou_hou.hipFile.clear(suppress_save_prompt=True)
     return result
 
+
 def set_config_params(params: ParameterSpec, hda_file: FileParameter, index: int, dependencies: list[FileParameter]):
     params['hda_file'] = FileParameterSpec(
         label='HDA File',
@@ -57,23 +58,27 @@ def set_config_params(params: ParameterSpec, hda_file: FileParameter, index: int
         default=[f.file_id for f in dependencies]
     )
 
+
 class JobDefRequest(ParameterSet):
     hda_file: FileParameter
     dependencies: list[FileParameter] = []
     src_asset_id: str = '0'
     src_version: list[int] = [1, 0, 0]
 
+
 class JobDefResponse(ProcessStreamItem):
     item_type: Literal["job_defs"] = "job_defs"
     job_definitions: list[JobDefinition]
 
-def job_defs_interface():
-  return [ 
-    StringParmTemplateSpec(label='Asset Index', name='src_asset_id', default_value=['0'], as_scalar=True),
-    IntParmTemplateSpec(label='Version', name='src_version', num_components=3, default_value=[1,0,0]),
-  ]
-def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefResponse:
 
+def job_defs_interface():
+    return [
+        StringParmTemplateSpec(label='Asset Index', name='src_asset_id', default_value=['0'], as_scalar=True),
+        IntParmTemplateSpec(label='Version', name='src_version', num_components=3, default_value=[1, 0, 0]),
+    ]
+
+
+def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefResponse:
     hda_file = request.hda_file
 
     type_infos = extract_node_type_info(hda_file.file_path)
@@ -81,11 +86,11 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
     ret = []
     for index, type_info in enumerate(type_infos):
         category = type_info['category']
-        #Only SOP HDA's supported
+        # Only SOP HDA's supported
         if category != 'SOP':
             continue
 
-        #Parse inputs and convert them to FileParameterSpec
+        # Parse inputs and convert them to FileParameterSpec
         in_files: dict[str, FileParameterSpec] = {}
         for index, label in enumerate(type_info['inputLabels']):
             name = f'input{index}'
@@ -95,10 +100,10 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
             name = f'output{index}'
             out_files[name] = FileParameterSpec(label=label, name=name, default='')
 
-        #Get parmTemplate definition script
+        # Get parmTemplate definition script
         nt_python = type_info['code']
 
-        #Emulate the hou namespace for the script
+        # Emulate the hou namespace for the script
         hou_ns = SimpleNamespace()
         hou_ns.__dict__.update(vars(houClasses))
         hou_ns.__dict__.update(vars(houTypes))
@@ -106,9 +111,9 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
         # Create an execution context and exec the script
         context = {"hou": hou_ns}
         scope = {}
-        exec(nt_python,context, scope)
-        #Grab results
-        group:houClasses.ParmTemplateGroup = scope.get("hou_parm_template_group")
+        exec(nt_python, context, scope)
+        # Grab results
+        group: houClasses.ParmTemplateGroup = scope.get("hou_parm_template_group")
 
         source = None
 
@@ -135,8 +140,8 @@ def job_defs(request: JobDefRequest, responder: ResultPublisher) -> JobDefRespon
             job_type='houdini::/mythica/generate_mesh',
             name=f"Generate {type_info['name']}",
             description=type_info['description'],
-            parameter_spec= ParameterSpec(
-                params= params,
+            parameter_spec=ParameterSpec(
+                params=params,
                 params_v2=params_v2
             ),
             source=source

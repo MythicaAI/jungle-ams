@@ -1,0 +1,107 @@
+import logging
+from http import HTTPStatus
+from typing import Optional
+
+from fastapi import HTTPException
+from pydantic import BaseModel
+from sqlmodel import select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from gcid.gcid import file_id_to_seq, file_seq_to_id, profile_seq_to_id
+from db.schema.media import FileContent
+from storage.local_file_uploader import LocalFileStorageClient
+from storage.storage_client import StorageClient
+
+log = logging.getLogger(__name__)
+
+
+class DownloadInfoResponse(BaseModel):
+    """Resolved file metadata and download URL for"""
+    file_id: str
+    owner_id: str
+    name: str
+    size: int
+    content_type: str
+    content_hash: str
+    url: str
+
+
+def translate_minio(storage: StorageClient, file: FileContent, object_spec: str) -> str:
+    """minio download link creator"""
+    bucket, object_name = object_spec.split(":")
+    return storage.download_link(bucket, object_name, file.name)
+
+
+def translate_gcs(storage: StorageClient, file: FileContent, object_spec: str) -> str:
+    """GCS download link creator"""
+    region_bucket, object_name = object_spec.split(":")
+    _, bucket_name = region_bucket.split(".")
+    return storage.download_link(bucket_name, object_name, file.name)
+
+
+def translate_test(storage: LocalFileStorageClient, file: FileContent, object_spec: str) -> str:
+    """LocalStorage download link creator"""
+    parts = object_spec.split(":")
+    bucket_name = parts[0]
+    if len(parts[1:]) > 1:
+        path_replace = parts[2].replace("\\", "/")
+        object_name = f"/lfs/{parts[1]}/{path_replace}"  # Windows file names may have colons in local test
+    else:
+        object_name = parts[1]
+    return storage.download_link(bucket_name, object_name, file.name)
+
+
+storage_types = {
+    "gcs": translate_gcs,
+    "minio": translate_minio,
+    "test": translate_test,
+}
+
+
+async def increment_download_count(db_session: AsyncSession, file_seq: int):
+    """Increment the download count by one"""
+    await db_session.exec(update(FileContent)
+                          .values(downloads=FileContent.downloads + 1)
+                          .where(FileContent.file_seq == file_seq))
+    await db_session.commit()
+
+
+def translate_download_url(storage, file: FileContent) -> str:
+    """translate locators to a downloadable URL"""
+    locators = file.locators
+    if type(locators) == dict:
+        locators = locators["locators"]
+    elif type(locators) != list:
+        raise ValueError(f"file locators were invalid type {type(file.locators)}")
+
+    for locator in locators:
+        log.info("translating %s", locator)
+        locator_type, object_spec = locator.split("://")
+        translate_func = storage_types.get(locator_type)
+        if translate_func is None:
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "unsupported storage type %s", locator_type)
+
+        url = translate_func(storage, file, object_spec)
+        if url is not None:
+            return url
+    raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, detail="no valid locators for file")
+
+
+async def resolve_download_info(
+        db_session: AsyncSession,
+        file_id: Optional[str],
+        storage: StorageClient) -> Optional[DownloadInfoResponse]:
+    """Given a file_id and storage client resolve the download info"""
+    if file_id is None:
+        return None
+    file_seq = file_id_to_seq(file_id)
+    await increment_download_count(db_session, file_seq)
+    file = (await db_session.exec(
+        select(FileContent).where(FileContent.file_seq == file_seq))).one_or_none()
+    if file is None:
+        return None
+    return DownloadInfoResponse(
+        **file.model_dump(),
+        file_id=file_seq_to_id(file.file_seq),
+        owner_id=profile_seq_to_id(file.owner_seq),
+        url=translate_download_url(storage, file))

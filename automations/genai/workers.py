@@ -1,8 +1,8 @@
 import sys
 import logging
-from  automation.api import (
+from automation.api import (
     Text2MaterialRequest,
-    text_2_material_interface, 
+    text_2_material_interface,
     Image2MaterialRequest,
     image_2_material_interface,
     Text2ThreeDRequest,
@@ -16,7 +16,7 @@ from  automation.api import (
     ApiResponse,
     api_request
 )
-from ripple.automation.worker import Worker
+from meshwork.automation.worker import Worker
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,11 +71,10 @@ automations = [
 
 ]
 
+
 def main():
-    
-    worker.start('genai',automations)        
+    worker.start('genai', automations)
+
 
 if __name__ == "__main__":
     main()
-
-

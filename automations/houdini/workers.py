@@ -10,8 +10,8 @@ from automation.job_defs import job_defs, JobDefRequest, JobDefResponse, job_def
 from automation.generate_mesh import generate_mesh, ExportMeshRequest, ExportMeshResponse
 from automation.run_hda import hda, HdaRequest, HdaResponse, run_hda, RunHdaRequest, RunHdaResponse
 from automation.helloworld import hello_world_api, HelloWorldRequest, HelloWorldResponse
-from ripple.automation.worker import Worker
-from ripple.config import configure_telemetry, ripple_config
+from meshwork.automation.worker import Worker
+from meshwork.config import configure_telemetry, meshwork_config
 
 # Get environment from MYTHICA_ENVIRONMENT env var
 mythica_environment = os.environ.get("MYTHICA_ENVIRONMENT", "prod")
@@ -19,10 +19,10 @@ debug = mythica_environment == "debug"
 
 worker = Worker()
 
-if ripple_config().telemetry_endpoint:
+if meshwork_config().telemetry_endpoint:
     configure_telemetry(
-        ripple_config().telemetry_endpoint,
-        ripple_config().telemetry_token,
+        meshwork_config().telemetry_endpoint,
+        meshwork_config().telemetry_token,
     )
 else:
     logging.basicConfig(level=logging.INFO, format="%(message)s")

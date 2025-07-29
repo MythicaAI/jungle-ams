@@ -1,0 +1,281 @@
+"""
+This module is designed to start a new session given a known profile sequence number. It updates
+the profile and generates a session start response.
+"""
+import logging
+from http import HTTPStatus
+
+from fastapi import HTTPException
+from sqlalchemy.sql.functions import func, now as sql_now
+from sqlmodel import asc, col, delete, insert, select, update
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from auth.data import resolve_org_roles
+from gcid.gcid import org_seq_to_id, profile_id_to_seq, profile_seq_to_id
+from db.schema.profiles import Org, OrgRef, Profile, ProfileLocatorOID, ProfileSession
+from profiles.auth0_validator import AuthTokenValidator, UserProfile, ValidTokenPayload
+from profiles.responses import ProfileResponse, SessionStartResponse, profile_to_profile_response
+from meshwork.auth import roles
+from meshwork.auth.authorization import validate_roles
+from meshwork.auth.generate_token import generate_token
+from meshwork.config import meshwork_config
+from meshwork.models.sessions import SessionProfile
+from validate_email.responses import ValidateEmailState
+
+log = logging.getLogger(__name__)
+
+# TODO: move to admin interface
+privileged_emails = {
+    "test@mythica.ai",
+    "jacob@mythica.ai",
+    "pedro@mythica.ai",
+    "kevin@mythica.ai",
+    "bohdan.krupa.mythica@gmail.com",
+    "kyrylo.katkov@gmail.com",
+}
+
+
+async def start_session(
+        db_session: AsyncSession,
+        profile_seq: int,
+        location: str,
+        impersonate_profile_id: str = None) -> SessionStartResponse:
+    """Given a database session start a new authenticated session"""
+
+    #
+    # Update profile, login count and location
+    #
+    result = await db_session.exec(update(Profile).values(
+        login_count=func.coalesce(Profile.login_count, 0) + 1,
+        active=True,
+        location=location).where(Profile.profile_seq == profile_seq))
+    if result.rowcount == 0:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="profile not found")
+    await db_session.commit()
+
+    #
+    # Delete existing sessions
+    #
+    await db_session.exec(delete(ProfileSession).where(
+        ProfileSession.profile_seq == profile_seq))
+    await db_session.commit()
+
+    #
+    # Generate a new token with the profile and role data embedded in the token
+    # for validation to other API endpoints
+    #
+    profile_org_results = (await db_session.exec(select(Profile, Org, OrgRef)
+                                                 .where(Profile.profile_seq == profile_seq)
+                                                 .outerjoin(OrgRef, Profile.profile_seq == OrgRef.profile_seq)
+                                                 .outerjoin(Org, Org.org_seq == OrgRef.org_seq)
+                                                 )).all()
+
+    # Convert org roles into auth role declarations for meshwork
+    auth_roles = set()
+    for r in profile_org_results:
+        _, r_org, r_org_ref = r
+        if r_org is None:
+            break
+        org_id = org_seq_to_id(r_org.org_seq)
+        auth_roles.add(f"{r_org_ref.role}:{org_id}")
+
+    profile = profile_org_results[0][0]
+
+    #
+    # add scoped roles for accounts, consider privileged accounts here
+    #
+    if profile.email in privileged_emails \
+            and profile.email_validate_state == \
+            ValidateEmailState.db_value(ValidateEmailState.validated):
+        auth_roles.update(roles.privileged_roles)
+    else:
+        auth_roles.update((
+            f"{roles.alias_asset_editor}:{roles.self_object_scope}",
+            f"{roles.alias_profile_owner}:{roles.self_object_scope}",
+            f"{roles.alias_job_def_all}:{roles.self_object_scope}",
+            f"{roles.alias_core_create}"))
+
+    # after role validation, it is possible to take on the identity of another profile
+    # if you have this role, this is a super-use privilege and should be audited
+    if impersonate_profile_id:
+        validate_roles(role=roles.profile_impersonate, auth_roles=auth_roles)
+        profile = await impersonated_profile(
+            db_session=db_session,
+            auth_profile=profile,
+            profile_id=impersonate_profile_id)
+
+    token = generate_token(
+        profile_seq_to_id(profile.profile_seq),
+        profile.email,
+        profile.email_validate_state,
+        profile.location,
+        meshwork_config().mythica_environment,
+        list(auth_roles))
+
+    # Add a new session
+    profile_session = ProfileSession(profile_seq=profile_seq,
+                                     refreshed=sql_now(),
+                                     location=location,
+                                     authenticated=True,
+                                     auth_token=token)
+    db_session.add(profile_session)
+    await db_session.commit()
+
+    # resolve all roles across all orgs this profile exists in
+    auth_roles = await resolve_org_roles(db_session, profile.profile_seq)
+
+    # Convert db profile to profile response
+    profile_response = profile_to_profile_response(
+        profile, ProfileResponse
+    )
+
+    result = SessionStartResponse(
+        token=token,
+        profile=profile_response,
+        roles=list(auth_roles))
+
+    return result
+
+
+async def impersonated_profile(
+        db_session: AsyncSession,
+        auth_profile: Profile,
+        profile_id: str) -> SessionProfile:
+    """
+    Return an impersonated profile and log the access
+    """
+    profile_seq = profile_id_to_seq(profile_id)
+    db_profile = (await db_session.exec(select(Profile).where(Profile.profile_seq == profile_seq))).one_or_none()
+    if db_profile is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="No profile to impersonate")
+
+    log.info("profile: (%s) %s #%s, impersonating (%s) %s #%s",
+             auth_profile.email,
+             profile_seq_to_id(auth_profile.profile_seq),
+             profile_seq,
+             db_profile.email,
+             profile_id,
+             profile_id_to_seq(profile_id))
+    return db_profile
+
+
+async def start_session_with_token_validator(
+        db_session: AsyncSession,
+        token: str,
+        validator: AuthTokenValidator) -> SessionStartResponse:
+    """Given a token and a validator, validate the token - the token validator must
+    return the user metadata which will be used to locate a profile and continue
+    with the session logic"""
+    log.info("starting session with token: %s", token)
+    valid_token = await validator.validate(token)
+
+    #
+    # look for an existing association of the unique sub key
+    #
+    locator_oid = (await db_session.exec(select(ProfileLocatorOID)
+                                         .where(col(ProfileLocatorOID.sub) == valid_token.sub))).one_or_none()
+    if locator_oid is not None:
+        return await start_session(db_session, locator_oid.owner_seq, locator_oid.sub)
+
+    #
+    # Resolve the locator to a profile, start by querying the user profile data associated with the sub
+    # get all profiles with the email, with the oldest profile as the first result
+    #
+    user_profile = await validator.query_user_profile(token)
+    profiles = (await db_session.exec(select(Profile)
+                                      .where(col(Profile.email) == user_profile.email)
+                                      .order_by(asc(Profile.created)))).all()
+    if profiles is None or len(profiles) == 0:
+        # if there are no profiles, attempt to associate the sub to a new profile
+        profile_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
+        session_start = await create_profile_locator_oid(db_session, valid_token, profile_seq)
+        return session_start
+
+    #
+    # a locator does not exist for the token subject, in this case we will associate all profiles
+    # bearing the verified email with the subject, TODO: this should be done in a two step process
+    # with an email verification on our side before allowing the new sub to take over the profile
+    # select the oldest profile, what to do with the rest?
+    oldest_profile = sorted(profiles, key=lambda p: p.created, reverse=True)[0]
+    session_start = await associate_profile(db_session, oldest_profile, valid_token, user_profile)
+    return session_start
+
+
+async def associate_profile(
+        db_session: AsyncSession,
+        profile: Profile,
+        valid_token: ValidTokenPayload,
+        user_profile: UserProfile) -> SessionStartResponse:
+    if user_profile.email_verified:
+        validate_email_state = 1
+    else:
+        validate_email_state = 0
+    profile_insert = await db_session.exec(insert(Profile).values(
+        name=user_profile.nickname,
+        full_name=user_profile.name,
+        email=user_profile.email,
+        email_validate_state=validate_email_state,
+        location=valid_token.sub,
+    ))
+    profile_seq = profile_insert.inserted_primary_key[0]
+
+    await db_session.exec(insert(ProfileLocatorOID).values(
+        sub=valid_token.sub,
+        owner_seq=profile_seq,
+    ))
+    await db_session.commit()
+
+    profile = (await db_session.exec(select(Profile).where(Profile.profile_seq == profile_seq))).one_or_none()
+    if profile is None:
+        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
+    return await start_session(db_session, profile.profile_seq, valid_token.sub)
+
+
+async def merge_profile(
+        db_session: AsyncSession,
+        valid_token: ValidTokenPayload,
+        user_profile: UserProfile,
+        _: ProfileLocatorOID) -> SessionStartResponse:
+    results = (await db_session.exec(select(Profile).where(col(Profile.email) == user_profile.email))).all()
+    profile = None
+    if results is None or len(results) == 0:
+        owner_seq = await create_profile_for_oid(db_session, valid_token, user_profile)
+        await create_profile_locator_oid(db_session, valid_token, owner_seq)
+    else:
+        profile = next(sorted(results, key=lambda p: p.profile_seq))
+
+    if profile is None:
+        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be resolved")
+    return await start_session(db_session, profile.profile_seq, valid_token.sub)
+
+
+def email_validate_state(email_verified) -> int:
+    if email_verified:
+        return 1
+    else:
+        return 0
+
+
+async def create_profile_locator_oid(db_session: AsyncSession, valid_token: ValidTokenPayload, owner_seq: int):
+    r = await db_session.exec(insert(ProfileLocatorOID).values(sub=valid_token.sub, owner_seq=owner_seq))
+    if r is None or r.rowcount == 0:
+        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "OID locator could not be created")
+    await db_session.commit()
+    return await start_session(db_session, owner_seq, valid_token.sub)
+
+
+async def create_profile_for_oid(
+        db_session: AsyncSession,
+        valid_token: ValidTokenPayload,
+        user_profile: UserProfile) -> int:
+    r = await db_session.exec(insert(Profile).values(
+        name=user_profile.nickname,
+        full_name=user_profile.name,
+        email=user_profile.email,
+        email_validate_state=email_validate_state(user_profile.email_verified),
+        location=valid_token.sub,
+    ))
+    if r.rowcount == 0:
+        raise HTTPException(HTTPStatus.SERVICE_UNAVAILABLE, "profile could not be created")
+    owner_seq = r.inserted_primary_key[0]
+    return owner_seq

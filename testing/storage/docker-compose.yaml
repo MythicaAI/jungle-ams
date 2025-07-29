@@ -51,7 +51,7 @@ services:
   # this is a one shot container to configure the minio access key within
   # the minio service
   minio-config:
-    image: minio-config
+    image: jrepp/jungle-ams:minio-config-latest
     depends_on:
       - minio
     build:
