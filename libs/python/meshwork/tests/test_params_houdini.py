@@ -1,61 +1,65 @@
 import pytest
 from pydantic import ValidationError
 
+# Import the classes from houClasses
+from meshwork.models.houClasses import (
+    ButtonParmTemplate,
+    DataParmTemplate,
+    FloatParmTemplate,
+    FolderParmTemplate,
+    FolderSetParmTemplate,
+    IntParmTemplate,
+    LabelParmTemplate,
+    MenuParmTemplate,
+    ParmTemplate,
+    ParmTemplateGroup,
+    RampParmTemplate,
+    SeparatorParmTemplate,
+    StringParmTemplate,
+    ToggleParmTemplate,
+)
+from meshwork.models.houClasses import (
+    rampBasis as classRampBasis,
+)
+from meshwork.models.houClasses import (
+    rampParmType as classRampParmType,  # same as from houTypes
+)
+
 # Import enums from houTypes
 from meshwork.models.houTypes import (
-    scriptLanguage,
-    parmTemplateType,
-    parmData,
-    parmLook,
-    parmNamingScheme,
-    parmCondType,
-    menuType,
-    stringParmType,
+    colorType,
+    dataParmType,
     fileType,
     folderType,
     labelParmType,
-    dataParmType,
-    rampParmType,
+    menuType,
+    parmCondType,
+    parmData,
+    parmLook,
+    parmNamingScheme,
+    parmTemplateType,
     rampBasis,
-    colorType,
+    rampParmType,
+    scriptLanguage,
+    stringParmType,
 )
 
 # Import specs from params (the new Houdini parameter specs)
 from meshwork.models.params import (
-    EnumParameterSpec,
-    SeparatorParmTemplateSpec,
     ButtonParmTemplateSpec,
-    IntParmTemplateSpec,
-    FloatParmTemplateSpec,
-    StringParmTemplateSpec,
-    ToggleParmTemplateSpec,
-    MenuParmTemplateSpec,
-    LabelParmTemplateSpec,
-    RampParmTemplateSpec,
     DataParmTemplateSpec,
+    EnumParameterSpec,
+    FloatParmTemplateSpec,
     FolderParmTemplateSpec,
     FolderSetParmTemplateSpec,
+    IntParmTemplateSpec,
+    LabelParmTemplateSpec,
+    MenuParmTemplateSpec,
+    RampParmTemplateSpec,
     RampPointSpec,
-)
-
-# Import the classes from houClasses
-from meshwork.models.houClasses import (
-    ParmTemplate,
-    SeparatorParmTemplate,
-    ButtonParmTemplate,
-    IntParmTemplate,
-    FloatParmTemplate,
-    StringParmTemplate,
-    ToggleParmTemplate,
-    MenuParmTemplate,
-    LabelParmTemplate,
-    DataParmTemplate,
-    RampParmTemplate,
-    FolderParmTemplate,
-    FolderSetParmTemplate,
-    ParmTemplateGroup,
-    rampParmType as classRampParmType,  # same as from houTypes
-    rampBasis as classRampBasis,
+    SeparatorParmTemplateSpec,
+    StringParmTemplateSpec,
+    ToggleParmTemplateSpec,
 )
 
 
@@ -596,7 +600,7 @@ def test_hidden_params():
         is_hidden=True,
     )
 
-    assert folder.getParameterSpec() == None
+    assert folder.getParameterSpec() is None
     assert intTemp.getParameterSpec() == []
     assert floatTemp.getParameterSpec() == []
     assert stringTemp.getParameterSpec() == []
@@ -732,7 +736,6 @@ def test_folder_parm_template_ends_tab_group():
     Ensures we cover the branch where `lastFolder.ends_tab_group == True`
     so we end up in the `else: wrapFolderset(parm_template)` path.
     """
-    from meshwork.models.houTypes import folderType
 
     # 1) Create a top-level FolderParmTemplate in a group
     group = ParmTemplateGroup()

@@ -75,7 +75,7 @@ def disable_nats(context_str):
     return False
 
 
-@router.post('/definitions', status_code=HTTPStatus.CREATED)
+@router.post("/definitions", status_code=HTTPStatus.CREATED)
 async def define_new(
         req_data: JobDefinitionRequest,
         profile: SessionProfile = Depends(maybe_session_profile),
@@ -108,7 +108,7 @@ async def define_new(
     return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
 
 
-@router.post('/definitions/{job_def_id}', status_code=HTTPStatus.CREATED)
+@router.post("/definitions/{job_def_id}", status_code=HTTPStatus.CREATED)
 async def define_new_from_template(
         job_def_id: str,
         new_data: JobDefinitionTemplateRequest,
@@ -173,7 +173,7 @@ async def define_new_from_template(
     return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def_seq))
 
 
-@router.put('/definitions/{job_def_id}')
+@router.put("/definitions/{job_def_id}")
 async def update_job_def(
         job_def_id: str,
         req_data: JobDefinitionRequest,
@@ -193,7 +193,7 @@ async def update_job_def(
     return JobDefinitionResponse(job_def_id=job_def_seq_to_id(job_def.job_def_seq))
 
 
-@router.delete('/definitions/{job_def_id}')
+@router.delete("/definitions/{job_def_id}")
 async def delete_job_def(
         job_def_id: str,
         db_session: AsyncSession = Depends(get_db_session)) -> None:
@@ -216,7 +216,7 @@ async def delete_job_def(
     return None
 
 
-@router.get('/definitions')
+@router.get("/definitions")
 async def list_definitions(db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:
     """List existing job definitions"""
     job_defs = (await db_session.exec(select(JobDefinition))).all()
@@ -262,7 +262,7 @@ async def resolve_job_definitions(
     return job_defs
 
 
-@router.get('/definitions/by_asset/{asset_id}')
+@router.get("/definitions/by_asset/{asset_id}")
 async def by_latest_asset(
         asset_id: str,
         db_session: AsyncSession = Depends(get_db_session)) -> list[JobDefinitionModel]:
@@ -273,7 +273,7 @@ async def by_latest_asset(
     return await resolve_job_definitions(db_session, latest_version)
 
 
-@router.get('/definitions/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
+@router.get("/definitions/by_asset/{asset_id}/versions/{major}/{minor}/{patch}")
 async def by_asset_version(
         asset_id: str,
         major: int,
@@ -287,7 +287,7 @@ async def by_asset_version(
     return await resolve_job_definitions(db_session, asset_version)
 
 
-@router.get('/definitions/{job_def_id}')
+@router.get("/definitions/{job_def_id}")
 async def by_id(
         job_def_id: str,
         db_session: AsyncSession = Depends(get_db_session)) -> JobDefinitionModel:
@@ -303,7 +303,7 @@ async def by_id(
     )
 
 
-@router.get('/def_from_file/{file_id}')
+@router.get("/def_from_file/{file_id}")
 async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_profile)) -> str:
     """Convert a file to a job definition"""
     if disable_nats(f"def_from_file: {file_id}"):
@@ -319,7 +319,7 @@ async def def_from_file(file_id: str, profile: SessionProfile = Depends(session_
     event = AutomationRequest(
         process_guid=process_guid,
         correlation=correlation,
-        path='/mythica/generate_job_defs',
+        path="/mythica/generate_job_defs",
         data=parameter_set.model_dump(),
         auth_token=profile.auth_token,
         telemetry_context=get_telemetry_headers(),
@@ -340,12 +340,12 @@ async def add_job_requested_event(
     # Create a new pipeline event
     job_id = job_seq_to_id(job_seq)
     job_data = {
-        'job_def_id': job_def_seq_to_id(job_def.job_def_seq),
-        'job_id': job_id,
-        'auth_token': auth_token,
-        'profile_id': profile_seq_to_id(profile_seq),
-        'params': params,
-        'job_results_endpoint': f'{app_config().api_base_uri}/jobs/{job_id}/results'
+        "job_def_id": job_def_seq_to_id(job_def.job_def_seq),
+        "job_id": job_id,
+        "auth_token": auth_token,
+        "profile_id": profile_seq_to_id(profile_seq),
+        "params": params,
+        "job_results_endpoint": f"{app_config().api_base_uri}/jobs/{job_id}/results"
     }
     loc = location()
     stmt = insert(Event).values(
@@ -387,7 +387,7 @@ async def add_job_nats_event(
     await nats.post(subject, event.model_dump())
 
 
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post("/", status_code=HTTPStatus.CREATED)
 async def create(
         req_data: JobRequest,
         profile: SessionProfile = Depends(session_profile),
@@ -450,7 +450,7 @@ async def job_result_insert(
     engine = db_session.get_bind()
     # fallback for composite primary key auto increment in SQLite
     # see the db connection code for the definition of this fallback
-    requires_app_sequences = {'sqlite'}
+    requires_app_sequences = {"sqlite"}
     if engine.dialect.name in requires_app_sequences:
         # generate the next sequence value, uses a custom upsert as this pattern is not
         # natively supported in SQLAlchemy
@@ -475,7 +475,7 @@ async def job_result_insert(
             result_data=req_data.result_data))
 
 
-@router.post('/results/{job_id}', status_code=HTTPStatus.CREATED)
+@router.post("/results/{job_id}", status_code=HTTPStatus.CREATED)
 async def create_result(
         job_id: str,
         req_data: JobResultRequest,
@@ -498,7 +498,7 @@ async def create_result(
     return JobResultCreateResponse(job_result_id=job_result_seq_to_id(job_result_seq))
 
 
-@router.get('/results/{job_id}')
+@router.get("/results/{job_id}")
 async def list_results(
         job_id: str,
         profile: Profile = Depends(session_profile),
@@ -523,7 +523,7 @@ async def list_results(
         results=results)
 
 
-@router.post('/complete/{job_id}')
+@router.post("/complete/{job_id}")
 async def set_complete(
         job_id: str,
         db_session: AsyncSession = Depends(get_db_session)):
@@ -543,7 +543,7 @@ async def set_complete(
     await db_session.commit()
 
 
-@router.delete('/definitions/delete_canary_jobs_def')
+@router.delete("/definitions/delete_canary_jobs_def")
 async def delete_canary_jobs_def(
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)):
@@ -596,7 +596,7 @@ async def delete_canary_jobs_def(
     }
 
 
-@router.get('/by_asset/{asset_id}/versions/{major}/{minor}/{patch}')
+@router.get("/by_asset/{asset_id}/versions/{major}/{minor}/{patch}")
 async def jobs_by_asset_version(
         asset_id: str,
         major: int,

@@ -37,10 +37,10 @@ from tags.type_utils import resolve_type_tags
 ZERO_VERSION = [0, 0, 0]
 VERSION_LEN = 3
 
-FILES_CONTENT_KEY = 'files'
-THUMBNAILS_CONTENT_KEY = 'thumbnails'
-LINKS_CONTENT_KEY = 'links'
-DEPENDENCIES_CONTENT_KEY = 'dependencies'
+FILES_CONTENT_KEY = "files"
+THUMBNAILS_CONTENT_KEY = "thumbnails"
+LINKS_CONTENT_KEY = "links"
+DEPENDENCIES_CONTENT_KEY = "dependencies"
 
 FILE_TYPE_CATEGORIES = {FILES_CONTENT_KEY, THUMBNAILS_CONTENT_KEY}
 ASSET_VERSION_TYPE_CATEGORIES = {DEPENDENCIES_CONTENT_KEY}
@@ -330,7 +330,7 @@ async def process_filtered_tags(
 def convert_version_input(version: str) -> tuple[int, ...]:
     """Convert a raw version string to a 3 part number tuple"""
     try:
-        tuple_version = tuple(map(int, version.split('.')))
+        tuple_version = tuple(map(int, version.split(".")))
         if len(tuple_version) != VERSION_LEN:
             raise HTTPException(HTTPStatus.BAD_REQUEST,
                                 detail="version must conform to 1.2.3")
@@ -418,11 +418,11 @@ async def add_version_packaging_event(db_session: AsyncSession, avr: AssetVersio
     """Add a new event that triggers version packaging"""
     # Create a new pipeline event
     job_data = {
-        'owner': avr.owner_id,
-        'author': avr.author_id,
-        'asset_id': avr.asset_id,
-        'version': avr.version,
-        'published': avr.published,
+        "owner": avr.owner_id,
+        "author": avr.author_id,
+        "asset_id": avr.asset_id,
+        "version": avr.version,
+        "published": avr.published,
     }
     loc = location()
     stmt = insert(Event).values(
@@ -506,12 +506,12 @@ async def resolve_asset_dependency(
     version = dep.version
     if asset_id is None or version is None or len(version) != 3:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            f'asset_id and version required on {str(dep)}')
+                            f"asset_id and version required on {str(dep)}")
     avr_results = await select_asset_version(db_session, asset_id, tuple(version))
     avr = (await process_join_results(avr_results))[0] if avr_results else None
     if avr is None:
         raise HTTPException(HTTPStatus.NOT_FOUND,
-                            f'asset {asset_id} {version} not found')
+                            f"asset {asset_id} {version} not found")
     package_file = await locate_content_by_seq(db_session, file_id_to_seq(avr.package_id))
     return AssetDependency(
         asset_id=avr.asset_id,
@@ -715,12 +715,12 @@ async def create_version(db_session: AsyncSession,
     # resolve and process contents if they are set in the request they
     # for any files they will be resolved to real files (or a file not found error will occur)
     # and converted to json for serialization into storage
-    contents = values.get('contents')
+    contents = values.get("contents")
     if contents is not None:
-        values['contents'] = await resolve_contents_as_json(db_session, r.contents)
+        values["contents"] = await resolve_contents_as_json(db_session, r.contents)
 
     # org change: if the org_id is specified update the property of the root asset
-    org_id = values.pop('org_id', None)
+    org_id = values.pop("org_id", None)
     if org_id:
         org_seq = org_id_to_seq(org_id)
         asset_seq = asset_id_to_seq(asset_id)
@@ -733,7 +733,7 @@ async def create_version(db_session: AsyncSession,
             raise HTTPException(HTTPStatus.FORBIDDEN, detail="org_id be updated by the asset owner")
 
     # Track author for update auditing
-    values['author_seq'] = author_seq
+    values["author_seq"] = author_seq
 
     # Create the revision, fails if the revision already exists
     # this could be optimized more using upsert but this will likely hold
@@ -790,7 +790,7 @@ async def create_version(db_session: AsyncSession,
     except sqlalchemy.exc.IntegrityError as exc:
         log.exception("asset database operation failed")
         raise HTTPException(HTTPStatus.CONFLICT,
-                            detail=f'asset: {asset_id} version {version_id} already exists') from exc
+                            detail=f"asset: {asset_id} version {version_id} already exists") from exc
 
 
 async def delete_version(db_session: AsyncSession, asset_id: str, version_str: str, profile_seq: int):

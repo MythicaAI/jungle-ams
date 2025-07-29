@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
 
 from gcid.gcid import profile_seq_to_id
+
 from meshwork.auth import roles
 from meshwork.auth.generate_token import decode_token, generate_token
 

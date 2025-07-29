@@ -54,8 +54,8 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-image_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webm'}
-houdini_extensions = ('hda', 'hdalc')
+image_extensions = {"png", "jpg", "jpeg", "gif", "webm"}
+houdini_extensions = ("hda", "hdalc")
 
 
 def parse_args():
@@ -127,7 +127,7 @@ def get_versions(
 
 def get_file_contents(v: AssetVersionResult) -> list[AssetFileReference]:
     """Return all file contents if they exist"""
-    return v.contents.get('files', [])
+    return v.contents.get("files", [])
 
 
 def resolve_contents(endpoint, file: AssetFileReference) -> DownloadInfoResponse:
@@ -154,7 +154,7 @@ def start_session(endpoint: str, api_key: str, as_profile_id: Optional[str]) -> 
     response.raise_for_status()
 
     result = response.json()
-    return result['token']
+    return result["token"]
 
 
 def is_houdini_file(content: AssetFileReference | DownloadInfoResponse) -> bool:
@@ -192,7 +192,7 @@ async def generate_several_thumbnails(
             process_guid=process_guid,
             correlation=str(uuid4()),
             auth_token=token,
-            path='/mythica/crop_image',
+            path="/mythica/crop_image",
             data=parameter_set.model_dump(),
             telemetry_context=get_telemetry_headers(),
             event_id=event_id,
@@ -253,7 +253,7 @@ async def generate_several_houdini_job_defs(
             process_guid=process_guid,
             correlation=str(uuid4()),
             auth_token=token,
-            path='/mythica/generate_job_defs',
+            path="/mythica/generate_job_defs",
             data=parameter_set.model_dump(),
             telemetry_context=get_telemetry_headers(),
             event_id=event_id,
@@ -278,7 +278,7 @@ async def generate_houdini_job_defs(avr: AssetVersionResult, content: DownloadIn
         process_guid=process_guid,
         correlation=str(uuid4()),
         auth_token=token,
-        path='/mythica/generate_job_defs',
+        path="/mythica/generate_job_defs",
         data=parameter_set.model_dump(),
         telemetry_context=get_telemetry_headers(),
         event_id=event_id,
@@ -324,7 +324,7 @@ async def generate_several_awpy_job_defs(
             process_guid=process_guid,
             correlation=str(uuid4()),
             auth_token=token,
-            path='/mythica/script/job_def',
+            path="/mythica/script/job_def",
             data=parameter_set.model_dump(),
             telemetry_context=get_telemetry_headers(),
             event_id=event_id,
@@ -340,7 +340,7 @@ async def generate_awpy_job_defs(avr: AssetVersionResult, content: DownloadInfoR
     """Request to generate one job_def"""
 
     # read the json file and get the worker name
-    with open(content.file_name, 'r', encoding="utf-8") as f:
+    with open(content.file_name, "r", encoding="utf-8") as f:
         data = json.load(f)
         worker_name = data.get("worker")
 
@@ -354,7 +354,7 @@ async def generate_awpy_job_defs(avr: AssetVersionResult, content: DownloadInfoR
         process_guid=process_guid,
         correlation=str(uuid4()),
         auth_token=token,
-        path='/mythica/script/job_def',
+        path="/mythica/script/job_def",
         data=parameter_set.model_dump(),
         telemetry_context=get_telemetry_headers(),
         event_id=event_id,
@@ -380,7 +380,7 @@ async def crop_thumbnail(avr: AssetVersionResult, content: DownloadInfoResponse,
         process_guid=process_guid,
         correlation=str(uuid4()),
         auth_token=token,
-        path='/mythica/crop_image',
+        path="/mythica/crop_image",
         data=parameter_set.model_dump(),
         telemetry_context=get_telemetry_headers(),
         event_id=event_id,
@@ -412,7 +412,7 @@ def is_awpy_file(content: Union[AssetFileReference | AssetDependency | str]) -> 
 
     try:
         extension = name.rpartition(".")[-1].lower()
-        return extension == 'awpy'
+        return extension == "awpy"
     except PackagerBaseException as ex:
         log.exception(ex)
         span = trace.get_current_span(context=get_current_telemetry_context())
@@ -422,7 +422,7 @@ def is_awpy_file(content: Union[AssetFileReference | AssetDependency | str]) -> 
 
 def build_asset_url(endpoint: str, asset_id: str, version: tuple[int]) -> str:
     """Build an access API access URL to a specific asset version"""
-    version_str = '.'.join(map(str, version))
+    version_str = ".".join(map(str, version))
     return f"{endpoint}/v1/assets/{asset_id}/versions/{version_str}"
 
 
@@ -438,7 +438,7 @@ async def create_zip_from_asset(
     """Given an output zip file name, resolve all the content of the asset_id and create a zip file"""
 
     token = start_session(endpoint, api_key, profile_id)
-    headers = {'Authorization': f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {token}"}
 
     versions = get_versions(endpoint, asset_id, version)
     for v in versions:
@@ -446,12 +446,12 @@ async def create_zip_from_asset(
             log.warning("asset does not have a name %s",
                         build_asset_url(endpoint, asset_id, v.version))
             continue
-        version_str = '.'.join(map(str, v.version))
+        version_str = ".".join(map(str, v.version))
         zip_name = f"{sanitize_filename(v.name)}-{version_str}.zip"
         zip_filename = output_path / zip_name
         log.info("creating package %s with %s", zip_filename, v.model_dump())
         contents = list(map(lambda c: resolve_contents(endpoint, c), get_file_contents(v)))
-        with zipfile.ZipFile(zip_filename, 'w') as zip_file:
+        with zipfile.ZipFile(zip_filename, "w") as zip_file:
             for content in contents:
                 url = AnyHttpUrl(content.url)
                 response = requests.get(url, stream=True, timeout=30)
@@ -469,13 +469,13 @@ async def create_zip_from_asset(
         worker_job_defs = [c for c in contents if is_houdini_file(c)]
         log.info("worker_houdini_job_defs: %s", worker_job_defs)
         if worker_job_defs:
-            dependencies = gather_hda_dependencies(endpoint, worker_job_defs, v.contents.get('dependencies', []))
+            dependencies = gather_hda_dependencies(endpoint, worker_job_defs, v.contents.get("dependencies", []))
             await generate_several_houdini_job_defs(v, worker_job_defs, dependencies, token, event_id)
 
         # TODO-jrepp: thumbnail generation is currently not working
         generate_thumbnails = False
         if generate_thumbnails:
-            worker_thumbnails = [c for c in v.contents.get('thumbnails', []) if is_image_file(c)]
+            worker_thumbnails = [c for c in v.contents.get("thumbnails", []) if is_image_file(c)]
             if worker_thumbnails:
                 await generate_several_thumbnails(v, worker_thumbnails, token, event_id)
 
@@ -495,17 +495,17 @@ async def upload_package(
         zip_filename: Path):
     """Upload a package update to an asset from a specific zip file"""
     url = f"{endpoint}/v1/upload/package/{asset_id}/{version_str}"
-    with open(zip_filename, 'rb') as file:
+    with open(zip_filename, "rb") as file:
         response = requests.post(url, timeout=60, files={
-            'files': (os.path.basename(zip_filename), file, 'application/zip')},
+            "files": (os.path.basename(zip_filename), file, "application/zip")},
                                  headers=headers)
         if response.status_code != 200:
             log.error("package upload failed: %s", response.status_code)
             log.error("response: %s", response.text)
             return
         o = response.json()
-        assert 'files' in o and type(o['files']) is list and len(o['files']) == 1
-        file_upload = FileUploadResponse(**response.json()['files'][0])
+        assert "files" in o and type(o["files"]) is list and len(o["files"]) == 1
+        file_upload = FileUploadResponse(**response.json()["files"][0])
         log.info("package uploaded for %s %s, package_id: %s, content_hash: %s",
                  asset_id, version_str, file_upload.file_id, file_upload.content_hash)
 
@@ -530,15 +530,15 @@ async def console_main(
 
 async def exec_job(endpoint: str, api_key: str, job_data, event_seq: int):
     """Given the job data from the event, create the ZIP package"""
-    asset_id = job_data.get('asset_id')
+    asset_id = job_data.get("asset_id")
     if asset_id is None:
         log.error("asset_id is missing from job_data")
         return
-    profile_id = job_data.get('owner')
+    profile_id = job_data.get("owner")
     if profile_id is None:
         log.error("profile_id is missing from job_data")
         return
-    version = job_data.get('version')
+    version = job_data.get("version")
     if version is None:
         log.error("version is missing from job_data")
         return
@@ -558,14 +558,14 @@ async def worker_main(endpoint: str, api_key: str):
     if api_key is None:
         raise ValueError("api_key is required as an argument or through MYTHICA_API_KEY")
 
-    sql_url = os.environ.get('SQL_URL',
-                             'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline').strip()
-    sleep_interval = os.environ.get('SLEEP_INTERVAL', 1)
+    sql_url = os.environ.get("SQL_URL",
+                             "postgresql+asyncpg://test:test@localhost:5432/upload_pipeline").strip()
+    sleep_interval = os.environ.get("SLEEP_INTERVAL", 1)
     allowed_job_exceptions = (
         requests.exceptions.ConnectionError,
         ConnectionError,
         ValueError)
-    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=['asset_version_updated']) as session:
+    async with EventsSession(sql_url, sleep_interval, event_type_prefixes=["asset_version_updated"]) as session:
         async for event_seq, _, job_data in session.ack_next():
             with tracer.start_as_current_span("packager.main") as span:
                 log.info("event: %s, %s", event_seq, job_data)
@@ -604,11 +604,11 @@ def main():
             args.api_key,
             args.asset,
             args.profile,
-            tuple(map(int, args.version.split('.')))))
+            tuple(map(int, args.version.split(".")))))
     else:
         log.info("no asset provided, running in event worker mode")
         asyncio.run(worker_main(args.endpoint, args.api_key))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

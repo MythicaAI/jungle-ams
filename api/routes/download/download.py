@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/download", tags=["files"])
 
 
-@router.get('/info/{file_id}')
+@router.get("/info/{file_id}")
 async def info(
         file_id: str,
         storage: StorageClient = Depends(storage_client),
@@ -31,7 +31,7 @@ async def info(
     return response
 
 
-@router.get('/{file_id}')
+@router.get("/{file_id}")
 async def redirect(
         file_id: str,
         response: Response,
@@ -45,4 +45,4 @@ async def redirect(
     if file is None:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="file_id not found")
     response.status_code = HTTPStatus.TEMPORARY_REDIRECT
-    response.headers['location'] = translate_download_url(storage, file)
+    response.headers["location"] = translate_download_url(storage, file)

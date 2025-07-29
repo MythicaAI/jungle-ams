@@ -1,10 +1,11 @@
-from typing import Any, AsyncIterator, Dict, List
+from collections.abc import AsyncIterator
+from typing import Any
 
 from meshwork.funcs import Boundary, Source
 from meshwork.models.streaming import StreamItem
 
 
-def create_memory_source(source: List[Any], params: Dict[str, Any]) -> Source:
+def create_memory_source(source: list[Any], params: dict[str, Any]) -> Source:
     """Create an in-memory source"""
     page_size = params.get("page_size", 1)
 

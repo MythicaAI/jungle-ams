@@ -24,9 +24,9 @@ class ProxiedHeadersMiddleware:
         remap_headers(headers)
 
         # replace the scheme if behind TLS termination
-        if b'x-forwarded-proto' in headers:
+        if b"x-forwarded-proto" in headers:
             print("re-writing scheme")
-            scope["scheme"] = headers[b'x-forwarded-proto'].decode('ascii')
+            scope["scheme"] = headers[b"x-forwarded-proto"].decode("ascii")
 
         # rewrite to tuple based headers format
         scope["headers"] = [(k, v) for k, v in headers.items()]
@@ -39,12 +39,12 @@ def remap_headers(source_headers: dict) -> None:
     """
     Map X-Forwarded-Host to host and X-Forwarded-Prefix to prefix.
     """
-    if b'x-forwarded-host' in source_headers:
-        source_headers.update({b'host': source_headers[b'x-forwarded-host']})
-        source_headers.pop(b'x-forwarded-host')
+    if b"x-forwarded-host" in source_headers:
+        source_headers.update({b"host": source_headers[b"x-forwarded-host"]})
+        source_headers.pop(b"x-forwarded-host")
 
-    if b'x-forwarded-prefix' in source_headers:
+    if b"x-forwarded-prefix" in source_headers:
         source_headers.update({
-            b'host': source_headers[b'host'] + source_headers[b'x-forwarded-prefix']
+            b"host": source_headers[b"host"] + source_headers[b"x-forwarded-prefix"]
         })
-        source_headers.pop(b'x-forwarded-prefix')
+        source_headers.pop(b"x-forwarded-prefix")

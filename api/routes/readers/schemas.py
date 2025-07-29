@@ -5,7 +5,7 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel
 
-Direction = Literal['before', 'after']
+Direction = Literal["before", "after"]
 
 
 class ReaderResponse(BaseModel):
@@ -16,7 +16,7 @@ class ReaderResponse(BaseModel):
     params: Optional[dict[str, Any]] = None
     name: Optional[str] = None
     position: Optional[str] = None
-    direction: Optional[Direction] = 'after'
+    direction: Optional[Direction] = "after"
 
 
 class CreateReaderRequest(BaseModel):
@@ -24,4 +24,4 @@ class CreateReaderRequest(BaseModel):
     params: Optional[dict[str, Any]] = None
     name: Optional[str] = None
     position: Optional[str] = None
-    direction: Direction = 'after'
+    direction: Direction = "after"

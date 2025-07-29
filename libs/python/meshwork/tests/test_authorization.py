@@ -2,6 +2,7 @@
 
 import pytest
 from gcid.gcid import asset_seq_to_id, org_seq_to_id, profile_seq_to_id
+
 from meshwork.auth import roles
 from meshwork.auth.authorization import RoleError, Scope, validate_roles
 from meshwork.auth.generate_token import generate_token

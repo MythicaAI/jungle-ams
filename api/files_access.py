@@ -15,10 +15,10 @@ log = logging.getLogger(__name__)
 class ApiSettings(BaseSettings):
     endpoint: str = "http://localhost:5555/v1"
     gcs_client_creds_path: str = "/Users/jrepp/tmp/hautomation-bucket-key.json"
-    minio_access_key: str = 'foo-access'
-    minio_secret_key: str = 'bar-secret'
+    minio_access_key: str = "foo-access"
+    minio_secret_key: str = "bar-secret"
     minio_tls_enable: bool = False
-    minio_endpoint: str = 'localhost:9000'
+    minio_endpoint: str = "localhost:9000"
 
 
 @lru_cache

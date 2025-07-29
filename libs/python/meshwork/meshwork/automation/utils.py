@@ -1,14 +1,14 @@
 import asyncio
+import json
+import logging
+import os
+import traceback
+import uuid
 from asyncio import Task
 from logging import Logger
-import traceback
-import os
-from gcid import location
-import nats
-import uuid
-import json
 
-import logging
+import nats
+from gcid import location
 
 # Set up logging
 logging.basicConfig(

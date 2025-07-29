@@ -95,7 +95,7 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
 
         if self._is_binary_content_type(content_type):
             return "[truncated]"
-        return body.decode('utf-8', errors='ignore') if body else ""
+        return body.decode("utf-8", errors="ignore") if body else ""
 
     def _sanitize_headers(self, headers: dict):
         if headers.get("authorization"):

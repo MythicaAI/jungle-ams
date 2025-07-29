@@ -21,10 +21,10 @@ router = APIRouter(prefix="/validate-email", tags=["profiles"])
 
 log = logging.getLogger(__name__)
 
-KEY_PREFIX = 'v_'
+KEY_PREFIX = "v_"
 
 
-@router.get('/')
+@router.get("/")
 async def begin_email(
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> ValidateEmailResponse:
@@ -35,15 +35,15 @@ async def begin_email(
             state=ValidateEmailState.validated,
         )
 
-    validate_code = KEY_PREFIX + ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
+    validate_code = KEY_PREFIX + "".join(secrets.choice(string.ascii_letters) for _ in range(20))
     validate_link = f"https://api.mythica.ai/v1/validate_email/{validate_code}"
     insert_result = await db_session.exec(insert(ProfileKey).values(
         key=validate_code,
         owner_seq=profile.profile_seq,
         expires=datetime.now(timezone.utc) + timedelta(minutes=60),
         payload={
-            'source': '/validate_email',
-            'verification_link': validate_link
+            "source": "/validate_email",
+            "verification_link": validate_link
         }
     ))
     await db_session.commit()
@@ -69,7 +69,7 @@ async def begin_email(
     )
 
 
-@router.get('/{verification_code}')
+@router.get("/{verification_code}")
 async def complete_email(
         verification_code: str,
         profile: SessionProfile = Depends(session_profile),
@@ -84,29 +84,29 @@ async def complete_email(
     validate_profile = (await db_session.exec(select(Profile).where(
         Profile.profile_seq == profile.profile_seq))).one_or_none()
     if validate_profile is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail='profile not found')
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="profile not found")
     if validate_profile.profile_seq != profile.profile_seq:
-        raise HTTPException(HTTPStatus.FORBIDDEN, detail='session profile mismatch')
+        raise HTTPException(HTTPStatus.FORBIDDEN, detail="session profile mismatch")
 
     # query the validation key for the profile
     validate_key_result = await db_session.exec(select(ProfileKey).where(
         ProfileKey.key == verification_code))
     validate_key = validate_key_result.one_or_none()
     if validate_key is None:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail='verification link is missing')
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="verification link is missing")
 
     # validate the profile matches up
     if validate_key.owner_seq != profile.profile_seq:
-        raise HTTPException(HTTPStatus.FORBIDDEN, detail='verification profile mismatch')
+        raise HTTPException(HTTPStatus.FORBIDDEN, detail="verification profile mismatch")
 
     # validate the expire time
     if validate_key.expires.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        raise HTTPException(HTTPStatus.GONE, detail='Verification code expired')
+        raise HTTPException(HTTPStatus.GONE, detail="Verification code expired")
 
         # extract and validate the payload
     validation_payload = validate_key.payload
-    if validation_payload.get('source', '') != '/validate_email':
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail='invalid validation source')
+    if validation_payload.get("source", "") != "/validate_email":
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="invalid validation source")
 
     # mark the profile email validation complete
     await db_session.exec(update(Profile).values(

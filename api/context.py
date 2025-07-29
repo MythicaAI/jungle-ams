@@ -19,16 +19,16 @@ class UploadContext(BaseModel):
 
     file_id: str | None = None
     event_id: str | None = None
-    filename: str = ''
-    local_filepath: str = ''
+    filename: str = ""
+    local_filepath: str = ""
     timestamp: datetime = datetime.now(timezone.utc)
     file_size: int = 0
-    content_hash: str = ''
-    extension: str = ''
+    content_hash: str = ""
+    extension: str = ""
     locators: list = Field(default_factory=list)
     purpose: FilePurpose = FilePurpose.UNDEFINED
-    bucket_name: str = ''
-    object_name: str = ''
+    bucket_name: str = ""
+    object_name: str = ""
 
     def add_object_locator(self, backend, bucket_name, object_name):
         """Add a backend storage locator reference"""

@@ -26,11 +26,11 @@ class Tag(SQLModel, table=True):
     @declared_attr
     def __table_args__(cls):
         # ensure auto increment behavior on non-PK int columns
-        return (UniqueConstraint('name', name='uq_tags_name'),{'sqlite_autoincrement': True}, )
+        return (UniqueConstraint("name", name="uq_tags_name"),{"sqlite_autoincrement": True}, )
 
-    tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    tag_seq: int = Field(sa_column=Column("tag_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     name: str = Field(default=None)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    page_priority: int | None = Field(sa_column=Column('page_priority',Integer,default=0))
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    page_priority: int | None = Field(sa_column=Column("page_priority",Integer,default=0))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

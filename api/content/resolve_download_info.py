@@ -35,7 +35,7 @@ def translate_minio(storage: StorageClient, file: FileContent, object_spec: str)
 def translate_gcs(storage: StorageClient, file: FileContent, object_spec: str) -> str:
     """GCS download link creator"""
     region_bucket, object_name = object_spec.split(":")
-    _, bucket_name = region_bucket.split('.')
+    _, bucket_name = region_bucket.split(".")
     return storage.download_link(bucket_name, object_name, file.name)
 
 
@@ -44,7 +44,7 @@ def translate_test(storage: LocalFileStorageClient, file: FileContent, object_sp
     parts = object_spec.split(":")
     bucket_name = parts[0]
     if len(parts[1:]) > 1:
-        path_replace = parts[2].replace('\\', '/')
+        path_replace = parts[2].replace("\\", "/")
         object_name = f"/lfs/{parts[1]}/{path_replace}"  # Windows file names may have colons in local test
     else:
         object_name = parts[1]
@@ -52,9 +52,9 @@ def translate_test(storage: LocalFileStorageClient, file: FileContent, object_sp
 
 
 storage_types = {
-    'gcs': translate_gcs,
-    'minio': translate_minio,
-    'test': translate_test,
+    "gcs": translate_gcs,
+    "minio": translate_minio,
+    "test": translate_test,
 }
 
 
@@ -70,7 +70,7 @@ def translate_download_url(storage, file: FileContent) -> str:
     """translate locators to a downloadable URL"""
     locators = file.locators
     if type(locators) == dict:
-        locators = locators['locators']
+        locators = locators["locators"]
     elif type(locators) != list:
         raise ValueError(f"file locators were invalid type {type(file.locators)}")
 

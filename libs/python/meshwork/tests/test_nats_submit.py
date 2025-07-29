@@ -1,8 +1,9 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
-from nats.errors import ConnectionClosedError, TimeoutError
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from nats.aio.client import Client as NATS
+from nats.errors import ConnectionClosedError, TimeoutError
 
 from meshwork.automation.utils import __nats_submit
 

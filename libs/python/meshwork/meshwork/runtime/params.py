@@ -3,6 +3,7 @@ from http import HTTPStatus
 
 import requests
 
+from meshwork.models.houTypes import rampBasis, rampParmType
 from meshwork.models.params import (
     BoolParameterSpec,
     EnumParameterSpec,
@@ -16,7 +17,6 @@ from meshwork.models.params import (
     RampParameterSpec,
     StringParameterSpec,
 )
-from meshwork.models.houTypes import rampParmType, rampBasis
 
 
 class ParamError(ValueError):
@@ -26,17 +26,17 @@ class ParamError(ValueError):
 
 def populate_constants(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
     """Populate all constant defaults from the paramSpec in the paramSet"""
-    for name, paramSpec in paramSpec.params.items():
-        if paramSpec.constant and name not in paramSet.model_fields.keys():
-            if isinstance(paramSpec, FileParameterSpec):
-                if isinstance(paramSpec.default, list):
+    for name, spec in paramSpec.params.items():
+        if spec.constant and name not in paramSet.model_fields.keys():
+            if isinstance(spec, FileParameterSpec):
+                if isinstance(spec.default, list):
                     default = [
-                        FileParameter(file_id=file_id) for file_id in paramSpec.default
+                        FileParameter(file_id=file_id) for file_id in spec.default
                     ]
                 else:
-                    default = FileParameter(file_id=paramSpec.default)
+                    default = FileParameter(file_id=spec.default)
             else:
-                default = paramSpec.default
+                default = spec.default
 
             setattr(paramSet, name, default)
 
@@ -94,7 +94,7 @@ def repair_parameters(paramSpec: ParameterSpec, paramSet: ParameterSet) -> None:
 def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> None:
     """Validate the parameter against the spec and expected type"""
     if not expectedType:
-        raise ParamError(paramSpec.label, f"invalid type validation")
+        raise ParamError(paramSpec.label, "invalid type validation")
 
     if isinstance(paramSpec, RampParameterSpec):
         # Check that param is a list of expectedType
@@ -118,37 +118,37 @@ def validate_param(paramSpec: ParameterSpecModel, param, expectedType) -> None:
             if "pos" not in item or vals not in item or "interp" not in item:
                 raise ParamError(
                     paramSpec.label,
-                    f"ramp point must contain 'pos' and 'value|c' and 'interp' keys",
+                    "ramp point must contain 'pos' and 'value|c' and 'interp' keys",
                 )
             if not isinstance(item["pos"], float):
                 raise ParamError(
-                    paramSpec.label, f"ramp point 'pos' must be of type float"
+                    paramSpec.label, "ramp point 'pos' must be of type float"
                 )
             if rampType == rampParmType.Color:
                 if not isinstance(item[vals], list):
                     raise ParamError(
-                        paramSpec.label, f"ramp point color 'c' must be of type list"
+                        paramSpec.label, "ramp point color 'c' must be of type list"
                     )
                 if len(item[vals]) != 3:
                     raise ParamError(
-                        paramSpec.label, f"ramp point color 'c' must be of length 3"
+                        paramSpec.label, "ramp point color 'c' must be of length 3"
                     )
                 for c in item[vals]:
                     if not isinstance(c, float):
                         raise ParamError(
                             paramSpec.label,
-                            f"ramp point color 'c' must be of type list of floats",
+                            "ramp point color 'c' must be of type list of floats",
                         )
             else:
                 if not isinstance(item[vals], float):
                     raise ParamError(
-                        paramSpec.label, f"ramp point 'value' must be of type float"
+                        paramSpec.label, "ramp point 'value' must be of type float"
                     )
             # check that interp is a valid value from rampBasis
             if item["interp"] not in [basis.name for basis in rampBasis]:
                 raise ParamError(
                     paramSpec.label,
-                    f"ramp point 'interp' must be a valid value from hou.rampBasis",
+                    "ramp point 'interp' must be a valid value from hou.rampBasis",
                 )
 
     elif isinstance(param, (list, tuple, set, frozenset)):
@@ -190,7 +190,7 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
         elif isinstance(paramSpec, FloatParameterSpec):
             use_type = float
         elif isinstance(paramSpec, StringParameterSpec) or isinstance(
-            paramSpec, EnumParameterSpec
+                paramSpec, EnumParameterSpec
         ):
             use_type = str
         elif isinstance(paramSpec, BoolParameterSpec):
@@ -227,7 +227,7 @@ def validate_params(paramSpecs: ParameterSpec, paramSet: ParameterSet) -> None:
                     )
 
 
-def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> str:
+def download_file(endpoint: str, directory: str, file_id: str, headers=None) -> str:
     """Automatically download an entire file at runtime, used to resolve file references"""
     # Get the URL to download the file
     url = f"{endpoint}/download/info/{file_id}"
@@ -251,7 +251,7 @@ def download_file(endpoint: str, directory: str, file_id: str, headers={}) -> st
 
 
 def resolve_params(
-    endpoint: str, directory: str, paramSet: ParameterSet, headers=None
+        endpoint: str, directory: str, paramSet: ParameterSet, headers=None
 ) -> ParameterSet:
     """Resolve any parameters that are external references"""
 

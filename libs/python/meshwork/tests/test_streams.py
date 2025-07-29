@@ -8,17 +8,18 @@ print(sys.path)
 import itertools
 from itertools import cycle
 from uuid import uuid4
+
 import meshwork as r
 
 print(r)
 import meshwork.sources as rs
 
 print(rs)
-from meshwork.sources.memory import create_memory_source
-
 from gcid.gcid import event_seq_to_id, file_seq_to_id, job_seq_to_id
+
 from meshwork.funcs import Boundary
 from meshwork.models.streaming import Event, Message, OutputFiles, Progress
+from meshwork.sources.memory import create_memory_source
 
 # length of event data in test events
 test_event_info_len = 10

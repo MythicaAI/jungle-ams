@@ -1,7 +1,8 @@
 import logging
+
 from pydantic import BaseModel
+
 from meshwork.models.params import FileParameter
-from meshwork.automation.utils import format_exception
 
 # Set up logging
 logging.basicConfig(
@@ -103,9 +104,9 @@ def parse(awful_json: dict) -> Workflow:
                         {"file_id": item["file_id"]} for item in flow_data
                     ]
                     target_node.data["inputData"][target_handle] = files
-            except Exception as e:
+            except Exception:
                 log.debug("No flow data found for %s %s", target, target_handle)
-        except Exception as e:
+        except Exception:
             log.warning("invalid edge: %s", str(edge_data))
 
     return graph
