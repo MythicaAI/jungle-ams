@@ -12,10 +12,6 @@ requires-python = "<4.0,>=3.11"
 dependencies = [
     "minio>=7.2.15,<8.0.0",
     "sqlalchemy>=2.0.38,<3.0.0",
-    "asyncpg>=0.30.0,<1.0.0",
-    "aiosqlite>=0.21.0",
-    "google-auth>=2.38.0,<3.0.0",
-    "google-cloud-storage>=3.0.0,<4.0.0",
     "fastapi>=0.115.8,<1.0.0",
     "pydantic-settings>=2.7.1,<3.0.0",
     "python-multipart>=0.0.20,<1.0.0",
@@ -37,14 +33,6 @@ dependencies = [
     "meshwork>=0.1.0,<1.0.0",
     "gcid>=0.1.0,<1.0.0",
     "better-profanity>=0.7.0,<1.0.0",
-    "opentelemetry-instrumentation>=0.51b0,<1.0.0",
-    "opentelemetry-instrumentation-fastapi>=0.51b0,<1.0.0",
-    "opentelemetry-instrumentation-httpx>=0.51b0,<1.0.0",
-    "opentelemetry-exporter-otlp>=1.30.0,<2.0.0",
-    "opentelemetry-distro>=0.51b0,<1.0.0",
-    "opentelemetry-api>=1.30.0,<2.0.0",
-    "opentelemetry-sdk>=1.30.0,<2.0.0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.51b0,<1.0.0",
     "uvicorn>=0.34.0,<1.0.0",
     "pydantic>=2.10.6,<3.0.0",
     "email-validator>=2.2.0,<3.0.0",
@@ -63,7 +51,6 @@ dependencies = [
     "certifi>=2025.1.31,<2026.0.0",
     "cffi>=1.17.1,<2.0.0",
     "charset-normalizer>=3.4.1,<4.0.0",
-    "sendgrid>=6.11.0,<7.0.0",
     "httpx>=0.28.1,<1.0.0",
     "httpx-ws>=0.7.1,<1.0.0",
     "async-lru>=2.0.5,<3.0.0",
@@ -74,20 +61,62 @@ Homepage = "https://github.com/MythicaAI/"
 Repository = "https://github.com/MythicaAI/infra"
 
 [dependency-groups]
-dev = [
+google_cloud_platform = [
+    "google-auth>=2.38.0,<3.0.0",
+    "google-cloud-storage>=3.0.0,<4.0.0",
+]
+postgres_db = [
+    "asyncpg>=0.30.0,<1.0.0",
+]
+sqlite_db = [
+    "aiosqlite>=0.21.0",
+]
+sendgrid = [
+    "sendgrid>=6.11.0,<7.0.0",
+]
+telemetry = [
+    "opentelemetry-instrumentation>=0.51b0,<1.0.0",
+    "opentelemetry-instrumentation-fastapi>=0.51b0,<1.0.0",
+    "opentelemetry-instrumentation-httpx>=0.51b0,<1.0.0",
+    "opentelemetry-exporter-otlp>=1.30.0,<2.0.0",
+    "opentelemetry-distro>=0.51b0,<1.0.0",
+    "opentelemetry-api>=1.30.0,<2.0.0",
+    "opentelemetry-sdk>=1.30.0,<2.0.0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.51b0,<1.0.0",
+]
+test = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3,<1.0.0",
     "pytest-cov>=6.0.0",
     "pytest-timeout>=2.3.1",
+    "munch>=4.0.0",
+]
+lint = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
-    "pre-commit>=3.0.0",
     "flake8>=7.1.2",
-    "munch>=4.0.0",
     "pylint>=3.3.4",
 ]
-
+dev = [
+    "pre-commit>=3.0.0",
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "telemetry" },
+    { include-group = "sendgrid" },
+    { include-group = "postgres_db" },
+    { include-group = "sqlite_db" },
+    { include-group = "google_cloud_platform" },
+]
+prod = [
+    { include-group = "telemetry" },
+    { include-group = "sendgrid" },
+    { include-group = "postgres_db" },
+    { include-group = "google_cloud_platform" },
+]
+local = [
+    { include-group = "sqlite_db" },
+]
 sqlalchemy = ["asyncio"]
 authlib = []
 
@@ -97,6 +126,7 @@ test = "scripts:test"
 lint = "scripts:lint"
 fmt = "scripts:format_code"
 typecheck = "scripts:typecheck"
+local = "uv_entrypoint:run_local"
 
 [tool.uv]
 package = true

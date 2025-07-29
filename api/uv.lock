@@ -137,7 +137,6 @@ source = { editable = "." }
 dependencies = [
     { name = "aiohappyeyeballs" },
     { name = "aiosignal" },
-    { name = "aiosqlite" },
     { name = "alembic" },
     { name = "annotated-types" },
     { name = "anyio" },
@@ -146,7 +145,6 @@ dependencies = [
     { name = "asgiref" },
     { name = "async-lru" },
     { name = "asyncio" },
-    { name = "asyncpg" },
     { name = "attrs" },
     { name = "authlib" },
     { name = "base58" },
@@ -159,23 +157,13 @@ dependencies = [
     { name = "fastapi" },
     { name = "fastapi-auth0" },
     { name = "gcid" },
-    { name = "google-auth" },
-    { name = "google-cloud-storage" },
     { name = "greenlet" },
     { name = "httpx" },
     { name = "httpx-ws" },
     { name = "jinja2" },
     { name = "meshwork" },
     { name = "minio" },
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-distro" },
     { name = "opentelemetry-exporter-gcp-trace" },
-    { name = "opentelemetry-exporter-otlp" },
-    { name = "opentelemetry-instrumentation" },
-    { name = "opentelemetry-instrumentation-fastapi" },
-    { name = "opentelemetry-instrumentation-httpx" },
-    { name = "opentelemetry-instrumentation-sqlalchemy" },
-    { name = "opentelemetry-sdk" },
     { name = "prometheus-fastapi-instrumentator" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -183,7 +171,6 @@ dependencies = [
     { name = "python-json-logger" },
     { name = "python-multipart" },
     { name = "redis" },
-    { name = "sendgrid" },
     { name = "sqlalchemy" },
     { name = "sqlmodel" },
     { name = "sqltap-ng" },
@@ -196,10 +183,22 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "aiosqlite" },
+    { name = "asyncpg" },
     { name = "black" },
     { name = "flake8" },
+    { name = "google-auth" },
+    { name = "google-cloud-storage" },
     { name = "munch" },
     { name = "mypy" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-distro" },
+    { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-httpx" },
+    { name = "opentelemetry-instrumentation-sqlalchemy" },
+    { name = "opentelemetry-sdk" },
     { name = "pre-commit" },
     { name = "pylint" },
     { name = "pytest" },
@@ -207,16 +206,70 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
     { name = "ruff" },
+    { name = "sendgrid" },
+]
+google-cloud-platform = [
+    { name = "google-auth" },
+    { name = "google-cloud-storage" },
+]
+lint = [
+    { name = "black" },
+    { name = "flake8" },
+    { name = "mypy" },
+    { name = "pylint" },
+    { name = "ruff" },
+]
+local = [
+    { name = "aiosqlite" },
+]
+postgres-db = [
+    { name = "asyncpg" },
+]
+prod = [
+    { name = "asyncpg" },
+    { name = "google-auth" },
+    { name = "google-cloud-storage" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-distro" },
+    { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-httpx" },
+    { name = "opentelemetry-instrumentation-sqlalchemy" },
+    { name = "opentelemetry-sdk" },
+    { name = "sendgrid" },
+]
+sendgrid = [
+    { name = "sendgrid" },
 ]
 sqlalchemy = [
     { name = "asyncio" },
+]
+sqlite-db = [
+    { name = "aiosqlite" },
+]
+telemetry = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-distro" },
+    { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-httpx" },
+    { name = "opentelemetry-instrumentation-sqlalchemy" },
+    { name = "opentelemetry-sdk" },
+]
+test = [
+    { name = "munch" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "aiohappyeyeballs", specifier = ">=2.4.6,<3.0.0" },
     { name = "aiosignal", specifier = ">=1.3.2,<2.0.0" },
-    { name = "aiosqlite", specifier = ">=0.21.0" },
     { name = "alembic", specifier = ">=1.14.1,<2.0.0" },
     { name = "annotated-types", specifier = ">=0.7.0,<1.0.0" },
     { name = "anyio", specifier = ">=4.8.0,<5.0.0" },
@@ -225,7 +278,6 @@ requires-dist = [
     { name = "asgiref", specifier = ">=3.8.1,<4.0.0" },
     { name = "async-lru", specifier = ">=2.0.5,<3.0.0" },
     { name = "asyncio", specifier = ">=3.4.3,<4.0.0" },
-    { name = "asyncpg", specifier = ">=0.30.0,<1.0.0" },
     { name = "attrs", specifier = ">=25.1.0,<26.0.0" },
     { name = "authlib", specifier = ">=1.4.1,<2.0.0" },
     { name = "base58", specifier = ">=2.1.1,<3.0.0" },
@@ -238,23 +290,13 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.8,<1.0.0" },
     { name = "fastapi-auth0", specifier = ">=0.5.0,<1.0.0" },
     { name = "gcid", editable = "../libs/python/gcid" },
-    { name = "google-auth", specifier = ">=2.38.0,<3.0.0" },
-    { name = "google-cloud-storage", specifier = ">=3.0.0,<4.0.0" },
     { name = "greenlet", specifier = ">=3.1.1,<4.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<1.0.0" },
     { name = "httpx-ws", specifier = ">=0.7.1,<1.0.0" },
     { name = "jinja2", specifier = ">=3.1.5,<4.0.0" },
     { name = "meshwork", editable = "../libs/python/meshwork" },
     { name = "minio", specifier = ">=7.2.15,<8.0.0" },
-    { name = "opentelemetry-api", specifier = ">=1.30.0,<2.0.0" },
-    { name = "opentelemetry-distro", specifier = ">=0.51b0,<1.0.0" },
     { name = "opentelemetry-exporter-gcp-trace", specifier = ">=1.9.0,<2.0.0" },
-    { name = "opentelemetry-exporter-otlp", specifier = ">=1.30.0,<2.0.0" },
-    { name = "opentelemetry-instrumentation", specifier = ">=0.51b0,<1.0.0" },
-    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.51b0,<1.0.0" },
-    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.51b0,<1.0.0" },
-    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.51b0,<1.0.0" },
-    { name = "opentelemetry-sdk", specifier = ">=1.30.0,<2.0.0" },
     { name = "prometheus-fastapi-instrumentator", specifier = ">=7.0.2,<8.0.0" },
     { name = "pydantic", specifier = ">=2.10.6,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.7.1,<3.0.0" },
@@ -262,7 +304,6 @@ requires-dist = [
     { name = "python-json-logger", specifier = ">=3.2.1,<4.0.0" },
     { name = "python-multipart", specifier = ">=0.0.20,<1.0.0" },
     { name = "redis", specifier = ">=5.2.1,<6.0.0" },
-    { name = "sendgrid", specifier = ">=6.11.0,<7.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.38,<3.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.22,<1.0.0" },
     { name = "sqltap-ng", specifier = ">=0.3.11,<1.0.0" },
@@ -276,10 +317,22 @@ requires-dist = [
 [package.metadata.requires-dev]
 authlib = []
 dev = [
+    { name = "aiosqlite", specifier = ">=0.21.0" },
+    { name = "asyncpg", specifier = ">=0.30.0,<1.0.0" },
     { name = "black", specifier = ">=23.0.0" },
     { name = "flake8", specifier = ">=7.1.2" },
+    { name = "google-auth", specifier = ">=2.38.0,<3.0.0" },
+    { name = "google-cloud-storage", specifier = ">=3.0.0,<4.0.0" },
     { name = "munch", specifier = ">=4.0.0" },
     { name = "mypy", specifier = ">=1.0.0" },
+    { name = "opentelemetry-api", specifier = ">=1.30.0,<2.0.0" },
+    { name = "opentelemetry-distro", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-exporter-otlp", specifier = ">=1.30.0,<2.0.0" },
+    { name = "opentelemetry-instrumentation", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.30.0,<2.0.0" },
     { name = "pre-commit", specifier = ">=3.0.0" },
     { name = "pylint", specifier = ">=3.3.4" },
     { name = "pytest", specifier = ">=8.3.4" },
@@ -287,8 +340,55 @@ dev = [
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-timeout", specifier = ">=2.3.1" },
     { name = "ruff", specifier = ">=0.1.0" },
+    { name = "sendgrid", specifier = ">=6.11.0,<7.0.0" },
 ]
+google-cloud-platform = [
+    { name = "google-auth", specifier = ">=2.38.0,<3.0.0" },
+    { name = "google-cloud-storage", specifier = ">=3.0.0,<4.0.0" },
+]
+lint = [
+    { name = "black", specifier = ">=23.0.0" },
+    { name = "flake8", specifier = ">=7.1.2" },
+    { name = "mypy", specifier = ">=1.0.0" },
+    { name = "pylint", specifier = ">=3.3.4" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
+local = [{ name = "aiosqlite", specifier = ">=0.21.0" }]
+postgres-db = [{ name = "asyncpg", specifier = ">=0.30.0,<1.0.0" }]
+prod = [
+    { name = "asyncpg", specifier = ">=0.30.0,<1.0.0" },
+    { name = "google-auth", specifier = ">=2.38.0,<3.0.0" },
+    { name = "google-cloud-storage", specifier = ">=3.0.0,<4.0.0" },
+    { name = "opentelemetry-api", specifier = ">=1.30.0,<2.0.0" },
+    { name = "opentelemetry-distro", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-exporter-otlp", specifier = ">=1.30.0,<2.0.0" },
+    { name = "opentelemetry-instrumentation", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.30.0,<2.0.0" },
+    { name = "sendgrid", specifier = ">=6.11.0,<7.0.0" },
+]
+sendgrid = [{ name = "sendgrid", specifier = ">=6.11.0,<7.0.0" }]
 sqlalchemy = [{ name = "asyncio" }]
+sqlite-db = [{ name = "aiosqlite", specifier = ">=0.21.0" }]
+telemetry = [
+    { name = "opentelemetry-api", specifier = ">=1.30.0,<2.0.0" },
+    { name = "opentelemetry-distro", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-exporter-otlp", specifier = ">=1.30.0,<2.0.0" },
+    { name = "opentelemetry-instrumentation", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.51b0,<1.0.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.30.0,<2.0.0" },
+]
+test = [
+    { name = "munch", specifier = ">=4.0.0" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3,<1.0.0" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.3.1" },
+]
 
 [[package]]
 name = "annotated-types"
