@@ -55,22 +55,6 @@ target-version = "py310"
 line-length = 88
 extend-exclude = ["tests/fixtures"]
 
-[tool.ruff.lint]
-select = [
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
-    "F", # pyflakes
-    "I", # isort
-    "B", # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-]
-ignore = ["E501"]  # line too long
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = ["-ra", "--strict-markers", "--strict-config"]
@@ -80,19 +64,6 @@ filterwarnings = ["error"]
 [tool.coverage.run]
 source = ["gcid"]
 branch = true
-
-[tool.coverage.report]
-exclude_also = [
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
-]
 
 [build-system]
 requires = ["hatchling"]

@@ -15,9 +15,9 @@ from db.connection import TZ, get_db_session
 from db.schema.profiles import Profile, ProfileKey
 from routes.authorization import session_profile
 
-router = APIRouter(prefix='/keys', tags=['keys'])
+router = APIRouter(prefix="/keys", tags=["keys"])
 
-KEY_PREFIX = 'key_'
+KEY_PREFIX = "key_"
 
 
 class KeyGenerateRequest(BaseModel):
@@ -45,7 +45,7 @@ def is_naive(dt):
     return dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None
 
 
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post("/", status_code=HTTPStatus.CREATED)
 async def generate(
         create: KeyGenerateRequest,
         profile: Profile = Depends(session_profile),
@@ -57,12 +57,12 @@ async def generate(
         create.expires = datetime.now(TZ) + timedelta(days=365)
 
     if is_naive(create.expires):
-        raise HTTPException(HTTPStatus.BAD_REQUEST, 'expiration time must include timezone information')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "expiration time must include timezone information")
 
     if create.expires < datetime.now(TZ) + timedelta(minutes=5):
-        raise HTTPException(HTTPStatus.BAD_REQUEST, 'expiration date cannot be less than 5 minutes')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "expiration date cannot be less than 5 minutes")
 
-    key = KEY_PREFIX + ''.join(secrets.choice(string.ascii_letters) for _ in range(20))
+    key = KEY_PREFIX + "".join(secrets.choice(string.ascii_letters) for _ in range(20))
 
     # ensure that we are storing timezones in the database with the native timezone format
     expires = create.expires.astimezone(TZ)
@@ -71,8 +71,8 @@ async def generate(
         owner_seq=profile.profile_seq,
         expires=expires,
         payload={
-            'name': create.name,
-            'description': create.description,
+            "name": create.name,
+            "description": create.description,
         }
     ))
     await db_session.commit()
@@ -89,10 +89,10 @@ async def generate(
         created=result.created.replace(tzinfo=TZ).astimezone(timezone.utc),
         expires=result.expires.replace(tzinfo=TZ).astimezone(timezone.utc),
         is_expired=False,
-        description=result.payload['description'])
+        description=result.payload["description"])
 
 
-@router.delete('/{key}')
+@router.delete("/{key}")
 async def delete(
         key: str,
         profile: Profile = Depends(session_profile),
@@ -103,7 +103,7 @@ async def delete(
     await db_session.commit()
 
 
-@router.get('/')
+@router.get("/")
 async def current(
         profile: Profile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> list[KeyGenerateResponse]:
@@ -120,6 +120,6 @@ async def current(
         expires=r.expires.astimezone(TZ).astimezone(timezone.utc),
         is_expired=is_expired(r.expires, now_utc),
         value=r.key,
-        name=r.payload['name'],
-        description=r.payload['description']) for r in rows]
+        name=r.payload["name"],
+        description=r.payload["description"]) for r in rows]
     return response

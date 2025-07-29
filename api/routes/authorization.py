@@ -47,5 +47,5 @@ async def session_profile_id(authorization: Annotated[str | None, Header()]) -> 
     """Dependency that provides the profile ID for the current authorization header"""
     profile = decode_session_profile(authorization)
     if profile is None:
-        return ''
+        return ""
     return profile_seq_to_id(profile.profile_seq)

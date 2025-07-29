@@ -30,7 +30,7 @@ class AutomationResponse(BaseModel):
     result: dict | list[dict]
 
 
-@router.post('/run', status_code=HTTPStatus.CREATED)
+@router.post("/run", status_code=HTTPStatus.CREATED)
 def automation_request(request: AutomationRequest) -> AutomationResponse:
     """Handle automation request.
     
@@ -46,15 +46,15 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
     request_data = request.model_dump()
     log.info("request - %s", request_data)
 
-    correlation = request_data['correlation'] or str(uuid.uuid4())
-    channel = request_data['channel']
-    path = request_data['path']
+    correlation = request_data["correlation"] or str(uuid.uuid4())
+    channel = request_data["channel"]
+    path = request_data["path"]
 
     log.info("processing automation: correlation: %s; path: %s; channel: %s",
              correlation, path, channel)
 
-    data = request_data['data']
-    auth_token = request_data.get('auth_token')
+    data = request_data["data"]
+    auth_token = request_data.get("auth_token")
 
     if not channel:
         raise HTTPException(
@@ -72,23 +72,23 @@ def automation_request(request: AutomationRequest) -> AutomationResponse:
     except ConnectionClosedError as exc:
         raise HTTPException(
             status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail='NATS connection closed'
+            detail="NATS connection closed"
         ) from exc
     except TimeoutError as exc:
         raise HTTPException(
             status_code=HTTPStatus.GATEWAY_TIMEOUT,
-            detail='NATS connection timed out'
+            detail="NATS connection timed out"
         ) from exc
     except NoServersError as exc:
         raise HTTPException(
             status_code=HTTPStatus.SERVICE_UNAVAILABLE,
-            detail='No servers available for NATS connection'
+            detail="No servers available for NATS connection"
         ) from exc
     except Exception as exc:
         log.error("Unexpected error: %s", exc)
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail='Unexpected error occurred'
+            detail="Unexpected error occurred"
         ) from exc
 
     log.info("response - %s", result)

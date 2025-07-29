@@ -25,7 +25,7 @@ async def update(db_session: AsyncSession, ctx: UploadContext) -> Tuple[str, str
     content_type = f"application/{ctx.extension}"
 
     # if the locators format changes we can add a different key
-    locators = {'locators': ctx.locators}
+    locators = {"locators": ctx.locators}
 
     # create a new upload
     insert_stmt = insert(FileContent).values(
@@ -42,13 +42,13 @@ async def update(db_session: AsyncSession, ctx: UploadContext) -> Tuple[str, str
 
     # Create a new pipeline event
     job_data = {
-        'file_id': file_id,
-        'profile_id': ctx.owner_id,
-        'locators': locators,
-        'content_type': content_type,
-        'content_hash': ctx.content_hash,
-        'file_size': ctx.file_size,
-        'file_type': ctx.extension
+        "file_id": file_id,
+        "profile_id": ctx.owner_id,
+        "locators": locators,
+        "content_type": content_type,
+        "content_hash": ctx.content_hash,
+        "file_size": ctx.file_size,
+        "file_type": ctx.extension
     }
     loc = location()
     event_result = await db_session.exec(insert(Event).values(
@@ -74,7 +74,7 @@ async def update(db_session: AsyncSession, ctx: UploadContext) -> Tuple[str, str
             process_guid=process_guid,
             correlation=str(uuid4()),
             auth_token=ctx.profile.auth_token,
-            path='/mythica/generate_job_defs',
+            path="/mythica/generate_job_defs",
             data=parameter_set.model_dump(),
             telemetry_context=get_telemetry_headers(),
         )
@@ -87,7 +87,7 @@ async def update(db_session: AsyncSession, ctx: UploadContext) -> Tuple[str, str
 
 
 def should_post_to_nats(ctx: UploadContext) -> bool:
-    if ctx.extension not in ('hda', 'hdalc'):
+    if ctx.extension not in ("hda", "hdalc"):
         return False
     if "pytest" in sys.argv[0] or "pytest" in sys.modules:
         return False

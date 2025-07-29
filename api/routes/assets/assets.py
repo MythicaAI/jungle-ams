@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/assets", tags=["assets"])
 
 
-@router.get('/log', include_in_schema=False)
+@router.get("/log", include_in_schema=False)
 async def log_request_headers(r: Request):
     """Log request headers for debugging"""
     header_str = str(r.headers)
@@ -26,20 +26,20 @@ async def log_request_headers(r: Request):
     return "LOGGED"
 
 
-@router.get('/all')
+@router.get("/all")
 async def list_all(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
     """Get all asset versions"""
     join_results = await asset_q.get_list_all_assets_query(db_session)
     return await repo.process_join_results(join_results)
 
 
-@router.get('/top')
+@router.get("/top")
 async def list_top(db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetTopResult]:
     """Get the list of asset headers top of the current profile"""
     return await repo.top(db_session)
 
 
-@router.get('/owned')
+@router.get("/owned")
 async def list_owned(
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
@@ -47,7 +47,7 @@ async def list_owned(
     return await repo.owned_versions(db_session, profile.profile_seq)
 
 
-@router.get('/named/{asset_name}')
+@router.get("/named/{asset_name}")
 async def named(
         asset_name: str,
         db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
@@ -55,7 +55,7 @@ async def named(
     return await repo.versions_by_name(db_session, asset_name)
 
 
-@router.get('/committed_at')
+@router.get("/committed_at")
 async def committed_at(
         ref: str,
         db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
@@ -63,7 +63,7 @@ async def committed_at(
     return await repo.versions_by_commit_ref(db_session, ref)
 
 
-@router.get('/{asset_id}')
+@router.get("/{asset_id}")
 async def by_id(
         asset_id: str,
         db_session: AsyncSession = Depends(get_db_session)) -> list[repo.AssetVersionResult]:
@@ -71,7 +71,7 @@ async def by_id(
     return await repo.version_by_asset_id(db_session, asset_id)
 
 
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post("/", status_code=HTTPStatus.CREATED)
 async def create(r: repo.AssetCreateRequest,
                  profile: SessionProfile = Depends(session_profile),
                  db_session: AsyncSession = Depends(get_db_session)) \
@@ -80,7 +80,7 @@ async def create(r: repo.AssetCreateRequest,
     return await repo.create_root(db_session, r, profile.profile_seq)
 
 
-@router.post('/{asset_id}/versions/{version_str}')
+@router.post("/{asset_id}/versions/{version_str}")
 async def create_version(asset_id: str,
                          version_str: str,
                          req: repo.AssetCreateVersionRequest,
@@ -101,7 +101,7 @@ async def create_version(asset_id: str,
     return version_result
 
 
-@router.post('/{asset_id}/versions/{version_str}/contents')
+@router.post("/{asset_id}/versions/{version_str}/contents")
 async def update_versions_contents(
         asset_id: str,
         version_str: str,
@@ -120,7 +120,7 @@ async def update_versions_contents(
     return version_result
 
 
-@router.get('/{asset_id}/versions/{version_str}/dependencies')
+@router.get("/{asset_id}/versions/{version_str}/dependencies")
 async def dependencies(
         asset_id: str,
         version_str: str,
@@ -129,7 +129,7 @@ async def dependencies(
     return await repo.select_asset_dependencies(db_session, asset_id, version_str, storage)
 
 
-@router.delete('/{asset_id}/versions/{version_str}')
+@router.delete("/{asset_id}/versions/{version_str}")
 async def delete_version(
         asset_id: str,
         version_str: str,
@@ -139,7 +139,7 @@ async def delete_version(
     await repo.delete_version(db_session, asset_id, version_str, profile.profile_seq)
 
 
-@router.delete('/{asset_id}')
+@router.delete("/{asset_id}")
 async def delete_asset(
         asset_id: str,
         profile: SessionProfile = Depends(session_profile),
@@ -148,7 +148,7 @@ async def delete_asset(
     await repo.delete_asset_and_versions(db_session, asset_id, profile)
 
 
-@router.get('/{asset_id}/versions/{version_str}')
+@router.get("/{asset_id}/versions/{version_str}")
 async def by_version(
         asset_id: str,
         version_str: str,

@@ -80,7 +80,7 @@ async def run_migrations_online() -> None:
     # Update the config with the environment
     config_dict = config.get_section(config.config_ini_section, {})
     sql_url = app_config().sql_url.strip()
-    print(f'running online migration on {sql_url}')
+    print(f"running online migration on {sql_url}")
     config_dict["sqlalchemy.url"] = sql_url
     connectable = AsyncEngine(engine_from_config(
         config_dict,

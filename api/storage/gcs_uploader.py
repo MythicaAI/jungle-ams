@@ -16,9 +16,9 @@ from opentelemetry.context import get_current as get_current_telemetry_context
 # regional and migrations occur
 
 GCS_BUCKET_NAMES = {
-    BucketType.FILES: 'mythica-public-files',
-    BucketType.IMAGES: 'mythica-public-images',
-    BucketType.PACKAGES: 'mythica-public-packages',
+    BucketType.FILES: "mythica-public-files",
+    BucketType.IMAGES: "mythica-public-images",
+    BucketType.PACKAGES: "mythica-public-packages",
 }
 
 
@@ -48,15 +48,15 @@ class Client(StorageClient):
             span.set_attribute("file.id", ctx.file_id if ctx.file_id else "")
             ctx.bucket_name = GCS_BUCKET_NAMES[bucket_type]
             bucket = self.gcs.bucket(ctx.bucket_name)
-            object_name = ctx.content_hash + '.' + ctx.extension
+            object_name = ctx.content_hash + "." + ctx.extension
             log.info("Upload file to the bucket. id: %s, name: %s", ctx.file_id, object_name)
             span.set_attribute("file.name", object_name)
 
             blob = bucket.blob(object_name)
             blob.upload_from_filename(ctx.local_filepath)
             ctx.add_object_locator(
-                'gcs',
-                location() + '.' + ctx.bucket_name,
+                "gcs",
+                location() + "." + ctx.bucket_name,
                 object_name)
         log.info("File uploaded", extra={"bucket_name": bucket_type.name, "file_name": object_name})
 

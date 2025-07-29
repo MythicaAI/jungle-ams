@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -9,7 +9,7 @@ class ClientOp(BaseModel):
 
 class ReadClientOp(ClientOp):
     op: str = Field(default="READ")
-    position: Optional[str] = Field(default=None)
+    position: str | None = Field(default=None)
     direction: Literal["before", "after"] = Field(default="after")
 
 

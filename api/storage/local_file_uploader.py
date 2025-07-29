@@ -24,7 +24,7 @@ class LocalFileStorageClient(StorageClient):
     def upload(self, ctx: UploadContext, bucket_type: BucketType) -> str:
         with tracer.start_as_current_span("file.upload", context=get_current_telemetry_context()) as span:
             span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
-            file_id = ctx.content_hash + '.' + ctx.extension
+            file_id = ctx.content_hash + "." + ctx.extension
             file_path = self.base_path / f"{ctx.content_hash}.{ctx.extension}"
             file_path.parent.mkdir(parents=True, exist_ok=True)
             span.set_attribute("file.name", file_id)
@@ -43,16 +43,16 @@ class LocalFileStorageClient(StorageClient):
                 raise
 
             ctx.add_object_locator(
-                'test',
-                'local',
+                "test",
+                "local",
                 file_path)
             log.info("File uploaded", extra={"bucket_name": bucket_type.name, "file_name": file_id})
             return file_id
 
     def upload_stream(self, ctx: UploadContext, stream: BytesIO, bucket_type: BucketType) -> str:
-        file_id = ctx.content_hash + '.' + ctx.extension
+        file_id = ctx.content_hash + "." + ctx.extension
         file_path = self.base_path / file_id
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             f.write(stream.getvalue())
         return file_id
 

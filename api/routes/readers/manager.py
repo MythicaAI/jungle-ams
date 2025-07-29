@@ -35,7 +35,7 @@ class ApiWebsocketError(Exception):
 
 
 class ReaderConnectionManager:
-    T = TypeVar('T', bound=ClientOp)
+    T = TypeVar("T", bound=ClientOp)
 
     def __init__(self):
         self.active_connections: dict = {}
@@ -46,7 +46,7 @@ class ReaderConnectionManager:
                 self.T,
                 Callable[[self.T, Source], None],
             ],
-        ] = {'READ': (ReadClientOp, self.process_read)}
+        ] = {"READ": (ReadClientOp, self.process_read)}
         self.default_reader_max_page = 1
         self.default_operation: str = "READ"
         self.default_op: tuple[self.T, Source] = self.ops.get(self.default_operation)
@@ -78,18 +78,18 @@ class ReaderConnectionManager:
                 if not op_data.get("reader_id"):
                     readers = await select_profile_readers(db_session, profile.profile_seq)
                 else:
-                    reader_seq = reader_id_to_seq(op_data['reader_id'])
+                    reader_seq = reader_id_to_seq(op_data["reader_id"])
                     reader = await self.get_reader_model(
                         db_session, reader_seq, profile.profile_seq
                     )
                     readers = [reader]
 
                 if op_data.get("reader_id"):
-                    del op_data['reader_id']
+                    del op_data["reader_id"]
 
                 log.info("websocket connected to readers %s", readers)
                 if readers is None:
-                    await websocket.send_json({'error': 'There are no readers'})
+                    await websocket.send_json({"error": "There are no readers"})
                 for reader in readers:
                     await self.add_reader_to_profile(reader, profile, op_data)
 
@@ -102,11 +102,11 @@ class ReaderConnectionManager:
             if not op_data.get("op"):
                 error_message = "No 'op' included in client message"
                 log.exception(error_message)
-                await websocket.send_json({'error': error_message})
+                await websocket.send_json({"error": error_message})
             else:
                 error_message = "Invalid 'op' included in client message"
                 log.exception(error_message)
-                await websocket.send_json({'error': error_message})
+                await websocket.send_json({"error": error_message})
         await self.websocket_handler(websocket, profile)
 
     async def add_all_tasks_for_new_websocket(
@@ -240,7 +240,7 @@ class ReaderConnectionManager:
             log.exception(
                 "The periodically sending the updates catch IdError", exc_info=ex
             )
-            await websocket.send_json({'error': str(ex)})
+            await websocket.send_json({"error": str(ex)})
         except ApiWebsocketError as ex:
             log.exception(
                 "The periodically sending the updates catch unrecognized error",
@@ -248,11 +248,11 @@ class ReaderConnectionManager:
             )
         except Exception as ex:
             log.exception("An uncaught exception occurred in periodic update", exc_info=ex)
-            await websocket.send_json({'error': str(ex)})
+            await websocket.send_json({"error": str(ex)})
         finally:
             if not is_cancelled_task:
                 await websocket.send_json(
-                    {'error': "Periodic update transmission terminated."}
+                    {"error": "Periodic update transmission terminated."}
                 )
             task_name = f"TASK-{websocket}-{reader}-{processor}"
             await self.cancel_and_delete_manager_task(task_name)
@@ -286,28 +286,28 @@ class ReaderConnectionManager:
         try:
             text = await websocket.receive_text()
             msg = json.loads(text)
-            for param in ['op', 'reader_id']:
+            for param in ["op", "reader_id"]:
                 if param not in msg:
                     await websocket.send_json(
-                        {'error': f"No '{param}' included in client message"}
+                        {"error": f"No '{param}' included in client message"}
                     )
                     return
 
-            if msg['op'] not in self.ops:
+            if msg["op"] not in self.ops:
                 await websocket.send_json(
-                    {'error': "Invalid 'op' included in client message"}
+                    {"error": "Invalid 'op' included in client message"}
                 )
                 return
 
-            op_name = msg['op']
+            op_name = msg["op"]
             if op_name not in self.ops:
-                await websocket.send_json({'error': f"Unknown op {op_name}"})
+                await websocket.send_json({"error": f"Unknown op {op_name}"})
                 return
             try:
-                reader_seq = reader_id_to_seq(msg['reader_id'])
+                reader_seq = reader_id_to_seq(msg["reader_id"])
             except IdError as ex:
                 log.error(str(ex))
-                await websocket.send_json({'error': str(ex)})
+                await websocket.send_json({"error": str(ex)})
                 return
 
             async with db_session_pool(websocket.app) as session:
@@ -319,7 +319,7 @@ class ReaderConnectionManager:
                         session, reader_seq, profile.profile_seq
                     )
                     if not reader:
-                        await websocket.send_json({'error': "There is no reader"})
+                        await websocket.send_json({"error": "There is no reader"})
                         return
                 else:
                     reader: Reader = self.active_connections[profile.profile_seq][
@@ -327,16 +327,16 @@ class ReaderConnectionManager:
                     ]["reader"]
                     reader.position = msg.get("position")
 
-            del msg['reader_id']
+            del msg["reader_id"]
 
             await self.add_reader_to_profile(reader, profile, msg)
             await self.change_reader_processor(profile.profile_seq, reader)
-            await websocket.send_json({'success': "The processor is being updated"})
+            await websocket.send_json({"success": "The processor is being updated"})
 
         except JSONDecodeError as ex:
             error_message = f"Json decode error for profile {profile}"
             log.exception(error_message, exc_info=ex)
-            await websocket.send_json({'error': error_message})
+            await websocket.send_json({"error": error_message})
 
     async def change_reader_processor(
             self,
@@ -378,10 +378,10 @@ class ReaderConnectionManager:
         """
         boundary = Boundary(position=op.position, direction=op.direction)
         item_gen = source(boundary)
-        page = [item.model_dump(mode='json') async for item in item_gen]
+        page = [item.model_dump(mode="json") async for item in item_gen]
         await websocket.send_json(page)
         if len(page) > 0:
-            op.position = page[-1]['index']
+            op.position = page[-1]["index"]
 
         log.debug("sent page of %s items", len(page))
         return op

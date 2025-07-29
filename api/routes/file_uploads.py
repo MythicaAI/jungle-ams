@@ -47,7 +47,7 @@ async def enrich_file(
 
     for oe in owned_events:
         job_data = oe.job_data
-        file_id = job_data.get('file_id')
+        file_id = job_data.get("file_id")
         if file_id == file_seq_to_id(file.file_seq):
             response.event_ids.append(event_seq_to_id(oe.event_seq))
 
@@ -77,7 +77,7 @@ async def enrich_files(
         )
     for oe in owned_events:
         job_data = oe.job_data
-        file_id = job_data.get('file_id')
+        file_id = job_data.get("file_id")
         if file_id is None:
             continue
         of = owned_files_by_id.get(file_id)

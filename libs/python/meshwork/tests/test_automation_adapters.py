@@ -4,6 +4,7 @@ adapters.py tests
 
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 from meshwork.automation.adapters import NatsAdapter, RestAdapter

@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tags.tag_models import TagFileReference
 
-THUMBNAILS_CONTENT_KEY = 'thumbnails'
+THUMBNAILS_CONTENT_KEY = "thumbnails"
 
 
 async def resolve_contents_as_json(

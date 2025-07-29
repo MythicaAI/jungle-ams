@@ -1,12 +1,12 @@
 import json
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
-from gcid import location
 import nats
 import requests
 
+from gcid import location
 from meshwork.automation.utils import format_exception
 
 logging.basicConfig(
@@ -120,20 +120,22 @@ class NatsAdapter:
             log.info(f"Listener for subject {subject} shut down")
             if not self.listeners:
                 await self._disconnect()
-                log.info(f"Last Listener was shut down. Closing Connection")
+                log.info("Last Listener was shut down. Closing Connection")
         else:
             log.warning(f"No active listener found for subject {subject}")
 
 
 class RestAdapter:
     def get(
-        self,
-        endpoint: str,
-        data: dict = {},
-        token: str = None,
-        headers: dict = {"traceparent": None},
-    ) -> Optional[str]:
+            self,
+            endpoint: str,
+            data: dict = None,
+            token: str = None,
+            headers: dict = None,
+    ) -> str | None:
         """Get data from an endpoint."""
+        data = data or {}
+        headers = headers or {"traceparent": None}
         log.debug(f"Getting from Endpoint: {endpoint} - {data}")
         headers = headers.copy()
         headers.update({"Authorization": "Bearer %s" % token})
@@ -151,16 +153,20 @@ class RestAdapter:
             return None
 
     def post(
-        self,
-        endpoint: str,
-        json_data: Any,
-        token: str,
-        headers: dict = {"traceparent": None},
-        query_params: dict = {},
-    ) -> Optional[str]:
+            self,
+            endpoint: str,
+            json_data: Any,
+            token: str,
+            headers: dict = None,
+            query_params: dict = None,
+    ) -> str | None:
         """Post data to an endpoint synchronously."""
+        if headers:
+            headers = headers.copy()
+        else:
+            headers = {"traceparent": None}
+        query_params = query_params or {}
         log.debug(f"posting[{endpoint}]: {json_data}; {headers=}")
-        headers = headers.copy()
         headers.update(
             {"Content-Type": "application/json", "Authorization": "Bearer %s" % token}
         )
@@ -180,15 +186,18 @@ class RestAdapter:
             return None
 
     def post_file(
-        self,
-        endpoint: str,
-        file_data: list,
-        token: str,
-        headers: dict = {"traceparent": None},
-    ) -> Optional[str]:
+            self,
+            endpoint: str,
+            file_data: list,
+            token: str,
+            headers: dict = None
+    ) -> str | None:
         """Post file to an endpoint."""
+        if headers:
+            headers = headers.copy()
+        else:
+            headers = {"traceparent": None}
         log.debug(f"Sending file to Endpoint: {endpoint} - {file_data}")
-        headers = headers.copy()
         headers.update({"Authorization": "Bearer %s" % token})
         response = requests.post(
             endpoint,

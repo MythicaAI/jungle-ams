@@ -2,7 +2,6 @@
 Asset API schema models
 """
 
-from typing import Optional, Self
 
 from gcid.gcid import asset_seq_to_id, org_seq_to_id, profile_seq_to_id
 from pydantic import BaseModel
@@ -21,20 +20,20 @@ class AssetVersionRef(BaseModel):
     author_id: str
     author_seq: int
 
-    org_id: Optional[str]
-    org_seq: Optional[int]
+    org_id: str | None
+    org_seq: int | None
 
-    package_id: Optional[str]
-    package_seq: Optional[int]
+    package_id: str | None
+    package_seq: int | None
 
     @staticmethod
     def create(
         owner_seq: int,
         asset_seq: int,
-        org_seq: Optional[int] = None,
-        author_seq: Optional[int] = None,
-        version: Optional[list[int]] = None,
-        package_seq: Optional[int] = None,
+        org_seq: int | None = None,
+        author_seq: int | None = None,
+        version: list[int] | None = None,
+        package_seq: int | None = None,
     ) -> "AssetVersionRef":
         """Build an asset reference from sequences"""
         return AssetVersionRef(

@@ -54,7 +54,7 @@ class Client(StorageClient):
             span.set_attribute("file.id", (ctx.file_id if ctx.file_id else ""))
             ctx.bucket_name = _create_bucket(self.minio, bucket_type)
 
-            ctx.object_name = ctx.content_hash + '.' + ctx.extension
+            ctx.object_name = ctx.content_hash + "." + ctx.extension
             log.info("Upload file to the minio bucket. id: %s, name: %s", ctx.file_id, ctx.object_name)
             span.set_attribute("file.name", ctx.object_name)
             # Upload the file, renaming it in the process
@@ -72,7 +72,7 @@ class Client(StorageClient):
         """Upload object via the streaming API"""
         ctx.bucket_name = _create_bucket(self.minio, bucket_type)
 
-        object_name = ctx.content_hash + '.' + ctx.extension
+        object_name = ctx.content_hash + "." + ctx.extension
 
         # Initialize hash
         hash_sha1 = hashlib.sha1()
@@ -99,7 +99,7 @@ class Client(StorageClient):
         # Finalize hash and location
         ctx.content_hash = hash_sha1.hexdigest()
         ctx.file_size = size
-        ctx.add_object_locator('minio', ctx.bucket_name, object_name)
+        ctx.add_object_locator("minio", ctx.bucket_name, object_name)
 
     def download_link(self, bucket_name: str, object_name: str, file_name: str):
         """Get a pre-signed URL to down the object"""

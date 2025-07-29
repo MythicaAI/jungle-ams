@@ -23,7 +23,7 @@ def send_validating_email(
     message = Mail(
         from_email=app_config().sendgrid_email,
         to_emails=to_emails,
-        subject='🔐 Verify Your Email Address on Mythica',
+        subject="🔐 Verify Your Email Address on Mythica",
         html_content=EMAIL_VERIFICATION_TEMPLATE.format(
             verification_link=verification_link
         ),

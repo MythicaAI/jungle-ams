@@ -28,12 +28,12 @@ class Reader(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    reader_seq: int = Field(sa_column=Column('reader_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    reader_seq: int = Field(sa_column=Column("reader_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
     source: str = Field(default=None)
     params: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     name: str | None = Field(default=None)
     position: str | None = Field(default=None)
-    direction: int | None = Field(sa_column=Column('direction',Integer,default=0))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    direction: int | None = Field(sa_column=Column("direction",Integer,default=0))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_onupdate": sql_now(), "nullable": True})

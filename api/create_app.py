@@ -13,9 +13,9 @@ from cache.connection import cache_connection_lifespan, get_redis
 from config import app_config
 from db.connection import db_connection_lifespan, get_db_session
 from exception_handlers import exception_handlers
+from meshwork_sources.register import register_streaming_sources, unregister_streaming_sources
 from middlewares.exception_middleware import ExceptionLoggingMiddleware
 from middlewares.proxied_headers_middleware import ProxiedHeadersMiddleware
-from meshwork_sources.register import register_streaming_sources, unregister_streaming_sources
 
 
 @asynccontextmanager
@@ -28,8 +28,8 @@ async def server_lifespan(app: FastAPI):
 
     async with db_connection_lifespan(app) as db_conn, cache_connection_lifespan(app) as cache_conn:
         yield {
-            'db': db_conn,
-            'cache': cache_conn,
+            "db": db_conn,
+            "cache": cache_conn,
         }
 
     unregister_streaming_sources()
@@ -45,13 +45,13 @@ def create_app(use_prom=False, intercept_exceptions=False):
         return f"{route.tags[0]}-{route.name}"
 
     app = FastAPI(
-        openapi_version='3.1.0',
+        openapi_version="3.1.0",
         generate_unique_id_function=custom_generate_unique_id,
         exception_handlers=exception_handlers(),
         servers=[
-            {'url': 'https://api.mythica.gg/', 'description': 'Production environment'},
-            {'url': 'https://api-staging.mythica.gg', 'description': 'Staging environment'}],
-        root_path='/v1',
+            {"url": "https://api.mythica.gg/", "description": "Production environment"},
+            {"url": "https://api-staging.mythica.gg", "description": "Staging environment"}],
+        root_path="/v1",
         lifespan=server_lifespan)
 
     # Add the prometheus metrics endpoint /metrics for scraping
@@ -88,35 +88,34 @@ def bind_routes(app):
     """Bind all the FastAPI routes, this prevents writing boilerplate
     and pylint errors"""
     route_names = [
-        'events',
-        'upload',
-        'download',
-        'profiles',
-        'files',
-        'jobs',
-        'automation',
-        'assets',
-        'asset_groups',
-        'orgs',
-        'topos',
-        'sessions',
-        'validate',
-        'keys',
-        'readers',
-        'tags',
+        "events",
+        "upload",
+        "download",
+        "profiles",
+        "files",
+        "jobs",
+        "automation",
+        "assets",
+        "asset_groups",
+        "orgs",
+        "topos",
+        "sessions",
+        "validate",
+        "keys",
+        "readers",
+        "tags",
     ]
 
     for name in route_names:
-        module = importlib.import_module(f'routes.{name}.{name}')
-        router = getattr(module, 'router')
-        app.include_router(router)
+        module = importlib.import_module(f"routes.{name}.{name}")
+        app.include_router(module.router)
 
     # always bind the default health endpoint
     @app.get("/", include_in_schema=False, tags=["internal", "health"])
     async def health(db_session=Depends(get_db_session), redis=Depends(get_redis)):
         """Health check"""
         cache_health_status = await redis.info()
-        return {'healthy': True,
-                'tracing': trace.get_current_span().is_recording(),
-                'db': db_session.is_active,
-                'cache': 'redis_version' in cache_health_status}
+        return {"healthy": True,
+                "tracing": trace.get_current_span().is_recording(),
+                "db": db_session.is_active,
+                "cache": "redis_version" in cache_health_status}

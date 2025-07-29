@@ -1,6 +1,7 @@
 # pylint: disable=W0105:pointless-string-statement
 
-from typing import Any, AsyncIterator, Callable, Literal, NamedTuple, Optional
+from collections.abc import AsyncIterator, Callable
+from typing import Any, Literal, NamedTuple
 
 from meshwork.models.streaming import StreamItem
 
@@ -19,7 +20,7 @@ class Boundary(NamedTuple):
     the element denoted by position.
     """
 
-    position: Optional[str] = None
+    position: str | None = None
     direction: Literal["before", "after"] = "after"
 
 

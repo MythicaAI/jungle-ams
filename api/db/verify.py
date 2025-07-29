@@ -16,20 +16,20 @@ def verify():
 
     # Create a new upload
     upload = FileContent(
-        file_name='example.txt',
-        content_hash='abc123',
+        file_name="example.txt",
+        content_hash="abc123",
         size=1024,
-        file_type='text/plain',
+        file_type="text/plain",
         purpose=FilePurpose.SYSTEM_GENERATED
     )
     session.add(upload)
     session.commit()
 
     # Create a new pipeline event
-    event = Event(upload_id=upload.file_id, event_type='processing_started', payload={'key': 'value'})
+    event = Event(upload_id=upload.file_id, event_type="processing_started", payload={"key": "value"})
     session.add(event)
     session.commit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     verify()

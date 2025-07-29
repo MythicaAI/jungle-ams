@@ -1,23 +1,23 @@
-from itertools import starmap
-
-from pydantic import BaseModel, Field, model_validator, ConfigDict
-from typing import Annotated, Literal, Optional, Union, Any
-from meshwork.models import houTypes as hou
-from uuid import uuid4
 import typing
+from itertools import starmap
+from typing import Annotated, Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from meshwork.models import houTypes as hou
 
 
 class ParameterSpecModel(BaseModel):
     param_type: str
     label: str
-    category_label: Optional[str] = None
+    category_label: str | None = None
     constant: bool = False
 
 
 class RampPointSpec(BaseModel):
     pos: float
-    c: Optional[list[float]] = None
-    value: Optional[float] = None
+    c: list[float] | None = None
+    value: float | None = None
     interp: hou.rampBasis = hou.rampBasis.Linear
 
 
@@ -39,15 +39,15 @@ class RampValuePointSpec(BaseModel):
 class IntParameterSpec(ParameterSpecModel):
     param_type: Literal["int"] = "int"
     default: int | list[int]
-    min: Optional[int] = None
-    max: Optional[int] = None
+    min: int | None = None
+    max: int | None = None
 
 
 class FloatParameterSpec(ParameterSpecModel):
     param_type: Literal["float"] = "float"
     default: float | list[float]
-    min: Optional[float] = None
-    max: Optional[float] = None
+    min: float | None = None
+    max: float | None = None
 
 
 class StringParameterSpec(ParameterSpecModel):
@@ -79,8 +79,8 @@ class EnumParameterSpec(ParameterSpecModel):
 
 class FileParameterSpec(ParameterSpecModel):
     param_type: Literal["file"] = "file"
-    name: Optional[str] = ""
-    type: Optional[list[str]] = None
+    name: str | None = ""
+    type: list[str] | None = None
     default: str | list[str]
 
 
@@ -123,7 +123,7 @@ class IntParmTemplateSpec(ParmTemplateSpec):
     max: int = 10
     min_is_strict: bool = False
     max_is_strict: bool = False
-    as_scalar: Optional[bool] = False
+    as_scalar: bool | None = False
 
 
 class FloatParmTemplateSpec(ParmTemplateSpec):
@@ -134,7 +134,7 @@ class FloatParmTemplateSpec(ParmTemplateSpec):
     max: float = 10.0
     min_is_strict: bool = False
     max_is_strict: bool = False
-    as_scalar: Optional[bool] = False
+    as_scalar: bool | None = False
 
 
 class StringParmTemplateSpec(ParmTemplateSpec):
@@ -147,7 +147,7 @@ class StringParmTemplateSpec(ParmTemplateSpec):
     menu_items: list[str] = []
     menu_labels: list[str] = []
     menu_type: hou.menuType = hou.menuType.Normal
-    as_scalar: Optional[bool] = False
+    as_scalar: bool | None = False
 
 
 class ToggleParmTemplateSpec(ParmTemplateSpec):
@@ -177,8 +177,8 @@ class RampParmTemplateSpec(ParmTemplateSpec):
     param_type: Literal[hou.parmTemplateType.Ramp] = hou.parmTemplateType.Ramp
     ramp_parm_type: hou.rampParmType = hou.rampParmType.Float
     default_value: int = 2
-    default_basis: Optional[hou.rampBasis] = hou.rampBasis.Linear
-    color_type: Optional[hou.colorType] = hou.colorType.RGB
+    default_basis: hou.rampBasis | None = hou.rampBasis.Linear
+    color_type: hou.colorType | None = hou.colorType.RGB
     default_points: list[RampPointSpec] = []
 
 
@@ -202,42 +202,19 @@ class FolderSetParmTemplateSpec(ParmTemplateSpec):
 
 
 HoudiniParmTemplateSpecType = Annotated[
-    Union[
-        SeparatorParmTemplateSpec,
-        ButtonParmTemplateSpec,
-        IntParmTemplateSpec,
-        FloatParmTemplateSpec,
-        StringParmTemplateSpec,
-        ToggleParmTemplateSpec,
-        MenuParmTemplateSpec,
-        LabelParmTemplateSpec,
-        RampParmTemplateSpec,
-        DataParmTemplateSpec,
-        FolderParmTemplateSpec,
-        FolderSetParmTemplateSpec,
-        FileParameterSpec,
-    ],
+    SeparatorParmTemplateSpec | ButtonParmTemplateSpec | IntParmTemplateSpec | FloatParmTemplateSpec | StringParmTemplateSpec | ToggleParmTemplateSpec | MenuParmTemplateSpec | LabelParmTemplateSpec | RampParmTemplateSpec | DataParmTemplateSpec | FolderParmTemplateSpec | FolderSetParmTemplateSpec | FileParameterSpec,
     Field(discriminator="param_type"),
 ]
 
 ParameterSpecType = Annotated[
-    Union[
-        IntParameterSpec,
-        FloatParameterSpec,
-        StringParameterSpec,
-        BoolParameterSpec,
-        EnumParameterSpec,
-        FileParameterSpec,
-        RampParameterSpec,
-        HoudiniParmTemplateSpecType,
-    ],
+    IntParameterSpec | FloatParameterSpec | StringParameterSpec | BoolParameterSpec | EnumParameterSpec | FileParameterSpec | RampParameterSpec | HoudiniParmTemplateSpecType,
     Field(discriminator="param_type"),
 ]
 
 
 class FileParameter(BaseModel):
     file_id: str
-    file_path: Optional[str] = None
+    file_path: str | None = None
 
 
 ParameterType = (
@@ -407,6 +384,6 @@ class ParameterSpec(BaseModel):
     """
 
     params: dict[str, ParameterSpecType]
-    params_v2: Optional[list[HoudiniParmTemplateSpecType]] = []
-    default: Optional[ParameterSet] = {}
-    hidden: Optional[dict[str, bool]] = {}
+    params_v2: list[HoudiniParmTemplateSpecType] | None = []
+    default: ParameterSet | None = {}
+    hidden: dict[str, bool] | None = {}

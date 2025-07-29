@@ -78,7 +78,7 @@ async def select_filtered_g_assets(
     return avr_results
 
 
-@router.get('/{category}')
+@router.get("/{category}")
 async def for_profile(
         category: str,
         auth_profile: SessionProfile = Depends(session_profile),
@@ -89,7 +89,7 @@ async def for_profile(
     return await select_filtered_g_assets(db_session, auth_profile, category=category)
 
 
-@router.post('/{category}/{asset_id}/versions/{version}', status_code=HTTPStatus.CREATED)
+@router.post("/{category}/{asset_id}/versions/{version}", status_code=HTTPStatus.CREATED)
 async def add(
         category: str,
         asset_id: str,
@@ -121,7 +121,7 @@ async def add(
     return avr[0] if avr else None
 
 
-@router.delete('/{category}/{asset_id}/versions/{version}')
+@router.delete("/{category}/{asset_id}/versions/{version}")
 async def g_delete(
         category: str,
         asset_id: str,

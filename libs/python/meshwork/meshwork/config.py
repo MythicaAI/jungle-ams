@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import traceback
-from typing import Optional
 from urllib.parse import urlparse
 
 from opentelemetry import metrics
@@ -35,12 +34,12 @@ class meshworkConfig(BaseSettings):
     meshwork_token_secret_key: str = "X" * 32  # shared secret for auth token generation
     api_base_uri: str = "http://localhost:5555/v1"
     mythica_environment: str = "debug"
-    telemetry_endpoint: Optional[str] = None
-    telemetry_token: Optional[str] = None
+    telemetry_endpoint: str | None = None
+    telemetry_token: str | None = None
     enable_telemetry_debug_logs: bool = (
         False  # show telemetry logs on stdout for debugging
     )
-    discord_infra_alerts_webhook: Optional[str] = None
+    discord_infra_alerts_webhook: str | None = None
 
 
 @functools.lru_cache
@@ -80,7 +79,7 @@ def is_secure_scheme(url):
     return parsed_url.scheme.lower() in secure_schemes
 
 
-def configure_telemetry(endpoint: str, ingest_token: Optional[str] = None):
+def configure_telemetry(endpoint: str, ingest_token: str | None = None):
     if ingest_token:
         headers = [("signoz-access-token", ingest_token)]
     else:

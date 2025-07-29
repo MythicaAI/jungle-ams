@@ -28,12 +28,12 @@ class Asset(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    asset_seq: int = Field(sa_column=Column("asset_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_onupdate": sql_now(), "nullable": True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),default=0))
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    org_seq: int | None = Field(sa_column=Column("org_seq",BigInteger().with_variant(Integer, "sqlite"),default=0))
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
 
 # sequences for table asset_versions
 
@@ -50,18 +50,18 @@ class AssetVersion(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    asset_seq: int = Field(sa_column=Column("asset_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     published: bool | None = Field(default=False)
-    major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
-    minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
-    patch: int = Field(sa_column=Column('patch',Integer,primary_key=True,nullable=False))
+    major: int = Field(sa_column=Column("major",Integer,primary_key=True,nullable=False))
+    minor: int = Field(sa_column=Column("minor",Integer,primary_key=True,nullable=False))
+    patch: int = Field(sa_column=Column("patch",Integer,primary_key=True,nullable=False))
     commit_ref: str | None = Field(default=None)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
     blurb: str | None = Field(default=None)
-    author_seq: int = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
-    package_seq: int | None = Field(sa_column=Column('package_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
+    author_seq: int = Field(sa_column=Column("author_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
+    package_seq: int | None = Field(sa_column=Column("package_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("files.file_seq"),default=None))
     contents: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
@@ -80,8 +80,8 @@ class AssetTag(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    type_seq: int = Field(sa_column=Column('type_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    type_seq: int = Field(sa_column=Column("type_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    tag_seq: int = Field(sa_column=Column("tag_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
 
 # sequences for table asset_version_entry_points
 
@@ -98,10 +98,10 @@ class AssetVersionEntryPoint(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
-    minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
-    patch: int = Field(sa_column=Column('patch',Integer,primary_key=True,nullable=False))
-    src_file_seq: int = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    asset_seq: int = Field(sa_column=Column("asset_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    major: int = Field(sa_column=Column("major",Integer,primary_key=True,nullable=False))
+    minor: int = Field(sa_column=Column("minor",Integer,primary_key=True,nullable=False))
+    patch: int = Field(sa_column=Column("patch",Integer,primary_key=True,nullable=False))
+    src_file_seq: int = Field(sa_column=Column("src_file_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     entry_point: str = Field(primary_key=True,nullable=False)
-    job_def_seq: int | None = Field(sa_column=Column('job_def_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('job_defs.job_def_seq'),default=None))
+    job_def_seq: int | None = Field(sa_column=Column("job_def_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("job_defs.job_def_seq"),default=None))

@@ -1,29 +1,30 @@
 # pylint: disable=redefined-outer-name, unused-import
-import pytest
 import tempfile
 from typing import Literal, Optional, Union
 
+import pytest
+
 from meshwork.compile.rpsc import compile_interface
-from meshwork.models.houTypes import rampParmType, rampBasis
+from meshwork.models.houTypes import rampBasis, rampParmType
 from meshwork.models.params import (
-    ParameterSpec,
-    ParameterSet,
-    IntParameterSpec,
+    BoolParameterSpec,
+    EnumParameterSpec,
+    EnumValueSpec,
+    FileParameter,
+    FileParameterSpec,
     FloatParameterSpec,
+    IntParameterSpec,
+    ParameterSet,
+    ParameterSpec,
     RampParameterSpec,
     StringParameterSpec,
-    BoolParameterSpec,
-    EnumValueSpec,
-    EnumParameterSpec,
-    FileParameterSpec,
-    FileParameter,
 )
 from meshwork.runtime.params import (
+    ParamError,
+    repair_parameters,
+    resolve_params,
     validate_param,
     validate_params,
-    resolve_params,
-    repair_parameters,
-    ParamError,
 )
 
 
@@ -834,10 +835,9 @@ def test_param_implicit_cast_to_float():
 def test_get_parameter_spec_with_literal_and_union_types():
     """Test _get_parameter_spec function with Literal and Union types."""
     from meshwork.models.params import (
-        _get_parameter_spec,
         IntParmTemplateSpec,
-        ToggleParmTemplateSpec,
         StringParmTemplateSpec,
+        _get_parameter_spec,
     )
 
     # Test with Literal type
@@ -874,16 +874,16 @@ def test_get_parameter_spec_with_literal_and_union_types():
 def test_get_parameter_spec_with_nested_types():
     """Test _get_parameter_spec function with nested Union and Literal types."""
     from meshwork.models.params import (
-        _get_parameter_spec,
-        IntParmTemplateSpec,
         FileParameterSpec,
+        IntParmTemplateSpec,
+        _get_parameter_spec,
     )
 
     # Test with nested Union types
     values = {
-        "nested_union": Union[Optional[int], str],  # Union[Union[int, None], str]
+        "nested_union": Union[int | None, str],  # Union[Union[int, None], str]
         "complex_union": Union[
-            Literal[1, 2], Optional[str]
+            Literal[1, 2], str | None
         ],  # Union[Literal[1, 2], Union[str, None]]
     }
 
@@ -955,7 +955,7 @@ def test_param_resolve():
 
 def test_nested_parameter_sets():
     """Test that a ParameterSet can contain another ParameterSet as an entry."""
-    from meshwork.models.params import _get_parameter_spec, ParameterSet
+    from meshwork.models.params import ParameterSet
 
     # Define a nested ParameterSet class
     class NestedParam(ParameterSet):

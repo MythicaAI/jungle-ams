@@ -1,46 +1,45 @@
-from typing import Optional
-import uuid
 import re
+import uuid
+
 from meshwork.compile.rpsc import (
     parse_index_menu_parameter,
     parse_string_menu_parameter,
 )
-
+from meshwork.models.houTypes import (
+    fileType,
+    folderType,
+    parmCondType,
+    parmTemplateType,
+    rampBasis,
+    rampParmType,
+    scriptLanguage,
+    stringParmType,
+)
 from meshwork.models.params import (
     BoolParameterSpec,
+    ButtonParmTemplateSpec,
+    DataParmTemplateSpec,
     EnumParameterSpec,
     FileParameterSpec,
     FloatParameterSpec,
+    FloatParmTemplateSpec,
+    FolderParmTemplateSpec,
+    FolderSetParmTemplateSpec,
+    HoudiniParmTemplateSpecType,
     IntParameterSpec,
+    IntParmTemplateSpec,
+    LabelParmTemplateSpec,
+    MenuParmTemplateSpec,
     ParameterSpec,
     ParameterSpecType,
     ParmTemplateSpec,
     RampParameterSpec,
+    RampParmTemplateSpec,
+    RampPointSpec,
     SeparatorParmTemplateSpec,
-    ButtonParmTemplateSpec,
-    IntParmTemplateSpec,
-    FloatParmTemplateSpec,
     StringParameterSpec,
     StringParmTemplateSpec,
     ToggleParmTemplateSpec,
-    MenuParmTemplateSpec,
-    LabelParmTemplateSpec,
-    RampPointSpec,
-    RampParmTemplateSpec,
-    FolderParmTemplateSpec,
-    FolderSetParmTemplateSpec,
-    DataParmTemplateSpec,
-    HoudiniParmTemplateSpecType,
-)
-from meshwork.models.houTypes import (
-    parmCondType,
-    parmTemplateType,
-    scriptLanguage,
-    folderType,
-    rampParmType,
-    stringParmType,
-    fileType,
-    rampBasis,
 )
 
 
@@ -59,7 +58,7 @@ class ParmTemplate:
     is_label_hidden: bool = False
 
     def __init__(
-        self, name: str, label: str = "", num_components: Optional[int] = None, **kwargs
+        self, name: str, label: str = "", num_components: int | None = None, **kwargs
     ):
         self.name = name
         self.label = label
@@ -301,9 +300,9 @@ class RampParmTemplate(ParmTemplate):
         Npos ( number ) NvalueOrC ( number(s) ) Ninterp ( string )
         For color ramps (c), we expect three floats inside the parentheses for 'c'.
         For float ramps (value), we expect one float.
-        (\d+)pos\s*\(\s*([^)]+)\)   -> Captures the index (N) and the position (x)
-        \1value|c\s*\(\s*([^)]+)\) -> Using a backreference \1 ensures we match the same index for value/c
-        \1interp\s*\(\s*([^)]+)\)  -> Matches the same index followed by interp
+        (\\d+)pos\\s*\\(\\s*([^)]+)\\)   -> Captures the index (N) and the position (x)
+        \1value|c\\s*\\(\\s*([^)]+)\\) -> Using a backreference \1 ensures we match the same index for value/c
+        \1interp\\s*\\(\\s*([^)]+)\\)  -> Matches the same index followed by interp
         
         Using a slightly more flexible approach:
         """

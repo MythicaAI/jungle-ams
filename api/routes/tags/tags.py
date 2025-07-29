@@ -23,11 +23,11 @@ from tags.tag_models import TagRequest, TagResponse, TagUpdateRequest
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix='/tags', tags=['tags'])
+router = APIRouter(prefix="/tags", tags=["tags"])
 router.include_router(tag_types_router)
 
 
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post("/", status_code=HTTPStatus.CREATED)
 async def create(
         create_req: TagRequest,
         response: Response,
@@ -67,7 +67,7 @@ async def create(
     )
 
 
-@router.delete('/{name}')
+@router.delete("/{name}")
 async def delete(
         name: str,
         profile: SessionProfile = Depends(session_profile),
@@ -81,7 +81,7 @@ async def delete(
     await db_session.commit()
 
 
-@router.get('/')
+@router.get("/")
 async def list_all(
         limit: int = Query(1, le=100),
         offset: int = 0,
@@ -107,7 +107,7 @@ async def list_all(
     return response
 
 
-@router.get('/{tag_id}')
+@router.get("/{tag_id}")
 async def by_id(
         tag_id: str,
         db_session: AsyncSession = Depends(get_db_session)) -> Optional[TagResponse]:
@@ -124,7 +124,7 @@ async def by_id(
     ) if result else None
 
 
-@router.post('/{tag_id}')
+@router.post("/{tag_id}")
 async def update(
         tag_id: str,
         req: TagUpdateRequest,

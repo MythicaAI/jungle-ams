@@ -1,8 +1,9 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
+
 from meshwork.models.assets import AssetVersionEntryPointReference
 from meshwork.models.params import ParameterSpec
 
@@ -16,7 +17,7 @@ class StreamItem(BaseModel):
     """
 
     item_type: str
-    index: Optional[str] = None
+    index: str | None = None
     correlation: str = Field(default_factory=lambda: str(uuid4()))
 
 
@@ -97,8 +98,8 @@ class JobDefinition(ProcessStreamItem):
     name: str
     description: str
     parameter_spec: ParameterSpec
-    owner_id: Optional[str] = None
-    source: Optional[AssetVersionEntryPointReference] = None
+    owner_id: str | None = None
+    source: AssetVersionEntryPointReference | None = None
 
 
 class Event(StreamItem):
@@ -109,10 +110,10 @@ class Event(StreamItem):
 
     item_type: Literal["event"] = "event"
     payload: dict[str, Any] = Field(default_factory=dict)
-    event_type: Optional[str] = None
-    queued: Optional[datetime] = None
-    acked: Optional[datetime] = None
-    completed: Optional[datetime] = None
+    event_type: str | None = None
+    queued: datetime | None = None
+    acked: datetime | None = None
+    completed: datetime | None = None
 
 
 class CropImageResponse(ProcessStreamItem):
@@ -125,8 +126,8 @@ class CropImageResponse(ProcessStreamItem):
     src_asset_id: str
     src_version: str
     src_file_id: str
-    file_id: Optional[str] = None
-    file_name: Optional[str] = None
+    file_id: str | None = None
+    file_name: str | None = None
     file_path: str
 
 
@@ -135,6 +136,6 @@ StreamModelTypes = {Progress, Message, OutputFiles, Event, FileContentChunk}
 
 # Define a Union type with a discriminator for proper serialization
 StreamItemUnion = Annotated[
-    Union[Progress, Message, OutputFiles, Event, FileContentChunk, CropImageResponse],
+    Progress | Message | OutputFiles | Event | FileContentChunk | CropImageResponse,
     Field(discriminator="item_type"),
 ]

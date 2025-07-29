@@ -3,26 +3,24 @@ Generate a token from profile session data, retrieve the SessionProfile
 object from a JWT token
 """
 
+import jwt
+
+from gcid.gcid import profile_id_to_seq
 from meshwork.config import meshwork_config
 from meshwork.models.sessions import SessionProfile
 
 _SECRET: bytes = meshwork_config().meshwork_token_secret_key.encode("utf-8")
 _AUDIENCE = "mythica_auth_token"
 
-import jwt
-
-from gcid.gcid import profile_id_to_seq
-from pydantic import BaseModel
-
 
 def generate_token(
-    profile_id: str,
-    profile_email: str,
-    profile_email_validate_state: int,
-    profile_location: str,
-    environment: str,
-    roles: list[str] = None,
-    impersonated_by: str = None,
+        profile_id: str,
+        profile_email: str,
+        profile_email_validate_state: int,
+        profile_location: str,
+        environment: str,
+        roles: list[str] = None,
+        impersonated_by: str = None,
 ) -> str:
     """Generate a token from a profile and optional list of roles on the profile."""
     payload = {

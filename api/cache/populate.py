@@ -16,6 +16,6 @@ async def populate_list(app: FastAPI, key: str, source: Source):
             page = [item async for item in item_gen]
             redis.rpush(key, page)
             if len(page) > 0:
-                after = page[-1].get('index', None)
+                after = page[-1].get("index", None)
             else:
                 after = None
