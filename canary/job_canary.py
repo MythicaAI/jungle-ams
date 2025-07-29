@@ -177,7 +177,7 @@ def get_job_result(endpoint: str, headers: Headers, job_id: str) -> str:
 
 
 def delete_job_defs(endpoint: str, headers: Headers) -> None:
-    url = f"{endpoint}/v1/jobs/definitions/delete_canary_jobs_def"
+    url = f"{endpoint}/v1/jobs/test/delete_canary_jobs_def"
     response = requests.delete(url, headers=headers, timeout=10)
     response.raise_for_status()
     log.info(f"Job defs successfully deleted")
