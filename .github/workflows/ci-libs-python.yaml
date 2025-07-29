@@ -34,10 +34,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           filters: |
-            libs/python/cryptid:
-              - 'libs/python/cryptid/**'
-            libs/python/ripple:
-              - 'libs/python/ripple/**'
+            libs/python/gcid:
+              - 'libs/python/gcid/**'
+            libs/python/meshwork:
+              - 'libs/python/meshwork/**'
 
       # Set matrix based on filter results or use all images for manual trigger
       - id: post_filter
@@ -46,8 +46,8 @@ jobs:
           script: |
             const isManualTrigger = context.eventName === 'workflow_dispatch';
             const allLibs = [
-              "libs/python/cryptid/",
-              "libs/python/ripple/" ];
+              "libs/python/gcid/",
+              "libs/python/meshwork/" ];
             
             let changes;
             try {
