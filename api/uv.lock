@@ -7,6 +7,13 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 
+[manifest]
+members = [
+    "ams-api",
+    "gcid",
+    "meshwork",
+]
+
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
@@ -126,7 +133,7 @@ wheels = [
 [[package]]
 name = "ams-api"
 version = "1.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aiohappyeyeballs" },
     { name = "aiosignal" },
@@ -230,14 +237,14 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.2.0,<3.0.0" },
     { name = "fastapi", specifier = ">=0.115.8,<1.0.0" },
     { name = "fastapi-auth0", specifier = ">=0.5.0,<1.0.0" },
-    { name = "gcid", specifier = ">=0.1.0,<1.0.0" },
+    { name = "gcid", editable = "../libs/python/gcid" },
     { name = "google-auth", specifier = ">=2.38.0,<3.0.0" },
     { name = "google-cloud-storage", specifier = ">=3.0.0,<4.0.0" },
     { name = "greenlet", specifier = ">=3.1.1,<4.0.0" },
     { name = "httpx", specifier = ">=0.28.1,<1.0.0" },
     { name = "httpx-ws", specifier = ">=0.7.1,<1.0.0" },
     { name = "jinja2", specifier = ">=3.1.5,<4.0.0" },
-    { name = "meshwork", specifier = ">=0.1.0,<1.0.0" },
+    { name = "meshwork", editable = "../libs/python/meshwork" },
     { name = "minio", specifier = ">=7.2.15,<8.0.0" },
     { name = "opentelemetry-api", specifier = ">=1.30.0,<2.0.0" },
     { name = "opentelemetry-distro", specifier = ">=0.51b0,<1.0.0" },
@@ -927,22 +934,54 @@ wheels = [
 [[package]]
 name = "gcid"
 version = "0.1.0"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../libs/python/gcid" }
 dependencies = [
     { name = "base58" },
     { name = "cryptography" },
-    { name = "flake8" },
-    { name = "munch" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
-    { name = "pylint" },
-    { name = "pytest" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/71/b604e00c52fabc27628128f80028c4efee1d1e6ed949575f23f53e73aebf/gcid-0.1.0.tar.gz", hash = "sha256:de15190e0917746f0164659f8ade8646f984be095cdc95cea786dc85d9566045", size = 3346, upload-time = "2025-07-27T13:00:28.379Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/ba/ee72a1bd4155845cefb2eb742a7ade84a351f5a16d98c0fd597a506f75b0/gcid-0.1.0-py3-none-any.whl", hash = "sha256:ea088f473b54a339a00de9394277eb925f061b9552ec9dd9212832b91feafc1a", size = 4330, upload-time = "2025-07-27T13:00:27.275Z" },
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+    { name = "ruff" },
+]
+lint = [
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "base58", specifier = ">=2.1.1" },
+    { name = "cryptography", specifier = ">=44.0.1" },
+    { name = "pydantic", specifier = ">=2.10.6" },
+    { name = "pydantic-settings", specifier = ">=2.7.1" },
+    { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "typing-extensions", specifier = ">=4.12.2" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.3.1" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+lint = [{ name = "ruff", specifier = ">=0.8.0" }]
+test = [
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.3.1" },
 ]
 
 [[package]]
@@ -1355,7 +1394,7 @@ wheels = [
 [[package]]
 name = "meshwork"
 version = "0.1.0"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../libs/python/meshwork" }
 dependencies = [
     { name = "aiohttp" },
     { name = "base58" },
@@ -1375,9 +1414,70 @@ dependencies = [
     { name = "tzdata" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/05/fb/32e6716224efdbfd47d99065d09d0a2a1e2b426040ce6282f0a2f678c027/meshwork-0.1.0.tar.gz", hash = "sha256:6348289ea59c6d275a8b99d2d3e1f820cb61250f80c8793d7707ec4b91025d40", size = 32005, upload-time = "2025-07-27T13:02:11.214Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/8a/78257ec57aa364dbf73acb9d17178b843de831837da18f3ac8f9ce4bb108/meshwork-0.1.0-py3-none-any.whl", hash = "sha256:2d9bc1b7bfb0555d6606c965f75a9d476fc966928f41bc2bbd7e9d36bbfc217b", size = 43010, upload-time = "2025-07-27T13:02:09.611Z" },
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+    { name = "ruff" },
+]
+lint = [
+    { name = "mypy" },
+    { name = "ruff" },
+]
+test = [
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.11.12" },
+    { name = "base58", specifier = ">=2.1.1" },
+    { name = "cryptography", specifier = ">=44.0.1" },
+    { name = "fastapi", specifier = ">=0.115.8" },
+    { name = "gcid", specifier = ">=0.1.0" },
+    { name = "nats-py", specifier = ">=2.9.0" },
+    { name = "opentelemetry-api", specifier = ">=1.30.0" },
+    { name = "opentelemetry-exporter-otlp", specifier = ">=1.30.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.30.0" },
+    { name = "pydantic", specifier = ">=2.10.6" },
+    { name = "pydantic-settings", specifier = ">=2.7.1" },
+    { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "python-json-logger", specifier = ">=3.2.1" },
+    { name = "requests", specifier = ">=2.32.3" },
+    { name = "typing-extensions", specifier = ">=4.12.2" },
+    { name = "tzdata", specifier = ">=2025.1" },
+    { name = "uvicorn", specifier = ">=0.34.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "mypy", specifier = ">=1.13.0" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.3.1" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+lint = [
+    { name = "mypy", specifier = ">=1.13.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+test = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.3.1" },
 ]
 
 [[package]]

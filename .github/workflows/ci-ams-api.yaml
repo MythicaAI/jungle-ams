@@ -73,19 +73,19 @@ jobs:
         if: ${{ steps.PR.outputs.number != null }}
         run: |
           mkdir alembic_sqlite/versions
-          uv run alembic -n sqlite revision --autogenerate -m "initial"
+          uv run -- alembic -n sqlite revision --autogenerate -m "initial"
 
       - name: Create Schema
         if: ${{ steps.PR.outputs.number != null }}
         run: |
-          uv run alembic -n sqlite upgrade head
+          uv run -- alembic -n sqlite upgrade head
           echo "REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
 
       - name: Generate coverage for codecov
         if: ${{ steps.PR.outputs.number != null }}
         id: codecov-service
         run: |
-          uv run pytest --timeout=10 --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          uv run -- pytest --timeout=10 --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
         shell: bash
 
       - name: Upload results to Codecov

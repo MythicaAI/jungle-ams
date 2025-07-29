@@ -98,6 +98,9 @@ lint = "scripts:lint"
 fmt = "scripts:format_code"
 typecheck = "scripts:typecheck"
 
+[tool.uv]
+package = true
+
 [tool.coverage.report]
 omit = [
     "tests/*",
@@ -106,3 +109,21 @@ omit = [
 [tool.pytest.ini_options]
 addopts = "-p no:logging"
 asyncio_mode = "auto"
+
+[tool.uv.workspace]
+members = ["../libs/python/*"]
+exclude = [
+    "../libs/python/gsc-protocol",
+    "../libs/python/mythica-api-client",
+    "../libs/python/scenetalk"]
+
+[tool.uv.sources]
+gcid = { workspace = true }
+meshwork = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
