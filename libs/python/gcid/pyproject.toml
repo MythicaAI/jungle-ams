@@ -1,6 +1,6 @@
 [project]
 name = "gcid"
-version = "0.1.3"
+version = "0.1.4"
 description = "Global Cryptographic Identifiers"
 license = "MPL-2.0"
 readme = "README.md"
