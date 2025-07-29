@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-import sys
 
 from collections.abc import Mapping  # pylint: disable=deprecated-class, unused-import
 

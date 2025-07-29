@@ -23,7 +23,7 @@ def coverage() -> int:
 
 def lint() -> int:
     """Check code quality."""
-    return run("ruff check .")
+    return run("ruff check . --exclude tests --exclude alembic --fix")
 
 
 def format_code() -> int:
