@@ -30,14 +30,15 @@ tag_for_release() {
 
 tag_all_for_release() {
     # Read image names from stdin (one per line) or from arguments
-    IMAGES="lets-encrypt \
-        mythica-app \
-        mythica-job-canary \
-        mythica-editor-build \
-        mythica-gcs-proxy \
-        mythica-sites-build \
-        mythica-packager \
-        mythica-web-front"
+    IMAGES="
+        api \
+        apps \
+        automations/genai \
+        automations/houdini \
+        automations/imagemagick \
+        bulk-import \
+        canary \
+        test-worker"
     for image_name in $IMAGES; do
         tag_for_release "$image_name"
     done
