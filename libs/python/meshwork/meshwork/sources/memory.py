@@ -20,6 +20,7 @@ def create_memory_source(source: List[Any], params: Dict[str, Any]) -> Source:
         Returns:
         - AsyncGenerator[StreamItem]: yields [0, page_size) items
         """
+        # pylint: disable=F824
         nonlocal source
         if not source:
             return
