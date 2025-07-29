@@ -1,6 +1,6 @@
 FROM nginx:1.27.5-alpine
 
-LABEL name="mythica-web-front"
+LABEL name="ingress"
 LABEL maintainer="jacobrepp@gmail.com"
 LABEL version="1.0.0"
 LABEL tier="web"

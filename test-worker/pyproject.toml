@@ -1,33 +1,23 @@
-[tool.poetry]
+[project]
 name = "test-worker"
 version = "0.1.0"
 description = "Worker application for testing automation"
-authors = ["Your Name <you@example.com>"]
+authors = [
+    { "name" = "Jacob Repp", "email" = "jacobrepp@gmail.com" }
+]
 readme = "README.md"
-package-mode = false
-repository = "https://github.com/MythicaAI/infra"
+license = "MPL-2.0"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.9.2",
+    "opentelemetry-instrumentation>=0.48b0",
+    "opentelemetry-exporter-otlp>=1.27.0",
+    "opentelemetry-distro>=0.48b0",
+    "opentelemetry-api>=1.27.0",
+    "opentelemetry-sdk>=1.27.0",
+    "meshwork>=0.1.0",
+    "gcid>=0.1.0" 
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-pydantic = "2.9.2"
-opentelemetry-instrumentation = "^0.48b0"
-opentelemetry-exporter-otlp = "^1.27.0"
-opentelemetry-distro = "^0.48b0"
-opentelemetry-api = "^1.27.0"
-opentelemetry-sdk = "^1.27.0"
-meshwork = "^0.1.0"
-gcid = "^0.1.0"
-
-# use this group to install without dev redirects
-[tool.poetry.group.infra.dependencies]
-meshwork = { path = "../../libs/python/meshwork" }
-gcid = { path = "../../libs/python/gcid" }
-
-# use thie group to install the local dev dependencies
-[tool.poetry.group.dev.dependencies]
-meshwork = { path = "../../libs/python/meshwork", develop = true }
-gcid = { path = "../../libs/python/gcid", develop = true }
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+Repository = "https://github.com/MythicaAI/jungle-ams"

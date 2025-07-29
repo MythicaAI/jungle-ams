@@ -21,14 +21,21 @@ RUN chown -R appuser /ams/ && \
 RUN python -m pip install --upgrade pip && \
     pip install uv
 
-# Run lib install as the app user to activate the virtual environment
-USER appuser
+# Copy dependency files first for better layer caching
+#COPY pyproject.toml uv.lock ./
 
-# Put all application data into the container /ams directory
+# Copy app code
 COPY . .
 
-# Sync the local environment
-RUN uv sync && source .venv/bin/activate
+# Run uv sync with cached mount points
+#ARG UV_CACHE_PATH=/root/.cache/uv
+#RUN --mount=type=cache,target=${UV_CACHE_PATH} \
+    #uv sync --no-sources --no-dev --compile-bytecode
+RUN uv sync --no-sources --no-dev
+
+
+# Run lib install as the app user to activate the virtual environment
+USER appuser
 
 # Application server listen port, see ./docker-entrypoint.sh
 EXPOSE 5555
@@ -61,4 +68,4 @@ ENV K8S_CLUSTER_NAME=localhost
 # Expose SQL connection using the environment variable
 ENV SQL_URL="postgresql+asyncpg://test:test@postgres:5432/upload_pipeline"
 
-CMD ["sh", "./docker-entrypoint.sh"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
