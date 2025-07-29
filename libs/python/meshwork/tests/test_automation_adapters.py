@@ -1,6 +1,7 @@
 """
 adapters.py tests
 """
+
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
@@ -10,7 +11,7 @@ from meshwork.automation.adapters import NatsAdapter, RestAdapter
 
 @pytest.fixture
 def mock_nats_connection():
-    with patch('nats.connect') as mock_connect:
+    with patch("nats.connect") as mock_connect:
         mock_nc = AsyncMock()
         mock_connect.return_value = mock_nc
         yield mock_nc
@@ -18,8 +19,7 @@ def mock_nats_connection():
 
 @pytest.fixture
 def mock_requests():
-    with patch('requests.post') as mock_post, \
-            patch('requests.get') as mock_get:
+    with patch("requests.post") as mock_post, patch("requests.get") as mock_get:
         mock_post.return_value = MagicMock(status_code=200)
         mock_get.return_value = MagicMock(status_code=200)
         yield mock_post, mock_get
@@ -56,7 +56,7 @@ async def test_nats_listen(mock_nats_connection):
     # Test message handling
     msg = MagicMock()
     msg.data = json.dumps({"test": "data"}).encode()
-    handler = mock_nats_connection.subscribe.call_args[1]['cb']
+    handler = mock_nats_connection.subscribe.call_args[1]["cb"]
     await handler(msg)
     callback.assert_called_once()
 
@@ -80,7 +80,7 @@ def test_rest_get(mock_requests):
     assert result == {"data": "test"}
     mock_get.assert_called_with(
         "http://test",
-        headers={"traceparent": None, "Authorization": "Bearer test-token"}
+        headers={"traceparent": None, "Authorization": "Bearer test-token"},
     )
 
 
@@ -89,11 +89,7 @@ def test_rest_post(mock_requests):
     mock_post.return_value.json.return_value = {"id": "test"}
 
     adapter = RestAdapter()
-    result = adapter.post(
-        "http://test",
-        json_data={"data": "test"},
-        token="test-token"
-    )
+    result = adapter.post("http://test", json_data={"data": "test"}, token="test-token")
 
     assert result == {"id": "test"}
     mock_post.assert_called_with(
@@ -103,8 +99,8 @@ def test_rest_post(mock_requests):
         headers={
             "traceparent": None,
             "Content-Type": "application/json",
-            "Authorization": "Bearer test-token"
-        }
+            "Authorization": "Bearer test-token",
+        },
     )
 
 
@@ -114,16 +110,14 @@ def test_rest_post_file(mock_requests):
 
     adapter = RestAdapter()
     result = adapter.post_file(
-        "http://test",
-        file_data=[("file", "content")],
-        token="test-token"
+        "http://test", file_data=[("file", "content")], token="test-token"
     )
 
     assert result == {"file_id": "test"}
     mock_post.assert_called_with(
         "http://test",
         files=[("file", "content")],
-        headers={"traceparent": None, "Authorization": "Bearer test-token"}
+        headers={"traceparent": None, "Authorization": "Bearer test-token"},
     )
 
 
@@ -154,7 +148,7 @@ async def test_nats_message_handler_error(mock_nats_connection):
     await adapter.listen("test", callback)
     msg = MagicMock()
     msg.data = json.dumps({"test": "data"}).encode()
-    handler = mock_nats_connection.subscribe.call_args[1]['cb']
+    handler = mock_nats_connection.subscribe.call_args[1]["cb"]
     await handler(msg)
 
 

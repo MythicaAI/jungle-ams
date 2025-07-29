@@ -1,6 +1,3 @@
-ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
-FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
-
 # Use the specified CUDA base image
 FROM python:3.12-alpine
 
@@ -27,16 +24,13 @@ RUN pip install --upgrade pip
 RUN pip install poetry==1.8.5
 RUN poetry config --local virtualenvs.create false
 
-# Copy monorepo dependencies
-COPY --from=libs-python-image /libs/python /libs/python
-
 COPY . /app
 WORKDIR /app
 
 
 # Install everything into the python site-packages, these
 # will be referenced later to build the houdini site-packages
-RUN poetry install --only main,infra --no-root --no-cache
+RUN poetry install --only main --no-root --no-cache
 
 
 ENTRYPOINT ["poetry", "run", "python3", "workers.py"]

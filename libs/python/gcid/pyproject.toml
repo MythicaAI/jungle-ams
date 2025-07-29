@@ -1,48 +1,99 @@
-[tool.poetry]
+[project]
 name = "gcid"
 version = "0.1.0"
 description = "Global Cryptographic IDs"
-authors = ["Jacob Repp <jacob@mythica.ai>"]
-license = "MIT"
+authors = [{ "name" = "Jacob Repp", "email" = "jacob@mythica.ai" }]
+license = "MPL-2.0"
 readme = "README.md"
-homepage = "https://github.com/MythicaAI/jungle-ams/libs/python/gcid"
-repository = "https://github.com/MythicaAI/jungle-ams"
 keywords = ["database", "api", "web", "crypto", "identifiers"]
-
-
-[tool.poetry.dependencies]
-python = "<4.0,>=3.10"
-typing-extensions = "^4.12.2"
-pydantic = "^2.10.6"
-base58 = "^2.1.1"
-cryptography = "^44.0.1"
-pydantic_settings = "^2.7.1"
-flake8 = "^7.1.2"
-munch = "^4.0.0"
-pylint = "^3.3.4"
-pytest = "^8.3.4"
-pyjwt = "^2.10.1"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.4"
-flake8 = "^7.1.2"
-munch = "^4.0.0"
-pylint = "^3.3.4"
-pytest-cov = "^6.0.0"
-pytest-timeout = "^2.3.1"
-
-# Add development dependencies here
-[tool.poetry.scripts]
-start = "main:start"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.coverage.report]
-omit = [
-    "tests/*",
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "typing-extensions>=4.12.2",
+    "pydantic>=2.10.6",
+    "base58>=2.1.1",
+    "cryptography>=44.0.1",
+    "pydantic-settings>=2.7.1",
+    "pyjwt>=2.10.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/MythicaAI/jungle-ams/libs/python/gcid"
+Repository = "https://github.com/MythicaAI/jungle-ams"
+
+[dependency-groups]
+test = [
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3.1",
+]
+lint = [
+    "ruff>=0.8.0",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+]
+
+[project.scripts]
+start = "main:start"
+test = "scripts:test"
+lint = "scripts:lint"
+fmt = "scripts:format"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = ["E501"]  # line too long
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
 [tool.pytest.ini_options]
-addopts = "-p no:logging"
+minversion = "8.0"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["gcid"]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

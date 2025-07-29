@@ -85,10 +85,10 @@ async def test_nats_submit_success(nats):
         "path": "/test/path",
         "data": {"test": "value"},
         "correlation": "test-guid",
-        "auth_token": "test-token"
+        "auth_token": "test-token",
     }
 
-    with patch('nats.connect', return_value=nats):
+    with patch("nats.connect", return_value=nats):
         result = await __nats_submit(**test_data)
 
         assert isinstance(result, list)
@@ -100,14 +100,14 @@ async def test_nats_submit_success(nats):
 @pytest.mark.asyncio
 async def test_nats_submit_connection_error():
     """Test NATS connection error handling."""
-    with patch('nats.connect', side_effect=ConnectionClosedError()):
+    with patch("nats.connect", side_effect=ConnectionClosedError()):
         with pytest.raises(ConnectionClosedError):
             await __nats_submit(
                 channel="test-channel",
                 path="/test/path",
                 data={},
                 correlation="test-guid",
-                auth_token="test-token"
+                auth_token="test-token",
             )
 
 
@@ -115,26 +115,26 @@ async def test_nats_submit_connection_error():
 async def test_nats_submit_timeout():
     """Test NATS timeout handling."""
 
-    with patch('nats.connect', side_effect=TimeoutError()):
+    with patch("nats.connect", side_effect=TimeoutError()):
         with pytest.raises(TimeoutError):
             await __nats_submit(
                 channel="test-channel",
                 path="/test/path",
                 data={},
                 correlation="test-guid",
-                auth_token="test-token"
+                auth_token="test-token",
             )
 
 
 @pytest.mark.asyncio
 async def test_nats_submit_cleanup(nats):
     """Test NATS client cleanup."""
-    with patch('nats.connect', return_value=nats):
+    with patch("nats.connect", return_value=nats):
         await __nats_submit(
             channel="test-channel",
             path="/test/path",
             data={},
             correlation="test-guid",
-            auth_token="test-token"
+            auth_token="test-token",
         )
         nats.close.assert_called_once()

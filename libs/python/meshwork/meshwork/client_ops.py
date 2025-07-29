@@ -10,6 +10,7 @@ class ClientOp(BaseModel):
 class ReadClientOp(ClientOp):
     op: str = Field(default="READ")
     position: Optional[str] = Field(default=None)
-    direction: Literal['before', 'after'] = Field(default="after")
+    direction: Literal["before", "after"] = Field(default="after")
+
 
 # extend with forward, rewind if needed

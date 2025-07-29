@@ -2,17 +2,15 @@
 #
 #
 # pylint: disable=unused-import
-from sqlalchemy import JSON, TIMESTAMP, Column, func, text, UniqueConstraint
+from sqlalchemy import JSON, TIMESTAMP, Column
 from sqlalchemy.types import Integer, BigInteger
 from sqlalchemy.sql.functions import now as sql_now
-from sqlalchemy.sql.schema import Sequence, ForeignKey
-from sqlalchemy.sql.ddl import CreateSequence, DropSequence
+from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 from typing import Any, Dict
 from datetime import datetime
-from uuid import UUID, uuid4
 
 
 # sequences for table topologies

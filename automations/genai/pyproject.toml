@@ -9,17 +9,9 @@ repository = "https://github.com/MythicaAI/infra"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
-
-# use thie group to install the local dev dependencies
-
-# use this group to install without dev redirects
-[tool.poetry.group.infra.dependencies]
-ripple = { path = "../../libs/python/ripple" }
-cryptid = { path = "../../libs/python/cryptid" }
-
-[tool.poetry.group.dev.dependencies]
-ripple = { path = "../../libs/python/ripple", develop = true }
-cryptid = { path = "../../libs/python/cryptid", develop = true }
+meshwork = "^0.1.0"
+gcid = "^0.1.0"
+pydantic = "^2.11.7"
 
 [build-system]
 requires = ["poetry-core"]

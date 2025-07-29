@@ -22,16 +22,16 @@ _SEQ_BYTES = 8
 _PREFIX_BYTES = 8
 _ENCRYPTED_BYTES = _PREFIX_BYTES + _SEQ_BYTES
 
-_ENC_KEY: bytes = _config.gcid_enc_key.encode('utf-8')
-_HMAC_KEY: bytes = _config.gcid_hmac_key.encode('utf-8')
-_PERSON: bytes = 'id'.encode('utf-8')
+_ENC_KEY: bytes = _config.gcid_enc_key.encode("utf-8")
+_HMAC_KEY: bytes = _config.gcid_hmac_key.encode("utf-8")
+_PERSON: bytes = b"id"
 
 # Generate a 16-byte Initialization Vector (IV)
-_IV = b'\00' * 16
+_IV = b"\00" * 16
 
 # ID metadata
-_VERSION = b'\01'
-_LOCATION_PARTITION = b'\00\00\00\00\00\00\00'
+_VERSION = b"\01"
+_LOCATION_PARTITION = b"\00\00\00\00\00\00\00"
 _API_ID_PREFIX = _VERSION + _LOCATION_PARTITION
 
 # Create a Cipher object using AES algorithm in CBC mode
@@ -42,17 +42,18 @@ log = logging.getLogger(__name__)
 
 class IdType(Enum):
     """Type enum for ID prefixes"""
-    PROFILE = 'prf'
-    ORG = 'org'
+
+    PROFILE = "prf"
+    ORG = "org"
     ASSET = "asset"
     FILE = "file"
-    EVENT = 'evt'
-    TOPO = 'topo'
-    JOBDEF = 'jobdef'
-    JOB = 'job'
-    JOBRESULT = 'jobres'
-    READER = 'read'
-    TAG = 'tag'
+    EVENT = "evt"
+    TOPO = "topo"
+    JOBDEF = "jobdef"
+    JOB = "job"
+    JOBRESULT = "jobres"
+    READER = "read"
+    TAG = "tag"
 
 
 class ApiError(Exception):
@@ -62,12 +63,12 @@ class ApiError(Exception):
 
 class IdError(Exception):
     def __init__(self, id_str: str, reason: str):
-        super().__init__(f'API ID {id_str} is not valid: {reason}')
+        super().__init__(f"API ID {id_str} is not valid: {reason}")
 
 
 class SequenceError(ApiError):
     def __init__(self, seq_num: int, reason: str):
-        super().__init__(f'sequence number {seq_num} is not valid: {reason}')
+        super().__init__(f"sequence number {seq_num} is not valid: {reason}")
 
 
 id_rev_map = {i.value: i for i in list(IdType)}
@@ -88,7 +89,7 @@ def seq_to_id(api_type: IdType, seq: int | None) -> str:
         raise SequenceError(seq, f"invalid type {type(seq)}")
 
     # encrypt first 16 bytes (note this must be done in 128bit blocks or else padded)
-    seq_bytes = seq.to_bytes(8, 'big')
+    seq_bytes = seq.to_bytes(8, "big")
     e = cipher.encryptor()
     encrypted = e.update(_API_ID_PREFIX + seq_bytes)
     if len(encrypted) != _ENCRYPTED_BYTES:
@@ -100,7 +101,7 @@ def seq_to_id(api_type: IdType, seq: int | None) -> str:
     combined = encrypted + digest[0:_HMAC_BYTES]
     encoded = base58.b58encode(combined)
 
-    return ''.join((api_type.value, '_', encoded.decode('utf-8')))
+    return "".join((api_type.value, "_", encoded.decode("utf-8")))
 
 
 def id_type(api_id: str) -> IdType:
@@ -108,7 +109,7 @@ def id_type(api_id: str) -> IdType:
     if type(api_id) is not str:
         raise IdError(api_id, f"invalid api id type {type(api_id)}")
 
-    parts = api_id.split('_')
+    parts = api_id.split("_")
     if len(parts) != 2:
         raise IdError(api_id, f"invalid api id format {api_id}")
 
@@ -121,7 +122,7 @@ def id_to_seq(api_id: str, api_id_type: IdType) -> int:
     if type(api_id) is not str:
         raise IdError(api_id, f"IDs must be of string type: {type(api_id)}")
 
-    parts = api_id.split('_')
+    parts = api_id.split("_")
     if len(parts) != 2:
         raise IdError(api_id, f"ID has invalid format: {api_id}")
 
@@ -156,7 +157,7 @@ def id_to_seq(api_id: str, api_id_type: IdType) -> int:
     if prefix != _API_ID_PREFIX:
         raise IdError(api_id, f"ID has invalid prefix: {prefix}")
 
-    return int.from_bytes(seq, 'big')
+    return int.from_bytes(seq, "big")
 
 
 def asset_seq_to_id(asset_seq: int) -> str:

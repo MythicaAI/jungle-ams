@@ -1,6 +1,3 @@
-ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
-FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
-
 FROM python:3.12-alpine AS base
 
 LABEL maintainer="pedro@mythica.ai"
@@ -42,9 +39,6 @@ RUN mkdir -p /etc/ImageMagick-7 && \
 # Create directories for input and output files
 USER 0
 
-# Copy monorepo dependencies
-COPY --from=libs-python-image /libs/python /libs/python
-
 WORKDIR /python-install
 
 COPY pyproject.toml .
@@ -58,7 +52,7 @@ RUN python -m pip install \
 
 # Install the poetry dependencies into the local python site-packages
 RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main,infra --no-root --no-cache
+RUN poetry install --only main --no-root --no-cache
 
 RUN mkdir -p /app/input /app/output
 

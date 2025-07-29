@@ -1,6 +1,7 @@
 import random
 
 import pytest
+
 from gcid.gcid import IdError, IdType, SequenceError, id_to_seq, id_type, seq_to_id
 
 
@@ -33,7 +34,7 @@ def test_invalid_format():
 def test_corrupt_id():
     _, api_id = profile_id()
     with pytest.raises(IdError):
-        id_to_seq(api_id[0:len(api_id) - 1], IdType.PROFILE)
+        id_to_seq(api_id[0 : len(api_id) - 1], IdType.PROFILE)
 
 
 def test_invalid_seq():
@@ -43,9 +44,7 @@ def test_invalid_seq():
 
 def test_multiple():
     enum_values = list(IdType)
-    sequences = [i for i in range(2 ^ 32, (2 ^ 32) + 10_000)]
-    ids = [seq_to_id(random.choice(enum_values), seq)
-           for seq in sequences]
+    sequences = list(range(2 ^ 32, (2 ^ 32) + 10_000))
+    ids = [seq_to_id(random.choice(enum_values), seq) for seq in sequences]
     decoded = [id_to_seq(id, id_type(id)) for id in ids]
-    decoded_seqs = [seq for seq in decoded]
-    assert sequences == decoded_seqs
+    assert sequences == decoded

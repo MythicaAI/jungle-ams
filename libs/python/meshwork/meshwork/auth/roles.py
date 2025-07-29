@@ -7,14 +7,14 @@ Roles and role aliases see auth.authorization for usage of role verification
 #
 # `Org` roles
 #
-org_create = 'org/create'
-org_update = 'org/update'
-org_delete = 'org/delete'
-org_asset_create = 'org/asset/create'
-org_asset_delete = 'org/asset/delete'
-org_asset_update = 'org/asset/update'
-org_create_role = 'org/role/create'
-org_delete_role = 'org/role/delete'
+org_create = "org/create"
+org_update = "org/update"
+org_delete = "org/delete"
+org_asset_create = "org/asset/create"
+org_asset_delete = "org/asset/delete"
+org_asset_update = "org/asset/update"
+org_create_role = "org/role/create"
+org_delete_role = "org/role/delete"
 org__all_roles = {
     org_create,
     org_update,
@@ -30,12 +30,7 @@ org__member_roles = {
     org_asset_update,
     org_asset_delete,
 }
-org__mod_roles = {
-    *org__member_roles,
-    org_update,
-    org_create_role,
-    org_delete_role
-}
+org__mod_roles = {*org__member_roles, org_update, org_create_role, org_delete_role}
 org__edit_roles = {
     org_update,
     org_create_role,
@@ -45,9 +40,9 @@ org__edit_roles = {
 #
 # `Asset` roles
 #
-asset_create = 'asset/create'
-asset_update = 'asset/update'
-asset_delete = 'asset/delete'
+asset_create = "asset/create"
+asset_update = "asset/update"
+asset_delete = "asset/delete"
 asset__all_roles = {
     asset_create,
     asset_update,
@@ -61,9 +56,9 @@ asset__edit_roles = {
 #
 # `Profile` roles
 #
-profile_update = 'profile/update'
-profile_delete = 'profile/delete'
-profile_impersonate = 'profile/impersonate'
+profile_update = "profile/update"
+profile_delete = "profile/delete"
+profile_impersonate = "profile/impersonate"
 profile__owner_roles = {
     profile_update,
     profile_delete,
@@ -77,18 +72,15 @@ profile__admin_roles = {
 #
 # `Tag` roles
 #
-tag_create = 'tag/create'
-tag_update = 'tag/update'
-tag_delete = 'tag/delete'
+tag_create = "tag/create"
+tag_update = "tag/update"
+tag_delete = "tag/delete"
 tag__all_roles = {
     tag_create,
     tag_update,
     tag_delete,
 }
-tag__edit_roles = {
-    tag_update,
-    tag_delete
-}
+tag__edit_roles = {tag_update, tag_delete}
 
 # Object creation roles (no scope)
 core__create_roles = {
@@ -100,23 +92,21 @@ core__create_roles = {
 #
 # `JobDef` roles
 #
-job_def_all = 'job_def/all'
-job_def__all_roles = {job_def_all,}
+job_def_all = "job_def/all"
+job_def__all_roles = {
+    job_def_all,
+}
 
 # Bind all roles
-all_roles = {
-    *org__all_roles,
-    *asset__all_roles,
-    *tag__all_roles
-}
+all_roles = {*org__all_roles, *asset__all_roles, *tag__all_roles}
 
 # Aliases to bind profiles to specific roles
 alias_org_admin = "org-admin"
 alias_org_mod = "org-mod"
 alias_org_member = "org-member"
 alias_asset_editor = "asset-editor"
-alias_profile_owner = 'profile-owner'
-alias_profile_admin = 'profile-admin'
+alias_profile_owner = "profile-owner"
+alias_profile_admin = "profile-admin"
 alias_tag_author = "tag-author"
 alias_core_create = "core-create"
 alias_job_def_all = "job-def-all"

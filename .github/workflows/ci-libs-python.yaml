@@ -34,10 +34,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           filters: |
-            libs/python/cryptid:
-              - 'libs/python/cryptid/**'
-            libs/python/ripple:
-              - 'libs/python/ripple/**'
+            libs/python/gcid:
+              - 'libs/python/gcid/**'
+            libs/python/meshwork:
+              - 'libs/python/meshwork/**'
 
       # Set matrix based on filter results or use all images for manual trigger
       - id: post_filter
@@ -46,8 +46,8 @@ jobs:
           script: |
             const isManualTrigger = context.eventName === 'workflow_dispatch';
             const allLibs = [
-              "libs/python/cryptid/",
-              "libs/python/ripple/" ];
+              "libs/python/gcid/",
+              "libs/python/meshwork/" ];
             
             let changes;
             try {
@@ -85,22 +85,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: install-poetry-deps
+      - name: install-deps
         working-directory: ${{ matrix.library }}
         run: |
-          python -m pip install --upgrade pip poetry
-          poetry install --with=dev --no-root
+          python -m pip install --upgrade pip uv flake8
+          uv sync --group dev
 
       - id: lint-flake8
         working-directory: ${{ matrix.library }}
         run: |
-          poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          uv run -- flake8 . --count --exclude=.git,.venv --select=E9,F63,F7,F82 --show-source --statistics
+          uv run -- flake8 . --count --exclude=.git,.venv --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Generate coverage
         working-directory: ${{ matrix.library }}
         run: |
-          poetry run pytest --timeout=10 --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          uv run -- pytest --timeout=10 --cov --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
         shell: bash
 
       - name: Upload coverage to Codecov

@@ -87,7 +87,7 @@ async def update(db_session: AsyncSession, ctx: UploadContext) -> Tuple[str, str
 
 
 def should_post_to_nats(ctx: UploadContext) -> bool:
-    if not ctx.extension in ('hda', 'hdalc'):
+    if ctx.extension not in ('hda', 'hdalc'):
         return False
     if "pytest" in sys.argv[0] or "pytest" in sys.modules:
         return False

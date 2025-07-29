@@ -77,7 +77,7 @@ def create_app(use_prom=False, intercept_exceptions=False):
     )
 
     if intercept_exceptions:
-        if not "pytest" in sys.argv[0] or not "pytest" in sys.modules:
+        if "pytest" not in sys.argv[0] or "pytest" not in sys.modules:
             app.add_middleware(ExceptionLoggingMiddleware)
 
     bind_routes(app)

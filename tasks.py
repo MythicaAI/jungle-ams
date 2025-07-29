@@ -48,10 +48,7 @@ DEFAULT_REPO = "jrepp/jungle-ams"
 
 IMAGES = {
     'testing/web/nginx': {},
-    'api': {
-        'requires': ['libs/python'],
-    },
-    'libs/python': {},
+    'api': {},
     'canary': {},
     'bulk-import': {},
     'apps': {
@@ -60,31 +57,21 @@ IMAGES = {
         }
     },
     'testing/storage/minio-config': {},
-    'test-worker': {
-        'requires': ['libs/python'],
-    },
-    'automations/blender': {
-        'requires': ['libs/python'],
-    },
+    'test-worker': {},
+    'automations/blender': {},
     'automations/genai': {
-        'requires': ['libs/python'],
         'buildargs': {
             'HF_AUTHTOKEN': HF_AUTHTOKEN,
         },
     },
     'automations/houdini': {
-        'requires': ['libs/python'],
         'buildargs': {
             'SFX_CLIENT_ID': SFX_CLIENT_ID,
             'SFX_CLIENT_SECRET': SFX_CLIENT_SECRET,
         },
     },
-    'automations/imagemagick': {
-        'requires': ['libs/python'],
-    },
-    'automations/workflow': {
-        'requires': ['libs/python'],
-    }
+    'automations/imagemagick': {},
+    'automations/workflow': {}
 }
 
 SITE_DATA = {
@@ -244,7 +231,8 @@ def build_image(c, image_path: PathLike, repo: str, no_cache: bool = False, use_
              f"  -t {repo}:{tag} ."),
             pty=PTY_SUPPORTED)
         print(f"tagging {repo}:{latest_tag}")
-        c.run(f'docker tag {repo}:{tag} {repo}:{latest_tag}', pty=PTY_SUPPORTED)
+        c.run(f'docker tag {repo}:{tag} {repo}:{latest_tag}', 
+              pty=PTY_SUPPORTED)
 
 
 def deploy_image(c, image_path, repo):

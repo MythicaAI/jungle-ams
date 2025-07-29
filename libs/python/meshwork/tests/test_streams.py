@@ -32,8 +32,14 @@ def generate_stream_items(item_list_length: int):
     generators = [
         lambda: Progress(process_guid=process_guid, job_id=job_id, progress=42),
         lambda: Message(process_guid=process_guid, job_id=job_id, message="foo"),
-        lambda: OutputFiles(process_guid=process_guid, job_id=job_id, files={'meshes': [file_seq_to_id(42)]}),
-        lambda: Event(index=event_seq_to_id(next(next_test_event_id)), payload={'hello': 'world'})
+        lambda: OutputFiles(
+            process_guid=process_guid,
+            job_id=job_id,
+            files={"meshes": [file_seq_to_id(42)]},
+        ),
+        lambda: Event(
+            index=event_seq_to_id(next(next_test_event_id)), payload={"hello": "world"}
+        ),
     ]
     gen_cycle = cycle(generators)
     return [next(gen_cycle)() for i in range(item_list_length)]
@@ -42,13 +48,14 @@ def generate_stream_items(item_list_length: int):
 @pytest.mark.asyncio
 async def test_source_fixture():
     progress = Progress(
-        item_type='progress',
+        item_type="progress",
         correlation=str(uuid4()),
         process_guid=str(uuid4()),
         job_id=job_seq_to_id(1),
-        progress=42)
+        progress=42,
+    )
 
-    source = create_memory_source([progress], {'name': 'foo', 'max_items': 1})
+    source = create_memory_source([progress], {"name": "foo", "max_items": 1})
     item_gen = source(Boundary())
     items = [item async for item in item_gen]
     assert len(items) == 1

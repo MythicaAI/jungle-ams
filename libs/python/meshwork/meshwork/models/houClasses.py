@@ -1,7 +1,10 @@
 from typing import Optional
 import uuid
 import re
-from meshwork.compile.rpsc import parse_index_menu_parameter, parse_string_menu_parameter
+from meshwork.compile.rpsc import (
+    parse_index_menu_parameter,
+    parse_string_menu_parameter,
+)
 
 from meshwork.models.params import (
     BoolParameterSpec,
@@ -27,7 +30,7 @@ from meshwork.models.params import (
     FolderParmTemplateSpec,
     FolderSetParmTemplateSpec,
     DataParmTemplateSpec,
-    HoudiniParmTemplateSpecType
+    HoudiniParmTemplateSpecType,
 )
 from meshwork.models.houTypes import (
     parmCondType,
@@ -37,7 +40,7 @@ from meshwork.models.houTypes import (
     rampParmType,
     stringParmType,
     fileType,
-    rampBasis
+    rampBasis,
 )
 
 
@@ -55,7 +58,9 @@ class ParmTemplate:
     is_hidden: bool = False
     is_label_hidden: bool = False
 
-    def __init__(self, name: str, label: str = "", num_components: Optional[int] = None, **kwargs):
+    def __init__(
+        self, name: str, label: str = "", num_components: Optional[int] = None, **kwargs
+    ):
         self.name = name
         self.label = label
         self.num_components = num_components
@@ -90,10 +95,14 @@ class ParmTemplate:
         self.tags = tags
 
     def getParmTemplateSpec(self) -> ParmTemplateSpec:
-        raise NotImplementedError(f"{self.__class__.__name__} must implement getParmTemplateSpec()")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement getParmTemplateSpec()"
+        )
 
     def getParameterSpec(self) -> list[ParameterSpecType]:
-        raise NotImplementedError(f"{self.__class__.__name__} must implement getParmTemplateSpec()")
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement getParmTemplateSpec()"
+        )
 
 
 class SeparatorParmTemplate(ParmTemplate):
@@ -131,7 +140,9 @@ class IntParmTemplate(ParmTemplate):
 
         default_value = self.default_value
         if isinstance(default_value, list) and self.num_components == 1:
-            default_value = default_value[0]  # Convert list to scalar if num_components == 1
+            default_value = default_value[
+                0
+            ]  # Convert list to scalar if num_components == 1
 
         return [IntParameterSpec(default=default_value, **self.__dict__)]
 
@@ -148,7 +159,9 @@ class FloatParmTemplate(ParmTemplate):
 
         default_value = self.default_value
         if isinstance(default_value, list) and self.num_components == 1:
-            default_value = default_value[0]  # Convert list to scalar if num_components == 1
+            default_value = default_value[
+                0
+            ]  # Convert list to scalar if num_components == 1
 
         return [FloatParameterSpec(default=default_value, **self.__dict__)]
 
@@ -180,7 +193,7 @@ class StringParmTemplate(ParmTemplate):
                 "menu_labels": self.menu_labels,
                 "default": self.default_value[0],
                 "label": self.label,
-                "menu_use_tokens": self.menu_use_token
+                "menu_use_tokens": self.menu_use_token,
             }
             return [parse_string_menu_parameter(value)]
         elif self.string_type == stringParmType.FileReference:
@@ -225,7 +238,7 @@ class MenuParmTemplate(ParmTemplate):
             "menu_labels": self.menu_labels,
             "default": self.default_value,
             "label": self.label,
-            "menu_use_tokens": self.menu_use_token
+            "menu_use_tokens": self.menu_use_token,
         }
         return [parse_index_menu_parameter(value)]
 
@@ -279,7 +292,9 @@ class RampParmTemplate(ParmTemplate):
     def fillRampDefaults(self) -> list[RampPointSpec]:
         is_color_ramp = self.ramp_parm_type == rampParmType.Color
         value_key = "c" if is_color_ramp else "value"
-        ramp_str = self.tags.get("rampcolordefault" if is_color_ramp else "rampfloatdefault", "")
+        ramp_str = self.tags.get(
+            "rampcolordefault" if is_color_ramp else "rampfloatdefault", ""
+        )
 
         """
         We look for sequences of:
@@ -293,12 +308,17 @@ class RampParmTemplate(ParmTemplate):
         Using a slightly more flexible approach:
         """
         pattern = re.compile(
-            r"(\d+)pos\s*\(\s*([^)]*)\)\s*\1" + value_key + r"\s*\(\s*([^)]*)\)\s*\1interp\s*\(\s*([^)]*)\)")
+            r"(\d+)pos\s*\(\s*([^)]*)\)\s*\1"
+            + value_key
+            + r"\s*\(\s*([^)]*)\)\s*\1interp\s*\(\s*([^)]*)\)"
+        )
 
         points = []
         for match in pattern.finditer(ramp_str):
             pos = float(match.group(2).strip())
-            interp_str = match.group(4).strip().lower().replace("-", "").replace(" ", "")
+            interp_str = (
+                match.group(4).strip().lower().replace("-", "").replace(" ", "")
+            )
             interp = rampBasis.Constant
             for b in rampBasis:
                 # b.value is the string value in the enum, e.g. "MonotoneCubic"
@@ -335,14 +355,26 @@ class FolderParmTemplate(ParmTemplate):
         parmTemplateSpecs: list[ParmTemplateSpec] = []
 
         for pt in self.parm_templates:
-
             if isinstance(
-                    pt,
-                    (FolderSetParmTemplate, FolderParmTemplate, RampParmTemplate, SeparatorParmTemplate,
-                     ButtonParmTemplate, FloatParmTemplate, IntParmTemplate, StringParmTemplate,
-                     ToggleParmTemplate, MenuParmTemplate, LabelParmTemplate, DataParmTemplate)
+                pt,
+                (
+                    FolderSetParmTemplate,
+                    FolderParmTemplate,
+                    RampParmTemplate,
+                    SeparatorParmTemplate,
+                    ButtonParmTemplate,
+                    FloatParmTemplate,
+                    IntParmTemplate,
+                    StringParmTemplate,
+                    ToggleParmTemplate,
+                    MenuParmTemplate,
+                    LabelParmTemplate,
+                    DataParmTemplate,
+                ),
             ):
-                spec: ParmTemplateSpec = pt.getParmTemplateSpec()  # Explicit type casting
+                spec: ParmTemplateSpec = (
+                    pt.getParmTemplateSpec()
+                )  # Explicit type casting
                 parmTemplateSpecs.append(spec)
 
         return FolderParmTemplateSpec(
@@ -352,7 +384,7 @@ class FolderParmTemplate(ParmTemplate):
             folder_type=self.folder_type,
             default_value=self.default_value,
             ends_tab_group=self.ends_tab_group,
-            parm_templates=parmTemplateSpecs
+            parm_templates=parmTemplateSpecs,
         )
 
     def getParameterSpec(self) -> list[ParameterSpecType]:
@@ -362,14 +394,26 @@ class FolderParmTemplate(ParmTemplate):
         parameterSpecs: list[ParameterSpecType] = []
 
         for pt in self.parm_templates:
-
             if isinstance(
-                    pt,
-                    (FolderSetParmTemplate, FolderParmTemplate, RampParmTemplate, SeparatorParmTemplate,
-                     ButtonParmTemplate, FloatParmTemplate, IntParmTemplate, StringParmTemplate,
-                     ToggleParmTemplate, MenuParmTemplate, LabelParmTemplate, DataParmTemplate)
+                pt,
+                (
+                    FolderSetParmTemplate,
+                    FolderParmTemplate,
+                    RampParmTemplate,
+                    SeparatorParmTemplate,
+                    ButtonParmTemplate,
+                    FloatParmTemplate,
+                    IntParmTemplate,
+                    StringParmTemplate,
+                    ToggleParmTemplate,
+                    MenuParmTemplate,
+                    LabelParmTemplate,
+                    DataParmTemplate,
+                ),
             ):
-                spec: list[ParameterSpecType] = pt.getParameterSpec()  # Explicit type casting
+                spec: list[ParameterSpecType] = (
+                    pt.getParameterSpec()
+                )  # Explicit type casting
                 if spec is not None:
                     parameterSpecs.extend(spec)
 
@@ -399,7 +443,10 @@ class FolderParmTemplate(ParmTemplate):
             self.parm_templates.append(parm_template)
 
     def isActualFolder(self) -> bool:
-        return self.folder_type not in {folderType.ImportBlock, folderType.MultiparmBlock}
+        return self.folder_type not in {
+            folderType.ImportBlock,
+            folderType.MultiparmBlock,
+        }
 
 
 class FolderSetParmTemplate(ParmTemplate):
@@ -411,29 +458,38 @@ class FolderSetParmTemplate(ParmTemplate):
         super().__init__("")
 
     def getParmTemplateSpec(self) -> FolderSetParmTemplateSpec:
-
         parmTemplateSpecs: list[FolderParmTemplateSpec] = []
         for pt in self.parm_templates:
             parmTemplateSpecs.append(pt.getParmTemplateSpec())
 
         return FolderSetParmTemplateSpec(
-            name="",
-            label="",
-            parm_templates=parmTemplateSpecs
+            name="", label="", parm_templates=parmTemplateSpecs
         )
 
     def getParameterSpec(self) -> list[ParameterSpecType]:
         parameterSpecs: list[ParameterSpecType] = []
 
         for pt in self.parm_templates:
-
             if isinstance(
-                    pt,
-                    (FolderSetParmTemplate, FolderParmTemplate, RampParmTemplate, SeparatorParmTemplate,
-                     ButtonParmTemplate, FloatParmTemplate, IntParmTemplate, StringParmTemplate,
-                     ToggleParmTemplate, MenuParmTemplate, LabelParmTemplate, DataParmTemplate)
+                pt,
+                (
+                    FolderSetParmTemplate,
+                    FolderParmTemplate,
+                    RampParmTemplate,
+                    SeparatorParmTemplate,
+                    ButtonParmTemplate,
+                    FloatParmTemplate,
+                    IntParmTemplate,
+                    StringParmTemplate,
+                    ToggleParmTemplate,
+                    MenuParmTemplate,
+                    LabelParmTemplate,
+                    DataParmTemplate,
+                ),
             ):
-                spec: list[ParameterSpecType] = pt.getParameterSpec()  # Explicit type casting
+                spec: list[ParameterSpecType] = (
+                    pt.getParameterSpec()
+                )  # Explicit type casting
                 if spec is not None:
                     for s in spec:
                         s.category_label = self.label
@@ -446,7 +502,7 @@ class FolderSetParmTemplate(ParmTemplate):
         self.parm_templates.append(parm_template)
 
 
-class ParmTemplateGroup():
+class ParmTemplateGroup:
     parm_templates: list[ParmTemplate]
 
     def __init__(self):
@@ -463,25 +519,36 @@ class ParmTemplateGroup():
         params_v2: list[HoudiniParmTemplateSpecType] = []
 
         for tmpl in self.parm_templates:
-
             if isinstance(
-                    tmpl,
-                    (FolderSetParmTemplate, FolderParmTemplate, RampParmTemplate, SeparatorParmTemplate,
-                     ButtonParmTemplate, FloatParmTemplate, IntParmTemplate, StringParmTemplate,
-                     ToggleParmTemplate, MenuParmTemplate, LabelParmTemplate, DataParmTemplate)
+                tmpl,
+                (
+                    FolderSetParmTemplate,
+                    FolderParmTemplate,
+                    RampParmTemplate,
+                    SeparatorParmTemplate,
+                    ButtonParmTemplate,
+                    FloatParmTemplate,
+                    IntParmTemplate,
+                    StringParmTemplate,
+                    ToggleParmTemplate,
+                    MenuParmTemplate,
+                    LabelParmTemplate,
+                    DataParmTemplate,
+                ),
             ):
-                spec: list[ParameterSpecType] = tmpl.getParameterSpec()  # Explicit type casting
+                spec: list[ParameterSpecType] = (
+                    tmpl.getParameterSpec()
+                )  # Explicit type casting
                 if spec is not None:
                     for s in spec:
                         params[s.label] = s
 
-                specv2: HoudiniParmTemplateSpecType = tmpl.getParmTemplateSpec()  # Explicit type hinting
+                specv2: HoudiniParmTemplateSpecType = (
+                    tmpl.getParmTemplateSpec()
+                )  # Explicit type hinting
                 params_v2.append(specv2)
 
-        return ParameterSpec(
-            params=params,
-            params_v2=params_v2
-        )
+        return ParameterSpec(params=params, params_v2=params_v2)
 
     def append(self, parm_template: ParmTemplate):
         self.addParmTemplate(parm_template)
