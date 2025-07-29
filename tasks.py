@@ -106,6 +106,7 @@ LOCAL_MOUNT_POINTS = {
     'static': 'testing/mnt/static',
     'nats': 'testing/mnt/nats',
     'tailscale': 'testing/mnt/tailscale',
+    'uv_cache': 'testing/mnt/uv_cache',
 }
 
 
@@ -171,18 +172,15 @@ def parse_expose_to_ports(dockerfile_path: PathLike):
     return ports
 
 
-def start_docker_compose(c, docker_compose_path, cleanup_fn=None):
+def start_docker_compose(c, docker_compose_path):
     """Cleanly start a docker compose instance"""
     env_file_path = generate_mount_env_file()
     compose_file = './docker-compose.yaml.local' if os.path.exists(
         os.path.join(docker_compose_path, 'docker-compose.yaml.local')) else './docker-compose.yaml'
     with c.cd(docker_compose_path):
         c.run(f'docker compose --env-file {env_file_path} down --timeout 1')
-        # cleanup_fn(c) if cleanup_fn is not None else None
         c.run(f'docker compose --env-file {env_file_path} '
               f'-f {compose_file} up -d', pty=PTY_SUPPORTED)
-        if cleanup_fn is not None:
-            cleanup_fn()
 
 
 def stop_docker_compose(c, docker_compose_path):
@@ -231,7 +229,7 @@ def build_image(c, image_path: PathLike, repo: str, no_cache: bool = False, use_
              f"  -t {repo}:{tag} ."),
             pty=PTY_SUPPORTED)
         print(f"tagging {repo}:{latest_tag}")
-        c.run(f'docker tag {repo}:{tag} {repo}:{latest_tag}', 
+        c.run(f'docker tag {repo}:{tag} {repo}:{latest_tag}',
               pty=PTY_SUPPORTED)
 
 
@@ -371,7 +369,7 @@ def cleanup_web_shared_publish_volume(c):
 @task
 def web_start(c):
     """Start web tier components"""
-    start_docker_compose(c, TESTING_WEB_DIR, cleanup_web_shared_publish_volume)
+    start_docker_compose(c, TESTING_WEB_DIR)
 
 
 @task(post=[cleanup_web_shared_publish_volume])
@@ -395,8 +393,7 @@ def auto_stop(c):
 @task
 def observe_start(c):
     """Start observability tier components"""
-    start_docker_compose(c, TESTING_OBSERVE_DIR,
-                         cleanup_web_shared_publish_volume)
+    start_docker_compose(c, TESTING_OBSERVE_DIR)
 
 
 @task(post=[cleanup_web_shared_publish_volume])

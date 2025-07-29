@@ -2,8 +2,7 @@
 
 set -eof pipefail
 
-# shellcheck disable=SC2046
-. $(poetry env info --path)/bin/activate
+source .venv/bin/activate
 
 ./print_ip_address.py
 

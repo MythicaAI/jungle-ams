@@ -6,9 +6,9 @@ name: web
 #
 services:
 
-  sites:
-    container_name: sites
-    image: mythica-sites-build:latest
+  apps:
+    container_name: apps
+    image: jrepp/jungle-ams:apps-latest
     volumes:
       - site-shared-publish:/mnt/publish
     environment:
@@ -27,12 +27,12 @@ services:
       VITE_SCENE_TALK_URL: ws://localhost:8765
       VITE_MYTHICA_ENVIRONMENT: dev
 
-  nginx:
-    container_name: nginx
-    image: mythica-web-front:latest
+  ingress:
+    container_name: ingress
+    image: jrepp/jungle-ams:ingress-latest
     depends_on:
-      - sites
-      - app
+      - apps
+      - api
       - collector
     ports:
       - "8080:80"
@@ -48,10 +48,10 @@ services:
       - storage
       - observe
 
-  app:
+  api:
     # network_mode: service:tailscale  # It is required by docs, but we use ports and networks so tailscale will be in host mode
-    container_name: app
-    image: mythica-app:latest
+    container_name: api
+    image: jrepp/jungle-ams:api-latest
     environment:
       MINIO_ENDPOINT: minio:9000
       LOCAL_STORAGE_PATH: /tmp/local_storage
@@ -75,8 +75,8 @@ services:
       - collector
 
   worker:
-    container_name: worker
-    image: mythica-test-worker:latest
+    container_name: test-worker
+    image: jrepp/jungle-ams:test-worker-latest
     environment:
       MYTHICA_ENVIRONMENT: debug
       NATS_ENDPOINT: nats://nats:4222
@@ -90,10 +90,11 @@ services:
 
   packager:
     container_name: packager
-    image: mythica-packager:latest
+    image: jrepp/jungle-ams:api-latest
+    command: ["packager"]
     environment:
       MYTHICA_ENVIRONMENT: debug
-      MYTHICA_ENDPOINT: http://app:5555
+      MYTHICA_ENDPOINT: http://api:5555
       MYTHICA_API_KEY: ${MYTHICA_API_KEY}
       NATS_ENDPOINT: nats://nats:4222
       TELEMETRY_ENDPOINT: grpc://collector:4317
@@ -102,23 +103,23 @@ services:
       - storage
       - observe
     depends_on:
-      - app
+      - api
       - collector
 
   canary:
     # network_mode: service:tailscale  # It is required by docs, but we use ports and networks so tailscale will be in host mode
     container_name: canary
-    image: mythica-job-canary:latest
+    image: jrepp/jungle-ams:canary-latest
     environment:
       MYTHICA_ENVIRONMENT: debug
-      MYTHICA_ENDPOINT: http://app:5555
+      MYTHICA_ENDPOINT: http://api:5555
       MYTHICA_API_KEY: ${MYTHICA_API_KEY}
       TELEMETRY_ENDPOINT: grpc://collector:4317
     networks:
       - web
       - observe
     depends_on:
-      - app
+      - api
       - collector
 
   # open telemetry collector for scraping nginx logs and recieving traces

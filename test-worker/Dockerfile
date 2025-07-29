@@ -1,7 +1,6 @@
-# Stage 1: python 3.11 base image
-FROM python:3.11-slim AS base
+FROM python:3.13.5-alpine
 
-LABEL maintainer="pedro@mythica.ai"
+LABEL maintainer="jacobrepp@gmail.com"
 LABEL name="test-worker"
 LABEL description="Simple worker test validation"
 LABEL version="1.0.0"
@@ -9,23 +8,22 @@ LABEL tier="auto"
 
 # Default for local (docker compose) mode, override in deployment
 ARG NATS_ENDPOINT="nats://nats:4222"
-
 ENV NATS_ENDPOINT=${NATS_ENDPOINT}
-# Install Poetry
-RUN apt-get update && apt-get install -y curl
 
 # Copy local application files
 COPY . /app
 
 # Set working directory
 WORKDIR /app
+
 RUN python -m pip install \
     --root-user-action=ignore \
     --upgrade \
-    --no-cache-dir pip poetry
+    --no-cache-dir pip uv
 
-RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main,infra --no-root --no-cache
+RUN uv sync --no-sources --compile-bytecode \
+    && source .venv/bin/activate
+
 ENV TELEMETRY_ENDPOINT=grpc://otel-sidecar:4317
 ENV OTEL_RESOURCE_ATTRIBUTES="service.name=automation-test"
 ENV K8S_CLUSTER_NAME=localhost
