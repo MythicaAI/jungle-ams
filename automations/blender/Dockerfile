@@ -1,6 +1,3 @@
-ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
-FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
-
 LABEL maintainer="pedro@mythica.ai"
 LABEL name="blender"
 LABEL description="Automation for mythica blender services"
@@ -50,8 +47,6 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-
-COPY --from=libs-python-image /libs/python /libs/python
 
 # Copy monorepo dependencies
 COPY . /app
