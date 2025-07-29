@@ -13,7 +13,7 @@ jobs:
       pull-requests: write
     defaults:
       run:
-        working-directory: libs/python/cryptid
+        working-directory: libs/python/gcid
     
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+
+      - name: Generate tag
+        id: generate_tag
+        run: |
+          github/get-pyproject-tag.sh ${{ matrix.image }} >> $GITHUB_OUTPUT
 
       - run: |
           python -m pip install --upgrade pip uv
