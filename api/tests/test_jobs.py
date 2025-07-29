@@ -7,15 +7,15 @@ from http import HTTPStatus
 import pytest
 from fastapi.testclient import TestClient
 from munch import munchify
-
-from gcid.gcid import asset_seq_to_id, job_def_seq_to_id
-from repos.assets import AssetVersionResult
-from db.schema.events import Event
-from routes.jobs.jobs import JobDefinitionModel, ExtendedJobResultResponse
 from tests.fixtures.create_asset_versions import create_asset_versions
 from tests.fixtures.create_profile import create_profile
 from tests.fixtures.uploader import uploader
 from tests.shared_test import ProfileTestObj, assert_status_code
+
+from db.schema.events import Event
+from gcid.gcid import asset_seq_to_id, job_def_seq_to_id
+from repos.assets import AssetVersionResult
+from routes.jobs.jobs import ExtendedJobResultResponse, JobDefinitionModel
 
 
 @pytest.mark.asyncio
@@ -418,10 +418,10 @@ async def test_delete_canary(client: TestClient, api_base, create_profile):
     assert_status_code(r, HTTPStatus.OK)
 
     # Test unauthorized /authorized delete canary job definitions
-    r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=headers2)
-    assert_status_code(r, HTTPStatus.BAD_REQUEST)
+    r = client.delete(f'{api_base}/jobs/test/delete_canary_jobs_def', headers=headers2)
+    assert_status_code(r, HTTPStatus.UNAUTHORIZED)
 
-    r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=privileged_headers)
+    r = client.delete(f'{api_base}/jobs/test/delete_canary_jobs_def', headers=privileged_headers)
     assert_status_code(r, HTTPStatus.OK)
 
     # find the job and check job_def_seq is set to null
@@ -439,7 +439,7 @@ async def test_delete_canary(client: TestClient, api_base, create_profile):
     # Test delete job_def by an admin
     r = crete_job_def(headers)
     assert_status_code(r, HTTPStatus.CREATED)
-    r = client.delete(f'{api_base}/jobs/definitions/delete_canary_jobs_def', headers=privileged_headers)
+    r = client.delete(f'{api_base}/jobs/test/delete_canary_jobs_def', headers=privileged_headers)
     o = munchify(r.json())
     assert_status_code(r, HTTPStatus.OK)
     r = client.get(f'{api_base}/jobs/definitions', headers=headers)

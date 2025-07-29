@@ -5,7 +5,20 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from uuid import uuid4
 
+from fastapi import APIRouter, Depends, HTTPException
+from opentelemetry import trace
+from opentelemetry.context import get_current as get_current_telemetry_context
+from opentelemetry.trace.status import Status, StatusCode
+from sqlalchemy.sql.functions import now as sql_now
+from sqlmodel import col, delete as sql_delete, insert, select, text, update
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from config import app_config
+from db.connection import get_db_session
+from db.schema.assets import AssetVersionEntryPoint
+from db.schema.events import Event
+from db.schema.jobs import Job, JobDefinition, JobResult
+from db.schema.profiles import Profile
 from gcid.gcid import (
     asset_id_to_seq,
     event_seq_to_id,
@@ -19,17 +32,6 @@ from gcid.gcid import (
     profile_seq_to_id,
 )
 from gcid.location import location
-from db.connection import get_db_session
-from db.schema.assets import AssetVersionEntryPoint
-from db.schema.events import Event
-from db.schema.jobs import Job, JobDefinition, JobResult
-from db.schema.profiles import Profile
-from fastapi import APIRouter, Depends, HTTPException
-from opentelemetry import trace
-from opentelemetry.context import get_current as get_current_telemetry_context
-from opentelemetry.trace.status import Status, StatusCode
-from repos import assets as repo
-from repos.assets import AssetVersionResult
 from meshwork.auth import roles
 from meshwork.auth.authorization import Scope, validate_roles
 from meshwork.automation.adapters import NatsAdapter
@@ -40,6 +42,8 @@ from meshwork.models.params import FileParameter, ParameterSet, ParameterSpec
 from meshwork.models.sessions import SessionProfile
 from meshwork.models.streaming import JobDefinition as JobDefinitionRef
 from meshwork.runtime.params import ParamError, repair_parameters, validate_params
+from repos import assets as repo
+from repos.assets import AssetVersionResult
 from routes.authorization import maybe_session_profile, session_profile
 from routes.jobs.models import (
     ExtendedJobResultResponse,
@@ -54,11 +58,6 @@ from routes.jobs.models import (
     JobResultRequest,
     JobResultResponse,
 )
-from sqlalchemy.sql.functions import now as sql_now
-from sqlmodel import col
-from sqlmodel import delete as sql_delete
-from sqlmodel import insert, select, text, update
-from sqlmodel.ext.asyncio.session import AsyncSession
 from telemetry_config import get_telemetry_headers
 
 log = logging.getLogger(__name__)
@@ -455,10 +454,11 @@ async def job_result_insert(
         # generate the next sequence value, uses a custom upsert as this pattern is not
         # natively supported in SQLAlchemy
         upsert_query = text("""
-                    INSERT INTO app_sequences (name) VALUES (:name)
-                    ON CONFLICT(name) DO UPDATE SET seq = seq + 1
-                    RETURNING seq;
-                """)
+                            INSERT INTO app_sequences (name)
+                            VALUES (:name)
+                            ON CONFLICT(name) DO UPDATE SET seq = seq + 1
+                            RETURNING seq;
+                            """)
         next_job_result_seq = (await db_session.exec(
             statement=upsert_query,
             params={"name": "job_result_seq_seq"})).scalar()
@@ -543,7 +543,7 @@ async def set_complete(
     await db_session.commit()
 
 
-@router.delete("/definitions/delete_canary_jobs_def")
+@router.delete("/test/delete_canary_jobs_def")
 async def delete_canary_jobs_def(
         profile: SessionProfile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)):
