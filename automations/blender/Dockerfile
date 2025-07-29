@@ -1,3 +1,4 @@
+FROM python:3.11-alpine
 LABEL maintainer="pedro@mythica.ai"
 LABEL name="blender"
 LABEL description="Automation for mythica blender services"
@@ -61,7 +62,7 @@ RUN python3.11 -m pip install \
 # Install everything into the python site-packages, these
 # will be referenced later to build the houdini site-packages
 RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main,infra --no-root --no-cache
+RUN poetry install --only main --no-root --no-cache
 ENV API_BASE_URI=http://app:5555/v1
 
 ENTRYPOINT ["poetry", "run", "python3.11", "workers.py"]

@@ -17,16 +17,6 @@ gcid = "^0.1.0"
 jax = {extras = ["cuda12"], version = "^0.5.0"}
 #numpy = "<2.0"
 
-# use this group to install without dev redirects
-[tool.poetry.group.infra.dependencies]
-meshwork = { path = "../../libs/python/meshwork" }
-gcid = { path = "../../libs/python/gcid" }
-
-[tool.poetry.group.dev.dependencies]
-meshwork = { path = "../../libs/python/meshwork", develop = true }
-gcid = { path = "../../libs/python/gcid", develop = true }
-
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

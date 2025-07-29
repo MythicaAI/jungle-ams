@@ -19,7 +19,7 @@ RUN chown -R appuser /ams/ && \
 
 
 RUN python -m pip install --upgrade pip && \
-    pip install poetry
+    pip install uv
 
 # Run lib install as the app user to activate the virtual environment
 USER appuser
@@ -28,7 +28,7 @@ USER appuser
 COPY . .
 
 # Sync the local environment
-RUN uv --sync && source ./venv/bin/activate
+RUN uv sync && source .venv/bin/activate
 
 # Application server listen port, see ./docker-entrypoint.sh
 EXPOSE 5555

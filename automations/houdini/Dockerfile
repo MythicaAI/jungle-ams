@@ -1,8 +1,4 @@
-ARG LIBS_PYTHON_IMAGE=jrepp/jungle-ams:libs-python-latest
 ARG HOUDINI_VERSION=20.5.370
-
-# Image for monorepo library dependencies
-FROM ${LIBS_PYTHON_IMAGE} AS libs-python-image
 
 # Gather python dependencies - do the worker deps here too.
 # this version of python should match the target version in Houdini
@@ -13,9 +9,6 @@ LABEL name="houdini"
 LABEL description="Automation for houdini automations"
 LABEL version="1.0.0"
 LABEL tier="auto"
-
-# Copy monorepo dependencies
-COPY --from=libs-python-image /libs/python /libs/python
 
 WORKDIR /python-install
 
@@ -31,7 +24,7 @@ RUN python -m pip install \
 # Install everything into the python site-packages, these
 # will be referenced later to build the houdini site-packages
 RUN poetry config --local virtualenvs.create false
-RUN poetry install --only main,infra --no-root --no-cache
+RUN poetry install --only main --no-root --no-cache
 
 # Build the primary image from upstream hbuild
 FROM aaronsmithtv/hbuild:${HOUDINI_VERSION}-base
@@ -77,7 +70,6 @@ RUN sed -i 's|"$HOUDINI_PACKAGE_PATH/SideFXLabs20.5"|"/app/sideFXLabs"|g' /root/
 COPY . /app
 
 # Install darol plugin 
-COPY --from=python-dependency-downloader /libs/python /libs/python
 COPY --from=python-dependency-downloader /usr/local/lib/python3.11/site-packages /darol/site-packages
 RUN cp /app/darol-plugin/darol.json /root/houdini20.5/packages/darol.json
 RUN sed -i 's|"/path/to/darol/repoclone/houdini-package"|"/app/darol-plugin"|g' /root/houdini20.5/packages/darol.json
