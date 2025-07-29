@@ -1,4 +1,4 @@
-line-length = 88
+line-length = 79
 
 [lint]
 # 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
