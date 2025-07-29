@@ -20,15 +20,15 @@ def transform_job_results(_):
 
 def create_job_results_table_source(app: FastAPI, params: dict[str, Any]) -> Source:
     """Constructor of event table result stream sources"""
-    param_page_size = params.get('page_size', 1)
-    param_owner_seq = params.get('owner_seq', None)
-    param_job_seq = params.get('job_seq', None)
-    param_job_result_seq = params.get('job_result_seq', None)
+    param_page_size = params.get("page_size", 1)
+    param_owner_seq = params.get("owner_seq", None)
+    param_job_seq = params.get("job_seq", None)
+    param_job_result_seq = params.get("job_result_seq", None)
 
     if param_owner_seq is None:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, 'an owner is required for job result table streams')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "an owner is required for job result table streams")
     if param_job_seq is None:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, 'a job is required for job result table streams')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "a job is required for job result table streams")
 
     async def job_results_source(boundary: Boundary) -> AsyncIterator[StreamItem]:
         """Function that produces event table result streams"""

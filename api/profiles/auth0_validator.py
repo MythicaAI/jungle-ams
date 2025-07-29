@@ -93,11 +93,11 @@ class Auth0Validator(AuthTokenValidator):
         header = jwt.get_unverified_header(token)
 
         # get the jwks key definitions and extract the signing key
-        jwks_url = f'https://{app_config().auth0_domain}/.well-known/jwks.json'
+        jwks_url = f"https://{app_config().auth0_domain}/.well-known/jwks.json"
         jwks_client = jwt.PyJWKClient(jwks_url)
-        kid = header['kid']
+        kid = header["kid"]
         self.signing_key = jwks_client.get_signing_key(kid)
-        self.alg = [header['alg']]
+        self.alg = [header["alg"]]
         return self.signing_key
 
     async def validate(self, token: str) -> ValidTokenPayload:
@@ -116,15 +116,15 @@ class Auth0Validator(AuthTokenValidator):
             raise HTTPException(HTTPStatus.BAD_REQUEST, f"invalid audience: {aud}") from e
 
         return ValidTokenPayload(
-            sub=payload['sub'],
-            scope=payload['scope'],
-            iat=payload['iat'],
-            exp=payload['exp'])
+            sub=payload["sub"],
+            scope=payload["scope"],
+            iat=payload["iat"],
+            exp=payload["exp"])
 
     async def query_user_profile(self, token) -> UserProfile:
-        user_info_url = f'https://{app_config().auth0_domain}/userinfo'
+        user_info_url = f"https://{app_config().auth0_domain}/userinfo"
         authorization_header = {
-            'Authorization': f'Bearer {token}'
+            "Authorization": f"Bearer {token}"
         }
         async with httpx.AsyncClient() as client:
             response = await client.get(user_info_url, headers=authorization_header)

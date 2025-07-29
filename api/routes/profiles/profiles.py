@@ -43,7 +43,7 @@ class CreateUpdateProfileModel(BaseModel):
     email: EmailStr = None
 
 
-@router.get('/named/{profile_name}')
+@router.get("/named/{profile_name}")
 async def by_name(
         profile_name: profile_name_str,
         exact_match: Optional[bool] = False,
@@ -70,7 +70,7 @@ async def by_name(
     ]
 
 
-@router.get('/roles')
+@router.get("/roles")
 async def active_roles(
         auth_profile=Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)
@@ -85,7 +85,7 @@ async def active_roles(
         auth_roles=list(auth_profile.auth_roles))
 
 
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post("/", status_code=HTTPStatus.CREATED)
 async def create(
         req_profile: CreateUpdateProfileModel,
         db_session: AsyncSession = Depends(get_db_session)) -> ProfileResponse:
@@ -109,7 +109,7 @@ async def create(
     return profile_to_profile_response(profile, ProfileResponse)
 
 
-@router.get('/{profile_id}')
+@router.get("/{profile_id}")
 async def by_id(
         profile_id: str,
         auth_profile: Optional[Profile] = Depends(maybe_session_profile),
@@ -133,7 +133,7 @@ async def by_id(
         PublicProfileResponse)
 
 
-@router.post('/{profile_id}')
+@router.post("/{profile_id}")
 async def update(
         profile_id: str,
         req_profile: CreateUpdateProfileModel,
@@ -155,7 +155,7 @@ async def update(
         result = await db_session.exec(stmt)
         rows_affected = result.rowcount
         if rows_affected == 0:
-            raise HTTPException(HTTPStatus.NOT_FOUND, detail='missing profile')
+            raise HTTPException(HTTPStatus.NOT_FOUND, detail="missing profile")
 
         await db_session.commit()
 

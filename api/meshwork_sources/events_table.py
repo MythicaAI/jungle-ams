@@ -14,10 +14,10 @@ from sqlmodel import select
 
 def create_events_table_source(app: FastAPI, params: dict[str, Any]) -> Source:
     """Constructor of event table result stream sources"""
-    page_size = params.get('page_size', 1)
-    owner_seq = params.get('owner_seq', None)
+    page_size = params.get("page_size", 1)
+    owner_seq = params.get("owner_seq", None)
     if owner_seq is None:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, 'an owner is required for event table streams')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "an owner is required for event table streams")
 
     async def events_table_source(boundary: Boundary) -> AsyncIterator[StreamItem]:
         """Function that produces event table result streams"""
@@ -29,7 +29,7 @@ def create_events_table_source(app: FastAPI, params: dict[str, Any]) -> Source:
             stmt = select(DbEvent).where(DbEvent.owner_seq == owner_seq)
             if boundary.position is not None:
                 event_seq_position = event_id_to_seq(boundary.position)
-                if boundary.direction == 'after':
+                if boundary.direction == "after":
                     stmt = stmt.where(DbEvent.event_seq > event_seq_position)
                 else:
                     stmt = stmt.where(DbEvent.event_seq < event_seq_position)

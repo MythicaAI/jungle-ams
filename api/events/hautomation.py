@@ -15,13 +15,13 @@ from munch import munchify
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 log = logging.getLogger(__name__)
 
-CONTAINER_REPO = 'us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images'
-CONTAINER_NAME = 'darol-houdini'
-CONTAINER_TAG = 'latest'
+CONTAINER_REPO = "us-central1-docker.pkg.dev/controlnet-407314/gke-us-central1-images"
+CONTAINER_NAME = "darol-houdini"
+CONTAINER_TAG = "latest"
 IMAGE_NAME = f"{CONTAINER_REPO}/{CONTAINER_NAME}:{CONTAINER_TAG}"
 IMAGE_NAME = "hautomation"
 
@@ -31,7 +31,7 @@ OUTPUT_LOCAL = os.path.join(SCRIPT_DIR, "output")
 
 def run_docker(docker_command: list[str]):
     try:
-        log.info("running %s", ' '.join(docker_command))
+        log.info("running %s", " ".join(docker_command))
         result = subprocess.run(
             docker_command,
             capture_output=True,
@@ -64,7 +64,7 @@ def process_output(stdout, stderr, returncode):
 
 
 def pull_container():
-    process_output(*run_docker(['docker', 'pull', IMAGE_NAME]))
+    process_output(*run_docker(["docker", "pull", IMAGE_NAME]))
 
 
 def launch_container(o):
@@ -77,7 +77,7 @@ def launch_container(o):
         if output_path is None:
             raise FileNotFoundError
 
-        if not str(output_path).endswith('.hda'):
+        if not str(output_path).endswith(".hda"):
             log.info(
                 "File %s is not an .hda file. Skipping processing.", str(output_path))
             return
@@ -99,8 +99,8 @@ def launch_container(o):
              "-v", "/tmp:/tmp",
              "-v", f"{OUTPUT_LOCAL}:/output",
              IMAGE_NAME,
-             '/bin/sh',
-             '-c', gather_deps_cmd]))
+             "/bin/sh",
+             "-c", gather_deps_cmd]))
         process_output(*run_docker(
             ["docker", "run",
              "--rm",
@@ -108,8 +108,8 @@ def launch_container(o):
              "-v", "/tmp:/tmp",
              "-v", f"{OUTPUT_LOCAL}:/output",
              IMAGE_NAME,
-             '/bin/sh',
-             '-c', gen_network_cmd]))
+             "/bin/sh",
+             "-c", gen_network_cmd]))
 
         upload_results(token)
 
@@ -125,9 +125,9 @@ def upload_results(token):
                 # Copy file to temporary directory
                 shutil.copyfile(file_path, temp_file_path)
 
-                with open(temp_file_path, 'rb') as file:
+                with open(temp_file_path, "rb") as file:
                     file_data = [
-                        ('files', (file_name, file, 'application/octet-stream'))]
+                        ("files", (file_name, file, "application/octet-stream"))]
                     response = requests.post(
                         f"{api_settings().endpoint}/upload/store",
                         headers=headers, files=file_data,
@@ -154,9 +154,9 @@ async def main():
     environment variable to form an initial connection"""
     # pull_container()
     sql_url = os.environ.get(
-        'SQL_URL',
-        'postgresql+asyncpg://test:test@localhost:5432/upload_pipeline')
-    sleep_interval = os.environ.get('SLEEP_INTERVAL', 3)
+        "SQL_URL",
+        "postgresql+asyncpg://test:test@localhost:5432/upload_pipeline")
+    sleep_interval = os.environ.get("SLEEP_INTERVAL", 3)
     async with EventsSession(sql_url, sleep_interval, event_type_prefixes=[]) as session:
         async for event_id, _, json_data in session.ack_next():
             log.info("%s: %s", event_id, json_data)
@@ -165,5 +165,5 @@ async def main():
             await session.complete(event_id)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

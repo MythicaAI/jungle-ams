@@ -28,21 +28,21 @@ class FileContent(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    file_seq: int = Field(sa_column=Column('file_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    file_seq: int = Field(sa_column=Column("file_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     name: str | None = Field(default=None)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_onupdate": sql_now(), "nullable": True})
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    size: int | None = Field(sa_column=Column('size',Integer,default=0))
+    size: int | None = Field(sa_column=Column("size",Integer,default=0))
     purpose: str | None = Field(default=None)
     content_type: str | None = Field(default=None)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
-    cache_ttl: int | None = Field(sa_column=Column('cache_ttl',Integer,default=0))
-    downloads: int | None = Field(sa_column=Column('downloads',Integer,default=0))
-    lifetime: int | None = Field(sa_column=Column('lifetime',Integer,default=0))
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
+    cache_ttl: int | None = Field(sa_column=Column("cache_ttl",Integer,default=0))
+    downloads: int | None = Field(sa_column=Column("downloads",Integer,default=0))
+    lifetime: int | None = Field(sa_column=Column("lifetime",Integer,default=0))
     content_hash: str | None = Field(default=None)
     locators: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
-    src_file_seq: int | None = Field(sa_column=Column('src_file_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('files.file_seq'),default=None))
+    src_file_seq: int | None = Field(sa_column=Column("src_file_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("files.file_seq"),default=None))
 
 # sequences for table file_tags
 
@@ -59,5 +59,5 @@ class FileTag(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    type_seq: int = Field(sa_column=Column('type_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    tag_seq: int = Field(sa_column=Column('tag_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    type_seq: int = Field(sa_column=Column("type_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    tag_seq: int = Field(sa_column=Column("tag_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))

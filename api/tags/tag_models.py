@@ -34,7 +34,7 @@ class TagRequest(BaseModel):
     page_priority: Optional[int] = None
     contents: Optional[dict[str, str | list[TagFileReference] | None | list[dict]]] = None
 
-    @field_validator('name')
+    @field_validator("name")
     @classmethod
     def check_profanity(cls, name: str) -> str:
         if profanity.contains_profanity(name):

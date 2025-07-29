@@ -28,19 +28,19 @@ class Profile(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    profile_seq: int = Field(sa_column=Column("profile_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     name: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
     signature: str | None = Field(default=None)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_onupdate": sql_now(), "nullable": True})
     active: bool | None = Field(default=False)
     profile_base_href: str | None = Field(default=None)
     description: str | None = Field(default=None)
     email: str | None = Field(default=None)
-    email_validate_state: int | None = Field(sa_column=Column('email_validate_state',Integer,default=0))
+    email_validate_state: int | None = Field(sa_column=Column("email_validate_state",Integer,default=0))
     location: str | None = Field(default=None)
-    login_count: int | None = Field(sa_column=Column('login_count',Integer,default=0))
+    login_count: int | None = Field(sa_column=Column("login_count",Integer,default=0))
 
 # sequences for table org_refs
 
@@ -57,11 +57,11 @@ class OrgRef(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    org_seq: int = Field(sa_column=Column("org_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    profile_seq: int = Field(sa_column=Column("profile_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     role: str = Field(primary_key=True,nullable=False)
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    author_seq: int | None = Field(sa_column=Column('author_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    author_seq: int | None = Field(sa_column=Column("author_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
 
 # sequences for table orgs
 
@@ -78,9 +78,9 @@ class Org(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    org_seq: int = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    org_seq: int = Field(sa_column=Column("org_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_onupdate": sql_now(), "nullable": True})
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
 
@@ -99,10 +99,10 @@ class ProfileSession(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    profile_session_seq: int = Field(sa_column=Column('profile_session_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    profile_session_seq: int = Field(sa_column=Column("profile_session_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
     refreshed: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    profile_seq: int = Field(sa_column=Column("profile_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
     authenticated: bool | None = Field(default=False)
     auth_token: str | None = Field(default=None)
     refresh_token: str | None = Field(default=None)
@@ -123,9 +123,9 @@ class ProfileFollower(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    follower_seq: int = Field(sa_column=Column('follower_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    profile_seq: int = Field(sa_column=Column("profile_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    follower_seq: int = Field(sa_column=Column("follower_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
     deleted: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
 
 # sequences for table profile_keys
@@ -144,8 +144,8 @@ class ProfileKey(SQLModel, table=True):
         return None
 
     key: str = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
     expires: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),default=None)
     payload: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
 
@@ -165,7 +165,7 @@ class ProfileLocatorOID(SQLModel, table=True):
         return None
 
     sub: str = Field(primary_key=True,nullable=False)
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
 
 # sequences for table profile_assets
 
@@ -182,10 +182,10 @@ class ProfileAsset(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    profile_seq: int = Field(sa_column=Column('profile_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    asset_seq: int = Field(sa_column=Column('asset_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    major: int = Field(sa_column=Column('major',Integer,primary_key=True,nullable=False))
-    minor: int = Field(sa_column=Column('minor',Integer,primary_key=True,nullable=False))
-    patch: int = Field(sa_column=Column('patch',Integer,primary_key=True,nullable=False))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
+    profile_seq: int = Field(sa_column=Column("profile_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    asset_seq: int = Field(sa_column=Column("asset_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    major: int = Field(sa_column=Column("major",Integer,primary_key=True,nullable=False))
+    minor: int = Field(sa_column=Column("minor",Integer,primary_key=True,nullable=False))
+    patch: int = Field(sa_column=Column("patch",Integer,primary_key=True,nullable=False))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
     category: str = Field(default=None)

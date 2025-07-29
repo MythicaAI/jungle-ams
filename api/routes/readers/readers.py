@@ -9,10 +9,10 @@ from pydantic import TypeAdapter, ValidationError
 from sqlmodel import delete as sql_delete, insert, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from gcid.gcid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from db.connection import TZ, db_session_pool, get_db_session
 from db.schema.profiles import Profile
 from db.schema.streaming import Reader
+from gcid.gcid import profile_seq_to_id, reader_id_to_seq, reader_seq_to_id
 from meshwork.client_ops import ReadClientOp
 from meshwork.funcs import Boundary
 from meshwork.models.streaming import StreamItemUnion
@@ -103,9 +103,9 @@ async def items(reader_id: str,
     params = reader_to_source_params(profile, reader)
     source = create_source(reader.source, params)
     if before is not None:
-        boundary = Boundary(position=before, direction='before')
+        boundary = Boundary(position=before, direction="before")
     elif after is not None:
-        boundary = Boundary(position=after, direction='after')
+        boundary = Boundary(position=after, direction="after")
     else:
         boundary = Boundary(position=reader.position, direction=direction_db_to_literal(reader.direction))
     if source is None:
@@ -123,14 +123,14 @@ async def items(reader_id: str,
     except ValidationError as e:
         log.exception("failed to validate", exc_info=e)
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,  # pylint: disable=W0707:raise-missing-from
-                            detail=f"validation error for reader {reader_id}")
+                            detail=f"validation error for reader {reader_id}") from e
 
 
 @router.websocket("/test/connect")
 async def test_connect(websocket: WebSocket):
     """Connect a websocket for all profile data"""
     await websocket.accept()
-    await websocket.send_json(data={'message': 'hello world'}, mode='text')
+    await websocket.send_json(data={"message": "hello world"}, mode="text")
 
 
 @router.websocket("/connect")

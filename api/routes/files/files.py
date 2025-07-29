@@ -65,7 +65,7 @@ async def by_purpose(
     return await enrich_files(db_session, files, profile)
 
 
-@router.delete('/{file_id}')
+@router.delete("/{file_id}")
 async def delete_file_by_id(
         file_id,
         profile: SessionProfile = Depends(session_profile),

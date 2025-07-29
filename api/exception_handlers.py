@@ -38,7 +38,7 @@ async def validation_error(_: Request, exc: ValidationError):
 async def role_error(_: Request, exc: RoleError):
     return JSONResponse(
         status_code=HTTP_401_UNAUTHORIZED,
-        content={'detail': exc.message}
+        content={"detail": exc.message}
     )
 
 

@@ -57,8 +57,8 @@ class WebSocketTester:
                 page_sized_reads += 1
             for output_raw in output_data:
                 raw: dict = json.loads(output_raw)
-                assert 'index' in raw
-                assert 'payload' in raw
+                assert "index" in raw
+                assert "payload" in raw
                 # TODO: assert raw["index"] == stream_items[count_events]["index"]
                 count_events += 1
 
@@ -84,14 +84,14 @@ class WebSocketTester:
                 "url:",
                 f"{self.http_uri}/readers/",
                 dict(
-                    json={'source': 'events', 'params': {'page_size': page_size}},
+                    json={"source": "events", "params": {"page_size": page_size}},
                     headers=auth_header,
                     timeout=self.timeout,
                 ),
             )
             await client.post(
                 f"{self.http_uri}/readers/",
-                json={'source': 'events', 'params': {'page_size': page_size}},
+                json={"source": "events", "params": {"page_size": page_size}},
                 headers=auth_header,
                 timeout=self.timeout,
             )

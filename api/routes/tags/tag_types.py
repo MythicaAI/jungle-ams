@@ -36,10 +36,10 @@ from tags.tag_models import (
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix='/types', tags=['tags'])
+router = APIRouter(prefix="/types", tags=["tags"])
 
 
-@router.post('/{tag_type}', status_code=HTTPStatus.CREATED)
+@router.post("/{tag_type}", status_code=HTTPStatus.CREATED)
 async def create_tag_for_type(
         tag_type: TagType,
         create: TagTypeRequest,
@@ -85,7 +85,7 @@ async def create_tag_for_type(
     return {"tag_id": create.tag_id, "type_id": create.type_id}
 
 
-@router.get('/{tag_type}')
+@router.get("/{tag_type}")
 async def get_tags_for_type(
         tag_type: TagType,
         profile: Optional[Profile] = Depends(maybe_session_profile),
@@ -117,7 +117,7 @@ async def get_tags_for_type(
     return response
 
 
-@router.delete('/{tag_type}/{tag_id}/{type_id}')
+@router.delete("/{tag_type}/{tag_id}/{type_id}")
 async def delete_tag_type(
         tag_type: TagType,
         tag_id: str,
@@ -163,7 +163,7 @@ async def delete_tag_type(
         )
 
 
-@router.get('/{tag_type}/top')
+@router.get("/{tag_type}/top")
 async def get_top_tags_for_type(
         tag_type: TagType,
         profile: Optional[Profile] = Depends(maybe_session_profile),
@@ -219,7 +219,7 @@ async def get_top_tags_for_type(
     return response
 
 
-@router.get('/{tag_type}/filter')
+@router.get("/{tag_type}/filter")
 async def get_filtered_model_types_by_tags(
         tag_type: TagType,
         profile: Optional[Profile] = Depends(maybe_session_profile),

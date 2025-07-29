@@ -10,8 +10,8 @@ def register_streaming_sources(app):
     to provide an overridable name->source factory map for the
     readers endpoint
     """
-    add_source_type('events', functools.partial(create_events_table_source, app))
+    add_source_type("events", functools.partial(create_events_table_source, app))
 
 
 def unregister_streaming_sources():
-    remove_source_type('events')
+    remove_source_type("events")

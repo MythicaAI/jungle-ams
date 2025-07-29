@@ -28,11 +28,11 @@ class Topology(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
-    owner_seq: int | None = Field(sa_column=Column('owner_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('profiles.profile_seq'),default=None))
-    org_seq: int | None = Field(sa_column=Column('org_seq',BigInteger().with_variant(Integer, 'sqlite'),ForeignKey('orgs.org_seq'),default=None))
-    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_default': sql_now(), 'nullable': False},default=None)
-    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={'server_onupdate': sql_now(), 'nullable': True})
+    topology_seq: int = Field(sa_column=Column("topology_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
+    owner_seq: int | None = Field(sa_column=Column("owner_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("profiles.profile_seq"),default=None))
+    org_seq: int | None = Field(sa_column=Column("org_seq",BigInteger().with_variant(Integer, "sqlite"),ForeignKey("orgs.org_seq"),default=None))
+    created: datetime | None = Field(sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_default": sql_now(), "nullable": False},default=None)
+    updated: datetime | None = Field(default=None,sa_type=TIMESTAMP(timezone=True),sa_column_kwargs={"server_onupdate": sql_now(), "nullable": True})
     name: str | None = Field(default=None)
     description: str | None = Field(default=None)
     edge_data_schema: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))
@@ -52,7 +52,7 @@ class TopologyRef(SQLModel, table=True):
         # ensure auto increment behavior on non-PK int columns
         return None
 
-    topology_seq: int = Field(sa_column=Column('topology_seq',BigInteger().with_variant(Integer, 'sqlite'),primary_key=True,nullable=False))
+    topology_seq: int = Field(sa_column=Column("topology_seq",BigInteger().with_variant(Integer, "sqlite"),primary_key=True,nullable=False))
     src_id: str = Field(primary_key=True,nullable=False)
     dst_id: str = Field(primary_key=True,nullable=False)
     edge_data: Dict[str, Any] | None = Field(default_factory=dict,sa_column=Column(JSON))

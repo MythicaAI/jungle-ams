@@ -26,12 +26,12 @@ log = logging.getLogger(__name__)
 
 # TODO: move to admin interface
 privileged_emails = {
-    'test@mythica.ai',
-    'jacob@mythica.ai',
-    'pedro@mythica.ai',
-    'kevin@mythica.ai',
-    'bohdan.krupa.mythica@gmail.com',
-    'kyrylo.katkov@gmail.com',
+    "test@mythica.ai",
+    "jacob@mythica.ai",
+    "pedro@mythica.ai",
+    "kevin@mythica.ai",
+    "bohdan.krupa.mythica@gmail.com",
+    "kyrylo.katkov@gmail.com",
 }
 
 
@@ -50,7 +50,7 @@ async def start_session(
         active=True,
         location=location).where(Profile.profile_seq == profile_seq))
     if result.rowcount == 0:
-        raise HTTPException(HTTPStatus.NOT_FOUND, detail='profile not found')
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="profile not found")
     await db_session.commit()
 
     #
@@ -77,7 +77,7 @@ async def start_session(
         if r_org is None:
             break
         org_id = org_seq_to_id(r_org.org_seq)
-        auth_roles.add(f'{r_org_ref.role}:{org_id}')
+        auth_roles.add(f"{r_org_ref.role}:{org_id}")
 
     profile = profile_org_results[0][0]
 
@@ -90,10 +90,10 @@ async def start_session(
         auth_roles.update(roles.privileged_roles)
     else:
         auth_roles.update((
-            f'{roles.alias_asset_editor}:{roles.self_object_scope}',
-            f'{roles.alias_profile_owner}:{roles.self_object_scope}',
-            f'{roles.alias_job_def_all}:{roles.self_object_scope}',
-            f'{roles.alias_core_create}'))
+            f"{roles.alias_asset_editor}:{roles.self_object_scope}",
+            f"{roles.alias_profile_owner}:{roles.self_object_scope}",
+            f"{roles.alias_job_def_all}:{roles.self_object_scope}",
+            f"{roles.alias_core_create}"))
 
     # after role validation, it is possible to take on the identity of another profile
     # if you have this role, this is a super-use privilege and should be audited

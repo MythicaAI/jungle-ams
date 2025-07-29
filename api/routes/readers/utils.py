@@ -20,12 +20,12 @@ log = logging.getLogger(__name__)
 
 def direction_literal_to_db(direction: Direction) -> int:
     """Convert the direction string literal to a database int"""
-    return 1 if direction == 'after' else -1
+    return 1 if direction == "after" else -1
 
 
 def direction_db_to_literal(db_direction: int) -> Direction:
     """Convert the database direction int to string"""
-    return 'after' if db_direction == 1 else 'before'
+    return "after" if db_direction == 1 else "before"
 
 
 def resolve_results(results) -> list[ReaderResponse]:
@@ -81,13 +81,13 @@ async def update_reader_index(
 def reader_to_source_params(profile: Profile, reader: Reader) -> dict[str, Any]:
     """Generate the source params from a reader"""
     params = reader.params or dict()
-    params['source'] = reader.source
-    params['name'] = reader.name
-    params['reader_seq'] = reader.reader_seq
-    params['reader_id'] = reader_seq_to_id(reader.reader_seq)
-    params['owner_seq'] = profile.profile_seq
-    params['owner_id'] = profile_seq_to_id(profile.profile_seq)
-    params['created'] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
-    params['position'] = reader.position
-    params['direction'] = direction_db_to_literal(reader.direction)
+    params["source"] = reader.source
+    params["name"] = reader.name
+    params["reader_seq"] = reader.reader_seq
+    params["reader_id"] = reader_seq_to_id(reader.reader_seq)
+    params["owner_seq"] = profile.profile_seq
+    params["owner_id"] = profile_seq_to_id(profile.profile_seq)
+    params["created"] = reader.created.replace(tzinfo=TZ).astimezone(timezone.utc)
+    params["position"] = reader.position
+    params["direction"] = direction_db_to_literal(reader.direction)
     return params

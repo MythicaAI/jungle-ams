@@ -28,7 +28,7 @@ class Auth0SpaStartRequest(BaseModel):
 
 def get_client_ip(request: Request) -> str:
     """Get the IP address of the requesting client"""
-    client_ip = request.headers.get('X-Forwarded-For')
+    client_ip = request.headers.get("X-Forwarded-For")
     if client_ip:
         # In case there are multiple IPs, take the first one
         return client_ip.split(",")[0]
@@ -47,7 +47,7 @@ async def get_auth_validator() -> Auth0Validator:
     return cached_validator()
 
 
-@router.get('/key/{api_key}')
+@router.get("/key/{api_key}")
 async def key(request: Request,
               api_key: str,
               impersonate_profile_id: str = Header(None, include_in_schema=False),
@@ -69,7 +69,7 @@ async def key(request: Request,
     return await start_session(db_session, key_result.owner_seq, client_ip, impersonate_profile_id)
 
 
-@router.post('/auth0-spa')
+@router.post("/auth0-spa")
 async def auth0_spa(req: Auth0SpaStartRequest,
                     validator: Auth0Validator = Depends(get_auth_validator),
                     db_session: AsyncSession = Depends(get_db_session)) -> SessionStartResponse:
@@ -78,13 +78,13 @@ async def auth0_spa(req: Auth0SpaStartRequest,
     return session_start
 
 
-@router.delete('/')
+@router.delete("/")
 async def delete(profile: Profile = Depends(session_profile),
                  db_session: AsyncSession = Depends(get_db_session)):
     """Stop a session for a profile"""
     await db_session.begin()
     result = await db_session.exec(update(Profile).values(
-        {'active': False}).where(
+        {"active": False}).where(
         col(Profile.profile_seq) == profile.profile_seq))
 
     await db_session.exec(sql_delete(ProfileSession).where(
@@ -94,4 +94,4 @@ async def delete(profile: Profile = Depends(session_profile),
 
     if result.rowcount == 0:
         raise HTTPException(HTTPStatus.NOT_FOUND,
-                            detail='profile not found')
+                            detail="profile not found")

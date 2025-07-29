@@ -40,11 +40,11 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 DEFAULT_BUCKET_TYPE = BucketType.FILES
 
 USER_BUCKET_MAPPINGS = {
-    BucketType.IMAGES: {'png', 'jpg', 'jpeg', 'gif', 'webm'},
+    BucketType.IMAGES: {"png", "jpg", "jpeg", "gif", "webm"},
 }
 
 PACKAGE_BUCKET_MAPPINGS = {
-    BucketType.PACKAGES: {'zip'}
+    BucketType.PACKAGES: {"zip"}
 }
 
 
@@ -82,16 +82,16 @@ async def upload_internal(
     # stream the file content to a local file path in the upload folder
     ctx.filename = filename
 
-    random_filename = ''.join(random.choice(string.ascii_letters + string.digits)
+    random_filename = "".join(random.choice(string.ascii_letters + string.digits)
                               for _ in range(20))
     ctx.local_filepath = os.path.join(cfg.upload_folder, random_filename)
     try:
-        with open(ctx.local_filepath, 'wb') as f:
+        with open(ctx.local_filepath, "wb") as f:
             shutil.copyfileobj(upload_file.file, f)
-        log.info('%s saved to %s', filename, ctx.local_filepath)
+        log.info("%s saved to %s", filename, ctx.local_filepath)
     except Exception as e:
-        log.error('Error saving file %s to %s: %s', filename, ctx.local_filepath, e)
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, 'Error saving file') from e
+        log.error("Error saving file %s to %s: %s", filename, ctx.local_filepath, e)
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Error saving file") from e
 
     page_size = 64 * 1024
     file_size = 0
@@ -114,19 +114,19 @@ async def upload_internal(
     if cfg.enable_storage:
         bucket_type = get_target_bucket(bucket_mappings, extension)
         if bucket_type is None:
-            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f'extension {extension} not supported')
+            raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, f"extension {extension} not supported")
         storage.upload(ctx, bucket_type)
     else:
         # for testing provide local file locator, these can't be located outside the
         # machine they live on, NOTE files are not actually resolvable, this provides
         # unit test support
-        ctx.add_object_locator('test', 'local', ctx.local_filepath)
+        ctx.add_object_locator("test", "local", ctx.local_filepath)
 
     # Update database index
     if cfg.enable_db:
         ctx.file_id, ctx.event_id = await db_index.update(db_session, ctx)
     else:
-        ctx.file_id, ctx.event_id = '', ''
+        ctx.file_id, ctx.event_id = "", ""
 
     if cfg.upload_folder_auto_clean:
         os.remove(ctx.local_filepath)
@@ -135,7 +135,7 @@ async def upload_internal(
     return ctx
 
 
-@router.post('/store')
+@router.post("/store")
 async def store_files(
         files: list[UploadFile] = File(...),
         profile: SessionProfile = Depends(session_profile),
@@ -146,7 +146,7 @@ async def store_files(
     log.info("handling upload for profile: %s", profile)
 
     if not files:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail="no files")
 
     response_files = []
     for file in files:
@@ -170,11 +170,11 @@ async def store_files(
             content_hash=ctx.content_hash,
             created=datetime.now(timezone.utc)))
     return UploadResponse(
-        message=f'uploaded {len(response_files)} files',
+        message=f"uploaded {len(response_files)} files",
         files=response_files)
 
 
-@router.post('/package/{asset_id}/{version_str}')
+@router.post("/package/{asset_id}/{version_str}")
 async def store_and_attach_package(
         asset_id: str,
         version_str: str,
@@ -184,12 +184,12 @@ async def store_and_attach_package(
         db_session: AsyncSession = Depends(get_db_session)) -> UploadResponse:
     """Provide a package upload to a specific asset and version"""
     if not files:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='no files')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail="no files")
     if len(files) != 1:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail='only one package at a time supported')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail="only one package at a time supported")
     file = files[0]
     if file.content_type is None:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f'no content type for file {file.filename}')
+        raise HTTPException(HTTPStatus.BAD_REQUEST, detail=f"no content type for file {file.filename}")
 
     version_id = convert_version_input(version_str)
 
@@ -240,11 +240,11 @@ async def store_and_attach_package(
     await db_session.commit()
 
     return UploadResponse(
-        message=f'uploaded {len(response_files)} files',
+        message=f"uploaded {len(response_files)} files",
         files=response_files)
 
 
-@router.get('/pending')
+@router.get("/pending")
 async def pending(
         profile: Annotated[Profile, Depends(session_profile)],
         db_session: AsyncSession = Depends(get_db_session)) -> list[FileUploadResponse]:

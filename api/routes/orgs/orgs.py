@@ -107,7 +107,7 @@ async def resolve_org_refs(
     return results
 
 
-@router.post('/', status_code=HTTPStatus.CREATED)
+@router.post("/", status_code=HTTPStatus.CREATED)
 async def create(
         create_req: OrgCreateRequest,
         profile: Profile = Depends(session_profile),
@@ -135,7 +135,7 @@ async def create(
     return resolved[0]
 
 
-@router.get('/named/{org_name}')
+@router.get("/named/{org_name}")
 async def by_name(
         org_name: org_name_str,
         exact_match: Optional[bool] = True,
@@ -153,7 +153,7 @@ async def by_name(
     return results
 
 
-@router.post('/{org_id}')
+@router.post("/{org_id}")
 async def update(
         org_id: str,
         req: OrgUpdateRequest,
@@ -182,7 +182,7 @@ async def update(
     return result
 
 
-@router.delete('/{org_id}')
+@router.delete("/{org_id}")
 async def delete(
         org_id: str,
         profile: SessionProfile = Depends(session_profile),
@@ -198,7 +198,7 @@ async def delete(
     await db_session.commit()
 
 
-@router.get('/')
+@router.get("/")
 async def member_of(
         profile: Profile = Depends(session_profile),
         db_session: AsyncSession = Depends(get_db_session)) -> list[OrgRefResponse]:
@@ -209,7 +209,7 @@ async def member_of(
     return await resolve_org_refs(db_session, refs)
 
 
-@router.get('/{org_id}')
+@router.get("/{org_id}")
 async def by_id(
         org_id: str = None,
         profile: Profile = Depends(session_profile),
@@ -227,7 +227,7 @@ async def by_id(
     return OrgResponse(**org.model_dump(), org_id=org_seq_to_id(org.org_seq))
 
 
-@router.get('/{org_id}/roles')
+@router.get("/{org_id}/roles")
 async def member_roles(
         org_id: str,
         db_session: AsyncSession = Depends(get_db_session)) -> list[OrgRefResponse]:
@@ -238,7 +238,7 @@ async def member_roles(
         (await db_session.exec(select(OrgRef).where(OrgRef.org_seq == org_seq))).all())
 
 
-@router.post('/{org_id}/roles/{profile_id}/{role}', status_code=HTTPStatus.CREATED)
+@router.post("/{org_id}/roles/{profile_id}/{role}", status_code=HTTPStatus.CREATED)
 async def add_role(
         org_id: str,
         profile_id: str,
@@ -268,7 +268,7 @@ async def add_role(
             OrgRef.org_seq == org_seq))).all())
 
 
-@router.delete('/{org_id}/roles/{profile_id}/{role}')
+@router.delete("/{org_id}/roles/{profile_id}/{role}")
 async def remove_role(
         org_id: str,
         profile_id: str,

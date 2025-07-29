@@ -19,7 +19,7 @@ def sanitize_filename(name: str, max_length: int = 255, replacement: str = "_") 
     name = re.sub(unsafe_chars, replacement, name)
 
     # Replace multiple replacements with a single one
-    name = re.sub(rf'{re.escape(replacement)}+', replacement, name).strip(replacement)
+    name = re.sub(rf"{re.escape(replacement)}+", replacement, name).strip(replacement)
 
     # Trim to max_length
     return name[:max_length] if len(name) > max_length else name

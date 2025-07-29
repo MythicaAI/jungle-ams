@@ -29,25 +29,25 @@ from tags.tag_models import TagResponse, TagType, get_model_type, get_model_type
 
 @lru_cache
 def build_json_function(db_session: AsyncSession) -> Callable:
-    if db_session.bind.name == 'postgresql':
+    if db_session.bind.name == "postgresql":
         return func.json_build_object
-    elif db_session.bind.name == 'sqlite':
+    elif db_session.bind.name == "sqlite":
         return func.json_object
 
 
 @lru_cache
 def build_json_agg_function(session: Session) -> Callable:
-    if session.bind.name == 'postgresql':
+    if session.bind.name == "postgresql":
         return func.json_agg
-    elif session.bind.name == 'sqlite':
+    elif session.bind.name == "sqlite":
         return func.json_group_array
 
 
 @lru_cache
 def build_lpad_function(db_session: AsyncSession) -> Callable:
-    if db_session.bind.name == 'postgresql':
+    if db_session.bind.name == "postgresql":
         return func.lpad
-    elif db_session.bind.name == 'sqlite':
+    elif db_session.bind.name == "sqlite":
         # Define a SQL function for LPAD
         def sqlite_lpad(value, length, pad_char):
             return func.substr(pad_char * length + value, -length, length)
@@ -58,9 +58,9 @@ def build_lpad_function(db_session: AsyncSession) -> Callable:
 @lru_cache
 def build_concat_function(db_session: AsyncSession) -> Callable:
     from sqlalchemy.sql.functions import _FunctionGenerator
-    if db_session.bind.dialect.name == 'postgresql':
+    if db_session.bind.dialect.name == "postgresql":
         return func.concat
-    elif db_session.bind.dialect.name == 'sqlite':
+    elif db_session.bind.dialect.name == "sqlite":
         def sqlite_concat(*args: tuple[_FunctionGenerator]):
             expr = args[0]
             for arg in args[1:]:
@@ -76,19 +76,19 @@ def get_tag_join_query(db_session: AsyncSession) -> Select[Tuple]:
 
     return (
         select(
-            AssetTag.type_seq.label('asset_seq'),  # pylint: disable=no-member
+            AssetTag.type_seq.label("asset_seq"),  # pylint: disable=no-member
             json_agg_func(
                 json_func(
-                    'tag_seq',
+                    "tag_seq",
                     AssetTag.tag_seq,
-                    'name',
+                    "name",
                     Tag.name,
-                    'page_priority',
+                    "page_priority",
                     Tag.page_priority,
-                    'contents',
+                    "contents",
                     Tag.contents,
                 )
-            ).label('tag_to_asset'),
+            ).label("tag_to_asset"),
         )
         .join(Tag, Tag.tag_seq == AssetTag.tag_seq)
         .group_by(AssetTag.type_seq)
@@ -386,11 +386,11 @@ async def exec_query_select_assets_by_profile_asset_category(
             AssetVersion.asset_seq,
             func.max(
                 concat_func(  # pylint: disable=not-callable
-                    lpad_func(cast(AssetVersion.major, String), 3, '0'),
-                    lpad_func(cast(AssetVersion.minor, String), 3, '0'),
-                    lpad_func(cast(AssetVersion.patch, String), 3, '0')  # pylint: disable=not-callable
+                    lpad_func(cast(AssetVersion.major, String), 3, "0"),
+                    lpad_func(cast(AssetVersion.minor, String), 3, "0"),
+                    lpad_func(cast(AssetVersion.patch, String), 3, "0")  # pylint: disable=not-callable
                 )
-            ).label('max_version'),
+            ).label("max_version"),
         )
         .group_by(AssetVersion.asset_seq)
         .subquery()
@@ -425,9 +425,9 @@ async def exec_query_select_assets_by_profile_asset_category(
                         ProfileAsset.minor == 0,
                         ProfileAsset.patch == 0,
                         concat_func(
-                            lpad_func(cast(AssetVersion.major, String), 3, '0'),
-                            lpad_func(cast(AssetVersion.minor, String), 3, '0'),
-                            lpad_func(cast(AssetVersion.patch, String), 3, '0')  # pylint: disable=not-callable
+                            lpad_func(cast(AssetVersion.major, String), 3, "0"),
+                            lpad_func(cast(AssetVersion.minor, String), 3, "0"),
+                            lpad_func(cast(AssetVersion.patch, String), 3, "0")  # pylint: disable=not-callable
                         )
                         == latest_version_subquery.c.max_version,
                     ),

@@ -41,7 +41,7 @@ class TopologyRefResponse(BaseModel):
 
 router = APIRouter(prefix="/topos", tags=["topology"])
 
-expression = re.compile(r'^[a-zA-Z-_]{1,63}$')
+expression = re.compile(r"^[a-zA-Z-_]{1,63}$")
 
 
 def validate_topo_name(name: str) -> bool:
@@ -88,14 +88,14 @@ async def create(
     org = (await db_session.exec(select(Org).where(Org.org_seq == org_seq))).first()
     if org is None:
         raise HTTPException(HTTPStatus.FAILED_DEPENDENCY,
-                            detail=f'missing org: {create_req.org_id}')
+                            detail=f"missing org: {create_req.org_id}")
     if not validate_topo_name(create_req.name):
         raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            detail=f'invalid topo name: {create_req.name}')
+                            detail=f"invalid topo name: {create_req.name}")
     name_result = await db_session.exec(select(Topology).where(Topology.name == create_req.name))
     if name_result.first() is not None:
         raise HTTPException(
-            HTTPStatus.CONFLICT, detail=f'topology already exists: {create_req.name}')
+            HTTPStatus.CONFLICT, detail=f"topology already exists: {create_req.name}")
 
     topology = Topology(**create_req.model_dump(),
                         owner_seq=profile.profile_seq,
@@ -121,22 +121,22 @@ async def update(
         org = (await db_session.exec(select(Org).where(Org.org_seq == org_seq))).first()
         if org is None:
             raise HTTPException(
-                HTTPStatus.FAILED_DEPENDENCY, detail=f'missing org: {req.org_id}')
-        update_params['org_seq'] = org_seq
-        update_params.pop('org_id')
+                HTTPStatus.FAILED_DEPENDENCY, detail=f"missing org: {req.org_id}")
+        update_params["org_seq"] = org_seq
+        update_params.pop("org_id")
     else:
-        update_params.pop('org_id', None)
+        update_params.pop("org_id", None)
 
     # Handle name updates, don't allow clearing of names
     if req.name is None:
-        update_params.pop('name', None)
+        update_params.pop("name", None)
     else:
         if not validate_topo_name(req.name):
             raise HTTPException(HTTPStatus.BAD_REQUEST,
-                                detail=f'invalid topo name: {req.name}')
+                                detail=f"invalid topo name: {req.name}")
         name_result = await db_session.exec(select(Topology).where(Topology.name == req.name))
         if name_result.first() is not None:
-            raise HTTPException(HTTPStatus.CONFLICT, detail=f'topology: {req.name} already exists')
+            raise HTTPException(HTTPStatus.CONFLICT, detail=f"topology: {req.name} already exists")
 
     # Update the topology
     topo_seq = topo_id_to_seq(topo_id)
