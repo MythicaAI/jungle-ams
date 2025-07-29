@@ -20,9 +20,9 @@ Profiles can have roles or have aliases that provide roles with special bindings
 
 """
 
-from typing import Optional
 
 from pydantic import BaseModel
+
 from meshwork.auth.roles import role_to_alias, self_object_scope
 from meshwork.models.assets import AssetVersionRef
 from meshwork.models.sessions import OrgRef, SessionProfile
@@ -49,14 +49,14 @@ class RoleError(Exception):
 class Scope(BaseModel):
     """The currently scoped objects to test against"""
 
-    profile: Optional[SessionProfile] = None
-    org: Optional[OrgRef] = None
-    asset_version: Optional[AssetVersionRef] = None
-    job_def: Optional[JobDefinition] = None
+    profile: SessionProfile | None = None
+    org: OrgRef | None = None
+    asset_version: AssetVersionRef | None = None
+    job_def: JobDefinition | None = None
 
 
 def check_asset_version_role(
-    role: str, auth_roles: set[str], scope: Optional[Scope] = None
+    role: str, auth_roles: set[str], scope: Scope | None = None
 ) -> bool:
     """Internally validate the roles against the asset ownership logic"""
     if scope.asset_version is None:
@@ -84,7 +84,7 @@ def check_asset_version_role(
     return False
 
 
-def check_job_def_role(scope: Optional[Scope] = None, **kwargs) -> bool:
+def check_job_def_role(scope: Scope | None = None, **kwargs) -> bool:
     """Internally validate the roles against the job_def ownership logic"""
     if scope.job_def is None:
         return False
@@ -103,8 +103,8 @@ def validate_roles(
     *,
     role: str,
     auth_roles: set[str],
-    object_id: Optional[str] = None,
-    scope: Optional[Scope] = None,
+    object_id: str | None = None,
+    scope: Scope | None = None,
     **kwargs,
 ) -> bool:
     """

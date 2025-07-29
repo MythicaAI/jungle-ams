@@ -1,6 +1,8 @@
-from typing import Any, Callable, Dict, Literal, Optional, Type
+from collections.abc import Callable
+from typing import Any, Literal
 
 from pydantic import BaseModel
+
 from meshwork.models.params import (
     FileParameter,
     HoudiniParmTemplateSpecType,
@@ -12,15 +14,15 @@ from meshwork.models.streaming import ProcessStreamItem
 
 class AutomationsResponse(ProcessStreamItem):
     item_type: Literal["automationsReponse"] = "automationsReponse"
-    automations: Dict[str, Dict[Literal["input", "output", "hidden"], Any]]
+    automations: dict[str, dict[Literal["input", "output", "hidden"], Any]]
 
 
 class AutomationModel(BaseModel):
     path: str
     provider: Callable
-    inputModel: Type[ParameterSet]
-    outputModel: Type[ProcessStreamItem]
-    interfaceModel: Optional[Callable[[], list[HoudiniParmTemplateSpecType]]] = None
+    inputModel: type[ParameterSet]
+    outputModel: type[ProcessStreamItem]
+    interfaceModel: Callable[[], list[HoudiniParmTemplateSpecType]] | None = None
     hidden: bool = False
 
 
@@ -32,13 +34,13 @@ class AutomationRequest(BaseModel):
 
     process_guid: str
     correlation: str
-    results_subject: Optional[str] = None
-    job_id: Optional[str] = None
-    auth_token: Optional[str] = None
+    results_subject: str | None = None
+    job_id: str | None = None
+    auth_token: str | None = None
     path: str
-    data: Dict
-    telemetry_context: Optional[Dict] = {}
-    event_id: Optional[str] = None
+    data: dict
+    telemetry_context: dict | None = {}
+    event_id: str | None = None
 
 
 class BulkAutomationRequest(BaseModel):
@@ -46,14 +48,14 @@ class BulkAutomationRequest(BaseModel):
 
     is_bulk_processing: bool = True
     requests: list[AutomationRequest] = []
-    event_id: Optional[str] = None
-    telemetry_context: Optional[Dict] = {}
+    event_id: str | None = None
+    telemetry_context: dict | None = {}
 
 
 class AutomationRequestResult(BaseModel):
     processed: bool = False
-    request: Optional[AutomationRequest] = None
-    result: Optional[Dict] = None
+    request: AutomationRequest | None = None
+    result: dict | None = None
 
 
 class EventAutomationResponse(BaseModel):
@@ -68,7 +70,7 @@ class CropImageRequest(ParameterSet):
     image_file: FileParameter
     src_asset_id: str
     src_version: list[int]
-    crop_pos_x: Optional[IntParameterSpec] = None
-    crop_pos_y: Optional[IntParameterSpec] = None
+    crop_pos_x: IntParameterSpec | None = None
+    crop_pos_y: IntParameterSpec | None = None
     crop_w: IntParameterSpec
     crop_h: IntParameterSpec

@@ -1,10 +1,10 @@
+import asyncio
 import logging
 import tempfile
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Callable, Optional
 from uuid import uuid4
 
-import asyncio
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
@@ -116,13 +116,13 @@ class Worker:
     def _load_automations(self, automations: list[AutomationModel]):
         """Function to dynamically discover and register workers in a container"""
         try:
-            log.debug(f"Start Registering automations")
+            log.debug("Start Registering automations")
             for automation in automations:
                 if type(automation) is not AutomationModel:
                     automation = AutomationModel(**automation)
                 self.automations[automation.path] = automation
                 log.debug(f"Registered automations for '{automation.path}'")
-            log.debug(f"End Registering automations")
+            log.debug("End Registering automations")
         except Exception as e:
             log.error(f"Failed to register automations: {format_exception(e)}")
 
@@ -280,7 +280,7 @@ class Worker:
             job_res: EventAutomationResponse,
             api_url: str,
             auth_token: str,
-            event_id: Optional[str] = None,
+            event_id: str | None = None,
     ) -> None:
         updated_headers = update_headers_from_context()
 
@@ -330,7 +330,7 @@ class Worker:
         """
         Start a FastAPI app dynamically based on the workers list.
         """
-        app = FastAPI(title=f"Automation API", description="Mythica Automation API")
+        app = FastAPI(title="Automation API", description="Mythica Automation API")
 
         @app.options("/")
         async def preflight():

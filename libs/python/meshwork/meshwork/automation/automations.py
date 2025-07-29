@@ -1,20 +1,20 @@
 import json
+from collections.abc import Callable
+from functools import wraps
+from typing import Any, Literal
 
 from meshwork.automation.models import AutomationModel, AutomationsResponse
 from meshwork.automation.publishers import ResultPublisher
 from meshwork.automation.utils import format_exception
+from meshwork.config import meshwork_config
+from meshwork.models.assets import AssetVersionEntryPointReference
 from meshwork.models.params import (
     FileParameter,
     HoudiniParmTemplateSpecType,
     ParameterSet,
     ParameterSpec,
 )
-from meshwork.models.assets import AssetVersionEntryPointReference
 from meshwork.models.streaming import Error, JobDefinition, ProcessStreamItem
-from typing import Callable, Literal, Optional, Tuple, Any, Dict
-from functools import wraps
-
-from meshwork.config import meshwork_config
 from meshwork.runtime.params import resolve_params
 
 
@@ -102,9 +102,9 @@ def automation():
                 )
 
             if (
-                "responder" in kwargs
-                and kwargs["responder"] is not None
-                and not isinstance(kwargs["responder"], ResultPublisher)
+                    "responder" in kwargs
+                    and kwargs["responder"] is not None
+                    and not isinstance(kwargs["responder"], ResultPublisher)
             ):
                 raise TypeError(
                     "The 'responder' argument must be of type ResultPublisher"
@@ -126,13 +126,13 @@ def automation():
 
 
 def _find_decorated_models(
-    script_namespace: Dict[str, Any],
-) -> Tuple[Optional[ParameterSet], Optional[ProcessStreamItem]]:
+        script_namespace: dict[str, Any],
+) -> tuple[ParameterSet | None, ProcessStreamItem | None]:
     """Find request and response models that have been decorated with the appropriate decorators."""
     request_model = None
     response_model = None
 
-    for name, obj in script_namespace.items():
+    for _, obj in script_namespace.items():
         if hasattr(obj, "_is_automation_request") and obj._is_automation_request:
             request_model = obj
         if hasattr(obj, "_is_automation_response") and obj._is_automation_response:
@@ -141,9 +141,9 @@ def _find_decorated_models(
     return request_model, response_model
 
 
-def _find_operation(script_namespace: Dict[str, Any]) -> Optional[Callable]:
+def _find_operation(script_namespace: dict[str, Any]) -> Callable | None:
     """Find the operation function that has been decorated with @script_operation."""
-    for name, obj in script_namespace.items():
+    for _, obj in script_namespace.items():
         if hasattr(obj, "_is_automation") and obj._is_automation:
             return obj
 
@@ -151,10 +151,10 @@ def _find_operation(script_namespace: Dict[str, Any]) -> Optional[Callable]:
 
 
 def _find_script_interface(
-    script_namespace: Dict[str, Any],
-) -> Optional[list[HoudiniParmTemplateSpecType]]:
+        script_namespace: dict[str, Any],
+) -> list[HoudiniParmTemplateSpecType] | None:
     """Find the script interface that has been decorated with @script_interface."""
-    for name, obj in script_namespace.items():
+    for _, obj in script_namespace.items():
         if hasattr(obj, "_is_automation_interface") and obj._is_automation_interface:
             return obj
 
@@ -163,7 +163,7 @@ def _find_script_interface(
 
 def _run_script_automation() -> Callable:
     def impl(
-        request: ScriptRequest = None, responder: ResultPublisher = None
+            request: ScriptRequest = None, responder: ResultPublisher = None
     ) -> ProcessStreamItem:
         # Prepare the environment to hold the script's namespace
         script_namespace = {}
@@ -206,7 +206,7 @@ def _run_script_automation() -> Callable:
 
 def _get_script_interface() -> Callable:
     def impl(
-        request: ScriptRequest = None, responder: ResultPublisher = None
+            request: ScriptRequest = None, responder: ResultPublisher = None
     ) -> ProcessStreamItem:
         script_namespace = {}
 
@@ -274,11 +274,11 @@ class ScriptJobDefResponse(ProcessStreamItem):
 
 def _get_script_job_def() -> Callable:
     def impl(
-        request: ScriptJobDefRequest = None, responder: ResultPublisher = None
+            request: ScriptJobDefRequest = None, responder: ResultPublisher = None
     ) -> ScriptJobDefResponse:
         script_namespace = {}
         awpy_file = request.awpy_file
-        with open(awpy_file.file_path, "r") as f:
+        with open(awpy_file.file_path) as f:
             awpy = json.load(f)
 
         if len(request.src_asset_id) > 0:

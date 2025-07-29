@@ -2,7 +2,6 @@ import asyncio
 import base64
 import logging
 import os
-from typing import Optional
 
 from meshwork.auth.generate_token import decode_token
 from meshwork.automation.adapters import NatsAdapter, RestAdapter
@@ -104,7 +103,7 @@ class ResultPublisher:
     def _publish_local_data(self, item: ProcessStreamItem, api_url: str) -> None:
         updated_headers = update_headers_from_context()
 
-        def upload_file(file_path: str, key: str, index: int) -> tuple[Optional[str]]:
+        def upload_file(file_path: str, key: str, index: int) -> tuple[str | None]:
             if not os.path.exists(file_path):
                 log.error("File not found: %s", file_path)
                 return (None, None)
@@ -137,7 +136,7 @@ class ResultPublisher:
             finally:
                 os.remove(file_path)
 
-        def upload_job_def(job_def: JobDefinition) -> Optional[str]:
+        def upload_job_def(job_def: JobDefinition) -> str | None:
             definition = {
                 "job_type": job_def.job_type,
                 "name": job_def.name,

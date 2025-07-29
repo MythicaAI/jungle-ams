@@ -8,14 +8,14 @@ that can be executed by a runtime.
 import json
 
 from meshwork.models.params import (
-    ParameterSpec,
-    IntParameterSpec,
-    FloatParameterSpec,
-    StringParameterSpec,
     BoolParameterSpec,
-    EnumValueSpec,
     EnumParameterSpec,
+    EnumValueSpec,
     FileParameterSpec,
+    FloatParameterSpec,
+    IntParameterSpec,
+    ParameterSpec,
+    StringParameterSpec,
 )
 
 
@@ -42,7 +42,7 @@ def parse_index_menu_parameter(value: dict) -> EnumParameterSpec:
 def parse_string_menu_parameter(value: dict) -> EnumParameterSpec:
     values = [
         EnumValueSpec(name=name, label=label)
-        for name, label in zip(value["menu_items"], value["menu_labels"])
+        for name, label in zip(value["menu_items"], value["menu_labels"], strict=False)
     ]
 
     default = str(value["default"])
