@@ -25,8 +25,9 @@ jobs:
       - run: |
           python -m pip install --upgrade pip uv
           pip install build twine
-
-      - run: uv build
+          uv lint
+          uv test
+          uv build
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:

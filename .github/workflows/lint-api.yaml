@@ -32,9 +32,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip poetry
-          poetry install --with=dev --no-root
+          python -m pip install --upgrade pip uv
+          uv sync --group dev
 
       - name: Run pylint
         run: |
-          poetry run pylint --disable=R,C,fixme .
+          uv run lint
