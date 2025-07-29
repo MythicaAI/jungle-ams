@@ -6,7 +6,7 @@ RELATIVE_PATH=$1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Convert the relative path to the workspace
-DOCKERFILE_RELATIVE_PATH=$(realpath "$SCRIPT_DIR/../../../$RELATIVE_PATH")
+DOCKERFILE_RELATIVE_PATH=$(realpath "$SCRIPT_DIR/../$RELATIVE_PATH")
 
 # Get the path from github.event.modified files or default to dockerfile path
 DOCKERFILE_PATH=$(realpath "$DOCKERFILE_RELATIVE_PATH/Dockerfile")
