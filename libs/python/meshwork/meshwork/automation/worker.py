@@ -1,15 +1,16 @@
-import asyncio
 import logging
 import tempfile
 from datetime import datetime, timezone
 from typing import Callable, Optional
 from uuid import uuid4
 
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from pydantic import ValidationError
+
 from meshwork.automation.adapters import NatsAdapter, RestAdapter
 from meshwork.automation.automations import get_default_automations
 from meshwork.automation.models import (
@@ -25,8 +26,8 @@ from meshwork.automation.utils import error_handler, format_exception
 from meshwork.config import meshwork_config, update_headers_from_context
 from meshwork.models.params import ParameterSet
 from meshwork.models.streaming import Error, ProcessStreamItem, Progress
-from meshwork.runtime.params import resolve_params
 from meshwork.runtime.alerts import AlertSeverity, send_alert
+from meshwork.runtime.params import resolve_params
 
 # Set up logging
 logging.basicConfig(
@@ -63,12 +64,12 @@ class Worker:
         self._load_automations(autos)
 
     def _get_catalog_provider(
-        self,
+            self,
     ) -> Callable[[ParameterSet, ResultPublisher], AutomationsResponse]:
         doer = self
 
         def impl(
-            request: ParameterSet = None, responder: ResultPublisher = None
+                request: ParameterSet = None, responder: ResultPublisher = None
         ) -> AutomationsResponse:
             ret = {}
             for path, wk in doer.automations.items():
@@ -217,7 +218,7 @@ class Worker:
             event_id = json_payload.get("event_id", None)
 
             with tracer.start_as_current_span(
-                "coordinator", context=telemetry_context
+                    "coordinator", context=telemetry_context
             ) as span:
                 job_res = EventAutomationResponse()
                 try:
@@ -275,11 +276,11 @@ class Worker:
         return coordinator
 
     async def process_items_result(
-        self,
-        job_res: EventAutomationResponse,
-        api_url: str,
-        auth_token: str,
-        event_id: Optional[str] = None,
+            self,
+            job_res: EventAutomationResponse,
+            api_url: str,
+            auth_token: str,
+            event_id: Optional[str] = None,
     ) -> None:
         updated_headers = update_headers_from_context()
 
@@ -293,8 +294,8 @@ class Worker:
                 elif item.get("item_type", "") == "error":
                     success = False
                 elif (
-                    item.get("item_type", "") == "job_def"
-                    and item.get("job_def_id") is None
+                        item.get("item_type", "") == "job_def"
+                        and item.get("job_def_id") is None
                 ):
                     success = False
                 elif item.get("item_type", "") == "job_defs":
@@ -304,8 +305,8 @@ class Worker:
                         if job_definition.get("job_def_id") is None:
                             success = False
                 elif (
-                    item.get("item_type", "") == "cropped_image"
-                    and item.get("file_id") is None
+                        item.get("item_type", "") == "cropped_image"
+                        and item.get("file_id") is None
                 ):
                     success = False
 
@@ -406,7 +407,7 @@ class Worker:
                     content={
                         "correlation": auto_request.correlation,
                         "result": {
-                            "error": f"Automation failed: {format_exception(e)}"
+                            "error": f"Automation failed: {str(e)}"
                         },
                     },
                     status_code=500,
