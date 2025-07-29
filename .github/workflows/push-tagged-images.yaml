@@ -3,7 +3,7 @@ on:
   push: # only run when PR merged to main
     branches:
       - 'main'
-      - '**'  # enable for testing
+      # - '**'  # enable for testing
     paths:
       - 'api/**'
       - 'apps/**'
